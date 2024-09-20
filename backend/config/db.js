@@ -1,21 +1,23 @@
-const mysql = require('mysql2');
+import mysql from 'mysql2/promise';
 
-// Configuración de la conexión a la base de datos
-const connection = mysql.createConnection({
+// Configuración de la conexión a la base de datos esto deben de meterlo en una varaible de entorno
+const connection = await mysql.createConnection({
     host: '127.0.0.1',
-    user: 'root',    
+    user: 'root',
     password: '',
-    database: 'saintpatrickacademy' 
+    database: 'saintpatrickacademy'
 });
 
-// Conectarse a la base de datos
-connection.connect((err) => {
-    if (err) {
+// Función para conectarse a la base de datos
+const conectarDB = async () => {
+    try {
+        // Intenta conectar a la base de datos 
+        await connection.connect();
+        console.log('Conexión establecida con la base de datos, ID de conexión: ' + connection.threadId);
+    } catch (err) {
         console.error('Error al conectar a la base de datos:', err.stack);
-        return;
+        process.exit(1); 
     }
-    console.log('Conexión establecida con la base de datos, ID de conexión: ' + connection.threadId);
-});
+};
 
-// Exportar la conexión para usarla en otros módulos
-module.exports = connection;
+export { connection, conectarDB };
