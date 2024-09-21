@@ -15,7 +15,7 @@ const conectarDB = async () => {
         await connection.connect();
         console.log('Conexión establecida con la base de datos, ID de conexión: ' + connection.threadId);
     } catch (err) {
-        console.error('Error al conectar a la base de datos:', err.stack);
+        console.error('Error al conectar a la base de datosssssss:', err.stack);
         process.exit(1); 
     }
 };
