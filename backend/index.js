@@ -1,14 +1,24 @@
 import express from 'express';
-import { conectarDB } from './config/db.js'; // Asegúrate de que la ruta sea correcta
+import dotenv from 'dotenv';
+import conectarDB from './config/db.js'; 
+import usuariosRoutes from './routes/usuario_routes.js'; // Asegúrate de la ruta correcta
+
+dotenv.config(); 
 
 const app = express();
-const PORT = 4000; // Puedes cambiarlo si es necesario
 
-// Conectar a la base de datos
-conectarDB();
+const init = async () => {
+    await conectarDB();
+};
 
-// Middleware para manejar JSON
+init();
+
 app.use(express.json());
+
+// Usar las rutas de usuarios
+app.use('/api/usuarios', usuariosRoutes); // Todas las rutas de usuarios estarán disponibles en /api/usuarios
+
+const PORT = process.env.PORT || 4000;
 
 // Iniciar el servidor
 app.listen(PORT, () => {

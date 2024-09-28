@@ -1,23 +1,28 @@
+// config/db.js
 import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
 
-// Configuración de la conexión a la base de datos esto deben de meterlo en una varaible de entorno
-const connection = await mysql.createConnection({
-    host: '127.0.0.1',
-    user: 'root',
-    password: '',
-    database: 'saintpatrickacademy'
-});
+dotenv.config();
 
-// Función para conectarse a la base de datos
 const conectarDB = async () => {
     try {
-        // Intenta conectar a la base de datos 
-        await connection.connect();
-        console.log('Conexión establecida con la base de datos, ID de conexión: ' + connection.threadId);
+        const pool = mysql.createPool({
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASSWORD,
+            database: process.env.DB_NAME,
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
+        });
+
+        console.log('Conexión establecida con la base de datos.');
+        return pool; // Retorna el pool para usarlo más tarde
     } catch (err) {
-        console.error('Error al conectar a la base de datosssssss:', err.stack);
-        process.exit(1); 
+        console.error('Error al conectar a la base de datos:', err);
+        process.exit(1);
     }
 };
 
-export { connection, conectarDB };
+// Exportar la función conectarDB como la exportación por defecto
+export default conectarDB;
