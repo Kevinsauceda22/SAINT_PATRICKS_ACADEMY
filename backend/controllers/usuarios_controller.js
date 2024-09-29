@@ -1,25 +1,51 @@
 import bcrypt from 'bcrypt';
 import conectarDB from '../config/db.js';
 
-// Inicializa la conexión a la base de datos
 const pool = await conectarDB();
 
 // Crear una nueva persona y usuario
 export const crearUsuario = async (req, res) => {
-    const { dni_persona, nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona, 
+    const { dni_persona, nombre, Segundo_nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona, 
             nombre_usuario, correo_usuario, contraseña_usuario, rol_usuario, confirmacion_email, token_usuario } = req.body;
 
     const connection = await pool.getConnection();
 
     try {
+        // Verificar si ya existe una persona con el mismo DNI
+        const [personaExistente] = await connection.query(
+            'SELECT dni_persona FROM tbl_personas WHERE dni_persona = ?', [dni_persona]
+        );
+
+        if (personaExistente.length > 0) {
+            return res.status(400).json({ mensaje: 'Ya existe una persona con este DNI' });
+        }
+
+        // Verificar si ya existe un usuario con el mismo correo
+        const [emailExistente] = await connection.query(
+            'SELECT correo_usuario FROM tbl_usuarios WHERE correo_usuario = ?', [correo_usuario]
+        );
+
+        if (emailExistente.length > 0) {
+            return res.status(400).json({ mensaje: 'Ya existe un usuario con este correo' });
+        }
+
+        // Verificar si ya existe un usuario con el mismo nombre de usuario
+        const [usernameExistente] = await connection.query(
+            'SELECT nombre_usuario FROM tbl_usuarios WHERE nombre_usuario = ?', [nombre_usuario]
+        );
+
+        if (usernameExistente.length > 0) {
+            return res.status(400).json({ mensaje: 'Ya existe un usuario con este nombre de usuario' });
+        }
+
         // Hashear la contraseña
         const saltRounds = 10; 
         const hashedPassword = await bcrypt.hash(contraseña_usuario, saltRounds);
 
         // Insertar los datos en tbl_personas
         const [personaResult] = await connection.query(
-            'INSERT INTO tbl_personas (dni_persona, Nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [dni_persona, nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona]
+            'INSERT INTO tbl_personas (dni_persona, Nombre, Segundo_nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [dni_persona, nombre, Segundo_nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona]
         );
 
         // Obtener el cod_persona de la persona recién creada
@@ -38,6 +64,7 @@ export const crearUsuario = async (req, res) => {
         connection.release();
     }
 };
+
 
 // Obtener todos los usuarios
 export const obtenerUsuarios = async (req, res) => {
