@@ -16,7 +16,7 @@ init();
 app.use(express.json());
 
 // Usar las rutas de usuarios
-app.use('/api/usuarios', usuariosRoutes); // Todas las rutas de usuarios estarán disponibles en /api/usuarios
+app.use('/api/usuarios', usuariosRoutes); 
 
 const PORT = process.env.PORT || 4000;
 
