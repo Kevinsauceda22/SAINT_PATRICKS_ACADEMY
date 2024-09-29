@@ -1,44 +1,29 @@
 import bcrypt from 'bcrypt';
 import conectarDB from '../config/db.js';
+import Generar_Id from '../helpers/generar_Id.js';
+
 
 const pool = await conectarDB();
 
-// Crear una nueva persona y usuario
+//crea un nuevo usuario 
 export const crearUsuario = async (req, res) => {
     const { dni_persona, nombre, Segundo_nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona, 
-            nombre_usuario, correo_usuario, contraseña_usuario, rol_usuario, confirmacion_email, token_usuario } = req.body;
+            nombre_usuario, correo_usuario, contraseña_usuario, rol_usuario, confirmacion_email } = req.body;
 
     const connection = await pool.getConnection();
 
     try {
-        // Verificar si ya existe una persona con el mismo DNI
-        const [personaExistente] = await connection.query(
-            'SELECT dni_persona FROM tbl_personas WHERE dni_persona = ?', [dni_persona]
+        // Verificar si el DNI, correo o nombre de usuario ya existen
+        const [existingUser] = await connection.query(
+            'SELECT * FROM tbl_personas INNER JOIN tbl_usuarios ON tbl_personas.cod_persona = tbl_usuarios.cod_persona WHERE dni_persona = ? OR correo_usuario = ? OR nombre_usuario = ?',
+            [dni_persona, correo_usuario, nombre_usuario]
         );
 
-        if (personaExistente.length > 0) {
-            return res.status(400).json({ mensaje: 'Ya existe una persona con este DNI' });
+        if (existingUser.length > 0) {
+            return res.status(400).json({ mensaje: 'El DNI, correo o nombre de usuario ya existen en el sistema' });
         }
 
-        // Verificar si ya existe un usuario con el mismo correo
-        const [emailExistente] = await connection.query(
-            'SELECT correo_usuario FROM tbl_usuarios WHERE correo_usuario = ?', [correo_usuario]
-        );
-
-        if (emailExistente.length > 0) {
-            return res.status(400).json({ mensaje: 'Ya existe un usuario con este correo' });
-        }
-
-        // Verificar si ya existe un usuario con el mismo nombre de usuario
-        const [usernameExistente] = await connection.query(
-            'SELECT nombre_usuario FROM tbl_usuarios WHERE nombre_usuario = ?', [nombre_usuario]
-        );
-
-        if (usernameExistente.length > 0) {
-            return res.status(400).json({ mensaje: 'Ya existe un usuario con este nombre de usuario' });
-        }
-
-        // Hashear la contraseña
+        // Si no existen, procedemos a crear el nuevo usuario
         const saltRounds = 10; 
         const hashedPassword = await bcrypt.hash(contraseña_usuario, saltRounds);
 
@@ -48,13 +33,16 @@ export const crearUsuario = async (req, res) => {
             [dni_persona, nombre, Segundo_nombre, primer_apellido, segundo_apellido, tipo_persona, direccion_persona, fecha_nacimiento, departamento, Estado_Persona, Genero_Persona]
         );
 
-        // Obtener el cod_persona de la persona recién creada
         const cod_persona = personaResult.insertId;
 
-        // Crear el usuario con cod_persona y la contraseña hasheada
-        const [nuevoUsuario] = await connection.query('CALL crearUsuario(?, ?, ?, ?, ?, ?, ?)', [
-            nombre_usuario, correo_usuario, hashedPassword, rol_usuario, confirmacion_email, token_usuario, cod_persona
-        ]);
+        // Generar token
+        const token_usuario = Generar_Id(); // Llamada a la función que genera el token
+
+        // Crear el usuario con el cod_persona y la contraseña hasheada
+        const [nuevoUsuario] = await connection.query(
+            'CALL crearUsuario(?, ?, ?, ?, ?, ?, ?)', 
+            [nombre_usuario, correo_usuario, hashedPassword, rol_usuario, confirmacion_email, token_usuario, cod_persona]
+        );
 
         res.status(201).json(nuevoUsuario);
     } catch (error) {
@@ -64,6 +52,7 @@ export const crearUsuario = async (req, res) => {
         connection.release();
     }
 };
+
 
 
 // Obtener todos los usuarios
