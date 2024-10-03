@@ -4,8 +4,9 @@ import conectarDB from '../config/db.js';
 import Generar_Id from '../helpers/generar_Id.js';
 const pool = await conectarDB();
 const confirmacion_email ='0' ;
+import db from '../config/db.js';
 
-
+//este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
     const { 
         dni_persona, 
@@ -20,13 +21,14 @@ export const crearUsuario = async (req, res) => {
         Tipo,
         Nombre_departamento,
         Nombre_municipio,
-        Valor,  // Valor del contacto (Email o número)
-        tipo_contacto_nombre, // Nombre del tipo de contacto (ENUM: "num" o "email")
+        Valor,  
+        tipo_contacto_nombre, 
         tipo_genero,
         nombre_usuario,
         correo_usuario,
         contraseña_usuario,
-        descripcion_rol  // Nuevo: descripción del rol (P, A, D)
+        descripcion_rol,  
+
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -78,7 +80,7 @@ export const crearUsuario = async (req, res) => {
                 Estado_Persona,
                 cod_tipo_persona,
                 cod_departamento,
-                cod_genero  // Incluimos cod_genero en la llamada
+                cod_genero 
             ]
         );
 
@@ -131,11 +133,12 @@ export const crearUsuario = async (req, res) => {
         
         // Crear el usuario con el cod_persona, cod_rol y la contraseña hasheada
         const [nuevoUsuario] = await connection.query(
-            'CALL crearUsuario(?, ?, ?, ?, ?, ?, ?)', 
-            [nombre_usuario, correo_usuario, hashedPassword, cod_estado_usuario, token_usuario, cod_persona, cod_rol]  // Sin el '0'
+            'CALL crearUsuario(?, ?, ?, ?, ?, ?, ?, ?)', 
+            [nombre_usuario, correo_usuario, hashedPassword, cod_estado_usuario, token_usuario, cod_persona, cod_rol, new Date()]  // Pasar null para que el procedimiento use CURDATE()
         );
 
-        res.status(201).json(nuevoUsuario);
+        // Respuesta exitosa
+        res.status(201).json({ mensaje: 'Usuario registrado correctamente', usuario: nuevoUsuario });
     } catch (error) {
         console.error('Error al crear el usuario:', error);
         res.status(500).json({ mensaje: 'Error al crear el usuario' });
@@ -144,44 +147,50 @@ export const crearUsuario = async (req, res) => {
     }
 };
 
-
-// Obtener todos los usuarios
+//con este controlador se obtienen todos los usuarios pero tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarios = async (req, res) => {
     try {
         const [usuarios] = await pool.query('CALL ObtenerUsuarios()');
+
+        if (!usuarios.length) {
+            return res.status(404).json({ mensaje: 'No se encontraron usuarios' });
+        }
+
         res.status(200).json(usuarios);
     } catch (error) {
-        console.error(error);
+        console.error('Error al obtener usuarios:', error);
         res.status(500).json({ mensaje: 'Error al obtener los usuarios' });
     }
 };
 
-// Confirmar la cuenta del usuario
+//con este se confirma la cuenta del usuario con el token enviado en el correo y se actualiza el estado de confirmacion y se elimina el token
 export const confirmarCuenta = async (req, res) => {
-    const { token_usuario } = req.params;
+    const { token_usuario } = req.params; // Leer el token desde los parámetros de la URL
 
-    const connection = await pool.getConnection();
     try {
-        // Buscar el usuario con el token
-        const [usuario] = await connection.query('SELECT * FROM tbl_usuarios WHERE token_usuario = ?', [token_usuario]);
+        const db = await conectarDB();
 
-        if (usuario.length === 0) {
-            return res.status(404).json({ mensaje: 'Token no válido o cuenta ya confirmada' });
+        // Consulta para verificar el token en la base de datos
+        const [rows] = await db.query('SELECT * FROM tbl_usuarios WHERE token_usuario = ?', [token_usuario]);
+
+        if (rows.length > 0) {
+            // Si se encuentra el usuario, actualizar el estado de confirmación y eliminar el token
+            await db.query(
+                'UPDATE tbl_usuarios SET confirmacion_email = 1, token_usuario = "" WHERE token_usuario = ?', 
+                [token_usuario]
+            );
+
+            return res.status(200).json({ message: 'Cuenta confirmada exitosamente.' });
+        } else {
+            return res.status(400).json({ message: 'Token inválido o expirado.' });
         }
-
-        // Marcar la cuenta como confirmada
-        await connection.query('UPDATE tbl_usuarios SET confirmacion_email = 1, token_usuario = NULL WHERE token_usuario = ?', [token_usuario]); // Agregada la coma
-
-        res.status(200).json({ mensaje: 'Cuenta confirmada correctamente' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ mensaje: 'Error al confirmar la cuenta' });
-    } finally {
-        connection.release();
+    } catch (err) {
+        console.error('Error en la confirmación de cuenta:', err);
+        return res.status(500).json({ message: 'Error en la confirmación de cuenta.' });
     }
 };
 
-// Obtener un usuario por su cod_usuario
+//con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarioPorId = async (req, res) => {
     try {
         const [usuario] = await pool.query('CALL ObtenerUsuarioPorID(?)', [req.params.cod_usuario]);
@@ -199,7 +208,7 @@ export const obtenerUsuarioPorId = async (req, res) => {
     }
 };
 
-// Actualizar un usuario
+//con este controlador se actualiza un usuario por su id y tiene una ruta protegida que requiere un token jwt
 export const actualizarUsuario = async (req, res) => {
     const { nombre_usuario, correo_usuario, contraseña_usuario, rol_usuario, confirmacion_email, token_usuario } = req.body;
 
@@ -261,12 +270,16 @@ export const eliminarUsuario = async (req, res) => {
     }
 };
 
-
+//con este controlador se autentica un usuario y se genera un token jwt
 export const autenticarUsuario = async (req, res) => {
-    const { nombre_usuario, contraseña_usuario } = req.body;
+    const { identificador, contraseña_usuario } = req.body; // Cambia el nombre a 'identificador'
 
     try {
-        const [user] = await pool.query('SELECT * FROM tbl_usuarios WHERE nombre_usuario = ?', [nombre_usuario]);
+        // Modifica la consulta para verificar el nombre de usuario o el correo electrónico
+        const [user] = await pool.query(
+            'SELECT * FROM tbl_usuarios WHERE nombre_usuario = ? OR correo_usuario = ?',
+            [identificador, identificador] // Usa el mismo valor para ambas condiciones
+        );
 
         // Verificar si el usuario existe
         if (user.length === 0) {
@@ -278,7 +291,7 @@ export const autenticarUsuario = async (req, res) => {
         // Verificar la contraseña 
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
         if (!contraseñaValida) {
-            return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario incorrecto' });
+            return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
         }
 
         // Verificar si el usuario ha confirmado su cuenta
@@ -290,7 +303,7 @@ export const autenticarUsuario = async (req, res) => {
         const token = jwt.sign(
             { cod_usuario: usuario.cod_usuario, nombre_usuario: usuario.nombre_usuario, rol_usuario: usuario.rol_usuario },
             process.env.JWT_SECRET,
-            { expiresIn: '1h' }      
+            { expiresIn: '1h' }
         );
 
         // Responder con el token
@@ -303,3 +316,4 @@ export const autenticarUsuario = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al autenticar usuario' });
     }
 };
+
