@@ -6,23 +6,27 @@ const pool = await conectarDB();
 const confirmacion_email ='0' ;
 
 
+
 export const crearUsuario = async (req, res) => {
     const { 
         dni_persona, 
-        Nombre, 
-        Segundo_nombre, 
-        primer_apellido, 
-        segundo_apellido, 
-        tipo_persona, 
-        direccion_persona, 
+        Nombre,
+        Segundo_nombre,
+        Primer_apellido,
+        Segundo_apellido,
+        Nacionalidad,
+        direccion_persona,
         fecha_nacimiento,
-        departamento, 
-        Estado_Persona, 
-        Genero_Persona, 
-        nombre_usuario, 
-        correo_usuario, 
-        contraseña_usuario, 
-        rol_usuario 
+        Estado_Persona,
+        Tipo,
+        Nombre_departamento,
+        Nombre_municipio,
+        Valor,  // Valor del contacto (Email o número)
+        tipo_contacto_nombre, // Nombre del tipo de contacto (ENUM: "num" o "email")
+        tipo_genero,
+        nombre_usuario,
+        correo_usuario,
+        contraseña_usuario
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -30,7 +34,7 @@ export const crearUsuario = async (req, res) => {
     try {
         // Verificar si el DNI, correo o nombre ya existen
         const [existingUser] = await connection.query(
-            'SELECT * FROM tbl_personas INNER JOIN tbl_usuarios ON tbl_personas.cod_persona = tbl_usuarios.cod_persona WHERE dni_persona = ? OR correo_usuario = ? OR nombre_usuario = ?',
+            'SELECT * FROM tbl_personas INNER JOIN tbl_usuarios ON tbl_personas.cod_persona = tbl_usuarios.cod_persona WHERE tbl_personas.dni_persona = ? OR tbl_usuarios.correo_usuario = ? OR tbl_usuarios.nombre_usuario = ?',
             [dni_persona, correo_usuario, nombre_usuario]
         );
 
@@ -38,27 +42,67 @@ export const crearUsuario = async (req, res) => {
             return res.status(400).json({ mensaje: 'El DNI, correo o nombre de usuario ya existen en el sistema' });
         }
 
-        // Si no existen, procedemos a crear la nueva persona
-        const [personaResult] = await connection.query(
-            'CALL crearPersona(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, @cod_persona)', 
+        // Crear el nuevo tipo de persona si no existe
+        const [tipoPersonaResult] = await connection.query(
+            'INSERT INTO tbl_tipo_persona (Tipo) VALUES (?) ON DUPLICATE KEY UPDATE Cod_tipo_persona=LAST_INSERT_ID(Cod_tipo_persona)',
+            [Tipo]
+        );
+        const cod_tipo_persona = tipoPersonaResult.insertId || tipoPersonaResult[0].Cod_tipo_persona;
+
+        // Crear el nuevo género si no existe
+        const [generoResult] = await connection.query(
+            'INSERT INTO tbl_genero_persona (Tipo_genero) VALUES (?) ON DUPLICATE KEY UPDATE Cod_genero=LAST_INSERT_ID(Cod_genero)',
+            [tipo_genero]
+        );
+        const cod_genero = generoResult.insertId || generoResult[0].Cod_genero;
+
+        // Crear el nuevo departamento si no existe
+        const [departamentoResult] = await connection.query(
+            'INSERT INTO tbl_departamento (Nombre_departamento, Nombre_municipio) VALUES (?, ?) ON DUPLICATE KEY UPDATE Cod_departamento=LAST_INSERT_ID(Cod_departamento)',
+            [Nombre_departamento, Nombre_municipio]
+        );
+        const cod_departamento = departamentoResult.insertId || departamentoResult[0].Cod_departamento;
+
+        // Crear la nueva persona
+        await connection.query(
+            "CALL crearPersona(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",  // 12 parámetros
             [
-                dni_persona,            
-                Nombre,                  
-                Segundo_nombre,         
-                primer_apellido,         
-                segundo_apellido,      
-                tipo_persona,           
-                direccion_persona,       
-                fecha_nacimiento,       
-                departamento,           
-                Estado_Persona,         
-                Genero_Persona           
+                dni_persona,
+                Nombre,
+                Segundo_nombre,
+                Primer_apellido,
+                Segundo_apellido,
+                Nacionalidad,
+                direccion_persona,
+                fecha_nacimiento,
+                Estado_Persona,
+                cod_tipo_persona,
+                cod_departamento,
+                cod_genero  // Incluimos cod_genero en la llamada
             ]
         );
-        
-        // Obtener el cod_persona
-        const [[result]] = await connection.query('SELECT @cod_persona AS cod_persona');
-        const cod_persona = result.cod_persona; // Obtener el ID de la persona recién insertada
+
+        // Obtener el cod_persona usando LAST_INSERT_ID()
+        const [[result]] = await connection.query('SELECT LAST_INSERT_ID() AS cod_persona');
+        const cod_persona = result.cod_persona; // ID de la persona recién insertada
+
+        // Verificar si cod_persona se obtuvo correctamente
+        if (!cod_persona) {
+            return res.status(500).json({ mensaje: 'Error al recuperar el ID de la persona recién creada' });
+        }
+
+        // Crear el nuevo tipo de contacto si no existe
+        const [tipoContactoResult] = await connection.query(
+            'INSERT INTO tbl_tipo_contacto (tipo_contacto) VALUES (?) ON DUPLICATE KEY UPDATE Cod_tipo_contacto=LAST_INSERT_ID(Cod_tipo_contacto)',
+            [tipo_contacto_nombre]
+        );
+        const cod_tipo_contacto = tipoContactoResult.insertId || tipoContactoResult[0].Cod_tipo_contacto;
+
+        // Llamar al procedimiento almacenado para agregar el contacto
+        await connection.query(
+            'CALL agregarContacto(?, ?, ?)', 
+            [cod_persona, Valor, cod_tipo_contacto]
+        );
 
         // Generar token
         const token_usuario = Generar_Id(); // Definir token_usuario aquí
@@ -69,13 +113,13 @@ export const crearUsuario = async (req, res) => {
 
         // Crear el usuario con el cod_persona y la contraseña hasheada
         const [nuevoUsuario] = await connection.query(
-            'CALL crearUsuario(?, ?, ?, ?, ?, ?, ?)', 
-            [nombre_usuario, correo_usuario, hashedPassword, rol_usuario, 0, token_usuario, cod_persona]  // Pasar 0 como confirmacion_email
+            'CALL crearUsuario(?, ?, ?, ?, ?, ?)', 
+            [nombre_usuario, correo_usuario, hashedPassword, 0, token_usuario, cod_persona,]  // Pasar 0 como confirmacion_email
         );
 
         res.status(201).json(nuevoUsuario);
     } catch (error) {
-        console.error(error);
+        console.error('Error al crear el usuario:', error);
         res.status(500).json({ mensaje: 'Error al crear el usuario' });
     } finally {
         connection.release();
@@ -212,7 +256,7 @@ export const autenticarUsuario = async (req, res) => {
 
         const usuario = user[0];
 
-        // Verificar la contraseña
+        // Verificar la contraseña 
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
         if (!contraseñaValida) {
             return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario incorrecto' });
@@ -226,8 +270,8 @@ export const autenticarUsuario = async (req, res) => {
         // Generar el token JWT
         const token = jwt.sign(
             { cod_usuario: usuario.cod_usuario, nombre_usuario: usuario.nombre_usuario, rol_usuario: usuario.rol_usuario },
-            process.env.JWT_SECRET,  // Clave secreta del JWT
-            { expiresIn: '1h' }      // Duración del token (1 hora en este ejemplo)
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }      
         );
 
         // Responder con el token
