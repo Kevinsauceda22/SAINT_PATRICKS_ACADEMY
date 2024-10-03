@@ -6,7 +6,6 @@ const pool = await conectarDB();
 const confirmacion_email ='0' ;
 
 
-
 export const crearUsuario = async (req, res) => {
     const { 
         dni_persona, 
@@ -26,7 +25,8 @@ export const crearUsuario = async (req, res) => {
         tipo_genero,
         nombre_usuario,
         correo_usuario,
-        contraseña_usuario
+        contraseña_usuario,
+        descripcion_rol  // Nuevo: descripción del rol (P, A, D)
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -104,17 +104,35 @@ export const crearUsuario = async (req, res) => {
             [cod_persona, Valor, cod_tipo_contacto]
         );
 
+        // Obtener o crear el rol (Cod_rol) en tbl_roles
+        const [rolResult] = await connection.query(
+            'INSERT INTO tbl_roles (Descripcion) VALUES (?) ON DUPLICATE KEY UPDATE Cod_rol=LAST_INSERT_ID(Cod_rol)',
+            [descripcion_rol]  // Pasa la descripción del rol
+        );
+        const cod_rol = rolResult.insertId || rolResult[0].Cod_rol;  // Aquí se obtiene el Cod_rol
+
         // Generar token
         const token_usuario = Generar_Id(); // Definir token_usuario aquí
 
         // Hashear la contraseña antes de insertarla
         const saltRounds = 10; 
         const hashedPassword = await bcrypt.hash(contraseña_usuario, saltRounds);
+        
+        // Mapear el estado de la persona a "Activo" o "Inactivo"
+        const estadoValido = (Estado_Persona === 'A') ? 'Activo' : 'Inactivo';
 
-        // Crear el usuario con el cod_persona y la contraseña hasheada
+        // Insertar o actualizar el estado del usuario
+        const [estadoUsuarioResult] = await connection.query(
+            'INSERT INTO tbl_estado_usuario (estado) VALUES (?) ON DUPLICATE KEY UPDATE Cod_estado_usuario=LAST_INSERT_ID(Cod_estado_usuario)',
+            [estadoValido] 
+        );
+        
+        const cod_estado_usuario = estadoUsuarioResult.insertId || estadoUsuarioResult[0].Cod_estado_usuario;
+        
+        // Crear el usuario con el cod_persona, cod_rol y la contraseña hasheada
         const [nuevoUsuario] = await connection.query(
-            'CALL crearUsuario(?, ?, ?, ?, ?, ?)', 
-            [nombre_usuario, correo_usuario, hashedPassword, 0, token_usuario, cod_persona,]  // Pasar 0 como confirmacion_email
+            'CALL crearUsuario(?, ?, ?, ?, ?, ?, ?)', 
+            [nombre_usuario, correo_usuario, hashedPassword, cod_estado_usuario, token_usuario, cod_persona, cod_rol]  // Sin el '0'
         );
 
         res.status(201).json(nuevoUsuario);
@@ -125,6 +143,7 @@ export const crearUsuario = async (req, res) => {
         connection.release();
     }
 };
+
 
 // Obtener todos los usuarios
 export const obtenerUsuarios = async (req, res) => {
