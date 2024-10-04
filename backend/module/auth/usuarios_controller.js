@@ -1,10 +1,10 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import conectarDB from '../config/db.js';
-import Generar_Id from '../helpers/generar_Id.js';
+import conectarDB from '../../config/db.js';
+import Generar_Id from '../../helpers/generar_Id.js';
 const pool = await conectarDB();
 const confirmacion_email ='0' ;
-import db from '../config/db.js';
+import db from '../../config/db.js';
 
 //este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
@@ -316,4 +316,35 @@ export const autenticarUsuario = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al autenticar usuario' });
     }
 };
+
+// PARA MOSTRAR EL PERFIL DE UN USUARIO
+export const mostrarPerfil = async (req, res) => {
+    const cod_usuario = req.params.cod_usuario; // Este es el ID que se pasa en la URL
+    const usuarioAutenticado = req.usuario.cod_usuario; // ID del usuario autenticado desde el token
+
+    // Verificar si cod_usuario es un número entero
+    if (!Number.isInteger(Number(cod_usuario))) {
+        return res.status(400).json({ mensaje: 'ID de usuario inválido' });
+    }
+
+    // Verificar que el usuario autenticado intenta acceder a su propio perfil
+    if (Number(cod_usuario) !== Number(usuarioAutenticado)) {
+        return res.status(403).json({ mensaje: 'Acceso denegado. No puedes ver el perfil de otro usuario' });
+    }
+
+    try {
+        const [usuario] = await pool.query('CALL MostrarPerfil(?)', [cod_usuario]);
+
+        // Verificar si el resultado es nulo o vacío
+        if (!usuario || usuario.length === 0 || usuario[0].length === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        res.status(200).json(usuario[0][0]);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: 'Error al obtener el perfil del usuario' });
+    }
+};
+
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import conectarDB from './config/db.js'; 
-import usuariosRoutes from './routes/usuario_routes.js'; // Asegúrate de la ruta correcta
+import usuariosRoutes from './module/auth/usuario_routes.js'; // Asegúrate de la ruta correcta
 
 dotenv.config(); 
 
@@ -16,7 +16,7 @@ init();
 app.use(express.json());
 
 // Usar las rutas de usuarios
-app.use('/api/usuarios', usuariosRoutes); 
+app.use('/api/auth/', usuariosRoutes); 
 
 const PORT = process.env.PORT || 4000;
 

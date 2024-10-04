@@ -1,4 +1,4 @@
-import conectarDB from '../config/db.js';
+import conectarDB from '../../config/db.js';
 
 let pool;
 

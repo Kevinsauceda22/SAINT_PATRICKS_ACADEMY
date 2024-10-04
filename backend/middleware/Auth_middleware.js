@@ -1,12 +1,11 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
-// Cargar las variables de entorno desde el archivo .env
 dotenv.config();
 
-const verificarToken = (req, res, next) => {
-    // Obtener el token desde el header (usualmente se envía en 'Authorization')
+const checkAuth = (req, res, next) => {
     const token = req.header('Authorization')?.split(' ')[1];
+
 
     // Verificar si el token fue proporcionado
     if (!token) {
@@ -25,4 +24,4 @@ const verificarToken = (req, res, next) => {
     }
 };
 
-export default verificarToken;
+export default checkAuth;
