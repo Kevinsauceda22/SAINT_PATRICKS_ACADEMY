@@ -11,7 +11,7 @@ const router = express.Router();
 // Ruta para obtener todos los estados de nota
 router.get('/estadonota', obtenerEstadoNota);
 
-// Ruta para crear un nuevo estado de nota
+// Ruta para crear un nuevo estado de notaa
 router.post('/crearestadonota', crearEstadoNota);
 
 // Ruta para actualizar un estado de nota
