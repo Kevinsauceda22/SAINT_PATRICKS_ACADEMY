@@ -1,4 +1,6 @@
-import pool from '../../../config/db.js'; // Conexión a la base de datos
+import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
+
 
 // Obtener todos los parciales
 export const obtenerParciales = async (req, res) => {

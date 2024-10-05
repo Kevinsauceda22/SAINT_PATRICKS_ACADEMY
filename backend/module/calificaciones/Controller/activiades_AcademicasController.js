@@ -1,4 +1,6 @@
-import pool from '../../../config/db.js'; // Importar conexión a la base de datos
+import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
+
 
 
 // Obtener todas las actividades académicas

@@ -1,4 +1,5 @@
-import pool from '../../../config/db.js'; // Importar conexión a la base de datos
+import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
 
 // Obtener todos los profesores y sus datos asociados
 export const obtenerProfesores = async (req, res) => {

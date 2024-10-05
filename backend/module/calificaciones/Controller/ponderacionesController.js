@@ -1,4 +1,5 @@
-import pool from '../../../config/db.js'; // Conexión a la base de datos
+import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
 
 // Obtener todas las ponderaciones
 export const obtenerPonderaciones = async (req, res) => {

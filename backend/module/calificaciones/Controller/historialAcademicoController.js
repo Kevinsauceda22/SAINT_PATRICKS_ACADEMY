@@ -1,4 +1,6 @@
-import pool from '../../../config/db.js'; // Importa la conexión a la base de datos
+import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
+
 
 // Obtener todos los historiales académicos
 export const obtenerHistoriales = async (req, res) => {

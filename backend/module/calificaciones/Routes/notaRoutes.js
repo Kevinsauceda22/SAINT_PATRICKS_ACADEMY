@@ -17,6 +17,7 @@ router.post('/crearnota', crearNota);
 // Ruta para actualizar una nota
 router.put('/actualizarnota', actualizarNota);
 
+
 // Ruta para eliminar una nota
 router.delete('/eliminarnota', eliminarNota);
 

@@ -1,4 +1,6 @@
-import pool from '../../../config/db.js'; // Conexión a la base de datos
+import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
+
 
 // Obtener todas las especialidades
 export const obtenerEspecialidades = async (req, res) => {
