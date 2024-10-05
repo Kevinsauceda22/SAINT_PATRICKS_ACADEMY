@@ -10,7 +10,7 @@ import {
     mostrarPerfil,
 } from './usuarios_controller.js';
 
-import checkAuth from '../../middleware/Auth_middleware.js'; // Importar el middleware de verificación de token
+import checkAuth from '../../middleware/Auth_middleware.js'; 
 import dotenv from 'dotenv';
 
 dotenv.config();
