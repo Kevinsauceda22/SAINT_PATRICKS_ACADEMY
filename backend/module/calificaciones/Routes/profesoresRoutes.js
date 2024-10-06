@@ -4,6 +4,7 @@ import {
     crearProfesor,
     actualizarProfesor
 } from '..//Controller/profesoresController.js'; // Importa el controlador
+import checkAuth from '../../../middleware/Auth_middleware.js'; // Importa el middleware de verificación de token
 
 const router = express.Router();
 
