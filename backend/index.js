@@ -17,6 +17,8 @@ import asisntenciaRoutes from './module/calificaciones/Routes/asistenciaRoutes.j
 import estadonotaRoutes from './module/calificaciones/Routes/estadoNotaRoutes.js';
 import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
+import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
+
 
 dotenv.config(); 
 
@@ -62,6 +64,10 @@ app.use('/api/estadoNotas', estadonotaRoutes);
 app.use('/api/notas', notaRoutes);
 //Rutas para historial academico de los estudiantes
 app.use('/api/historialAcademico', historialAcademicoRoutes);
+
+//matricula
+// Usar las rutas de matrícula
+app.use('/api/matricula', matriculaRoutes);
 
 const PORT = process.env.PORT || 4000;
 
