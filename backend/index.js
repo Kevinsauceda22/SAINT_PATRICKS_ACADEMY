@@ -18,6 +18,7 @@ import estadonotaRoutes from './module/calificaciones/Routes/estadoNotaRoutes.js
 import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
+import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 
 
 dotenv.config(); 
@@ -68,6 +69,8 @@ app.use('/api/historialAcademico', historialAcademicoRoutes);
 //matricula
 // Usar las rutas de matrícula
 app.use('/api/matricula', matriculaRoutes);
+// Rutas para el edificio
+app.use('/api/edificio', edificiosRoutes);
 
 const PORT = process.env.PORT || 4000;
 
