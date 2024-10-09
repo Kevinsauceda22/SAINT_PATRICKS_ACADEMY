@@ -44,17 +44,17 @@ export const crearMatricula = async (req, res) => {
 
 // Obtener todas las matrículas o una matrícula por Cod_matricula
 export const obtenerMatricula = async (req, res) => {
-    const { Cod_matricula } = req.params;
+    const { Cod_matricula } = req.params; // Usamos params para obtener Cod_matricula
 
     try {
         let query;
         let params;
 
         if (Cod_matricula) {
-            query = 'CALL sp_obtener_matriculas(?)';
+            query = 'CALL sp_obtener_matriculas(?)'; // Llama al procedimiento almacenado para una matrícula específica
             params = [Cod_matricula];
         } else {
-            query = 'CALL sp_obtener_matriculas(NULL)';
+            query = 'CALL sp_obtener_matriculas(NULL)'; // Llama al procedimiento almacenado para obtener todas las matrículas
             params = [null];
         }
 
@@ -65,13 +65,30 @@ export const obtenerMatricula = async (req, res) => {
             return res.status(404).json({ message: 'Matrícula no encontrada' });
         }
 
-        return res.status(200).json(results[0]); // Retornar las matrículas obtenidas
+        // Formatear las fechas y horas en los resultados
+        const formattedResults = results[0].map(matricula => {
+            return {
+                ...matricula,
+                Fecha_inicio: new Date(matricula.Fecha_inicio).toLocaleDateString('es-HN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                }),
+                Fecha_fin: new Date(matricula.Fecha_fin).toLocaleDateString('es-HN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                }),
+                
+            };
+        });
+
+        return res.status(200).json(formattedResults); // Retornar las matrículas formateadas
     } catch (error) {
         console.error('Error al obtener la matrícula:', error);
         res.status(500).json({ message: 'Error al obtener la matrícula', error: error.message });
     }
 };
-
 
 // Obtener todas las cajas o una caja por Cod_caja
 export const obtenerCaja = async (req, res) => {
@@ -137,37 +154,6 @@ export const actualizarMatricula = async (req, res) => {
         res.status(200).json({ Mensaje: 'Matrícula actualizada exitosamente' });
     } catch (error) {
         console.error('Error al actualizar la matrícula:', error);
-        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
-    }
-};
-
-// Controlador para aplicar descuento automático
-export const aplicarDescuentoAutomatico = async (req, res) => {
-    try {
-        await pool.query('CALL aplicar_descuento_automatico()');
-        res.status(200).json({ mensaje: 'Descuento aplicado automáticamente.' });
-    } catch (error) {
-        console.error('Error al aplicar el descuento automático:', error);
-        res.status(500).json({ mensaje: 'Error al aplicar el descuento', error: error.message });
-    }
-};
-
-// Controlador para crear un descuento
-export const crearDescuento = async (req, res) => {
-    const { nombre_descuento, valor, fecha_inicio, fecha_fin, descripcion } = req.body;
-
-    try {
-        await pool.query('CALL insertar_descuento(?, ?, ?, ?, ?)', [
-            nombre_descuento,
-            valor,
-            fecha_inicio,
-            fecha_fin,
-            descripcion
-        ]);
-
-        res.status(201).json({ Mensaje: 'Descuento creado exitosamente' });
-    } catch (error) {
-        console.error('Error al crear el descuento:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
@@ -243,3 +229,46 @@ export const eliminarMatricula = async (req, res) => {
         return res.status(500).json({ message: 'Ocurrió un error al intentar eliminar la matrícula.', error });
     }
 };
+
+//pruebaaaa
+// Controlador para crear un descuento y aplicarlo a la última caja
+export const crearYAplicarDescuento = async (req, res) => {
+    const { nombre_descuento, valor, fecha_inicio, fecha_fin, descripcion } = req.body;
+
+    try {
+        await pool.query('CALL crearYAplicarDescuento(?, ?, ?, ?, ?)', [
+            nombre_descuento,
+            valor,
+            fecha_inicio,
+            fecha_fin,
+            descripcion
+        ]);
+
+        res.status(201).json({ Mensaje: 'Descuento creado y aplicado exitosamente' });
+    } catch (error) {
+        console.error('Error al crear y aplicar el descuento:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+// Controlador para actualizar un descuento y aplicarlo a la última caja
+export const actualizarYAplicarDescuento = async (req, res) => {
+    const { Cod_descuento, nombre_descuento, valor, fecha_inicio, fecha_fin, descripcion } = req.body;
+
+    try {
+        await pool.query('CALL actualizarYAplicarDescuento(?, ?, ?, ?, ?, ?)', [
+            Cod_descuento,
+            nombre_descuento,
+            valor,
+            fecha_inicio,
+            fecha_fin,
+            descripcion
+        ]);
+
+        res.status(200).json({ Mensaje: 'Descuento actualizado y aplicado exitosamente' });
+    } catch (error) {
+        console.error('Error al actualizar y aplicar el descuento:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
