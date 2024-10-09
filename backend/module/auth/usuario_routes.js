@@ -4,7 +4,7 @@ import {
     obtenerUsuarios,
     obtenerUsuarioPorId,
     actualizarUsuario,
-    eliminarUsuario,
+    eliminarUsuarioCompleto,
     confirmarCuenta,
     autenticarUsuario,
     mostrarPerfil,
@@ -25,11 +25,10 @@ router.get('/Todos-los-usuarios', checkAuth, obtenerUsuarios);
 router.get('/:cod_usuario', checkAuth, obtenerUsuarioPorId);
 // Actualizar un usuario por su cod_usuario (Protegido por JWT)
 router.put('/:cod_usuario', checkAuth, actualizarUsuario);
-// Eliminar un usuario y su persona asociada por cod_usuario (Protegido por JWT)
-router.delete('/:cod_usuario', checkAuth, eliminarUsuario);
 // Mostrar el perfil del usuario autenticado (Protegido por JWT)
 router.get('/perfil/:cod_usuario', checkAuth, mostrarPerfil);
-
+//ruta para eliminar un usuario completo
+router.delete('/eliminar-perfil/:cod_usuario', checkAuth, eliminarUsuarioCompleto);
 
 
 // Rutas públicas

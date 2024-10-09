@@ -33,6 +33,33 @@ export const crearUsuario = async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
+        // Validaciones
+        // Verificar que el DNI tenga exactamente 13 dígitos
+        if (!/^\d{13}$/.test(dni_persona)) {
+            return res.status(400).json({ mensaje: 'El DNI debe tener exactamente 13 dígitos.' });
+        }
+
+        // Verificar que los primeros 4 dígitos del DNI estén entre 0101 y 0909
+        const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
+        if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
+            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.' });
+        }
+
+        // Extraer el año de nacimiento del DNI (dígitos del 7 al 10)
+        const añoNacimientoDNI = dni_persona.substring(4, 8); // Los dígitos del 5 al 8 son el año
+        const añoNacimiento = parseInt(añoNacimientoDNI); // Convertir a número
+
+        // Verificar que el año de nacimiento esté entre 1920 y 2020
+        if (añoNacimiento < 1920 || añoNacimiento > 2020) {
+            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.' });
+        }
+
+        // Validar el nombre
+        const nombreLength = Nombre.length;
+        if (nombreLength < 3 || nombreLength > 40) {
+            return res.status(400).json({ mensaje: 'El nombre debe tener entre 3 y 40 caracteres.' });
+        }
+
         // Verificar si el DNI, correo o nombre ya existen
         const [existingUser] = await connection.query(
             'SELECT * FROM tbl_personas INNER JOIN tbl_usuarios ON tbl_personas.cod_persona = tbl_usuarios.cod_persona WHERE tbl_personas.dni_persona = ? OR tbl_usuarios.correo_usuario = ? OR tbl_usuarios.nombre_usuario = ?',
@@ -152,7 +179,6 @@ export const crearUsuario = async (req, res) => {
 };
 
 
-
 //con este controlador se obtienen todos los usuarios pero tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarios = async (req, res) => {
     try {
@@ -239,69 +265,101 @@ export const actualizarUsuario = async (req, res) => {
     }
 };
 
-// Eliminar un usuario y su persona asociada
-export const eliminarUsuario = async (req, res) => {
-    const cod_usuario = req.params.cod_usuario; // Asegúrate de que esto contenga solo el ID del usuario a eliminar.
+export const eliminarUsuarioCompleto = async (req, res) => {
+    const { cod_usuario } = req.params; // Obtener el cod_usuario de los parámetros de la URL
 
     const connection = await pool.getConnection();
-    try {
-        // Primero, obtenemos el cod_persona asociado al usuario
-        const [usuario] = await connection.query('SELECT cod_persona FROM tbl_usuarios WHERE cod_usuario = ?', [cod_usuario]);
 
-        if (usuario.length === 0) {
-            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+    try {
+        // Verificar si el usuario existe antes de intentar eliminarlo
+        const [usuarioExistente] = await connection.query(
+            'SELECT * FROM tbl_usuarios WHERE cod_usuario = ?', 
+            [cod_usuario]
+        );
+
+        if (usuarioExistente.length === 0) {
+            return res.status(404).json({ mensaje: 'El usuario no existe.' });
         }
 
-        const cod_persona = usuario[0].cod_persona;
+        // Obtener cod_persona del usuario que se va a eliminar
+        const cod_persona = usuarioExistente[0].cod_persona;
 
-        // Eliminar el usuario
+        // Eliminar el historial de contraseñas
+        await connection.query('DELETE FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [cod_usuario]);
+
+        // Eliminar el rol del usuario en tbl_roles_usuarios o una tabla similar si tienes un mapeo de roles
+        await connection.query('DELETE FROM tbl_roles_usuarios WHERE Cod_usuario = ?', [cod_usuario]);
+
+        // Eliminar los contactos asociados a la persona
+        await connection.query('DELETE FROM tbl_contactos WHERE Cod_persona = ?', [cod_persona]);
+
+        // Eliminar cualquier dato relacionado en otros catálogos
+        await connection.query('DELETE FROM tbl_persona_departamento WHERE Cod_persona = ?', [cod_persona]);
+
+        // Eliminar los registros de usuario
         await connection.query('DELETE FROM tbl_usuarios WHERE cod_usuario = ?', [cod_usuario]);
 
-        // Luego eliminar la persona asociada
-        const result = await connection.query('DELETE FROM tbl_personas WHERE cod_persona = ?', [cod_persona]);
+        // Eliminar la persona asociada
+        await connection.query('DELETE FROM tbl_personas WHERE cod_persona = ?', [cod_persona]);
 
-        // No es necesario verificar aquí si se eliminó la persona, ya que se elimina el usuario primero
-        // Pero podemos dejarlo para asegurar que no haya un error.
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ mensaje: 'Persona no encontrada o ya eliminada' });
-        }
+        // Eliminar cualquier otra tabla de catálogos relacionada (puedes agregar más según tu esquema)
+        await connection.query('DELETE FROM tbl_tipo_contacto WHERE Cod_persona = ?', [cod_persona]);
 
-        // Respuesta exitosa al eliminar el usuario y la persona
-        res.status(200).json({ mensaje: 'Usuario eliminado correctamente' });
+        // Si la tabla de tipo_persona está relacionada, elimínala si es necesario
+        await connection.query('DELETE FROM tbl_tipo_persona WHERE Cod_persona = ?', [cod_persona]);
+
+        // Si la tabla de roles tiene un mapeo con la persona, puedes eliminarlo también
+        await connection.query('DELETE FROM tbl_roles WHERE Cod_rol IN (SELECT Cod_rol FROM tbl_usuarios WHERE cod_usuario = ?)', [cod_usuario]);
+
+        // Responder con éxito
+        res.status(200).json({ mensaje: 'Usuario y datos asociados eliminados correctamente.' });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ mensaje: 'Error al eliminar el usuario y la persona' });
+        console.error('Error al eliminar el usuario y datos asociados:', error);
+        res.status(500).json({ mensaje: 'Error al eliminar el usuario y los datos relacionados.' });
     } finally {
-        connection.release();
+        connection.release();  // Liberar la conexión
     }
 };
 
-//con este controlador se autentica un usuario y se genera un token jwt
+// Con este controlador se autentica un usuario y se genera un token jwt y que si la contraseña ingresada coincide con una contraseña antigua, devolver un error
 export const autenticarUsuario = async (req, res) => {
-    const { identificador, contraseña_usuario } = req.body; // Cambia el nombre a 'identificador'
+    const { identificador, contraseña_usuario } = req.body;
 
     try {
-        // Modifica la consulta para verificar el nombre de usuario o el correo electrónico
+        // Verificar si el nombre de usuario o el correo existe
         const [user] = await pool.query(
             'SELECT * FROM tbl_usuarios WHERE nombre_usuario = ? OR correo_usuario = ?',
-            [identificador, identificador] // Usa el mismo valor para ambas condiciones
+            [identificador, identificador]
         );
 
-        // Verificar si el usuario existe
         if (user.length === 0) {
             return res.status(404).json({ mensaje: 'Usuario no encontrado' });
         }
 
         const usuario = user[0];
 
-        // Verificar la contraseña 
+        // Obtener el historial de contraseñas del usuario
+        const [historial] = await pool.query('SELECT * FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [usuario.cod_usuario]);
+
+        // Verificar si la contraseña ingresada está en el historial
+        for (const record of historial) {
+            const contrasenaHistorial = record.Contraseña;
+
+            // Si la contraseña ingresada coincide con una contraseña antigua, devolver un error
+            if (await bcrypt.compare(contraseña_usuario, contrasenaHistorial)) {
+                return res.status(400).json({ mensaje: 'Has ingresado una contraseña antigua' });
+            }
+        }
+
+        // Verificar la contraseña actual
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
         if (!contraseñaValida) {
             return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
         }
 
         // Verificar si el usuario ha confirmado su cuenta
-        if (usuario.confirmacion_email !== 1) { // Cambia a 1 para verificar la confirmación
+        if (usuario.confirmacion_email !== 1) {
             return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
         }
 
