@@ -4,7 +4,7 @@ import conectarDB from '../../config/db.js';
 import Generar_Id from '../../helpers/generar_Id.js';
 const pool = await conectarDB();
 const confirmacion_email ='0' ;
-import db from '../../config/db.js';
+
 
 //este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
@@ -28,7 +28,6 @@ export const crearUsuario = async (req, res) => {
         correo_usuario,
         contraseña_usuario,
         descripcion_rol,  
-
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -41,7 +40,11 @@ export const crearUsuario = async (req, res) => {
         );
 
         if (existingUser.length > 0) {
-            return res.status(400).json({ mensaje: 'El DNI, correo o nombre de usuario ya existen en el sistema' });
+            if (existingUser.some(user => user.correo_usuario === correo_usuario)) {
+                return res.status(400).json({ mensaje: 'El correo ya está en uso' });
+            }
+
+            return res.status(400).json({ mensaje: 'El DNI o nombre de usuario ya existen en el sistema' });
         }
 
         // Crear el nuevo tipo de persona si no existe
@@ -67,7 +70,7 @@ export const crearUsuario = async (req, res) => {
 
         // Crear la nueva persona
         await connection.query(
-            "CALL crearPersona(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",  // 12 parámetros
+            "CALL crearPersona(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
             [
                 dni_persona,
                 Nombre,
@@ -88,7 +91,6 @@ export const crearUsuario = async (req, res) => {
         const [[result]] = await connection.query('SELECT LAST_INSERT_ID() AS cod_persona');
         const cod_persona = result.cod_persona; // ID de la persona recién insertada
 
-        // Verificar si cod_persona se obtuvo correctamente
         if (!cod_persona) {
             return res.status(500).json({ mensaje: 'Error al recuperar el ID de la persona recién creada' });
         }
@@ -109,9 +111,12 @@ export const crearUsuario = async (req, res) => {
         // Obtener o crear el rol (Cod_rol) en tbl_roles
         const [rolResult] = await connection.query(
             'INSERT INTO tbl_roles (Descripcion) VALUES (?) ON DUPLICATE KEY UPDATE Cod_rol=LAST_INSERT_ID(Cod_rol)',
-            [descripcion_rol]  // Pasa la descripción del rol
+            [descripcion_rol]  
         );
-        const cod_rol = rolResult.insertId || rolResult[0].Cod_rol;  // Aquí se obtiene el Cod_rol
+        const cod_rol = rolResult.insertId || rolResult[0].Cod_rol;
+
+        // Definir el estado del usuario (por ejemplo, activo)
+        const cod_estado_usuario = 1; // Cambia este valor según tu tabla de estados
 
         // Generar token
         const token_usuario = Generar_Id(); // Definir token_usuario aquí
@@ -120,21 +125,20 @@ export const crearUsuario = async (req, res) => {
         const saltRounds = 10; 
         const hashedPassword = await bcrypt.hash(contraseña_usuario, saltRounds);
         
-        // Mapear el estado de la persona a "Activo" o "Inactivo"
-        const estadoValido = (Estado_Persona === 'A') ? 'Activo' : 'Inactivo';
-
-        // Insertar o actualizar el estado del usuario
-        const [estadoUsuarioResult] = await connection.query(
-            'INSERT INTO tbl_estado_usuario (estado) VALUES (?) ON DUPLICATE KEY UPDATE Cod_estado_usuario=LAST_INSERT_ID(Cod_estado_usuario)',
-            [estadoValido] 
-        );
-        
-        const cod_estado_usuario = estadoUsuarioResult.insertId || estadoUsuarioResult[0].Cod_estado_usuario;
-        
-        // Crear el usuario con el cod_persona, cod_rol y la contraseña hasheada
-        const [nuevoUsuario] = await connection.query(
+        // Insertar el usuario en tbl_usuarios
+        const [nuevoUsuarioResult] = await connection.query(
             'CALL crearUsuario(?, ?, ?, ?, ?, ?, ?, ?)', 
-            [nombre_usuario, correo_usuario, hashedPassword, cod_estado_usuario, token_usuario, cod_persona, cod_rol, new Date()]  // Pasar null para que el procedimiento use CURDATE()
+            [nombre_usuario, correo_usuario, hashedPassword, cod_estado_usuario, token_usuario, cod_persona, cod_rol, new Date()]  
+        );
+
+        // Obtener el cod_usuario usando LAST_INSERT_ID() después de crear el usuario
+        const [[nuevoUsuario]] = await connection.query('SELECT LAST_INSERT_ID() AS cod_usuario');
+        const cod_usuario = nuevoUsuario.cod_usuario;
+
+        // Insertar la contraseña hasheada en el historial de contraseñas
+        await connection.query(
+            'INSERT INTO tbl_hist_contraseña (Cod_usuario, Contraseña, Fecha_creacion) VALUES (?, ?, ?)', 
+            [cod_usuario, hashedPassword, new Date()]  // Usa el cod_usuario que se acaba de crear
         );
 
         // Respuesta exitosa
@@ -146,6 +150,8 @@ export const crearUsuario = async (req, res) => {
         connection.release();
     }
 };
+
+
 
 //con este controlador se obtienen todos los usuarios pero tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarios = async (req, res) => {
@@ -347,4 +353,77 @@ export const mostrarPerfil = async (req, res) => {
     }
 };
 
+//con este controlador se recupera la contraseña del usuario y que si no esta confirmado el correo no se puede recuperar la contraseña
+export const OlvidePasssword = async (req, res) => {
+    const { correo_usuario } = req.body;
+
+    try {
+        const [usuario] = await pool.query('SELECT * FROM tbl_usuarios WHERE correo_usuario = ?', [correo_usuario]);
+
+        if (usuario.length === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+       //si el usuario no ha confirmado su correo, no se puede recuperar la contraseña 
+        if (usuario[0].confirmacion_email !== 1) { 
+            return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
+        }
+
+        const token = Generar_Id();
+
+        await pool.query('UPDATE tbl_usuarios SET token_usuario = ? WHERE correo_usuario = ?', [token, correo_usuario]);
+
+        res.status(200).json({ mensaje: 'Correo de recuperación de contraseña enviado' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: 'Error al recuperar la contraseña' });
+    }
+};
+
+//con este controlador se comprueba el token de recuperar contraseña
+export const comprobarToken = async (req, res) => {
+    const { token } = req.params;
+
+    try {
+        const [usuario] = await pool.query('SELECT * FROM tbl_usuarios WHERE token_usuario = ?', [token]);
+
+        if (usuario.length === 0) {
+            return res.status(404).json({ mensaje: 'Token inválido o expirado' });
+        }
+
+        res.status(200).json({ mensaje: 'Token válido' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: 'Error al comprobar el token' });
+    }
+};
+
+// Controlador para cambiar la contraseña del usuario
+export const cambiarContrasena = async (req, res) => {
+    const { token } = req.params; // Obtener el token de la URL
+    const { contraseña_usuario } = req.body; // Obtener la nueva contraseña del cuerpo de la solicitud
+
+    try {
+        // Verificar si el token es válido
+        const [usuario] = await pool.query('SELECT * FROM tbl_usuarios WHERE token_usuario = ?', [token]);
+
+        if (usuario.length === 0) {
+            return res.status(404).json({ mensaje: 'Token inválido o expirado' });
+        }
+
+        // Hash de la nueva contraseña
+        const hashedPassword = await bcrypt.hash(contraseña_usuario, 10);
+
+        // Actualizar la contraseña del usuario en la base de datos
+        await pool.query('UPDATE tbl_usuarios SET contraseña_usuario = ?, token_usuario = NULL WHERE cod_usuario = ?', [hashedPassword, usuario[0].cod_usuario]);
+
+        // Opcional: Agregar la nueva contraseña al historial de contraseñas
+        await pool.query('INSERT INTO tbl_hist_contraseña (Cod_usuario, Contraseña, Fecha_creacion) VALUES (?, ?, NOW())', [usuario[0].cod_usuario, hashedPassword]);
+
+        res.status(200).json({ mensaje: 'Contraseña actualizada correctamente' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: 'Error al cambiar la contraseña' });
+    }
+};
 

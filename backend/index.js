@@ -33,7 +33,7 @@ init();
 app.use(express.json());
 
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
-app.use('/api/auth/', usuariosRoutes); 
+app.use('/api/usuarios', usuariosRoutes); 
 // Rutas para los profesores para poder agregar, modificar, eliminar y obtener profesores
 app.use('/api/profesores', profesoresRoutes); 
 // Rutas para tipos de contrato de los profesores 
