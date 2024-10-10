@@ -339,45 +339,49 @@ export const autenticarUsuario = async (req, res) => {
 
         const usuario = user[0];
 
-        // Obtener el historial de contraseñas del usuario
+        // Verificar la contraseña actual primero
+        const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
+        
+        if (contraseñaValida) {
+            // Si la contraseña es válida, omitir la verificación del historial de contraseñas
+
+            // Verificar si el usuario ha confirmado su cuenta
+            if (usuario.confirmacion_email !== 1) {
+                return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
+            }
+
+            // Generar el token JWT
+            const token = jwt.sign(
+                { cod_usuario: usuario.cod_usuario, nombre_usuario: usuario.nombre_usuario, rol_usuario: usuario.rol_usuario },
+                process.env.JWT_SECRET,
+                { expiresIn: '1h' }
+            );
+
+            // Responder con el token
+            return res.status(200).json({
+                mensaje: 'Autenticación exitosa',
+                token
+            });
+        }
+
+        // Si la contraseña no es válida, verificar en el historial de contraseñas
         const [historial] = await pool.query('SELECT * FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [usuario.cod_usuario]);
 
         // Verificar si la contraseña ingresada está en el historial
         for (const record of historial) {
             const contrasenaHistorial = record.Contraseña;
 
-            // Si la contraseña ingresada coincide con una contraseña antigua, devolver un error
             if (await bcrypt.compare(contraseña_usuario, contrasenaHistorial)) {
                 return res.status(400).json({ mensaje: 'Has ingresado una contraseña antigua' });
             }
         }
 
-        // Verificar la contraseña actual
-        const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
-        if (!contraseñaValida) {
-            return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
-        }
+        // Si no es válida ni está en el historial
+        return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
 
-        // Verificar si el usuario ha confirmado su cuenta
-        if (usuario.confirmacion_email !== 1) {
-            return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
-        }
-
-        // Generar el token JWT
-        const token = jwt.sign(
-            { cod_usuario: usuario.cod_usuario, nombre_usuario: usuario.nombre_usuario, rol_usuario: usuario.rol_usuario },
-            process.env.JWT_SECRET,
-            { expiresIn: '1h' }
-        );
-
-        // Responder con el token
-        res.status(200).json({
-            mensaje: 'Autenticación exitosa',
-            token
-        });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ mensaje: 'Error al autenticar usuario' });
+        return res.status(500).json({ mensaje: 'Error al autenticar usuario' });
     }
 };
 
