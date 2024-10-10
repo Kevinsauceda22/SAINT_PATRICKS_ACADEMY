@@ -32,7 +32,7 @@ router.delete('/eliminar-perfil/:cod_usuario', checkAuth, eliminarUsuarioComplet
 
 
 // Rutas públicas
-// Ruta para crear un nuevo usuario (no requiere autenticación)
+// Ruta para crear un nuevo usuario (no requiere autenticación)====999
 router.post('/registrar', crearUsuario);
 // Ruta para autenticar/login de usuarios (no requiere autenticación)
 router.post('/login', autenticarUsuario);
