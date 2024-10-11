@@ -20,6 +20,6 @@ router.post('/crear_aula', crearAula);
 router.put('/actualizar_aula', actualizarAula);
 
 //ruta para eliminar una aula
-router.delete('/:p_Numero_aula', eliminarAula);
+router.delete('/:Cod_aula', eliminarAula);
 
 export default router;
