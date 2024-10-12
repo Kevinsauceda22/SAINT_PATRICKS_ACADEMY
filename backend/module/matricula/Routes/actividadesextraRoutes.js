@@ -23,5 +23,4 @@ router.put('/actualizaractividades', actualizarActividadExtracurricular); // Act
 // Ruta para eliminar una actividad por Cod_actividad
 router.delete('/actividades/:p_cod_actividad', eliminarActividadExtracurricular); // Nueva ruta para eliminar actividad
 
-
 export default router;
