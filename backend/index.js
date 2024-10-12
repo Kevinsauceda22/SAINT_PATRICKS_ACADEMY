@@ -22,6 +22,7 @@ import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
+import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js"
 
 
 dotenv.config(); 
@@ -36,8 +37,12 @@ init();
 
 app.use(express.json());
 
+//autenticación y seguridad
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/usuarios', usuariosRoutes); 
+
+
+//calificaciones
 // Rutas para los profesores para poder agregar, modificar, eliminar y obtener profesores
 app.use('/api/profesores', profesoresRoutes); 
 // Rutas para tipos de contrato de los profesores 
@@ -80,9 +85,17 @@ app.use('/api/aula', aulasRoutes);
 app.use('/api/actividadesExtracurriculares',actividadesextraRoutes)
 // Usar las rutas de solicitud
 app.use('/api/solicitud', solicitudRoutes);
+
+//pagos y finanzas
+// Ruta para crear un nuevo pago
+app.use('/api/pagos', pagoRoutes); 
+
+// Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;
 
-// Iniciar el servidor
+
+
+// Iniciar el servidor en el puerto especificado
 app.listen(PORT, () => {
     console.log(`Servidor backend en ejecución en el puerto ${PORT}`);
 });

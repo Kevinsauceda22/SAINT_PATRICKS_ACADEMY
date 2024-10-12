@@ -34,27 +34,18 @@ export const crearUsuario = async (req, res) => {
 
     try {
         // Validaciones
-        // Verificar que el DNI tenga exactamente 13 dígitos
         if (!/^\d{13}$/.test(dni_persona)) {
             return res.status(400).json({ mensaje: 'El DNI debe tener exactamente 13 dígitos.' });
         }
-
-        // Verificar que los primeros 4 dígitos del DNI estén entre 0101 y 0909
         const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
         if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
             return res.status(400).json({ mensaje: 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.' });
         }
-
-        // Extraer el año de nacimiento del DNI (dígitos del 7 al 10)
-        const añoNacimientoDNI = dni_persona.substring(4, 8); // Los dígitos del 5 al 8 son el año
-        const añoNacimiento = parseInt(añoNacimientoDNI); // Convertir a número
-
-        // Verificar que el año de nacimiento esté entre 1920 y 2020
+        const añoNacimientoDNI = dni_persona.substring(4, 8);
+        const añoNacimiento = parseInt(añoNacimientoDNI);
         if (añoNacimiento < 1920 || añoNacimiento > 2020) {
             return res.status(400).json({ mensaje: 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.' });
         }
-
-        // Validar el nombre
         const nombreLength = Nombre.length;
         if (nombreLength < 3 || nombreLength > 40) {
             return res.status(400).json({ mensaje: 'El nombre debe tener entre 3 y 40 caracteres.' });
@@ -70,7 +61,6 @@ export const crearUsuario = async (req, res) => {
             if (existingUser.some(user => user.correo_usuario === correo_usuario)) {
                 return res.status(400).json({ mensaje: 'El correo ya está en uso' });
             }
-
             return res.status(400).json({ mensaje: 'El DNI o nombre de usuario ya existen en el sistema' });
         }
 
@@ -116,7 +106,7 @@ export const crearUsuario = async (req, res) => {
 
         // Obtener el cod_persona usando LAST_INSERT_ID()
         const [[result]] = await connection.query('SELECT LAST_INSERT_ID() AS cod_persona');
-        const cod_persona = result.cod_persona; // ID de la persona recién insertada
+        const cod_persona = result.cod_persona;
 
         if (!cod_persona) {
             return res.status(500).json({ mensaje: 'Error al recuperar el ID de la persona recién creada' });
@@ -135,18 +125,18 @@ export const crearUsuario = async (req, res) => {
             [cod_persona, Valor, cod_tipo_contacto]
         );
 
-        // Obtener o crear el rol (Cod_rol) en tbl_roles
+        // Obtener o crear el rol en tbl_roles
         const [rolResult] = await connection.query(
             'INSERT INTO tbl_roles (Descripcion) VALUES (?) ON DUPLICATE KEY UPDATE Cod_rol=LAST_INSERT_ID(Cod_rol)',
             [descripcion_rol]  
         );
         const cod_rol = rolResult.insertId || rolResult[0].Cod_rol;
 
-        // Definir el estado del usuario (por ejemplo, activo)
-        const cod_estado_usuario = 1; // Cambia este valor según tu tabla de estados
+        // Definir el estado del usuario
+        const cod_estado_usuario = 1;
 
         // Generar token
-        const token_usuario = Generar_Id(); // Definir token_usuario aquí
+        const token_usuario = Generar_Id();
 
         // Hashear la contraseña antes de insertarla
         const saltRounds = 10; 
@@ -158,15 +148,17 @@ export const crearUsuario = async (req, res) => {
             [nombre_usuario, correo_usuario, hashedPassword, cod_estado_usuario, token_usuario, cod_persona, cod_rol, new Date()]  
         );
 
-        // Obtener el cod_usuario usando LAST_INSERT_ID() después de crear el usuario
+        // Obtener el cod_usuario usando LAST_INSERT_ID()
         const [[nuevoUsuario]] = await connection.query('SELECT LAST_INSERT_ID() AS cod_usuario');
         const cod_usuario = nuevoUsuario.cod_usuario;
 
         // Insertar la contraseña hasheada en el historial de contraseñas
         await connection.query(
             'INSERT INTO tbl_hist_contraseña (Cod_usuario, Contraseña, Fecha_creacion) VALUES (?, ?, ?)', 
-            [cod_usuario, hashedPassword, new Date()]  // Usa el cod_usuario que se acaba de crear
+            [cod_usuario, hashedPassword, new Date()] 
         );
+
+        // Registrar la acción en la tabla de bitácora
 
         // Respuesta exitosa
         res.status(201).json({ mensaje: 'Usuario registrado correctamente', usuario: nuevoUsuario });
@@ -271,9 +263,12 @@ export const eliminarUsuarioCompleto = async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
+        // Iniciar una transacción
+        await connection.beginTransaction();
+
         // Verificar si el usuario existe antes de intentar eliminarlo
         const [usuarioExistente] = await connection.query(
-            'SELECT * FROM tbl_usuarios WHERE cod_usuario = ?', 
+            'SELECT * FROM tbl_usuarios WHERE cod_usuario = ?',
             [cod_usuario]
         );
 
@@ -287,14 +282,8 @@ export const eliminarUsuarioCompleto = async (req, res) => {
         // Eliminar el historial de contraseñas
         await connection.query('DELETE FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [cod_usuario]);
 
-        // Eliminar el rol del usuario en tbl_roles_usuarios o una tabla similar si tienes un mapeo de roles
-        await connection.query('DELETE FROM tbl_roles_usuarios WHERE Cod_usuario = ?', [cod_usuario]);
-
         // Eliminar los contactos asociados a la persona
-        await connection.query('DELETE FROM tbl_contactos WHERE Cod_persona = ?', [cod_persona]);
-
-        // Eliminar cualquier dato relacionado en otros catálogos
-        await connection.query('DELETE FROM tbl_persona_departamento WHERE Cod_persona = ?', [cod_persona]);
+        await connection.query('DELETE FROM tbl_contacto WHERE cod_persona = ?', [cod_persona]);
 
         // Eliminar los registros de usuario
         await connection.query('DELETE FROM tbl_usuarios WHERE cod_usuario = ?', [cod_usuario]);
@@ -302,25 +291,22 @@ export const eliminarUsuarioCompleto = async (req, res) => {
         // Eliminar la persona asociada
         await connection.query('DELETE FROM tbl_personas WHERE cod_persona = ?', [cod_persona]);
 
-        // Eliminar cualquier otra tabla de catálogos relacionada (puedes agregar más según tu esquema)
-        await connection.query('DELETE FROM tbl_tipo_contacto WHERE Cod_persona = ?', [cod_persona]);
-
-        // Si la tabla de tipo_persona está relacionada, elimínala si es necesario
-        await connection.query('DELETE FROM tbl_tipo_persona WHERE Cod_persona = ?', [cod_persona]);
-
-        // Si la tabla de roles tiene un mapeo con la persona, puedes eliminarlo también
-        await connection.query('DELETE FROM tbl_roles WHERE Cod_rol IN (SELECT Cod_rol FROM tbl_usuarios WHERE cod_usuario = ?)', [cod_usuario]);
+        // Si todo fue exitoso, hacer commit de la transacción
+        await connection.commit();
 
         // Responder con éxito
         res.status(200).json({ mensaje: 'Usuario y datos asociados eliminados correctamente.' });
 
     } catch (error) {
+        // Si ocurre un error, revertir la transacción
+        await connection.rollback();
         console.error('Error al eliminar el usuario y datos asociados:', error);
         res.status(500).json({ mensaje: 'Error al eliminar el usuario y los datos relacionados.' });
     } finally {
         connection.release();  // Liberar la conexión
     }
 };
+
 
 // Con este controlador se autentica un usuario y se genera un token jwt y que si la contraseña ingresada coincide con una contraseña antigua, devolver un error
 export const autenticarUsuario = async (req, res) => {

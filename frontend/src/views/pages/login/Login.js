@@ -7,11 +7,20 @@ const LoginRegister = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    dni: "",
+    firstName: "",
+    secondName: "",
+    firstLastName: "",
+    secondLastName: "",
+    nationality: "",
+    address: "",
+    birthDate: "",
   });
   const [errors, setErrors] = useState({});
 
   const toggleForm = () => {
     setIsLogin((prev) => !prev);
+    setErrors({}); // Limpiar los errores al cambiar de formulario
   };
 
   const handleChange = (e) => {
@@ -19,8 +28,7 @@ const LoginRegister = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const validateForm = () => {
     const newErrors = {};
 
     if (!formData.email) {
@@ -37,11 +45,43 @@ const LoginRegister = () => {
       newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
 
-    setErrors(newErrors);
+    // Validar campos adicionales si es registro
+    if (!isLogin) {
+      if (!formData.dni) {
+        newErrors.dni = "DNI es requerido";
+      }
+      if (!formData.firstName) {
+        newErrors.firstName = "Primer Nombre es requerido";
+      }
+      if (!formData.firstLastName) {
+        newErrors.firstLastName = "Primer Apellido es requerido";
+      }
+      if (!formData.nationality) {
+        newErrors.nationality = "Nacionalidad es requerida";
+      }
+      if (!formData.address) {
+        newErrors.address = "Dirección es requerida";
+      }
+      if (!formData.birthDate) {
+        newErrors.birthDate = "Fecha de nacimiento es requerida";
+      }
+    }
 
-    if (Object.keys(newErrors).length === 0) {
-      // Aquí iría la lógica para manejar el login o registro.
-      console.log(formData);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (validateForm()) {
+      if (isLogin) {
+        console.log("Login data:", formData);
+        // Lógica de login
+      } else {
+        console.log("Registro data:", formData);
+        // Lógica de registro
+      }
     }
   };
 
@@ -99,168 +139,86 @@ const LoginRegister = () => {
       </div>
 
       {/* Formulario de Registro */}
-<div className="form-container register-container">
-  <form onSubmit={handleSubmit}>
-    <h1 className="title">Regístrate</h1>
+      <div className="form-container register-container">
+        <form onSubmit={handleSubmit}>
+          <h1 className="title">Regístrate</h1>
 
-    <div className="form-control2">
-      <input
-        type="text"
-        name="dni"
-        placeholder="DNI"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.dni && <small>{errors.dni}</small>}
-    </div>
+          <div className="form-control2">
+            <input
+              type="text"
+              name="dni"
+              placeholder="DNI"
+              onChange={handleChange}
+              required
+            />
+            <span></span>
+            {errors.dni && <small>{errors.dni}</small>}
+          </div>
 
-    <div className="form-control2">
-      <input
-        type="text"
-        name="firstName"
-        placeholder="Primer Nombre"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.firstName && <small>{errors.firstName}</small>}
-    </div>
+          <div className="form-control2">
+            <input
+              type="text"
+              name="firstName"
+              placeholder="Primer Nombre"
+              onChange={handleChange}
+              required
+            />
+            <span></span>
+            {errors.firstName && <small>{errors.firstName}</small>}
+          </div>
 
-    <div className="form-control2">
-      <input
-        type="text"
-        name="secondName"
-        placeholder="Segundo Nombre"
-        onChange={handleChange}
-      />
-      <span></span>
-      {errors.secondName && <small>{errors.secondName}</small>}
-    </div>
+          {/* Otros campos... */}
+          
+          <div className="form-control2">
+            <input
+              type="password"
+              name="password"
+              placeholder="Contraseña"
+              onChange={handleChange}
+              required
+            />
+            <span></span>
+            {errors.password && <small>{errors.password}</small>}
+          </div>
 
-    <div className="form-control2">
-      <input
-        type="text"
-        name="firstLastName"
-        placeholder="Primer Apellido"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.firstLastName && <small>{errors.firstLastName}</small>}
-    </div>
+          <div className="form-control2">
+            <input
+              type="password"
+              name="confirmPassword"
+              placeholder="Confirma Contraseña"
+              onChange={handleChange}
+              required
+            />
+            <span></span>
+            {errors.confirmPassword && <small>{errors.confirmPassword}</small>}
+          </div>
 
-    <div className="form-control2">
-      <input
-        type="text"
-        name="secondLastName"
-        placeholder="Segundo Apellido"
-        onChange={handleChange}
-      />
-      <span></span>
-      {errors.secondLastName && <small>{errors.secondLastName}</small>}
-    </div>
+          <button type="submit">Regístrate</button>
 
-    <div className="form-control2">
-      <input
-        type="email"
-        name="email"
-        placeholder="Correo Electrónico"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.email && <small>{errors.email}</small>}
-    </div>
-
-    <div className="form-control2">
-      <input
-        type="text"
-        name="nationality"
-        placeholder="Nacionalidad"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.nationality && <small>{errors.nationality}</small>}
-    </div>
-
-    <div className="form-control2">
-      <input
-        type="text"
-        name="address"
-        placeholder="Dirección o Domicilio"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.address && <small>{errors.address}</small>}
-    </div>
-
-    <div className="form-control2">
-      <input
-        type="date"
-        name="birthDate"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.birthDate && <small>{errors.birthDate}</small>}
-    </div>
-
-    <div className="form-control2">
-      <input
-        type="password"
-        name="password"
-        placeholder="Contraseña"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.password && <small>{errors.password}</small>}
-    </div>
-
-    <div className="form-control2">
-      <input
-        type="password"
-        name="confirmPassword"
-        placeholder="Confirma Contraseña"
-        onChange={handleChange}
-        required
-      />
-      <span></span>
-      {errors.confirmPassword && <small>{errors.confirmPassword}</small>}
-    </div>
-
-    <button type="submit">Regístrate</button>
-
-    <span>
-      ¿Ya tienes cuenta?{" "}
-      <button
-        type="button"
-        onClick={toggleForm}
-        style={{
-          background: 'none',
-          border: 'none',
-          color: '#4bb6b7',
-          cursor: 'pointer',
-        }}
-      >
-        Inicia Sesión
-      </button>
-    </span>
-  </form>
-</div>
-
+          <span>
+            ¿Ya tienes cuenta?{" "}
+            <button
+              type="button"
+              onClick={toggleForm}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#4bb6b7',
+                cursor: 'pointer',
+              }}
+            >
+              Inicia Sesión
+            </button>
+          </span>
+        </form>
+      </div>
 
       {/* Panel de Overlay */}
       <div className="overlay-container">
         <div className="overlay">
           <div className="overlay-panel overlay-left">
             <h1>¡Bienvenido de nuevo!</h1>
-            <p>
-              Para mantenerte conectado con nosotros, inicia sesión con tus datos asignados
-            </p>
+            <p>Para mantenerte conectado con nosotros, inicia sesión con tus datos asignados</p>
             <button className="ghost" id="login" onClick={toggleForm}>
               Iniciar Sesión
             </button>
