@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import cors from 'cors'; // Importar cors
 import conectarDB from './config/db.js'; 
 import usuariosRoutes from './module/auth/usuario_routes.js'; 
 import profesoresRoutes from './module/calificaciones/Routes/profesoresRoutes.js';
@@ -33,6 +34,13 @@ const init = async () => {
 };
 
 init();
+// Middleware para permitir CORS desde cualquier origen
+app.use(cors({
+    origin: 'http://localhost:3000', // Permitir sólo desde el frontend
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
+    credentials: true, // Para permitir cookies en las solicitudes
+}));
+
 
 app.use(express.json());
 

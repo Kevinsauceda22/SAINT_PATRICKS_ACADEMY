@@ -1,4 +1,5 @@
 import conectarDB from '../../../config/db.js';
+
 const pool = await conectarDB();
 
 
@@ -6,7 +7,7 @@ const pool = await conectarDB();
 export const crearMatricula = async (req, res) => {
     const {
         p_fecha_matricula,
-        p_Cod_persona,
+        p_Cod_genealogia,
         p_tipo_estado,
         p_Fecha_inicio,
         p_Fecha_fin,
@@ -19,10 +20,15 @@ export const crearMatricula = async (req, res) => {
         p_Codificacion_matricula
     } = req.body;
 
+    const estadosValidos = ['pendiente', 'activa', 'cancelada', 'inactiva'];
+    if (!estadosValidos.includes(p_tipo_estado)) {
+        return res.status(400).json({ Mensaje: 'Estado inválido. Los estados permitidos son: ' + estadosValidos.join(', ') });
+    }
+
     try {
         await pool.query('CALL insertar_matricula(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             p_fecha_matricula,
-            p_Cod_persona,
+            p_Cod_genealogia,
             p_tipo_estado,
             p_Fecha_inicio,
             p_Fecha_fin,
@@ -35,9 +41,19 @@ export const crearMatricula = async (req, res) => {
             p_Codificacion_matricula
         ]);
 
+
         res.status(201).json({ Mensaje: 'Matrícula creada exitosamente' });
     } catch (error) {
         console.error('Error al crear la matrícula:', error);
+        
+        // Mostrar alerta de error
+        Swal.fire({
+            icon: 'error',
+            title: 'Error al crear la matrícula',
+            text: error.message,
+            showConfirmButton: true,
+        });
+
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
@@ -75,6 +91,11 @@ export const obtenerMatricula = async (req, res) => {
                     day: '2-digit',
                 }),
                 Fecha_fin: new Date(matricula.Fecha_fin).toLocaleDateString('es-HN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                }),
+                fecha_matricula: new Date(matricula.fecha_matricula).toLocaleDateString('es-HN', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -212,13 +233,13 @@ export const actualizarDescuentoAutomatico = async (req, res) => {
     }
 };
 
-// Controlador para eliminar una matrícula
 export const eliminarMatricula = async (req, res) => {
     const { Cod_matricula } = req.params;
 
     try {
         const [rows] = await pool.query("CALL eliminar_matricula(?)", [Cod_matricula]);
 
+        // Si rows.length es 0, significa que no se encontraron filas afectadas.
         if (rows.affectedRows > 0) {
             return res.status(200).json({ message: 'Matrícula eliminada correctamente.' });
         } else {
@@ -230,18 +251,31 @@ export const eliminarMatricula = async (req, res) => {
     }
 };
 
+
 //pruebaaaa
-// Controlador para crear un descuento y aplicarlo a la última caja
+// Controlador para crear un descuento y aplicarlo a la matrícula especificada
 export const crearYAplicarDescuento = async (req, res) => {
-    const { nombre_descuento, valor, fecha_inicio, fecha_fin, descripcion } = req.body;
+    const { nombre_descuento, valor, fecha_inicio, fecha_fin, descripcion, cod_matricula } = req.body;
 
     try {
-        await pool.query('CALL crearYAplicarDescuento(?, ?, ?, ?, ?)', [
+        // Paso 1: Obtener el cod_caja asociado a la matrícula
+        const [matricula] = await pool.query('SELECT cod_caja FROM tbl_matricula WHERE cod_matricula = ?', [cod_matricula]);
+
+        // Comprobar si la matrícula existe
+        if (!matricula || matricula.length === 0) {
+            return res.status(404).json({ Mensaje: 'Matrícula no encontrada' });
+        }
+
+        const cod_caja = matricula[0].cod_caja;
+
+        // Paso 2: Llamar al procedimiento almacenado para crear y aplicar el descuento
+        await pool.query('CALL crearYAplicarDescuento(?, ?, ?, ?, ?, ?)', [
             nombre_descuento,
             valor,
             fecha_inicio,
             fecha_fin,
-            descripcion
+            descripcion,
+            cod_matricula // Pasando el cod_matricula al procedimiento
         ]);
 
         res.status(201).json({ Mensaje: 'Descuento creado y aplicado exitosamente' });
@@ -269,6 +303,34 @@ export const actualizarYAplicarDescuento = async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar y aplicar el descuento:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+// Controlador para obtener descuento por Cod_matricula (a través de Cod_caja)
+export const obtenerDescuentoPorMatricula = async (req, res) => {
+    const { Cod_matricula } = req.params;
+
+    try {
+        // Obtener Cod_caja vinculado a la matrícula
+        const [cajaResults] = await pool.query('SELECT Cod_caja FROM caja WHERE Cod_matricula = ?', [Cod_matricula]);
+
+        if (cajaResults.length === 0) {
+            return res.status(404).json({ message: 'Caja no encontrada para esta matrícula' });
+        }
+
+        const Cod_caja = cajaResults[0].Cod_caja;
+
+        // Obtener el descuento relacionado con el Cod_caja
+        const [descuentoResults] = await pool.query('SELECT * FROM descuentos WHERE Cod_caja = ?', [Cod_caja]);
+
+        if (descuentoResults.length === 0) {
+            return res.status(404).json({ message: 'Descuento no encontrado para esta matrícula' });
+        }
+
+        res.status(200).json(descuentoResults[0]);
+    } catch (error) {
+        console.error('Error al obtener el descuento:', error);
+        res.status(500).json({ message: 'Error interno del servidor', error: error.message });
     }
 };
 
