@@ -1,8 +1,16 @@
-
 import express from 'express';
-import { crearMatricula, obtenerMatricula, obtenerCaja, actualizarMatricula, obtenerDescuentos, actualizarDescuento,
-    actualizarDescuentoAutomatico, eliminarMatricula,
-    crearYAplicarDescuento, actualizarYAplicarDescuento} from '../Controllers/matriculaController.js'; // Asegúrate de que esta ruta sea correcta
+import {
+    crearMatricula,
+    obtenerMatricula,
+    obtenerCaja,
+    actualizarMatricula,
+    obtenerDescuentos,
+    actualizarDescuento,
+    actualizarDescuentoAutomatico,
+    eliminarMatricula,
+    crearYAplicarDescuento,
+    actualizarYAplicarDescuento,
+} from '../Controllers/matriculaController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
 
@@ -36,7 +44,6 @@ router.put('/actualizar-descuento-automatico', actualizarDescuentoAutomatico); /
 // Ruta para eliminar una matrícula por Cod_matricula
 router.delete('/matriculas/:Cod_matricula', eliminarMatricula); // Nueva ruta para eliminar matrícula
 
-//prueba
 // Ruta para crear un descuento y aplicarlo a la última caja
 router.post('/descuentos', crearYAplicarDescuento);
 
@@ -44,4 +51,3 @@ router.post('/descuentos', crearYAplicarDescuento);
 router.put('/descuentos/:Cod_descuento', actualizarYAplicarDescuento);
 
 export default router;
-

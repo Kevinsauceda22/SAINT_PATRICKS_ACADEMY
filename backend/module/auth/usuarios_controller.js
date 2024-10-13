@@ -158,10 +158,15 @@ export const crearUsuario = async (req, res) => {
             [cod_usuario, hashedPassword, new Date()] 
         );
 
-        // Registrar la acción en la tabla de bitácora
+        // Generar el token JWT para el usuario
+        const token = jwt.sign({ cod_persona }, 'secreto', { expiresIn: '1h' });
 
-        // Respuesta exitosa
-        res.status(201).json({ mensaje: 'Usuario registrado correctamente', usuario: nuevoUsuario });
+        // Respuesta exitosa con el token y redirección
+        res.status(201).json({ 
+            mensaje: 'Usuario registrado correctamente', 
+            usuario: nuevoUsuario, 
+            token // Incluye el token en la respuesta
+        });
     } catch (error) {
         console.error('Error al crear el usuario:', error);
         res.status(500).json({ mensaje: 'Error al crear el usuario' });
@@ -170,6 +175,101 @@ export const crearUsuario = async (req, res) => {
     }
 };
 
+export const agregarEstudiante = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        // Obtener el token del encabezado
+        const { authorization } = req.headers;
+        const tokens = authorization.split(" ");
+
+        if (tokens.length !== 2 || tokens[0] !== "Bearer") {
+            return res.status(401).json({ mensaje: "Tokens inválidos" });
+        }
+
+        const tokenPadre = tokens[1]; // Token del padre
+
+        // Verificar el token del padre
+        const decodedPadre = jwt.verify(tokenPadre, process.env.JWT_SECRET);
+
+        // Extraer los datos del cuerpo de la solicitud
+        const { 
+            dni_hijo, 
+            nombre_hijo, 
+            primer_apellido, 
+            segundo_apellido, 
+            nacionalidad, 
+            direccion, 
+            fecha_nacimiento, 
+            tipo_relacion, 
+            segundo_nombre,
+            descripcion,
+            nombre_departamento, // Nombre del departamento
+            nombre_municipio, // Nombre del municipio
+            genero, // Género del estudiante
+        } = req.body;
+
+        // Obtener Cod_tipo_persona para estudiante
+        const [tipoPersona] = await connection.query('SELECT Cod_tipo_persona FROM tbl_tipo_persona WHERE Tipo = ?', ['E']); // 'E' para estudiante
+        const codTipoPersona = tipoPersona.length > 0 ? tipoPersona[0].Cod_tipo_persona : null;
+
+        if (!codTipoPersona) {
+            return res.status(400).json({ mensaje: "Tipo de persona no encontrado" });
+        }
+
+        // Obtener Cod_tipo_relacion correspondiente al tipo_relacion
+        const [tipoRelacion] = await connection.query('SELECT Cod_tipo_relacion FROM tbl_tipo_relacion WHERE Tipo_relacion = ?', [tipo_relacion]);
+        const codTipoRelacion = tipoRelacion.length > 0 ? tipoRelacion[0].Cod_tipo_relacion : null;
+
+        if (!codTipoRelacion) {
+            return res.status(400).json({ mensaje: "Tipo de relación no encontrado" });
+        }
+
+        // Obtener Cod_genero correspondiente al género
+        const [generoQuery] = await connection.query('SELECT Cod_genero FROM tbl_genero_persona WHERE Tipo_genero = ?', [genero]);
+        const codGenero = generoQuery.length > 0 ? generoQuery[0].Cod_genero : null;
+
+        if (!codGenero) {
+            return res.status(400).json({ mensaje: "Género no encontrado" });
+        }
+
+        // Crear el nuevo departamento si no existe
+        const [departamentoResult] = await connection.query(
+            'INSERT INTO tbl_departamento (Nombre_departamento, Nombre_municipio) VALUES (?, ?) ON DUPLICATE KEY UPDATE Cod_departamento=LAST_INSERT_ID(Cod_departamento)',
+            [nombre_departamento, nombre_municipio]
+        );
+
+        // Obtener el Cod_departamento del resultado
+        const cod_departamento = departamentoResult.insertId || departamentoResult[0].Cod_departamento;
+
+        // Insertar el estudiante en la base de datos
+        const [result] = await connection.query(
+            'INSERT INTO tbl_personas (dni_persona, Nombre, Segundo_nombre, Primer_apellido, Segundo_Apellido, Nacionalidad, direccion_persona, fecha_nacimiento, Cod_tipo_persona, Cod_departamento, Cod_genero) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [dni_hijo, nombre_hijo, segundo_nombre, primer_apellido, segundo_apellido, nacionalidad, direccion, fecha_nacimiento, codTipoPersona, cod_departamento, codGenero]
+        );
+
+        const codPersonaHijo = result.insertId; // Obtener el ID del estudiante insertado
+
+        // Relacionar el estudiante con el padre en tbl_estructura_familiar
+        await connection.query(
+            'INSERT INTO tbl_estructura_familiar (Cod_persona_padre, Cod_persona_estudiante, dni_hijo, Cod_tipo_relacion, Descripcion) VALUES (?, ?, ?, ?, ?)',
+            [decodedPadre.cod_persona, codPersonaHijo, dni_hijo, codTipoRelacion, descripcion]
+        );
+
+        return res.status(201).json({ mensaje: "Estudiante registrado exitosamente." });
+
+    } catch (error) {
+        console.error("Error en agregarEstudiante:", error);
+        if (error instanceof jwt.TokenExpiredError) {
+            return res.status(401).json({ mensaje: "Token ha expirado" });
+        }
+        if (error instanceof jwt.JsonWebTokenError) {
+            return res.status(401).json({ mensaje: "Token inválido" });
+        }
+        return res.status(500).json({ mensaje: "Error al registrar al estudiante." });
+    } finally {
+        connection.release();
+    }
+};
 
 //con este controlador se obtienen todos los usuarios pero tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarios = async (req, res) => {
@@ -338,7 +438,7 @@ export const autenticarUsuario = async (req, res) => {
 
             // Generar el token JWT
             const token = jwt.sign(
-                { cod_usuario: usuario.cod_usuario, nombre_usuario: usuario.nombre_usuario, rol_usuario: usuario.rol_usuario },
+                { cod_usuario: usuario.cod_usuario, nombre_usuario: usuario.nombre_usuario, rol_usuario: usuario.rol_usuario, cod_persona: usuario.cod_persona },
                 process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );

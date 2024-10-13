@@ -11,6 +11,7 @@ import {
     comprobarToken,
     cambiarContrasena,
     OlvidePasssword,
+    agregarEstudiante
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -29,6 +30,8 @@ router.put('/:cod_usuario', checkAuth, actualizarUsuario);
 router.get('/perfil/:cod_usuario', checkAuth, mostrarPerfil);
 //ruta para eliminar un usuario completo
 router.delete('/eliminar-perfil/:cod_usuario', checkAuth, eliminarUsuarioCompleto);
+//RUTA PARA AGREGAR AL ESTUDIANTE 
+router.post('/agregar-estudiante/', checkAuth, agregarEstudiante);
 
 
 // Rutas públicas
