@@ -279,7 +279,7 @@ const _nav = [
     items: [
       {
         component: CNavItem,
-        name: 'Login',
+        name: 'Iniciar Secion',
         to: '/login',
       },
       {

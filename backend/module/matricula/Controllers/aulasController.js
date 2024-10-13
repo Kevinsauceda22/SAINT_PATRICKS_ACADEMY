@@ -88,12 +88,13 @@ export const actualizarAula = async (req, res) => {
 
 // Controlador para eliminar un aula
 export const eliminarAula = async (req, res) => {
-    const { p_Numero_aula } = req.params; // Extraer el número de aula desde los parámetros de la URL
+    const { Cod_aula } = req.params;
 
     try {
-        const [rows] = await pool.query("CALL sp_delete_Aula(?)", [p_Numero_aula]);
+        // Llamar al procedimiento almacenado para eliminar el aula
+        const [rows] = await pool.query("CALL sp_delete_Aula(?)", [Cod_aula]);
 
-        // Si se eliminaron filas, el aula fue eliminada
+        // Comprobar si se afectaron filas (es decir, si el aula fue eliminada)
         if (rows.affectedRows > 0) {
             return res.status(200).json({ message: 'Aula eliminada correctamente.' });
         } else {

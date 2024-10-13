@@ -2,24 +2,21 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
 dotenv.config();
-
 const checkAuth = (req, res, next) => {
+    console.log('Middleware checkAuth ejecutado en la ruta:', req.originalUrl);
+
     const token = req.header('Authorization')?.split(' ')[1];
 
-
-    // Verificar si el token fue proporcionado
     if (!token) {
         return res.status(403).json({ mensaje: 'Acceso denegado.' });
     }
 
     try {
-        // Verificar si el token es válido usando la clave secreta JWT
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.usuario = decoded; // Guardar los datos del usuario decodificados en el request
+        req.usuario = decoded;
 
-        next(); // Continuar con la siguiente función o ruta
+        next();
     } catch (error) {
-        // Manejar el error si el token no es válido o expiró
         res.status(401).json({ mensaje: 'Token inválido o ha expirado' });
     }
 };

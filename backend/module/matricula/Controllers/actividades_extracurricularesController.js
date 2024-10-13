@@ -1,46 +1,5 @@
 import conectarDB from '../../../config/db.js';
-
-let pool;
-
-//Inicializar la conexión a la base de datos
-const initDB = async () => {
-    pool = await conectarDB();
-};
-
-initDB();
-/*
-//Controlador para obtener todas o una actividad_extracurricular
-export const obtenerActExtra = async (req, res) => {
-    const {Nombre_actividad, Nombre_seccion} =req.params;
-
-    try {
-        if (Nombre_actividad){
-            const query = 'CALL sp_get_actividades_extracurriculares(?,?)';
-            const [results] = await pool.query(query, [Nombre_actividad|| null, Nombre_seccion || null]);
-
-            if (results[0].length === 0) {
-                return res.status(404).json({ message: 'Actividad extracurricular no encontrada' });
-            }
-            return res.status(200).json(results[0]); //Asegurate de acceder al primer elemento del array
-
-        } else{
-            const query = 'CALL sp_get_actividades_extracurriculares(NULL,NULL)';
-            const [results] = await pool.query(query, [null]);
-
-            return res.status(200).json(results[0]); //Asegurate de acceder al primer elemento del array
-
-        }
-
-    }catch (error){
-        console.error('Error al obtener la actividad extracuriicular:', error);
-        res.status(500).json({ message: 'Error al obtener la actividad extracurricular', error});
-
-    }
-
-
-};
-
-*/
+const pool = await conectarDB();
 
 
 // Controlador para obtener todas o una actividad extracurricular por nombre de actividad o nombre de sección
