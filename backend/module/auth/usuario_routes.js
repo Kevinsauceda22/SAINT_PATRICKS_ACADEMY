@@ -11,7 +11,8 @@ import {
     comprobarToken,
     cambiarContrasena,
     OlvidePasssword,
-    agregarEstudiante
+    agregarEstudiante,
+    preRegistroUsuario
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -47,5 +48,8 @@ router.post('/olvide-password', OlvidePasssword);
 router.get('/olvide-password/:token', comprobarToken);
 //ruta para cambiar la contraseña y almacenarla en la base de datos
 router.post('/nuevopassword/:token', cambiarContrasena);
+//ruta para pre-registrar al padre de familia
+router.post('/pre-registrar-padre', preRegistroUsuario);
+
 
 export default router;

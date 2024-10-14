@@ -23,7 +23,8 @@ import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
-import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js"
+import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
+//importtacion de middleware
 
 
 dotenv.config(); 
@@ -31,10 +32,17 @@ dotenv.config();
 const app = express();
 
 const init = async () => {
-    await conectarDB();
+    try {
+        await conectarDB();
+        console.log('Base de datos conectada correctamente');
+    } catch (error) {
+        console.error('Error al conectar a la base de datos:', error);
+        process.exit(1); // Salir del proceso si no se puede conectar a la base de datos
+    }
 };
 
 init();
+
 // Middleware para permitir CORS desde cualquier origen
 app.use(cors({
     origin: 'http://localhost:3000', // Permitir sólo desde el frontend
@@ -42,66 +50,60 @@ app.use(cors({
     credentials: true, // Para permitir cookies en las solicitudes
 }));
 
+app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes
 
-app.use(express.json());
-
-//autenticación y seguridad
+// Autenticación y seguridad
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/usuarios', usuariosRoutes); 
 
-
-//calificaciones
+// Calificaciones
 // Rutas para los profesores para poder agregar, modificar, eliminar y obtener profesores
 app.use('/api/profesores', profesoresRoutes); 
 // Rutas para tipos de contrato de los profesores 
 app.use('/api/contratos', tiposContratoRoutes); 
-//Rutas para actividades academicas para poder agregar, modificar, eliminar y obtener actividades academicas
+// Rutas para actividades académicas
 app.use('/api/actividadesAcademicas', actividadesRoutes);
-//Rutas para grados academicos de los profesores
+// Rutas para grados académicos de los profesores
 app.use('/api/gradosAcademicos', gradosAcademicosRoutes);
-//Rutas para especialidades de los profesores
+// Rutas para especialidades de los profesores
 app.use('/api/especialidades', especialidadRoutes);
-//Rutas para asignaturas de los grados
+// Rutas para asignaturas de los grados
 app.use('/api/asignaturas', asignaturaRoutes);
-//Rutas para parciales de las asignaturas
+// Rutas para parciales de las asignaturas
 app.use('/api/parciales', parcialesRoutes);
-//Rutas para grados de los estudiantes
+// Rutas para grados de los estudiantes
 app.use('/api/grados', gradoRoutes);
-//Rutas para ciclos de los grados
+// Rutas para ciclos de los grados
 app.use('/api/ciclos', ciclosRoutes);
-//Rutas para ponderaciones de las notas
+// Rutas para ponderaciones de las notas
 app.use('/api/ponderaciones', ponderacionRoutes);
-//Rutas para estado de asistencia de los estudiantes
+// Rutas para estado de asistencia de los estudiantes
 app.use('/api/estadoAsistencia', estadoasitenciaRoutes);
-//Rutas para asistencia de los estudiantes
+// Rutas para asistencia de los estudiantes
 app.use('/api/asistencia', asisntenciaRoutes);
-//Rutas para estado de notas de los estudiantes
+// Rutas para estado de notas de los estudiantes
 app.use('/api/estadoNotas', estadonotaRoutes);
-//Rutas para notas de los estudiantes
+// Rutas para notas de los estudiantes
 app.use('/api/notas', notaRoutes);
-//Rutas para historial academico de los estudiantes
+// Rutas para historial académico de los estudiantes
 app.use('/api/historialAcademico', historialAcademicoRoutes);
 
-//matricula
-// Usar las rutas de matrícula
-app.use('/api/matricula', matriculaRoutes);
+// Matrícula
+app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
 // Rutas para el edificio
 app.use('/api/edificio', edificiosRoutes);
 // Rutas para las aulas
 app.use('/api/aula', aulasRoutes);
 // Rutas para las actividades extracurriculares
-app.use('/api/actividadesExtracurriculares',actividadesextraRoutes)
+app.use('/api/actividadesExtracurriculares', actividadesextraRoutes);
 // Usar las rutas de solicitud
 app.use('/api/solicitud', solicitudRoutes);
 
-//pagos y finanzas
-// Ruta para crear un nuevo pago
-app.use('/api/pagos', pagoRoutes); 
+// Pagos y finanzas
+app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;
-
-
 
 // Iniciar el servidor en el puerto especificado
 app.listen(PORT, () => {

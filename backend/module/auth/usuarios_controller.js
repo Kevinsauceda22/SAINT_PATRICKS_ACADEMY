@@ -3,8 +3,6 @@ import jwt from 'jsonwebtoken';
 import conectarDB from '../../config/db.js';
 import Generar_Id from '../../helpers/generar_Id.js';
 const pool = await conectarDB();
-const confirmacion_email ='0' ;
-
 
 //este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
@@ -174,6 +172,66 @@ export const crearUsuario = async (req, res) => {
         connection.release();
     }
 };
+
+export const preRegistroUsuario = async (req, res) => {
+    const { 
+        primer_nombre, 
+        primer_apellido, 
+        correo_usuario, 
+        contraseña_usuario, 
+        confirmar_contraseña 
+    } = req.body;
+
+    const connection = await pool.getConnection();
+
+    try {
+        // Validar que la contraseña y la confirmación sean iguales
+        if (contraseña_usuario !== confirmar_contraseña) {
+            return res.status(400).json({ mensaje: 'Las contraseñas no coinciden' });
+        }
+
+        // Verificar si el correo ya existe
+        const [existingUser] = await connection.query(
+            'SELECT * FROM tbl_usuarios WHERE correo_usuario = ?', 
+            [correo_usuario]
+        );
+        if (existingUser.length > 0) {
+            return res.status(400).json({ mensaje: 'El correo ya está en uso' });
+        }
+
+        // Insertar en tbl_personas con Cod_tipo_persona = 1 (Padre)
+        const [resultPersona] = await connection.query(
+            'INSERT INTO tbl_personas (Nombre, Primer_apellido, dni_persona, Estado_Persona, Cod_tipo_persona) VALUES (?, ?, ?, ?, ?)',
+            [primer_nombre, primer_apellido, null, 'A', 1] // 'A' = Activo, Cod_tipo_persona = 1 (Padre)
+        );
+
+        const cod_persona = resultPersona.insertId; // Obtener el id de la persona insertada
+
+        // Hashear la contraseña
+        const hashedPassword = await bcrypt.hash(contraseña_usuario, 10);
+
+        // Generar token para el usuario
+        const token_usuario = Generar_Id(); // Generar el token de usuario
+
+        // Insertar en tbl_usuarios con el token generado
+        await connection.query(
+            'INSERT INTO tbl_usuarios (correo_usuario, contraseña_usuario, cod_persona, Cod_rol, Cod_estado_usuario, token_usuario) VALUES (?, ?, ?, ?, ?, ?)',
+            [correo_usuario, hashedPassword, cod_persona, 1, 1, token_usuario] // Cod_rol = 1 (Padre), Cod_estado_usuario = 1 (Activo)
+        );
+
+        // Respuesta exitosa
+        res.status(201).json({ 
+            mensaje: 'Pre-registro exitoso, Ahora verificaremos tu correo electronico.',
+            token_usuario // Puedes devolver el token si es necesario
+        });
+    } catch (error) {
+        console.error('Error en el pre-registro:', error);
+        res.status(500).json({ mensaje: 'Error al realizar el pre-registro' });
+    } finally {
+        connection.release();
+    }
+};
+
 
 export const agregarEstudiante = async (req, res) => {
     const connection = await pool.getConnection();
@@ -406,7 +464,6 @@ export const eliminarUsuarioCompleto = async (req, res) => {
         connection.release();  // Liberar la conexión
     }
 };
-
 
 // Con este controlador se autentica un usuario y se genera un token jwt y que si la contraseña ingresada coincide con una contraseña antigua, devolver un error
 export const autenticarUsuario = async (req, res) => {
