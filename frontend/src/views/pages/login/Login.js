@@ -7,6 +7,9 @@ import { useNavigate } from 'react-router-dom';
 
 const LoginRegister = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetError, setResetError] = useState("");
   const [formData, setFormData] = useState({
     identificador: "",
     contraseña_usuario: "",
@@ -108,7 +111,56 @@ const LoginRegister = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+    if (!resetEmail) {
+      setResetError("El correo electrónico es requerido");
+    } else {
+      setResetError(""); // Limpia el error si ya se ha ingresado un correo válido
+  
+      // Realiza la llamada a la API para enviar el enlace de restablecimiento
+      try {
+        const response = await axios.post('http://localhost:4000/api/usuarios/reset-password', { email: resetEmail });
+        
+        // Si la respuesta es exitosa, muestra el mensaje de éxito
+        toast.success("Se ha enviado el enlace para restablecer tu contraseña", {
+          position: "top-right",
+          autoClose: 5000,
+          style: {
+            backgroundColor: '#4bb6b7',
+            color: '#ffffff',
+            fontWeight: 'bold',
+          },
+        });
+        
+        // Oculta el modal una vez enviado el correo de restablecimiento
+        setShowResetPasswordModal(false);
+  
+      } catch (error) {
+        // Muestra un mensaje de error si algo falla durante la solicitud a la API
+        toast.error("Error al enviar el enlace. Intenta nuevamente.", {
+          position: "top-right",
+          autoClose: 5000,
+          style: {
+            backgroundColor: '#ff4d4d',
+            color: '#ffffff',
+            fontWeight: 'bold',
+          },
+        });
+      }
+    }
+  };
+  
+  const handleCloseModal = () => {
+    setResetError(""); // Limpia el error al cerrar el modal
+    const modalElement = document.querySelector('.modal');
+    modalElement.classList.remove('show'); // Retirar clase show para iniciar la animación de cierre
+    setTimeout(() => {
+      setShowResetPasswordModal(false); // Ocultar el modal después de la animación
+    }, 500); // Debe coincidir con la duración de la transición de la clase CSS
+  };
+
   return (
+    
     <div className={`container ${!isLogin ? "right-panel-active" : ""}`}>
       {/* Formulario de Login */}
       <div className="form-container login-container">
@@ -122,7 +174,6 @@ const LoginRegister = () => {
               onChange={handleChange}
               required
             />
-            <span></span>
             {errors.identificador && <small>{errors.identificador}</small>}
           </div>
           <div className="form-control">
@@ -133,9 +184,24 @@ const LoginRegister = () => {
               onChange={handleChange}
               required
             />
-            <span></span>
             {errors.contraseña_usuario && <small>{errors.contraseña_usuario}</small>}
           </div>
+
+          <div style={{ marginBottom: '10px', textAlign: 'left' }}>
+            <button 
+              type="button" 
+              onClick={() => setShowResetPasswordModal(true)} 
+              style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#4bb6b7', 
+                cursor: 'pointer', 
+                fontSize: '14px' 
+              }}>
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+
           <button type="submit">Iniciar Sesión</button>
           <span>
             ¿No tienes cuenta?{" "}
@@ -145,6 +211,34 @@ const LoginRegister = () => {
           </span>
         </form>
       </div>
+
+      {/* Modal Reiniciar contraseña */}
+      {showResetPasswordModal && (
+        <div className={`modal ${showResetPasswordModal ? 'show' : ''}`}>
+          <div className={`modal-content ${showResetPasswordModal ? 'show' : ''}`}>
+            <span className="close" onClick={() => {
+              setResetError(""); // Limpia el error al cerrar el modal
+              setShowResetPasswordModal(false);
+              {handleCloseModal};
+            }}>&times;</span>
+            <h1>Restablecer Contraseña</h1>
+            <p>Ingresa tu correo electrónico para recibir un enlace de restablecimiento</p>
+            <input
+              type="email"
+              placeholder="Correo electrónico"
+              value={resetEmail}
+              onChange={(e) => setResetEmail(e.target.value)}
+              className={resetError ? 'error' : ''}
+            />
+            {resetError && <small style={{ color: 'red', display: 'block' }}>{resetError}</small>}
+            <button onClick={handleResetPassword}>Enviar</button>
+          </div>
+        </div>
+      )}
+
+
+
+
 
       {/* Formulario de Pre-Registro */}
       <div className="form-container register-container">
@@ -156,7 +250,7 @@ const LoginRegister = () => {
             <input
               type="text"
               name="primerNombre"
-              placeholder="Primer Nombre (Requerido)"
+              placeholder="Primer Nombre"
               onChange={handleChange}
               required
             />
@@ -169,7 +263,7 @@ const LoginRegister = () => {
             <input
               type="text"
               name="primerApellido"
-              placeholder="Primer Apellido (Requerido)"
+              placeholder="Primer Apellido"
               onChange={handleChange}
               required
             />
@@ -182,7 +276,7 @@ const LoginRegister = () => {
             <input
               type="email"
               name="identificador"
-              placeholder="Correo Electrónico (Requerido)"
+              placeholder="Correo Electrónico"
               onChange={handleChange}
               required
             />
@@ -195,7 +289,7 @@ const LoginRegister = () => {
             <input
               type="password"
               name="contraseña_usuario"
-              placeholder="Contraseña (Requerido)"
+              placeholder="Contraseña"
               onChange={handleChange}
               required
             />
@@ -208,7 +302,7 @@ const LoginRegister = () => {
             <input
               type="password"
               name="confirmPassword"
-              placeholder="Confirma Contraseña (Requerido)"
+              placeholder="Confirma Contraseña"
               onChange={handleChange}
               required
             />
@@ -220,19 +314,17 @@ const LoginRegister = () => {
           <button type="submit" className="submit-button">Continuar</button>
         </form>
       </div>
-
+                
       {/* Panel de Overlay */}
       <div className="overlay-container">
         <div className="overlay">
           <div className="overlay-panel overlay-left">
             <h1>¡Bienvenido de nuevo!</h1>
-            <p>Para mantenerte conectado con nosotros, inicia sesión con tus datos asignados</p>
+            <p>Para mantenerte conectado con nosotros, pre-registrate </p>
             <button className="ghost" id="signIn" onClick={toggleForm}>Iniciar Sesión</button>
           </div>
           <div className="overlay-panel overlay-right">
             <h2>Saint Patrick´s Academy</h2>
-            <p>Ingresa tus datos personales y comienza tu viaje con nosotros</p>
-            <button className="ghost" id="signUp" onClick={toggleForm}>Pre-Regístrate</button>
           </div>
         </div>
       </div>

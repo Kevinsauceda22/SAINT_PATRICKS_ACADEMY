@@ -487,3 +487,77 @@ h1.title {
   text-align: center;
   margin-top: 10px;
 }
+
+/* Fondo oscuro con animación de desvanecimiento */
+.modal {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px); /* Aplica desenfoque al fondo */
+  opacity: 0;
+  animation: fadeIn 0.5s forwards; /* Animación de fade-in */
+}
+
+/* Contenido del modal con animación suave */
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+  position: relative;
+  z-index: 1001;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: scale(0.8);
+  animation: scaleIn 0.3s forwards; /* Aparece con un "zoom" suave */
+}
+
+/* Botón de cerrar (X) posicionado en la esquina superior derecha */
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 25px;
+  font-weight: bold;
+  color: #333;
+  cursor: pointer;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { transform: scale(0.8); }
+  to { transform: scale(1); }
+}
+
+/* Oculta los mensajes de error inicialmente */
+small {
+  display: none;
+}
+
+small.error-active {
+  display: block;
+  color: red;
+}
+
+button {
+  padding: 10px 20px;
+  margin-top: 20px;
+  background-color: #4bb6b7;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer; /* Aparece la mano al pasar sobre el botón */
+}
