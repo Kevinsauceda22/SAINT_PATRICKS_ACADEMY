@@ -1,0 +1,25 @@
+.verificar-cuenta-container {
+    text-align: center;
+    margin: 20px;
+}
+
+.loading-spinner {
+    /* Aquí puedes agregar tu estilo para el spinner */
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.error-icon {
+    font-size: 50px; /* Tamaño de la X */
+    color: red; /* Color de la X */
+}
+
+/* Animación para el spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

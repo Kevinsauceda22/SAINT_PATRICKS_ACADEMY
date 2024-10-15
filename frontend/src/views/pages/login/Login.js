@@ -20,8 +20,15 @@ const LoginRegister = () => {
     direccion: "",
     fechaNacimiento: "",
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({
+    email: '',
+    contraseña: '',
+});
+
+  
   const navigate = useNavigate();
+ 
+
 
   const toggleForm = () => {
     setIsLogin((prev) => !prev);
@@ -30,57 +37,165 @@ const LoginRegister = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    setErrors({ ...errors, [name]: '' }); // Limpiar mensaje de error al cambiar el input
+
   };
 
-  // Manejador para el Login
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault();
-    const newErrors = {};
+  const handleEmailChange = (e) => {
+    const email = e.target.value;
     
-    // Validación del login
-    if (!formData.identificador) newErrors.identificador = "Identificador es requerido";
-    if (!formData.contraseña_usuario) newErrors.contraseña_usuario = "Contraseña es requerida";
-    else if (formData.contraseña_usuario.length < 6) newErrors.contraseña_usuario = "La contraseña debe tener al menos 6 caracteres";
+    // Verifica si el email es repetitivo
+    if (/^(a+)$/.test(email)) {
+        setErrors({ ...errors, email: 'Verifica este campo' });
+        setFormData({ ...formData, identificador: '' }); // Limpiar el input
+    } else {
+        setErrors({ ...errors, email: '' }); // Limpiar mensaje de error
+    }
+    setFormData({ ...formData, identificador: email });
+};
 
-    setErrors(newErrors);
+const handlePasswordChange = (e) => {
+    const password = e.target.value;
 
-    if (Object.keys(newErrors).length === 0) {
-      try {
-        const response = await axios.post('http://localhost:4000/api/usuarios/login', {
+    // Verifica la longitud de la contraseña
+    if (password.length < 6) {
+        setErrors({ ...errors, contraseña: 'La contraseña debe tener al menos 6 caracteres' });
+    } else {
+        setErrors({ ...errors, contraseña: '' }); // Limpiar mensaje de error
+    }
+    setFormData({ ...formData, contraseña_usuario: password });
+};
+
+
+// Manejador para el Login
+const handleLoginSubmit = async (e) => {
+  e.preventDefault();
+  const newErrors = {};
+
+  // Validación del login
+  if (!formData.identificador) newErrors.identificador = "Identificador es requerido";
+  if (!formData.contraseña_usuario) newErrors.contraseña_usuario = "Contraseña es requerida";
+  else if (formData.contraseña_usuario.length < 6) newErrors.contraseña_usuario = "La contraseña debe tener al menos 6 caracteres";
+
+  setErrors(newErrors);
+
+  if (Object.keys(newErrors).length === 0) {
+    try {
+      const response = await axios.post('http://localhost:4000/api/usuarios/login', {
           identificador: formData.identificador,
           contraseña_usuario: formData.contraseña_usuario,
-        });
-
-        toast.success("Inicio de sesión exitoso!", {
+      });
+  
+      // Si el inicio de sesión es exitoso, muestra el toast de éxito
+      toast.success("Inicio de sesión exitoso.", {
           position: "top-right",
           autoClose: 5000,
           style: {
-            backgroundColor: '#4bb6b7',
-            color: '#ffffff',
-            fontWeight: 'bold',
+              backgroundColor: '#4caf50',
+              color: '#ffffff',
+              fontWeight: 'bold',
           },
-        });
-
-        navigate('/dashboard'); // Redirige al dashboard
-      } catch (error) {
-        toast.error("Error en el inicio de sesión. Intenta nuevamente.", {
-          position: "top-right",
-          autoClose: 5000,
-          style: {
-            backgroundColor: '#ff4d4d',
-            color: '#ffffff',
-            fontWeight: 'bold',
-          },
-        });
+      });
+  
+      // Redirigir al dashboard
+      navigate('/dashboard');
+      window.location.reload();
+  } catch (error) {
+      // Capturar los detalles del error
+      if (error.response) {
+          const errorMessage = error.response.data.mensaje; // Obtener el mensaje del backend
+          
+          // Mostrar un mensaje de error específico según el mensaje del backend
+          switch (errorMessage) {
+              case 'Usuario no encontrado':
+                  toast.error("El correo no está registrado.", {
+                      position: "top-right",
+                      autoClose: 5000,
+                      style: {
+                          backgroundColor: '#ff4d4d',
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                      },
+                  });
+                  break;
+              case 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.':
+                  toast.error("Por favor verifica tu correo electrónico para iniciar sesión.", {
+                      position: "top-right",
+                      autoClose: 5000,
+                      style: {
+                          backgroundColor: '#ff4d4d',
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                      },
+                  });
+                  break;
+              case 'Contraseña o nombre de usuario/correo incorrecto':
+                  toast.error("Correo o contraseña incorrecta.", {
+                      position: "top-right",
+                      autoClose: 5000,
+                      style: {
+                          backgroundColor: '#ff4d4d',
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                      },
+                  });
+                  break;
+              case 'Has ingresado una contraseña antigua':
+                  toast.error("Has ingresado una contraseña antigua.", {
+                      position: "top-right",
+                      autoClose: 5000,
+                      style: {
+                          backgroundColor: '#ff4d4d',
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                      },
+                  });
+                  break;
+              default:
+                  toast.error("Error en el inicio de sesión. Intenta nuevamente.", {
+                      position: "top-right",
+                      autoClose: 5000,
+                      style: {
+                          backgroundColor: '#ff4d4d',
+                          color: '#ffffff',
+                          fontWeight: 'bold',
+                      },
+                  });
+          }
+      } else if (error.request) {
+          console.error("No se recibió respuesta del servidor:", error.request);
+          toast.error("No se recibió respuesta del servidor. Intenta nuevamente.", {
+              position: "top-right",
+              autoClose: 5000,
+              style: {
+                  backgroundColor: '#ff4d4d',
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+              },
+          });
+      } else {
+          console.error("Error al hacer la solicitud:", error.message);
+          toast.error("Error al hacer la solicitud. Intenta nuevamente.", {
+              position: "top-right",
+              autoClose: 5000,
+              style: {
+                  backgroundColor: '#ff4d4d',
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+              },
+          });
       }
-    }
-  };
+  }
+  
+  }
+};
+
 
   // Manejador para el Pre-Registro
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
-    
+
     // Validación del pre-registro
     if (!formData.primerNombre) newErrors.primerNombre = "Primer nombre es requerido";
     if (!formData.primerApellido) newErrors.primerApellido = "Primer apellido es requerido";
@@ -91,23 +206,62 @@ const LoginRegister = () => {
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length === 0) {
-      // Redirigir sin hacer la llamada a la API por ahora
-      console.log("Redirigiendo a la página de registro...");
-      navigate('/register');
+    // Si hay errores, no continuar
+    if (Object.keys(newErrors).length > 0) return;
 
-      toast.success("Redirigiendo a la página de registro!", {
-        position: "top-right",
-        autoClose: 5000,
-        style: {
-          backgroundColor: '#4bb6b7',
-          color: '#ffffff',
-          fontWeight: 'bold',
-        },
-      });
+    try {
+        // Si no hay errores, enviar los datos al servidor
+        const response = await axios.post('http://localhost:4000/api/usuarios/pre-registrar-padre', {
+            primer_nombre: formData.primerNombre,
+            primer_apellido: formData.primerApellido,
+            correo_usuario: formData.identificador, // Cambiar el nombre a correo_usuario
+            contraseña_usuario: formData.contraseña_usuario,
+            confirmar_contraseña: formData.confirmPassword, // Agregar el campo de confirmación
+            Primer_ingreso: true, // Marcamos que es el primer ingreso
+        });
+
+        // Manejo de la respuesta del servidor
+        toast.success("Registro exitoso. Por favor, revisa tu correo electrónico para confirmar.", {
+            position: "top-right",
+            autoClose: 5000,
+            style: {
+                backgroundColor: '#4caf50',
+                color: '#ffffff',
+                fontWeight: 'bold',
+            },
+        });
+
+        // Redirigir al usuario a la página de confirmación de correo electrónico
+        navigate(`/confirmacion-email/${formData.identificador}`); // Cambiar a la ruta correcta
+        window.location.reload();
+
+    } catch (error) {
+        // Manejo de errores de la solicitud
+        if (error.response) {
+            // El servidor respondió con un código de estado que no está en el rango de 2xx
+            toast.error(error.response.data.mensaje || "Error al registrar el usuario.", {
+                position: "top-right",
+                autoClose: 5000,
+                style: {
+                    backgroundColor: '#f44336',
+                    color: '#ffffff',
+                    fontWeight: 'bold',
+                },
+            });
+        } else {
+            // Error al hacer la solicitud
+            toast.error("Error de conexión. Por favor, intenta más tarde.", {
+                position: "top-right",
+                autoClose: 5000,
+                style: {
+                    backgroundColor: '#f44336',
+                    color: '#ffffff',
+                    fontWeight: 'bold',
+                },
+            });
+        }
     }
-  };
-
+};
   return (
     <div className={`container ${!isLogin ? "right-panel-active" : ""}`}>
       {/* Formulario de Login */}

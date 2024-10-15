@@ -487,3 +487,7 @@ h1.title {
   text-align: center;
   margin-top: 10px;
 }
+.input-error {
+  border: 1px solid red; /* Borde rojo para inputs con error */
+}
+

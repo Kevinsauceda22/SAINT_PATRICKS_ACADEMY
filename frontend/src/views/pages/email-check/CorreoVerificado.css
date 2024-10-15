@@ -1,0 +1,53 @@
+/* CorreoVerificado.css */
+.verificado-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* Ocupa toda la altura de la ventana */
+    background: linear-gradient(135deg, #f0f4f8, #d9e7ff); /* Degradado de fondo */
+    font-family: 'Arial', sans-serif; /* Fuente */
+    text-align: center; /* Centrar el texto */
+    padding: 40px; /* Espaciado interior */
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); /* Sombra */
+    border-radius: 15px; /* Bordes redondeados */
+    margin: 20px auto; /* Margen para centrarse horizontalmente */
+    width: 90%; /* Ancho responsive */
+    max-width: 500px; /* Ancho máximo */
+}
+
+.title {
+    font-size: 2.2rem; /* Tamaño del título */
+    margin-bottom: 15px; /* Espacio inferior */
+    color: #ffffff; /* Color del texto */
+    background-color: #4CAF50; /* Color de fondo del título */
+    padding: 20px; /* Espacio interior */
+    border-radius: 10px; /* Bordes redondeados */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Sombra */
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* Sombra de texto */
+}
+
+.message {
+    font-size: 1.1rem; /* Tamaño del mensaje */
+    color: #333; /* Color de texto */
+    margin-bottom: 20px; /* Espacio inferior */
+    line-height: 1.6; /* Espaciado entre líneas */
+}
+
+.link {
+    font-size: 1.1rem; /* Tamaño del enlace */
+    color: #4CAF50; /* Color del enlace */
+    text-decoration: none; /* Sin subrayado */
+    padding: 10px 20px; /* Espaciado interior */
+    border: 2px solid #4CAF50; /* Borde */
+    border-radius: 5px; /* Bordes redondeados */
+    transition: background-color 0.3s, color 0.3s; /* Transición suave */
+    margin-top: 20px; /* Espacio superior */
+    background-color: #ffffff; /* Fondo blanco */
+}
+
+.link:hover {
+    background-color: #4CAF50; /* Color de fondo en hover */
+    color: #ffffff; /* Color del texto en hover */
+    border: 2px solid transparent; /* Sin borde en hover */
+}

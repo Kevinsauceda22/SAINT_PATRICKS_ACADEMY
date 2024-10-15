@@ -1,0 +1,60 @@
+/* ConfirmacionEmail.css */
+.verificar-cuenta-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* Ocupa toda la altura de la ventana */
+    background-color: #f0f4f8; /* Color de fondo suave */
+    font-family: 'Segoe UI', sans-serif; /* Fuente */
+    text-align: center; /* Centrar el texto */
+    padding: 20px; /* Espaciado interior */
+}
+
+.title {
+    font-size: 2.5rem; /* Tamaño del título */
+    margin-bottom: 15px; /* Espacio inferior */
+    color: #333; /* Color de texto */
+    font-weight: bold; /* Hacer el título más prominente */
+}
+
+.message {
+    font-size: 1.2rem; /* Tamaño del mensaje */
+    color: #555; /* Color de texto */
+    margin-bottom: 20px; /* Espacio inferior */
+    line-height: 1.5; /* Espaciado entre líneas */
+    max-width: 600px; /* Ancho máximo para evitar que el texto se extienda demasiado */
+}
+
+.loading-message {
+    font-size: 1.2rem; /* Tamaño del mensaje de carga */
+    color: #555; /* Color de texto */
+    margin-top: 15px; /* Espacio superior */
+}
+
+.thank-you-message {
+    font-size: 1.2rem; /* Tamaño del mensaje de agradecimiento */
+    color: #4CAF50; /* Color verde para el mensaje de agradecimiento */
+    margin-top: 20px; /* Espacio superior */
+}
+
+.spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centrar el spinner y el texto */
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #ccc; /* Color de borde */
+    border-top: 5px solid #3498db; /* Color de la parte superior */
+    border-radius: 50%;
+    animation: spin 1s linear infinite; /* Animación de giro */
+    margin-top: 20px; /* Espacio superior */
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

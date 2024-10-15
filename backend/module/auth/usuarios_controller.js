@@ -2,7 +2,11 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import conectarDB from '../../config/db.js';
 import Generar_Id from '../../helpers/generar_Id.js';
+import enviarCorreoVerificacion  from '../../helpers/emailHelper.js';
 const pool = await conectarDB();
+//importar el envio de correo
+
+
 
 //este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
@@ -219,9 +223,12 @@ export const preRegistroUsuario = async (req, res) => {
             [correo_usuario, hashedPassword, cod_persona, 1, 1, token_usuario] // Cod_rol = 1 (Padre), Cod_estado_usuario = 1 (Activo)
         );
 
+        // Enviar el correo de verificación
+        await enviarCorreoVerificacion(correo_usuario, primer_nombre, token_usuario);
+
         // Respuesta exitosa
         res.status(201).json({ 
-            mensaje: 'Pre-registro exitoso, Ahora verificaremos tu correo electronico.',
+            mensaje: 'Pre-registro exitoso, ahora verificaremos tu correo electrónico.',
             token_usuario // Puedes devolver el token si es necesario
         });
     } catch (error) {
@@ -231,7 +238,6 @@ export const preRegistroUsuario = async (req, res) => {
         connection.release();
     }
 };
-
 
 export const agregarEstudiante = async (req, res) => {
     const connection = await pool.getConnection();
@@ -345,7 +351,7 @@ export const obtenerUsuarios = async (req, res) => {
     }
 };
 
-//con este se confirma la cuenta del usuario con el token enviado en el correo y se actualiza el estado de confirmacion y se elimina el token
+// controllers/usuarioController.js
 export const confirmarCuenta = async (req, res) => {
     const { token_usuario } = req.params; // Leer el token desde los parámetros de la URL
 
@@ -358,7 +364,7 @@ export const confirmarCuenta = async (req, res) => {
         if (rows.length > 0) {
             // Si se encuentra el usuario, actualizar el estado de confirmación y eliminar el token
             await db.query(
-                'UPDATE tbl_usuarios SET confirmacion_email = 1, token_usuario = "" WHERE token_usuario = ?', 
+                'UPDATE tbl_usuarios SET confirmacion_email = 1, token_usuario = NULL WHERE token_usuario = ?', 
                 [token_usuario]
             );
 
@@ -371,6 +377,8 @@ export const confirmarCuenta = async (req, res) => {
         return res.status(500).json({ message: 'Error en la confirmación de cuenta.' });
     }
 };
+
+
 
 //con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarioPorId = async (req, res) => {
@@ -470,7 +478,7 @@ export const autenticarUsuario = async (req, res) => {
     const { identificador, contraseña_usuario } = req.body;
 
     try {
-        // Verificar si el nombre de usuario o el correo existe
+        // Verificar si el usuario existe por nombre de usuario o correo
         const [user] = await pool.query(
             'SELECT * FROM tbl_usuarios WHERE nombre_usuario = ? OR correo_usuario = ?',
             [identificador, identificador]
@@ -485,22 +493,24 @@ export const autenticarUsuario = async (req, res) => {
         // Verificar la contraseña actual primero
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
         
+        // Verificar si el usuario ha confirmado su cuenta
+        if (usuario.confirmacion_email !== 1) {
+            return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
+        }
+
+        // Si la contraseña es válida, generar el token
         if (contraseñaValida) {
-            // Si la contraseña es válida, omitir la verificación del historial de contraseñas
-
-            // Verificar si el usuario ha confirmado su cuenta
-            if (usuario.confirmacion_email !== 1) {
-                return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
-            }
-
-            // Generar el token JWT
             const token = jwt.sign(
-                { cod_usuario: usuario.cod_usuario, nombre_usuario: usuario.nombre_usuario, rol_usuario: usuario.rol_usuario, cod_persona: usuario.cod_persona },
+                { 
+                    cod_usuario: usuario.cod_usuario, 
+                    nombre_usuario: usuario.nombre_usuario, 
+                    rol_usuario: usuario.rol_usuario, 
+                    cod_persona: usuario.cod_persona 
+                },
                 process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );
 
-            // Responder con el token
             return res.status(200).json({
                 mensaje: 'Autenticación exitosa',
                 token
@@ -519,7 +529,7 @@ export const autenticarUsuario = async (req, res) => {
             }
         }
 
-        // Si no es válida ni está en el historial
+        // Si la contraseña no es válida ni está en el historial
         return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
 
     } catch (error) {
@@ -527,7 +537,6 @@ export const autenticarUsuario = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error al autenticar usuario' });
     }
 };
-
 // PARA MOSTRAR EL PERFIL DE UN USUARIO
 export const mostrarPerfil = async (req, res) => {
     const cod_usuario = req.params.cod_usuario; // Este es el ID que se pasa en la URL
