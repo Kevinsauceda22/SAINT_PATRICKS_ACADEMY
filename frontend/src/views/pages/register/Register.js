@@ -1,150 +1,131 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CContainer,
-  CForm,
-  CFormInput,
-  CInputGroup,
-  CInputGroupText,
-  CRow,
-} from '@coreui/react';
-import CIcon from '@coreui/icons-react';
-import { cilLockLocked, cilUser } from '@coreui/icons';
+import './register.css';
 
 const Register = () => {
   const location = useLocation();
   const {
-    primerNombre,
-    segundoNombre,
-    primerApellido,
-    segundoApellido,
-    dni,
-    nacionalidad,
-    direccion,
-    fechaNacimiento,
+    primerNombre: initialPrimerNombre,
+    segundoNombre: initialSegundoNombre,
+    primerApellido: initialPrimerApellido,
+    segundoApellido: initialSegundoApellido,
+    dni: initialDni,
+    nacionalidad: initialNacionalidad,
+    direccion: initialDireccion,
+    fechaNacimiento: initialFechaNacimiento,
   } = location.state || {}; // Recupera el estado si está disponible
 
+  // Estados locales para manejar los valores de los inputs
+  const [primerNombre, setPrimerNombre] = useState(initialPrimerNombre || '');
+  const [segundoNombre, setSegundoNombre] = useState(initialSegundoNombre || '');
+  const [primerApellido, setPrimerApellido] = useState(initialPrimerApellido || '');
+  const [segundoApellido, setSegundoApellido] = useState(initialSegundoApellido || '');
+  const [dni, setDni] = useState(initialDni || '');
+  const [nacionalidad, setNacionalidad] = useState(initialNacionalidad || '');
+  const [direccion, setDireccion] = useState(initialDireccion || '');
+  const [fechaNacimiento, setFechaNacimiento] = useState(initialFechaNacimiento || '');
+  const [password, setPassword] = useState('');
+  const [repeatPassword, setRepeatPassword] = useState('');
+
   return (
-    <div className="bg-body-tertiary min-vh-100 d-flex flex-row align-items-center">
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol md={9} lg={7} xl={6}>
-            <CCard className="mx-4">
-              <CCardBody className="p-4">
-                <CForm>
-                  <h1>Register</h1>
-                  <p className="text-body-secondary">Create your account</p>
-
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilUser} />
-                    </CInputGroupText>
-                    <CFormInput
-                      placeholder="Primer Nombre"
-                      value={primerNombre || ''}
-                      autoComplete="given-name"
-                      required
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilUser} />
-                    </CInputGroupText>
-                    <CFormInput
-                      placeholder="Segundo Nombre"
-                      value={segundoNombre || ''}
-                      autoComplete="additional-name"
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilUser} />
-                    </CInputGroupText>
-                    <CFormInput
-                      placeholder="Primer Apellido"
-                      value={primerApellido || ''}
-                      autoComplete="family-name"
-                      required
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilUser} />
-                    </CInputGroupText>
-                    <CFormInput
-                      placeholder="Segundo Apellido"
-                      value={segundoApellido || ''}
-                      autoComplete="additional-family-name"
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>DNI</CInputGroupText>
-                    <CFormInput
-                      placeholder="DNI"
-                      value={dni || ''}
-                      required
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>Nacionalidad</CInputGroupText>
-                    <CFormInput
-                      placeholder="Nacionalidad"
-                      value={nacionalidad || ''}
-                      required
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>Dirección</CInputGroupText>
-                    <CFormInput
-                      placeholder="Dirección o Domicilio"
-                      value={direccion || ''}
-                      required
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-4">
-                    <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
-                    <CFormInput
-                      type="date"
-                      value={fechaNacimiento || ''}
-                      required
-                    />
-                  </CInputGroup>
-
-                  <CInputGroup className="mb-3">
-                    <CInputGroupText>
-                      <CIcon icon={cilLockLocked} />
-                    </CInputGroupText>
-                    <CFormInput
-                      type="password"
-                      placeholder="Password"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </CInputGroup>
-                  <CInputGroup className="mb-4">
-                    <CInputGroupText>
-                      <CIcon icon={cilLockLocked} />
-                    </CInputGroupText>
-                    <CFormInput
-                      type="password"
-                      placeholder="Repeat password"
-                      autoComplete="new-password"
-                      required
-                    />
-                  </CInputGroup>
-                  <div className="d-grid">
-                    <CButton color="success">Create Account</CButton>
-                  </div>
-                </CForm>
-              </CCardBody>
-            </CCard>
-          </CCol>
-        </CRow>
-      </CContainer>
+    <div className="form-container">
+      <div className="card">
+        <div className="card-header">Formulario</div>
+        <div className="card-subheader">Saint Patrick's Academy</div>
+        <form>
+          <div className="input-group">
+            <label>Nombre del alumno</label>
+            <input
+              type="text"
+              placeholder="Primer Nombre"
+              value={primerNombre}
+              onChange={(e) => setPrimerNombre(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Segundo Nombre"
+              value={segundoNombre}
+              onChange={(e) => setSegundoNombre(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Primer Apellido"
+              value={primerApellido}
+              onChange={(e) => setPrimerApellido(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Segundo Apellido"
+              value={segundoApellido}
+              onChange={(e) => setSegundoApellido(e.target.value)}
+            />
+          </div>
+          <div className="input-group">
+            <label>DNI</label>
+            <input
+              type="text"
+              placeholder="DNI"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label>Nacionalidad</label>
+            <input
+              type="text"
+              placeholder="Nacionalidad"
+              value={nacionalidad}
+              onChange={(e) => setNacionalidad(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label>Dirección</label>
+            <input
+              type="text"
+              placeholder="Dirección o Domicilio"
+              value={direccion}
+              onChange={(e) => setDireccion(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label>Fecha de Nacimiento</label>
+            <input
+              type="date"
+              value={fechaNacimiento}
+              onChange={(e) => setFechaNacimiento(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label>Contraseña</label>
+            <input
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="input-group">
+            <label>Repite la contraseña</label>
+            <input
+              type="password"
+              placeholder="Repite la contraseña"
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="button-container">
+            <button type="submit">Enviar</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

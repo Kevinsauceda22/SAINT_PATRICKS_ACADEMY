@@ -1,0 +1,113 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap");
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Poppins", sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: linear-gradient(to right, #7189c1, #9cc28d); /* Degradado azul a verde */; 
+}
+
+.form-container {
+  max-width: 700px;
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+}
+
+.card-header, .card-subheader {
+  text-align: center;
+  font-weight: 500;
+}
+
+.card-header {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.card-subheader {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.form-container form {
+  margin-top: 20px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.input-group label {
+  width: 100%;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.input-group input {
+  width: calc(50% - 10px);
+  margin-right: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+.input-group input:last-child {
+  margin-right: 0;
+}
+
+.input-group input[type="date"],
+.input-group input[type="password"],
+.input-group input[type="text"] {
+  width: 100%;
+}
+
+.input-group input:focus {
+  border-color: rgba(237, 16, 16, 0.8);
+  outline: none;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.button-container {
+  text-align: center;
+}
+
+.button-container button {
+  height: 55px;
+  width: 100%;
+  color: #fff;
+  background: linear-gradient(to right, #7189c1, #9cc28d); /* Degradado azul a verde */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: background 0.25s ease;
+}
+
+.button-container button:hover {
+  background: rgb(81, 15, 9);
+}
+
+@media screen and (max-width: 500px) {
+  .input-group input {
+    width: 100%;
+    margin-right: 0;
+  }
+}
