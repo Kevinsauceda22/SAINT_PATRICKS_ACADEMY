@@ -5,16 +5,32 @@
   box-sizing: border-box;
 }
 
+/* Animación para el fondo */
+@keyframes gradientAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 body {
-  background: linear-gradient(to right, #7189c1, #9cc28d); /* Degradado azul a verde */
+  background: linear-gradient(-45deg, #2ecc71, #27ae60, #7f8c8d, #95a5a6);
+  background-size: 400% 400%;
+  animation: gradientAnimation 8s ease infinite;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
   height: 100vh;
-  position: relative; /* Añadido para posicionar las pelotas */
+  color:#000;
+  text-shadow: 2px 2px 4px rgba(0, 255, 0, 0.527);
 }
 
 h1 {
@@ -54,7 +70,7 @@ a {
 }
 
 a:hover {
-  color: #4bb6b7;
+  color: #6ed926;
 }
 
 .content {
@@ -101,7 +117,6 @@ button {
 
 button:hover {
   letter-spacing: 0.5px;
-
 }
 
 button:active {
@@ -144,10 +159,10 @@ button.ghost i.login {
 }
 
 form {
-  background-color: #fff;
+  background-color: #b0c4b1;
   border: none;
-  padding: 0; /* Asegura que no haya relleno externo */
-    margin: 0; /* Asegura que no haya márgenes externos */
+  padding: 0;
+  margin: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,7 +173,9 @@ form {
 }
 
 input {
-  background-color: #f9f9f9; /* Color de fondo más suave */
+  background-color: #b0c4b1;
+  color: #000;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   outline: none;
   border: none;
   border-bottom: 2px solid #851616;
@@ -166,7 +183,7 @@ input {
   margin: 8px 0;
   width: 100%;
   border-radius: 4px;
-  transition: all 0.3s ease; /* Efecto de transición */
+  transition: all 0.3s ease;
   box-shadow: none;
 }
 
@@ -194,7 +211,7 @@ input {
 
 .form-control2 span {
   position: absolute;
-  border-bottom: 3px solid #2691d9;
+  border-bottom: 3px solid #6ed926;
   left: 0;
   bottom: 8px;
   width: 0%;
@@ -216,7 +233,7 @@ input {
 
 .form-control span {
   position: absolute;
-  border-bottom: 3px solid #2691d9;
+  border-bottom: 3px solid hsl(110, 70%, 35%);
   left: 0;
   bottom: 8px;
   width: 0%;
@@ -238,11 +255,19 @@ input {
 
 .form-control2 span {
   position: absolute;
-  border-bottom: 3px solid #2691d9;
+  border-bottom: 3px solid #21b81b;
   left: 0;
-  bottom: 8px;
+  bottom: -8px;
   width: 0%;
   transition: all 0.3s ease;
+}
+
+.form-control small {
+  color: red;
+  position: relative;
+  top: 5px;
+  font-size: 12px;
+  z-index: 100;
 }
 
 .form-control2 input:focus ~ span {
@@ -301,6 +326,7 @@ input {
 .container.right-panel-active .overlay-container {
   transform: translate(-100%);
 }
+
 .overlay {
   background-image: url("/src/fondo.jpg");
   background-repeat: no-repeat;
@@ -315,7 +341,6 @@ input {
   transition: transform 0.6s ease-in-out;
 }
 
-/* Superposición para hacer el fondo más oscuro o opaco */
 .overlay::before {
   content: '';
   position: absolute;
@@ -323,13 +348,13 @@ input {
   left: 0;
   height: 100%;
   width: 100%;
-  background-color: rgba(0, 0, 0, 0.6); /* Capa negra con 50% de opacidad */
-  z-index: 0; /* Asegura que la superposición esté detrás del contenido */
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 0;
 }
 
 .overlay-content {
   position: relative;
-  z-index: 5; /* Coloca el contenido encima de la superposición */
+  z-index: 5;
 }
 
 .container.right-panel-active .overlay {
@@ -387,52 +412,51 @@ input {
 }
 
 form input {
-  margin-bottom: 15px; /* Agrega un margen inferior a cada input */
-  padding: 10px; /* Asegura que los inputs tengan suficiente padding interno */
+  margin-bottom: 15px;
+  padding: 10px;
   border-radius: 0px;
-  border: 10px solid #ccc;
-  border: 1px solid #ccc; /* Solo un borde alrededor del input */
-    border-radius: 5px;
-    outline: none; /* Elimina los bordes exteriores al hacer focus */
-    box-shadow: none; /* Asegura que no haya sombras que puedan causar esos bordes */
+  border: 10px solid #cccccc;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  outline: none;
+  box-shadow: none;
 }
 
 form label {
   margin-bottom: 5px;
-  display: block; /* Asegura que el label esté sobre el input */
+  display: block;
 }
 
 form input {
-  margin-bottom:-11px; /* Espacio entre campos */
+  margin-bottom:-11px;
   padding: 10px;
   border-radius: 6px;
-  border: 1px solid #ccc; /* Control del borde interno */
-  outline: none; /* Elimina el borde exterior cuando el campo está en foco */
+  border: none;
+  border-bottom: 3px solid hsl(110, 70%, 35%);
+  outline: none;
 }
 
 form input:focus {
-  border-color: #4bb6b7; /* Opcional: cambia el color del borde cuando el input está enfocado */
+  border-color: #68e98f;
 }
 
-/* Asegúrate de que los campos no tengan margen externo */
 .form-control {
-  margin: 15px 0; /* Espaciado entre cada campo */
-  border: 1px; /* Elimina cualquier borde de contenedor de los inputs */
+  margin: 15px 0;
+  border: 1px;
 }
 
-/* styles.css */
 .toast-warning {
-  background-color: #ffeb3b !important; /* Color amarillo */
-  color: #000000 !important; /* Texto negro */
+  background-color: #ffeb3b !important;
+  color: #000000 !important;
 }
 
 .form-container {
   max-width: 400px;
-  margin: 0 auto; /* Centra el formulario */
+  margin: 0 auto;
   padding: 0px;
-  background-color: #fff; /* Fondo blanco */
-  border-radius: 5px; /* Bordes redondeados */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 form {
@@ -442,25 +466,26 @@ form {
 
 h1.title {
   text-align: center;
-  margin-bottom: 20px; /* Espacio entre el título y el formulario */
+  margin-bottom: 20px;
 }
 
 .form-control2 {
   position: relative;
-  margin-bottom: 15px; /* Espaciado entre inputs */
+  margin-bottom: 15px;
 }
 
 .form-control2 input {
   width: 100%;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: none;
   border-radius: 5px;
   outline: none;
   transition: border-color 0.3s ease;
+  border-bottom: 3px solid hsl(110, 70%, 35%);
 }
 
 .form-control2 input:focus {
-  border-color: #4bb6b7; /* Cambia el color del borde cuando se enfoca */
+  border-color: #68e98f;
 }
 
 .error-message {
@@ -480,14 +505,14 @@ h1.title {
 }
 
 .submit-button:hover {
-  background-color: #3a8d8f; /* Cambia de color al pasar el cursor */
+  background-color: #1bb950;
 }
 
 .toggle-login {
   text-align: center;
   margin-top: 10px;
 }
-.input-error {
-  border: 1px solid red; /* Borde rojo para inputs con error */
-}
 
+.input-error {
+  border: 1px solid red;
+}
