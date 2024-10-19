@@ -5,7 +5,6 @@
   box-sizing: border-box;
 }
 
-/* Animación para el fondo */
 @keyframes gradientAnimation {
   0% {
     background-position: 0% 50%;
@@ -19,9 +18,9 @@
 }
 
 body {
-  background: linear-gradient(-45deg, #2ecc71, #27ae60, #7f8c8d, #95a5a6);
+  background: linear-gradient(-45deg, #82dfa9, #27ae60, #7f8c8d, #95a5a6);
   background-size: 400% 400%;
-  animation: gradientAnimation 8s ease infinite;
+  animation: gradientAnimation 10s ease infinite;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -30,7 +29,6 @@ body {
   overflow: hidden;
   height: 100vh;
   color:#000;
-  text-shadow: 2px 2px 4px rgba(0, 255, 0, 0.527);
 }
 
 h1 {
@@ -44,7 +42,6 @@ h1.title {
   font-size: 45px;
   line-height: 45px;
   margin: 0;
-  text-shadow: 0 0 10px rgba(33, 90, 45, 0.5);
 }
 
 p {
@@ -53,7 +50,6 @@ p {
   line-height: 20px;
   letter-spacing: 0.5px;
   margin: 20px 0 30px;
-  text-shadow: 0 0 10px rgba(35, 122, 74, 0.5);
 }
 
 span {
@@ -159,7 +155,7 @@ button.ghost i.login {
 }
 
 form {
-  background-color: #b0c4b1;
+  background-color: #ffffff;
   border: none;
   padding: 0;
   margin: 0;
@@ -515,4 +511,20 @@ h1.title {
 
 .input-error {
   border: 1px solid red;
+}
+
+.link-button {
+  background: transparent;
+  border: none;
+  color: #007BFF; /* Color del texto */
+  text-decoration: underline; /* Subrayar el texto */
+  cursor: pointer;
+  font-size: 1rem; /* Ajusta el tamaño del texto */
+  padding: 0; /* Sin relleno */
+  margin-top: 0.5rem; /* Espaciado superior */
+  transition: color 0.3s ease; /* Transición suave para el color */
+}
+
+.link-button:hover {
+  color: #0056b3; /* Color al pasar el mouse */
 }

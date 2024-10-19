@@ -15,7 +15,9 @@ const Page500 = React.lazy(() => import('./views/pages/page500/Page500'));
 const Matricula = React.lazy(() => import('./views/pages/matricula/matricula'));
 const ConfirmacionEmail = React.lazy(() => import('./views/pages/email-confirmation/email-confirmation'));
 const CorreoVerificado = React.lazy(() => import('./views/pages/email-check/email-check'));
-const VerificarEmail = React.lazy(() => import('./views/pages/components/verificarCuenta'));
+const ChangePassword = React.lazy(() => import('./views/pages/components/cambiar password/ChangePassword')); // Importa ChangePassword
+const VerificarEmail = React.lazy(() => import('./views/pages/components/verificar cuenta/verificarCuenta'));
+const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPass")); // Importa NuevaContrasena
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme');
@@ -51,8 +53,10 @@ const App = () => {
           <Route exact path="/correo-verificado" name="Correo Verificado" element={<CorreoVerificado />} /> {/* Corregido aquí */}
           <Route exact path="/verificar-cuenta/:token_usuario" name="Verificar Cuenta" element={<VerificarEmail />} /> {/* Corregido aquí */}
           <Route exact path="/404" name="Page 404" element={<Page404 />} />
+          <Route exact path="/olvide-password/:token" name="Nueva Contraseña" element={<NuevaContrasena />} /> {/* Corregido aquí */}
           <Route exact path="/500" name="Page 500" element={<Page500 />} />
           <Route exact path="/matricula" name="matricula" element={<Matricula />} />
+          <Route path="/cambiar-contrasena/:token" element={<ChangePassword />} />
           <Route path="/" element={<Navigate to="/login" replace />} /> {/* Redirige a /login */}
           <Route path="*" name="Home" element={<DefaultLayout />} />
         </Routes>

@@ -39,4 +39,26 @@ const enviarCorreoVerificacion = async (correo_usuario, nombre_usuario, token_us
     }
 };
 
-export default enviarCorreoVerificacion;
+// Función para enviar correo de recuperación
+const enviarCorreoRecuperacion = async (correo, token) => {
+    const baseUrl = process.env.BASE_URL || 'http://localhost:3000'; // URL base desde el .env
+    const recuperacionLink = `${baseUrl}/#/olvide-password/${token}`; // Corregido el uso de token
+
+    const mailOptions = {
+        from: 'SAINT PATRICK´S ACADEMY <stevenflores0522@gmail.com>',
+        to: correo,
+        subject: 'Recuperación de Contraseña Saint Patrick´s Academy',
+        html: `<p>Haz clic en el siguiente enlace para restablecer tu contraseña:</p>
+               <a href="${recuperacionLink}">Restablecer contraseña</a>`, // Usar HTML para mantener la consistencia
+    };
+
+    try {
+        await transporter.sendMail(mailOptions);
+        console.log('Correo de recuperación enviado correctamente');
+    } catch (error) {
+        console.error('Error al enviar el correo de recuperación:', error.message); // Manejo de errores
+    }
+};
+
+// Exportar ambas funciones
+export { enviarCorreoVerificacion, enviarCorreoRecuperacion };

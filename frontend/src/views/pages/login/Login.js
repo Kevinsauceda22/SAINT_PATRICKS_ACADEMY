@@ -53,18 +53,57 @@ const LoginRegister = () => {
     }
     setFormData({ ...formData, identificador: email });
 };
-
-const handlePasswordChange = (e) => {
-    const password = e.target.value;
-
-    // Verifica la longitud de la contraseña
-    if (password.length < 6) {
-        setErrors({ ...errors, contraseña: 'La contraseña debe tener al menos 6 caracteres' });
-    } else {
-        setErrors({ ...errors, contraseña: '' }); // Limpiar mensaje de error
+const handleResetPassword = () => {
+  Swal.fire({
+    title: 'Restablecer Contraseña',
+    input: 'email',
+    inputPlaceholder: 'Ingresa tu correo electrónico',
+    showCancelButton: true,
+    confirmButtonText: 'Enviar',
+    cancelButtonText: 'Cancelar',
+    inputValidator: (value) => {
+      return !value && '¡Necesitas ingresar un correo electrónico!';
     }
-    setFormData({ ...formData, contraseña_usuario: password });
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Lógica para restablecer la contraseña
+      resetPassword(result.value)
+        .then((response) => {
+          // Manejar la respuesta exitosa
+          Swal.fire('¡Éxito!', 'Se ha enviado un correo para restablecer tu contraseña.', 'success');
+        })
+        .catch((error) => {
+          // Manejar errores
+          Swal.fire('Error', 'No se pudo restablecer la contraseña. Intenta de nuevo más tarde.', 'error');
+        });
+    }
+  });
 };
+
+// Función para realizar la solicitud al backend
+const resetPassword = async (correo_usuario) => {
+  try {
+    const response = await fetch('http://localhost:4000/api/usuarios/olvide-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ correo_usuario }), // Asegúrate de pasar el email correcto
+    });
+
+    if (!response.ok) {
+      const errorResponse = await response.json();
+      throw new Error(errorResponse.mensaje || 'Error al enviar el correo de restablecimiento');
+    }
+
+    return await response.json(); // Aquí puedes retornar la respuesta si la necesitas
+  } catch (error) {
+    console.error(error);
+    throw error; // Lanzar el error para manejarlo en el catch
+  }
+};
+
+
 
 
 // Manejador para el Login
@@ -292,9 +331,18 @@ const handleLoginSubmit = async (e) => {
           </div>
           <button type="submit">Iniciar Sesión</button>
           <span>
-            ¿No tienes cuenta?{" "}
-            <button type="button" onClick={toggleForm} style={{ background: 'none', border: 'none', color: '#4bb6b7', cursor: 'pointer' }}>
-              Pre-Regístrate
+            ¿Olvidaste tu contraseña?{" "}
+            <button type="button" onClick={handleResetPassword} style={{  background: '#318f49', // Color de fondo
+    border: 'none', // Sin borde
+    color: '#fff', // Color del texto
+    cursor: 'pointer', // Cursor de mano al pasar
+    padding: '10px 20px', // Espaciado interno
+    borderRadius: '12px', // Bordes redondeados
+    fontSize: '9px', // Tamaño de la fuente
+    fontWeight: 'bold', // Negrita
+    transition: 'background 0.3s, transform 0.3s', // Transiciones suaves
+      }}>
+              Recupera tu contraseña aquí
             </button>
           </span>
         </form>

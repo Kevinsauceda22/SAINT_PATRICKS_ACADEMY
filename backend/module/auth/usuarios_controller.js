@@ -2,7 +2,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import conectarDB from '../../config/db.js';
 import Generar_Id from '../../helpers/generar_Id.js';
-import enviarCorreoVerificacion  from '../../helpers/emailHelper.js';
+import { enviarCorreoVerificacion, enviarCorreoRecuperacion } from '../../helpers/emailHelper.js';
 const pool = await conectarDB();
 //importar el envio de correo
 
@@ -567,30 +567,36 @@ export const mostrarPerfil = async (req, res) => {
     }
 };
 
-//con este controlador se recupera la contraseña del usuario y que si no esta confirmado el correo no se puede recuperar la contraseña
+
 export const OlvidePasssword = async (req, res) => {
     const { correo_usuario } = req.body;
 
     try {
+        // Verificar si el correo existe en la base de datos
         const [usuario] = await pool.query('SELECT * FROM tbl_usuarios WHERE correo_usuario = ?', [correo_usuario]);
 
         if (usuario.length === 0) {
             return res.status(404).json({ mensaje: 'Usuario no encontrado' });
         }
 
-       //si el usuario no ha confirmado su correo, no se puede recuperar la contraseña 
+        // Verificar si el correo está confirmado
         if (usuario[0].confirmacion_email !== 1) { 
             return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
         }
 
+        // Generar un token único para la recuperación de contraseña
         const token = Generar_Id();
 
+        // Actualizar el token en la base de datos
         await pool.query('UPDATE tbl_usuarios SET token_usuario = ? WHERE correo_usuario = ?', [token, correo_usuario]);
 
-        res.status(200).json({ mensaje: 'Correo de recuperación de contraseña enviado' });
+        // Enviar el correo de recuperación con el token generado
+        await enviarCorreoRecuperacion(correo_usuario, token); // Asegúrate de que esta función esté bien configurada
+
+        return res.status(200).json({ mensaje: 'Correo de recuperación de contraseña enviado' });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ mensaje: 'Error al recuperar la contraseña' });
+        return res.status(500).json({ mensaje: 'Error al intentar recuperar la contraseña' });
     }
 };
 
@@ -613,11 +619,17 @@ export const comprobarToken = async (req, res) => {
 };
 
 // Controlador para cambiar la contraseña del usuario
+// Controlador para cambiar la contraseña del usuario
 export const cambiarContrasena = async (req, res) => {
     const { token } = req.params; // Obtener el token de la URL
-    const { contraseña_usuario } = req.body; // Obtener la nueva contraseña del cuerpo de la solicitud
+    const { contraseña_usuario, confirmar_contrasena } = req.body; // Obtener la nueva contraseña del cuerpo de la solicitud
 
     try {
+        // Verificar que las contraseñas coinciden
+        if (contraseña_usuario !== confirmar_contrasena) {
+            return res.status(400).json({ mensaje: 'Las contraseñas no coinciden' });
+        }
+
         // Verificar si el token es válido
         const [usuario] = await pool.query('SELECT * FROM tbl_usuarios WHERE token_usuario = ?', [token]);
 
@@ -625,15 +637,27 @@ export const cambiarContrasena = async (req, res) => {
             return res.status(404).json({ mensaje: 'Token inválido o expirado' });
         }
 
+        // Verificar que la nueva contraseña no haya sido usada antes (evitar reutilización)
+        const [historial] = await pool.query('SELECT Contraseña FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [usuario[0].cod_usuario]);
+
+        const contraseñaReutilizada = await Promise.all(historial.map(async (registro) => {
+            return await bcrypt.compare(contraseña_usuario, registro.Contraseña);
+        }));
+
+        if (contraseñaReutilizada.includes(true)) {
+            return res.status(400).json({ mensaje: 'No puedes reutilizar una contraseña anterior' });
+        }
+
         // Hash de la nueva contraseña
         const hashedPassword = await bcrypt.hash(contraseña_usuario, 10);
 
-        // Actualizar la contraseña del usuario en la base de datos
+        // Actualizar la contraseña del usuario en la base de datos y eliminar el token
         await pool.query('UPDATE tbl_usuarios SET contraseña_usuario = ?, token_usuario = NULL WHERE cod_usuario = ?', [hashedPassword, usuario[0].cod_usuario]);
 
-        // Opcional: Agregar la nueva contraseña al historial de contraseñas
+        // Agregar la nueva contraseña al historial de contraseñas
         await pool.query('INSERT INTO tbl_hist_contraseña (Cod_usuario, Contraseña, Fecha_creacion) VALUES (?, ?, NOW())', [usuario[0].cod_usuario, hashedPassword]);
 
+        // Respuesta de éxito
         res.status(200).json({ mensaje: 'Contraseña actualizada correctamente' });
     } catch (error) {
         console.error(error);
