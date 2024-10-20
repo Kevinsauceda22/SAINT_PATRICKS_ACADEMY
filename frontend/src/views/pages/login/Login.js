@@ -4,6 +4,8 @@ import axios from 'axios';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
+
 
 const LoginRegister = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -62,23 +64,29 @@ const handleResetPassword = () => {
     confirmButtonText: 'Enviar',
     cancelButtonText: 'Cancelar',
     inputValidator: (value) => {
-      return !value && '¡Necesitas ingresar un correo electrónico!';
+      if (!value) {
+        return '¡Necesitas ingresar un correo electrónico!';
+      }
+      // Validar formato de correo
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(value)) {
+        return 'Por favor ingresa un correo válido';
+      }
     }
   }).then((result) => {
     if (result.isConfirmed) {
-      // Lógica para restablecer la contraseña
+      Swal.showLoading(); // Muestra un indicador de carga
       resetPassword(result.value)
-        .then((response) => {
-          // Manejar la respuesta exitosa
+        .then(() => {
           Swal.fire('¡Éxito!', 'Se ha enviado un correo para restablecer tu contraseña.', 'success');
         })
-        .catch((error) => {
-          // Manejar errores
+        .catch(() => {
           Swal.fire('Error', 'No se pudo restablecer la contraseña. Intenta de nuevo más tarde.', 'error');
         });
     }
   });
 };
+
 
 // Función para realizar la solicitud al backend
 const resetPassword = async (correo_usuario) => {
@@ -121,10 +129,12 @@ const handleLoginSubmit = async (e) => {
   if (Object.keys(newErrors).length === 0) {
     try {
       const response = await axios.post('http://localhost:4000/api/usuarios/login', {
-          identificador: formData.identificador,
-          contraseña_usuario: formData.contraseña_usuario,
+        identificador: formData.identificador,
+        contraseña_usuario: formData.contraseña_usuario,
       });
-  
+
+      // Guarda el token JWT en el local storage
+      localStorage.setItem('token', response.data.token);
       // Si el inicio de sesión es exitoso, muestra el toast de éxito
       toast.success("Inicio de sesión exitoso.", {
           position: "top-right",
