@@ -1,9 +1,11 @@
 import {useState, useEffect, createContext} from "react"
 
 
-const AuthContext = CreateContext(children)
+const AuthContext = createContext()
 
-const AuthProvider =() => {
+const AuthProvider =({children}) => {
+
+    const [auth, setAuth ] = useState({})
 
     return(
         <AuthContext.Provider>

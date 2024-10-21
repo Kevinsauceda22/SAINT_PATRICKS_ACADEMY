@@ -1,8 +1,9 @@
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'; // Cambia BrowserRouter a Router
 import { useSelector } from 'react-redux';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
+import { AuthProvider } from "../context/AuthProvider";
 
 // Containers
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
@@ -16,7 +17,7 @@ const Matricula = React.lazy(() => import('./views/pages/matricula/matricula'));
 const ConfirmacionEmail = React.lazy(() => import('./views/pages/email-confirmation/email-confirmation'));
 const CorreoVerificado = React.lazy(() => import('./views/pages/email-check/email-check'));
 const VerificarEmail = React.lazy(() => import('./views/pages/components/verificar cuenta/verificarCuenta'));
-const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPass")); // Importa NuevaContrasena
+const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPass"));
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme');
@@ -37,7 +38,8 @@ const App = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <Router>
+    <Router> {/* Cambia BrowserRouter a Router */}
+      <AuthProvider>
         <Suspense
           fallback={
             <div className="pt-3 text-center">
@@ -59,9 +61,9 @@ const App = () => {
             <Route path="*" name="Home" element={<DefaultLayout />} />
           </Routes>
         </Suspense>
+      </AuthProvider>
     </Router>
   );
-  
 };
 
 export default App;
