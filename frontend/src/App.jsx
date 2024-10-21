@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react';
-import { HashRouter, Route, Routes, Navigate } from 'react-router-dom'; // Importa Navigate
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
@@ -37,30 +37,31 @@ const App = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <HashRouter>
-      <Suspense
-        fallback={
-          <div className="pt-3 text-center">
-            <CSpinner color="primary" variant="grow" />
-          </div>
-        }
-      >
-        <Routes>
-          <Route exact path="/login" name="Login Page" element={<Login />} />
-          <Route exact path="/register" name="Register Page" element={<Register />} />
-          <Route exact path="/confirmacion-email/:correo" name="Confirmacion Email" element={<ConfirmacionEmail />} /> {/* Corregido aquí */}
-          <Route exact path="/correo-verificado" name="Correo Verificado" element={<CorreoVerificado />} /> {/* Corregido aquí */}
-          <Route exact path="/verificar-cuenta/:token_usuario" name="Verificar Cuenta" element={<VerificarEmail />} /> {/* Corregido aquí */}
-          <Route exact path="/404" name="Page 404" element={<Page404 />} />
-          <Route exact path="/olvide-password/:token" name="Nueva Contraseña" element={<NuevaContrasena />} /> {/* Corregido aquí */}
-          <Route exact path="/500" name="Page 500" element={<Page500 />} />
-          <Route exact path="/matricula" name="matricula" element={<Matricula />} />
-          <Route path="/" element={<Navigate to="/login" replace />} /> {/* Redirige a /login */}
-          <Route path="*" name="Home" element={<DefaultLayout />} />
-        </Routes>
-      </Suspense>
-    </HashRouter>
+    <Router>
+        <Suspense
+          fallback={
+            <div className="pt-3 text-center">
+              <CSpinner color="primary" variant="grow" />
+            </div>
+          }
+        >
+          <Routes>
+            <Route exact path="/login" name="Login Page" element={<Login />} />
+            <Route exact path="/register" name="Register Page" element={<Register />} />
+            <Route exact path="/confirmacion-email/:correo" name="Confirmacion Email" element={<ConfirmacionEmail />} />
+            <Route exact path="/correo-verificado" name="Correo Verificado" element={<CorreoVerificado />} />
+            <Route exact path="/verificar-cuenta/:token_usuario" name="Verificar Cuenta" element={<VerificarEmail />} />
+            <Route exact path="/404" name="Page 404" element={<Page404 />} />
+            <Route exact path="/olvide-password/:token" name="Nueva Contraseña" element={<NuevaContrasena />} />
+            <Route exact path="/500" name="Page 500" element={<Page500 />} />
+            <Route exact path="/matricula" name="matricula" element={<Matricula />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" name="Home" element={<DefaultLayout />} />
+          </Routes>
+        </Suspense>
+    </Router>
   );
+  
 };
 
 export default App;
