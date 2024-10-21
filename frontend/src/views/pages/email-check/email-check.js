@@ -49,7 +49,7 @@ const styles = {
         marginBottom: '10px',
         padding: '20px',
         backgroundColor: '#4CAF50',
-        color: '#fffffff1',
+        color: '#ffffff',
         borderRadius: '5px',
     },
     message: {

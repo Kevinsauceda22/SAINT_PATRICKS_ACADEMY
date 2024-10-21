@@ -2,8 +2,6 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors'; // Importar cors
 import conectarDB from './config/db.js'; 
-
-
 import usuariosRoutes from './module/auth/usuario_routes.js'; 
 import profesoresRoutes from './module/calificaciones/Routes/profesoresRoutes.js';
 import tiposContratoRoutes from './module/calificaciones/Routes/tiposContratosRoutes.js';
