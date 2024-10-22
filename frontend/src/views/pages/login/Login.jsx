@@ -7,6 +7,10 @@ import { useNavigate } from 'react-router-dom'
 import Swal from 'sweetalert2'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faRedo } from '@fortawesome/free-solid-svg-icons';
+import { Eye, EyeOff, RefreshCw } from 'lucide-react';
+
+// Login.jsx
+import useAuth from '/hooks/useAuth';
 
 
 
@@ -546,64 +550,92 @@ const LoginRegister = () => {
       {errors.confirmPassword && <small className="error-message">{errors.confirmPassword}</small>}
     </div>
 
-    {/* Contenedor de Botones */}
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
-      {/* Botón para Mostrar/Ocultar Contraseña */}
-      <button
-        type="button"
-        onClick={() => setShowPassword(prev => !prev)}
-        style={{
-          padding: '10px 10px',
-          backgroundColor: '#007BFF',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          marginRight: '10px',
-        }}
-      >
-        <FontAwesomeIcon icon={showPassword ? faEye : faEyeSlash} />
-        <span style={{ marginLeft: '5px' }}>{showPassword ? 'Ocultar' : 'Mostrar'}</span>
-      </button>
+{/* Contenedor de Botones */}
+<div style={{ 
+  display: 'flex', 
+  gap: '0px',
+  marginTop: '8px',
+  paddingBottom: '8px'
+}}>
+  {/* Botón para Mostrar/Ocultar Contraseña */}
+  <button
+    type="button"
+    onClick={() => setShowPassword(prev => !prev)}
+    style={{
+      padding: '6px 10px',
+      backgroundColor: '#2E7D32',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '9px', // Texto más pequeño
+      height: '28px',
+      transition: 'all 0.2s ease',
+      width: '80px',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+    }}
+  >
+    {showPassword ? 
+      <Eye size={12} style={{ marginRight: '3px' }} /> : // Icono más pequeño
+      <EyeOff size={12} style={{ marginRight: '3px' }} />
+    }
+    <span>{showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}</span>
+  </button>
 
-      {/* Botón para Generar Contraseña */}
-      <button
-        type="button"
-        onClick={generatePassword}
-        style={{
-          padding: '5px',
-          backgroundColor: '#2a9421',
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          marginLeft: '10px',
-        }}
-      >
-        <FontAwesomeIcon icon={faRedo} />
-        <span style={{ marginLeft: '5px' }}>Generar Contraseña</span>
-      </button>
+  {/* Botón para Generar Contraseña */}
+  <button
+    type="button"
+    onClick={generatePassword}
+    style={{
+      padding: '6px 10px',
+      backgroundColor: '#1B5E20',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '9px', // Texto más pequeño
+      height: '28px',
+      transition: 'all 0.2s ease',
+      width: '90px',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+    }}
+  >
+    <RefreshCw size={12} style={{ marginRight: '3px' }} /> {/* Icono más pequeño */}
+    <span>Generar contraseña</span>
+  </button>
 
-      {/* Botón de Pre-Registro */}
-      <button 
-        type="submit" 
-        className="submit-button"
-        style={{
-          padding: '10px 15px',
-          backgroundColor: '#28a745', // Cambia el color según sea necesario
-          color: 'white',
-          border: 'none',
-          borderRadius: '4px',
-          cursor: 'pointer',
-        }}
-      >
-        Continuar
-      </button>
-    </div>
+  {/* Botón de Pre-Registro */}
+  <button 
+    type="submit" 
+    className="submit-button"
+    style={{
+      padding: '6px 10px',
+      backgroundColor: '#43A047',
+      color: '#fff',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer',
+      fontSize: '12px', // Texto más pequeño
+      fontWeight: '500',
+      textAlign: 'center',
+      height: '28px',
+      width: '80px',
+      transition: 'all 0.2s ease',
+      boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+    }}
+  >
+    Continuar
+  </button>
+</div>
+
+
+
   </form>
 </div>
 

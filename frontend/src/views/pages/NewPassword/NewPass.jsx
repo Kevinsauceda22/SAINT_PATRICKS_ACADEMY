@@ -27,12 +27,13 @@ const NewPasswordPage = () => {
     newPassword += digits.charAt(Math.floor(Math.random() * digits.length));
     newPassword += specialChars.charAt(Math.floor(Math.random() * specialChars.length));
 
-    for (let i = newPassword.length; i < length; ++i) {
-      newPassword += lowercase.charAt(Math.floor(Math.random() * lowercase.length));
+    while (newPassword.length < length) {
+      const charPool = lowercase + uppercase + digits + specialChars;
+      newPassword += charPool.charAt(Math.floor(Math.random() * charPool.length));
     }
 
     newPassword = newPassword.split('').sort(() => 0.5 - Math.random()).join('');
-
+    
     setPassword(newPassword);
     setConfirmPassword(newPassword);
   };
@@ -40,41 +41,52 @@ const NewPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%&*!])[A-Za-z\d@#$%&*!]{8,}$/;
-  
-    if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
-      return;
-    } else if (!passwordRegex.test(password)) {
-      setError('La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, un número y un carácter especial');
-      return;
-    }
-  
-    setError('');
-  
-    try {
-      const token_usuario = window.location.hash.split('/').pop();
-      
-      // Cambiar contraseña
-      const response = await fetch(`http://localhost:4000/api/usuarios/nuevopassword/${token_usuario}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contraseña_usuario: password,
-          confirmar_contrasena: confirmPassword,
-        }),
-      });
-  
-      if (!response.ok) {
-        const errorResponse = await response.json(); 
-        throw new Error(errorResponse.mensaje || 'Error al cambiar la contraseña');
-      }
 
-      setSuccess('¡Contraseña cambiada exitosamente! Guarda esta contraseña en un gestor de contraseñas.');
-    } catch (err) {
-      console.error(err);
-      setError(err.message || 'Ocurrió un error al cambiar la contraseña');
+    if (password !== confirmPassword) {
+        setError('Las contraseñas no coinciden');
+        return;
+    } else if (!passwordRegex.test(password)) {
+        setError('La contraseña debe tener al menos 8 caracteres, incluir mayúsculas, minúsculas, un número y un carácter especial');
+        return;
     }
-  };
+
+    setError('');
+
+    try {
+        const token_usuario = window.location.pathname.split('/').pop();
+        console.log('Token de usuario:', token_usuario); // Asegúrate de que esto esté correcto
+
+        const response = await fetch(`http://localhost:4000/api/usuarios/nuevopassword/${token_usuario}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contraseña_usuario: password,
+                confirmar_contrasena: confirmPassword,
+            }),
+        });
+
+        console.log('Status de respuesta:', response.status); // Verifica el status de la respuesta
+
+        if (!response.ok) {
+            let responseData;
+            try {
+                responseData = await response.json();
+            } catch (err) {
+                console.error('Error al parsear JSON:', err);
+                throw new Error('Error desconocido al cambiar la contraseña');
+            }
+            console.error('Error de la API:', responseData);
+            throw new Error(responseData.message || 'Error al cambiar la contraseña');
+        }
+
+        setSuccess('¡Contraseña cambiada exitosamente! Guarda esta contraseña en un gestor de contraseñas.');
+        setPassword('');
+        setConfirmPassword('');
+    } catch (err) {
+        console.error('Error en el envío:', err);
+        setError(err.message || 'Ocurrió un error al cambiar la contraseña');
+    }
+};
 
   return (
     <div className="new-password-container">

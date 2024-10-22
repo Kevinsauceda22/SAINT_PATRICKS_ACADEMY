@@ -4,6 +4,8 @@ import conectarDB from '../../config/db.js';
 import Generar_Id from '../../helpers/generar_Id.js';
 import { enviarCorreoVerificacion, enviarCorreoRecuperacion } from '../../helpers/emailHelper.js';
 const pool = await conectarDB();
+import cors from 'cors';
+
 //importar el envio de correo
 
 
@@ -539,30 +541,34 @@ export const autenticarUsuario = async (req, res) => {
 };
 // PARA MOSTRAR EL PERFIL DE UN USUARIO
 export const mostrarPerfil = async (req, res) => {
-    const cod_usuario = req.params.cod_usuario; // Este es el ID que se pasa en la URL
+    const cod_usuario = parseInt(req.params.cod_usuario, 10); // Asegúrate de que el ID sea un número entero
     const usuarioAutenticado = req.usuario.cod_usuario; // ID del usuario autenticado desde el token
 
-    // Verificar si cod_usuario es un número entero
-    if (!Number.isInteger(Number(cod_usuario))) {
+    // Verificar si cod_usuario es un número válido
+    if (isNaN(cod_usuario)) {
         return res.status(400).json({ mensaje: 'ID de usuario inválido' });
     }
 
-    // Verificar que el usuario autenticado intenta acceder a su propio perfil
-    if (Number(cod_usuario) !== Number(usuarioAutenticado)) {
+    // Verificar que el usuario autenticado solo acceda a su propio perfil
+    if (cod_usuario !== usuarioAutenticado) {
         return res.status(403).json({ mensaje: 'Acceso denegado. No puedes ver el perfil de otro usuario' });
     }
 
     try {
+        // Ejecutar la consulta almacenada 'MostrarPerfil'
         const [usuario] = await pool.query('CALL MostrarPerfil(?)', [cod_usuario]);
+        console.log("Resultado de la base de datos:", usuario);
 
-        // Verificar si el resultado es nulo o vacío
-        if (!usuario || usuario.length === 0 || usuario[0].length === 0) {
+
+        // Verificar si no se encontró el usuario
+        if (!usuario || !usuario[0] || usuario[0].length === 0) {
             return res.status(404).json({ mensaje: 'Usuario no encontrado' });
         }
 
+        // Enviar los datos del usuario encontrado
         res.status(200).json(usuario[0][0]);
     } catch (error) {
-        console.error(error);
+        console.error('Error al obtener el perfil del usuario:', error);
         res.status(500).json({ mensaje: 'Error al obtener el perfil del usuario' });
     }
 };
