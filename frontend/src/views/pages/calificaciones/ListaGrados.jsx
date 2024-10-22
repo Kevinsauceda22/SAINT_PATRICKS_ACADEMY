@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilInfo, cilPen, cilTrash } from '@coreui/icons'; // Importar iconos específicos
+import { cilPen, cilTrash, cilPlus, cilSave} from '@coreui/icons'; // Importar iconos específicos
+import Swal from 'sweetalert2';
 
 import {
   CButton,
-  CCard,
-  CCardBody,
-  CCol,
   CContainer,
   CForm,
   CFormInput,
@@ -26,7 +24,6 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CPaginationItem,
 } from '@coreui/react';
 
 
@@ -59,12 +56,6 @@ const ListaGrados = () => {
       console.error('Error al obtener los ciclos:', error);
     }
 
-         const getCicloName = (codCiclo) => {
-        if (!ciclos.length) return 'Ciclos no disponibles'; // Mensaje alternativo si no hay ciclos
-        const ciclo = ciclos.find((c) => c.Cod_ciclo === codCiclo);
-        return ciclo ? ciclo.Nombre_ciclo : 'Ciclo no encontrado';
-      };
-
   };
 
   const getCicloName = (codCiclo) => {
@@ -91,31 +82,61 @@ const ListaGrados = () => {
     }
   };
 
+  const validarCiclo = () => {
+    if (!nuevoCiclo || nuevoCiclo === "") {
+      Swal.fire('Error', 'Debe seleccionar un ciclo', 'error');
+      return false;
+    }
+    return true;
+  };
+
+  const validarGrado = () => {
+    if (!nuevoGrado.Nombre_grado) {
+      Swal.fire('Error', 'El Nombre del grado es obligatorio', 'error');
+      return false;
+    }
+    return true;
+  };
+
+
   const handleCreateGrado = async () => {
+    if (!validarCiclo() || !validarGrado()) return;
     try {
       const response = await fetch('http://localhost:4000/api/grados/crearGrado', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({Cod_ciclo: nuevoCiclo, Nombre_grado: nuevoGrado}),
+        body: JSON.stringify({
+          Cod_ciclo: nuevoCiclo, // O ajusta según lo que necesites enviar
+          Nombre_grado: nuevoGrado.Nombre_grado,
+        }),
       });
-
+  
       if (response.ok) {
-        fetchGrados();
-        setModalVisible(false);
+        fetchGrados(); // Refrescar la lista de grados después de crear uno nuevo
+        setModalVisible(false); // Cerrar el modal
         setNuevoCiclo('');  // Restablecer estado de ciclo
-        setNuevoGrado('');  // Restablecer estado de grado      } else {
-        console.error('Error al crear el grado:', response.statusText);
+        setNuevoGrado({});  // Restablecer estado de grado
+        Swal.fire('Creado', 'El grado ha sido creado exitosamente', 'success');
+      } else {
+        Swal.fire('Error', 'Hubo un problema al crear el grado', 'error');
       }
     } catch (error) {
-      console.error('Error al crear el grado:', error);
+      Swal.fire('Error', 'Hubo un problema al crear el grado', 'error');
     }
   };
 
-
   
   const handleUpdateGrado = async () => {
+    if (!gradoToUpdate.Nombre_grado) {
+      Swal.fire('Error', 'El nombre del grado es obligatorio', 'error');
+      return false;
+    }
+    if (!gradoToUpdate.Cod_ciclo) {
+      Swal.fire('Error', 'El nombre del ciclo es obligatorio', 'error');
+      return false;
+    }
     try {
       const response = await fetch('http://localhost:4000/api/grados/actualizarGrado', {
         method: 'PUT',
@@ -129,11 +150,12 @@ const ListaGrados = () => {
         fetchGrados(); // Refrescar la lista de grados después de la actualización
         setModalUpdateVisible(false); // Cerrar el modal de actualización
         setGradoToUpdate({}); // Resetear el grado a actualizar
+        Swal.fire('Actualizado', 'El grado ha sido actualizado correctamente', 'success');
       } else {
-        console.error('Error al actualizar el grado:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al actualizar el grado', 'error');
       }
     } catch (error) {
-      console.error('Error al actualizar el grado:', error);
+      Swal.fire('Error', 'Hubo un problema al actualizar el grado', 'error');
     }
   };
 
@@ -152,11 +174,12 @@ const ListaGrados = () => {
         fetchGrados(); // Refrescar la lista de grados después de la eliminación
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
         setGradoToDelete({}); // Resetear el grado a eliminar
+        Swal.fire('Eliminado', 'El grado ha sido eliminado correctamente', 'success');
       } else {
-        console.error('Error al eliminar el grado:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al eliminar el grado', 'error');
       }
     } catch (error) {
-      console.error('Error al eliminar el grado:', error);
+      Swal.fire('Error', 'Hubo un problema al eliminar el grado', 'error');
     }
   };
 
@@ -194,34 +217,39 @@ const paginate = (pageNumber) => {
 }
  return (
   <CContainer>
-    <h1>Lista de Grados</h1>
-    {/* Barra de búsqueda */}
-    <CInputGroup style={{ marginBottom: '20px', width: '400px', float: 'right' }}>
-    <CInputGroupText>Buscar</CInputGroupText>
-    <CFormInput placeholder="Buscar grado..." onChange={handleSearch} value={searchTerm} />
-     {/* Botón para limpiar la búsqueda */}
-      <CButton 
-        style={{ backgroundColor: '#cccccc', color: 'black' }}
-        onClick={() => {
-          setSearchTerm(''); // Limpiar el campo de búsqueda
-          setCurrentPage(1); // Resetear a la primera página
-        }}>
-        Limpiar
-      </CButton>
-    </CInputGroup>
+    <h1>Mantenimiento Grados</h1>
+     {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
+     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
+      {/* Barra de búsqueda */}
+      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
+        <CInputGroupText>Buscar</CInputGroupText>
+        <CFormInput placeholder="Buscar grado..." onChange={handleSearch} value={searchTerm} />
+        {/* Botón para limpiar la búsqueda */}
+        <CButton
+          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
+          onClick={() => {
+            setSearchTerm(''); // Limpiar el campo de búsqueda
+            setCurrentPage(1); // Resetear a la primera página
+          }}
+        >
+          Limpiar
+        </CButton>
+      </CInputGroup>
 
-    
-    <CButton 
-      color="success"  // Usar el color predefinido 'success' para el botón verde
-      style={{ color: 'white', marginBottom: '20px' }}  // Letras blancas y margen inferior
-      onClick={() => setModalVisible(true)}>
-      Crear Grado
-    </CButton>
+      {/* Botón "Nuevo" alineado a la derecha */}
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
+        Nuevo
+      </CButton>
+    </div>
 
 
     {/* Tabla para mostrar ciclos */}
     {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '220px', overflowY: 'scroll', marginBottom: '20px' }}>
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
 
       {/* Tabla para mostrar los grados */}
       <CTable striped bordered hover>
@@ -240,14 +268,11 @@ const paginate = (pageNumber) => {
               <CTableDataCell>{grado.Nombre_grado}</CTableDataCell>
               <CTableDataCell>{getCicloName(grado.Cod_ciclo)}</CTableDataCell>
               <CTableDataCell>
-                  <CButton color="info" style={{ marginRight: '10px' }} onClick={() => openUpdateModal(grado)}>
+                  <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(grado)}>
                     <CIcon icon={cilPen} />
                   </CButton>
-                  <CButton color="danger" style={{ marginRight: '10px' }} onClick={() => openDeleteModal(grado)}>
+                  <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(grado)}>
                     <CIcon icon={cilTrash} />
-                  </CButton>
-                  <CButton  color="primary" style={{ marginRight: '10px' }}>
-                    <CIcon icon={cilInfo} />
                   </CButton>
                 </CTableDataCell>
                 </CTableRow>
@@ -260,14 +285,13 @@ const paginate = (pageNumber) => {
     <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <CPagination aria-label="Page navigation">
         <CButton
-          color="secondary"
+         style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === 1} // Deshabilitar si estás en la primera página
           onClick={() => paginate(currentPage - 1)}>
           Anterior
         </CButton>
         <CButton
-          color="secondary"
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === Math.ceil(filteredGrados.length / recordsPerPage)} // Deshabilitar si estás en la última página
           onClick={() => paginate(currentPage + 1)}>
           Siguiente
@@ -281,19 +305,20 @@ const paginate = (pageNumber) => {
 
 
     {/* Modal Crear Ciclo */}
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
       <CModalHeader>
-        <CModalTitle>Crear Nuevo Grado</CModalTitle>
+        <CModalTitle>Nuevo Grado</CModalTitle>
         </CModalHeader>
         <CModalBody>
         <CForm>
       <CInputGroup className="mb-3">
-        <CInputGroupText>Código Ciclo</CInputGroupText>
+        <CInputGroupText>Nombre Ciclo</CInputGroupText>
         <CFormSelect 
-          aria-label="Seleccionar ciclo"
-          value={nuevoCiclo}
-          onChange={(e) => setNuevoCiclo(e.target.value)} // Actualiza el estado cuando se selecciona un ciclo
-        >
+        aria-label="Seleccionar ciclo"
+        value={nuevoCiclo}
+        onChange={(e) => setNuevoCiclo(e.target.value)}
+        style={{ maxHeight: '200px', overflowY: 'auto' }} // Limita la altura y permite el scroll
+      >
           <option value="">Seleccione un ciclo</option> {/* Opción predeterminada */}
           {ciclos.map((ciclo) => (
             <option key={ciclo.Cod_ciclo} value={ciclo.Cod_ciclo}>
@@ -305,10 +330,25 @@ const paginate = (pageNumber) => {
       <CInputGroup className="mb-3">
         <CInputGroupText>Nombre Grado</CInputGroupText>
         <CFormInput
-          placeholder="Ingrese el nombre del grado"
-          value={nuevoGrado}
-          onChange={(e) => setNuevoGrado(e.target.value)}
-        />
+              type="text"
+              placeholder="Ingrese el nombre del grado"
+              maxLength={20}
+              value={nuevoGrado.Nombre_grado}
+              onChange={(e) => {
+                // Remover cualquier caracter especial del valor ingresado
+                const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+                if (regex.test(e.target.value)) {
+                  setNuevoGrado({ ...nuevoGrado, Nombre_grado: e.target.value });
+                } else {
+                  // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Caracter no permitido',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
+            />
       </CInputGroup>
     </CForm>
         </CModalBody>
@@ -316,21 +356,21 @@ const paginate = (pageNumber) => {
           <CButton color="secondary" onClick={() => setModalVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="success" style={{ color: 'white' }} onClick={handleCreateGrado}>
-            Crear Grado
+          <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateGrado}>
+          <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
           </CButton>
         </CModalFooter>
       </CModal>
 
     {/* Modal Actualizar Grado */}
-    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)}>
+    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Actualizar Grado</CModalTitle>
       </CModalHeader>
       <CModalBody>
       <CForm>
       <CInputGroup className="mb-3">
-        <CInputGroupText>Código Ciclo</CInputGroupText>
+        <CInputGroupText>Nombre Ciclo</CInputGroupText>
         <CFormSelect 
           aria-label="Seleccionar ciclo"
           value={gradoToUpdate.Cod_ciclo} // Usa el código ciclo del grado a actualizar
@@ -347,25 +387,42 @@ const paginate = (pageNumber) => {
       <CInputGroup className="mb-3">
         <CInputGroupText>Nombre Grado</CInputGroupText>
         <CFormInput
-          placeholder="Ingrese el nombre del grado"
-          value={gradoToUpdate.Nombre_grado}
-          onChange={(e) => setGradoToUpdate({ ...gradoToUpdate, Nombre_grado: e.target.value })}
-        />
+              maxLength={20}
+              placeholder="Ingrese el nuevo nombre del grado"
+              value={gradoToUpdate.Nombre_grado}
+              onChange={(e) => {
+                // Remover cualquier caracter especial del valor ingresado
+                const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+                if (regex.test(e.target.value)) {
+                  setGradoToUpdate({
+                    ...gradoToUpdate,
+                    Nombre_grado: e.target.value,
+                  });
+                } else {
+                  // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Caracter no permitido',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
+            />
       </CInputGroup>
     </CForm>
       </CModalBody>
       <CModalFooter>
-        <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
+        <CButton color="secondary" onClick={() => setModalUpdateVisible(false)} >
           Cancelar
         </CButton>
-        <CButton color="info" style={{ color: 'white' }}  onClick={handleUpdateGrado}>
-          Actualizar Grado
+        <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }}  onClick={handleUpdateGrado}>
+        <CIcon icon={cilPen} style={{ marginRight: '5px' }} />Actualizar
         </CButton>
       </CModalFooter>
     </CModal>
 
     {/* Modal Eliminar Grado */}
-    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)}>
+    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Confirmar Eliminación</CModalTitle>
       </CModalHeader>
@@ -376,8 +433,8 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="danger" style={{ color: 'white' }}  onClick={handleDeleteGrado}>
-          Eliminar Grado
+        <CButton style={{  backgroundColor: '#E57368',color: 'white' }}  onClick={handleDeleteGrado}>
+        <CIcon icon={cilTrash} style={{ marginRight: '5px' }} />Eliminar
         </CButton>
       </CModalFooter>
     </CModal>

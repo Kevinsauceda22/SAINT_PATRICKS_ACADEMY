@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilInfo, cilPen, cilTrash } from '@coreui/icons'; // Importar iconos específicos
-
+import {  cilPen, cilTrash, cilPlus, cilSave } from '@coreui/icons'; // Importar iconos específicos
+import swal from 'sweetalert2';
 import {
   CButton,
-  CCard,
-  CCardBody,
-  CCol,
   CContainer,
   CForm,
   CFormInput,
@@ -25,7 +22,6 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CPaginationItem,
 } from '@coreui/react';
 
 
@@ -63,73 +59,140 @@ const ListaEstadoasistencia = () => {
   };
 
   const handleCreateEstadoasistencia = async () => {
+    // Convertir a formato "Primera letra mayúscula, el resto minúsculas"
+    const formattedEstado = nuevoEstadoasistencia
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  
     try {
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/crearestadoasistencias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Descripcion_asistencia: nuevoEstadoasistencia }),
+        body: JSON.stringify({ Descripcion_asistencia: formattedEstado }),  // Enviar descripción formateada
       });
-
+  
+      const result = await response.json();
+  
       if (response.ok) {
-        fetchEstadoasistencia();
-        setModalVisible(false);
-        setNuevoEstadoasistencia('');
+        fetchEstadoasistencia();  // Actualiza la lista de estados de asistencia
+        setModalVisible(false);  // Cierra el modal
+        setNuevoEstadoasistencia('');  // Limpia el campo de entrada
+        swal.fire({
+          icon: 'success',
+          title: 'Creación exitosa',
+          text: 'El estado asistencia se ha creado correctamente.',
+        });
       } else {
-        console.error('Error al crear el estado asistencia:', response.statusText);
+        swal.fire({
+          icon: 'error',
+          title: 'Error de validación',
+          text: result.Mensaje || 'Hubo un error al crear el estado asistencia.',
+        });
       }
     } catch (error) {
       console.error('Error al crear el estado asistencia:', error);
+      swal.fire({
+        icon: 'error',
+        title: 'Error en el servidor',
+        text: 'Hubo un error en el servidor. Inténtalo más tarde.',
+      });
     }
   };
-
-
+  
   
   const handleUpdateEstadoasistencia = async () => {
+    // Convertir a formato "Primera letra mayúscula, el resto minúsculas"
+    const formattedEstado = estadonasistenciaToUpdate.Descripcion_asistencia
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  
     try {
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/actualizarestadoasistencias', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Cod_estado_asistencia: estadonasistenciaToUpdate.Cod_estado_asistencia, Descripcion_asistencia: estadonasistenciaToUpdate.Descripcion_asistencia }), // Envío de la Descripcion_asistenciaactualizado y Cod_estado en el cuerpo
+        body: JSON.stringify({
+          Cod_estado_asistencia: estadonasistenciaToUpdate.Cod_estado_asistencia,
+          Descripcion_asistencia: formattedEstado, // Usar la descripción formateada
+        }),
       });
-
+  
+      const result = await response.json();
+  
       if (response.ok) {
-        fetchEstadoasistencia(); // Refrescar la lista de estadonasistencia después de la actualización
+        fetchEstadoasistencia(); // Refrescar la lista de estados de asistencia
         setModalUpdateVisible(false); // Cerrar el modal de actualización
-        setEstadoasistenciaToUpdate({}); // Resetear el ciclo a actualizar
+        setEstadoasistenciaToUpdate({}); // Resetear el objeto a actualizar
+        swal.fire({
+          icon: 'success',
+          title: 'Actualización exitosa',
+          text: 'El estado asistencia se ha actualizado correctamente.',
+        });
       } else {
-        console.error('Error al actualizar el estado asistencia:', response.statusText);
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: result.Mensaje || 'Hubo un error al actualizar el estado asistencia.',
+        });
       }
     } catch (error) {
       console.error('Error al actualizar el estado asistencia:', error);
-    }
-  };
-
-
-  const handleDeleteEstadoasistencia = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/eliminarestadoasistencias', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ Cod_estado_asistencia: estadonasistenciaToDelete.Cod_estado_asistencia }), // Enviar Cod_estado_asistencia en el cuerpo
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un error en el servidor.',
       });
-
-      if (response.ok) {
-        fetchEstadoasistencia(); // Refrescar la lista de Estadoasistencia después de la eliminación
-        setModalDeleteVisible(false); // Cerrar el modal de confirmación
-        setEstadoasistenciaToDelete({}); // Resetear el ciclo a eliminar
-      } else {
-        console.error('Error al eliminar el estado asistencia:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error al eliminar el estado asistencia:', error);
     }
   };
+  
+
+const handleDeleteEstadoasistencia = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/estadoAsistencia/eliminarestadoasistencias', {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Cod_estado_asistencia: estadonasistenciaToDelete.Cod_estado_asistencia
+      }), // Enviar Cod_estado_asistencia en el cuerpo
+    });
+
+    // Parsear la respuesta JSON del servidor
+    const result = await response.json();
+
+    if (response.ok) {
+      // Si la respuesta es exitosa
+      fetchEstadoasistencia(); // Refrescar la lista de estados de asistencia
+      setModalDeleteVisible(false); // Cerrar el modal de confirmación
+      setEstadoasistenciaToDelete({}); // Resetear el objeto a eliminar
+      swal.fire({
+        icon: 'success',
+        title: 'Eliminación exitosa',
+        text: 'El estado asistencia se ha eliminado correctamente.',
+      });
+    } else {
+      // Si hubo un error, mostrar el mensaje devuelto por el servidor
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: result.Mensaje || 'Hubo un error al eliminar el estado asistencia.',
+      });
+    }
+  } catch (error) {
+    // Manejo de errores inesperados (como problemas de red)
+    console.error('Error al eliminar el estado asistencia:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Hubo un error en el servidor.',
+    });
+  }
+};
+
 
   const openUpdateModal = (estadonasistencia) => {
     setEstadoasistenciaToUpdate(estadonasistencia); // Cargar los datos del estado asistencia a actualizar
@@ -165,34 +228,41 @@ const paginate = (pageNumber) => {
 }
  return (
   <CContainer>
-    <h1>Lista de Estadoasistencia</h1>
-    {/* Barra de búsqueda */}
-    <CInputGroup style={{ marginBottom: '20px', width: '400px', float: 'right' }}>
-    <CInputGroupText>Buscar</CInputGroupText>
-    <CFormInput placeholder="Buscar estado asistencia..." onChange={handleSearch} value={searchTerm} />
-     {/* Botón para limpiar la búsqueda */}
-      <CButton 
-        style={{ backgroundColor: '#cccccc', color: 'black' }}
-        onClick={() => {
-          setSearchTerm(''); // Limpiar el campo de búsqueda
-          setCurrentPage(1); // Resetear a la primera página
-        }}>
-        Limpiar
-      </CButton>
-    </CInputGroup>
+  {/* Contenedor del h1 */}
+    <h1 >Mantenimiento Estado asistencia</h1>
+    {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
+      {/* Barra de búsqueda */}
+      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
+        <CInputGroupText>Buscar</CInputGroupText>
+        <CFormInput placeholder="Buscar estado asistencia..." onChange={handleSearch} value={searchTerm} />
+        {/* Botón para limpiar la búsqueda */}
+        <CButton
+          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
+          onClick={() => {
+            setSearchTerm(''); // Limpiar el campo de búsqueda
+            setCurrentPage(1); // Resetear a la primera página
+          }}
+        >
+          Limpiar
+        </CButton>
+      </CInputGroup>
 
-    
-    <CButton 
-      color="success"  // Usar el color predefinido 'success' para el botón verde
-      style={{ color: 'white', marginBottom: '20px' }}  // Letras blancas y margen inferior
-      onClick={() => setModalVisible(true)}>
-      Crear Estado Asistencia
-    </CButton>
+      {/* Botón "Nuevo" alineado a la derecha */}
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
+        Nuevo
+      </CButton>
+    </div>
+
 
 
     {/* Tabla para mostrar Estadoasistencia */}
     {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '220px', overflowY: 'scroll', marginBottom: '20px' }}>
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
         <CTable striped bordered hover>
           <CTableHead>
             <CTableRow>
@@ -210,14 +280,11 @@ const paginate = (pageNumber) => {
                 </CTableDataCell>
                 <CTableDataCell>{estadonasistencia.Descripcion_asistencia}</CTableDataCell>
                 <CTableDataCell>
-                  <CButton color="info" style={{ marginRight: '10px' }} onClick={() => openUpdateModal(estadonasistencia)}>
+                  <CButton  style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(estadonasistencia)}>
                     <CIcon icon={cilPen} />
                   </CButton>
-                  <CButton color="danger" style={{ marginRight: '10px' }} onClick={() => openDeleteModal(estadonasistencia)}>
+                  <CButton  style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(estadonasistencia)}>
                     <CIcon icon={cilTrash} />
-                  </CButton>
-                  <CButton color="primary" style={{ marginRight: '10px' }}>
-                    <CIcon icon={cilInfo} />
                   </CButton>
                 </CTableDataCell>
               </CTableRow>
@@ -230,14 +297,13 @@ const paginate = (pageNumber) => {
     <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <CPagination aria-label="Page navigation">
         <CButton
-          color="secondary"
+          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === 1} // Deshabilitar si estás en la primera página
           onClick={() => paginate(currentPage - 1)}>
           Anterior
         </CButton>
         <CButton
-          color="secondary"
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === Math.ceil(filteredEstadoasistencia.length / recordsPerPage)} // Deshabilitar si estás en la última página
           onClick={() => paginate(currentPage + 1)}>
           Siguiente
@@ -251,9 +317,9 @@ const paginate = (pageNumber) => {
 
 
     {/* Modal Crear Estado asistencia */}
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
       <CModalHeader>
-        <CModalTitle>Crear Nuevo Estado Asistencia</CModalTitle>
+        <CModalTitle>Nuevo Estado Asistencia</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CForm>
@@ -262,7 +328,24 @@ const paginate = (pageNumber) => {
               <CFormInput
                 placeholder="Ingrese la descripción del estado"
                 value={nuevoEstadoasistencia}
-                onChange={(e) => setNuevoEstadoasistencia(e.target.value)}/>
+                maxLength={50} // Limitar a 50 caracteres
+                onChange={(e) => {
+                  const value = e.target.value
+                    .trimStart() // Evitar espacios al inicio
+                    .replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+
+                  const regex = /^[a-zA-Z\s]*$/; // Solo letras y espacios
+                  if (regex.test(value)) {
+                    setNuevoEstadoasistencia(value);
+                  } else {
+                    swal.fire({
+                      icon: 'warning',
+                      title: 'Caracteres no permitidos',
+                      text: 'Solo se permiten letras y espacios.',
+                    });
+                  }
+                }}
+              />
             </CInputGroup>
           </CForm>
         </CModalBody>
@@ -270,14 +353,14 @@ const paginate = (pageNumber) => {
           <CButton color="secondary" onClick={() => setModalVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="success" style={{ color: 'white' }} onClick={handleCreateEstadoasistencia}>
-            Crear Estado
+          <CButton  style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateEstadoasistencia}>
+          <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
           </CButton>
         </CModalFooter>
       </CModal>
 
     {/* Modal Actualizar Estado Asistencia*/}
-    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)}>
+    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Actualizar Estado Asistencia</CModalTitle>
       </CModalHeader>
@@ -288,7 +371,23 @@ const paginate = (pageNumber) => {
             <CFormInput
               placeholder="Ingrese la descripción del estado"
               value={estadonasistenciaToUpdate.Descripcion_asistencia}
-              onChange={(e) => setEstadoasistenciaToUpdate({ ...estadonasistenciaToUpdate, Descripcion_asistencia: e.target.value })}
+              maxLength={50} // Limitar a 50 caracteres
+              onChange={(e) => {
+                const value = e.target.value
+                  .trimStart() // Evitar espacios al inicio
+                  .replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+
+                const regex = /^[a-zA-Z\s]*$/; // Solo letras y espacios
+                if (regex.test(value)) {
+                  setEstadoasistenciaToUpdate({ ...estadonasistenciaToUpdate, Descripcion_asistencia: value });
+                } else {
+                  swal.fire({
+                    icon: 'warning',
+                    title: 'Caracteres no permitidos',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
             />
           </CInputGroup>
         </CForm>
@@ -297,14 +396,14 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="info" style={{ color: 'white' }}  onClick={handleUpdateEstadoasistencia}>
-          Actualizar Estado
+        <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }}  onClick={handleUpdateEstadoasistencia}>
+        <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
         </CButton>
       </CModalFooter>
     </CModal>
 
     {/* Modal Eliminar estado Asistencia */}
-    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)}>
+    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Confirmar Eliminación</CModalTitle>
       </CModalHeader>
@@ -315,8 +414,8 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="danger" style={{ color: 'white' }}  onClick={handleDeleteEstadoasistencia}>
-          Eliminar Estado
+        <CButton  style={{  backgroundColor: '#E57368',color: 'white' }}  onClick={handleDeleteEstadoasistencia}>
+        <CIcon icon={cilTrash} style={{ marginRight: '5px' }} /> Eliminar
         </CButton>
       </CModalFooter>
     </CModal>

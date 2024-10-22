@@ -159,7 +159,7 @@ const ListaProfesores = () => {
         />
       </CInputGroup>
 
-      <CButton color="success" onClick={() => setModalVisible(true)} style={{ color: 'white', marginBottom: '20px' }}>
+      <CButton color="success" onClick={() => setModalVisible(true)} style={{ color: 'white',marginBottom: '20px' }}>
         Crear Profesor
       </CButton>
 
@@ -292,12 +292,8 @@ const ListaProfesores = () => {
           </CForm>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>
-            Cancelar
-          </CButton>
-          <CButton color="primary" onClick={handleCreateProfesor}>
-            Crear
-          </CButton>
+          <CButton color="secondary" onClick={() => setModalVisible(false)}>Cerrar</CButton>
+          <CButton color="success" style={{ color: 'white' }} onClick={handleCreateProfesor}>Crear Profesor</CButton>
         </CModalFooter>
       </CModal>
 
@@ -372,12 +368,8 @@ const ListaProfesores = () => {
           </CForm>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
-            Cancelar
-          </CButton>
-          <CButton color="primary" onClick={handleUpdateProfesor}>
-            Actualizar
-          </CButton>
+          <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>Cerrar</CButton>
+          <CButton color="info" style={{ color: 'white' }} onClick={handleUpdateProfesor}>Actualizar Profesor</CButton>
         </CModalFooter>
       </CModal>
 
@@ -387,15 +379,11 @@ const ListaProfesores = () => {
           <CModalTitle>Eliminar Profesor</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          ¿Está seguro de que desea eliminar a {profesorToDelete.Nombre} {profesorToDelete.Primer_apellido}?
+          ¿Estás seguro de que deseas eliminar al profesor: <strong>{profesorToDelete.Nombre} {profesorToDelete.Primer_apellido}</strong>?
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
-            Cancelar
-          </CButton>
-          <CButton color="danger" onClick={handleDeleteProfesor}>
-            Eliminar
-          </CButton>
+          <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>Cancelar</CButton>
+          <CButton color="danger" style={{ color: 'white' }} onClick={handleDeleteProfesor}>Eliminar Profesor</CButton>
         </CModalFooter>
       </CModal>
 
@@ -405,6 +393,7 @@ const ListaProfesores = () => {
           <CModalTitle>Detalles del Profesor</CModalTitle>
         </CModalHeader>
         <CModalBody>
+          <p><strong>Código Profesor:</strong> {profesorDetails.Cod_profesor}</p>
           <p><strong>Nombre:</strong> {profesorDetails.Nombre} {profesorDetails.Primer_apellido}</p>
           <p><strong>Grado Académico:</strong> {profesorDetails.GradoAcademicoDescripcion}</p>
           <p><strong>Tipo de Contrato:</strong> {profesorDetails.TipoContratoDescripcion}</p>
@@ -415,9 +404,7 @@ const ListaProfesores = () => {
           <p><strong>Años de Experiencia:</strong> {profesorDetails.Años_experiencia}</p>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalDetailsVisible(false)}>
-            Cerrar
-          </CButton>
+          <CButton color="secondary" onClick={() => setModalDetailsVisible(false)}>Cerrar</CButton>
         </CModalFooter>
       </CModal>
     </CContainer>

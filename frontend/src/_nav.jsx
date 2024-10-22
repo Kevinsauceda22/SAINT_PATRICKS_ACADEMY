@@ -1,5 +1,5 @@
-import React from 'react'
-import CIcon from '@coreui/icons-react'
+import React from 'react';
+import CIcon from '@coreui/icons-react';
 import {
   cilSpeedometer,
   cilPeople,
@@ -13,70 +13,50 @@ import {
   cilChartLine,
   cilFile,
   cilBookmark,
-  cilUser, // Importar un ícono para los usuarios
-} from '@coreui/icons'
-import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
+} from '@coreui/icons';
+import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react';
 
 const _nav = [
   {
     component: CNavItem,
     name: 'Dashboard',
     to: '/dashboard',
-    icon: <CIcon icon={cilSpeedometer} customClassName="nav-icon" />, // Icono de velocidad para el panel de control
+    icon: cilSpeedometer, // Solo se guarda el icono
   },
   {
-    component: CNavTitle,
-    name: 'Components',
-  },
-  {
-    component: CNavGroup,
+    component: CNavItem,
     name: 'Asistencia',
-    icon: <CIcon icon={cilClipboard} customClassName="nav-icon" />, // Icono de clipboard para asistencia
-    items: [
-      {
-        component: CNavItem,
-        name: 'Asistencia',
-        to: '/pages/calificaciones/ListaAsistencia',
-      },
-      {
-        component: CNavItem,
-        name: 'Estado asistencia',
-        to: '/pages/calificaciones/ListaEstadoasistencia',
-      },
-    ],
+    to: '/pages/calificaciones/ListaAsistencia',
+    icon: cilClipboard,
   },
   {
-    component: CNavGroup,
+    component: CNavItem,
     name: 'Profesores',
-    icon: <CIcon icon={cilPeople} customClassName="nav-icon" />, // Icono de personas para profesores
-    items: [
-      {
-        component: CNavItem,
-        name: 'Profesores',
-        to: '/pages/calificaciones/ListaProfesores',
-      },
-      {
-        component: CNavItem,
-        name: 'Tipo de contrato',
-        to: '/pages/calificaciones/ListaTipoContrato',
-      },
-      {
-        component: CNavItem,
-        name: 'Grado académico',
-        to: '/pages/calificaciones/ListaGradoAcademico',
-      },
-      {
-        component: CNavItem,
-        name: 'Especialidades',
-        to: '/pages/calificaciones/ListaEspecialidades',
-      },
-    ],
+    to: '/pages/calificaciones/ListaProfesores',
+    icon: cilPeople,
+  },
+  {
+    component: CNavItem,
+    name: 'Actividades académicas',
+    to: '/pages/calificaciones/ListaActividadesAca',
+    icon: cilTask,
+  },
+  {
+    component: CNavItem,
+    name: 'Notas',
+    to: '',
+    icon: cilFile,
   },
   {
     component: CNavGroup,
-    name: 'Ciclos',
-    icon: <CIcon icon={cilCalendar} customClassName="nav-icon" />, // Icono de calendario para ciclos
+    name: 'Mantenimientos',
+    icon: cilListRich,
     items: [
+      {
+        component: CNavItem,
+        name: 'Asignaturas',
+        to: '/pages/calificaciones/ListaAsignaturas',
+      },
       {
         component: CNavItem,
         name: 'Ciclos',
@@ -84,8 +64,18 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Ponderaciones',
-        to: '/pages/calificaciones/ListaPonderaciones',
+        name: 'Especialidades',
+        to: '/pages/calificaciones/ListaEspecialidades',
+      },
+      {
+        component: CNavItem,
+        name: 'Estado asistencia',
+        to: '/pages/calificaciones/ListaEstadoasistencia',
+      },
+      {
+        component: CNavItem,
+        name: 'Estado nota',
+        to: '/pages/calificaciones/ListaEstadonota',
       },
       {
         component: CNavItem,
@@ -94,60 +84,27 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Asignaturas',
-        to: '/pages/calificaciones/ListaAsignaturas',
+        name: 'Grado académico',
+        to: '/pages/calificaciones/ListaGradoAcademico',
       },
       {
         component: CNavItem,
         name: 'Parciales',
         to: '/pages/calificaciones/ListaParciales',
       },
+      {
+        component: CNavItem,
+        name: 'Ponderaciones',
+        to: '/pages/calificaciones/ListaPonderaciones',
+      },
+      {
+        component: CNavItem,
+        name: 'Tipo de contrato',
+        to: '/pages/calificaciones/ListaTipoContrato',
+      },
+      
     ],
   },
-  {
-    component: CNavGroup,
-    name: 'Actividades académicas',
-    icon: <CIcon icon={cilTask} customClassName="nav-icon" />, // Icono de tareas para actividades
-    items: [
-      {
-        component: CNavItem,
-        name: 'Actividades',
-        to: '/pages/calificaciones/ListaActividadesAca',
-      },
-      {
-        component: CNavItem,
-        name: 'Nota',
-        to: '/buttons/button-groups',
-      },
-      {
-        component: CNavItem,
-        name: 'Estado nota',
-        to: '/pages/calificaciones/ListaEstadonota',
-      },
-    ],
-  },
-  {
-    component: CNavGroup,
-    name: 'Usuarios',  // Nueva sección para usuarios
-    icon: <CIcon icon={cilUser} customClassName="nav-icon" />, // Icono de usuario
-    items: [
-      {
-        component: CNavItem,
-        name: 'Lista de Usuarios',
-        to: '/pages/usuarios/listaUsuarios',
-      },
-      {
-        component: CNavItem,
-        name: 'Crear Usuario',
-        to: '/pages/usuarios/crearUsuario',
-      },
-      {
-        component: CNavItem,
-        name: 'Roles',
-        to: '/pages/usuarios/listaRoles',
-      },
-    ],
-  },
-]
+];
 
-export default _nav
+export default _nav;

@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilInfo, cilPen, cilTrash } from '@coreui/icons'; // Importar iconos específicos
-
+import Swal from 'sweetalert2';
+import { cilPen, cilTrash, cilPlus, cilSave } from '@coreui/icons'; // Importar iconos específicos
 import {
   CButton,
-  CCard,
-  CCardBody,
-  CCol,
   CContainer,
   CForm,
   CFormInput,
@@ -25,7 +22,6 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CPaginationItem,
 } from '@coreui/react';
 
 
@@ -62,7 +58,20 @@ const ListaParciales = () => {
     }
   };
 
+  const validateParcial = () => {
+    if (!nuevoParcial.Nombre_parcial) {
+      Swal.fire('Error', 'El nombre del parcial es obligatorio', 'error');
+      return false;
+    }
+    if (!nuevoParcial.Nota_recuperacion || isNaN(nuevoParcial.Nota_recuperacion)) {
+      Swal.fire('Error', 'La nota de recuperación debe ser un número', 'error');
+      return false;
+    }
+    return true;
+  };
+  
   const handleCreateParcial = async () => {
+    if (!validateParcial()) return;
     try {
       const response = await fetch('http://localhost:4000/api/parciales/crearParcial', {
         method: 'POST',
@@ -76,17 +85,25 @@ const ListaParciales = () => {
         fetchParciales();
         setModalVisible(false);
         setNuevoParcial('');
+        Swal.fire('Creado', 'El parcial ha sido creado exitosamente', 'success');
       } else {
-        console.error('Error al crear el parcial:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al crear el parcial', 'error');
       }
     } catch (error) {
-      console.error('Error al crear el parcial:', error);
+      Swal.fire('Error', 'Hubo un problema al crear el parcial', 'error');
     }
-  };
+  };  
 
 
-  
   const handleUpdateParcial = async () => {
+    if (!parcialToUpdate.Nombre_parcial) {
+      Swal.fire('Error', 'El nombre del parcial es obligatorio', 'error');
+      return false;
+    }
+    if (!parcialToUpdate.Nota_recuperacion) {
+      Swal.fire('Error', 'La nota del parcial es obligatoria', 'error');
+      return false;
+    }
     try {
       const response = await fetch('http://localhost:4000/api/parciales/actualizarParcial', {
         method: 'PUT',
@@ -97,17 +114,21 @@ const ListaParciales = () => {
       });
 
       if (response.ok) {
-        fetchParciales(); // Refrescar la lista de ciclos después de la actualización
-        setModalUpdateVisible(false); // Cerrar el modal de actualización
-        setParcialesToUpdate({}); // Resetear el ciclo a actualizar
+        fetchParciales();
+        setModalUpdateVisible(false);
+        setParcialesToUpdate({});
+        Swal.fire('Actualizado', 'El parcial ha sido actualizado correctamente', 'success');
       } else {
-        console.error('Error al actualizar el parcial:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al actualizar el parcial', 'error');
+      }
+      if (!parcialToUpdate.Nombre_parcial) {
+        Swal.fire('Error', 'El nombre del parcial es obligatorio', 'error');
+        return false;
       }
     } catch (error) {
-      console.error('Error al actualizar el parcial:', error);
+      Swal.fire('Error', 'Hubo un problema al actualizar el parcial', 'error');
     }
   };
-
 
   const handleDeleteParcial = async () => {
     try {
@@ -120,14 +141,15 @@ const ListaParciales = () => {
       });
 
       if (response.ok) {
-        fetchParciales(); // Refrescar la lista de ciclos después de la eliminación
-        setModalDeleteVisible(false); // Cerrar el modal de confirmación
-        setParcialToDelete({}); // Resetear el ciclo a eliminar
+        fetchParciales();
+        setModalDeleteVisible(false);
+        setParcialToDelete({});
+        Swal.fire('Eliminado', 'El parcial ha sido eliminado correctamente', 'success');
       } else {
-        console.error('Error al eliminar el parcial:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al eliminar el parcial', 'error');
       }
     } catch (error) {
-      console.error('Error al eliminar el parcial:', error);
+      Swal.fire('Error', 'Hubo un problema al eliminar el parcial', 'error');
     }
   };
 
@@ -165,34 +187,39 @@ const paginate = (pageNumber) => {
 }
  return (//boton de busqueda
   <CContainer>
-    <h1>Lista de Parciales</h1>
-    {/* Barra de búsqueda */}
-    <CInputGroup style={{ marginBottom: '20px', width: '400px', float: 'right' }}>
-    <CInputGroupText>Buscar</CInputGroupText>
-    <CFormInput placeholder="Buscar parcial..." onChange={handleSearch} value={searchTerm} />
-     {/* Botón para limpiar la búsqueda */}
-      <CButton 
-        style={{ backgroundColor: '#cccccc', color: 'black' }}
-        onClick={() => {
-          setSearchTerm(''); // Limpiar el campo de búsqueda
-          setCurrentPage(1); // Resetear a la primera página
-        }}>
-        Limpiar
-      </CButton>
-    </CInputGroup>
+    <h1>Mantenimiento Parciales</h1>
+   {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
+   <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
+      {/* Barra de búsqueda */}
+      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
+        <CInputGroupText>Buscar</CInputGroupText>
+        <CFormInput placeholder="Buscar parcial..." onChange={handleSearch} value={searchTerm} />
+        {/* Botón para limpiar la búsqueda */}
+        <CButton
+          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
+          onClick={() => {
+            setSearchTerm(''); // Limpiar el campo de búsqueda
+            setCurrentPage(1); // Resetear a la primera página
+          }}
+        >
+          Limpiar
+        </CButton>
+      </CInputGroup>
 
-    
-    <CButton 
-      color="success"  // Usar el color predefinido 'success' para el botón verde
-      style={{ color: 'white', marginBottom: '20px' }}  // Letras blancas y margen inferior
-      onClick={() => setModalVisible(true)}>
-      Crear Parcial
-    </CButton>
+      {/* Botón "Nuevo" alineado a la derecha */}
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
+        Nuevo
+      </CButton>
+    </div>
 
 
     {/* Tabla para mostrar ciclos */}
     {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '220px', overflowY: 'scroll', marginBottom: '20px' }}>
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
         <CTable striped bordered hover>
           <CTableHead>
             <CTableRow>
@@ -214,15 +241,12 @@ const paginate = (pageNumber) => {
                 <CTableDataCell>{parcial.Nombre_parcial}</CTableDataCell>
                 <CTableDataCell>{parcial.Nota_recuperacion}</CTableDataCell>
                 <CTableDataCell>
-                  <CButton color="info"   style={{ marginRight: '10px' }} onClick={() => openUpdateModal(parcial)}>
+                  <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(parcial)}>
                     <CIcon icon={cilPen} />
                   </CButton>
-                  <CButton color="danger" style={{ marginRight: '10px' }} onClick={() => openDeleteModal(parcial)}>
+                  <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(parcial)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
-                  <CButton color="primary" style={{ marginRight: '10px' }}>
-                      <CIcon icon={cilInfo} />
-                    </CButton>
                 </CTableDataCell>
               </CTableRow>
             ))}
@@ -234,14 +258,13 @@ const paginate = (pageNumber) => {
     <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <CPagination aria-label="Page navigation">
         <CButton
-          color="secondary"
+          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === 1} // Deshabilitar si estás en la primera página
           onClick={() => paginate(currentPage - 1)}>
           Anterior
         </CButton>
         <CButton
-          color="secondary"
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === Math.ceil(filteredParciales.length / recordsPerPage)} // Deshabilitar si estás en la última página
           onClick={() => paginate(currentPage + 1)}>
           Siguiente
@@ -255,9 +278,9 @@ const paginate = (pageNumber) => {
 
 
     {/* Modal Crear Parcial */}
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
       <CModalHeader>
-        <CModalTitle>Crear un Nuevo Parcial</CModalTitle>
+        <CModalTitle>Nuevo Parcial</CModalTitle>
         </CModalHeader>
         <CModalBody>
           
@@ -266,36 +289,57 @@ const paginate = (pageNumber) => {
             <CInputGroupText>Nombre del Parcial</CInputGroupText>
             <CFormInput
               type="text"
+              maxLength={20}
               value={nuevoParcial.Nombre_parcial}
-              onChange={(e) => setNuevoParcial({ ...nuevoParcial, Nombre_parcial: e.target.value })}
+              onChange={(e) => {
+                // Remover cualquier caracter especial del valor ingresado
+                const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+                if (regex.test(e.target.value)) {
+                  setNuevoParcial({ ...nuevoParcial, Nombre_parcial: e.target.value });
+                } else {
+                  // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Caracter no permitido',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
             />
           </CInputGroup>
           <CInputGroup className="mb-3">
             <CInputGroupText>Nota Recuperacion</CInputGroupText>
             <CFormInput
               type="number"
+              min={1} // No permitir negativos
+              max={100} // Limitar el valor máximo a 100
+              maxLength={11}
               value={nuevoParcial.Nota_recuperacion}
-              onChange={(e) => setNuevoParcial({ ...nuevoParcial, Nota_recuperacion: e.target.value })}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                // Permitir valores entre 1 y 100
+                if (!isNaN(value) && value >= 1 && value <= 100) {
+                  setNuevoParcial({ ...nuevoParcial, Nota_recuperacion: value });
+                } else if (value < 1) {
+                  setNuevoParcial({ ...nuevoParcial, Nota_recuperacion: 1 }); // Establecer a 1 si se intenta ingresar un valor negativo
+                }
+              }}
             />
           </CInputGroup>
-          
-          
-
         </CForm>
-
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setModalVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="success" style={{ color: 'white' }} onClick={handleCreateParcial}>
-            Crear Parcial
+          <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateParcial}>
+          <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
           </CButton>
         </CModalFooter>
       </CModal>
 
     {/* Modal Actualizar Parcial */}
-    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)}>
+    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Actualizar Parcial</CModalTitle>
       </CModalHeader>
@@ -304,17 +348,45 @@ const paginate = (pageNumber) => {
           <CInputGroup className="mb-3">
             <CInputGroupText>Nombre del Parcial</CInputGroupText>
             <CFormInput
+              maxLength={20}
               placeholder="Ingrese el nuevo nombre del parcial"
               value={parcialToUpdate.Nombre_parcial}
-              onChange={(e) => setParcialesToUpdate({ ...parcialToUpdate, Nombre_parcial: e.target.value })}
+              onChange={(e) => {
+                // Remover cualquier caracter especial del valor ingresado
+                const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+                if (regex.test(e.target.value)) {
+                  setParcialesToUpdate({
+                    ...parcialToUpdate,
+                    Nombre_parcial: e.target.value,
+                  });
+                } else {
+                  // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Caracter no permitido',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
             />
           </CInputGroup>
           <CInputGroup className="mb-3">
             <CInputGroupText>Nota Recuperacion</CInputGroupText>
             <CFormInput
+              type="number"
+              min={1} // No permitir negativos
+              max={100} // Limitar el valor máximo a 100
+              maxLength={11}
               placeholder="Ingrese la nueva nota"
               value={parcialToUpdate.Nota_recuperacion}
-              onChange={(e) => setParcialesToUpdate({ ...parcialToUpdate, Nota_recuperacion: e.target.value })}
+              onChange={(e) => {
+                const value = parseInt(e.target.value, 10);
+                if (value >= 1 && value <= 100) {
+                  setParcialesToUpdate({ ...parcialToUpdate, Nota_recuperacion: value });
+                } else if (value < 1) {
+                  setParcialesToUpdate({ ...parcialToUpdate, Nota_recuperacion: 1 });
+                }
+              }}
             />
           </CInputGroup>
         </CForm>
@@ -323,26 +395,26 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="info" style={{ color: 'white' }}  onClick={handleUpdateParcial}>
-          Actualizar Parcial
+        <CButton style={{  backgroundColor: '#F9B64E',color: 'white' }}  onClick={handleUpdateParcial}>
+        <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
         </CButton>
       </CModalFooter>
     </CModal>
 
     {/* Modal Eliminar Parcial */}
-    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)}>
+    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Confirmar Eliminación</CModalTitle>
       </CModalHeader>
       <CModalBody>
-        <p>¿Estás seguro de que deseas eliminar el parcial: <strong>{parcialToDelete.Nombre_parcial}</strong>?</p>
+        <p>¿Estás seguro de que deseas eliminar el parcial: <b>{parcialToDelete.Nombre_parcial}</b>?</p>
       </CModalBody>
       <CModalFooter>
         <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="danger" style={{ color: 'white' }}  onClick={handleDeleteParcial}>
-          Eliminar
+        <CButton style={{  backgroundColor: '#E57368',color: 'white' }}  onClick={handleDeleteParcial}>
+        <CIcon icon={cilTrash} style={{ marginRight: '5px' }} /> Eliminar
         </CButton>
       </CModalFooter>
     </CModal>

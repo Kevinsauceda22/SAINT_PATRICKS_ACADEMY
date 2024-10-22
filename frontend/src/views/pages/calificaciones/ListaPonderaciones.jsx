@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilInfo, cilPen, cilTrash } from '@coreui/icons'; // Importar iconos específicos
-
+import { cilPen, cilTrash, cilPlus, cilSave } from '@coreui/icons'; // Importar iconos específicos
+import Swal from 'sweetalert2';
 import {
   CButton,
-  CCard,
-  CCardBody,
-  CCol,
   CContainer,
   CForm,
   CFormInput,
@@ -25,7 +22,6 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CPaginationItem,
 } from '@coreui/react';
 
 
@@ -62,29 +58,46 @@ const ListaPonderaciones = () => {
     }
   };
 
+  const validarPonderacion = () => {
+    if (!nuevaPonderacion.Descripcion_ponderacion) {
+      Swal.fire('Error', 'La Descripcion de la ponderacion es obligatorio', 'error');
+      return false;
+    }
+    return true;
+  };
+
+
+
   const handleCreatePonderacion = async () => {
+    if (!validarPonderacion()) return;
     try {
       const response = await fetch('http://localhost:4000/api/ponderaciones/crearPonderacion', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Descripcion_ponderacion: nuevaPonderacion }),
+        body: JSON.stringify( nuevaPonderacion ),
       });
 
       if (response.ok) {
         fetchPonderacion();
         setModalVisible(false);
         setNuevaPonderacion('');
+
+        Swal.fire('Creado', 'La ponderacion ha sido creada exitosamente', 'success');
       } else {
-        console.error('Error al crear la ponderacion:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al crear la ponderacion', 'error');
       }
     } catch (error) {
-      console.error('Error al crear la ponderacion:', error);
+      Swal.fire('Error', 'Hubo un problema al crear la ponderacion', 'error');
     }
-  };
+  };  
 
   const handleUpdatePonderacion = async () => {
+    if (!ponderacionToUpdate.Descripcion_ponderacion) {
+      Swal.fire('Error', 'El nombre de la ponderacion es obligatorio', 'error');
+      return false;
+    }
     try {
       const response = await fetch('http://localhost:4000/api/ponderaciones/actualizarPonderacion', {
         method: 'PUT',
@@ -98,14 +111,19 @@ const ListaPonderaciones = () => {
         fetchPonderacion(); // Refrescar la lista de ponderaciones después de la actualización
         setModalUpdateVisible(false); // Cerrar el modal de actualización
         setPonderacionToUpdate({}); // Resetear las ponderaciones al actualizar
+
+        Swal.fire('Actualizado', 'La ponderacion ha sido actualizada correctamente', 'success');
       } else {
-        console.error('Error al actualizar la ponderacion:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al actualizar la ponderacion', 'error');
+      }
+      if (!ponderacionToUpdate.Descripcion_ponderacion) {
+        Swal.fire('Error', 'La Descripcion de la ponderacion es obligatorio', 'error');
+        return false;
       }
     } catch (error) {
-      console.error('Error al actualizar la ponderacion:', error);
+      Swal.fire('Error', 'Hubo un problema al actualizar la ponderacion', 'error');
     }
   };
-
 
   const handleDeletePonderacion = async () => {
     try {
@@ -121,11 +139,12 @@ const ListaPonderaciones = () => {
         fetchPonderacion(); 
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
         setPonderacionToDelete({}); // Resetear la ponderacion a eliminar
+        Swal.fire('Eliminado', 'La ponderacion ha sido eliminada correctamente', 'success');
       } else {
-        console.error('Error al eliminar la ponderacion:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al eliminar la ponderacion', 'error');
       }
     } catch (error) {
-      console.error('Error al eliminar la ponderacion:', error);
+      Swal.fire('Error', 'Hubo un problema al eliminar la ponderacion', 'error');
     }
   };
 
@@ -165,34 +184,40 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
 
   return (
     <CContainer>
-        <h1>Lista de Ponderaciones</h1>
-    {/* Barra de búsqueda */}
-    <CInputGroup style={{ marginBottom: '20px', width: '400px', float: 'right' }}>
-    <CInputGroupText>Buscar</CInputGroupText>
-    <CFormInput placeholder="Buscar ponderacion..." onChange={handleSearch} value={searchTerm} />
-     {/* Botón para limpiar la búsqueda */}
-      <CButton 
-        style={{ backgroundColor: '#cccccc', color: 'black' }}
-        onClick={() => {
-          setSearchTerm(''); // Limpiar el campo de búsqueda
-          setCurrentPage(1); // Resetear a la primera página
-        }}>
-        Limpiar
-      </CButton>
-    </CInputGroup>
+    <h1>Mantenimiento Ponderaciones</h1>
+     {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
+     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
+      {/* Barra de búsqueda */}
+      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
+        <CInputGroupText>Buscar</CInputGroupText>
+        <CFormInput placeholder="Buscar ponderación..." onChange={handleSearch} value={searchTerm} />
+        {/* Botón para limpiar la búsqueda */}
+        <CButton
+          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
+          onClick={() => {
+            setSearchTerm(''); // Limpiar el campo de búsqueda
+            setCurrentPage(1); // Resetear a la primera página
+          }}
+        >
+          Limpiar
+        </CButton>
+      </CInputGroup>
 
-    
-    <CButton 
-      color="success"  // Usar el color predefinido 'success' para el botón verde
-      style={{ color: 'white', marginBottom: '20px' }}  // Letras blancas y margen inferior
-      onClick={() => setModalVisible(true)}>
-      Crear Ponderacion
-    </CButton>
+      {/* Botón "Nuevo" alineado a la derecha */}
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
+        Nuevo
+      </CButton>
+    </div>
+
 
 
     {/* Tabla para mostrar ponderaciones */}
     {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '220px', overflowY: 'scroll', marginBottom: '20px' }}>
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
         <CTable striped bordered hover>
           <CTableHead>
             <CTableRow>
@@ -210,14 +235,11 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
                 </CTableDataCell>
                 <CTableDataCell>{ponderacion.Descripcion_ponderacion}</CTableDataCell>
                 <CTableDataCell>
-                  <CButton color="info" style={{ marginRight: '10px' }} onClick={() => openUpdateModal(ponderacion)}>
+                  <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(ponderacion)}>
                     <CIcon icon={cilPen} />
                   </CButton>
-                  <CButton color="danger" style={{ marginRight: '10px' }} onClick={() => openDeleteModal(ponderacion)}>
+                  <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(ponderacion)}>
                     <CIcon icon={cilTrash} />
-                  </CButton>
-                  <CButton color="primary" style={{ marginRight: '10px' }}>
-                    <CIcon icon={cilInfo} />
                   </CButton>
                 </CTableDataCell>
               </CTableRow>
@@ -230,14 +252,13 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
     <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <CPagination aria-label="Page navigation">
         <CButton
-          color="secondary"
+          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === 1} // Deshabilitar si estás en la primera página
           onClick={() => paginate(currentPage - 1)}>
           Anterior
         </CButton>
         <CButton
-          color="secondary"
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === Math.ceil(filteredPonderaciones.length / recordsPerPage)} // Deshabilitar si estás en la última página
           onClick={() => paginate(currentPage + 1)}>
           Siguiente
@@ -251,19 +272,34 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
 
 
       {/* Modal para crear una nueva Ponderacion */}
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
         <CModalHeader>
-          <CModalTitle>Crear Nueva Ponderacion</CModalTitle>
+          <CModalTitle>Nueva Ponderacion</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CForm>
             <CInputGroup className="mb-3">
-              <CInputGroupText>Descripcion de la Ponderacion</CInputGroupText>
-              <CFormInput
-                placeholder="Ingrese la descripcion de la Ponderacion"
-                value={nuevaPonderacion}
-                onChange={(e) => setNuevaPonderacion(e.target.value)}
-              />
+            <CInputGroupText>Descripcion de la Ponderacion</CInputGroupText>
+            <CFormInput
+            type="text"
+            placeholder="Ingrese una descripcion de la ponderacion"
+            maxLength={50}
+            value={nuevaPonderacion.Descripcion_ponderacion}
+            onChange={(e) => {
+              // Remover cualquier caracter especial del valor ingresado
+              const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+              if (regex.test(e.target.value)) {
+                setNuevaPonderacion({ ...nuevaPonderacion, Descripcion_ponderacion: e.target.value });
+              } else {
+                // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                Swal.fire({
+                  icon: 'warning',
+                  title: 'Caracter no permitido',
+                  text: 'Solo se permiten letras y espacios.',
+                });
+              }
+            }}
+          />
             </CInputGroup>
           </CForm>
         </CModalBody>
@@ -271,14 +307,14 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
           <CButton color="secondary" onClick={() => setModalVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="success" style={{ color: 'white' }} onClick={handleCreatePonderacion}>
-            Crear Ponderacion
+          <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreatePonderacion}>
+          <CIcon icon={cilSave} style={{ marginRight: '5px' }} />Guardar
           </CButton>
         </CModalFooter>
       </CModal>
 
       {/* Modal para actualizar una Ponderacion */}
-      <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)}>
+      <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Actualizar Ponderacion</CModalTitle>
         </CModalHeader>
@@ -287,10 +323,27 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
             <CInputGroup className="mb-3">
               <CInputGroupText>Descripcion de la Ponderacion</CInputGroupText>
               <CFormInput
-                placeholder="Ingrese la descripcion de la ponderacion"
-                value={ponderacionToUpdate.Descripcion_ponderacion}
-                onChange={(e) => setPonderacionToUpdate({ ...ponderacionToUpdate, Descripcion_ponderacion: e.target.value })} // Actualiza la descrp de la ponderacion
-              />
+              maxLength={50}
+              placeholder="Ingrese la nueva descripcion de la ponderacion"
+              value={ponderacionToUpdate.Descripcion_ponderacion}
+              onChange={(e) => {
+                // Remover cualquier caracter especial del valor ingresado
+                const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+                if (regex.test(e.target.value)) {
+                  setPonderacionToUpdate({
+                    ...ponderacionToUpdate,
+                    Descripcion_ponderacion: e.target.value,
+                  });
+                } else {
+                  // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Caracter no permitido',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
+            />
             </CInputGroup>
           </CForm>
         </CModalBody>
@@ -298,14 +351,14 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
           <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="info" style={{ color: 'white' }} onClick={handleUpdatePonderacion}>
-            Actualizar Ponderacion
+          <CButton style={{  backgroundColor: '#F9B64E',color: 'white' }} onClick={handleUpdatePonderacion}>
+          <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
           </CButton>
         </CModalFooter>
       </CModal>
 
       {/* Modal para eliminar una ponderacion */}
-      <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)}>
+      <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Confirmar Eliminación</CModalTitle>
         </CModalHeader>
@@ -316,8 +369,8 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
           <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="danger" style={{ color: 'white' }} onClick={handleDeletePonderacion}>
-            Eliminar Ponderación 
+          <CButton style={{  backgroundColor: '#E57368',color: 'white' }} onClick={handleDeletePonderacion}>
+          <CIcon icon={cilTrash} style={{ marginRight: '5px' }} />Eliminar 
           </CButton>
         </CModalFooter>
       </CModal>

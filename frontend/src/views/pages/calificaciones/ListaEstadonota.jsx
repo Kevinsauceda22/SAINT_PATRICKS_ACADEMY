@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilInfo, cilPen, cilTrash } from '@coreui/icons'; // Importar iconos específicos
-
+import { cilPen, cilTrash, cilPlus, cilSave } from '@coreui/icons'; // Importar iconos específicos
+import swal from 'sweetalert2';
 import {
   CButton,
-  CCard,
-  CCardBody,
-  CCol,
   CContainer,
   CForm,
   CFormInput,
@@ -25,7 +22,6 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
-  CPaginationItem,
 } from '@coreui/react';
 
 
@@ -63,50 +59,92 @@ const ListaEstadonota = () => {
   };
 
   const handleCreateEstadonota = async () => {
+    // Convertir a formato "Primera letra mayúscula, el resto minúsculas"
+    const formattedEstado = nuevoEstadonota
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+
     try {
       const response = await fetch('http://localhost:4000/api/estadoNotas/crearestadonota', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Descripcion: nuevoEstadonota }),
+        body: JSON.stringify({ Descripcion: formattedEstado }),
       });
+       
+      const result = await response.json();
 
       if (response.ok) {
         fetchEstadonota();
         setModalVisible(false);
         setNuevoEstadonota('');
+        swal.fire({
+          icon: 'success',
+          title: 'Creación exitosa',
+          text: 'El estado nota se ha creado correctamente.',
+        });
       } else {
-        console.error('Error al crear el estado nota:', response.statusText);
+        swal.fire({
+          icon: 'error',
+          title: 'Error de validación',
+          text: result.Mensaje || 'Hubo un error al crear el estado nota.',
+        });
       }
     } catch (error) {
       console.error('Error al crear el estado nota:', error);
+      swal.fire({
+        icon: 'error',
+        title: 'Error en el servidor',
+        text: 'Hubo un error en el servidor. Inténtalo más tarde.',
+      });
     }
   };
 
 
   
   const handleUpdateEstadonota = async () => {
+    // Convertir a formato "Primera letra mayúscula, el resto minúsculas"
+    const formattedEstado = estadonotaToUpdate.Descripcion
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
     try {
       const response = await fetch('http://localhost:4000/api/estadoNotas/actualizarestadonota', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Cod_estado: estadonotaToUpdate.Cod_estado, Descripcion: estadonotaToUpdate.Descripcion }), // Envío de la descripcion actualizado y Cod_estado en el cuerpo
+        body: JSON.stringify({ Cod_estado: estadonotaToUpdate.Cod_estado, Descripcion: formattedEstado }), // Envío de la descripcion actualizado y Cod_estado en el cuerpo
       });
+
+      const result = await response.json();
 
       if (response.ok) {
         fetchEstadonota(); // Refrescar la lista de Estadonota después de la actualización
         setModalUpdateVisible(false); // Cerrar el modal de actualización
         setEstadonotaToUpdate({}); // Resetear el ciclo a actualizar
+        swal.fire({
+          icon: 'success',
+          title: 'Actualización exitosa',
+          text: 'El estado nota se ha actualizado correctamente.',
+        });
       } else {
-        console.error('Error al actualizar el estado nota:', response.statusText);
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: result.Mensaje || 'Hubo un error al actualizar el estado nota.',
+        });
       }
     } catch (error) {
       console.error('Error al actualizar el estado nota:', error);
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un error en el servidor.',
+      });
     }
   };
+  
 
 
   const handleDeleteEstadonota = async () => {
@@ -119,15 +157,34 @@ const ListaEstadonota = () => {
         body: JSON.stringify({ Cod_estado: estadonotaToDelete.Cod_estado }), // Enviar Cod_estado en el cuerpo
       });
 
+      // Parsear la respuesta JSON del servidor
+      const result = await response.json();
+
       if (response.ok) {
         fetchEstadonota(); // Refrescar la lista de Estadonota después de la eliminación
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
         setEstadonotaToDelete({}); // Resetear el ciclo a eliminar
+        swal.fire({
+          icon: 'success',
+          title: 'Eliminación exitosa',
+          text: 'El estado nota se ha eliminado correctamente.',
+        });
       } else {
-        console.error('Error al eliminar el estado  nota:', response.statusText);
+        // Si hubo un error, mostrar el mensaje devuelto por el servidor
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: result.Mensaje || 'Hubo un error al eliminar el estado nota.',
+        });
       }
     } catch (error) {
+      // Manejo de errores inesperados (como problemas de red)
       console.error('Error al eliminar el estado nota:', error);
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un error en el servidor.',
+      });
     }
   };
 
@@ -165,34 +222,40 @@ const paginate = (pageNumber) => {
 }
  return (
   <CContainer>
-    <h1>Lista de Estadonota</h1>
-    {/* Barra de búsqueda */}
-    <CInputGroup style={{ marginBottom: '20px', width: '400px', float: 'right' }}>
-    <CInputGroupText>Buscar</CInputGroupText>
-    <CFormInput placeholder="Buscar estado nota..." onChange={handleSearch} value={searchTerm} />
-     {/* Botón para limpiar la búsqueda */}
-      <CButton 
-        style={{ backgroundColor: '#cccccc', color: 'black' }}
-        onClick={() => {
-          setSearchTerm(''); // Limpiar el campo de búsqueda
-          setCurrentPage(1); // Resetear a la primera página
-        }}>
-        Limpiar
-      </CButton>
-    </CInputGroup>
+    <h1>Mantenimiento Estado nota</h1>
+    {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
+      {/* Barra de búsqueda */}
+      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
+        <CInputGroupText>Buscar</CInputGroupText>
+        <CFormInput placeholder="Buscar estado nota..." onChange={handleSearch} value={searchTerm} />
+        {/* Botón para limpiar la búsqueda */}
+        <CButton
+          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
+          onClick={() => {
+            setSearchTerm(''); // Limpiar el campo de búsqueda
+            setCurrentPage(1); // Resetear a la primera página
+          }}
+        >
+          Limpiar
+        </CButton>
+      </CInputGroup>
 
-    
-    <CButton 
-      color="success"  // Usar el color predefinido 'success' para el botón verde
-      style={{ color: 'white', marginBottom: '20px' }}  // Letras blancas y margen inferior
-      onClick={() => setModalVisible(true)}>
-      Crear Estado Nota
-    </CButton>
+      {/* Botón "Nuevo" alineado a la derecha */}
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
+        Nuevo
+      </CButton>
+    </div>
+
 
 
     {/* Tabla para mostrar Estadonota */}
     {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '220px', overflowY: 'scroll', marginBottom: '20px' }}>
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
         <CTable striped bordered hover>
           <CTableHead>
             <CTableRow>
@@ -210,15 +273,12 @@ const paginate = (pageNumber) => {
                 </CTableDataCell>
                 <CTableDataCell>{estadonota.Descripcion}</CTableDataCell>
                 <CTableDataCell>
-                  <CButton color="info" style={{ marginRight: '10px' }} onClick={() => openUpdateModal(estadonota)}>
+                  <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(estadonota)}>
                     <CIcon icon={cilPen} />
                   </CButton>
-                  <CButton color="danger" style={{ marginRight: '10px' }} onClick={() => openDeleteModal(estadonota)}>
+                  <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(estadonota)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
-                  <CButton color="primary" style={{ marginRight: '10px' }}>
-                      <CIcon icon={cilInfo} />
-                    </CButton>
                 </CTableDataCell>
               </CTableRow>
             ))}
@@ -230,14 +290,13 @@ const paginate = (pageNumber) => {
     <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <CPagination aria-label="Page navigation">
         <CButton
-          color="secondary"
+          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === 1} // Deshabilitar si estás en la primera página
           onClick={() => paginate(currentPage - 1)}>
           Anterior
         </CButton>
         <CButton
-          color="secondary"
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === Math.ceil(filteredEstadonota.length / recordsPerPage)} // Deshabilitar si estás en la última página
           onClick={() => paginate(currentPage + 1)}>
           Siguiente
@@ -251,9 +310,9 @@ const paginate = (pageNumber) => {
 
 
     {/* Modal Crear Estado nota */}
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
       <CModalHeader>
-        <CModalTitle>Crear Nuevo Estado Nota</CModalTitle>
+        <CModalTitle>Nuevo Estado Nota</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CForm>
@@ -262,7 +321,24 @@ const paginate = (pageNumber) => {
               <CFormInput
                 placeholder="Ingrese el la descripción del estado"
                 value={nuevoEstadonota}
-                onChange={(e) => setNuevoEstadonota(e.target.value)}/>
+                maxLength={50} // Limitar a 50 caracteres
+                onChange={(e) => {
+                  const value = e.target.value
+                    .trimStart() // Evitar espacios al inicio
+                    .replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+
+                  const regex = /^[a-zA-Z\s]*$/; // Solo letras y espacios
+                  if (regex.test(value)) {
+                    setNuevoEstadonota(value);
+                  } else {
+                    swal.fire({
+                      icon: 'warning',
+                      title: 'Caracteres no permitidos',
+                      text: 'Solo se permiten letras y espacios.',
+                    });
+                  }
+                }}
+              />
             </CInputGroup>
           </CForm>
         </CModalBody>
@@ -270,14 +346,14 @@ const paginate = (pageNumber) => {
           <CButton color="secondary" onClick={() => setModalVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="success" style={{ color: 'white' }} onClick={handleCreateEstadonota}>
-            Crear Estado
+          <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateEstadonota}>
+          <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
           </CButton>
         </CModalFooter>
       </CModal>
 
     {/* Modal Actualizar Estado nota*/}
-    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)}>
+    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Actualizar Estado nota</CModalTitle>
       </CModalHeader>
@@ -288,7 +364,23 @@ const paginate = (pageNumber) => {
             <CFormInput
               placeholder="Ingrese la descripción del estado"
               value={estadonotaToUpdate.Descripcion}
-              onChange={(e) => setEstadonotaToUpdate({ ...estadonotaToUpdate, Descripcion: e.target.value })}
+              maxLength={50} // Limitar a 50 caracteres
+              onChange={(e) => {
+                const value = e.target.value
+                  .trimStart() // Evitar espacios al inicio
+                  .replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+
+                const regex = /^[a-zA-Z\s]*$/; // Solo letras y espacios
+                if (regex.test(value)) {
+                  setEstadonotaToUpdate({ ...estadonotaToUpdate, Descripcion: value });
+                } else {
+                  swal.fire({
+                    icon: 'warning',
+                    title: 'Caracteres no permitidos',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
             />
           </CInputGroup>
         </CForm>
@@ -297,14 +389,14 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="info" style={{ color: 'white' }}  onClick={handleUpdateEstadonota}>
-          Actualizar Estado
+        <CButton style={{  backgroundColor: '#F9B64E',color: 'white' }}  onClick={handleUpdateEstadonota}>
+        <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
         </CButton>
       </CModalFooter>
     </CModal>
 
     {/* Modal Eliminar estado nota */}
-    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)}>
+    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Confirmar Eliminación</CModalTitle>
       </CModalHeader>
@@ -315,8 +407,8 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="danger" style={{ color: 'white' }}  onClick={handleDeleteEstadonota}>
-          Eliminar Estado
+        <CButton style={{  backgroundColor: '#E57368',color: 'white' }} onClick={handleDeleteEstadonota}>
+        <CIcon icon={cilTrash} style={{ marginRight: '5px' }} /> Eliminar
         </CButton>
       </CModalFooter>
     </CModal>

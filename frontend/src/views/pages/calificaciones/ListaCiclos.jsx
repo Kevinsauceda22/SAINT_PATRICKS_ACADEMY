@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilInfo, cilPen, cilTrash } from '@coreui/icons'; // Importar iconos específicos
+import {  cilPen, cilTrash, cilPlus,cilSave } from '@coreui/icons'; // Importar iconos específicos
+import Swal from 'sweetalert2';
+
 
 import {
   CButton,
@@ -62,31 +64,46 @@ const ListaCiclos = () => {
     }
   };
 
+  const validarCiclo = () => {
+    if (!nuevoCiclo.Nombre_ciclo) {
+      Swal.fire('Error', 'El nombre del ciclo es obligatorio', 'error');
+      return false;
+    }
+    return true;
+  };
+
+
   const handleCreateCiclo = async () => {
+    if (!validarCiclo()) return;
     try {
       const response = await fetch('http://localhost:4000/api/ciclos/crearCiclo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Nombre_ciclo: nuevoCiclo }),
+        body: JSON.stringify(nuevoCiclo),
       });
 
       if (response.ok) {
         fetchCiclos();
         setModalVisible(false);
         setNuevoCiclo('');
+
+       Swal.fire('Creado', 'El ciclo ha sido creado exitosamente', 'success');
       } else {
-        console.error('Error al crear el ciclo:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al crear el ciclo', 'error');
       }
     } catch (error) {
-      console.error('Error al crear el ciclo:', error);
+      Swal.fire('Error', 'Hubo un problema al crear el ciclo', 'error');
     }
-  };
+  };  
 
 
-  
   const handleUpdateCiclo = async () => {
+    if (!cicloToUpdate.Nombre_ciclo) {
+      Swal.fire('Error', 'El nombre del ciclo es obligatorio', 'error');
+      return false;
+    }
     try {
       const response = await fetch('http://localhost:4000/api/ciclos/actualizarCiclo', {
         method: 'PUT',
@@ -100,11 +117,16 @@ const ListaCiclos = () => {
         fetchCiclos(); // Refrescar la lista de ciclos después de la actualización
         setModalUpdateVisible(false); // Cerrar el modal de actualización
         setCicloToUpdate({}); // Resetear el ciclo a actualizar
+        Swal.fire('Actualizado', 'El ciclo ha sido actualizado correctamente', 'success');
       } else {
-        console.error('Error al actualizar el ciclo:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al actualizar el ciclo', 'error');
+      }
+      if (!cicloToUpdate.Nombre_ciclo) {
+        Swal.fire('Error', 'El nombre del ciclo es obligatorio', 'error');
+        return false;
       }
     } catch (error) {
-      console.error('Error al actualizar el ciclo:', error);
+      Swal.fire('Error', 'Hubo un problema al actualizar el ciclo', 'error');
     }
   };
 
@@ -123,11 +145,12 @@ const ListaCiclos = () => {
         fetchCiclos(); // Refrescar la lista de ciclos después de la eliminación
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
         setCicloToDelete({}); // Resetear el ciclo a eliminar
+        Swal.fire('Eliminado', 'El ciclo ha sido eliminado correctamente', 'success');
       } else {
-        console.error('Error al eliminar el ciclo:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al eliminar el ciclo', 'error');
       }
     } catch (error) {
-      console.error('Error al eliminar el ciclo:', error);
+      Swal.fire('Error', 'Hubo un problema al eliminar el ciclo', 'error');
     }
   };
 
@@ -165,34 +188,39 @@ const paginate = (pageNumber) => {
 }
  return (
   <CContainer>
-    <h1>Lista de Ciclos</h1>
-    {/* Barra de búsqueda */}
-    <CInputGroup style={{ marginBottom: '20px', width: '400px', float: 'right' }}>
-    <CInputGroupText>Buscar</CInputGroupText>
-    <CFormInput placeholder="Buscar ciclo..." onChange={handleSearch} value={searchTerm} />
-     {/* Botón para limpiar la búsqueda */}
-      <CButton 
-        style={{ backgroundColor: '#cccccc', color: 'black' }}
-        onClick={() => {
-          setSearchTerm(''); // Limpiar el campo de búsqueda
-          setCurrentPage(1); // Resetear a la primera página
-        }}>
-        Limpiar
-      </CButton>
-    </CInputGroup>
+    <h1>Mantenimiento Ciclos</h1>
+    {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
+      {/* Barra de búsqueda */}
+      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
+        <CInputGroupText>Buscar</CInputGroupText>
+        <CFormInput placeholder="Buscar ciclo..." onChange={handleSearch} value={searchTerm} />
+        {/* Botón para limpiar la búsqueda */}
+        <CButton
+          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
+          onClick={() => {
+            setSearchTerm(''); // Limpiar el campo de búsqueda
+            setCurrentPage(1); // Resetear a la primera página
+          }}
+        >
+          Limpiar
+        </CButton>
+      </CInputGroup>
 
-    
-    <CButton 
-      color="success"  // Usar el color predefinido 'success' para el botón verde
-      style={{ color: 'white', marginBottom: '20px' }}  // Letras blancas y margen inferior
-      onClick={() => setModalVisible(true)}>
-      Crear Ciclo
-    </CButton>
+      {/* Botón "Nuevo" alineado a la derecha */}
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
+        Nuevo
+      </CButton>
+    </div>
 
 
     {/* Tabla para mostrar ciclos */}
     {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '220px', overflowY: 'scroll', marginBottom: '20px' }}>
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
         <CTable striped bordered hover>
           <CTableHead>
             <CTableRow>
@@ -210,14 +238,11 @@ const paginate = (pageNumber) => {
                 </CTableDataCell>
                 <CTableDataCell>{ciclo.Nombre_ciclo}</CTableDataCell>
                 <CTableDataCell>
-                  <CButton color="info" style={{ marginRight: '10px' }} onClick={() => openUpdateModal(ciclo)}>
+                  <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(ciclo)}>
                     <CIcon icon={cilPen} />
                   </CButton>
-                  <CButton color="danger" style={{ marginRight: '10px' }} onClick={() => openDeleteModal(ciclo)}>
+                  <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(ciclo)}>
                     <CIcon icon={cilTrash} />
-                  </CButton>
-                  <CButton color="primary" style={{ marginRight: '10px' }}>
-                    <CIcon icon={cilInfo} />
                   </CButton>
                 </CTableDataCell>
               </CTableRow>
@@ -230,14 +255,13 @@ const paginate = (pageNumber) => {
     <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <CPagination aria-label="Page navigation">
         <CButton
-          color="secondary"
+         style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === 1} // Deshabilitar si estás en la primera página
           onClick={() => paginate(currentPage - 1)}>
           Anterior
         </CButton>
         <CButton
-          color="secondary"
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
           disabled={currentPage === Math.ceil(filteredCiclos.length / recordsPerPage)} // Deshabilitar si estás en la última página
           onClick={() => paginate(currentPage + 1)}>
           Siguiente
@@ -251,18 +275,34 @@ const paginate = (pageNumber) => {
 
 
     {/* Modal Crear Ciclo */}
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
       <CModalHeader>
-        <CModalTitle>Crear Nuevo Ciclo</CModalTitle>
+        <CModalTitle>Nuevo Ciclo</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CForm>
             <CInputGroup className="mb-3">
               <CInputGroupText>Nombre del Ciclo</CInputGroupText>
               <CFormInput
-                placeholder="Ingrese el nombre del ciclo"
-                value={nuevoCiclo}
-                onChange={(e) => setNuevoCiclo(e.target.value)}/>
+              type="text"
+              placeholder="Ingrese el nombre del ciclo"
+              maxLength={20}
+              value={nuevoCiclo.Nombre_ciclo}
+              onChange={(e) => {
+                // Remover cualquier caracter especial del valor ingresado
+                const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+                if (regex.test(e.target.value)) {
+                  setNuevoCiclo({ ...nuevoCiclo, Nombre_ciclo: e.target.value });
+                } else {
+                  // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Caracter no permitido',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
+            />
             </CInputGroup>
           </CForm>
         </CModalBody>
@@ -270,14 +310,14 @@ const paginate = (pageNumber) => {
           <CButton color="secondary" onClick={() => setModalVisible(false)}>
             Cancelar
           </CButton>
-          <CButton color="success" style={{ color: 'white' }} onClick={handleCreateCiclo}>
-            Crear Ciclo
+          <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateCiclo}>
+          <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
           </CButton>
         </CModalFooter>
       </CModal>
 
     {/* Modal Actualizar Ciclo */}
-    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)}>
+    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Actualizar Ciclo</CModalTitle>
       </CModalHeader>
@@ -286,9 +326,26 @@ const paginate = (pageNumber) => {
           <CInputGroup className="mb-3">
             <CInputGroupText>Nombre del Ciclo</CInputGroupText>
             <CFormInput
+              maxLength={20}
               placeholder="Ingrese el nuevo nombre del ciclo"
               value={cicloToUpdate.Nombre_ciclo}
-              onChange={(e) => setCicloToUpdate({ ...cicloToUpdate, Nombre_ciclo: e.target.value })}
+              onChange={(e) => {
+                // Remover cualquier caracter especial del valor ingresado
+                const regex = /^[a-zA-Z\s]*$/; // Solo permite letras y espacios
+                if (regex.test(e.target.value)) {
+                  setCicloToUpdate({
+                    ...cicloToUpdate,
+                    Nombre_ciclo: e.target.value,
+                  });
+                } else {
+                  // Mostrar un mensaje de error opcional usando SweetAlert2 si se desea
+                  Swal.fire({
+                    icon: 'warning',
+                    title: 'Caracter no permitido',
+                    text: 'Solo se permiten letras y espacios.',
+                  });
+                }
+              }}
             />
           </CInputGroup>
         </CForm>
@@ -297,14 +354,14 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="info" style={{ color: 'white' }}  onClick={handleUpdateCiclo}>
-          Actualizar Ciclo
+        <CButton style={{  backgroundColor: '#F9B64E',color: 'white' }}  onClick={handleUpdateCiclo}>
+        <CIcon icon={cilPen} style={{ marginRight: '5px' }} />Actualizar
         </CButton>
       </CModalFooter>
     </CModal>
 
     {/* Modal Eliminar Ciclo */}
-    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)}>
+    <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
       <CModalHeader>
       <CModalTitle>Confirmar Eliminación</CModalTitle>
       </CModalHeader>
@@ -315,8 +372,8 @@ const paginate = (pageNumber) => {
         <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
           Cancelar
         </CButton>
-        <CButton color="danger" style={{ color: 'white' }}  onClick={handleDeleteCiclo}>
-          Eliminar Ciclo
+        <CButton style={{  backgroundColor: '#E57368',color: 'white' }}  onClick={handleDeleteCiclo}>
+        <CIcon icon={cilTrash} style={{ marginRight: '5px' }} />Eliminar
         </CButton>
       </CModalFooter>
     </CModal>
