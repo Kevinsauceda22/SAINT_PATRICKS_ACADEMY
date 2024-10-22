@@ -13,6 +13,7 @@ import {
   cilChartLine,
   cilFile,
   cilBookmark,
+  cilUser, // Importar un ícono para los usuarios
 } from '@coreui/icons'
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react'
 
@@ -125,7 +126,28 @@ const _nav = [
       },
     ],
   },
+  {
+    component: CNavGroup,
+    name: 'Usuarios',  // Nueva sección para usuarios
+    icon: <CIcon icon={cilUser} customClassName="nav-icon" />, // Icono de usuario
+    items: [
+      {
+        component: CNavItem,
+        name: 'Lista de Usuarios',
+        to: '/pages/usuarios/listaUsuarios',
+      },
+      {
+        component: CNavItem,
+        name: 'Crear Usuario',
+        to: '/pages/usuarios/crearUsuario',
+      },
+      {
+        component: CNavItem,
+        name: 'Roles',
+        to: '/pages/usuarios/listaRoles',
+      },
+    ],
+  },
 ]
-
 
 export default _nav
