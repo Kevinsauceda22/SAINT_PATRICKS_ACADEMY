@@ -1,9 +1,10 @@
 import React, { Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom'; // Cambia BrowserRouter a Router
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
 import { AuthProvider } from "../context/AuthProvider";
+import RutaProtegida from './layout/RutaProtegida'; // Importa el componente RutaProtegida
 
 // Containers
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
@@ -18,6 +19,8 @@ const ConfirmacionEmail = React.lazy(() => import('./views/pages/email-confirmat
 const CorreoVerificado = React.lazy(() => import('./views/pages/email-check/email-check'));
 const VerificarEmail = React.lazy(() => import('./views/pages/components/verificar cuenta/verificarCuenta'));
 const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPass"));
+const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
+const Perfil = React.lazy(() => import('./views/pages/profile/profile'));
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme');
@@ -30,15 +33,13 @@ const App = () => {
       setColorMode(theme);
     }
 
-    if (isColorModeSet()) {
-      return;
+    if (!isColorModeSet()) {
+      setColorMode(storedTheme);
     }
-
-    setColorMode(storedTheme);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isColorModeSet, setColorMode, storedTheme]);
 
   return (
-    <Router> {/* Cambia BrowserRouter a Router */}
+    <Router>
       <AuthProvider>
         <Suspense
           fallback={
@@ -48,17 +49,28 @@ const App = () => {
           }
         >
           <Routes>
-            <Route exact path="/login" name="Login Page" element={<Login />} />
-            <Route exact path="/register" name="Register Page" element={<Register />} />
-            <Route exact path="/confirmacion-email/:correo" name="Confirmacion Email" element={<ConfirmacionEmail />} />
-            <Route exact path="/correo-verificado" name="Correo Verificado" element={<CorreoVerificado />} />
-            <Route exact path="/verificar-cuenta/:token_usuario" name="Verificar Cuenta" element={<VerificarEmail />} />
-            <Route exact path="/404" name="Page 404" element={<Page404 />} />
-            <Route exact path="/olvide-password/:token" name="Nueva Contraseña" element={<NuevaContrasena />} />
-            <Route exact path="/500" name="Page 500" element={<Page500 />} />
-            <Route exact path="/matricula" name="matricula" element={<Matricula />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/confirmacion-email/:correo" element={<ConfirmacionEmail />} />
+            <Route path="/correo-verificado" element={<CorreoVerificado />} />
+            <Route path="/verificar-cuenta/:token_usuario" element={<VerificarEmail />} />
+            <Route path="/404" element={<Page404 />} />
+            <Route path="/olvide-password/:token" element={<NuevaContrasena />} />
+            <Route path="/500" element={<Page500 />} />
+
+            {/* Rutas protegidas */}
+            <Route element={<RutaProtegida />}>
+              {/* Envuelve las rutas protegidas en DefaultLayout */}
+              <Route path="/" element={<DefaultLayout />}>
+                <Route path="/matricula" element={<Matricula />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Perfil />} />
+                {/* Agrega más rutas protegidas aquí */}
+              </Route>
+            </Route>
+
             <Route path="/" element={<Navigate to="/login" replace />} />
-            <Route path="*" name="Home" element={<DefaultLayout />} />
+            <Route path="*" element={<Page404 />} /> {/* Manejo de rutas no encontradas */}
           </Routes>
         </Suspense>
       </AuthProvider>

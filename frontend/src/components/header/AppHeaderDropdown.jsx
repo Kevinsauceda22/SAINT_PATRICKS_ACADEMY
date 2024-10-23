@@ -1,7 +1,6 @@
 import React from 'react'
 import {
   CAvatar,
-  CBadge,
   CDropdown,
   CDropdownDivider,
   CDropdownHeader,
@@ -12,81 +11,67 @@ import {
 import {
   cilBell,
   cilCreditCard,
-  cilCommentSquare,
-  cilEnvelopeOpen,
-  cilFile,
-  cilLockLocked,
   cilSettings,
-  cilTask,
   cilUser,
+  cilLockLocked,
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
 import avatar8 from './../../assets/images/avatars/8.jpg'
 
 const AppHeaderDropdown = () => {
+  const isDarkMode = document.body.classList.contains('dark-mode') // Cambia 'dark-mode' según la clase que use tu plantilla
+
   return (
     <CDropdown variant="nav-item">
       <CDropdownToggle placement="bottom-end" className="py-0 pe-0" caret={false}>
         <CAvatar src={avatar8} size="md" />
       </CDropdownToggle>
       <CDropdownMenu className="pt-0" placement="bottom-end">
-        <CDropdownHeader className="bg-body-secondary fw-semibold mb-2">Account</CDropdownHeader>
+        {/* Sección Cuenta */}
+        <CDropdownHeader 
+          className="fw-semibold mb-2"
+          style={{
+            backgroundColor: '#198754',
+            color: isDarkMode ? '#000000' : '#FFFFFF', // Letra negra en oscuro, blanca en claro
+          }}
+        >
+          Cuenta
+        </CDropdownHeader>
         <CDropdownItem href="#">
           <CIcon icon={cilBell} className="me-2" />
-          Updates
-          <CBadge color="info" className="ms-2">
-            42
-          </CBadge>
+          Notificaciones
         </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilEnvelopeOpen} className="me-2" />
-          Messages
-          <CBadge color="success" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilTask} className="me-2" />
-          Tasks
-          <CBadge color="danger" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilCommentSquare} className="me-2" />
-          Comments
-          <CBadge color="warning" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
-        <CDropdownHeader className="bg-body-secondary fw-semibold my-2">Settings</CDropdownHeader>
-        <CDropdownItem href="#">
+
+        {/* Sección Configuraciones */}
+        <CDropdownHeader 
+          className="fw-semibold my-2"
+          style={{
+            backgroundColor: '#198754',
+            color: isDarkMode ? '#000000' : '#FFFFFF', // Letra negra en oscuro, blanca en claro
+          }}
+        >
+          Configuraciones
+        </CDropdownHeader>
+        <CDropdownItem href="/profile">
           <CIcon icon={cilUser} className="me-2" />
-          Profile
+          Perfil
         </CDropdownItem>
         <CDropdownItem href="#">
           <CIcon icon={cilSettings} className="me-2" />
-          Settings
+          Ajustes
         </CDropdownItem>
         <CDropdownItem href="#">
           <CIcon icon={cilCreditCard} className="me-2" />
-          Payments
-          <CBadge color="secondary" className="ms-2">
-            42
-          </CBadge>
+          Pagos
         </CDropdownItem>
-        <CDropdownItem href="#">
-          <CIcon icon={cilFile} className="me-2" />
-          Projects
-          <CBadge color="primary" className="ms-2">
-            42
-          </CBadge>
-        </CDropdownItem>
+
         <CDropdownDivider />
-        <CDropdownItem href="#">
+
+        {/* Botón Bloquear cuenta */}
+        <CDropdownItem href="#" className={isDarkMode ? 'text-white' : 'text-success'}>
           <CIcon icon={cilLockLocked} className="me-2" />
-          Lock Account
+          Cerrar Sesión
         </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>

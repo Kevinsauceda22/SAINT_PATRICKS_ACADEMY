@@ -1,5 +1,6 @@
-import React from 'react'
-import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/index'
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+import { AppContent, AppSidebar, AppFooter, AppHeader } from '../components/index';
 
 const DefaultLayout = () => {
   return (
@@ -8,12 +9,13 @@ const DefaultLayout = () => {
       <div className="wrapper d-flex flex-column min-vh-100">
         <AppHeader />
         <div className="body flex-grow-1">
-          <AppContent />
+          {/* Aquí se renderizarán los componentes secundarios */}
+          <Outlet />
         </div>
         <AppFooter />
       </div>
     </div>
-  )
+  );
 }
 
-export default DefaultLayout
+export default DefaultLayout;

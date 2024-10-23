@@ -1,0 +1,152 @@
+.profile-container {
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.profile-image-container {
+  position: relative;
+}
+
+.profile-image {
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #e5e7eb;
+}
+
+.profile-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.edit-image-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  padding: 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.edit-image-button:hover {
+  background-color: #e5e7eb;
+}
+
+.edit-image-button svg {
+  width: 1rem;
+  height: 1rem;
+  color: #4b5563;
+}
+
+.profile-info {
+  margin-left: 1.5rem;
+}
+
+.profile-name {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0;
+}
+
+.profile-username {
+  color: #6b7280;
+  margin: 0;
+}
+
+.info-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.info-item label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  display: block;
+}
+
+.info-item p {
+  color: #1f2937;
+  margin: 0.25rem 0 0 0;
+}
+
+.bio {
+  color: #4b5563;
+  line-height: 1.5;
+}
+
+.edit-button {
+  width: 100%;
+  margin-top: 1.5rem;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.edit-button:hover {
+  background-color: #1d4ed8;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .profile-info {
+    margin-left: 0;
+    margin-top: 1rem;
+  }
+}
+
+.twofa-button {
+  margin-top: 16px; /* Espacio por encima */
+  width: 100%; /* Ocupa todo el ancho */
+  background-color: #4CAF50; /* Color de fondo verde */
+  color: white; /* Color del texto */
+  padding: 12px 16px; /* Espaciado interno */
+  border: none; /* Sin borde */
+  border-radius: 8px; /* Bordes redondeados */
+  cursor: pointer; /* Cambia el cursor al pasar por encima */
+  transition: background-color 0.3s; /* Transición de color */
+}
+
+.twofa-button:hover {
+  background-color: #45a049; /* Color de fondo más oscuro al pasar el ratón */
+}

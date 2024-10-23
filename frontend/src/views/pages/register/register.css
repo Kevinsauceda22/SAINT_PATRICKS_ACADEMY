@@ -1,4 +1,4 @@
-@use url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap");
 
 * {
   margin: 0;
@@ -7,107 +7,251 @@
   font-family: "Poppins", sans-serif;
 }
 
+/* Animación para los círculos flotantes */
+@keyframes float {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(15px, 15px) rotate(180deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 body {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: linear-gradient(to right, #7189c1, #9cc28d); /* Degradado azul a verde */; 
+  background: linear-gradient(45deg, #37bb3d, #7189c1,#9cc28d);
+  background-size: 400% 400%;
+  animation: gradientBG 5s ease infinite;
+  position: relative;
+  overflow: hidden;
 }
 
+/* Animación del fondo degradado */
+@keyframes gradientBG {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Círculos flotantes */
+body::before,
+body::after {
+  content: '';
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  animation: float 8s infinite;
+}
+
+body::before {
+  top: -75px;
+  left: -75px;
+}
+
+body::after {
+  bottom: -75px;
+  right: -75px;
+  animation-delay: -4s;
+}
+
+/* Contenedor del formulario con scroll */
 .form-container {
   max-width: 700px;
   width: 100%;
-  background-color: rgba(255, 255, 255, 0.9);
-  padding: 25px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra ligera */
+  max-height: 500px; /* Limita la altura para habilitar scroll */
+  background: rgba(255, 255, 255, 0.95);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 15px 35px rgba(85, 192, 53, 0.2);
+  backdrop-filter: blur(10px);
+  animation: fadeInUp 0.8s ease-out;
+  overflow-y: auto; /* Habilita el scroll */
+  overflow-x: hidden; /* Evita el scroll horizontal */
 }
 
-.card-header, .card-subheader {
-  text-align: center;
-  font-weight: 500;
+.form-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.form-container::-webkit-scrollbar-track {
+  background: #91bd7800;
+}
+
+.form-container::-webkit-scrollbar-thumb {
+  background: #47b343a6;
+  border-radius: 2px;
 }
 
 .card-header {
-  font-size: 1.5rem;
-  color: #333;
-  margin-bottom: 10px;
+  font-size: 2rem;
+  color: #15923b;
+  margin-bottom: 15px;
+  position: relative;
+  padding-bottom: 15px;
+}
+
+.card-header::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(to right, #344cad, #20cc20);
 }
 
 .card-subheader {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 20px;
+  font-size: 1.1rem;
+  color: #09bd45;
+  margin-bottom: 30px;
+  position: center;
 }
-
-.form-container form {
-  margin-top: 20px;
+.card-header, .card-subheader {
+  text-align: center; /* Asegura que el texto esté centrado */
+  font-weight: 500;
 }
 
 .input-group {
-  margin-bottom: 20px;
-  display: flex;
-  flex-wrap: wrap;
+  margin-bottom: 25px;
+  position: relative;
 }
 
 .input-group label {
-  width: 100%;
-  color: #333;
-  margin-bottom: 5px;
+  display: block;
+  margin-bottom: 8px;
+  color: #041809;
+  font-weight: 500;
+  transform: translateY(0);
+  transition: all 0.3s ease;
 }
 
 .input-group input {
-  width: calc(50% - 10px);
-  margin-right: 10px;
-  margin-bottom: 10px;
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-}
-
-.input-group input:last-child {
-  margin-right: 0;
-}
-
-.input-group input[type="date"],
-.input-group input[type="password"],
-.input-group input[type="text"] {
   width: 100%;
+  padding: 12px 15px;
+  font-size: 1rem;
+  border: 2px solid #e1e1e1;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  transition: all 0.3s ease;
 }
 
 .input-group input:focus {
-  border-color: rgba(237, 16, 16, 0.8);
+  border-color: #2ccc5c;
+  box-shadow: 0 0 0 3px rgba(26, 42, 108, 0.1);
   outline: none;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.1);
-}
-
-.button-container {
-  text-align: center;
 }
 
 .button-container button {
-  height: 55px;
-  width: 100%;
-  color: #fff;
-  background: linear-gradient(to right, #7189c1, #9cc28d); /* Degradado azul a verde */
+  width: 30%;
+  padding: 15px;
   border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
+  border-radius: 10px;
+  background: linear-gradient(45deg, #344cad, #20cc20);
+  color: white;
+  font-size: 1.1rem;
   font-weight: 500;
-  transition: background 0.25s ease;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.button-container {
+  width: 100%; /* Asegura que el contenedor ocupe el 100% del ancho */
+  text-align: center; /* Centra el contenido dentro del contenedor */
+}
+.button-container button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
+}
+
+.button-container button:hover::before {
+  left: 100%;
 }
 
 .button-container button:hover {
-  background: rgb(81, 15, 9);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(26, 42, 108, 0.3);
 }
 
+/* Responsive */
 @media screen and (max-width: 500px) {
-  .input-group input {
-    width: 100%;
-    margin-right: 0;
+  .form-container {
+    padding: 20px;
+    max-height: 350px; /* Ajusta el tamaño para pantallas más pequeñas */
   }
+  
+  .card-header {
+    font-size: 1.5rem;
+  }
+  
+  .input-group input {
+    font-size: 0.9rem;
+  }
+}
+
+/* Círculos decorativos flotantes */
+.floating-circles {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.floating-circles div {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.floating-circles div:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  animation: float 7s infinite;
+}
+
+.floating-circles div:nth-child(2) {
+  top: 100%;
+  left: 100%;
+  animation: float 9s infinite;
+  width: 100px;
+  height: 100px;
+}
+
+.floating-circles div:nth-child(3) {
+  top: 80%;
+  left: 80%;
+  animation: float 11s infinite;
+  width: 40px;
+  height: 40px;
 }

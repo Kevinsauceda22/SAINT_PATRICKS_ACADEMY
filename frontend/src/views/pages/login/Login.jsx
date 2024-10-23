@@ -8,10 +8,10 @@ import Swal from 'sweetalert2'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faRedo } from '@fortawesome/free-solid-svg-icons';
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { useEffect } from 'react'
 
 // Login.jsx
 import useAuth from '/hooks/useAuth';
-
 
 
 const LoginRegister = () => {
@@ -38,6 +38,8 @@ const LoginRegister = () => {
 
   const navigate = useNavigate()
 
+   // Verificar si hay un token al cargar el componente
+ 
   const toggleForm = () => {
     setIsLogin((prev) => !prev)
   }
