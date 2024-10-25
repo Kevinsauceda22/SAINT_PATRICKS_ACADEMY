@@ -24,6 +24,7 @@ import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
+import personasRoutes from "./module/personas/personaRoutes.js"
 //importtacion de middleware
 
 
@@ -98,9 +99,11 @@ app.use('/api/aula', aulasRoutes);
 app.use('/api/actividadesExtracurriculares', actividadesextraRoutes);
 // Usar las rutas de solicitud
 app.use('/api/solicitud', solicitudRoutes);
-
 // Pagos y finanzas
 app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
+
+// Rutas para manejar personas
+app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;

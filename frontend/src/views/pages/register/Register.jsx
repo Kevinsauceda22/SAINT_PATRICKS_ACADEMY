@@ -1,133 +1,196 @@
+// ParentProfileForm.jsx
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import './register.css';
+import '../register/Register.css';
 
-const Register = () => {
-  const location = useLocation();
-  const {
-    primerNombre: initialPrimerNombre,
-    segundoNombre: initialSegundoNombre,
-    primerApellido: initialPrimerApellido,
-    segundoApellido: initialSegundoApellido,
-    dni: initialDni,
-    nacionalidad: initialNacionalidad,
-    direccion: initialDireccion,
-    fechaNacimiento: initialFechaNacimiento,
-  } = location.state || {}; // Recupera el estado si está disponible
+const ParentProfileForm = ({ preloadedData }) => {
+  const [formData, setFormData] = useState({
+    dni_persona: preloadedData?.dni_persona || '',
+    nombre: preloadedData?.nombre || '',
+    segundo_nombre: '',
+    primer_apellido: preloadedData?.primer_apellido || '',
+    segundo_apellido: '',
+    nacionalidad: '',
+    direccion_persona: '',
+    fecha_nacimiento: '',
+    cod_tipo_persona: 'PADRE',
+    cod_departamento: '',
+    cod_genero: ''
+  });
 
-  // Estados locales para manejar los valores de los inputs
-  const [primerNombre, setPrimerNombre] = useState(initialPrimerNombre || '');
-  const [segundoNombre, setSegundoNombre] = useState(initialSegundoNombre || '');
-  const [primerApellido, setPrimerApellido] = useState(initialPrimerApellido || '');
-  const [segundoApellido, setSegundoApellido] = useState(initialSegundoApellido || '');
-  const [dni, setDni] = useState(initialDni || '');
-  const [nacionalidad, setNacionalidad] = useState(initialNacionalidad || '');
-  const [direccion, setDireccion] = useState(initialDireccion || '');
-  const [fechaNacimiento, setFechaNacimiento] = useState(initialFechaNacimiento || '');
-  const [password, setPassword] = useState('');
-  const [repeatPassword, setRepeatPassword] = useState('');
+  const departamentos = [
+    { id: '1', nombre: 'Francisco Morazán', municipios: ['Tegucigalpa', 'Valle de Ángeles'] },
+    { id: '2', nombre: 'Cortés', municipios: ['San Pedro Sula', 'Puerto Cortés'] },
+  ];
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log('Datos del padre:', formData);
+  };
 
   return (
-    <div className="form-container">
-      <div className="card">
-        <div className="card-header">Formulario</div>
-        <div className="card-subheader">Saint Patrick's Academy</div>
-        <form>
-          <div className="input-group">
-            <label>Nombre del alumno</label>
-            <input
-              type="text"
-              placeholder="Primer Nombre"
-              value={primerNombre}
-              onChange={(e) => setPrimerNombre(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Segundo Nombre"
-              value={segundoNombre}
-              onChange={(e) => setSegundoNombre(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Primer Apellido"
-              value={primerApellido}
-              onChange={(e) => setPrimerApellido(e.target.value)}
-              required
-            />
-            <input
-              type="text"
-              placeholder="Segundo Apellido"
-              value={segundoApellido}
-              onChange={(e) => setSegundoApellido(e.target.value)}
-            />
-          </div>
-          <div className="input-group">
-            <label>DNI</label>
-            <input
-              type="text"
-              placeholder="DNI"
-              value={dni}
-              onChange={(e) => setDni(e.target.value)}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label>Nacionalidad</label>
-            <input
-              type="text"
-              placeholder="Nacionalidad"
-              value={nacionalidad}
-              onChange={(e) => setNacionalidad(e.target.value)}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label>Dirección</label>
-            <input
-              type="text"
-              placeholder="Dirección o Domicilio"
-              value={direccion}
-              onChange={(e) => setDireccion(e.target.value)}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label>Fecha de Nacimiento</label>
-            <input
-              type="date"
-              value={fechaNacimiento}
-              onChange={(e) => setFechaNacimiento(e.target.value)}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label>Contraseña</label>
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="input-group">
-            <label>Repite la contraseña</label>
-            <input
-              type="password"
-              placeholder="Repite la contraseña"
-              value={repeatPassword}
-              onChange={(e) => setRepeatPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="button-container">
-            <button type="submit">Enviar</button>
-          </div>
-        </form>
+    <div className="profile-container">
+      <div className="profile-header">
+        <h1 className="profile-title">Registro de Padre de Familia</h1>
+        <p className="profile-subtitle">Ahora completaremos su perfil</p>
       </div>
+      
+      <form onSubmit={handleSubmit}>
+        <div className="form-section">
+          <h2 className="form-section-title">Información Personal</h2>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="dni_persona">DNI</label>
+              <input
+                className="form-input"
+                id="dni_persona"
+                name="dni_persona"
+                value={formData.dni_persona}
+                onChange={handleInputChange}
+                disabled={preloadedData?.dni_persona}
+                placeholder="Ingrese su DNI"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="nombre">Nombre</label>
+              <input
+                className="form-input"
+                id="nombre"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleInputChange}
+                disabled={preloadedData?.nombre}
+                placeholder="Ingrese su nombre"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="segundo_nombre">Segundo Nombre</label>
+              <input
+                className="form-input"
+                id="segundo_nombre"
+                name="segundo_nombre"
+                value={formData.segundo_nombre}
+                onChange={handleInputChange}
+                placeholder="Ingrese su segundo nombre"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="primer_apellido">Primer Apellido</label>
+              <input
+                className="form-input"
+                id="primer_apellido"
+                name="primer_apellido"
+                value={formData.primer_apellido}
+                onChange={handleInputChange}
+                disabled={preloadedData?.primer_apellido}
+                placeholder="Ingrese su primer apellido"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="segundo_apellido">Segundo Apellido</label>
+              <input
+                className="form-input"
+                id="segundo_apellido"
+                name="segundo_apellido"
+                value={formData.segundo_apellido}
+                onChange={handleInputChange}
+                placeholder="Ingrese su segundo apellido"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="nacionalidad">Nacionalidad</label>
+              <input
+                className="form-input"
+                id="nacionalidad"
+                name="nacionalidad"
+                value={formData.nacionalidad}
+                onChange={handleInputChange}
+                placeholder="Ingrese su nacionalidad"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h2 className="form-section-title">Información de Contacto y Ubicación</h2>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="direccion_persona">Dirección</label>
+              <input
+                className="form-input"
+                id="direccion_persona"
+                name="direccion_persona"
+                value={formData.direccion_persona}
+                onChange={handleInputChange}
+                placeholder="Ingrese su dirección"
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="fecha_nacimiento">Fecha de Nacimiento</label>
+              <input
+                className="form-input"
+                id="fecha_nacimiento"
+                name="fecha_nacimiento"
+                type="date"
+                value={formData.fecha_nacimiento}
+                onChange={handleInputChange}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="cod_departamento">Departamento</label>
+              <select
+                className="form-select"
+                id="cod_departamento"
+                name="cod_departamento"
+                value={formData.cod_departamento}
+                onChange={handleInputChange}
+              >
+                <option value="">Seleccione un departamento</option>
+                {departamentos.map((depto) => (
+                  <option key={depto.id} value={depto.id}>
+                    {depto.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label required-field" htmlFor="cod_genero">Género</label>
+              <select
+                className="form-select"
+                id="cod_genero"
+                name="cod_genero"
+                value={formData.cod_genero}
+                onChange={handleInputChange}
+              >
+                <option value="">Seleccione un género</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" className="submit-button">
+          Guardar Perfil
+        </button>
+      </form>
     </div>
   );
 };
 
-export default Register;
+export default ParentProfileForm;

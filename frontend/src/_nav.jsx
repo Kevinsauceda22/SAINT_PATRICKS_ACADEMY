@@ -26,19 +26,19 @@ const _nav = [
   {
     component: CNavItem,
     name: 'Asistencia',
-    to: '/pages/calificaciones/ListaAsistencia',
+    to: '/ListaAsistencia',
     icon: cilClipboard,
   },
   {
     component: CNavItem,
     name: 'Profesores',
-    to: '/pages/calificaciones/ListaProfesores',
+    to: '/ListaProfesores',
     icon: cilPeople,
   },
   {
     component: CNavItem,
     name: 'Actividades académicas',
-    to: '/pages/calificaciones/ListaActividadesAca',
+    to: '/ListaActividadesAca',
     icon: cilTask,
   },
   {
@@ -55,52 +55,52 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Asignaturas',
-        to: '/pages/calificaciones/ListaAsignaturas',
+        to: '/ListaAsignaturas',
       },
       {
         component: CNavItem,
         name: 'Ciclos',
-        to: '/pages/calificaciones/ListaCiclos',
+        to: '/ListaCiclos',
       },
       {
         component: CNavItem,
         name: 'Especialidades',
-        to: '/pages/calificaciones/ListaEspecialidades',
+        to: '/ListaEspecialidades',
       },
       {
         component: CNavItem,
         name: 'Estado asistencia',
-        to: '/pages/calificaciones/ListaEstadoasistencia',
+        to: '/ListaEstadoasistencia',
       },
       {
         component: CNavItem,
         name: 'Estado nota',
-        to: '/pages/calificaciones/ListaEstadonota',
+        to: '/ListaEstadonota',
       },
       {
         component: CNavItem,
         name: 'Grados',
-        to: '/pages/calificaciones/ListaGrados',
+        to: '/ListaGrados',
       },
       {
         component: CNavItem,
         name: 'Grado académico',
-        to: '/pages/calificaciones/ListaGradoAcademico',
+        to: '/ListaGradoAcademico',
       },
       {
         component: CNavItem,
         name: 'Parciales',
-        to: '/pages/calificaciones/ListaParciales',
+        to: '/ListaParciales',
       },
       {
         component: CNavItem,
         name: 'Ponderaciones',
-        to: '/pages/calificaciones/ListaPonderaciones',
+        to: '/ListaPonderaciones',
       },
       {
         component: CNavItem,
         name: 'Tipo de contrato',
-        to: '/pages/calificaciones/ListaTipoContrato',
+        to: '/ListaTipoContrato',
       },
       
     ],

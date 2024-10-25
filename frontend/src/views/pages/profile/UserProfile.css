@@ -1,127 +1,326 @@
 .profile-container {
-  max-width: 36rem;
-  margin: 0 auto;
-  padding: 1.5rem;
-  background-color: white;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-width: 42rem;
+  margin: 2rem auto;
+  padding: 2.5rem;
+  background: linear-gradient(135deg, #f8fff9 0%, #ffffff 50%, #f0fff2 100%);
+  border-radius: 1.5rem;
+  box-shadow: 
+    0 10px 30px rgba(75, 201, 25, 0.08),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Marco decorativo */
+.profile-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid transparent;
+  border-radius: 1.5rem;
+  background: linear-gradient(135deg, #34c759 0%, #4dd667 50%, #34c759 100%) border-box;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) padding-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Elemento decorativo esquina */
+.profile-container::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 150px;
+  height: 150px;
+  background: linear-gradient(135deg, rgba(52, 199, 89, 0.1) 0%, rgba(77, 214, 103, 0.1) 100%);
+  border-radius: 50%;
+  z-index: 0;
 }
 
 .profile-header {
   display: flex;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2.5rem;
+  position: relative;
+  z-index: 1;
 }
 
 .profile-image-container {
   position: relative;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
 }
 
 .profile-image {
-  width: 6rem;
-  height: 6rem;
-  border-radius: 50%;
+  width: 8rem;
+  height: 8rem;
+  border-radius: 1rem;
   overflow: hidden;
-  background-color: #e5e7eb;
+  border: 3px solid #ffffff;
+  background-color: #f1f3f5;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.profile-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.875rem;
+  padding: 2px;
+  background: linear-gradient(135deg, #34c759 0%, #4dd667 100%);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
 }
 
 .profile-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.profile-image:hover {
+  transform: translateY(-2px);
 }
 
 .edit-image-button {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  padding: 0.5rem;
-  background-color: #f3f4f6;
+  bottom: -0.5rem;
+  right: -0.5rem;
+  padding: 0.6rem;
+  background: #ffffff;
   border-radius: 50%;
-  border: none;
+  border: 2px solid #e5e7eb;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 2;
 }
 
 .edit-image-button:hover {
-  background-color: #e5e7eb;
+  background: linear-gradient(135deg, #34c759 0%, #4dd667 100%);
+  border-color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.edit-image-button:hover svg {
+  color: #ffffff;
 }
 
 .edit-image-button svg {
   width: 1rem;
   height: 1rem;
-  color: #4b5563;
+  color: #34c759;
+  transition: color 0.2s ease;
 }
 
 .profile-info {
-  margin-left: 1.5rem;
+  margin-left: 2.5rem;
+  position: relative;
 }
 
 .profile-name {
-  font-size: 1.5rem;
-  font-weight: bold;
+  font-size: 2rem;
+  font-weight: 700;
   color: #1f2937;
   margin: 0;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  background: linear-gradient(135deg, #1f2937 0%, #34c759 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .profile-username {
   color: #6b7280;
-  margin: 0;
+  margin: 0.5rem 0 0 0;
+  font-size: 1.1rem;
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.profile-username::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1rem;
+  height: 2px;
+  background: linear-gradient(90deg, #34c759 0%, transparent 100%);
 }
 
 .info-section {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid rgba(52, 199, 89, 0.1);
+  position: relative;
+  z-index: 1;
 }
 
 .section-title {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  margin-bottom: 0.5rem;
+  color: #34c759;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(52, 199, 89, 0.2) 0%, transparent 100%);
 }
 
 .info-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  gap: 2rem;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.info-item {
+  position: relative;
 }
 
 .info-item label {
   font-size: 0.875rem;
   color: #6b7280;
   display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .info-item p {
   color: #1f2937;
-  margin: 0.25rem 0 0 0;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
 .bio {
   color: #4b5563;
-  line-height: 1.5;
+  line-height: 1.7;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 1.5rem;
+  border-radius: 1rem;
+  margin-top: 1.5rem;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
 .edit-button {
-  width: 100%;
-  margin-top: 1.5rem;
-  padding: 0.5rem 1rem;
-  background-color: #2563eb;
+  width: max-content;
+  margin: 2rem auto 0;
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #1b5f2c 0%, #379e4a 100%);
   color: white;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.75rem;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.edit-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
 }
 
 .edit-button:hover {
-  background-color: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(52, 199, 89, 0.25);
+}
+
+.edit-button:hover::before {
+  left: 100%;
+}
+
+.twofa-button {
+  width: max-content;
+  margin: 1rem auto 0;
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #1b5f2c 0%, #379e4a 100%);
+  color: white;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(52, 199, 89, 0.2);
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.twofa-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  transition: left 0.5s ease;
+}
+
+.twofa-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(52, 199, 89, 0.25);
+}
+
+.twofa-button:hover::before {
+  left: 100%;
 }
 
 /* Responsive */
 @media (max-width: 640px) {
+  .profile-container {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
   .info-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
   
   .profile-header {
@@ -131,22 +330,27 @@
   
   .profile-info {
     margin-left: 0;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
   }
-}
+  
+  .profile-name {
+    font-size: 1.75rem;
+  }
+  
+  .profile-username {
+    justify-content: center;
+    padding-left: 0;
+  }
+  
+  .profile-username::before {
+    display: none;
+  }
+  
+  .edit-button,
+  .twofa-button {
+    width: max-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
 
-.twofa-button {
-  margin-top: 16px; /* Espacio por encima */
-  width: 100%; /* Ocupa todo el ancho */
-  background-color: #4CAF50; /* Color de fondo verde */
-  color: white; /* Color del texto */
-  padding: 12px 16px; /* Espaciado interno */
-  border: none; /* Sin borde */
-  border-radius: 8px; /* Bordes redondeados */
-  cursor: pointer; /* Cambia el cursor al pasar por encima */
-  transition: background-color 0.3s; /* Transición de color */
-}
-
-.twofa-button:hover {
-  background-color: #45a049; /* Color de fondo más oscuro al pasar el ratón */
 }

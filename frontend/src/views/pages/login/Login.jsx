@@ -9,16 +9,23 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEye, faEyeSlash, faRedo } from '@fortawesome/free-solid-svg-icons';
 import { Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { useEffect } from 'react'
+import Modal from 'react-modal';
+
 
 // Login.jsx
 import useAuth from '/hooks/useAuth';
 
 
 const LoginRegister = () => {
-  const [isLogin, setIsLogin] = useState(true)
+  const [isLogin, setIsLogin] = useState(true);
+  const [isTwoFA, setIsTwoFA] = useState(false);
+  const [twoFACode, setTwoFACode] = useState('');
+  const [isTwoFAOpen, setIsTwoFAOpen] = useState(false);
+
   const [passwordStrength, setPasswordStrength] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
+
     identificador: '',
     contraseña_usuario: '',
     confirmPassword: '',
@@ -178,132 +185,112 @@ const LoginRegister = () => {
   }
 
   // Manejador para el Login
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault()
-    const newErrors = {}
+// Manejador para el Login
+const handleLoginSubmit = async (e) => {
+  e.preventDefault();
+  const newErrors = {};
 
-    // Validación del login
-    if (!formData.identificador) newErrors.identificador = 'Identificador es requerido'
-    if (!formData.contraseña_usuario) newErrors.contraseña_usuario = 'Contraseña es requerida'
-    else if (formData.contraseña_usuario.length < 6)
-      newErrors.contraseña_usuario = 'La contraseña debe tener al menos 6 caracteres'
+  // Validación del login
+  if (!formData.identificador) {
+    newErrors.identificador = 'Identificador es requerido';
+  }
+  if (!formData.contraseña_usuario) {
+    newErrors.contraseña_usuario = 'Contraseña es requerida';
+  } else if (formData.contraseña_usuario.length < 6) {
+    newErrors.contraseña_usuario = 'La contraseña debe tener al menos 6 caracteres';
+  }
 
-    setErrors(newErrors)
+  setErrors(newErrors);
 
-    if (Object.keys(newErrors).length === 0) {
-      try {
-        const response = await axios.post('http://localhost:4000/api/usuarios/login', {
-          identificador: formData.identificador,
-          contraseña_usuario: formData.contraseña_usuario,
-        })
+  if (Object.keys(newErrors).length === 0) {
+    try {
+      const response = await axios.post('http://localhost:4000/api/usuarios/login', {
+        identificador: formData.identificador,
+        contraseña_usuario: formData.contraseña_usuario,
+      });
 
-        // Guarda el token JWT en el local storage
-        localStorage.setItem('token', response.data.token)
-        // Si el inicio de sesión es exitoso, muestra el toast de éxito
-        toast.success('Inicio de sesión exitoso.', {
+      console.log('Login exitoso:', response.data);
+
+      // Guardar datos necesarios en localStorage
+      localStorage.setItem('token', response.data.token);
+      
+      // Verificar si 2FA está habilitado y redirigir según corresponda
+      if (response.data.is_two_factor_enabled === 1) {
+        localStorage.setItem('temp_identificador', formData.identificador);
+        navigate('/Auth2FA');
+      } else {
+        navigate('/dashboard');
+        window.location.reload();
+      }
+
+    } catch (error) {
+      console.error('Error en el login:', error);
+      if (error.response) {
+        toast.error(error.response.data.mensaje || 'Error en el inicio de sesión.', {
           position: 'top-center',
           autoClose: 5000,
-          style: {
-            backgroundColor: '#4caf50',
-            color: '#ffffff',
-            fontWeight: 'bold',
-          },
-        })
-
-        // Redirigir al dashboard
-        navigate('/dashboard')
-        window.location.reload()
-      } catch (error) {
-        // Capturar los detalles del error
-        if (error.response) {
-          const errorMessage = error.response.data.mensaje // Obtener el mensaje del backend
-
-          // Mostrar un mensaje de error específico según el mensaje del backend
-          switch (errorMessage) {
-            case 'Usuario no encontrado':
-              toast.error('El correo no está registrado.', {
-                position: 'top-center',
-                autoClose: 5000,
-                style: {
-                  backgroundColor: '#ff4d4d',
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                },
-              })
-              break
-            case 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.':
-              toast.error('Por favor verifica tu correo electrónico para iniciar sesión.', {
-                position: 'top-center',
-                autoClose: 5000,
-                style: {
-                  backgroundColor: '#ff4d4d',
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                },
-              })
-              break
-            case 'Contraseña o nombre de usuario/correo incorrecto':
-              toast.error('Correo o contraseña incorrecta.', {
-                position: 'top-center',
-                autoClose: 5000,
-                style: {
-                  backgroundColor: '#ff4d4d',
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                },
-              })
-              break
-            case 'Has ingresado una contraseña antigua':
-              toast.error('Has ingresado una contraseña antigua.', {
-                position: 'top-center',
-                autoClose: 5000,
-                style: {
-                  backgroundColor: '#ff4d4d',
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                },
-              })
-              break
-            default:
-              toast.error('Error en el inicio de sesión. Intenta nuevamente.', {
-                position: 'top-center',
-                autoClose: 5000,
-                style: {
-                  backgroundColor: '#ff4d4d',
-                  color: '#ffffff',
-                  fontWeight: 'bold',
-                },
-              })
-          }
-        } else if (error.request) {
-          console.error('No se recibió respuesta del servidor:', error.request)
-          toast.error('No se recibió respuesta del servidor. Intenta nuevamente.', {
-            position: 'top-center',
-            autoClose: 5000,
-            style: {
-              backgroundColor: '#ff4d4d',
-              color: '#ffffff',
-              fontWeight: 'bold',
-            },
-          })
-        } else {
-          console.error('Error al hacer la solicitud:', error.message)
-          toast.error('Error al hacer la solicitud. Intenta nuevamente.', {
-            position: 'top-right',
-            autoClose: 5000,
-            style: {
-              backgroundColor: '#ff4d4d',
-              color: '#ffffff',
-              fontWeight: 'bold',
-            },
-          })
-        }
+        });
       }
     }
   }
+};
 
+
+// Manejador para verificar el código 2FA
+const handleTwoFA = async (twoFACode) => {
+  try {
+      const response = await axios.post('http://localhost:4000/api/usuarios/verificar-2fa', {
+          identificador: formData.identificador,
+          twoFACode, // Código ingresado por el usuario
+      });
+
+      console.log('Verificación 2FA exitosa:', response.data);
+      localStorage.setItem('token', response.data.token);
+      navigate('/dashboard');
+      window.location.reload();
+  } catch (error) {
+      console.error('Error en la verificación 2FA:', error);
+      toast.error('Código de 2FA inválido. Intenta de nuevo.', {
+          position: 'top-center',
+          autoClose: 5000,
+      });
+  }
+};
+
+// Modal de 2FA
+const TwoFAModal = ({ isOpen, onClose }) => {
+  const [twoFACode, setTwoFACode] = useState('');
+
+  const handleSubmit = (e) => {
+      e.preventDefault();
+      handleTwoFA(twoFACode); // Llamar a la función para manejar el envío del código
+      setTwoFACode(''); // Limpiar el código después del envío
+  };
+
+  if (!isOpen) return null;
+
+  return (
+      <div className="modal">
+          <div className="modal-content">
+              <span className="close" onClick={onClose}>&times;</span>
+              <h2>Ingrese el código de 2FA</h2>
+              <form onSubmit={handleSubmit}>
+                  <input
+                      type="text"
+                      value={twoFACode}
+                      onChange={(e) => setTwoFACode(e.target.value)}
+                      placeholder="Código 2FA"
+                      required
+                  />
+                  <button type="submit">Enviar</button>
+              </form>
+          </div>
+      </div>
+  );
+};
   // Manejador para el Pre-Registro
   const handleRegisterSubmit = async (e) => {
+
     e.preventDefault()
     const newErrors = {}
 

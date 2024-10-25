@@ -12,7 +12,8 @@ import {
     cambiarContrasena,
     OlvidePasssword,
     agregarEstudiante,
-    preRegistroUsuario
+    preRegistroUsuario,
+    generarCodigo2FA
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -33,6 +34,8 @@ router.get('/perfil/:cod_usuario', checkAuth, mostrarPerfil);
 router.delete('/eliminar-perfil/:cod_usuario', checkAuth, eliminarUsuarioCompleto);
 //RUTA PARA AGREGAR AL ESTUDIANTE 
 router.post('/agregar-estudiante/', checkAuth, agregarEstudiante);
+router.post('/generar-2fa', checkAuth, generarCodigo2FA);
+
 
 
 // Rutas públicas

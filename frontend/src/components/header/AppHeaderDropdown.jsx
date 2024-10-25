@@ -17,7 +17,7 @@ import {
 } from '@coreui/icons'
 import CIcon from '@coreui/icons-react'
 
-import avatar8 from './../../assets/images/avatars/8.jpg'
+import avatar8 from './../../assets/images/avatars/user.svg'
 
 const AppHeaderDropdown = () => {
   const isDarkMode = document.body.classList.contains('dark-mode') // Cambia 'dark-mode' según la clase que use tu plantilla
@@ -69,7 +69,7 @@ const AppHeaderDropdown = () => {
         <CDropdownDivider />
 
         {/* Botón Bloquear cuenta */}
-        <CDropdownItem href="#" className={isDarkMode ? 'text-white' : 'text-success'}>
+        <CDropdownItem href="/login" className={isDarkMode ? 'text-white' : 'text-success'}>
           <CIcon icon={cilLockLocked} className="me-2" />
           Cerrar Sesión
         </CDropdownItem>

@@ -21,6 +21,22 @@ const VerificarEmail = React.lazy(() => import('./views/pages/components/verific
 const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPass"));
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
 const Perfil = React.lazy(() => import('./views/pages/profile/profile'));
+const TwoAuthFA = React.lazy(() => import('./views/pages/2FA/2fa'));
+const ListaActiviadesAca = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAca'));
+const ListaAsigaturas = React.lazy(() => import('./views/pages/calificaciones/ListaAsignaturas'));
+const ListaAsistencia = React.lazy(() => import('./views/pages/calificaciones/ListaAsistencia'));
+const ListaCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaCiclos'));
+const ListaEspecialidades = React.lazy(() => import('./views/pages/calificaciones/ListaEspecialidades'));
+const ListaEstadoasistencia = React.lazy(() => import('./views/pages/calificaciones/ListaEstadoasistencia'));
+
+const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
+const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
+const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
+const ListaParciales = React.lazy(() => import('./views/pages/calificaciones/ListaParciales'));
+const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones/ListaPonderaciones'));
+
+const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
+const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme');
@@ -60,12 +76,24 @@ const App = () => {
 
             {/* Rutas protegidas */}
             <Route element={<RutaProtegida />}>
-              {/* Envuelve las rutas protegidas en DefaultLayout */}
+              <Route path="/2fa" element={<TwoAuthFA />} />
               <Route path="/" element={<DefaultLayout />}>
                 <Route path="/matricula" element={<Matricula />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Perfil />} />
-                {/* Agrega más rutas protegidas aquí */}
+                <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />
+                <Route path="/ListaAsignaturas" element={<ListaAsigaturas />} />
+                <Route path="/ListaAsistencia" element={<ListaAsistencia />} />
+                <Route path="/ListaCiclos" element={<ListaCiclos />} />
+                <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
+                <Route path="/ListaEstadoasistencia" element={<ListaEstadoasistencia />} />
+                <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />
+                <Route path="/ListaGradoAcademico" element={<ListaGradoAcademico />} />
+                <Route path="/ListaGrados" element={<ListaGrado />} />
+                <Route path="/ListaParciales" element={<ListaParciales />} />
+                <Route path="/ListaPonderaciones" element={<ListaPonderaciones />} />
+                <Route path="/ListaProfesores" element={<ListaProfesor />} />
+                <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
               </Route>
             </Route>
 

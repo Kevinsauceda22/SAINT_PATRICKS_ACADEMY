@@ -5,6 +5,9 @@ import Generar_Id from '../../helpers/generar_Id.js';
 import { enviarCorreoVerificacion, enviarCorreoRecuperacion } from '../../helpers/emailHelper.js';
 const pool = await conectarDB();
 import cors from 'cors';
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
+
 
 //importar el envio de correo
 
@@ -179,6 +182,38 @@ export const crearUsuario = async (req, res) => {
     }
 };
 
+const generarNombreUsuarioUnico = async (correo_usuario, connection) => {
+    // Obtener la parte del nombre del correo (antes de @)
+    let baseNombreUsuario = correo_usuario.split('@')[0];
+    let nombreUsuario = baseNombreUsuario;
+    let contador = 1;
+
+    // Verificar si el nombre de usuario ya existe
+    const [existingUser] = await connection.query(
+        'SELECT nombre_usuario FROM tbl_usuarios WHERE nombre_usuario = ?', 
+        [nombreUsuario]
+    );
+
+    // Si ya existe, agregar un número al final e ir incrementando
+    while (existingUser.length > 0) {
+        nombreUsuario = `${baseNombreUsuario}${contador}`;
+        contador++;
+        
+        // Volver a verificar si el nuevo nombre de usuario existe
+        const [existingUserRetry] = await connection.query(
+            'SELECT nombre_usuario FROM tbl_usuarios WHERE nombre_usuario = ?', 
+            [nombreUsuario]
+        );
+        
+        if (existingUserRetry.length === 0) {
+            break;
+        }
+    }
+
+    return nombreUsuario;
+};
+
+
 export const preRegistroUsuario = async (req, res) => {
     const { 
         primer_nombre, 
@@ -219,10 +254,13 @@ export const preRegistroUsuario = async (req, res) => {
         // Generar token para el usuario
         const token_usuario = Generar_Id(); // Generar el token de usuario
 
-        // Insertar en tbl_usuarios con el token generado
+        // Generar un nombre de usuario único basado en el correo
+        const nombre_usuario = await generarNombreUsuarioUnico(correo_usuario, connection);
+
+        // Insertar en tbl_usuarios con el token generado y el nombre de usuario
         await connection.query(
-            'INSERT INTO tbl_usuarios (correo_usuario, contraseña_usuario, cod_persona, Cod_rol, Cod_estado_usuario, token_usuario) VALUES (?, ?, ?, ?, ?, ?)',
-            [correo_usuario, hashedPassword, cod_persona, 1, 1, token_usuario] // Cod_rol = 1 (Padre), Cod_estado_usuario = 1 (Activo)
+            'INSERT INTO tbl_usuarios (nombre_usuario, correo_usuario, contraseña_usuario, cod_persona, Cod_rol, Cod_estado_usuario, token_usuario) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [nombre_usuario, correo_usuario, hashedPassword, cod_persona, 1, 2, token_usuario] // Cod_rol = 1 (Padre), Cod_estado_usuario = 2 (Inactivo)
         );
 
         // Enviar el correo de verificación
@@ -240,6 +278,7 @@ export const preRegistroUsuario = async (req, res) => {
         connection.release();
     }
 };
+
 
 export const agregarEstudiante = async (req, res) => {
     const connection = await pool.getConnection();
@@ -336,7 +375,6 @@ export const agregarEstudiante = async (req, res) => {
         connection.release();
     }
 };
-
 //con este controlador se obtienen todos los usuarios pero tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarios = async (req, res) => {
     try {
@@ -352,7 +390,6 @@ export const obtenerUsuarios = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener los usuarios' });
     }
 };
-
 // controllers/usuarioController.js
 export const confirmarCuenta = async (req, res) => {
     const { token_usuario } = req.params; // Leer el token desde los parámetros de la URL
@@ -379,9 +416,6 @@ export const confirmarCuenta = async (req, res) => {
         return res.status(500).json({ message: 'Error en la confirmación de cuenta.' });
     }
 };
-
-
-
 //con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarioPorId = async (req, res) => {
     try {
@@ -399,7 +433,6 @@ export const obtenerUsuarioPorId = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener el usuario' });
     }
 };
-
 //con este controlador se actualiza un usuario por su id y tiene una ruta protegida que requiere un token jwt
 export const actualizarUsuario = async (req, res) => {
     const { nombre_usuario, correo_usuario, contraseña_usuario, rol_usuario, confirmacion_email, token_usuario } = req.body;
@@ -474,10 +507,9 @@ export const eliminarUsuarioCompleto = async (req, res) => {
         connection.release();  // Liberar la conexión
     }
 };
-
 // Con este controlador se autentica un usuario y se genera un token jwt y que si la contraseña ingresada coincide con una contraseña antigua, devolver un error
 export const autenticarUsuario = async (req, res) => {
-    const { identificador, contraseña_usuario } = req.body;
+    const { identificador, contraseña_usuario, twoFactorCode } = req.body;
 
     try {
         // Verificar si el usuario existe por nombre de usuario o correo
@@ -495,44 +527,76 @@ export const autenticarUsuario = async (req, res) => {
         // Verificar la contraseña actual primero
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
         
+        if (!contraseñaValida) {
+            return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
+        }
+
         // Verificar si el usuario ha confirmado su cuenta
         if (usuario.confirmacion_email !== 1) {
             return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
         }
 
-        // Si la contraseña es válida, generar el token
-        if (contraseñaValida) {
-            const token = jwt.sign(
-                { 
-                    cod_usuario: usuario.cod_usuario, 
-                    nombre_usuario: usuario.nombre_usuario, 
-                    rol_usuario: usuario.rol_usuario, 
-                    cod_persona: usuario.cod_persona 
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: '1h' }
-            );
+        // Verificar si tiene habilitado el 2FA
+        if (usuario.is_two_factor_enabled) {
+            if (!twoFactorCode) {
+                return res.status(400).json({ mensaje: 'El código de 2FA es requerido' });
+            }
 
-            return res.status(200).json({
-                mensaje: 'Autenticación exitosa',
-                token
+            // Validar el código de 2FA usando el código secreto almacenado
+            const isCodeValid = speakeasy.totp.verify({
+                secret: usuario.two_factor_code,  // El código secreto almacenado en la base de datos
+                encoding: 'base32',
+                token: twoFactorCode
             });
-        }
 
-        // Si la contraseña no es válida, verificar en el historial de contraseñas
-        const [historial] = await pool.query('SELECT * FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [usuario.cod_usuario]);
-
-        // Verificar si la contraseña ingresada está en el historial
-        for (const record of historial) {
-            const contrasenaHistorial = record.Contraseña;
-
-            if (await bcrypt.compare(contraseña_usuario, contrasenaHistorial)) {
-                return res.status(400).json({ mensaje: 'Has ingresado una contraseña antigua' });
+            if (!isCodeValid) {
+                return res.status(401).json({ mensaje: 'Código 2FA incorrecto' });
             }
         }
 
-        // Si la contraseña no es válida ni está en el historial
-        return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
+          // Actualizar el campo Fecha_ultima_conexion con la fecha y hora actual
+          const fechaConexion = new Date();
+          await pool.query(
+              'UPDATE tbl_usuarios SET Fecha_ultima_conexion = ? WHERE cod_usuario = ?',
+              [fechaConexion, usuario.cod_usuario]
+          );
+
+           // Si el campo Primer_ingreso está vacío o es NULL, actualizarlo
+        if (!usuario.Primer_ingreso) {
+            await pool.query(
+                'UPDATE tbl_usuarios SET Primer_ingreso = ? WHERE cod_usuario = ?',
+                [fechaConexion, usuario.cod_usuario]
+            );
+        }
+
+
+        // Calcular la fecha de vencimiento sumando 12 años a la fecha actual
+        const fechaVencimiento = new Date();
+        fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 12);  // Sumar 12 años
+        const fechaVencimientoFormateada = fechaVencimiento.toISOString().slice(0, 19).replace('T', ' ');
+
+        // Actualizar el campo Fecha_vencimiento
+        await pool.query(
+            'UPDATE tbl_usuarios SET Fecha_vencimiento = ? WHERE cod_usuario = ?',
+            [fechaVencimientoFormateada, usuario.cod_usuario]
+        );
+
+        // Generar el token si la autenticación es exitosa
+        const token = jwt.sign(
+            { 
+                cod_usuario: usuario.cod_usuario, 
+                nombre_usuario: usuario.nombre_usuario, 
+                rol_usuario: usuario.rol_usuario, 
+                cod_persona: usuario.cod_persona 
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        return res.status(200).json({
+            mensaje: 'Autenticación exitosa',
+            token
+        });
 
     } catch (error) {
         console.error(error);
@@ -572,6 +636,82 @@ export const mostrarPerfil = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener el perfil del usuario' });
     }
 };
+export const generarCodigo2FA = async (req, res) => {
+    const usuarioId = req.usuario.cod_usuario;  // Se obtiene del token autenticado
+
+    try {
+        // Generar un código secreto de 2FA
+        const secret = speakeasy.generateSecret({ length: 20 });
+
+        // Guardar el código secreto en la base de datos
+        await pool.query('UPDATE tbl_usuarios SET two_factor_code = ? WHERE cod_usuario = ?', [secret.base32, usuarioId]);
+
+        // Generar un código QR que el usuario pueda escanear con una app 2FA
+        const urlQR = await qrcode.toDataURL(secret.otpauth_url);
+
+        res.json({ qrCode: urlQR, secret: secret.base32 });
+    } catch (error) {
+        console.error('Error al generar el código 2FA:', error);
+        res.status(500).json({ mensaje: 'Error al generar el código 2FA' });
+    }
+};
+// Generar el código QR para habilitar 2FA
+export const generar2FA = async (req, res) => {
+    const { cod_usuario } = req.body;
+  
+    try {
+      const secret = speakeasy.generateSecret({ name: "SaintPatrickAcademy" });
+  
+      // Guardar el secreto en la base de datos y establecer is_two_factor_enabled en 0
+      await db.query('UPDATE tbl_usuarios SET two_factor_code = ?, is_two_factor_enabled = 0 WHERE cod_usuario = ?', [secret.base32, cod_usuario]);
+  
+      // Generar el código QR
+      qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
+        if (err) {
+          return res.status(500).json({ message: 'Error al generar el código QR.' });
+        }
+  
+        // Enviar el código QR al frontend
+        res.json({ qrCodeUrl: data_url });
+      });
+    } catch (error) {
+      console.error('Error al habilitar 2FA:', error);
+      res.status(500).json({ message: 'Error al habilitar 2FA. Inténtalo nuevamente.' });
+    }
+  };
+  
+  // Verificar el código de 2FA ingresado
+  export const verificar2FA = async (req, res) => {
+    const { cod_usuario, twoFactorCode } = req.body;
+  
+    try {
+      // Obtener el código secreto de la base de datos
+      const [user] = await db.query('SELECT two_factor_code FROM tbl_usuarios WHERE cod_usuario = ?', [cod_usuario]);
+  
+      if (!user) {
+        return res.status(404).json({ message: 'Usuario no encontrado.' });
+      }
+  
+      // Verificar el código 2FA ingresado
+      const verified = speakeasy.totp.verify({
+        secret: user.two_factor_code,
+        encoding: 'base32',
+        token: twoFactorCode
+      });
+  
+      if (verified) {
+        // Actualizar el campo para habilitar 2FA
+        await db.query('UPDATE tbl_usuarios SET is_two_factor_enabled = 1 WHERE cod_usuario = ?', [cod_usuario]);
+        res.json({ success: true, message: 'Autenticación de dos factores habilitada con éxito.' });
+      } else {
+        res.status(400).json({ success: false, message: 'Código de verificación incorrecto.' });
+      }
+    } catch (error) {
+      console.error('Error al verificar 2FA:', error);
+      res.status(500).json({ message: 'Error al verificar 2FA. Inténtalo nuevamente.' });
+    }
+  };
+
 
 
 export const OlvidePasssword = async (req, res) => {

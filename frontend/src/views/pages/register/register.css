@@ -1,257 +1,204 @@
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500&display=swap");
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: "Poppins", sans-serif;
-}
-
-/* Animación para los círculos flotantes */
-@keyframes float {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  50% { transform: translate(15px, 15px) rotate(180deg); }
-  100% { transform: translate(0, 0) rotate(360deg); }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ProfileStyles.css */
+:root {
+  --primary-color: #4CAF50;
+  --primary-hover: #45a049;
+  --background-color: #f5f7fa;
+  --card-background: #ffffff;
+  --text-color: #2d3748;
+  --text-secondary: #718096;
+  --border-color: #e2e8f0;
+  --input-focus: #ebf4ff;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.12);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+  --gradient-start: #4CAF50;
+  --gradient-end: #45a049;
 }
 
 body {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: linear-gradient(45deg, #37bb3d, #7189c1,#9cc28d);
-  background-size: 400% 400%;
-  animation: gradientBG 5s ease infinite;
-  position: relative;
-  overflow: hidden;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
-/* Animación del fondo degradado */
-@keyframes gradientBG {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* Círculos flotantes */
-body::before,
-body::after {
-  content: '';
-  position: absolute;
-  width: 250px;
-  height: 250px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  animation: float 8s infinite;
-}
-
-body::before {
-  top: -75px;
-  left: -75px;
-}
-
-body::after {
-  bottom: -75px;
-  right: -75px;
-  animation-delay: -4s;
-}
-
-/* Contenedor del formulario con scroll */
-.form-container {
-  max-width: 700px;
-  width: 100%;
-  max-height: 500px; /* Limita la altura para habilitar scroll */
-  background: rgba(255, 255, 255, 0.95);
+.profile-container {
+  max-width: 900px;
+  margin: 40px auto;
   padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 15px 35px rgba(85, 192, 53, 0.2);
-  backdrop-filter: blur(10px);
-  animation: fadeInUp 0.8s ease-out;
-  overflow-y: auto; /* Habilita el scroll */
-  overflow-x: hidden; /* Evita el scroll horizontal */
+  background: var(--card-background);
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
 }
 
-.form-container::-webkit-scrollbar {
-  width: 8px;
+.profile-header {
+  text-align: center;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid var(--border-color);
 }
 
-.form-container::-webkit-scrollbar-track {
-  background: #91bd7800;
+.profile-title {
+  color: var(--text-color);
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.form-container::-webkit-scrollbar-thumb {
-  background: #47b343a6;
-  border-radius: 2px;
-}
-
-.card-header {
-  font-size: 2rem;
-  color: #15923b;
-  margin-bottom: 15px;
-  position: relative;
-  padding-bottom: 15px;
-}
-
-.card-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 50px;
-  height: 3px;
-  background: linear-gradient(to right, #344cad, #20cc20);
-}
-
-.card-subheader {
-  font-size: 1.1rem;
-  color: #09bd45;
-  margin-bottom: 30px;
-  position: center;
-}
-.card-header, .card-subheader {
-  text-align: center; /* Asegura que el texto esté centrado */
+.profile-subtitle {
+  color: var(--text-secondary);
+  font-size: 18px;
   font-weight: 500;
 }
 
-.input-group {
-  margin-bottom: 25px;
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
   position: relative;
 }
 
-.input-group label {
+.form-label {
   display: block;
   margin-bottom: 8px;
-  color: #041809;
-  font-weight: 500;
-  transform: translateY(0);
-  transition: all 0.3s ease;
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.input-group input {
+.form-input, .form-select {
   width: 100%;
-  padding: 12px 15px;
-  font-size: 1rem;
-  border: 2px solid #e1e1e1;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.9);
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 16px;
+  color: var(--text-color);
+  background-color: var(--card-background);
   transition: all 0.3s ease;
 }
 
-.input-group input:focus {
-  border-color: #2ccc5c;
-  box-shadow: 0 0 0 3px rgba(26, 42, 108, 0.1);
+.form-input:focus, .form-select:focus {
   outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+  background-color: var(--input-focus);
 }
 
-.button-container button {
-  width: 30%;
-  padding: 15px;
-  border: none;
-  border-radius: 10px;
-  background: linear-gradient(45deg, #344cad, #20cc20);
+.form-input:disabled {
+  background-color: var(--background-color);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.form-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 16px;
+  margin-top: 32px;
+  background: linear-gradient(to right, var(--gradient-start), var(--gradient-end));
   color: white;
-  font-size: 1.1rem;
-  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-.button-container {
-  width: 100%; /* Asegura que el contenedor ocupe el 100% del ancho */
-  text-align: center; /* Centra el contenido dentro del contenedor */
-}
-.button-container button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: 0.5s;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
-.button-container button:hover::before {
-  left: 100%;
-}
-
-.button-container button:hover {
+.submit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(26, 42, 108, 0.3);
+  box-shadow: 0 6px 12px rgba(76, 175, 80, 0.2);
 }
 
-/* Responsive */
-@media screen and (max-width: 500px) {
-  .form-container {
+.submit-button:active {
+  transform: translateY(0);
+}
+
+.required-field::after {
+  content: '*';
+  color: #e53e3e;
+  margin-left: 4px;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.profile-container {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  .profile-container {
+    margin: 20px;
     padding: 20px;
-    max-height: 350px; /* Ajusta el tamaño para pantallas más pequeñas */
   }
-  
-  .card-header {
-    font-size: 1.5rem;
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
-  
-  .input-group input {
-    font-size: 0.9rem;
+
+  .profile-title {
+    font-size: 24px;
+  }
+
+  .profile-subtitle {
+    font-size: 16px;
   }
 }
 
-/* Círculos decorativos flotantes */
-.floating-circles {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  pointer-events: none;
+/* Estilos para campos con validación */
+.form-input.valid {
+  border-color: var(--primary-color);
 }
 
-.floating-circles div {
+.form-input.invalid {
+  border-color: #e53e3e;
+}
+
+/* Tooltip para errores */
+.error-tooltip {
   position: absolute;
-  width: 100px;
-  height: 100px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
+  bottom: -20px;
+  left: 0;
+  font-size: 12px;
+  color: #e53e3e;
 }
 
-.floating-circles div:nth-child(1) {
-  top: 20%;
-  left: 20%;
-  animation: float 7s infinite;
+/* Estilos para el grupo de campos */
+.form-section {
+  margin-bottom: 32px;
+  padding: 24px;
+  background-color: #fafafa;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
 }
 
-.floating-circles div:nth-child(2) {
-  top: 100%;
-  left: 100%;
-  animation: float 9s infinite;
-  width: 100px;
-  height: 100px;
-}
-
-.floating-circles div:nth-child(3) {
-  top: 80%;
-  left: 80%;
-  animation: float 11s infinite;
-  width: 40px;
-  height: 40px;
+.form-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
 }
