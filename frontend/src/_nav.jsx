@@ -13,6 +13,9 @@ import {
   cilChartLine,
   cilFile,
   cilBookmark,
+  cilDollar,
+  cilGraph,
+  cilUser,
 } from '@coreui/icons';
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react';
 
@@ -21,7 +24,7 @@ const _nav = [
     component: CNavItem,
     name: 'Dashboard',
     to: '/dashboard',
-    icon: cilSpeedometer, // Solo se guarda el icono
+    icon: cilSpeedometer,
   },
   {
     component: CNavItem,
@@ -44,7 +47,7 @@ const _nav = [
   {
     component: CNavItem,
     name: 'Notas',
-    to: '',
+    to: '/notas',
     icon: cilFile,
   },
   {
@@ -102,7 +105,72 @@ const _nav = [
         name: 'Tipo de contrato',
         to: '/ListaTipoContrato',
       },
-      
+    ],
+  },
+  {
+    component: CNavGroup,
+    name: 'Contabilidad y Pagos',
+    icon: cilDollar,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Pagos',
+        to: '/ListaPagos',
+      },
+      {
+        component: CNavItem,
+        name: 'Historial de Pagos',
+        to: '/HistorialPagos',
+      },
+      {
+        component: CNavItem,
+        name: 'Estado de Cuenta',
+        to: '/EstadoCuenta',
+      },
+    ],
+  },
+  {
+    component: CNavGroup,
+    name: 'Reportes de Bitácora',
+    icon: cilGraph,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Actividades del Sistema',
+        to: '/ReporteActividades',
+      },
+      {
+        component: CNavItem,
+        name: 'Historial de Inicios de Sesión',
+        to: '/ReporteIniciosSesion',
+      },
+      {
+        component: CNavItem,
+        name: 'Cambios en Datos',
+        to: '/ReporteCambiosDatos',
+      },
+    ],
+  },
+  {
+    component: CNavGroup,
+    name: 'Administrador de Usuarios',
+    icon: cilUser,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Usuarios',
+        to: '/ListaUsuarios',
+      },
+      {
+        component: CNavItem,
+        name: 'Roles',
+        to: '/ListaRoles',
+      },
+      {
+        component: CNavItem,
+        name: 'Permisos',
+        to: '/ListaPermisos',
+      },
     ],
   },
 ];

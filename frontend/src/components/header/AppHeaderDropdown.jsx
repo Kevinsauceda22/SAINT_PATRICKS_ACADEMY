@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react';
 import {
   CAvatar,
   CDropdown,
@@ -7,20 +7,19 @@ import {
   CDropdownItem,
   CDropdownMenu,
   CDropdownToggle,
-} from '@coreui/react'
-import {
-  cilBell,
-  cilCreditCard,
-  cilSettings,
-  cilUser,
-  cilLockLocked,
-} from '@coreui/icons'
-import CIcon from '@coreui/icons-react'
+} from '@coreui/react';
+import { cilBell, cilCreditCard, cilSettings, cilUser, cilLockLocked } from '@coreui/icons';
+import CIcon from '@coreui/icons-react';
 
-import avatar8 from './../../assets/images/avatars/user.svg'
+import avatar8 from './../../assets/images/avatars/user.svg';
 
 const AppHeaderDropdown = () => {
-  const isDarkMode = document.body.classList.contains('dark-mode') // Cambia 'dark-mode' según la clase que use tu plantilla
+  const isDarkMode = document.body.classList.contains('dark-mode'); // Reemplaza si tienes un contexto de tema global
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); // Elimina el token del localStorage
+    window.location.href = '/login'; // Redirige al login
+  };
 
   return (
     <CDropdown variant="nav-item">
@@ -28,14 +27,9 @@ const AppHeaderDropdown = () => {
         <CAvatar src={avatar8} size="md" />
       </CDropdownToggle>
       <CDropdownMenu className="pt-0" placement="bottom-end">
+        
         {/* Sección Cuenta */}
-        <CDropdownHeader 
-          className="fw-semibold mb-2"
-          style={{
-            backgroundColor: '#198754',
-            color: isDarkMode ? '#000000' : '#FFFFFF', // Letra negra en oscuro, blanca en claro
-          }}
-        >
+        <CDropdownHeader className={`fw-semibold mb-2 ${isDarkMode ? 'text-black' : 'text-white'}`} style={{ backgroundColor: '#198754' }}>
           Cuenta
         </CDropdownHeader>
         <CDropdownItem href="#">
@@ -44,13 +38,7 @@ const AppHeaderDropdown = () => {
         </CDropdownItem>
 
         {/* Sección Configuraciones */}
-        <CDropdownHeader 
-          className="fw-semibold my-2"
-          style={{
-            backgroundColor: '#198754',
-            color: isDarkMode ? '#000000' : '#FFFFFF', // Letra negra en oscuro, blanca en claro
-          }}
-        >
+        <CDropdownHeader className={`fw-semibold my-2 ${isDarkMode ? 'text-black' : 'text-white'}`} style={{ backgroundColor: '#198754' }}>
           Configuraciones
         </CDropdownHeader>
         <CDropdownItem href="/profile">
@@ -68,14 +56,14 @@ const AppHeaderDropdown = () => {
 
         <CDropdownDivider />
 
-        {/* Botón Bloquear cuenta */}
-        <CDropdownItem href="/login" className={isDarkMode ? 'text-white' : 'text-success'}>
+        {/* Botón Cerrar Sesión */}
+        <CDropdownItem onClick={handleLogout} className={isDarkMode ? 'text-white' : 'text-success'}>
           <CIcon icon={cilLockLocked} className="me-2" />
           Cerrar Sesión
         </CDropdownItem>
       </CDropdownMenu>
     </CDropdown>
-  )
-}
+  );
+};
 
-export default AppHeaderDropdown
+export default AppHeaderDropdown;

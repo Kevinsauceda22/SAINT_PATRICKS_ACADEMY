@@ -45,8 +45,16 @@ const LoginRegister = () => {
 
   const navigate = useNavigate()
 
-   // Verificar si hay un token al cargar el componente
- 
+ // Verificar si hay un token en el localStorage al cargar el componente
+useEffect(() => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    // Si hay un token, redirigir al dashboard
+    navigate('/active-session');
+    window.location.reload(); // Recargar la página
+  }
+}, [navigate]);
+
   const toggleForm = () => {
     setIsLogin((prev) => !prev)
   }
