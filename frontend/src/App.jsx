@@ -34,6 +34,7 @@ const ListaEspecialidades = React.lazy(() => import('./views/pages/calificacione
 const ListaEstadoasistencia = React.lazy(() => import('./views/pages/calificaciones/ListaEstadoasistencia'));
 const ActiveSessionPage = React.lazy(() => import ("./views/pages/SesionActiva/SesionActiva"))
 const VerificaciónCuenta = React.lazy(() => import ("./views/pages/VerificarCuenta/VerificarCuenta"))
+const Permisos = React.lazy(() => import ("./views/pages/Permissions/Permissions"))
 
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
@@ -91,6 +92,7 @@ const App = () => {
               <Route path="/CuentaenRevision" element={<VerificaciónCuenta />} />
               <Route path="/" element={<DefaultLayout />}>
                 <Route path="/matricula" element={<Matricula />} />
+                <Route path="/rolesandpermissions" element={<Permisos />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Perfil />} />
                 <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />

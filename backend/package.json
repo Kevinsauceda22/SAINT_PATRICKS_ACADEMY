@@ -20,6 +20,7 @@
     "mysql2": "^3.11.3",
     "nodemailer": "^6.9.15",
     "qrcode": "^1.5.4",
+    "resend": "^4.0.0",
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {

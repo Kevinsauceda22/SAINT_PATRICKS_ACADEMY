@@ -169,7 +169,7 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Permisos',
-        to: '/ListaPermisos',
+        to: '/rolesandpermissions',
       },
     ],
   },
