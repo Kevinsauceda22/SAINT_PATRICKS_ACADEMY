@@ -44,6 +44,14 @@ const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
 
+const Tipopersona = React.lazy(() => import('./views/pages/matricula/tipopersona'));
+const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
+const Periodomatricula = React.lazy(() => import('./views/pages/matricula/periodomatricula'));
+const Departamento = React.lazy(() => import('./views/pages/matricula/departamento'));
+const Estadomatricula = React.lazy(() => import('./views/pages/matricula/estadomatricula'));
+const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopago'));
+
+
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme');
   const storedTheme = useSelector((state) => state.theme);
@@ -106,7 +114,13 @@ const App = () => {
                 <Route path="/ListaPonderaciones" element={<ListaPonderaciones />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
-              
+                <Route path="/tipopersona" element={<Tipopersona />} />
+                <Route path="/tipomatricula" element={<Tipomatricula />} />
+                <Route path="/periodomatricula" element={<Periodomatricula />} />
+                <Route path="/departamento" element={<Departamento />} />
+                <Route path="/estadomatricula" element={<Estadomatricula />} />
+                <Route path="/conceptopago" element={<Conceptopago />} />
+
               </Route>
             </Route>
 

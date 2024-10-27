@@ -105,6 +105,36 @@ const _nav = [
         name: 'Tipo de contrato',
         to: '/ListaTipoContrato',
       },
+      {
+        component: CNavItem,
+        name: 'Permisos',
+        to: '/ListaPermisos',
+      },
+      {
+        component: CNavItem,
+        name: 'Tipo matricula',
+        to: '/tipomatricula',
+      },{
+        component: CNavItem,
+        name: 'Periodo matricula',
+        to: '/periodomatricula',
+      },{
+        component: CNavItem,
+        name: 'Estado matricula',
+        to: '/estadomatricula',
+      },{
+        component: CNavItem,
+        name: 'Concepto pago',
+        to: '/conceptopago',
+      },{
+        component: CNavItem,
+        name: 'Departamento',
+        to: '/departamento',
+      },{
+        component: CNavItem,
+        name: 'Tipo persona',
+        to: '/tipopersona',
+      },
     ],
   },
   {
@@ -166,11 +196,7 @@ const _nav = [
         name: 'Roles',
         to: '/ListaRoles',
       },
-      {
-        component: CNavItem,
-        name: 'Permisos',
-        to: '/ListaPermisos',
-      },
+  
     ],
   },
 ];
