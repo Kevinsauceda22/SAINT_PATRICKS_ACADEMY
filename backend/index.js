@@ -25,6 +25,13 @@ import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRo
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personasRoutes from "./module/personas/personaRoutes.js"
+import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
+import tipomatriculaRoutes from './module/matricula/Routes/tipomatriculaRoutes.js';
+import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRoutes.js';
+import estadomatriculaRoutes from './module/matricula/Routes/estadomatriculaRoutes.js';
+import departamentoRoutes from './module/matricula/Routes/departamentoRoutes.js';
+import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
+
 //importtacion de middleware
 
 
@@ -97,6 +104,18 @@ app.use('/api/edificio', edificiosRoutes);
 app.use('/api/aula', aulasRoutes);
 // Rutas para las actividades extracurriculares
 app.use('/api/actividadesExtracurriculares', actividadesextraRoutes);
+// Usar las rutas de solicitud
+app.use('/api/tipopersona', tipopersonaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/tipomatricula', tipomatriculaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/periodomatricula', periodomatriculaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/estadomatricula', estadomatriculaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/departamento', departamentoRoutes);
+// Usar las rutas de solicitud
+app.use('/api/conceptopago', conceptopagoRoutes);
 // Usar las rutas de solicitud
 app.use('/api/solicitud', solicitudRoutes);
 // Pagos y finanzas
