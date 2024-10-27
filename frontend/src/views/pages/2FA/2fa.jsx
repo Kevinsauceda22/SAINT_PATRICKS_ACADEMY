@@ -19,7 +19,6 @@ const Auth2FA = () => {
       // Si la verificación es exitosa
       localStorage.setItem('token', response.data.token); // Guardar el token
       navigate('/dashboard'); // Redirigir al dashboard
-      window.location.reload(); // Refrescar la página para cargar datos nuevos
     } catch (error) {
       console.error('Error en 2FA:', error);
       alert('Código de verificación incorrecto, por favor intenta de nuevo.');

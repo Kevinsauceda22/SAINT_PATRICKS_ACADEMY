@@ -11,13 +11,17 @@ const ActiveSession = () => {
     localStorage.removeItem('token');
     console.log('Cerrando sesión...');
     // Redirigir al login
-    navigate('/login');
+    window.location.href = '/login';
+
+
   };
 
   const handleStay = () => {
     console.log('Permaneciendo en la sesión actual...');
     // Redirigir al Dashboard
     navigate('/dashboard');
+
+
   };
 
   return (

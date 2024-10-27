@@ -5,13 +5,17 @@ import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
 import { AuthProvider } from "../context/AuthProvider";
 import RutaProtegida from './layout/RutaProtegida'; // Importa el componente RutaProtegida
+import RutaPublica from './layout/RutaPublica'; // Componente de rutas públicas
+
 
 // Containers
 const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'));
 
 // Pages
 const Login = React.lazy(() => import('./views/pages/login/Login'));
+const PreRegistro = React.lazy(() => import('./views/pages/Pre-Registro/Pre-Registro'));
 const Register = React.lazy(() => import('./views/pages/register/Register'));
+const ResetPasssword = React.lazy(() => import('./views/pages/ResetPassword/ResetPassword'));
 const Page404 = React.lazy(() => import('./views/pages/page404/Page404'));
 const Page500 = React.lazy(() => import('./views/pages/page500/Page500'));
 const Matricula = React.lazy(() => import('./views/pages/matricula/matricula'));
@@ -29,6 +33,7 @@ const ListaCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaC
 const ListaEspecialidades = React.lazy(() => import('./views/pages/calificaciones/ListaEspecialidades'));
 const ListaEstadoasistencia = React.lazy(() => import('./views/pages/calificaciones/ListaEstadoasistencia'));
 const ActiveSessionPage = React.lazy(() => import ("./views/pages/SesionActiva/SesionActiva"))
+const VerificaciónCuenta = React.lazy(() => import ("./views/pages/VerificarCuenta/VerificarCuenta"))
 
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
@@ -65,20 +70,25 @@ const App = () => {
             </div>
           }
         >
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/confirmacion-email/:correo" element={<ConfirmacionEmail />} />
-            <Route path="/correo-verificado" element={<CorreoVerificado />} />
-            <Route path="/verificar-cuenta/:token_usuario" element={<VerificarEmail />} />
-            <Route path="/404" element={<Page404 />} />
-            <Route path="/olvide-password/:token" element={<NuevaContrasena />} />
-            <Route path="/500" element={<Page500 />} />
+                  <Routes>
+            <Route element={<RutaPublica />}>
+              <Route path="/login" element={<Login />} />
+              <Route path="/Pre-Registro" element={<PreRegistro />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/Olvidecontraseña" element={<ResetPasssword />} />
+              <Route path="/confirmacion-email/:correo" element={<ConfirmacionEmail />} />
+              <Route path="/correo-verificado" element={<CorreoVerificado />} />
+              <Route path="/verificar-cuenta/:token_usuario" element={<VerificarEmail />} />
+              <Route path="/404" element={<Page404 />} />
+              <Route path="/olvide-password/:token" element={<NuevaContrasena />} />
+              <Route path="/500" element={<Page500 />} />
+            </Route>
 
             {/* Rutas protegidas */}
             <Route element={<RutaProtegida />}>
             <Route path="/active-session" element={<ActiveSessionPage />} />
               <Route path="/2fa" element={<TwoAuthFA />} />
+              <Route path="/CuentaenRevision" element={<VerificaciónCuenta />} />
               <Route path="/" element={<DefaultLayout />}>
                 <Route path="/matricula" element={<Matricula />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -96,6 +106,7 @@ const App = () => {
                 <Route path="/ListaPonderaciones" element={<ListaPonderaciones />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
+              
               </Route>
             </Route>
 
