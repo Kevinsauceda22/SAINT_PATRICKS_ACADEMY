@@ -134,6 +134,22 @@ const _nav = [
         component: CNavItem,
         name: 'Tipo persona',
         to: '/tipopersona',
+      },{
+        component: CNavItem,
+        name: 'Edificios',
+        to: 'ListaEdificios',
+      },{
+        component: CNavItem,
+        name: 'Dias',
+        to: 'ListaDias',
+      },{
+        component: CNavItem,
+        name: 'Lista de Actividades',
+        to: 'ListaActivex', 
+      },{
+        component: CNavItem,
+        name: 'Historial Procedencia',
+        to: 'ListaHistoricoProc',
       },
     ],
   },
