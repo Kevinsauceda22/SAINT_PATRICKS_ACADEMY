@@ -420,7 +420,7 @@ const TipoPersona = () => {
           position: sticky;
           top: 0;
           background-color: ;
-          color: white;
+          color: black;
           z-index: 1000;
         }
 
