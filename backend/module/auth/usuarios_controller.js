@@ -572,19 +572,19 @@ export const autenticarUsuario = async (req, res) => {
 
         // Verificar la contraseña
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
-        
         if (!contraseñaValida) {
             return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
         }
 
         // Verificar contraseñas anteriores
         const [contraseñasAnteriores] = await pool.query(
-            'SELECT * FROM tbl_hist_contraseña WHERE cod_usuario = ?',
+            'SELECT Contraseña FROM tbl_hist_contraseña WHERE cod_usuario = ?',
             [usuario.cod_usuario]
         );
-
         for (const contraseñaAnt of contraseñasAnteriores) {
-            const esContraseñaAntigua = await bcrypt.compare(contraseña_usuario, contraseñaAnt.contraseña_hash);
+            console.log("Comparando con contraseña anterior:", contraseñaAnt.Contraseña); // Registro de depuración
+            const esContraseñaAntigua = await bcrypt.compare(contraseña_usuario, contraseñaAnt.Contraseña);
+            console.log("¿Es la contraseña antigua?", esContraseñaAntigua); // Depuración del resultado de comparación
             if (esContraseñaAntigua) {
                 return res.status(401).json({ mensaje: 'La contraseña ingresada coincide con una contraseña anterior. Por favor, usa una contraseña nueva.' });
             }
@@ -602,7 +602,7 @@ export const autenticarUsuario = async (req, res) => {
             return res.status(403).json({ mensaje: 'Tu cuenta ha sido suspendida. Por favor, contacta al administrador.' });
         }
 
-        // Verificar 2FA
+        // Verificar 2FA, si está habilitado
         if (usuario.is_two_factor_enabled) {
             if (!twoFactorCode) {
                 return res.status(400).json({ mensaje: 'El código de 2FA es requerido' });
@@ -831,13 +831,11 @@ export const comprobarToken = async (req, res) => {
 };
 
 // Controlador para cambiar la contraseña del usuario
-// Controlador para cambiar la contraseña del usuario
 export const cambiarContrasena = async (req, res) => {
-    const { token } = req.params; // Obtener el token de la URL
-    const { contraseña_usuario, confirmar_contrasena } = req.body; // Obtener la nueva contraseña del cuerpo de la solicitud
+    const { token } = req.params;
+    const { contraseña_usuario, confirmar_contrasena } = req.body;
 
     try {
-        // Verificar que las contraseñas coinciden
         if (contraseña_usuario !== confirmar_contrasena) {
             return res.status(400).json({ mensaje: 'Las contraseñas no coinciden' });
         }
@@ -845,16 +843,21 @@ export const cambiarContrasena = async (req, res) => {
         // Verificar si el token es válido
         const [usuario] = await pool.query('SELECT * FROM tbl_usuarios WHERE token_usuario = ?', [token]);
 
-        if (usuario.length === 0) {
+        if (!usuario || usuario.length === 0) {
             return res.status(404).json({ mensaje: 'Token inválido o expirado' });
         }
 
-        // Verificar que la nueva contraseña no haya sido usada antes (evitar reutilización)
+        // Verificar el historial de contraseñas
         const [historial] = await pool.query('SELECT Contraseña FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [usuario[0].cod_usuario]);
 
-        const contraseñaReutilizada = await Promise.all(historial.map(async (registro) => {
-            return await bcrypt.compare(contraseña_usuario, registro.Contraseña);
-        }));
+        const contraseñaReutilizada = await Promise.all(
+            historial.map(async (registro) => {
+                if (registro.Contraseña) {  // Verifica que no sea undefined o null
+                    return await bcrypt.compare(contraseña_usuario, registro.Contraseña);
+                }
+                return false; // Si es undefined o null, evita llamar a bcrypt.compare
+            })
+        );
 
         if (contraseñaReutilizada.includes(true)) {
             return res.status(400).json({ mensaje: 'No puedes reutilizar una contraseña anterior' });
@@ -869,11 +872,11 @@ export const cambiarContrasena = async (req, res) => {
         // Agregar la nueva contraseña al historial de contraseñas
         await pool.query('INSERT INTO tbl_hist_contraseña (Cod_usuario, Contraseña, Fecha_creacion) VALUES (?, ?, NOW())', [usuario[0].cod_usuario, hashedPassword]);
 
-        // Respuesta de éxito
         res.status(200).json({ mensaje: 'Contraseña actualizada correctamente' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ mensaje: 'Error al cambiar la contraseña' });
     }
 };
+
 
