@@ -134,7 +134,7 @@ const App = () => {
                 <Route path="/edificios" element={<ListaEdificios />} />
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/actividades" element={<ListaActivex />} />
-                <Route path= "/ListaHistoricoProc" element={ListaHistoricoProc/>} />
+                <Route path= "/ListaHistoricoProc" element={<ListaHistoricoProc/>} />
           
 
               </Route>
