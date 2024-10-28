@@ -224,7 +224,7 @@ const EstadoMatricula = () => {
   <CCol xs={12} md={4} className="text-end">
     {/* Botón Nuevo */}
     <CButton 
-      style={{ backgroundColor: '#0F463A', color: 'white', borderColor: '#0F463A' }} 
+      style={{ backgroundColor: '#0F463A', color: 'white', borderColor: '#4B6251' }} 
       onClick={handleAddModal} 
       className="me-2"
     >
@@ -234,7 +234,7 @@ const EstadoMatricula = () => {
     {/* Botón de Reporte con menú desplegable */}
     <CDropdown className="d-inline ms-2">
       <CDropdownToggle 
-        style={{ backgroundColor: '#617341', color: 'white', borderColor: '#617341', width: 'auto', height: '38px' }} // Ajuste del tamaño
+        style={{ backgroundColor: '#6C8E58', color: 'white', borderColor: '#617341', width: 'auto', height: '38px' }} // Ajuste del tamaño
       >
         <CIcon icon={cilFile} /> Reporte
       </CDropdownToggle>
@@ -374,7 +374,7 @@ const EstadoMatricula = () => {
   style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
   type="submit"
 >
-  <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Guardar'}
+  <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
 </CButton>
 
             </CModalFooter>

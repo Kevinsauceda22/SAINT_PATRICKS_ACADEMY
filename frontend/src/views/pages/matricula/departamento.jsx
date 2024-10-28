@@ -282,11 +282,11 @@ const Departamento = () => {
           <h3>Mantenimeinto de Departamentos</h3>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
-          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#0F463A', borderColor: '#0F463A' }}>
+          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
           <CDropdown className="report-dropdown">
-            <CDropdownToggle style={{ backgroundColor: '#617341', borderColor: '#617341', zIndex: '1050' }}>
+            <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#617341', zIndex: '1050' }}>
               <CIcon icon={cilFile} /> Reporte
             </CDropdownToggle>
             <CDropdownMenu>
@@ -422,7 +422,7 @@ const Departamento = () => {
                 Cancelar
               </CButton>
               <CButton style={{ backgroundColor: '#617341', color: 'white' }} type="submit">
-                <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Crear'}
+                <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
               </CButton>
             </CModalFooter>
           </CForm>

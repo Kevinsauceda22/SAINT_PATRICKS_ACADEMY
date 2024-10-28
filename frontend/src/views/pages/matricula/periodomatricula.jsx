@@ -309,11 +309,11 @@ const PeriodosMatricula = () => {
           <h1>Mantenimiento Periodo Matrícula</h1>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
-  <CButton color="dark" onClick={() => setModalVisible(true)} className="me-2" style={{ backgroundColor: '#0F463A', borderColor: '#0F463A' }}>
+  <CButton color="dark" onClick={() => setModalVisible(true)} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
     <CIcon icon={cilPlus} /> Nuevo
   </CButton>
   <CDropdown>
-    <CDropdownToggle style={{ backgroundColor: '#617341', borderColor: '#617341' }}>
+    <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
       <CIcon icon={cilFile} /> Reporte
     </CDropdownToggle>
     <CDropdownMenu>
@@ -509,7 +509,7 @@ const PeriodosMatricula = () => {
   style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
   type="submit"
 >
-  <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Agregar'}
+  <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
 </CButton>
 
             </CModalFooter>

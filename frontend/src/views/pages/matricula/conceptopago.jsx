@@ -391,11 +391,11 @@ const ConceptoPago = () => {
           <h3>Mantenimiento de Conceptos de Pago</h3>
           </CCol>
         <CCol xs="4" md="3" className="text-end">
-  <CButton color="dark" onClick={() => handleAddModal(true)} className="me-2" style={{ backgroundColor: '#0F463A', borderColor: '#0F463A' }}>
+  <CButton color="dark" onClick={() => handleAddModal(true)} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
     <CIcon icon={cilPlus} /> Nuevo
   </CButton>
   <CDropdown>
-    <CDropdownToggle style={{ backgroundColor: '#617341', borderColor: '#617341' }}>
+    <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
       <CIcon icon={cilFile} /> Reporte
     </CDropdownToggle>
     <CDropdownMenu>
@@ -572,7 +572,7 @@ const ConceptoPago = () => {
   style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
   type="submit"
 >
-  <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Crear'}
+  <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
 </CButton>
 
             </CModalFooter>
