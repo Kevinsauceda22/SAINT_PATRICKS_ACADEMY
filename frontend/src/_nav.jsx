@@ -47,7 +47,7 @@ const _nav = [
   {
     component: CNavItem,
     name: 'Notas',
-    to: '/notas',
+    to: '/ListaEstadonota',
     icon: cilFile,
   },
   {
@@ -137,19 +137,19 @@ const _nav = [
       },{
         component: CNavItem,
         name: 'Edificios',
-        to: 'ListaEdificios',
+        to: '/edificios',
       },{
         component: CNavItem,
         name: 'Dias',
-        to: 'ListaDias',
+        to: '/dias',
       },{
         component: CNavItem,
         name: 'Lista de Actividades',
-        to: 'ListaActivex', 
+        to: '/ListaActivex', 
       },{
         component: CNavItem,
         name: 'Historial Procedencia',
-        to: 'ListaHistoricoProc',
+        to: '/ListaHistoricoProc',
       },
     ],
   },
