@@ -570,21 +570,23 @@ export const autenticarUsuario = async (req, res) => {
 
         const usuario = users[0];
 
-        // Verificar la contraseña
+        // Verificar la contraseña actual
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
         if (!contraseñaValida) {
             return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
         }
 
-        // Verificar contraseñas anteriores
+        // Verificar contraseñas anteriores (excluyendo la contraseña actual)
         const [contraseñasAnteriores] = await pool.query(
-            'SELECT Contraseña FROM tbl_hist_contraseña WHERE cod_usuario = ?',
-            [usuario.cod_usuario]
+            `SELECT Contraseña 
+             FROM tbl_hist_contraseña 
+             WHERE cod_usuario = ? 
+             AND Contraseña != ?`,
+            [usuario.cod_usuario, usuario.contraseña_usuario] // Remove ORDER BY for now
         );
+
         for (const contraseñaAnt of contraseñasAnteriores) {
-            console.log("Comparando con contraseña anterior:", contraseñaAnt.Contraseña); // Registro de depuración
             const esContraseñaAntigua = await bcrypt.compare(contraseña_usuario, contraseñaAnt.Contraseña);
-            console.log("¿Es la contraseña antigua?", esContraseñaAntigua); // Depuración del resultado de comparación
             if (esContraseñaAntigua) {
                 return res.status(401).json({ mensaje: 'La contraseña ingresada coincide con una contraseña anterior. Por favor, usa una contraseña nueva.' });
             }
@@ -667,8 +669,6 @@ export const autenticarUsuario = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error al autenticar usuario' });
     }
 };
-
-
 // PARA MOSTRAR EL PERFIL DE UN USUARIO
 export const mostrarPerfil = async (req, res) => {
     const cod_usuario = parseInt(req.params.cod_usuario, 10); // Asegúrate de que el ID sea un número entero
