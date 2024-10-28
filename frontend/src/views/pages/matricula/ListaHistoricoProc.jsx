@@ -571,10 +571,10 @@ const handleCreateHistorico = async () => {
       Cancelar
     </CButton>
     <CButton
-      style={{ backgroundColor: '#F9B64E', color: 'white' }}
+      style={{ backgroundColor: '#4B6251', color: 'white' }}
       onClick={handleUpdateHistorico}
     >
-      <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
+       Guardar
     </CButton>
   </CModalFooter>
 </CModal>
