@@ -312,14 +312,25 @@ const EstadoMatricula = () => {
                   {estado.Tipo === 'Inactiva' && <BsDashCircle className="text-secondary me-2" />}
                   {estado.Tipo}
                 </CTableDataCell>
-                <CTableDataCell>
-                  <CButton color="warning" size="sm" onClick={() => handleEditModal(estado)}>
-                    <CIcon icon={cilPen} />
-                  </CButton>{' '}
-                  <CButton color="danger" size="sm" onClick={() => handleDelete(estado.Cod_estado_matricula)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
+                <CTableDataCell className="text-end">
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleEditModal(estado)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>{' '}
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleDelete(estado.Cod_estado_matricula)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+</CTableDataCell>
+
               </CTableRow>
             ))}
           </CTableBody>

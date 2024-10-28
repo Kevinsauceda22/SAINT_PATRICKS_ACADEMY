@@ -316,14 +316,25 @@ const TipoMatricula = () => {
                 {tipo.Tipo === 'Otras' && <BsDashCircle className="text-secondary me-2" />}
                 {tipo.Tipo.toUpperCase()}
               </CTableDataCell>
-              <CTableDataCell>
-                <CButton color="warning" size="sm" onClick={() => openEditModal(tipo)}>
-                  <CIcon icon={cilPen} />
-                </CButton>{' '}
-                <CButton color="danger" size="sm" onClick={() => confirmDelete(tipo.Cod_tipo_matricula)}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
-              </CTableDataCell>
+              <CTableDataCell className="text-end">
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => openEditModal(tipo)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>{' '}
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => confirmDelete(tipo.Cod_tipo_matricula)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+</CTableDataCell>
+
             </CTableRow>
           ))}
         </CTableBody>

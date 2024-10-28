@@ -404,14 +404,24 @@ const PeriodosMatricula = () => {
                       <CIcon icon={cilXCircle} className="text-danger" />
                     )}
                   </CTableDataCell>
-                  <CTableDataCell>
-                    <CButton color="warning" className="me-2" onClick={() => handleEditClick(periodo)}>
-                      <CIcon icon={cilPen} />
-                    </CButton>
-                    <CButton color="danger" onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}>
-                      <CIcon icon={cilTrash} />
-                    </CButton>
-                  </CTableDataCell>
+                  <CTableDataCell className="text-end">
+  <CButton
+    color="warning"
+    className="me-2"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleEditClick(periodo)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>
+  <CButton
+    color="danger"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+</CTableDataCell>
+
                 </CTableRow>
               ))
             ) : (
