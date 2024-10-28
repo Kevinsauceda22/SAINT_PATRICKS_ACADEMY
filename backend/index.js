@@ -36,6 +36,7 @@ import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js'
 import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
 import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
 
+
 //importtacion de middleware
 
 

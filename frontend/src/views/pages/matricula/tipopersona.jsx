@@ -344,13 +344,24 @@ const TipoPersona = () => {
                 <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
                 <CTableDataCell>{getTipoLabel(tipo.Tipo)}</CTableDataCell>
                 <CTableDataCell className="text-end">
-                  <CButton color="warning" size="sm" onClick={() => handleEditModal(tipo)}>
-                    <CIcon icon={cilPen} />
-                  </CButton>{' '}
-                  <CButton color="danger" size="sm" onClick={() => confirmDelete(tipo.Cod_tipo_persona)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleEditModal(tipo)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>{' '}
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => confirmDelete(tipo.Cod_tipo_persona)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+</CTableDataCell>
+
               </CTableRow>
             ))}
           </CTableBody>

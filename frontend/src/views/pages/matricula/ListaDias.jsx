@@ -645,10 +645,10 @@ const handleDeleteDia = async () => {
                 <CModalFooter>
                     <CButton color="secondary" onClick={handleCloseModal}>Cancelar</CButton>
                     <CButton
-                          style={{  backgroundColor: '#F9B64E', color: 'white' }}
+                          style={{  backgroundColor: '#4B6251', color: 'white' }}
                           onClick={handleUpdateDia}
                     >
-                        <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
+                         Guardar
                     </CButton>
                 </CModalFooter>
             </CModal>

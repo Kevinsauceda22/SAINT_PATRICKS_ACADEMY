@@ -472,13 +472,24 @@ const ConceptoPago = () => {
                   {concepto.Activo.toUpperCase() === 'SI' ? <FaCheck color="green" /> : <FaTimes color="red" />}
                 </CTableDataCell>
                 <CTableDataCell className="text-end">
-                  <CButton color="warning" size="sm" onClick={() => handleEditModal(concepto)}>
-                    <CIcon icon={cilPen} />
-                  </CButton>{' '}
-                  <CButton color="danger" size="sm" onClick={() => confirmDelete(concepto.Cod_concepto)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Ajusta la opacidad
+    onClick={() => handleEditModal(concepto)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>{' '}
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Ajusta la opacidad
+    onClick={() => confirmDelete(concepto.Cod_concepto)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+</CTableDataCell>
+
               </CTableRow>
             ))}
           </CTableBody>
@@ -545,7 +556,7 @@ const ConceptoPago = () => {
               )}
             </CInputGroup>
             <CInputGroup className="mb-3">
-              <CInputGroupText>Activo</CInputGroupText>
+              <CInputGroupText>Selecionar Activo</CInputGroupText>
               <CFormSelect
                 value={conceptoActual.activo}
                 onChange={(e) => {
