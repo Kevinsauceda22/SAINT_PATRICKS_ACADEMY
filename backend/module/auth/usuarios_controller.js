@@ -9,6 +9,7 @@ import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 
 
+
 //importar el envio de correo
 
 
@@ -390,6 +391,69 @@ export const obtenerUsuarios = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener los usuarios' });
     }
 };
+
+
+export const cambiarEstadoUsuario = async (req, res) => {
+    const { userId, Cod_estado_usuario } = req.body;
+
+    // Validación de datos
+    if (!userId || !Cod_estado_usuario) {
+        return res.status(400).json({ 
+            mensaje: 'Se requieren userId y Cod_estado_usuario' 
+        });
+    }
+
+    // Validar que el estado sea válido
+    if (![1, 2, 3].includes(Number(Cod_estado_usuario))) {
+        return res.status(400).json({ 
+            mensaje: 'Estado de usuario no válido' 
+        });
+    }
+
+    try {
+        // Verificar si el usuario existe
+        const [userExists] = await pool.query(
+            'SELECT cod_usuario FROM tbl_usuarios WHERE cod_usuario = ?',
+            [userId]
+        );
+
+        if (!userExists.length) {
+            return res.status(404).json({ 
+                mensaje: 'Usuario no encontrado' 
+            });
+        }
+
+        // Actualizar el estado
+        const [result] = await pool.query(
+            'UPDATE tbl_usuarios SET Cod_estado_usuario = ? WHERE cod_usuario = ?',
+            [Cod_estado_usuario, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ 
+                mensaje: 'No se pudo actualizar el estado del usuario' 
+            });
+        }
+
+        // Obtener el estado actualizado
+        const [updatedUser] = await pool.query(
+            'SELECT cod_usuario, Cod_estado_usuario FROM tbl_usuarios WHERE cod_usuario = ?',
+            [userId]
+        );
+
+        res.status(200).json({
+            mensaje: 'Estado del usuario actualizado correctamente',
+            usuario: updatedUser[0]
+        });
+
+    } catch (error) {
+        console.error('Error en la base de datos:', error);
+        res.status(500).json({
+            mensaje: 'Error interno del servidor al actualizar el estado',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
 // controllers/usuarioController.js
 export const confirmarCuenta = async (req, res) => {
     const { token_usuario } = req.params; // Leer el token desde los parámetros de la URL
@@ -433,30 +497,7 @@ export const obtenerUsuarioPorId = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener el usuario' });
     }
 };
-//con este controlador se actualiza un usuario por su id y tiene una ruta protegida que requiere un token jwt
-export const actualizarUsuario = async (req, res) => {
-    const { nombre_usuario, correo_usuario, contraseña_usuario, rol_usuario, confirmacion_email, token_usuario } = req.body;
 
-    const connection = await pool.getConnection();
-    try {
-        let queryParams = [req.params.cod_usuario, nombre_usuario, correo_usuario, rol_usuario, confirmacion_email, token_usuario];
-        if (contraseña_usuario) {
-            const hashedPassword = await bcrypt.hash(contraseña_usuario, 10);
-            queryParams.splice(2, 0, hashedPassword);
-        }
-
-        const [result] = await connection.query('CALL sp_actualizar_usuario(?, ?, ?, ?, ?, ?, ?)', queryParams);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
-        }
-        res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ mensaje: 'Error al actualizar el usuario' });
-    } finally {
-        connection.release();
-    }
-};
 
 export const eliminarUsuarioCompleto = async (req, res) => {
     const { cod_usuario } = req.params; // Obtener el cod_usuario de los parámetros de la URL
@@ -507,44 +548,68 @@ export const eliminarUsuarioCompleto = async (req, res) => {
         connection.release();  // Liberar la conexión
     }
 };
-// Con este controlador se autentica un usuario y se genera un token jwt y que si la contraseña ingresada coincide con una contraseña antigua, devolver un error
+
 export const autenticarUsuario = async (req, res) => {
     const { identificador, contraseña_usuario, twoFactorCode } = req.body;
 
+    // Validar datos de entrada
+    if (!identificador || !contraseña_usuario) {
+        return res.status(400).json({ mensaje: 'Identificador y contraseña son requeridos' });
+    }
+
     try {
         // Verificar si el usuario existe por nombre de usuario o correo
-        const [user] = await pool.query(
+        const [users] = await pool.query(
             'SELECT * FROM tbl_usuarios WHERE nombre_usuario = ? OR correo_usuario = ?',
             [identificador, identificador]
         );
 
-        if (user.length === 0) {
+        if (users.length === 0) {
             return res.status(404).json({ mensaje: 'Usuario no encontrado' });
         }
 
-        const usuario = user[0];
+        const usuario = users[0];
 
-        // Verificar la contraseña actual primero
+        // Verificar la contraseña
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
         
         if (!contraseñaValida) {
             return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
         }
 
+        // Verificar contraseñas anteriores
+        const [contraseñasAnteriores] = await pool.query(
+            'SELECT * FROM tbl_hist_contraseña WHERE cod_usuario = ?',
+            [usuario.cod_usuario]
+        );
+
+        for (const contraseñaAnt of contraseñasAnteriores) {
+            const esContraseñaAntigua = await bcrypt.compare(contraseña_usuario, contraseñaAnt.contraseña_hash);
+            if (esContraseñaAntigua) {
+                return res.status(401).json({ mensaje: 'La contraseña ingresada coincide con una contraseña anterior. Por favor, usa una contraseña nueva.' });
+            }
+        }
+
         // Verificar si el usuario ha confirmado su cuenta
-        if (usuario.confirmacion_email !== 1) {
+        if (!usuario.confirmacion_email) {
             return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
         }
 
-        // Verificar si tiene habilitado el 2FA
+        // Verificar el estado del usuario
+        if (usuario.cod_estado_usuario === 2) {
+            return res.status(403).json({ mensaje: 'Tu cuenta está en revisión. Por favor, contacta al administrador.' });
+        } else if (usuario.cod_estado_usuario === 3) {
+            return res.status(403).json({ mensaje: 'Tu cuenta ha sido suspendida. Por favor, contacta al administrador.' });
+        }
+
+        // Verificar 2FA
         if (usuario.is_two_factor_enabled) {
             if (!twoFactorCode) {
                 return res.status(400).json({ mensaje: 'El código de 2FA es requerido' });
             }
 
-            // Validar el código de 2FA usando el código secreto almacenado
             const isCodeValid = speakeasy.totp.verify({
-                secret: usuario.two_factor_code,  // El código secreto almacenado en la base de datos
+                secret: usuario.two_factor_code,
                 encoding: 'base32',
                 token: twoFactorCode
             });
@@ -554,14 +619,14 @@ export const autenticarUsuario = async (req, res) => {
             }
         }
 
-          // Actualizar el campo Fecha_ultima_conexion con la fecha y hora actual
-          const fechaConexion = new Date();
-          await pool.query(
-              'UPDATE tbl_usuarios SET Fecha_ultima_conexion = ? WHERE cod_usuario = ?',
-              [fechaConexion, usuario.cod_usuario]
-          );
+        // Actualizar Fecha de última conexión
+        const fechaConexion = new Date();
+        await pool.query(
+            'UPDATE tbl_usuarios SET Fecha_ultima_conexion = ? WHERE cod_usuario = ?',
+            [fechaConexion, usuario.cod_usuario]
+        );
 
-           // Si el campo Primer_ingreso está vacío o es NULL, actualizarlo
+        // Actualizar Primer_ingreso si está vacío
         if (!usuario.Primer_ingreso) {
             await pool.query(
                 'UPDATE tbl_usuarios SET Primer_ingreso = ? WHERE cod_usuario = ?',
@@ -569,16 +634,13 @@ export const autenticarUsuario = async (req, res) => {
             );
         }
 
-
-        // Calcular la fecha de vencimiento sumando 12 años a la fecha actual
+        // Actualizar Fecha de vencimiento
         const fechaVencimiento = new Date();
-        fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 12);  // Sumar 12 años
-        const fechaVencimientoFormateada = fechaVencimiento.toISOString().slice(0, 19).replace('T', ' ');
-
-        // Actualizar el campo Fecha_vencimiento
+        fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 12);
+        
         await pool.query(
             'UPDATE tbl_usuarios SET Fecha_vencimiento = ? WHERE cod_usuario = ?',
-            [fechaVencimientoFormateada, usuario.cod_usuario]
+            [fechaVencimiento, usuario.cod_usuario]
         );
 
         // Generar el token si la autenticación es exitosa
@@ -586,16 +648,18 @@ export const autenticarUsuario = async (req, res) => {
             { 
                 cod_usuario: usuario.cod_usuario, 
                 nombre_usuario: usuario.nombre_usuario, 
-                rol_usuario: usuario.rol_usuario, 
+                rol_usuario: usuario.cod_rol,
                 cod_persona: usuario.cod_persona 
             },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
+        // Retornar respuesta con el token y el estado del usuario
         return res.status(200).json({
             mensaje: 'Autenticación exitosa',
-            token
+            token,
+            cod_estado_usuario: usuario.cod_estado_usuario,
         });
 
     } catch (error) {
@@ -603,6 +667,8 @@ export const autenticarUsuario = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error al autenticar usuario' });
     }
 };
+
+
 // PARA MOSTRAR EL PERFIL DE UN USUARIO
 export const mostrarPerfil = async (req, res) => {
     const cod_usuario = parseInt(req.params.cod_usuario, 10); // Asegúrate de que el ID sea un número entero

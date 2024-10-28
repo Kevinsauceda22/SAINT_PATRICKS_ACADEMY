@@ -2,8 +2,8 @@ import express from 'express';
 import {
     crearUsuario,
     obtenerUsuarios,
+    cambiarEstadoUsuario,
     obtenerUsuarioPorId,
-    actualizarUsuario,
     eliminarUsuarioCompleto,
     confirmarCuenta,
     autenticarUsuario,
@@ -26,8 +26,6 @@ const router = express.Router();
 router.get('/Todos-los-usuarios', checkAuth, obtenerUsuarios);
 // Obtener un usuario por su cod_usuario (Protegido por JWT)
 router.get('/:cod_usuario', checkAuth, obtenerUsuarioPorId);
-// Actualizar un usuario por su cod_usuario (Protegido por JWT)
-router.put('/:cod_usuario', checkAuth, actualizarUsuario);
 // Mostrar el perfil del usuario autenticado (Protegido por JWT)
 router.get('/perfil/:cod_usuario', checkAuth, mostrarPerfil);
 //ruta para eliminar un usuario completo
@@ -35,6 +33,8 @@ router.delete('/eliminar-perfil/:cod_usuario', checkAuth, eliminarUsuarioComplet
 //RUTA PARA AGREGAR AL ESTUDIANTE 
 router.post('/agregar-estudiante/', checkAuth, agregarEstudiante);
 router.post('/generar-2fa', checkAuth, generarCodigo2FA);
+router.put('/cambiar-estado', checkAuth, cambiarEstadoUsuario);
+
 
 
 

@@ -60,8 +60,12 @@ const Login = () => {
         });
 
         if (response.data.token) {
+          
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('user', JSON.stringify(response.data.user));
+
+          
+          
           
           if (response.data.is_two_factor_enabled === 1) {
             localStorage.setItem('temp_identificador', formData.identificador);
@@ -70,6 +74,8 @@ const Login = () => {
             await handleTransition('/dashboard');
           }
         }
+
+        
       } catch (error) {
         toast.error(error.response?.data?.mensaje || 'Error en el inicio de sesión', {
           position: 'top-center',

@@ -159,7 +159,7 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Usuarios',
-        to: '/ListaUsuarios',
+        to: '/UserMagnament',
       },
       {
         component: CNavItem,

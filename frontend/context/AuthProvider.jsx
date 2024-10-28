@@ -1,13 +1,15 @@
 import { useState, createContext, useEffect } from "react";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
+import { useNavigate } from "react-router-dom"; // Importa useNavigate
 
 const AuthContext = createContext();
 
 const AuthProvider = ({ children }) => {
-  const [auth, setAuth] = useState({});
+  const [auth, setAuth] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate(); // Inicializa useNavigate
 
   useEffect(() => {
     const autenticarUsuario = async () => {
@@ -32,9 +34,33 @@ const AuthProvider = ({ children }) => {
         const { data } = await axios.get(`http://localhost:4000/api/usuarios/perfil/${cod_usuario}`, config);
         
         setAuth(data);
+
+        // Manejo de redirección basado en el estado del usuario
+        switch (data.cod_estado_usuario) {
+          case 1: // Activo
+            // Solo redirigir si no está en las rutas de cuenta suspendida o en revisión
+            if (window.location.pathname === "/CuentaSuspendida" || window.location.pathname === "/CuentaenRevision") {
+              navigate("/dashboard"); // Redirige al dashboard
+            }
+            break;
+          case 2: // Cuenta en revisión
+            if (window.location.pathname !== "/CuentaenRevision") {
+              navigate("/CuentaenRevision");
+            }
+            break;
+          case 3: // Cuenta suspendida
+            if (window.location.pathname !== "/CuentaSuspendida") {
+              navigate("/CuentaSuspendida");
+            }
+            break;
+          default:
+            // Manejo si el estado es inesperado
+            setError("Estado de usuario desconocido.");
+            break;
+        }
       } catch (error) {
         console.error("Error al autenticar al usuario:", error);
-        setAuth({});
+        setAuth(null); // Cambia a null para indicar que no hay usuario autenticado
         if (error.response) {
           setError("Error en el servidor. Por favor, intenta más tarde.");
         } else if (error.request) {
@@ -49,11 +75,15 @@ const AuthProvider = ({ children }) => {
     };
 
     autenticarUsuario();
-  }, []);
+    
+    return () => {
+      // Limpieza si es necesario
+    };
+  }, [navigate]); // Agrega navigate a las dependencias
 
   return (
     <AuthContext.Provider value={{ auth, setAuth, loading, error }}>
-      {children}
+      {loading ? <div>Cargando...</div> : children}
     </AuthContext.Provider>
   );
 };

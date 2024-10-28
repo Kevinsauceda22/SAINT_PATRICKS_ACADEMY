@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
 const MinimalPermissionManager = () => {
-  const [showWarning, setShowWarning] = useState(true); // Estado para controlar la advertencia
+  const [showWarning, setShowWarning] = useState(true);
 
   const handleCloseWarning = () => {
-    setShowWarning(false); // Función para cerrar la advertencia
+    setShowWarning(false);
   };
 
   const pages = [
@@ -20,7 +20,7 @@ const MinimalPermissionManager = () => {
     { id: 'read', name: 'Ver' },
     { id: 'create', name: 'Crear' },
     { id: 'update', name: 'Editar' },
-    { id: 'delete', name: 'Eliminar' }
+    { id: 'delete', name: 'Eliminar' },
   ];
 
   const [users, setUsers] = useState([
@@ -30,8 +30,8 @@ const MinimalPermissionManager = () => {
       role: 'Padre',
       permissions: pages.reduce((acc, page) => ({
         ...acc,
-        [page.id]: { read: true, create: false, update: false, delete: false }
-      }), {})
+        [page.id]: { read: true, create: false, update: false, delete: false },
+      }), {}),
     },
     {
       id: 2,
@@ -39,8 +39,8 @@ const MinimalPermissionManager = () => {
       role: 'Docente',
       permissions: pages.reduce((acc, page) => ({
         ...acc,
-        [page.id]: { read: true, create: true, update: true, delete: false }
-      }), {})
+        [page.id]: { read: true, create: true, update: true, delete: false },
+      }), {}),
     },
     {
       id: 3,
@@ -48,9 +48,9 @@ const MinimalPermissionManager = () => {
       role: 'Admin',
       permissions: pages.reduce((acc, page) => ({
         ...acc,
-        [page.id]: { read: true, create: true, update: true, delete: true }
-      }), {})
-    }
+        [page.id]: { read: true, create: true, update: true, delete: true },
+      }), {}),
+    },
   ]);
 
   const handlePermissionChange = (userId, pageId, permissionId) => {
@@ -62,9 +62,9 @@ const MinimalPermissionManager = () => {
             ...user.permissions,
             [pageId]: {
               ...user.permissions[pageId],
-              [permissionId]: !user.permissions[pageId][permissionId]
-            }
-          }
+              [permissionId]: !user.permissions[pageId][permissionId],
+            },
+          },
         };
       }
       return user;
@@ -72,11 +72,20 @@ const MinimalPermissionManager = () => {
   };
 
   const styles = `
+    .container {
+      padding: 2rem;
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    
     .minimal-table {
       width: 100%;
       border-collapse: collapse;
       background: white;
       font-size: 14px;
+      border-radius: 8px;
+      overflow: hidden;
     }
 
     .minimal-table th {
@@ -85,6 +94,7 @@ const MinimalPermissionManager = () => {
       font-weight: 600;
       border-bottom: 1px solid #ddd;
       color: #333;
+      background-color: #f1f1f1;
     }
 
     .minimal-table td {
@@ -196,8 +206,7 @@ const MinimalPermissionManager = () => {
 
     .table-container {
       overflow-x: auto;
-      border: 1px solid #ddd;
-      border-radius: 4px;
+      border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
@@ -228,10 +237,12 @@ const MinimalPermissionManager = () => {
       cursor: pointer;
       font-size: 14px;
       margin-left: 20px;
+      transition: color 0.2s;
     }
 
     .close-button:hover {
       text-decoration: underline;
+      color: #ff0000; /* Cambiar a color rojo al pasar el mouse */
     }
 
     @media (max-width: 600px) {
@@ -242,7 +253,7 @@ const MinimalPermissionManager = () => {
   `;
 
   return (
-    <div className="p-6">
+    <div className="container">
       <style>{styles}</style>
 
       {showWarning && (

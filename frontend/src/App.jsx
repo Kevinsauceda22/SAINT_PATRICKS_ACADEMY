@@ -34,6 +34,8 @@ const ListaEspecialidades = React.lazy(() => import('./views/pages/calificacione
 const ListaEstadoasistencia = React.lazy(() => import('./views/pages/calificaciones/ListaEstadoasistencia'));
 const ActiveSessionPage = React.lazy(() => import ("./views/pages/SesionActiva/SesionActiva"))
 const VerificaciónCuenta = React.lazy(() => import ("./views/pages/VerificarCuenta/VerificarCuenta"))
+const CuentaSupendida = React.lazy(() => import ("./views/pages/Suspendida/Accoutsuspended"))
+const ListaUsuarios = React.lazy(() => import('./views/pages/ListaUsuarios/ListaUsuarios'));
 const Permisos = React.lazy(() => import ("./views/pages/Permissions/Permissions"))
 
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
@@ -90,6 +92,7 @@ const App = () => {
             <Route path="/active-session" element={<ActiveSessionPage />} />
               <Route path="/2fa" element={<TwoAuthFA />} />
               <Route path="/CuentaenRevision" element={<VerificaciónCuenta />} />
+              <Route path="/CuentaSuspendida" element={<CuentaSupendida />} />
               <Route path="/" element={<DefaultLayout />}>
                 <Route path="/matricula" element={<Matricula />} />
                 <Route path="/rolesandpermissions" element={<Permisos />} />
@@ -98,6 +101,7 @@ const App = () => {
                 <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />
                 <Route path="/ListaAsignaturas" element={<ListaAsigaturas />} />
                 <Route path="/ListaAsistencia" element={<ListaAsistencia />} />
+                <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
                 <Route path="/ListaEstadoasistencia" element={<ListaEstadoasistencia />} />

@@ -1,0 +1,294 @@
+/* Container principal */
+.user-management {
+    padding: 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  }
+  
+  /* Header mejorado */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 24px;
+  }
+  
+  .header h1 {
+    color: #111827;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+  }
+  
+  /* Controles mejorados */
+  .controls {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  
+  /* Caja de búsqueda mejorada */
+  .search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .search-box svg {
+    position: absolute;
+    left: 14px;
+    color: #6B7280;
+    width: 20px;
+    height: 20px;
+  }
+  
+  .search-box input {
+    padding: 12px 16px 12px 44px;
+    border: 2px solid #E5E7EB;
+    border-radius: 10px;
+    width: 320px;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background: #F9FAFB;
+  }
+  
+  .search-box input:focus {
+    outline: none;
+    border-color: #3B82F6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* Selector de filtro mejorado */
+  .filter-box {
+    position: relative;
+  }
+  
+  .filter-box select {
+    padding: 12px 40px 12px 16px;
+    border: 2px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 1rem;
+    background: #F9FAFB;
+    cursor: pointer;
+    appearance: none;
+    min-width: 200px;
+    transition: all 0.2s ease;
+  }
+  
+  .filter-box select:focus {
+    outline: none;
+    border-color: #3B82F6;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  .filter-box .select-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6B7280;
+    pointer-events: none;
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Tabla mejorada */
+  .table-container {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #E5E7EB;
+    background: #ffffff;
+  }
+  
+  .users-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    white-space: nowrap;
+  }
+  
+  .users-table th {
+    background: #F9FAFB;
+    padding: 16px 20px;
+    text-align: left;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 2px solid #E5E7EB;
+    font-size: 0.95rem;
+  }
+  
+  .users-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #E5E7EB;
+    vertical-align: middle;
+    transition: background-color 0.2s ease;
+  }
+  
+  .users-table tr:hover td {
+    background-color: #F9FAFB;
+  }
+  
+  /* Celda de usuario mejorada */
+  .user-cell {
+    min-width: 220px;
+  }
+  
+  .user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .user-name {
+    font-weight: 600;
+    color: #111827;
+    font-size: 1rem;
+  }
+  
+  .user-email {
+    color: #6B7280;
+    font-size: 0.925rem;
+  }
+  
+  /* Badges de estado mejorados */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: capitalize;
+  }
+  
+  .status-icon {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  
+  .status-active {
+    background-color: #DCFCE7;
+    color: #15803D;
+  }
+  
+  .status-inactive {
+    background-color: #F3F4F6;
+    color: #4B5563;
+  }
+  
+  .status-suspended {
+    background-color: #FEF3C7;
+    color: #B45309;
+  }
+  
+  /* Botones de acción mejorados */
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  
+  .btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  .btn-activate {
+    background-color: #DCFCE7;
+    color: #15803D;
+  }
+  
+  .btn-activate:hover:not(:disabled) {
+    background-color: #BBF7D0;
+  }
+  
+  .btn-deactivate {
+    background-color: #F3F4F6;
+    color: #4B5563;
+  }
+  
+  .btn-deactivate:hover:not(:disabled) {
+    background-color: #E5E7EB;
+  }
+  
+  .btn-suspend {
+    background-color: #FEF3C7;
+    color: #B45309;
+  }
+  
+  .btn-suspend:hover:not(:disabled) {
+    background-color: #FDE68A;
+  }
+  
+  /* Responsive mejorado */
+  @media (max-width: 1024px) {
+    .user-management {
+      padding: 24px;
+      border-radius: 12px;
+    }
+  
+    .header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 20px;
+    }
+  
+    .controls {
+      flex-direction: column;
+      gap: 16px;
+    }
+  
+    .search-box input,
+    .filter-box select {
+      width: 100%;
+    }
+  
+    .action-buttons {
+      flex-direction: column;
+      gap: 8px;
+    }
+  
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  
+  /* Añadido: Animaciones y transiciones suaves */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .users-table tr {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
