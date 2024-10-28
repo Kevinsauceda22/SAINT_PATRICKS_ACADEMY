@@ -33,6 +33,8 @@ import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRo
 import estadomatriculaRoutes from './module/matricula/Routes/estadomatriculaRoutes.js';
 import departamentoRoutes from './module/matricula/Routes/departamentoRoutes.js';
 import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
+import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
+import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
 
 //importtacion de middleware
 
@@ -129,6 +131,8 @@ app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 
 // Rutas para manejar personas
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
+app.use('/api/tipoRelacion', tipoRelacionRoutes);
+app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;

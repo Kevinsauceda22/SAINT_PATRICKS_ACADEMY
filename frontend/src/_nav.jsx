@@ -51,6 +51,12 @@ const _nav = [
     icon: cilFile,
   },
   {
+    component: CNavItem,
+    name: 'Familias',
+    to: '/ListaEstructura',
+    icon: cilPeople,
+  },
+  {
     component: CNavGroup,
     name: 'Mantenimientos',
     icon: cilListRich,
@@ -150,9 +156,14 @@ const _nav = [
         component: CNavItem,
         name: 'Historial Procedencia',
         to: '/ListaHistoricoProc',
+      },{
+        component: CNavItem,
+        name: 'Tipo de Relaciones',
+        to: 'ListaRelacion',
       },
-    ],
-  },
+      
+        ],
+      },
   {
     component: CNavGroup,
     name: 'Contabilidad y Pagos',
