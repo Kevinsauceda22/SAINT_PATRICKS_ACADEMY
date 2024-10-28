@@ -50,6 +50,10 @@ const Periodomatricula = React.lazy(() => import('./views/pages/matricula/period
 const Departamento = React.lazy(() => import('./views/pages/matricula/departamento'));
 const Estadomatricula = React.lazy(() => import('./views/pages/matricula/estadomatricula'));
 const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopago'));
+const ListaEdificios = React.lazy(() => import('./views/pages/matricula/ListaEdificios')) 
+const ListaActivex = React.lazy(() => import('./views/pages/matricula/ListaActivex')); 
+const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias')) 
+
 
 
 const App = () => {
@@ -120,6 +124,11 @@ const App = () => {
                 <Route path="/departamento" element={<Departamento />} />
                 <Route path="/estadomatricula" element={<Estadomatricula />} />
                 <Route path="/conceptopago" element={<Conceptopago />} />
+                <Route path="/edificios" element={<ListaEdificios />} />
+                <Route path="/dias" element={<ListaDias />} />
+                <Route path="/actividades" element={<ListaActivex />} />
+                <Route path="/historico" element={<ListaDias />} />
+          
 
               </Route>
             </Route>
