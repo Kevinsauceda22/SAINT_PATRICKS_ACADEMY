@@ -56,6 +56,7 @@ const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopa
 const ListaEdificios = React.lazy(() => import('./views/pages/matricula/ListaEdificios')) 
 const ListaActivex = React.lazy(() => import('./views/pages/matricula/ListaActivex')); 
 const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias')) 
+const ListaHistoricoProc = React.lazy(() => import('./views/pages/matricula/ListaHistoricoProc')) // Importa tu componente
 
 
 
@@ -133,7 +134,7 @@ const App = () => {
                 <Route path="/edificios" element={<ListaEdificios />} />
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/actividades" element={<ListaActivex />} />
-                <Route path="/historico" element={<ListaDias />} />
+             <Route exact path="/historico" element={<ListaHistoricoProc/>} />
           
 
               </Route>
