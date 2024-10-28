@@ -1,26 +1,21 @@
 import express from 'express';
-import {
-        obtenerActExtra,
-        crearActividadExtracurricular,
-        actualizarActividadExtracurricular,
-        eliminarActividadExtracurricular
-} from '../Controllers/actividades_extracurricularesController.js'; // Asegúrate de que esta ruta sea correcta
+import { obtenerActividadesExtra,
+         crearActividadesExtra,
+         actualizarActividadesExtra,
+         eliminarActividadExtracurricular } from '../Controllers/actividades_extracurricularesController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
 
-// Ruta para obtener todas las actividades extracurriculares
-router.get('/extracurriculares', obtenerActExtra);
+// Ruta para obtener todas las actividades extracurriculares o una específica
+router.get('/actividades/extracurriculares/:Cod_actividades_extracurriculares?', obtenerActividadesExtra);
 
-//Ruta para obtener una actividad por nombre de actividad o nombre de sección
-router.get('/extracurriculares/:Nombre_actividad?/:nombreSeccion?', obtenerActExtra);
+// Ruta para crear una nueva actividad extracurricular
+router.post('/actividades/extracurriculares', crearActividadesExtra);
 
-// Ruta para crear una actividad extracurricular
-router.post('/crearactividad', crearActividadExtracurricular);
+// Ruta para actualizar una actividad extracurricular
+router.put('/actividades/extracurriculares', actualizarActividadesExtra);
 
-// Ruta para actualizar una actividad
-router.put('/actualizaractividades', actualizarActividadExtracurricular); // Actualiza la actidad
-
-// Ruta para eliminar una actividad por Cod_actividad
-router.delete('/actividades/:p_cod_actividad', eliminarActividadExtracurricular); // Nueva ruta para eliminar actividad
+// Ruta para eliminar una actividad extracurricular
+router.delete('/actividades/extracurriculares/:Cod_actividad', eliminarActividadExtracurricular);
 
 export default router;
