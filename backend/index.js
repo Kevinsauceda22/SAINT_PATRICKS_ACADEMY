@@ -19,12 +19,21 @@ import estadonotaRoutes from './module/calificaciones/Routes/estadoNotaRoutes.js
 import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
-import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
+import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js':
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
+import diasRoutes from './module/matricula/Routes/diasRoutes.js';
+import historicoprocRoutes from './module/matricula/Routes/historicoprocRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personasRoutes from "./module/personas/personaRoutes.js"
+import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
+import tipomatriculaRoutes from './module/matricula/Routes/tipomatriculaRoutes.js';
+import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRoutes.js';
+import estadomatriculaRoutes from './module/matricula/Routes/estadomatriculaRoutes.js';
+import departamentoRoutes from './module/matricula/Routes/departamentoRoutes.js';
+import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
+
 //importtacion de middleware
 
 
@@ -96,7 +105,23 @@ app.use('/api/edificio', edificiosRoutes);
 // Rutas para las aulas
 app.use('/api/aula', aulasRoutes);
 // Rutas para las actividades extracurriculares
-app.use('/api/actividadesExtracurriculares', actividadesextraRoutes);
+app.use('/api', actividadesextraRoutes);
+// Rutas para el día
+app.use('/api/dia', diasRoutes);
+// Rutas para el historico procedencia
+app.use('/api/historial_proc', historicoprocRoutes);
+// Usar las rutas de solicitud
+app.use('/api/tipopersona', tipopersonaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/tipomatricula', tipomatriculaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/periodomatricula', periodomatriculaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/estadomatricula', estadomatriculaRoutes);
+// Usar las rutas de solicitud
+app.use('/api/departamento', departamentoRoutes);
+// Usar las rutas de solicitud
+app.use('/api/conceptopago', conceptopagoRoutes);
 // Usar las rutas de solicitud
 app.use('/api/solicitud', solicitudRoutes);
 // Pagos y finanzas

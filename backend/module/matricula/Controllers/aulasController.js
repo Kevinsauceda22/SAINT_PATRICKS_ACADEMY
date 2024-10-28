@@ -2,78 +2,83 @@ import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
 
-//Controlador para obtener todas o una aula
+// Controlador para obtener aulas
 export const obtenerAula = async (req, res) => {
-    const { Numero_aula } = req.params; // Extraemos el parámetro de la URL
+    const { Cod_aula } = req.query; // Obtiene el código del aula desde la consulta
 
     try {
-        // Si el valor es vacío o 'null', lo pasamos como null explícitamente al procedimiento almacenado
-        const query = 'CALL sp_get_Aula(?)';
-        const [results] = await pool.query(query, [
-            Numero_aula && Numero_aula !== 'null' ? Numero_aula : null
-        ]);
+        let query;
+        let params;
 
-        // Verificar si se encontraron registros
-        if (results[0].length === 0) {
-            return res.status(404).json({ message: 'Aula no encontrada' });
+        // Si se proporciona un código de aula, busca una aula específica, de lo contrario, busca todas las aulas
+        if (Cod_aula) {
+            query = 'CALL sp_obtener_aulas(?)'; // Procedimiento almacenado para una aula específica
+            params = [Cod_aula];
+        } else {
+            query = 'CALL sp_obtener_aulas(0)'; // Procedimiento almacenado para todas las aulas
+            params = [null];
         }
 
-        return res.status(200).json(results[0]); // Asegúrate de acceder al primer elemento del array
+        // Ejecuta la consulta en la base de datos
+        const [rows] = await pool.query(query, params);
+
+        // Verifica si hay resultados
+        if (!rows || rows[0].length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron aulas.' });
+        }
+
+        // Devuelve los resultados al cliente
+        res.status(200).json(rows[0]); // Solo toma el primer resultado que contiene las filas
     } catch (error) {
-        console.error('Error al obtener el aula:', error);
-        res.status(500).json({ message: 'Error al obtener el aula', error });
-    }
-};
-
-
-//Controlador para crear una aula
-export const crearAula = async (req, res) => {
-    const {
-        p_Numero_aula,
-        p_Capacidad,
-        p_Cupos_aula,
-        p_Nombre_edificio,
-        p_Division,
-        p_Secciones_disponibles
-    } = req.body;
-
-    try {
-        await pool.query('CALL sp_insert_Aula(?, ?, ?, ?, ?, ?)', [
-            p_Numero_aula,
-            p_Capacidad,
-            p_Cupos_aula,
-            p_Nombre_edificio,
-            p_Division,
-            p_Secciones_disponibles
-        ]);
-
-        res.status(201).json({ mensaje: 'Aula creada exitosamente' });
-    } catch (error) {
-        console.error('Error al crear el aula:', error);
+        console.error('Error al obtener las aulas:', error);
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
 
 
-// Controlador para actualizar un aula
+
+// Controlador para crear un aula
+export const crearAula = async (req, res) => {
+    const { Numero_aula, Capacidad, Cupos_aula, Division, Secciones_disponibles, Secciones_ocupadas, Cod_edificio } = req.body;
+
+    try {
+        // Verifica que se proporcionen todos los parámetros requeridos
+        if (Numero_aula == null || Capacidad == null || Cupos_aula == null || Division == null || Secciones_disponibles == null || Secciones_ocupadas == null || Cod_edificio == null) {
+            return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
+        }
+
+        // Llama al procedimiento almacenado para insertar el aula
+        const [result] = await pool.query('CALL sp_insertar_aula(?, ?, ?, ?, ?, ?, ?)', [Numero_aula, Capacidad, Cupos_aula, Division, Secciones_disponibles, Secciones_ocupadas, Cod_edificio]);
+
+        // Responde con un mensaje de éxito
+        return res.status(201).json({ mensaje: "Aula insertada con éxito", data: result });
+    } catch (error) {
+        console.error("Error al insertar el aula:", error);
+        return res.status(500).json({ mensaje: "Error al insertar el aula." });
+    }
+};
+
+
+/// Controlador para actualizar un aula
 export const actualizarAula = async (req, res) => {
+    const { Cod_aula } = req.params; // Obtiene el código del aula desde la URL
+
     const {
-        p_Item,                   // Código del Aula (Cod_aula)
         p_Numero_aula,           // Número de Aula
         p_Capacidad,             // Capacidad del Aula
         p_Cupos_aula,            // Cupos Disponibles
-        p_Nombre_edificio,       // Nombre del Edificio
+        p_Nombre_edificios,       // Nombre del Edificio
         p_Division,              // Número de Divisiones Permitidas
-        p_Secciones_ocupadas      // Secciones Ocupadas
+        p_Secciones_ocupadas     // Secciones Ocupadas
     } = req.body;
 
     try {
-        await pool.query('CALL sp_update_Aula(?, ?, ?, ?, ?, ?, ?)', [
-            p_Item,
+        await pool.query('CALL sp_actualizar_aulas(?, ?, ?, ?, ?, ?, ?)', [
+            Cod_aula,            // Usamos Cod_aula desde params
             p_Numero_aula,
             p_Capacidad,
             p_Cupos_aula,
-            p_Nombre_edificio,
+            p_Nombre_edificios,
             p_Division,
             p_Secciones_ocupadas
         ]);
@@ -84,6 +89,7 @@ export const actualizarAula = async (req, res) => {
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
 
 
 // Controlador para eliminar un aula

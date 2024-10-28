@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/edificios', obtenerEdificios);
 
 //Ruta para obtener un edificio
-router.get('/edificios/:Nombre_edificio', obtenerEdificios);
+router.get('/edificios/:Cod_edificio', obtenerEdificios);
 
 //Ruta para crear un edificio
 router.post('/crear_edificio', crearEdificio);
@@ -19,6 +19,6 @@ router.post('/crear_edificio', crearEdificio);
 router.put('/actualizar_edificio', actualizarEdificio);
 
 //Ruta para eliminar un edificio
-router.delete('/:p_Nombre_edificio', eliminarEdificio);
-
+router.delete('/:Cod_edificio', eliminarEdificio);
 export default router;
+
