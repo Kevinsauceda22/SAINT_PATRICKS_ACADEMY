@@ -391,11 +391,11 @@ const ConceptoPago = () => {
           <h3>Mantenimiento de Conceptos de Pago</h3>
           </CCol>
         <CCol xs="4" md="3" className="text-end">
-  <CButton color="dark" onClick={() => handleAddModal(true)} className="me-2" style={{ backgroundColor: '#0F463A', borderColor: '#0F463A' }}>
+  <CButton color="dark" onClick={() => handleAddModal(true)} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
     <CIcon icon={cilPlus} /> Nuevo
   </CButton>
   <CDropdown>
-    <CDropdownToggle style={{ backgroundColor: '#617341', borderColor: '#617341' }}>
+    <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
       <CIcon icon={cilFile} /> Reporte
     </CDropdownToggle>
     <CDropdownMenu>
@@ -472,13 +472,24 @@ const ConceptoPago = () => {
                   {concepto.Activo.toUpperCase() === 'SI' ? <FaCheck color="green" /> : <FaTimes color="red" />}
                 </CTableDataCell>
                 <CTableDataCell className="text-end">
-                  <CButton color="warning" size="sm" onClick={() => handleEditModal(concepto)}>
-                    <CIcon icon={cilPen} />
-                  </CButton>{' '}
-                  <CButton color="danger" size="sm" onClick={() => confirmDelete(concepto.Cod_concepto)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Ajusta la opacidad
+    onClick={() => handleEditModal(concepto)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>{' '}
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Ajusta la opacidad
+    onClick={() => confirmDelete(concepto.Cod_concepto)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+</CTableDataCell>
+
               </CTableRow>
             ))}
           </CTableBody>
@@ -545,7 +556,7 @@ const ConceptoPago = () => {
               )}
             </CInputGroup>
             <CInputGroup className="mb-3">
-              <CInputGroupText>Activo</CInputGroupText>
+              <CInputGroupText>Selecionar Activo</CInputGroupText>
               <CFormSelect
                 value={conceptoActual.activo}
                 onChange={(e) => {
@@ -572,7 +583,7 @@ const ConceptoPago = () => {
   style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
   type="submit"
 >
-  <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Crear'}
+  <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
 </CButton>
 
             </CModalFooter>

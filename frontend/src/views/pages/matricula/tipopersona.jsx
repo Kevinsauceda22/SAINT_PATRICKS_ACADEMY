@@ -273,11 +273,11 @@ const TipoPersona = () => {
           <h3>Mantenimiento Tipo de Personas</h3>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
-          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#0F463A', borderColor: '#0F463A' }}>
+          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
           <CDropdown className="report-dropdown">
-            <CDropdownToggle style={{ backgroundColor: '#617341', borderColor: '#617341', zIndex: '1050' }}>
+            <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#6C8E58', zIndex: '1050' }}>
               <CIcon icon={cilFile} /> Reporte
             </CDropdownToggle>
             <CDropdownMenu>
@@ -344,13 +344,24 @@ const TipoPersona = () => {
                 <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
                 <CTableDataCell>{getTipoLabel(tipo.Tipo)}</CTableDataCell>
                 <CTableDataCell className="text-end">
-                  <CButton color="warning" size="sm" onClick={() => handleEditModal(tipo)}>
-                    <CIcon icon={cilPen} />
-                  </CButton>{' '}
-                  <CButton color="danger" size="sm" onClick={() => confirmDelete(tipo.Cod_tipo_persona)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleEditModal(tipo)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>{' '}
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => confirmDelete(tipo.Cod_tipo_persona)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+</CTableDataCell>
+
               </CTableRow>
             ))}
           </CTableBody>
@@ -402,7 +413,7 @@ const TipoPersona = () => {
                 Cancelar
               </CButton>
               <CButton style={{ backgroundColor: '#617341', color: 'white' }} type="submit">
-                <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Crear'}
+                <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
               </CButton>
             </CModalFooter>
           </CForm>
@@ -420,7 +431,7 @@ const TipoPersona = () => {
           position: sticky;
           top: 0;
           background-color: ;
-          color: white;
+          color: ;
           z-index: 1000;
         }
 
