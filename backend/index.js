@@ -19,7 +19,7 @@ import estadonotaRoutes from './module/calificaciones/Routes/estadoNotaRoutes.js
 import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
-import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js':
+import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
