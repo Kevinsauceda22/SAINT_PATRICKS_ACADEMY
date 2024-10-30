@@ -4,6 +4,8 @@ import { useSelector } from 'react-redux';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
 import { AuthProvider } from "../context/AuthProvider";
+import { PermissionProvider } from "../context/AuthPermision";
+
 import RutaProtegida from './layout/RutaProtegida'; // Importa el componente RutaProtegida
 import RutaPublica from './layout/RutaPublica'; // Componente de rutas públicas
 
@@ -26,7 +28,7 @@ const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPa
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
 const Perfil = React.lazy(() => import('./views/pages/profile/profile'));
 const TwoAuthFA = React.lazy(() => import('./views/pages/2FA/2fa'));
-const ListaActiviadesAca = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAca'));
+const ListaActiviadesAca = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAca.jsX'));
 const ListaAsigaturas = React.lazy(() => import('./views/pages/calificaciones/ListaAsignaturas'));
 const ListaAsistencia = React.lazy(() => import('./views/pages/calificaciones/ListaAsistencia'));
 const ListaCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaCiclos'));
@@ -43,6 +45,8 @@ const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificacione
 const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
 const ListaParciales = React.lazy(() => import('./views/pages/calificaciones/ListaParciales'));
 const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones/ListaPonderaciones'));
+const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabilidad'));
+const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDiario'));
 
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
@@ -80,6 +84,7 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
+      <PermissionProvider>
         <Suspense
           fallback={
             <div className="pt-3 text-center">
@@ -110,6 +115,8 @@ const App = () => {
               <Route path="/" element={<DefaultLayout />}>
                 <Route path="/matricula" element={<Matricula />} />
                 <Route path="/rolesandpermissions" element={<Permisos />} />
+                <Route path="/Contabilidad" element={<Contabilidad />} />
+                <Route path="/LibroDiario" element={<LibroDiario />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Perfil />} />
                 <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />
@@ -147,6 +154,8 @@ const App = () => {
             <Route path="*" element={<Page404 />} /> {/* Manejo de rutas no encontradas */}
           </Routes>
         </Suspense>
+        </PermissionProvider>
+
       </AuthProvider>
     </Router>
   );

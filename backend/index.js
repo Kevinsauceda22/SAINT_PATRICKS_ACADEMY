@@ -35,6 +35,9 @@ import departamentoRoutes from './module/matricula/Routes/departamentoRoutes.js'
 import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
 import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
 import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
+import catalogoCuentasRoutes from './module/Contabilidad/Contabilidad_routes.js'; // Cambia la ruta según tu estructura de carpetas
+import libroDiarioRoutes from './module/Contabilidad/librodiario_routes.js'; // Asegúrate de usar la ruta correcta
+
 
 
 //importtacion de middleware
@@ -134,6 +137,11 @@ app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
+
+
+//contabilidad
+app.use('/api/catalogoCuentas', catalogoCuentasRoutes);
+app.use('/api/Librodiario',libroDiarioRoutes);
 
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;

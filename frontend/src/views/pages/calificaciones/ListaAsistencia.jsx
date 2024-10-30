@@ -6,7 +6,6 @@ import {
   CCard,
   CCardBody,
   CFormSelect,
-  CAlert,
   CSpinner,
   CTable,
   CTableHeaderCell,
@@ -19,7 +18,6 @@ const ListaAsistencia = () => {
   const [secciones, setSecciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [cargando, setCargando] = useState(true);
-  const [mensaje, setMensaje] = useState('');
   const [codSeccionSeleccionada, setCodSeccionSeleccionada] = useState('');
 
   useEffect(() => {
@@ -34,7 +32,6 @@ const ListaAsistencia = () => {
       setSecciones(data);
     } catch (error) {
       console.error('Error al obtener las secciones:', error);
-      setMensaje('Error al cargar secciones.');
     } finally {
       setCargando(false);
     }
@@ -48,7 +45,6 @@ const ListaAsistencia = () => {
       setAlumnos(data);
     } catch (error) {
       console.error('Error al obtener los estudiantes:', error);
-      setMensaje('Error al cargar estudiantes.');
     }
   };
 
@@ -68,7 +64,6 @@ const ListaAsistencia = () => {
           <CCard>
             <CCardBody>
               <h3>Selecciona una Sección</h3>
-              {mensaje && <CAlert color="danger">{mensaje}</CAlert>}
               {cargando ? (
                 <CSpinner color="primary" />
               ) : (

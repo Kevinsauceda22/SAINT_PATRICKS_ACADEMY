@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Shield, ShieldOff, AlertCircle, Search, ChevronDown } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 import './UserManagement.css';
 
 const UserManagement = () => {
@@ -10,7 +11,9 @@ const UserManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [processingUsers, setProcessingUsers] = useState(new Set()); // Para deshabilitar botones durante el proceso
+  const [processingUsers, setProcessingUsers] = useState(new Set());
+  const loggedInUserId = localStorage.getItem('userId');
+  const loggedInUserRole = localStorage.getItem('userRole');
 
   useEffect(() => {
     fetchUsers();
@@ -21,7 +24,12 @@ const UserManagement = () => {
     const token = localStorage.getItem('token');
 
     if (!token) {
-      toast.error('No se ha encontrado el token. Por favor, inicia sesión nuevamente.');
+      Swal.fire({
+        title: 'Error',
+        text: 'No se ha encontrado el token. Por favor, inicia sesión nuevamente.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
       setLoading(false);
       return;
     }
@@ -35,13 +43,28 @@ const UserManagement = () => {
       setUsers(userData);
 
       if (userData.length > 0) {
-        toast.success('Usuarios cargados correctamente');
+        Swal.fire({
+          title: 'Éxito',
+          text: 'Usuarios cargados correctamente',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+        });
       } else {
-        toast.warning('No se encontraron usuarios');
+        Swal.fire({
+          title: 'Aviso',
+          text: 'No se encontraron usuarios',
+          icon: 'warning',
+          confirmButtonText: 'Aceptar',
+        });
       }
     } catch (error) {
       console.error('Error al cargar usuarios:', error);
-      toast.error(error.response?.data?.mensaje || 'Error al cargar usuarios');
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.mensaje || 'Error al cargar usuarios',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
       setErrorMessage(error.response?.data?.mensaje || 'Error al cargar usuarios');
     } finally {
       setLoading(false);
@@ -49,7 +72,39 @@ const UserManagement = () => {
   };
 
   const handleStatusChange = async (userId, newStatus) => {
-    // Si el usuario ya está en proceso, no hacer nada
+    // Prevent the current user from modifying their own status
+    if (parseInt(loggedInUserId) === userId) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No puedes cambiar tu propio estado de privilegios.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+
+    // Prevent administrators from modifying the status of other administrators
+    if (loggedInUserRole === '2' && newStatus !== '2' && users.find(user => user.cod_usuario === userId)?.Cod_rol === '2') {
+      Swal.fire({
+        title: 'Error',
+        text: 'No puedes cambiar el estado de otros administradores.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+
+    // Prevent managers from modifying the status of other managers
+    if (loggedInUserRole === '4' && newStatus !== '2' && users.find(user => user.cod_usuario === userId)?.Cod_rol === '4') {
+      Swal.fire({
+        title: 'Error',
+        text: 'No puedes cambiar el estado de otros managers.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+
     if (processingUsers.has(userId)) {
       return;
     }
@@ -57,95 +112,128 @@ const UserManagement = () => {
     const statusTexts = {
       1: 'activar',
       2: 'desactivar',
-      3: 'suspender'
+      3: 'suspender',
     };
 
-    if (!window.confirm(`¿Estás seguro de que deseas ${statusTexts[newStatus]} este usuario?`)) {
+    const { value: confirm } = await Swal.fire({
+      title: `¿Estás seguro de que deseas ${statusTexts[newStatus]} este usuario?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, estoy seguro',
+      cancelButtonText: 'Cancelar',
+    });
+
+    if (!confirm) {
       return;
     }
 
     const token = localStorage.getItem('token');
-    
+
     if (!token) {
-      toast.error('No se encontró el token de autenticación');
+      Swal.fire({
+        title: 'Error',
+        text: 'No se encontró el token de autenticación',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
       return;
     }
 
     try {
-      // Agregar usuario a la lista de procesamiento
       setProcessingUsers(prev => new Set(prev).add(userId));
 
-      // Asegúrate que los nombres de las propiedades coincidan con lo que espera el backend
       const response = await axios.put(
         'http://localhost:4000/api/usuarios/cambiar-estado',
         {
           userId: userId,
-          Cod_estado_usuario: newStatus  // Cambiado para coincidir con el nombre en la base de datos
+          Cod_estado_usuario: newStatus,
         },
         {
-          headers: { 
+          headers: {
             'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            'Content-Type': 'application/json',
+          },
         }
       );
 
       if (response.data && response.status === 200) {
-        // Actualizar el estado del usuario localmente
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user.cod_usuario === userId 
+        setUsers(prevUsers =>
+          prevUsers.map(user =>
+            user.cod_usuario === userId
               ? { ...user, Cod_estado_usuario: newStatus }
               : user
           )
         );
-        toast.success('Estado actualizado correctamente');
+        Swal.fire({
+          title: 'Éxito',
+          text: 'Estado actualizado correctamente',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+        });
       }
     } catch (error) {
       console.error('Error detallado:', error.response?.data);
-      toast.error(error.response?.data?.mensaje || 'Error al cambiar el estado del usuario');
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.mensaje || 'Error al cambiar el estado del usuario',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
     } finally {
-      // Remover usuario de la lista de procesamiento
       setProcessingUsers(prev => {
         const newSet = new Set(prev);
         newSet.delete(userId);
         return newSet;
       });
     }
-};
+  };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 1: return <Shield className="status-icon active" size={18} />;
-      case 2: return <ShieldOff className="status-icon inactive" size={18} />;
-      case 3: return <AlertCircle className="status-icon suspended" size={18} />;
-      default: return null;
+      case 1:
+        return <Shield className="status-icon active" size={18} />;
+      case 2:
+        return <ShieldOff className="status-icon inactive" size={18} />;
+      case 3:
+        return <AlertCircle className="status-icon suspended" size={18} />;
+      default:
+        return null;
     }
   };
 
   const getStatusText = (status) => {
     switch (status) {
-      case 1: return 'Activo';
-      case 2: return 'Inactivo';
-      case 3: return 'Suspendido';
-      default: return 'Desconocido';
+      case 1:
+        return 'Activo';
+      case 2:
+        return 'Inactivo';
+      case 3:
+        return 'Suspendido';
+      default:
+        return 'Desconocido';
     }
   };
 
   const getRoleText = (Cod_rol) => {
     switch (Cod_rol) {
-      case 1: return 'Padre';           
-      case 2: return 'Administrador';    
-      case 3: return 'Docente';          
-      default: return 'Desconocido';
+      case 1:
+        return 'Padre';
+      case 2:
+        return 'Administrador';
+      case 3:
+        return 'Docente';
+      case 4:
+        return 'Manager';
+      default:
+        return 'Desconocido';
     }
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
+    const matchesSearch =
       (user.nombre_usuario?.toLowerCase().includes(searchTerm.toLowerCase()) || false) ||
       (user.correo_electronico?.toLowerCase().includes(searchTerm.toLowerCase()) || false);
-    
+
     const matchesStatus = statusFilter === 'all' || user.Cod_estado_usuario === parseInt(statusFilter);
     return matchesSearch && matchesStatus;
   });
@@ -155,7 +243,7 @@ const UserManagement = () => {
       <div className="header">
         <h1>Gestión de Usuarios</h1>
         {errorMessage && <div className="error-message">{errorMessage}</div>}
-        
+
         <div className="controls">
           <div className="search-box">
             <Search size={20} />
@@ -214,23 +302,23 @@ const UserManagement = () => {
                     <td>
                       <div className="action-buttons">
                         <button
-                          className="btn btn-activate"
+                          className={`btn btn-activate ${(user.Cod_estado_usuario === 1 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4') ? 'disabled' : ''}`}
                           onClick={() => handleStatusChange(user.cod_usuario, 1)}
-                          disabled={user.Cod_estado_usuario === 1 || processingUsers.has(user.cod_usuario)}
+                          disabled={user.Cod_estado_usuario === 1 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4'}
                         >
                           Activar
                         </button>
                         <button
-                          className="btn btn-deactivate"
+                          className={`btn btn-deactivate ${(user.Cod_estado_usuario === 2 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4') ? 'disabled' : ''}`}
                           onClick={() => handleStatusChange(user.cod_usuario, 2)}
-                          disabled={user.Cod_estado_usuario === 2 || processingUsers.has(user.cod_usuario)}
+                          disabled={user.Cod_estado_usuario === 2 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4'}
                         >
                           Desactivar
                         </button>
                         <button
-                          className="btn btn-suspend"
+                          className={`btn btn-suspend ${(user.Cod_estado_usuario === 3 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4') ? 'disabled' : ''}`}
                           onClick={() => handleStatusChange(user.cod_usuario, 3)}
-                          disabled={user.Cod_estado_usuario === 3 || processingUsers.has(user.cod_usuario)}
+                          disabled={user.Cod_estado_usuario === 3 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4'}
                         >
                           Suspender
                         </button>

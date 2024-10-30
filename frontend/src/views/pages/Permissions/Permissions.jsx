@@ -1,275 +1,318 @@
 import React, { useState } from 'react';
+import Swal from 'sweetalert2';
+import withReactContent from 'sweetalert2-react-content';
 
-const MinimalPermissionManager = () => {
-  const [showWarning, setShowWarning] = useState(true);
+const GestorDePermisos = ({ pathName }) => { // Recibiendo pathName como prop
+  const [mostrarAdvertencia, setMostrarAdvertencia] = useState(true);
 
-  const handleCloseWarning = () => {
-    setShowWarning(false);
+  const cerrarAdvertencia = () => {
+    setMostrarAdvertencia(false);
   };
 
-  const pages = [
-    { id: 'dashboard', name: 'Dashboard' },
+  const MySwal = withReactContent(Swal);
+
+  const paginas = [
+    { id: 'dashboard', name: 'Tablero' },
     { id: 'usuarios', name: 'Usuarios' },
     { id: 'cursos', name: 'Cursos' },
     { id: 'notas', name: 'Notas' },
     { id: 'reportes', name: 'Reportes' },
     { id: 'configuracion', name: 'Configuración' },
+    { id: 'ventas', name: 'Ventas' },
+    { id: 'inventario', name: 'Inventario' },
+    { id: 'marketing', name: 'Marketing' },
   ];
 
-  const permissions = [
+  const permisos = [
     { id: 'read', name: 'Ver' },
     { id: 'create', name: 'Crear' },
     { id: 'update', name: 'Editar' },
     { id: 'delete', name: 'Eliminar' },
   ];
 
-  const [users, setUsers] = useState([
+  const [usuarios, setUsuarios] = useState([
     {
       id: 1,
-      name: 'Juan Pérez',
-      role: 'Padre',
-      permissions: pages.reduce((acc, page) => ({
+      nombre: 'Juan Pérez',
+      rol: 'Padre',
+      permisos: paginas.reduce((acc, pagina) => ({
         ...acc,
-        [page.id]: { read: true, create: false, update: false, delete: false },
+        [pagina.id]: { read: true, create: false, update: false, delete: false },
       }), {}),
     },
     {
       id: 2,
-      name: 'María Docente',
-      role: 'Docente',
-      permissions: pages.reduce((acc, page) => ({
+      nombre: 'María Docente',
+      rol: 'Docente',
+      permisos: paginas.reduce((acc, pagina) => ({
         ...acc,
-        [page.id]: { read: true, create: true, update: true, delete: false },
+        [pagina.id]: { read: true, create: true, update: true, delete: false },
       }), {}),
     },
     {
       id: 3,
-      name: 'Admin Sistema',
-      role: 'Admin',
-      permissions: pages.reduce((acc, page) => ({
+      nombre: 'Admin Sistema',
+      rol: 'Admin',
+      permisos: paginas.reduce((acc, pagina) => ({
         ...acc,
-        [page.id]: { read: true, create: true, update: true, delete: true },
+        [pagina.id]: { read: true, create: true, update: true, delete: true },
       }), {}),
     },
   ]);
 
-  const handlePermissionChange = (userId, pageId, permissionId) => {
-    setUsers(users.map(user => {
-      if (user.id === userId) {
+  const cambiarPermiso = (usuarioId, paginaId, permisoId) => {
+    setUsuarios(usuarios.map(usuario => {
+      if (usuario.id === usuarioId) {
         return {
-          ...user,
-          permissions: {
-            ...user.permissions,
-            [pageId]: {
-              ...user.permissions[pageId],
-              [permissionId]: !user.permissions[pageId][permissionId],
+          ...usuario,
+          permisos: {
+            ...usuario.permisos,
+            [paginaId]: {
+              ...usuario.permisos[paginaId],
+              [permisoId]: !usuario.permisos[paginaId][permisoId],
             },
           },
         };
       }
-      return user;
+      return usuario;
     }));
   };
 
-  const styles = `
-    .container {
-      padding: 2rem;
-      background-color: #f9f9f9;
-      border-radius: 8px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    }
-    
-    .minimal-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      font-size: 14px;
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .minimal-table th {
-      padding: 15px;
-      text-align: left;
-      font-weight: 600;
-      border-bottom: 1px solid #ddd;
-      color: #333;
-      background-color: #f1f1f1;
-    }
-
-    .minimal-table td {
-      padding: 15px;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .user-cell {
-      position: sticky;
-      left: 0;
-      background: white;
-      z-index: 10;
-      border-right: 1px solid #ddd;
-    }
-
-    .user-name {
-      font-weight: 600;
-      color: #333;
-      margin: 0;
-    }
-
-    .user-role {
-      color: #666;
-      font-size: 12px;
-      margin: 0;
-    }
-
-    .permission-cell {
-      min-width: 160px;
-    }
-
-    .permission-group {
-      display: grid;
-      gap: 10px;
-    }
-
-    .permission-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .permission-label {
-      color: #666;
-      font-size: 14px;
-    }
-
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 28px;
-      height: 16px;
-    }
-
-    .switch input {
-      opacity: 0;
-      width: 0;
-      height: 0;
-    }
-
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: #ddd;
-      transition: .2s;
-      border-radius: 16px;
-    }
-
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 12px;
-      width: 12px;
-      left: 2px;
-      bottom: 2px;
-      background-color: white;
-      transition: .2s;
-      border-radius: 50%;
-    }
-
-    input:checked + .slider {
-      background-color: #4CAF50;
-    }
-
-    input:checked + .slider:before {
-      transform: translateX(12px);
-    }
-
-    .permissions-header {
-      margin-bottom: 20px;
-    }
-
-    .title {
-      font-size: 24px;
-      font-weight: 600;
-      color: #333;
-      margin: 0;
-    }
-
-    .subtitle {
-      color: #666;
-      margin: 4px 0 0 0;
-      font-size: 16px;
-    }
-
-    .table-container {
-      overflow-x: auto;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .warning-message {
-      background-color: #ffcc00;
-      padding: 20px;
-      border: 1px solid #ffd600;
-      border-radius: 8px;
-      color: #333;
-      margin-bottom: 20px;
-      font-weight: bold;
-      position: relative;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: background-color 0.3s ease;
-    }
-
-    .warning-message:hover {
-      background-color: #ffe68c;
-    }
-
-    .close-button {
-      background: transparent;
-      border: none;
-      color: #333;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 14px;
-      margin-left: 20px;
-      transition: color 0.2s;
-    }
-
-    .close-button:hover {
-      text-decoration: underline;
-      color: #ff0000; /* Cambiar a color rojo al pasar el mouse */
-    }
-
-    @media (max-width: 600px) {
-      .permission-cell {
-        min-width: 120px;
+  const guardarCambios = () => {
+    MySwal.fire({
+      title: '¿Guardar cambios?',
+      text: '¿Estás seguro de que quieres guardar los cambios en los permisos?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#4CAF50',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Guardar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Guardar los cambios en la base de datos o backend
+        MySwal.fire(
+          '¡Cambios Guardados!',
+          'Los cambios en los permisos han sido guardados.',
+          'success'
+        );
       }
-    }
-  `;
+    });
+  };
 
   return (
     <div className="container">
-      <style>{styles}</style>
+      <style>{`
+        /* Estilos principales */
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+          font-family: 'Inter', sans-serif;
+        }
 
-      {showWarning && (
+        .container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 2rem;
+        }
+
+        .minimal-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .minimal-table th {
+          padding: 12px;
+          text-align: left;
+          font-weight: 600;
+          border-bottom: 1px solid #ddd;
+          color: #333;
+          background-color: #f6f6f6;
+        }
+
+        .minimal-table td {
+          padding: 12px;
+          border-bottom: 1px solid #f0f0f0;
+        }
+
+        .user-cell {
+          position: sticky;
+          left: 0;
+          background: #f6f6f6;
+          z-index: 10;
+          border-right: 1px solid #ddd;
+          min-width: 160px;
+        }
+
+        .user-name {
+          font-weight: 600;
+          color: #333;
+          margin: 0;
+        }
+
+        .permission-cell {
+          min-width: 140px;
+        }
+
+        .permission-group {
+          display: grid;
+          gap: 8px;
+        }
+
+        .permission-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+
+        .permission-label {
+          color: #666;
+          font-size: 14px;
+        }
+
+        .switch {
+          position: relative;
+          display: inline-block;
+          width: 24px;
+          height: 14px;
+        }
+
+        .switch input {
+          opacity: 0;
+          width: 0;
+          height: 0;
+        }
+
+        .slider {
+          position: absolute;
+          cursor: pointer;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: #ccc;
+          transition: 0.2s;
+          border-radius: 14px;
+        }
+
+        .slider:before {
+          position: absolute;
+          content: "";
+          height: 10px;
+          width: 10px;
+          left: 2px;
+          bottom: 2px;
+          background-color: white;
+          transition: 0.2s;
+          border-radius: 50%;
+        }
+
+        input:checked + .slider {
+          background-color: #4CAF50;
+        }
+
+        input:checked + .slider:before {
+          transform: translateX(10px);
+        }
+
+        .permissions-header {
+          margin-bottom: 20px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .title {
+          font-size: 20px;
+          font-weight: 600;
+          color: #333;
+          margin: 0;
+        }
+
+        .subtitle {
+          color: #666;
+          margin: 4px 0 0 0;
+          font-size: 14px;
+        }
+
+        .table-container {
+          overflow-x: auto;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .warning-message {
+          background-color: #fffacd;
+          padding: 16px;
+          border: 1px solid #fff59d;
+          border-radius: 8px;
+          color: #333;
+          margin-bottom: 20px;
+          font-weight: bold;
+          position: relative;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          transition: background-color 0.3s ease;
+        }
+
+        .warning-message:hover {
+          background-color: #fff9e6;
+        }
+
+        .close-button {
+          background: transparent;
+          border: none;
+          color: #333;
+          font-weight: bold;
+          cursor: pointer;
+          font-size: 14px;
+          margin-left: 16px;
+          transition: color 0.2s;
+        }
+
+        .close-button:hover {
+          text-decoration: underline;
+          color: #ff0000;
+        }
+
+        .save-button {
+          background-color: #4CAF50;
+          border: none;
+          color: white;
+          padding: 8px 16px;
+          text-align: center;
+          text-decoration: none;
+          display: inline-block;
+          font-size: 14px;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background-color 0.3s ease;
+        }
+
+        .save-button:hover {
+          background-color: #45a049;
+        }
+      `}</style>
+
+      {mostrarAdvertencia && (
         <div className="warning-message">
           <span>
-            ADVERTENCIA: AL MODIFICAR ALGO EN ESTA PÁGINA ESTÁS MODIFICANDO LOS PERMISOS A LOS DEMÁS USUARIOS.
+            ADVERTENCIA: MODIFICAR ALGO EN ESTA PÁGINA AFECTARÁ LOS PERMISOS DE OTROS USUARIOS.
           </span>
-          <button onClick={handleCloseWarning} className="close-button">
+          <button onClick={cerrarAdvertencia} className="close-button">
             Cerrar
           </button>
         </div>
       )}
-      
+
       <div className="permissions-header">
-        <h1 className="title">Permisos del Sistema</h1>
-        <p className="subtitle">Gestiona los accesos por usuario y página</p>
+        <h1 className="title">{pathName}</h1> {/* Mostrar el nombre de la ruta aquí */}
+        <button className="save-button" onClick={guardarCambios}>Guardar Cambios</button>
       </div>
 
       <div className="table-container">
@@ -277,29 +320,29 @@ const MinimalPermissionManager = () => {
           <thead>
             <tr>
               <th className="user-cell">Usuario</th>
-              {pages.map(page => (
-                <th key={page.id}>{page.name}</th>
+              {paginas.map(pagina => (
+                <th key={pagina.id} className="permission-cell">{pagina.name}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {users.map(user => (
-              <tr key={user.id}>
+            {usuarios.map(usuario => (
+              <tr key={usuario.id}>
                 <td className="user-cell">
-                  <p className="user-name">{user.name}</p>
-                  <p className="user-role">{user.role}</p>
+                  <p className="user-name">{usuario.nombre}</p>
+                  <p className="permission-label">{usuario.rol}</p>
                 </td>
-                {pages.map(page => (
-                  <td key={page.id} className="permission-cell">
+                {paginas.map(pagina => (
+                  <td key={pagina.id} className="permission-cell">
                     <div className="permission-group">
-                      {permissions.map(permission => (
-                        <div key={permission.id} className="permission-row">
-                          <span className="permission-label">{permission.name}</span>
+                      {permisos.map(permiso => (
+                        <div className="permission-row" key={permiso.id}>
+                          <label className="permission-label">{permiso.name}</label>
                           <label className="switch">
                             <input
                               type="checkbox"
-                              checked={user.permissions[page.id][permission.id]}
-                              onChange={() => handlePermissionChange(user.id, page.id, permission.id)}
+                              checked={usuario.permisos[pagina.id][permiso.id]}
+                              onChange={() => cambiarPermiso(usuario.id, pagina.id, permiso.id)}
                             />
                             <span className="slider"></span>
                           </label>
@@ -317,4 +360,4 @@ const MinimalPermissionManager = () => {
   );
 };
 
-export default MinimalPermissionManager;
+export default GestorDePermisos;

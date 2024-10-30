@@ -392,7 +392,6 @@ export const obtenerUsuarios = async (req, res) => {
     }
 };
 
-
 export const cambiarEstadoUsuario = async (req, res) => {
     const { userId, Cod_estado_usuario } = req.body;
 

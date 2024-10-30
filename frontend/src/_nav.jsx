@@ -120,50 +120,59 @@ const _nav = [
         component: CNavItem,
         name: 'Tipo matricula',
         to: '/tipomatricula',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Periodo matricula',
         to: '/periodomatricula',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Estado matricula',
         to: '/estadomatricula',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Concepto pago',
         to: '/conceptopago',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Departamento',
         to: '/departamento',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Tipo persona',
         to: '/tipopersona',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Edificios',
         to: '/edificios',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Dias',
         to: '/dias',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Lista de Actividades',
-        to: '/ListaActivex', 
-      },{
+        to: '/ListaActivex',
+      },
+      {
         component: CNavItem,
         name: 'Historial Procedencia',
         to: '/ListaHistoricoProc',
-      },{
+      },
+      {
         component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
       },
-      
-        ],
-      },
+    ],
+  },
   {
     component: CNavGroup,
     name: 'Contabilidad y Pagos',
@@ -182,7 +191,13 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Estado de Cuenta',
-        to: '/EstadoCuenta',
+        to: '/Contabilidad',
+      },
+      {
+        component: CNavItem,
+        name: 'Libro Diario', // Nueva opción agregada
+        to: '/LibroDiario', // Ruta del libro diario
+        icon: cilBook, // Puedes agregar un icono si lo deseas
       },
     ],
   },
