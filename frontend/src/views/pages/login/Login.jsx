@@ -57,6 +57,9 @@ const Login = () => {
         const response = await axios.post('http://localhost:4000/api/usuarios/login', {
           identificador: formData.identificador,
           contraseña_usuario: formData.contraseña_usuario,
+          twoFactorCode: formData.twoFactorCode // Solo si se requiere 2FA
+
+
         });
 
         if (response.data.token) {
@@ -67,25 +70,34 @@ const Login = () => {
           const isTwoFactorEnabled = response.data.is_two_factor_enabled === 1;
         console.log('Estado 2FA:', isTwoFactorEnabled); // Verificar el estado de 2FA
     
-          if (response.data.is_two_factor_enabled === 1) {
-            localStorage.setItem('temp_identificador', formData.identificador);
-            await handleTransition('/2fa');
-          } else {
-            await handleTransition('/dashboard');
-          }
+        // Check if 2FA is enabled for the user
+        if (response.data.is_two_factor_enabled === 1) {
+          // Store identificador temporarily for 2FA verification
+          localStorage.setItem('temp_identificador', formData.identificador);
+          // Redirect to 2FA page
+          await handleTransition('/2fa');
+        } else {
+          // If 2FA is not enabled, redirect directly to dashboard
+          await handleTransition('/dashboard');
+           // Si tiene 2FA activado, mostrar notificación
+        if (response.data.is_two_factor_enabled === 1) {
+          toast.info('Tu cuenta tiene autenticación de dos factores activada. Puedes configurarla en tu perfil.', {
+            position: 'top-right',
+            autoClose: 5000,
+          });
         }
-
-        
-      } catch (error) {
-        toast.error(error.response?.data?.mensaje || 'Error en el inicio de sesión', {
-          position: 'top-center',
-          autoClose: 5000,
-        });
-      } finally {
-        setIsLoading(false);
+        }
       }
+    } catch (error) {
+      toast.error(error.response?.data?.mensaje || 'Error en el inicio de sesión', {
+        position: 'top-center',
+        autoClose: 5000,
+      });
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
+};
 
   const styles = {
     container: {

@@ -32,31 +32,22 @@ const AuthProvider = ({ children }) => {
         };
 
         const { data } = await axios.get(`http://localhost:4000/api/usuarios/perfil/${cod_usuario}`, config);
-        
+        console.log("Datos de la API:", data); // Verifica los datos obtenidos
+
         setAuth(data);
 
-        // Manejo de redirección basado en el estado del usuario
-        switch (data.cod_estado_usuario) {
-          case 1: // Activo
-            // Solo redirigir si no está en las rutas de cuenta suspendida o en revisión
-            if (window.location.pathname === "/CuentaSuspendida" || window.location.pathname === "/CuentaenRevision") {
-              navigate("/dashboard"); // Redirige al dashboard
-            }
-            break;
-          case 2: // Cuenta en revisión
-            if (window.location.pathname !== "/CuentaenRevision") {
-              navigate("/CuentaenRevision");
-            }
-            break;
-          case 3: // Cuenta suspendida
-            if (window.location.pathname !== "/CuentaSuspendida") {
-              navigate("/CuentaSuspendida");
-            }
-            break;
-          default:
-            // Manejo si el estado es inesperado
-            setError("Estado de usuario desconocido.");
-            break;
+        // Verificar si el usuario necesita 2FA
+        if (data.is_two_factor_enabled === 1) {
+          if (data.otp_verified === 1) {
+            // El usuario ha verificado el OTP, se procede con el flujo normal
+            handleRedirection(data.cod_estado_usuario);
+          } else {
+            // El usuario no ha verificado el OTP, redirigir a la página 2FA
+            navigate("/2fa");
+          }
+        } else {
+          // Manejo de redirección basado en el estado del usuario si no requiere 2FA
+          handleRedirection(data.cod_estado_usuario);
         }
       } catch (error) {
         console.error("Error al autenticar al usuario:", error);
@@ -71,6 +62,31 @@ const AuthProvider = ({ children }) => {
         localStorage.removeItem("token");
       } finally {
         setLoading(false);
+      }
+    };
+
+    const handleRedirection = (estadoUsuario) => {
+      switch (estadoUsuario) {
+        case 1: // Activo
+          // Redirigir al dashboard si está en una página de revisión o suspensión
+          if (window.location.pathname === "/CuentaSuspendida" || window.location.pathname === "/CuentaenRevision") {
+            navigate("/dashboard");
+          }
+          break;
+        case 2: // Cuenta en revisión
+          if (window.location.pathname !== "/CuentaenRevision") {
+            navigate("/CuentaenRevision");
+          }
+          break;
+        case 3: // Cuenta suspendida
+          if (window.location.pathname !== "/CuentaSuspendida") {
+            navigate("/CuentaSuspendida");
+          }
+          break;
+        default:
+          // Manejo si el estado es inesperado
+          setError("Estado de usuario desconocido.");
+          break;
       }
     };
 

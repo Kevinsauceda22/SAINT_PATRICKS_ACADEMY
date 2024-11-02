@@ -39,7 +39,6 @@ const VerificaciónCuenta = React.lazy(() => import ("./views/pages/VerificarCue
 const CuentaSupendida = React.lazy(() => import ("./views/pages/Suspendida/Accoutsuspended"))
 const ListaUsuarios = React.lazy(() => import('./views/pages/ListaUsuarios/ListaUsuarios'));
 const Permisos = React.lazy(() => import ("./views/pages/Permissions/Permissions"))
-
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
 const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
@@ -47,10 +46,8 @@ const ListaParciales = React.lazy(() => import('./views/pages/calificaciones/Lis
 const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones/ListaPonderaciones'));
 const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabilidad'));
 const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDiario'));
-
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
-
 const Tipopersona = React.lazy(() => import('./views/pages/matricula/tipopersona'));
 const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
 const Periodomatricula = React.lazy(() => import('./views/pages/matricula/periodomatricula'));
@@ -62,6 +59,7 @@ const ListaActivex = React.lazy(() => import('./views/pages/matricula/ListaActiv
 const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias'));
 const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
+const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 
 
 
@@ -109,9 +107,9 @@ const App = () => {
             {/* Rutas protegidas */}
             <Route element={<RutaProtegida />}>
             <Route path="/active-session" element={<ActiveSessionPage />} />
-              <Route path="/2fa" element={<TwoAuthFA />} />
               <Route path="/CuentaenRevision" element={<VerificaciónCuenta />} />
               <Route path="/CuentaSuspendida" element={<CuentaSupendida />} />
+              <Route path="/2fa" element={<TwoAuthFA />} />
               <Route path="/" element={<DefaultLayout />}>
                 <Route path="/matricula" element={<Matricula />} />
                 <Route path="/rolesandpermissions" element={<Permisos />} />
@@ -119,6 +117,7 @@ const App = () => {
                 <Route path="/LibroDiario" element={<LibroDiario />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/profile" element={<Perfil />} />
+                <Route path="/MisPagos" element={<MisPagos />} />
                 <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />
                 <Route path="/ListaAsignaturas" element={<ListaAsigaturas />} />
                 <Route path="/ListaAsistencia" element={<ListaAsistencia />} />

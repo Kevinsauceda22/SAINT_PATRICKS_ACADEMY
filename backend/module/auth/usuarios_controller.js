@@ -545,7 +545,7 @@ export const eliminarUsuarioCompleto = async (req, res) => {
 };
 
 export const autenticarUsuario = async (req, res) => {
-    const { identificador, contraseña_usuario, twoFactorCode } = req.body;
+    const { identificador, contraseña_usuario } = req.body;
 
     // Validar datos de entrada
     if (!identificador || !contraseña_usuario) {
@@ -592,28 +592,25 @@ export const autenticarUsuario = async (req, res) => {
             return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
         }
 
+        if (usuario.cod_estado_usuario === 1) {
+            // Usuario activo, continuar con la lógica
+        
+            // Verificar si la autenticación de dos factores está habilitada
+            if (usuario.is_two_factor_enabled==1) {
+                // Lógica para manejar la autenticación de dos factores
+                // Por ejemplo, enviar un código de verificación al usuario
+                return res.status(200).json({ mensaje: 'La autenticación de dos factores está habilitada. Se ha enviado un código de verificación.' });
+            } else {
+                // Lógica para usuarios que no tienen 2FA habilitado
+                return res.status(200).json({ mensaje: 'Acceso concedido. La autenticación de dos factores no está habilitada.' });
+            }
+        }
+        
         // Verificar el estado del usuario
         if (usuario.cod_estado_usuario === 2) {
             return res.status(403).json({ mensaje: 'Tu cuenta está en revisión. Por favor, contacta al administrador.' });
         } else if (usuario.cod_estado_usuario === 3) {
             return res.status(403).json({ mensaje: 'Tu cuenta ha sido suspendida. Por favor, contacta al administrador.' });
-        }
-
-        // Verificar 2FA, si está habilitado
-        if (usuario.is_two_factor_enabled) {
-            if (!twoFactorCode) {
-                return res.status(400).json({ mensaje: 'El código de 2FA es requerido' });
-            }
-
-            const isCodeValid = speakeasy.totp.verify({
-                secret: usuario.two_factor_code,
-                encoding: 'base32',
-                token: twoFactorCode
-            });
-
-            if (!isCodeValid) {
-                return res.status(401).json({ mensaje: 'Código 2FA incorrecto' });
-            }
         }
 
         // Actualizar Fecha de última conexión
@@ -646,7 +643,8 @@ export const autenticarUsuario = async (req, res) => {
                 cod_usuario: usuario.cod_usuario, 
                 nombre_usuario: usuario.nombre_usuario, 
                 rol_usuario: usuario.cod_rol,
-                cod_persona: usuario.cod_persona 
+                cod_persona: usuario.cod_persona,
+                is_two_factor_enabled: usuario.is_two_factor_enabled // Agrega esta línea
             },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
@@ -826,7 +824,7 @@ export const enableTwoFactorAuth = async (req, res) => {
 
 export const verifyTwoFactorAuthCode = async (req, res) => {
     const { twoFactorCode } = req.body;
-    const userId = req.usuario.cod_usuario;
+    const userId = req.usuario.cod_usuario; // Assuming the user ID is set in the request object
 
     console.log('Código recibido:', twoFactorCode);
     console.log('Usuario ID:', userId);
@@ -834,6 +832,8 @@ export const verifyTwoFactorAuthCode = async (req, res) => {
     try {
         const connection = await pool.getConnection();
         const [user] = await connection.query('SELECT two_factor_code, is_two_factor_enabled FROM tbl_usuarios WHERE cod_usuario = ?', [userId]);
+        
+        // Release the connection immediately after the query
         connection.release();
         
         if (!user || user.length === 0) {
@@ -850,19 +850,25 @@ export const verifyTwoFactorAuthCode = async (req, res) => {
             return res.status(400).json({ message: 'Configuración 2FA incompleta' });
         }
 
+        // Verificar el código TOTP
         const verified = speakeasy.totp.verify({
             secret,
             encoding: 'base32',
             token: twoFactorCode,
-            window: 5
+            window: 5 // Allow a window for timing issues
         });
 
         console.log('Resultado de verificación:', verified);
 
         if (verified) {
-            res.status(200).json({ message: 'Código TOTP válido' });
+            // Si la verificación es exitosa, actualiza otp_verified a 1
+            const updateResult = await pool.query('UPDATE tbl_usuarios SET otp_verified = 1 WHERE cod_usuario = ?', [userId]);
+            console.log('Resultado de la actualización:', updateResult);
+
+            // Envía una respuesta exitosa
+            return res.status(200).json({ message: 'Código TOTP válido. Verificación exitosa.' });
         } else {
-            res.status(401).json({ 
+            return res.status(401).json({ 
                 message: 'Código TOTP inválido',
                 debug: {
                     receivedToken: twoFactorCode,
@@ -872,7 +878,7 @@ export const verifyTwoFactorAuthCode = async (req, res) => {
         }
     } catch (error) {
         console.error('Error detallado:', error);
-        res.status(500).json({ 
+        return res.status(500).json({ 
             message: 'Error al verificar el código TOTP',
             error: error.message 
         });
@@ -973,5 +979,20 @@ export const getTwoFactorStatus = async (req, res) => {
             success: false,
             error: error.message
         });
+    }
+};
+
+// Controlador para actualizar el estado de otp_verified
+export const actualizarOtp = async (req, res) => {
+    const { cod_usuario } = req.params; // Captura el parámetro de la URL
+    const { otp_verified } = req.body; // Captura el cuerpo de la solicitud
+
+    try {
+        // Actualiza el campo otp_verified en la base de datos
+        await pool.query('UPDATE tbl_usuarios SET otp_verified = ? WHERE cod_usuario = ?', [otp_verified, cod_usuario]);
+        res.status(200).json({ message: 'Otp verified actualizado exitosamente.' });
+    } catch (error) {
+        console.error('Error al actualizar otp_verified:', error);
+        res.status(500).json({ message: 'Error en el servidor.' });
     }
 };

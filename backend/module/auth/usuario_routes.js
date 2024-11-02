@@ -17,7 +17,8 @@ import {
     verifyTwoFactorAuthCode,
     disableTwoFactorAuth,
     getTwoFactorStatus,
-    updateTwoFactorAuthStatus
+    updateTwoFactorAuthStatus,
+    actualizarOtp
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -47,7 +48,8 @@ router.post('/verifyTwoFactorAuthCode',checkAuth, verifyTwoFactorAuthCode);
  router.get('/2faStatus/:cod_usuario', checkAuth, getTwoFactorStatus);
 // Ruta para actualizar el estado de 2FA
 router.post('/update-2fa-status',checkAuth, updateTwoFactorAuthStatus);
-
+// Ruta para actualizar otp_verified
+router.put('/actualizarOtp/:cod_usuario', checkAuth, actualizarOtp);
 
 // Rutas públicas
 // Ruta para crear un nuevo usuario (no requiere autenticación)====999
