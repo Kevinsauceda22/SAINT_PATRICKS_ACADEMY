@@ -10,10 +10,6 @@ import qrcode from 'qrcode';
 
 
 
-//importar el envio de correo
-
-
-
 //este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
     const { 
@@ -701,83 +697,6 @@ export const mostrarPerfil = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener el perfil del usuario' });
     }
 };
-export const generarCodigo2FA = async (req, res) => {
-    const usuarioId = req.usuario.cod_usuario;  // Se obtiene del token autenticado
-
-    try {
-        // Generar un código secreto de 2FA
-        const secret = speakeasy.generateSecret({ length: 20 });
-
-        // Guardar el código secreto en la base de datos
-        await pool.query('UPDATE tbl_usuarios SET two_factor_code = ? WHERE cod_usuario = ?', [secret.base32, usuarioId]);
-
-        // Generar un código QR que el usuario pueda escanear con una app 2FA
-        const urlQR = await qrcode.toDataURL(secret.otpauth_url);
-
-        res.json({ qrCode: urlQR, secret: secret.base32 });
-    } catch (error) {
-        console.error('Error al generar el código 2FA:', error);
-        res.status(500).json({ mensaje: 'Error al generar el código 2FA' });
-    }
-};
-// Generar el código QR para habilitar 2FA
-export const generar2FA = async (req, res) => {
-    const { cod_usuario } = req.body;
-  
-    try {
-      const secret = speakeasy.generateSecret({ name: "SaintPatrickAcademy" });
-  
-      // Guardar el secreto en la base de datos y establecer is_two_factor_enabled en 0
-      await db.query('UPDATE tbl_usuarios SET two_factor_code = ?, is_two_factor_enabled = 0 WHERE cod_usuario = ?', [secret.base32, cod_usuario]);
-  
-      // Generar el código QR
-      qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error al generar el código QR.' });
-        }
-  
-        // Enviar el código QR al frontend
-        res.json({ qrCodeUrl: data_url });
-      });
-    } catch (error) {
-      console.error('Error al habilitar 2FA:', error);
-      res.status(500).json({ message: 'Error al habilitar 2FA. Inténtalo nuevamente.' });
-    }
-  };
-  
-  // Verificar el código de 2FA ingresado
-  export const verificar2FA = async (req, res) => {
-    const { cod_usuario, twoFactorCode } = req.body;
-  
-    try {
-      // Obtener el código secreto de la base de datos
-      const [user] = await db.query('SELECT two_factor_code FROM tbl_usuarios WHERE cod_usuario = ?', [cod_usuario]);
-  
-      if (!user) {
-        return res.status(404).json({ message: 'Usuario no encontrado.' });
-      }
-  
-      // Verificar el código 2FA ingresado
-      const verified = speakeasy.totp.verify({
-        secret: user.two_factor_code,
-        encoding: 'base32',
-        token: twoFactorCode
-      });
-  
-      if (verified) {
-        // Actualizar el campo para habilitar 2FA
-        await db.query('UPDATE tbl_usuarios SET is_two_factor_enabled = 1 WHERE cod_usuario = ?', [cod_usuario]);
-        res.json({ success: true, message: 'Autenticación de dos factores habilitada con éxito.' });
-      } else {
-        res.status(400).json({ success: false, message: 'Código de verificación incorrecto.' });
-      }
-    } catch (error) {
-      console.error('Error al verificar 2FA:', error);
-      res.status(500).json({ message: 'Error al verificar 2FA. Inténtalo nuevamente.' });
-    }
-  };
-
-
 
 export const OlvidePasssword = async (req, res) => {
     const { correo_usuario } = req.body;
@@ -878,4 +797,181 @@ export const cambiarContrasena = async (req, res) => {
     }
 };
 
+export const enableTwoFactorAuth = async (req, res) => {
+    const userId = req.usuario.cod_usuario;
 
+    try {
+        // Generar un secreto para el TOTP
+        const secret = speakeasy.generateSecret({ length: 20 });
+
+        // Guardar el secreto en la base de datos
+        const connection = await pool.getConnection();
+        await connection.query('UPDATE tbl_usuarios SET two_factor_code = ?, is_two_factor_enabled = ? WHERE cod_usuario = ?', [
+            secret.base32, // Guardamos el secreto en base32
+            0, // Inicialmente no está habilitado, podrías cambiar a 1 si ya deseas habilitarlo aquí
+            userId,
+        ]);
+        connection.release();
+
+        // Generar un código QR para el usuario
+        const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+
+        // Retornar el código QR y el secreto
+        res.status(200).json({ qrCodeUrl, secret: secret.base32 });
+    } catch (error) {
+        console.error('Error al habilitar 2FA:', error);
+        res.status(500).json({ message: 'Error al habilitar 2FA' });
+    }
+};
+
+export const verifyTwoFactorAuthCode = async (req, res) => {
+    const { twoFactorCode } = req.body;
+    const userId = req.usuario.cod_usuario;
+
+    console.log('Código recibido:', twoFactorCode);
+    console.log('Usuario ID:', userId);
+
+    try {
+        const connection = await pool.getConnection();
+        const [user] = await connection.query('SELECT two_factor_code, is_two_factor_enabled FROM tbl_usuarios WHERE cod_usuario = ?', [userId]);
+        connection.release();
+        
+        if (!user || user.length === 0) {
+            console.log('Usuario no encontrado en la base de datos');
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const secret = user[0].two_factor_code;
+        console.log('Secret recuperado:', secret);
+
+        // Verificar que el secret no sea null o undefined
+        if (!secret) {
+            console.log('Secret no encontrado para el usuario');
+            return res.status(400).json({ message: 'Configuración 2FA incompleta' });
+        }
+
+        const verified = speakeasy.totp.verify({
+            secret,
+            encoding: 'base32',
+            token: twoFactorCode,
+            window: 5
+        });
+
+        console.log('Resultado de verificación:', verified);
+
+        if (verified) {
+            res.status(200).json({ message: 'Código TOTP válido' });
+        } else {
+            res.status(401).json({ 
+                message: 'Código TOTP inválido',
+                debug: {
+                    receivedToken: twoFactorCode,
+                    timestamp: new Date().toISOString()
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error detallado:', error);
+        res.status(500).json({ 
+            message: 'Error al verificar el código TOTP',
+            error: error.message 
+        });
+    }
+};
+
+export const updateTwoFactorAuthStatus = async (req, res) => {
+    const { is_two_factor_enabled  } = req.body;
+    const userId = req.usuario.cod_usuario;
+    
+   
+    // Asegurarnos de que el valor sea numérico
+    const newStatus = is_two_factor_enabled ? 1 : 0;
+
+
+    try {
+        const connection = await pool.getConnection();
+        
+        // Log de la consulta SQL antes de ejecutarla
+        const query = 'UPDATE tbl_usuarios SET is_two_factor_enabled = ? WHERE cod_usuario = ?';
+        const params = [newStatus, userId];
+     
+        const [result] = await connection.query(query, params);
+        
+    
+        connection.release();
+
+        if (result.affectedRows === 0) {
+            console.log('No se encontró el usuario para actualizar');
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Verificar el estado actual después de la actualización
+        const [verification] = await connection.query(
+            'SELECT is_two_factor_enabled FROM tbl_usuarios WHERE cod_usuario = ?',
+            [userId]
+        );
+
+        res.status(200).json({ 
+            message: 'Estado de 2FA actualizado exitosamente',
+            currentStatus: verification[0].is_two_factor_enabled
+        });
+    } catch (error) {
+        console.error('Error detallado al actualizar el estado de 2FA:', error);
+        res.status(500).json({
+            message: 'Error al actualizar el estado de 2FA',
+            error: error.message,
+            stack: error.stack
+        });
+    }
+};
+
+
+export const disableTwoFactorAuth = async (req, res) => {
+    const userId = req.usuario.cod_usuario;
+
+    try {
+        const connection = await pool.getConnection();
+        await connection.query('UPDATE tbl_usuarios SET two_factor_code = NULL, is_two_factor_enabled = 0 WHERE cod_usuario = ?', [userId]);
+        connection.release();
+
+        res.status(200).json({ success: true, message: '2FA deshabilitado' });
+    } catch (error) {
+        console.error('Error al deshabilitar 2FA:', error);
+        res.status(500).json({ success: false, message: 'Error al deshabilitar 2FA' });
+    }
+};
+
+export const getTwoFactorStatus = async (req, res) => {
+    const userId = req.usuario.cod_usuario;
+
+    try {
+        const connection = await pool.getConnection();
+        
+        const [result] = await connection.query(
+            'SELECT is_two_factor_enabled FROM tbl_usuarios WHERE cod_usuario = ?', 
+            [userId]
+        );
+        
+        connection.release();
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                message: 'Usuario no encontrado',
+                success: false
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            is2FAEnabled: result[0].is_two_factor_enabled === 1
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo estado 2FA:', error);
+        res.status(500).json({
+            message: 'Error obteniendo estado 2FA',
+            success: false,
+            error: error.message
+        });
+    }
+};

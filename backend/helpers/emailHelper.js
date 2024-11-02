@@ -3,18 +3,16 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Configuración del transporter de nodemailer para Brevo
-// Looking to send emails in production? Check out our Email API/SMTP product!
 const transporter = nodemailer.createTransport({
-    host: "sandbox.smtp.mailtrap.io",
-    port: 2525,
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false,
     auth: {
-      user: "dc63658321cf33",
-      pass: "1a4e145f35bfb3"
+        user: "7ec616001@smtp-brevo.com",
+        pass: "5IztAckKmSBN07Ow"
     }
-  });
+});
 
-// Función para obtener la plantilla de correo
 const getEmailTemplate = (content, title) => `
 <!DOCTYPE html>
 <html lang="es">
@@ -23,64 +21,196 @@ const getEmailTemplate = (content, title) => `
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
     <style>
+        :root {
+            --primary-green: #009B3A;      /* Verde principal */
+            --header-green: #00843F;       /* Verde para header */
+            --button-green: #00A650;       /* Verde para botones */
+            --hover-green: #008C46;        /* Verde hover */
+            --background-color: #FFFFFF;    /* Fondo blanco */
+            --text-color: #2C3E50;         /* Texto principal */
+            --text-light: #FFFFFF;         /* Texto claro */
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #F5F5F5;
             margin: 0;
             padding: 20px;
+            color: var(--text-color);
+            line-height: 1.6;
         }
+
         .container {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: var(--background-color);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
+
         .header {
+            background-color: var(--header-green);
+            padding: 40px 20px;
             text-align: center;
+            color: var(--text-light);
+        }
+
+        .header img {
+            max-width: 140px;
+            height: auto;
             margin-bottom: 20px;
         }
-        .footer {
+
+        .header h1 {
+            color: var(--text-light);
+            font-size: 28px;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .content {
+            padding: 40px;
+            background-color: var(--background-color);
+        }
+
+        .welcome-text {
+            font-size: 18px;
+            color: var(--primary-green);
+            font-weight: 600;
+            margin-bottom: 20px;
+            padding-left: 15px;
+            border-left: 4px solid var(--primary-green);
+        }
+
+        .message-box {
+            background-color: #F8F9FA;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .verify-button {
+            display: inline-block;
+            background-color: var(--button-green);
+            color: var(--text-light) !important;
+            text-decoration: none;
+            padding: 14px 32px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 16px;
+            margin: 20px 0;
             text-align: center;
-            font-size: 12px;
-            color: #777777;
+            transition: background-color 0.3s ease;
+            border: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+        }
+
+        .verify-button:hover {
+            background-color: var(--hover-green);
+            text-decoration: none;
+        }
+
+        .link-box {
+            background-color: #F8F9FA;
+            border: 1px solid #E9ECEF;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--text-color);
+        }
+
+        .footer {
+            background-color: #F8F9FA;
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid #E9ECEF;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            color: #6C757D;
+            font-size: 14px;
+        }
+
+        .social-links {
             margin-top: 20px;
+        }
+
+        .social-links a {
+            color: var(--primary-green);
+            text-decoration: none;
+            margin: 0 10px;
+            font-weight: 500;
+        }
+
+        @media (max-width: 480px) {
+            .content {
+                padding: 20px;
+            }
+
+            .verify-button {
+                width: 100%;
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
+            <img src="https://i.ibb.co/58kBnCh/Logo.png" alt="Saint Patrick's Academy Logo" />
             <h1>${title}</h1>
         </div>
-        <div>
+        <div class="content">
             ${content}
         </div>
         <div class="footer">
-            <p>&copy; ${new Date().getFullYear()} Saint Patrick's Academy. Todos los derechos reservados.</p>
+            <p>Saint Patrick's Academy</p>
+            <p>&copy; ${new Date().getFullYear()} Todos los derechos reservados</p>
+            <div class="social-links">
+                <a href="#">Facebook</a> |
+                <a href="#">Twitter</a> |
+                <a href="#">Instagram</a>
+            </div>
         </div>
     </div>
 </body>
 </html>
 `;
 
-// Función para enviar el correo de verificación
 const enviarCorreoVerificacion = async (correo_usuario, nombre_usuario, token_usuario) => {
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     const verificationLink = `${baseUrl}/verificar-cuenta/${token_usuario}`;
 
     const content = `
-        <p>Hola ${nombre_usuario},</p>
-        <p>¡Bienvenido a Saint Patrick's Academy!</p>
-        <p>Por favor, verifica tu cuenta haciendo clic en el siguiente enlace:</p>
-        <a href="${verificationLink}">Verificar Cuenta</a>
-        <p>Si no solicitaste esta verificación, puedes ignorar este mensaje.</p>
+        <div class="welcome-text">
+            ¡Bienvenido a nuestra comunidad educativa, ${nombre_usuario}!
+        </div>
+        <div class="message-box">
+            Nos complace darte la bienvenida a Saint Patrick's Academy. Para garantizar la seguridad de tu cuenta y comenzar tu experiencia educativa, necesitamos verificar tu dirección de correo electrónico.
+        </div>
+        <p style="text-align: center;">
+            <a href="${verificationLink}" class="verify-button">Verificar mi cuenta</a>
+        </p>
+        <p>Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:</p>
+        <div class="link-box">
+            ${verificationLink}
+        </div>
+        <p>⚠️ Este enlace expirará en 24 horas por motivos de seguridad.</p>
     `;
 
     try {
         await transporter.sendMail({
-            from: 'Saint Patrick\'s Academy <onboarding@brevo.com>', // Cambia esto si es necesario
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
             to: correo_usuario,
-            subject: '¡Bienvenido a Saint Patrick\'s Academy! - Verifica tu cuenta',
+            subject: '¡Bienvenido! Verifica tu cuenta - Saint Patrick\'s Academy',
             html: getEmailTemplate(content, 'Verificación de Cuenta'),
         });
         console.log('Correo de verificación enviado correctamente');
@@ -89,21 +219,37 @@ const enviarCorreoVerificacion = async (correo_usuario, nombre_usuario, token_us
     }
 };
 
-// Función para enviar el correo de recuperación
 const enviarCorreoRecuperacion = async (correo, token) => {
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     const recuperacionLink = `${baseUrl}/olvide-password/${token}`;
 
     const content = `
-        <p>Hola,</p>
-        <p>Has solicitado restablecer tu contraseña. Haz clic en el siguiente enlace para hacerlo:</p>
-        <a href="${recuperacionLink}">Recuperar Contraseña</a>
-        <p>Si no solicitaste este cambio, ignora este correo.</p>
+        <div class="welcome-text">
+            Solicitud de recuperación de contraseña
+        </div>
+        <div class="message-box">
+            Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Saint Patrick's Academy. 
+        </div>
+        <p style="text-align: center;">
+            <a href="${recuperacionLink}" class="verify-button">Restablecer contraseña</a>
+        </p>
+        <p>Si el botón no funciona, usa este enlace:</p>
+        <div class="link-box">
+            ${recuperacionLink}
+        </div>
+        <div class="message-box">
+            <strong>Recomendaciones de seguridad:</strong>
+            <ul style="margin-top: 10px;">
+                <li>No compartas este enlace con nadie</li>
+                <li>Usa una contraseña única y segura</li>
+                <li>El enlace expirará en 1 hora</li>
+            </ul>
+        </div>
     `;
 
     try {
         await transporter.sendMail({
-            from: 'Saint Patrick\'s Academy <onboarding@brevo.com>', // Cambia esto si es necesario
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
             to: correo,
             subject: 'Recuperación de Contraseña - Saint Patrick\'s Academy',
             html: getEmailTemplate(content, 'Recuperación de Contraseña'),
@@ -114,5 +260,4 @@ const enviarCorreoRecuperacion = async (correo, token) => {
     }
 };
 
-// Exportar las funciones para usarlas en otros módulos
 export { enviarCorreoVerificacion, enviarCorreoRecuperacion };

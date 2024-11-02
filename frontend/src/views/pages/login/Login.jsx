@@ -64,12 +64,12 @@ const Login = () => {
           localStorage.setItem('token', response.data.token);
           localStorage.setItem('user', JSON.stringify(response.data.user));
 
-          
-          
-          
+          const isTwoFactorEnabled = response.data.is_two_factor_enabled === 1;
+        console.log('Estado 2FA:', isTwoFactorEnabled); // Verificar el estado de 2FA
+    
           if (response.data.is_two_factor_enabled === 1) {
             localStorage.setItem('temp_identificador', formData.identificador);
-            await handleTransition('/Auth2FA');
+            await handleTransition('/2fa');
           } else {
             await handleTransition('/dashboard');
           }

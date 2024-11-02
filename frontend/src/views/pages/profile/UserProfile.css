@@ -1,4 +1,3 @@
-/* UserProfile.css */
 :root {
   --primary-color: #0ea5e9;
   --primary-light: #e0f2fe;
@@ -13,8 +12,9 @@
   --border-focus: #bae6fd;
   --error-color: #ef4444;
   --success-color: #10b981;
-  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
-  --hover-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08);
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --transition-speed: 0.3s;
 }
 
 /* Reset & Base Styles */
@@ -22,6 +22,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  font-family: 'Arial', sans-serif;
 }
 
 .profile-container {
@@ -31,11 +32,12 @@
   background: var(--background-color);
   border-radius: 1.5rem;
   box-shadow: var(--card-shadow);
-  transition: box-shadow 0.3s ease;
+  transition: box-shadow var(--transition-speed), transform var(--transition-speed);
 }
 
 .profile-container:hover {
   box-shadow: var(--hover-shadow);
+  transform: translateY(-2px);
 }
 
 /* Header Section */
@@ -60,11 +62,11 @@
   overflow: hidden;
   background: var(--surface-color);
   border: 3px solid var(--primary-light);
-  transition: transform 0.3s ease, border-color 0.3s ease;
+  transition: transform var(--transition-speed), border-color var(--transition-speed);
 }
 
 .profile-image:hover {
-  transform: scale(1.02);
+  transform: scale(1.05);
   border-color: var(--primary-color);
 }
 
@@ -72,11 +74,11 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: filter 0.3s ease;
+  transition: filter var(--transition-speed);
 }
 
 .profile-image:hover img {
-  filter: brightness(1.05);
+  filter: brightness(1.1);
 }
 
 .edit-image-button {
@@ -92,7 +94,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: background var(--transition-speed), transform var(--transition-speed);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -100,7 +102,7 @@
   width: 16px;
   height: 16px;
   color: white;
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-speed);
 }
 
 .edit-image-button:hover {
@@ -160,7 +162,7 @@
   border-radius: 1rem;
   padding: 2rem;
   margin: 2rem 0;
-  transition: transform 0.3s ease;
+  transition: transform var(--transition-speed);
 }
 
 .info-section:hover {
@@ -196,11 +198,12 @@
   gap: 0.75rem;
   padding: 1rem;
   border-radius: 0.75rem;
-  transition: background-color 0.3s ease;
+  transition: background-color var(--transition-speed), transform var(--transition-speed);
 }
 
 .info-item:hover {
   background: var(--surface-hover);
+  transform: scale(1.02);
 }
 
 .info-item label {
@@ -227,7 +230,7 @@
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: transform var(--transition-speed), box-shadow var(--transition-speed);
   margin-top: 1.5rem;
   display: flex;
   align-items: center;
@@ -249,13 +252,14 @@
 .twofa-button:hover:not(:disabled),
 .edit-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 12px -3px rgb(0 0 0 / 0.1);
+  box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.1);
 }
 
 .edit-button:hover {
   background: var(--primary-dark);
 }
 
+/* Disabled Button Styles */
 .twofa-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -311,51 +315,14 @@
 .twofa-input {
   width: 100%;
   padding: 1rem;
-  border: 2px solid var(--border-color);
-  border-radius: 0.75rem;
-  font-size: 1.125rem;
-  outline: none;
-  transition: all 0.3s ease;
-  text-align: center;
-  letter-spacing: 0.1em;
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  transition: border-color var(--transition-speed);
 }
 
 .twofa-input:focus {
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 4px var(--primary-light);
-}
-
-.verify-2fa-button,
-.close-modal-button {
-  width: 100%;
-  padding: 1rem;
-  border-radius: 0.75rem;
-  border: none;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.verify-2fa-button {
-  background: var(--primary-color);
-  color: white;
-}
-
-.verify-2fa-button:hover:not(:disabled) {
-  background: var(--primary-dark);
-  transform: translateY(-2px);
-}
-
-.close-modal-button {
-  background: var(--surface-color);
-  color: var(--text-primary);
-  border: 2px solid var(--border-color);
-}
-
-.close-modal-button:hover {
-  background: var(--surface-hover);
-  transform: translateY(-2px);
+  outline: none;
 }
 
 /* Animations */
@@ -370,52 +337,12 @@
 
 @keyframes slideUp {
   from {
-    opacity: 0;
     transform: translateY(20px);
+    opacity: 0;
   }
   to {
-    opacity: 1;
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-  .profile-container {
-    margin: 1.5rem;
-    padding: 1.5rem;
-  }
-
-  .profile-header {
-    flex-direction: column;
-    text-align: center;
-    gap: 2rem;
-  }
-
-  .profile-name {
-    font-size: 1.75rem;
-  }
-
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .modal {
-    padding: 1.5rem;
-  }
-}
-
-/* Print Styles */
-@media print {
-  .profile-container {
-    box-shadow: none;
-    margin: 0;
-    padding: 1rem;
-  }
-
-  .edit-image-button,
-  .twofa-button,
-  .edit-button {
-    display: none;
-  }
-}

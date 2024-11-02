@@ -13,7 +13,11 @@ import {
     OlvidePasssword,
     agregarEstudiante,
     preRegistroUsuario,
-    generarCodigo2FA
+    enableTwoFactorAuth,
+    verifyTwoFactorAuthCode,
+    disableTwoFactorAuth,
+    getTwoFactorStatus,
+    updateTwoFactorAuthStatus
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -32,10 +36,17 @@ router.get('/perfil/:cod_usuario', checkAuth, mostrarPerfil);
 router.delete('/eliminar-perfil/:cod_usuario', checkAuth, eliminarUsuarioCompleto);
 //RUTA PARA AGREGAR AL ESTUDIANTE 
 router.post('/agregar-estudiante/', checkAuth, agregarEstudiante);
-router.post('/generar-2fa', checkAuth, generarCodigo2FA);
 router.put('/cambiar-estado', checkAuth, cambiarEstadoUsuario);
-
-
+// Ruta para habilitar 2FA
+router.post('/enableTwoFactorAuth/:cod_usuario', checkAuth,enableTwoFactorAuth);
+// Ruta para habilitar 2FA
+router.post('/disableTwoFactorAuth', checkAuth,disableTwoFactorAuth);
+// Ruta para verificar el código TOTP
+router.post('/verifyTwoFactorAuthCode',checkAuth, verifyTwoFactorAuthCode);
+ // Add to routes
+ router.get('/2faStatus/:cod_usuario', checkAuth, getTwoFactorStatus);
+// Ruta para actualizar el estado de 2FA
+router.post('/update-2fa-status',checkAuth, updateTwoFactorAuthStatus);
 
 
 // Rutas públicas
