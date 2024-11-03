@@ -61,7 +61,11 @@ const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
+const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhijo')) 
+const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
 
+
+const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
 
 
 const App = () => {
@@ -108,6 +112,9 @@ const App = () => {
             {/* Rutas protegidas */}
             <Route element={<RutaProtegida />}>
             <Route path="/active-session" element={<ActiveSessionPage />} />
+            <Route path="/CompletarDatos" element={<Register />} />
+            <Route path="/RegistrarHijo" element={<RegistrarHijo />} />
+            <Route path="/AccesoDenegado" element={<AccesoDenegado />} />
               <Route path="/CuentaenRevision" element={<VerificaciónCuenta />} />
               <Route path="/CuentaSuspendida" element={<CuentaSupendida />} />
               <Route path="/2fa" element={<TwoAuthFA />} />
