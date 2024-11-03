@@ -1,7 +1,6 @@
 import express from 'express';
 import {
         obtenerEstructuraFamiliar,
-        //verDetalleEstructuraFamiliar,
         obtenerPersonas,
         obtenerTipoRelacion,
         crearEstructuraFamiliar,
@@ -14,9 +13,6 @@ const router = express.Router();
 // Ruta para obtener todas las estructuras familiares
 router.get('/verEstructuraFamiliar', obtenerEstructuraFamiliar);
 
-// Ruta para obtener todas las estructuras familiares por codigo
-//router.get('/verDetalleEstructuraFamiliar/:Cod_genialogia', verDetalleEstructuraFamiliar
-
 //Ruta para obtener las personas
 router.get('/verPersonas', obtenerPersonas);
 
@@ -27,9 +23,9 @@ router.get('/verTipoRelacion', obtenerTipoRelacion);
 router.post('/crearEstructuraFamiliar',crearEstructuraFamiliar)
 
 // Ruta para 
-router.put('/actualizarEstructuraFamiliar/:Cod_genialogia', actualizarEstructuraFamiliar);
+router.put('/actualizarEstructuraFamiliar/:cod_genealogia', actualizarEstructuraFamiliar);
 
 // Ruta para eliminar 
-router.delete('/eliminarestructuraFamiliar/:Cod_genialogia', eliminarEstructuraFamiliar);
+router.delete('/eliminarestructuraFamiliar/:cod_genealogia', eliminarEstructuraFamiliar);
 
 export default router;

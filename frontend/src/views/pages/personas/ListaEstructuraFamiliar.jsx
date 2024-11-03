@@ -126,7 +126,7 @@ useEffect(() => {
       try {
           const response = await axios.get(`http://localhost:4000/api/estructuraFamiliar/verTipoRelacion`);
           setTipoRelacion(response.data);
-          console.log('Datos de tipoRelacion:', response.data);  // Verifica la estructura de los datos
+          console.log('Datos de tipo Relacion:', response.data);  // Verifica la estructura de los datos
       } catch (error) {
           console.error('Error al cargar tipos de relación:', error);
       }
@@ -619,8 +619,12 @@ useEffect(() => {
                     ?.fullName.toUpperCase()}
                 </CTableDataCell>
                 <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {tipoRelacion[estructura.cod_tipo_relacion]?.toUpperCase()}
+                    {
+                        // Buscar el tipo de relación correspondiente
+                        tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || "N/A"
+                    }
                 </CTableDataCell>
+
                 <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
                   {estructura.descripcion.toUpperCase()}
                 </CTableDataCell>
@@ -750,15 +754,15 @@ useEffect(() => {
                 setNuevaEstructuraFamiliar({
                   ...nuevaEstructura,
                   cod_tipo_relacion: e.target.value,
-                })
+                });
               }}
             >
               <option value="">Seleccione un Tipo de Relación</option>
               {tipoRelacion
                 .filter((tipo) => tipo) // Filtrar elementos vacíos
-                .map((tipo, index) => (
-                  <option key={index} value={tipo}>
-                    {tipo.toUpperCase()}
+                .map((tipo) => (
+                  <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
+                    {tipo.tipo_relacion.toUpperCase()}
                   </option>
                 ))}
             </CFormSelect>
@@ -884,21 +888,21 @@ useEffect(() => {
 
       {/* Selector de Tipo Relación */}
       <CFormSelect
-        label="Tipo Relación"
-        value={estructuraToUpdate.cod_tipo_relacion}
-        onChange={(e) => {
-          setEstructuraToUpdate({ ...estructuraToUpdate, cod_tipo_relacion: e.target.value })
-        }}
-      >
-        <option value="">Seleccione un Tipo de Relación</option>
-        {tipoRelacion
-          .filter((tipo) => tipo) // Filtrar elementos vacíos
-          .map((tipo, index) => (
-            <option key={index} value={tipo}>
-              {tipo.toUpperCase()}
-            </option>
-          ))}
-      </CFormSelect>
+            label="Tipo Relación"
+            value={estructuraToUpdate.cod_tipo_relacion}
+            onChange={(e) => {
+                setEstructuraToUpdate({ ...estructuraToUpdate, cod_tipo_relacion: e.target.value })
+            }}>
+            <option value="">Seleccione un Tipo de Relación</option>
+            {tipoRelacion
+                .filter((tipo) => tipo) // Filtrar elementos vacíos
+                .map((tipo) => (
+                    <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
+                        {tipo.tipo_relacion.toUpperCase()} {/* Accediendo a la propiedad correcta */}
+                    </option>
+                ))}
+        </CFormSelect>
+
 
       {/* Campo de Descripción */}
       <CFormInput
