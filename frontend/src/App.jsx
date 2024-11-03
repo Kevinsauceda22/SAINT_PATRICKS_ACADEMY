@@ -60,6 +60,7 @@ const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias'));
 const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
+const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
 
 
 
@@ -116,6 +117,7 @@ const App = () => {
                 <Route path="/Contabilidad" element={<Contabilidad />} />
                 <Route path="/LibroDiario" element={<LibroDiario />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/PaginaPrincipal" element={<Dashboard2 />} />
                 <Route path="/profile" element={<Perfil />} />
                 <Route path="/MisPagos" element={<MisPagos />} />
                 <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />
@@ -144,8 +146,6 @@ const App = () => {
                 <Route path="/historico" element={<ListaDias />} />
                 <Route path="/ListaEstructura" element={<ListaEstructuraFamiliar />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
-          
-
               </Route>
             </Route>
 
