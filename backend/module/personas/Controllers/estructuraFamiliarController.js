@@ -18,28 +18,6 @@ export const obtenerEstructuraFamiliar = async (req, res) => {
     }
 };
 
-/*//Controlador para obtener el detalle de la estructura familiar 
-export const verDetalleEstructuraFamiliar = async (req, res) => {
-    const {Cod_genialogia } = req.params; // Obtener el parámetro de la ruta
-
-    try {
-        const query = 'CALL P_Get_EstructuraFamiliar_Detalle(?)'; // Llama al procedimiento almacenado
-        const params = [Cod_genialogia];
-
-        const [results] = await pool.query(query, params);
-
-        // Verificar si hay resultados
-        if (!results || results[0].length === 0) {
-            return res.status(404).json({ message: 'Estructura no encontrada' });
-        }
-
-        return res.status(200).json(results[0][0]); // Retornar la solicitud encontrada
-    } catch (error) {
-        console.error('Error al obtener la estructura:', error);
-        res.status(500).json({ message: 'Error al obtener la estructra', error: error.message });
-    }
-};*/
-
 
 // Controlador para obtener las personas
 export const obtenerPersonas = async (req, res) => {
@@ -67,9 +45,12 @@ export const obtenerTipoRelacion = async (req, res) => {
         const [rows] = await pool.query('CALL P_Get_TipoRelacion()');
 
         if (rows[0].length > 0) {
-            // Solo obtenemos el campo tipo_relacion directamente
-            const tipoRelacion = rows[0].map(tipo => tipo.tipo_relacion); // Cambiado para devolver el valor directamente
-            res.status(200).json(tipoRelacion); // Devuelve un array de tipo_relacion
+            // Devolver ambos campos: Cod_tipo_relacion y tipo_relacion
+            const tipoRelacion = rows[0].map(tipo => ({
+                Cod_tipo_relacion: tipo.Cod_tipo_relacion, // Asegúrate de que este nombre coincide con el campo de tu SP
+                tipo_relacion: tipo.tipo_relacion // Este es el nombre del campo que estás usando
+            }));
+            res.status(200).json(tipoRelacion); // Devuelve un array de objetos con ambos valores
         } else {
             res.status(404).json({ message: 'No se encontraron tipos de relación' });
         }
@@ -78,6 +59,7 @@ export const obtenerTipoRelacion = async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
 };
+
 
 
 //Controlador para crear 
@@ -89,31 +71,31 @@ export const crearEstructuraFamiliar = async (req, res) => {
         cod_tipo_relacion
     } = req.body;
 
-        // Validar que el padre/tutor y el estudiante no sean la misma persona
-        if (cod_persona_padre === cod_persona_estudiante) {
-            return res.status(400).json({
-                mensaje: 'No se puede seleccionar la misma persona como Padre/Tutor y Estudiante.'
-            });
-        }
-        
+    // Validar que el padre/tutor y el estudiante no sean la misma persona
+    if (cod_persona_padre === cod_persona_estudiante) {
+        return res.status(400).json({
+            mensaje: 'No se puede seleccionar la misma persona como Padre/Tutor y Estudiante.'
+        });
+    }
+
     try {
         await pool.query('CALL P_Post_EstructuraFamiliar(?, ?, ?, ?)', [
-        descripcion,
-        cod_persona_padre,
-        cod_persona_estudiante,
-        cod_tipo_relacion
+            descripcion,
+            cod_persona_padre,
+            cod_persona_estudiante,
+            cod_tipo_relacion
         ]);
 
         res.status(201).json({ mensaje: 'Estructura Familiar creada exitosamente' });
     } catch (error) {
-        console.error('Error al crear el aula:', error);
+        console.error('Error al crear la estructura familiar:', error);
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
 
 
 export const actualizarEstructuraFamiliar = async (req, res) => {
-    const { Cod_genialogia } = req.params; // Obtiene el código del aula desde la URL
+    const { Cod_genealogia } = req.params; // Obtiene el código del aula desde la URL
 
     const {
         descripcion,
@@ -124,7 +106,7 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
 
     try {
         await pool.query('CALL P_Put_EstructuraFamiliar(?, ?, ?, ?, ?)', [
-            Cod_genialogia,
+            Cod_genealogia,
             descripcion,
             cod_persona_padre,
             cod_persona_estudiante,
@@ -143,11 +125,11 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
 
 // Controlador para eliminar 
 export const eliminarEstructuraFamiliar = async (req, res) => {
-    const { Cod_genialogia } = req.params;
+    const { Cod_genealogia } = req.params;
 
     try {
         // Llamar al procedimiento almacenado para eliminar 
-        const [rows] = await pool.query("CALL P_Delete_EstructuraFamiliar(?)", [Cod_genialogia]);
+        const [rows] = await pool.query("CALL P_Delete_EstructuraFamiliar(?)", [Cod_genealogia]);
 
         
         if (rows.affectedRows > 0) {
