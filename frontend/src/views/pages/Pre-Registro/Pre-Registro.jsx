@@ -240,7 +240,7 @@ const PreRegisterForm = () => {
                 </div>
 
                 <div className="input-group">
-                  <label>Contraseña*</label>
+                  <label>Contraseña:‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ ‎ </label>
                   <div className="password-input">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -277,7 +277,7 @@ const PreRegisterForm = () => {
                 </div>
 
                 <div className="input-group">
-                  <label>Confirmar Contraseña*</label>
+                  <label>Confirmar Contraseña:‎ ‎ ‎ ‎ </label>
                   <div className="password-input">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -493,7 +493,7 @@ const PreRegisterForm = () => {
 
         .toggle-password {
           position: absolute;
-          right: 16px;
+          right: 14px;
           top: 50%;
           transform: translateY(-50%);
           background: none;
