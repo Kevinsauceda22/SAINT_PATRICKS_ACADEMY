@@ -22,6 +22,12 @@ import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react';
 const _nav = [
   {
     component: CNavItem,
+    name: 'Panel de control',
+    to: '/PaginaPrincipal',
+    icon: cilSpeedometer, // Puedes usar otro ícono si lo deseas
+  },
+  {
+    component: CNavItem,
     name: 'Dashboard',
     to: '/dashboard',
     icon: cilSpeedometer,

@@ -996,3 +996,37 @@ export const actualizarOtp = async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor.' });
     }
 };
+
+// Para mostrar solo el rol y el correo del usuario
+export const mostrarRolYCorreo = async (req, res) => {
+    const cod_usuario = parseInt(req.params.cod_usuario, 10); // Asegúrate de que el ID sea un número entero
+    const usuarioAutenticado = req.usuario.cod_usuario; // ID del usuario autenticado desde el token
+
+    // Verificar si cod_usuario es un número válido
+    if (isNaN(cod_usuario)) {
+        return res.status(400).json({ mensaje: 'ID de usuario inválido' });
+    }
+
+    // Verificar que el usuario autenticado solo acceda a su propio rol y correo
+    if (cod_usuario !== usuarioAutenticado) {
+        return res.status(403).json({ mensaje: 'Acceso denegado. No puedes ver los datos de otro usuario' });
+    }
+
+    try {
+        // Ejecutar la consulta almacenada 'ObtenerRolYCorreo'
+        const [usuario] = await pool.query('CALL ObtenerRolYCorreo(?)', [cod_usuario]);
+        console.log("Resultado de la base de datos:", usuario);
+
+        // Verificar si no se encontró el usuario
+        if (!usuario || !usuario[0] || usuario[0].length === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        // Enviar los datos del usuario encontrado
+        res.status(200).json(usuario[0][0]);
+    } catch (error) {
+        console.error('Error al obtener el rol y correo del usuario:', error);
+        res.status(500).json({ mensaje: 'Error al obtener el rol y correo del usuario' });
+    }
+};
+
