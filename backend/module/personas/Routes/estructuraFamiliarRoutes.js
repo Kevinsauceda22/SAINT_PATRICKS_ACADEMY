@@ -23,9 +23,9 @@ router.get('/verTipoRelacion', obtenerTipoRelacion);
 router.post('/crearEstructuraFamiliar',crearEstructuraFamiliar)
 
 // Ruta para 
-router.put('/actualizarEstructuraFamiliar/:cod_genealogia', actualizarEstructuraFamiliar);
+router.put('/actualizarEstructuraFamiliar/:Cod_genealogia', actualizarEstructuraFamiliar);
 
 // Ruta para eliminar 
-router.delete('/eliminarestructuraFamiliar/:cod_genealogia', eliminarEstructuraFamiliar);
+router.delete('/eliminarEstructuraFamiliar/:Cod_genealogia', eliminarEstructuraFamiliar);
 
 export default router;

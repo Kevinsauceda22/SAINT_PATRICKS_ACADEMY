@@ -7,6 +7,7 @@ import { jsPDF } from 'jspdf';       // Para generar archivos PDF
 import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
 import * as XLSX from 'xlsx';        // Para generar archivos Excel
 import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
+import Select from 'react-select'; // Para crear un seleccionador dinamico 
 import {
   CContainer,
   CInputGroup,
@@ -57,69 +58,48 @@ const ListaEstructuraFamiliar = () => {
   const [tipoRelacion, setTipoRelacion] = useState([]);
   const [errorSamePerson, setErrorSamePerson] = useState('');
   const [errorSamePersonUpdate, setErrorSamePersonUpdate] = useState('');
+  const [rol, setRol] = useState(''); // Inicializa rol
+  const [codPersonaPadre, setCodPersonaPadre] = useState(null);
+  const [codPersonaEstudiante, setCodPersonaEstudiante] = useState(null);
 
 
 
+  const handleFormSubmit = () => {
+      // Enviar datos al backend
+      onSubmit({
+          cod_persona_padre: codPersonaPadre,
+          cod_persona_estudiante: codPersonaEstudiante,
+          // otros campos...
+      });
+  };
 
   useEffect(() => {
-    fetchEstructuraFamiliar();
-  }, []);
-
-  const exportToExcel = () => {
-    // Convierte los datos de las estructuras a formato de hoja de cálculo
-    const estructuraConNombres = estructuraFamiliar.map((estructura, index) => ({
-      '#': index + 1, // Índice personalizado
-      'Tutor/Padre': personas.find((p) => p.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || '',
-      'Estudiante': personas.find((p) => p.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || '',
-      'Tipo Relación': tipoRelacion[estructura.cod_tipo_relacion]?.toUpperCase() || '',
-      'Descripción': estructura.descripcion.toUpperCase() || '',
-    }));
-  
-    const worksheet = XLSX.utils.json_to_sheet(estructuraConNombres); 
-    const workbook = XLSX.utils.book_new(); // Crea un nuevo libro de trabajo
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Estructura Familiar'); // Añade la hoja
-  
-    // Genera el archivo Excel en formato binario
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  
-    // Crea un Blob para descargar el archivo con file-saver
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, 'reporte_Estructura.xlsx'); // Descarga el archivo Excel
-  };
-  
-  const exportToPDF = () => {
-    const doc = new jsPDF(); // Crea un nuevo documento PDF
-  
-    // Añade un título al documento PDF
-    doc.text('Reporte de Estructuras Familiares', 20, 10);
-  
-    // Genera la tabla en el PDF con los datos de las estructuras familiares
-    doc.autoTable({
-      head: [['#', 'Tutor/Padre', 'Estudiante', 'Tipo Relación', 'Descripción']], // Cabecera de la tabla
-      body: estructuraFamiliar.map((estructura, index) => [
-        index + 1,
-        personas.find((p) => p.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || '',
-        personas.find((p) => p.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || '',
-        tipoRelacion[estructura.cod_tipo_relacion]?.toUpperCase() || '',
-        estructura.descripcion.toUpperCase() || '',
-      ]), // Datos que se mostrarán en la tabla
-    });
-  
-    // Descarga el archivo PDF
-    doc.save('reporte_estructura.pdf');
-  };
-  
-
-
-  useEffect(() => {
+    // Cargar personas según el rol (1 = Padre, 2 = Estudiante)
     const fetchPersonas = async () => {
-        const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/verPersonas`);
-        const data = await response.json();
-        setPersonas(data);
+        try {
+            const response = await axios.get(`http://localhost:4000/api/estructuraFamiliar/verPersonas?rol=${rol}`); // Cambia '=' por '?' para parámetros de consulta
+            console.log("Datos de Personas:", response.data); // Agregado para depuración
+
+            const options = response.data.map(persona => ({
+                value: persona.cod_persona,
+                label: `${persona.fullName} - DNI: ${persona.dni}`,
+                rol: persona.rol
+            }));
+            setPersonas(options);
+        } catch (error) {
+            console.error("Error al cargar personas:", error);
+        }
     };
 
     fetchPersonas();
-}, []);
+}, [rol]);
+
+
+// Manejar selección de persona
+const handleSelectChange = (selected) => {
+    setSelectedOption(selected);
+    onChange(selected ? selected.value : null);
+};
 
 useEffect(() => {
   const fetchTipoRelacion = async () => {
@@ -134,6 +114,9 @@ useEffect(() => {
   fetchTipoRelacion();
 }, []);
 
+useEffect(() => {
+  fetchEstructuraFamiliar();
+}, []);
   
   const fetchEstructuraFamiliar = async () => {
     try {
@@ -288,6 +271,50 @@ useEffect(() => {
       }
     };
 
+    const exportToExcel = () => {
+      // Convierte los datos de las estructuras a formato de hoja de cálculo
+      const estructuraConNombres = estructuraFamiliar.map((estructura, index) => ({
+        '#': index + 1, // Índice personalizado
+        'Tutor/Padre': personas.find((p) => p.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || '',
+        'Estudiante': personas.find((p) => p.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || '',
+        'Tipo Relación': tipoRelacion[estructura.cod_tipo_relacion]?.toUpperCase() || '',
+        'Descripción': estructura.descripcion.toUpperCase() || '',
+      }));
+    
+      const worksheet = XLSX.utils.json_to_sheet(estructuraConNombres); 
+      const workbook = XLSX.utils.book_new(); // Crea un nuevo libro de trabajo
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Estructura Familiar'); // Añade la hoja
+    
+      // Genera el archivo Excel en formato binario
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+    
+      // Crea un Blob para descargar el archivo con file-saver
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'reporte_Estructura.xlsx'); // Descarga el archivo Excel
+    };
+    
+    const exportToPDF = () => {
+      const doc = new jsPDF(); // Crea un nuevo documento PDF
+    
+      // Añade un título al documento PDF
+      doc.text('Reporte de Estructuras Familiares', 20, 10);
+    
+      // Genera la tabla en el PDF con los datos de las estructuras familiares
+      doc.autoTable({
+        head: [['#', 'Tutor/Padre', 'Estudiante', 'Tipo Relación', 'Descripción']], // Cabecera de la tabla
+        body: estructuraFamiliar.map((estructura, index) => [
+          index + 1,
+          personas.find((p) => p.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || '',
+          personas.find((p) => p.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || '',
+          tipoRelacion[estructura.cod_tipo_relacion]?.toUpperCase() || '',
+          estructura.descripcion.toUpperCase() || '',
+        ]), // Datos que se mostrarán en la tabla
+      });
+    
+      // Descarga el archivo PDF
+      doc.save('reporte_estructura.pdf');
+    };
+    
     const resetNuevaEstructuraFamiliar = () => {
       setNuevaEstructuraFamiliar({ descripcion: '', cod_persona_padre: '', cod_persona_estudiante: '', cod_tipo_relacion: '' });
     };
@@ -371,7 +398,7 @@ useEffect(() => {
     }
 
     try {
-      const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genialogia}`, {
+      const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -381,8 +408,7 @@ useEffect(() => {
           cod_persona_padre: estructuraToUpdate.cod_persona_padre, 
           cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante, 
           cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion
-       }),
-       
+       })
       });
 
       if (response.ok) {
@@ -410,7 +436,7 @@ useEffect(() => {
   const handleDeleteEstructura = async () => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/estructuraFamiliar/eliminarEstructuraFamiliar/${encodeURIComponent(estructuraToDelete.Cod_genialogia)}`,
+        `http://localhost:4000/api/estructuraFamiliar/eliminarEstructuraFamiliar/${encodeURIComponent(estructuraToDelete.Cod_genealogia)}`,
         {
           method: 'DELETE',
           headers: {
@@ -603,31 +629,22 @@ useEffect(() => {
           </CTableHead>
 
           <CTableBody>
-            {currentRecords.map((estructura) => (
-              <CTableRow key={estructura.Cod_genialogia}>
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {estructura.originalIndex}
-                </CTableDataCell>
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {personas
-                    .find((p) => p.cod_persona === estructura.cod_persona_padre)
-                    ?.fullName.toUpperCase()}
-                </CTableDataCell>
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {personas
-                    .find((p) => p.cod_persona === estructura.cod_persona_estudiante)
-                    ?.fullName.toUpperCase()}
-                </CTableDataCell>
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                    {
-                        // Buscar el tipo de relación correspondiente
-                        tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || "N/A"
-                    }
-                </CTableDataCell>
-
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {estructura.descripcion.toUpperCase()}
-                </CTableDataCell>
+          {currentRecords.map((estructura) => (
+    <CTableRow key={estructura.Cod_genealogia}>
+      <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+        {estructura.originalIndex}
+      </CTableDataCell>
+      <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+        {personas.find((p) => p.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || "N/A"}
+      </CTableDataCell>
+      <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+        {personas.find((p) => p.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || "N/A"}
+      </CTableDataCell>
+      <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+        {tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || "N/A"}
+      </CTableDataCell>
+      <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+        {estructura.descripcion.toUpperCase()}</CTableDataCell>
                 <CTableDataCell className="text-center">
                   <div className="d-flex justify-content-center">
                     <CButton
@@ -674,280 +691,292 @@ useEffect(() => {
         </span>
       </div>
 
-      {/* Modal para crear una nueva estructura */}
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-        <CModalHeader>
-          <CModalTitle>Ingresar Nueva Estructura Familiar</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <CForm>
+
+
+        {/* Modal para crear una nueva estructura */}
+        <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
+          <CModalHeader closeButton>
+            <CModalTitle>Ingresar Nueva Estructura Familiar</CModalTitle>
+          </CModalHeader>
+          <CModalBody>
+            <CForm>
             {/* Selector de Padre/Tutor */}
-            <CFormSelect
-              label="Padre/Tutor"
-              value={nuevaEstructura.cod_persona_padre}
-              onChange={(e) => {
-                const selectedPadre = e.target.value
-                setNuevaEstructuraFamiliar({ ...nuevaEstructura, cod_persona_padre: selectedPadre })
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Padre/Tutor</CInputGroupText>
+              <Select
+                value={personas.find(persona => persona.cod_persona === nuevaEstructura.cod_persona_padre)}
+                onChange={(selectedOption) => {
+                  const selectedPadre = selectedOption ? selectedOption.value : '';
+                  setNuevaEstructuraFamiliar({ ...nuevaEstructura, cod_persona_padre: selectedPadre });
 
-                // Limpiar el error cuando se selecciona un nuevo Padre/Tutor
-                setErrorSamePerson('')
+                  // Limpiar el error cuando se selecciona un nuevo Padre/Tutor
+                  setErrorSamePerson('');
 
-                // Verificar si el Padre/Tutor y el Estudiante son la misma persona
-                if (selectedPadre === nuevaEstructura.cod_persona_estudiante) {
-                  setErrorSamePerson(
-                    'El Padre/Tutor y el Estudiante no pueden ser la misma persona.',
-                  )
+                  // Verificar si el Padre/Tutor y el Estudiante son la misma persona
+                  if (selectedPadre === nuevaEstructura.cod_persona_estudiante) {
+                    setErrorSamePerson('El Padre/Tutor y el Estudiante no pueden ser la misma persona.');
+                  }
+                }}
+                options={personas.filter(persona => persona.rol === 'Padre')} // Filtrar solo los padres
+                getOptionLabel={option => `${option.fullName} - DNI: ${option.dni}`} // Mostrar nombre y DNI
+                getOptionValue={option => option.cod_persona} // Valor del option
+                placeholder="Seleccione un Padre/Tutor"
+                isClearable
+              />
+            </CInputGroup>
+            {errors.cod_persona_padre && <p className="text-danger">{errors.cod_persona_padre}</p>}
+            <p className="text-danger" style={{ fontSize: '12px' }}>{errorSamePerson}</p>
+
+
+              {/* Selector de Estudiante */}
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Estudiante</CInputGroupText>
+                <Select
+                  value={personas.find(persona => persona.cod_persona === nuevaEstructura.cod_persona_estudiante)} // Obtener el estudiante seleccionado
+                  onChange={(selectedOption) => {
+                    const selectedEstudiante = selectedOption ? selectedOption.value : '';
+                    setNuevaEstructuraFamiliar({
+                      ...nuevaEstructura,
+                      cod_persona_estudiante: selectedEstudiante,
+                    });
+
+                    // Limpiar el error cuando se selecciona un nuevo Estudiante
+                    setErrorSamePerson('');
+
+                    // Verificar si el Estudiante y el Padre/Tutor son la misma persona
+                    if (selectedEstudiante === nuevaEstructura.cod_persona_padre) {
+                      setErrorSamePerson('El Padre/Tutor y el Estudiante no pueden ser la misma persona.');
+                    }
+                  }}
+                  options={personas.filter(persona => persona.rol === 'Estudiante')} // Filtrar solo los estudiantes
+                  getOptionLabel={option => `${option.fullName} - DNI: ${option.dni}`} // Mostrar nombre y DNI
+                  getOptionValue={option => option.cod_persona} // Valor del option
+                  placeholder="Seleccione un Estudiante"
+                  isClearable
+                />
+              </CInputGroup>
+              {errors.cod_persona_estudiante && <p className="text-danger">{errors.cod_persona_estudiante}</p>}
+              <p className="text-danger" style={{ fontSize: '12px' }}>{errorSamePerson}</p>
+
+
+              {/* Selector de Tipo Relación */}
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Tipo Relación</CInputGroupText>
+                <CFormSelect
+                  value={nuevaEstructura.cod_tipo_relacion}
+                  onChange={(e) => {
+                    setNuevaEstructuraFamiliar({
+                      ...nuevaEstructura,
+                      cod_tipo_relacion: e.target.value,
+                    });
+                  }}
+                >
+                  <option value="">Seleccione un Tipo de Relación</option>
+                  {tipoRelacion
+                    .filter((tipo) => tipo) // Filtrar elementos vacíos
+                    .map((tipo) => (
+                      <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
+                        {tipo.tipo_relacion.toUpperCase()}
+                      </option>
+                    ))}
+                </CFormSelect>
+              </CInputGroup>
+
+              {/* Campo de Descripción */}
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Descripción</CInputGroupText>
+                <CFormInput
+                  type="text"
+                  value={nuevaEstructura.descripcion.toUpperCase()}
+                  maxLength={50}
+                  onPaste={disableCopyPaste}
+                  onCopy={disableCopyPaste}
+                  onChange={(e) =>
+                    handleDescripcionInputChange(
+                      e,
+                      setNuevaEstructuraFamiliar,
+                      handleChange,
+                      setDescripcionError,
+                    )
+                  }
+                  required
+                  style={{ textTransform: 'uppercase' }}
+                />
+              </CInputGroup>
+              {descripcionError && <p className="text-danger" style={{ fontSize: '12px' }}>{descripcionError}</p>}
+            </CForm>
+          </CModalBody>
+          <CModalFooter>
+            <CButton
+              style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+              onClick={() => handleCloseModal(setModalVisible, resetNuevaEstructuraFamiliar)}
+            >
+              Cerrar
+            </CButton>
+            <CButton
+              style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+              onClick={() => {
+                // Validación antes de guardar
+                if (nuevaEstructura.cod_persona_padre === nuevaEstructura.cod_persona_estudiante) {
+                  swal.fire({
+                    icon: 'warning',
+                    title: 'Campo inválido',
+                    text: 'El Padre/Tutor y el Estudiante no pueden ser la misma persona.',
+                  });
+                  return; // Detener la función si hay un error
                 }
+
+                handleCreateEstructura(); // Llama a la función para crear la estructura
               }}
             >
-              <option value="">Seleccione un Padre/Tutor</option>
-              {personas.map((persona) => (
-                <option key={persona.cod_persona} value={persona.cod_persona}>
-                  {persona.fullName.toUpperCase()}
-                </option>
-              ))}
-            </CFormSelect>
-            {errors.cod_persona_padre && <p style={{ color: 'red' }}>{errors.cod_persona_padre}</p>}
-            <p style={{ color: 'red', fontSize: '12px' }}>{errorSamePerson} </p>
+              Guardar
+            </CButton>
+          </CModalFooter>
+        </CModal>
+        {/* Fin del modal agregar */}
 
-            {/* Selector de Estudiante */}
-            <CFormSelect
-              label="Estudiante"
-              value={nuevaEstructura.cod_persona_estudiante}
-              onChange={(e) => {
-                const selectedEstudiante = e.target.value
-                setNuevaEstructuraFamiliar({
-                  ...nuevaEstructura,
-                  cod_persona_estudiante: selectedEstudiante,
-                })
 
-                // Limpiar el error cuando se selecciona un nuevo Estudiante
-                setErrorSamePerson('')
-
-                // Verificar si el Estudiante y el Padre/Tutor son la misma persona
-                if (selectedEstudiante === nuevaEstructura.cod_persona_padre) {
-                  setErrorSamePerson(
-                    'El Padre/Tutor y el Estudiante no pueden ser la misma persona.',
-                  )
-                }
-              }}
-            >
-              <option value="">Seleccione un Estudiante</option>
-              {personas.map((persona) => (
-                <option key={persona.cod_persona} value={persona.cod_persona}>
-                  {persona.fullName.toUpperCase()}
-                </option>
-              ))}
-            </CFormSelect>
-            {errors.cod_persona_estudiante && (
-              <p style={{ color: 'red' }}>{errors.cod_persona_estudiante}</p>
-            )}
-            {errorSamePerson && (
-              <p style={{ color: 'red', fontSize: '12px' }}>{errorSamePerson} </p>
-            )}
-
-            {/* Selector de Tipo Relación */}
-            <CFormSelect
-              label="Tipo Relación"
-              value={nuevaEstructura.cod_tipo_relacion}
-              onChange={(e) => {
-                setNuevaEstructuraFamiliar({
-                  ...nuevaEstructura,
-                  cod_tipo_relacion: e.target.value,
-                });
-              }}
-            >
-              <option value="">Seleccione un Tipo de Relación</option>
-              {tipoRelacion
-                .filter((tipo) => tipo) // Filtrar elementos vacíos
-                .map((tipo) => (
-                  <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
-                    {tipo.tipo_relacion.toUpperCase()}
-                  </option>
-                ))}
-            </CFormSelect>
-
-            {/* Campo de Descripción */}
-            <CFormInput
-              label="Descripción"
-              value={nuevaEstructura.descripcion.toUpperCase()}
-              maxLength={50}
-              onPaste={disableCopyPaste}
-              onCopy={disableCopyPaste}
-              onChange={(e) =>
-                handleDescripcionInputChange(
-                  e,
-                  setNuevaEstructuraFamiliar,
-                  handleChange,
-                  setDescripcionError,
-                )
-              }
-              style={{ textTransform: 'uppercase' }} // Esto asegura que el texto se muestre en mayúsculas
-            />
-            {descripcionError && (
-              <p style={{ color: 'red', fontSize: '12px' }}>{descripcionError}</p>
-            )}
-          </CForm>
-        </CModalBody>
-        <CModalFooter>
-          <CButton
-            color="secondary"
-            onClick={() => handleCloseModal(setModalVisible, resetNuevaEstructuraFamiliar)}
-          >
-            Cerrar
-          </CButton>
-          <CButton
-            color="primary"
-            onClick={() => {
-              // Validación antes de guardar
-              if (nuevaEstructura.cod_persona_padre === nuevaEstructura.cod_persona_estudiante) {
-                swal.fire({
-                  icon: 'warning',
-                  title: 'Campo inválido',
-                  text: 'El Padre/Tutor y el Estudiante no pueden ser la misma persona.',
-                })
-                return // Detener la función si hay un error
-              }
-
-              handleCreateEstructura() // Llama a la función para crear la estructura
-            }}
-          >
-            Guardar
-          </CButton>
-        </CModalFooter>
-      </CModal>
-
-        {/* Modal para actualizar una estructura */}
-<CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)}>
-  <CModalHeader>
+{/* Modal para actualizar una estructura */}
+<CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
+  <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
   </CModalHeader>
   <CModalBody>
     <CForm>
-      <CFormInput label="Identificador" value={estructuraToUpdate.Cod_genialogia} readOnly />
+      {/* Campo de Identificador (solo lectura) */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Identificador</CInputGroupText>
+        <CFormInput value={estructuraToUpdate.Cod_genealogia} readOnly />
+      </CInputGroup>
 
-      {/* Selector de Padre/Tutor */}
-      <CFormSelect
-        label="Padre/Tutor"
-        value={estructuraToUpdate.cod_persona_padre}
-        onChange={(e) => {
-          const selectedPadre = e.target.value
-          setEstructuraToUpdate((prevState) => ({
-            ...prevState,
-            cod_persona_padre: selectedPadre,
-          }))
+{/* Selector de Padre/Tutor con validación */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Padre/Tutor</CInputGroupText>
+  <Select
+    value={personas.find(persona => persona.cod_persona === estructuraToUpdate.cod_persona_padre)} // Obtener el padre/tutor seleccionado
+    onChange={(selectedOption) => {
+      const selectedPadre = selectedOption ? selectedOption.value : '';
+      setEstructuraToUpdate((prevState) => ({
+        ...prevState,
+        cod_persona_padre: selectedPadre,
+      }));
 
-          // Validar si el Padre/Tutor y el Estudiante son la misma persona
-          if (selectedPadre === estructuraToUpdate.cod_persona_estudiante) {
-            setErrorSamePersonUpdate('El Padre/Tutor y el Estudiante no pueden ser la misma persona.')
-          } else {
-            setErrorSamePersonUpdate('') // Limpiar el error si son diferentes
-          }
-        }}
-      >
-        <option value="">Seleccione un Padre/Tutor</option>
-        {personas.map((persona) => (
-          <option key={persona.cod_persona} value={persona.cod_persona}>
-            {persona.fullName.toUpperCase()}
-          </option>
-        ))}
-      </CFormSelect>
-      {errorSamePersonUpdate && (
-        <p style={{ color: 'red', fontSize: '12px' }}>{errorSamePersonUpdate}</p>
-      )}
+      // Validación para evitar duplicados
+      if (selectedPadre === estructuraToUpdate.cod_persona_estudiante) {
+        setErrorSamePersonUpdate('El Padre/Tutor y el Estudiante no pueden ser la misma persona.');
+      } else {
+        setErrorSamePersonUpdate('');
+      }
+    }}
+    options={personas.filter(persona => persona.rol === 'Padre')} // Filtrar solo los padres
+    getOptionLabel={option => `${option.fullName} - DNI: ${option.dni}`} // Mostrar nombre y DNI
+    getOptionValue={option => option.cod_persona} // Valor del option
+    placeholder="Seleccione un Padre/Tutor"
+    isClearable
+  />
+</CInputGroup>
+{errorSamePersonUpdate && (
+  <p style={{ color: 'red', fontSize: '12px' }}>{errorSamePersonUpdate}</p>
+)}
 
-      {/* Selector de Estudiante */}
-      <CFormSelect
-        label="Estudiante"
-        value={estructuraToUpdate.cod_persona_estudiante}
-        onChange={(e) => {
-          const selectedEstudiante = e.target.value
-          setEstructuraToUpdate((prevState) => ({
-            ...prevState,
-            cod_persona_estudiante: selectedEstudiante,
-          }))
+{/* Selector de Estudiante con validación */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Estudiante</CInputGroupText>
+  <Select
+    value={personas.find(persona => persona.cod_persona === estructuraToUpdate.cod_persona_estudiante)} // Obtener el estudiante seleccionado
+    onChange={(selectedOption) => {
+      const selectedEstudiante = selectedOption ? selectedOption.value : '';
+      setEstructuraToUpdate((prevState) => ({
+        ...prevState,
+        cod_persona_estudiante: selectedEstudiante,
+      }));
 
-          // Validar si el Estudiante y el Padre/Tutor son la misma persona
-          if (selectedEstudiante === estructuraToUpdate.cod_persona_padre) {
-            setErrorSamePersonUpdate('El Padre/Tutor y el Estudiante no pueden ser la misma persona.')
-          } else {
-            setErrorSamePersonUpdate('') // Limpiar el error si son diferentes
-          }
-        }}
-      >
-        <option value="">Seleccione un Estudiante</option>
-        {personas.map((persona) => (
-          <option key={persona.cod_persona} value={persona.cod_persona}>
-            {persona.fullName.toUpperCase()}
-          </option>
-        ))}
-      </CFormSelect>
-      {errorSamePersonUpdate && (
-        <p style={{ color: 'red', fontSize: '12px' }}>{errorSamePersonUpdate}</p>
-      )}
+      // Validación para evitar duplicados
+      if (selectedEstudiante === estructuraToUpdate.cod_persona_padre) {
+        setErrorSamePersonUpdate('El Padre/Tutor y el Estudiante no pueden ser la misma persona.');
+      } else {
+        setErrorSamePersonUpdate('');
+      }
+    }}
+    options={personas.filter(persona => persona.rol === 'Estudiante')} // Filtrar solo los estudiantes
+    getOptionLabel={option => `${option.fullName} - DNI: ${option.dni}`} // Mostrar nombre y DNI
+    getOptionValue={option => option.cod_persona} // Valor del option
+    placeholder="Seleccione un Estudiante"
+    isClearable
+  />
+</CInputGroup>
+{errorSamePersonUpdate && (
+  <p style={{ color: 'red', fontSize: '12px' }}>{errorSamePersonUpdate}</p>
+)}
 
       {/* Selector de Tipo Relación */}
-      <CFormSelect
-            label="Tipo Relación"
-            value={estructuraToUpdate.cod_tipo_relacion}
-            onChange={(e) => {
-                setEstructuraToUpdate({ ...estructuraToUpdate, cod_tipo_relacion: e.target.value })
-            }}>
-            <option value="">Seleccione un Tipo de Relación</option>
-            {tipoRelacion
-                .filter((tipo) => tipo) // Filtrar elementos vacíos
-                .map((tipo) => (
-                    <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
-                        {tipo.tipo_relacion.toUpperCase()} {/* Accediendo a la propiedad correcta */}
-                    </option>
-                ))}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Relación</CInputGroupText>
+        <CFormSelect
+          value={estructuraToUpdate.cod_tipo_relacion}
+          onChange={(e) => {
+            setEstructuraToUpdate({ ...estructuraToUpdate, cod_tipo_relacion: e.target.value });
+          }}
+        >
+          <option value="">Seleccione un Tipo de Relación</option>
+          {tipoRelacion
+            .filter((tipo) => tipo) // Filtrar elementos vacíos
+            .map((tipo) => (
+              <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
+                {tipo.tipo_relacion.toUpperCase()}
+              </option>
+            ))}
         </CFormSelect>
+      </CInputGroup>
 
-
-      {/* Campo de Descripción */}
-      <CFormInput
-        label="Descripción"
-        value={estructuraToUpdate.descripcion}
-        maxLength={50}
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        onChange={(e) =>
-          handleDescripcionInputChange(
-            e,
-            setEstructuraToUpdate,
-            handleChange,
-            setDescripcionError,
-          )
-        }
-        style={{ textTransform: 'uppercase' }} // Esto asegura que el texto se muestre en mayúsculas
-      />
+      {/* Campo de Descripción con validación */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Descripción</CInputGroupText>
+        <CFormInput
+          value={estructuraToUpdate.descripcion}
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          onChange={(e) =>
+            handleDescripcionInputChange(
+              e,
+              setEstructuraToUpdate,
+              handleChange,
+              setDescripcionError,
+            )
+          }
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
       {descripcionError && (
         <p style={{ color: 'red', fontSize: '12px' }}>{descripcionError}</p>
       )}
     </CForm>
   </CModalBody>
   <CModalFooter>
+    {/* Botón de Cerrar */}
     <CButton
       color="secondary"
       onClick={() => handleCloseModal(setModalUpdateVisible, resetEstructuraToUpdate)}
     >
       Cerrar
     </CButton>
+    {/* Botón de Guardar con validación */}
     <CButton
       color="primary"
       onClick={() => {
-        // Validación antes de actualizar
+        // Validación para evitar duplicados antes de actualizar
         if (estructuraToUpdate.cod_persona_padre === estructuraToUpdate.cod_persona_estudiante) {
           swal.fire({
             icon: 'warning',
             title: 'Campo inválido',
             text: 'El Padre/Tutor y el Estudiante no pueden ser la misma persona.',
-          })
-          return // Detener la función si hay un error
+          });
+          return;
         }
 
-        // Continuar con la actualización si no hay errores
-        handleUpdateEstructura()
+        // Llamada a la función de actualización si no hay errores
+        handleUpdateEstructura();
       }}
     >
       Guardar
@@ -956,14 +985,15 @@ useEffect(() => {
 </CModal>
 
 
+
       {/* Modal para eliminar una estructura */}
-      <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)}>
+      <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
         </CModalHeader>
         <CModalBody>
           ¿Estás seguro de que deseas eliminar la estructura familiar con el código{' '}
-          {estructuraToDelete.Cod_genialogia}?
+          {estructuraToDelete.Cod_genealogia}?
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
