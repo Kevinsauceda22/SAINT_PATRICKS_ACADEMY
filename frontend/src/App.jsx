@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
 import { AuthProvider } from "../context/AuthProvider";
-import { PermissionProvider } from "../context/AuthPermision";
 
 import RutaProtegida from './layout/RutaProtegida'; // Importa el componente RutaProtegida
 import RutaPublica from './layout/RutaPublica'; // Componente de rutas públicas
@@ -87,7 +86,6 @@ const App = () => {
   return (
     <Router>
       <AuthProvider>
-      <PermissionProvider>
         <Suspense
           fallback={
             <div className="pt-3 text-center">
@@ -160,7 +158,6 @@ const App = () => {
             <Route path="*" element={<Page404 />} /> {/* Manejo de rutas no encontradas */}
           </Routes>
         </Suspense>
-        </PermissionProvider>
 
       </AuthProvider>
     </Router>

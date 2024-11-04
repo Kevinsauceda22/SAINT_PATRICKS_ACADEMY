@@ -32,7 +32,6 @@ const AuthProvider = ({ children }) => {
         };
 
         const { data } = await axios.get(`http://localhost:4000/api/usuarios/perfil/${cod_usuario}`, config);
-        console.log("Datos de la API:", data); // Verifica los datos obtenidos
 
         setAuth(data);
 

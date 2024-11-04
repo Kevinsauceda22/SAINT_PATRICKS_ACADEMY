@@ -4,13 +4,19 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import './UserManagement.css';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
+//GestionUsuarios
 const UserManagement = () => {
+  const { canSelect, loading, error } = usePermission('GestionUsuarios');
+
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [errorMessage, setErrorMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loadingg, setLoadingg] = useState(true);
+
   const [processingUsers, setProcessingUsers] = useState(new Set());
   const loggedInUserId = localStorage.getItem('userId');
   const loggedInUserRole = localStorage.getItem('userRole');
@@ -20,7 +26,7 @@ const UserManagement = () => {
   }, []);
 
   const fetchUsers = async () => {
-    setLoading(true);
+    setLoadingg(true);
     const token = localStorage.getItem('token');
 
     if (!token) {
@@ -30,7 +36,7 @@ const UserManagement = () => {
         icon: 'error',
         confirmButtonText: 'Aceptar',
       });
-      setLoading(false);
+      setLoadingg(false);
       return;
     }
 
@@ -67,7 +73,7 @@ const UserManagement = () => {
       });
       setErrorMessage(error.response?.data?.mensaje || 'Error al cargar usuarios');
     } finally {
-      setLoading(false);
+      setLoadingg(false);
     }
   };
 
@@ -238,6 +244,29 @@ const UserManagement = () => {
     return matchesSearch && matchesStatus;
   });
 
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Manejar errores
+  if (error) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        Error al cargar los permisos. Por favor, intente nuevamente.
+      </div>
+    );
+  }
+
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
   return (
     <div className="user-management">
       <div className="header">
@@ -270,7 +299,7 @@ const UserManagement = () => {
       </div>
 
       <div className="table-container">
-        {loading ? (
+        {loadingg ? (
           <div className="loading-message">Cargando usuarios...</div>
         ) : (
           <>

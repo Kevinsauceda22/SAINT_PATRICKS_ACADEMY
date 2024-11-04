@@ -19,7 +19,8 @@ import {
     getTwoFactorStatus,
     updateTwoFactorAuthStatus,
     actualizarOtp,
-    mostrarRolYCorreo
+    mostrarRolYCorreo,
+    getPermisos
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -31,7 +32,7 @@ const router = express.Router();
 // Obtener todos los usuarios y sus personas asociadas (Protegido por JWT)
 router.get('/Todos-los-usuarios', checkAuth, obtenerUsuarios);
 // Obtener un usuario por su cod_usuario (Protegido por JWT)
-router.get('/:cod_usuario', checkAuth, obtenerUsuarioPorId);
+router.get('user/:cod_usuario', checkAuth, obtenerUsuarioPorId);
 // Mostrar el perfil del usuario autenticado (Protegido por JWT)
 router.get('/perfil/:cod_usuario', checkAuth, mostrarPerfil);
 //ruta para eliminar un usuario completo
@@ -53,6 +54,9 @@ router.post('/update-2fa-status',checkAuth, updateTwoFactorAuthStatus);
 router.put('/actualizarOtp/:cod_usuario', checkAuth, actualizarOtp);
 // Nueva ruta para obtener solo el rol y el correo del usuario
 router.get('/rol-correo/:cod_usuario', checkAuth, mostrarRolYCorreo);
+//obtenerPermisosPorRolYObjeto
+router.get('/permisos', getPermisos);
+
 
 
 

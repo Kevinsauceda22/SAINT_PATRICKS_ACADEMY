@@ -8,7 +8,23 @@ import cors from 'cors';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 
+//con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
+export const obtenerUsuarioPorId = async (req, res) => {
+    try {
+        const [usuario] = await pool.query('CALL ObtenerUsuarioPorID(?)', [req.params.cod_usuario]);
 
+        // Verifica que el resultado tenga longitud y que contenga resultados
+        if (!usuario || usuario.length === 0 || usuario[0].length === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        // Devuelve el primer usuario encontrado
+        res.status(200).json(usuario[0][0]); // Asegúrate de acceder al primer usuario
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: 'Error al obtener el usuario' });
+    }
+};
 
 //este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
@@ -475,23 +491,7 @@ export const confirmarCuenta = async (req, res) => {
         return res.status(500).json({ message: 'Error en la confirmación de cuenta.' });
     }
 };
-//con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
-export const obtenerUsuarioPorId = async (req, res) => {
-    try {
-        const [usuario] = await pool.query('CALL ObtenerUsuarioPorID(?)', [req.params.cod_usuario]);
 
-        // Verifica que el resultado tenga longitud y que contenga resultados
-        if (!usuario || usuario.length === 0 || usuario[0].length === 0) {
-            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
-        }
-
-        // Devuelve el primer usuario encontrado
-        res.status(200).json(usuario[0][0]); // Asegúrate de acceder al primer usuario
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ mensaje: 'Error al obtener el usuario' });
-    }
-};
 
 
 export const eliminarUsuarioCompleto = async (req, res) => {
@@ -988,8 +988,11 @@ export const actualizarOtp = async (req, res) => {
     const { otp_verified } = req.body; // Captura el cuerpo de la solicitud
 
     try {
-        // Actualiza el campo otp_verified en la base de datos
-        await pool.query('UPDATE tbl_usuarios SET otp_verified = ? WHERE cod_usuario = ?', [otp_verified, cod_usuario]);
+        // Actualiza el campo otp_verified y ultima_actualizacion en la base de datos
+        await pool.query(
+            'UPDATE tbl_usuarios SET otp_verified = ?, ultima_actualizacion = NOW() WHERE cod_usuario = ?',
+            [otp_verified, cod_usuario]
+        );
         res.status(200).json({ message: 'Otp verified actualizado exitosamente.' });
     } catch (error) {
         console.error('Error al actualizar otp_verified:', error);
@@ -1029,4 +1032,60 @@ export const mostrarRolYCorreo = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener el rol y correo del usuario' });
     }
 };
+
+// OBTENER TODOS LOS PERMISOS DE UN ROL
+export const getPermisos = async (req, res) => {
+    const { Cod_rol, Nom_objeto } = req.query;
+
+    // Validación de parámetros
+    if (!Cod_rol || !Nom_objeto) {
+        return res.status(400).json({
+            success: false,
+            message: "Cod_rol y Nom_objeto son parámetros requeridos",
+        });
+    }
+
+    try {
+        // Consulta para obtener los permisos directamente
+        const [rows] = await pool.query(
+            `SELECT
+                sa.Permiso_Modulo,
+                sa.Permiso_Consultar,
+                sa.Permiso_Insercion,
+                sa.Permiso_Actualizacion,
+                sa.Permiso_Eliminacion
+            FROM
+                tbl_permisos sa
+            JOIN tbl_objetos so ON
+                sa.Cod_Objeto = so.Cod_Objeto
+            WHERE
+                sa.Cod_Rol = ? AND so.Nom_objeto = ?`,
+            [Cod_rol, Nom_objeto]
+        );
+
+        // Verificar si hay resultados
+        if (rows.length === 0) {
+            return res.status(200).json({
+                success: true,
+                permissions: []
+            });
+        }
+
+        // Devolver los permisos encontrados
+        res.status(200).json({
+            success: true,
+            permissions: rows // Devuelve el array completo de permisos
+        });
+    } catch (error) {
+        console.error('Error en el controlador:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Error al procesar la solicitud de permisos",
+            error: error.message
+        });
+    }
+};
+
+  
+
 
