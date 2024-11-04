@@ -1,6 +1,9 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Calendar, Clock, Book, Award, User, Activity } from 'lucide-react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const styles = {
   dashboard: {
@@ -126,6 +129,8 @@ const styles = {
 };
 
 const ParentDashboard = () => {
+  const { canSelect, loading, error } = usePermission('PaginaPrincipal');
+
   const attendanceData = [
     { mes: 'Ene', asistencia: 95 },
     { mes: 'Feb', asistencia: 98 },
@@ -146,6 +151,11 @@ const ParentDashboard = () => {
     { fecha: '10 Nov', evento: 'Exposición de ciencias' },
     { fecha: '15 Nov', evento: 'Festival deportivo' },
   ];
+
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
 
   return (
     <div style={styles.dashboard}>

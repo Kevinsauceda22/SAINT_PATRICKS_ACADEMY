@@ -14,7 +14,11 @@ import {
   CTableDataCell,
 } from '@coreui/react';
 
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 const ListaAsistencia = () => {
+  const { canSelect, loading, error } = usePermission('ListaAsistencia');
   const [secciones, setSecciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -56,6 +60,12 @@ const ListaAsistencia = () => {
       fetchAlumnosPorSeccion(codSeccion);
     }
   };
+
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+
 
   return (
     <CContainer>
@@ -108,6 +118,18 @@ const ListaAsistencia = () => {
       </CRow>
     </CContainer>
   );
+
+  return { 
+    canSelect, 
+    canInsert, 
+    canUpdate, 
+    canDelete, 
+    hasAccess, 
+    loading,
+    error,
+    permissions 
+  };
+
 };
 
 export default ListaAsistencia;

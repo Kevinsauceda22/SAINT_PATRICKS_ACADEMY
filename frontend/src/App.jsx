@@ -27,7 +27,7 @@ const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPa
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
 const Perfil = React.lazy(() => import('./views/pages/profile/profile'));
 const TwoAuthFA = React.lazy(() => import('./views/pages/2FA/2fa'));
-const ListaActiviadesAca = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAca.jsX'));
+const ListaActiviadesAca = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAca'));
 const ListaAsigaturas = React.lazy(() => import('./views/pages/calificaciones/ListaAsignaturas'));
 const ListaAsistencia = React.lazy(() => import('./views/pages/calificaciones/ListaAsistencia'));
 const ListaCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaCiclos'));
@@ -62,6 +62,7 @@ const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos'))
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
 const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhijo')) 
 const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
+const Procedencia = React.lazy(() => import('./views/pages/matricula/ListaHistoricoProc')) 
 
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
@@ -130,6 +131,7 @@ const App = () => {
                 <Route path="/ListaAsistencia" element={<ListaAsistencia />} />
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
+                <Route path="/ListaHistoricoProc" element={<Procedencia />} />
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
                 <Route path="/ListaEstadoasistencia" element={<ListaEstadoasistencia />} />
                 <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />

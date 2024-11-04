@@ -26,9 +26,11 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaEstadoasistencia = () => {
+  const { canSelect, loading, error } = usePermission('ListaEspecialidades');
   const [estadoasistencia, setEstadoasistencia] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear un estado asistencia
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar un estado asistencia
@@ -388,6 +390,12 @@ const ListaEstadoasistencia = () => {
       setCurrentPage(pageNumber);
     }
   };
+
+     // Verificar permisos
+     if (!canSelect) {
+      return <AccessDenied />;
+    }
+  
 
  return (
   <CContainer>

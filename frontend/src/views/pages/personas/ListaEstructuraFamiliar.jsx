@@ -36,10 +36,13 @@ import {
   CDropdownMenu,
   CDropdownItem
 } from '@coreui/react';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaEstructuraFamiliar = () => {
+  const { canSelect, loading, error } = usePermission('ListaEstructura');
+
   const [estructuraFamiliar, setEstructuraFamiliar] = useState([]);
   const [errors, setErrors] = useState({ descripcion: '', cod_persona_padre: '', cod_persona_estudiante: '', cod_tipo_relacion: ''});
   const [modalVisible, setModalVisible] = useState(false);
@@ -497,6 +500,11 @@ useEffect(() => {
       setCurrentPage(pageNumber);
     }
   };
+
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
 
 
   return (
@@ -1006,5 +1014,16 @@ useEffect(() => {
       </CModal>
     </CContainer>
   )
+  return { 
+    canSelect, 
+    canInsert, 
+    canUpdate, 
+    canDelete, 
+    hasAccess, 
+    loading,
+    error,
+    permissions 
+  };
+
 };
 export default ListaEstructuraFamiliar;

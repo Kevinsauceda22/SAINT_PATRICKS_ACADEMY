@@ -26,9 +26,11 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaEstadonota = () => {
+  const { canSelect, loading, error } = usePermission('ListaEstadonota');
   const [estadonota, setEstadonota] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear un estado nota
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar un estado nota
@@ -391,6 +393,12 @@ const paginate = (pageNumber) => {
   }
 }
 
+
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
+
 return (
   <CContainer>
     {/* Contenedor del h1 y botón "Nuevo" */}
@@ -622,6 +630,17 @@ return (
     </CModal>
  </CContainer>
   );
+
+  return { 
+    canSelect, 
+    canInsert, 
+    canUpdate, 
+    canDelete, 
+    hasAccess, 
+    loading,
+    error,
+    permissions 
+  };
 };
 
 

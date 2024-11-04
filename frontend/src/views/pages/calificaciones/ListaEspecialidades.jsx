@@ -26,8 +26,12 @@ import {
   CCol,
   CFormSelect,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const ListaEspecialidades = () => {
+  const { canSelect, loading, error } = usePermission('ListaEspecialidades');
   const [especialidades, setEspecialidades] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
@@ -347,6 +351,12 @@ const valdiarEspecialidad = () => {
     setSearchTerm(input);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
+
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+  
 
 
   return (

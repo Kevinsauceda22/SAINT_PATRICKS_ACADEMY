@@ -27,9 +27,12 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaAsignaturas = () => {
+  const { canSelect, loading, error } = usePermission('ListaAsignaturas');
+
   const [Asignaturas, setAsignatura] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ciclo
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar ciclo
@@ -348,6 +351,11 @@ const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
   }
 }
+
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
  return (
   <CContainer>
     
@@ -618,6 +626,10 @@ const paginate = (pageNumber) => {
     </CModal>
  </CContainer>
   );
+
+
+
+
 };
 
 
