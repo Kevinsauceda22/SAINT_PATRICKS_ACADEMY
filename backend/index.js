@@ -26,7 +26,8 @@ import diasRoutes from './module/matricula/Routes/diasRoutes.js';
 import historicoprocRoutes from './module/matricula/Routes/historicoprocRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
-import personasRoutes from "./module/personas/personaRoutes.js"
+import personaRoutes from "./module/personas/Routes/personasRoutes.js";
+import personasRoutes from "./module/personas/personaRoutes.js";
 import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
 import tipomatriculaRoutes from './module/matricula/Routes/tipomatriculaRoutes.js';
 import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRoutes.js';
@@ -134,9 +135,11 @@ app.use('/api/solicitud', solicitudRoutes);
 app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 
 // Rutas para manejar personas
-app.use('/api/personas', personasRoutes); // Añadir ruta para personas
+app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
+
+app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 
 
 //contabilidad
