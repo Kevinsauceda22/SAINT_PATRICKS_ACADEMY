@@ -18,28 +18,6 @@ export const obtenerEstructuraFamiliar = async (req, res) => {
     }
 };
 
-
-// Controlador para obtener las personas
-export const obtenerPersonas = async (req, res) => {
-    try {
-        const [rows] = await pool.query('CALL P_Get_Personas()');
-
-        if (rows[0].length > 0) {
-            const personas = rows[0].map(persona => ({
-                cod_persona: persona.cod_persona,
-                fullName: `${persona.Nombre} ${persona.Segundo_nombre} ${persona.Primer_apellido} ${persona.Segundo_Apellido}`
-            }));
-            res.status(200).json(personas);
-        } else {
-            res.status(404).json({ message: 'No se encontraron personas' });
-        }
-    } catch (error) {
-        console.error('Error al obtener las personas:', error);
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
-    }
-};
-
-//Controlador para obtener tipo de relaciones 
 export const obtenerTipoRelacion = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL P_Get_TipoRelacion()');
@@ -60,7 +38,37 @@ export const obtenerTipoRelacion = async (req, res) => {
     }
 };
 
+// Controlador para obtener las personas
+export const obtenerPersonas = async (req, res) => {
+    const { rol } = req.query; // Obtenemos el rol de los parámetros de consulta (opcional)
 
+    try {
+        let query = 'CALL P_Get_Personas()';
+        
+        if (rol) {
+            query += ` WHERE Cod_tipo_persona = ?`; // Filtrar por rol si se proporciona
+        }
+        
+        const [rows] = rol 
+            ? await pool.query(query, [rol]) 
+            : await pool.query(query);
+
+        if (rows[0].length > 0) {
+            const personas = rows[0].map(persona => ({
+                cod_persona: persona.cod_persona,
+                fullName: `${persona.Nombre} ${persona.Segundo_nombre} ${persona.Primer_apellido} ${persona.Segundo_Apellido}`,
+                dni: persona.dni_persona,
+                rol: persona.Cod_tipo_persona
+            }));
+            res.status(200).json(personas);
+        } else {
+            res.status(404).json({ message: 'No se encontraron personas' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las personas:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
 
 //Controlador para crear 
 export const crearEstructuraFamiliar = async (req, res) => {
