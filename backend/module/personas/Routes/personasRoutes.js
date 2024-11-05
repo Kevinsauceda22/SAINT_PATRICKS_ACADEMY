@@ -1,6 +1,7 @@
 import express from 'express';
 import {
         obtenerPersonas,
+        obtenerDetallePersona,
         crearPersona,
         actualizarPersona,
         eliminarPersona,

@@ -241,6 +241,11 @@ const _nav = [
       },
       {
         component: CNavItem,
+        name: 'Personas',
+        to: '/ListaPersonas',
+      },
+      {
+        component: CNavItem,
         name: 'Roles',
         to: '/ListaRoles',
       },
