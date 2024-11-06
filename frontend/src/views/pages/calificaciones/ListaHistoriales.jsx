@@ -26,8 +26,13 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const ListaHistoriales = () => {
+  const { canSelect, loading } = usePermission('ListaHistorial');
+
   const [historiales, setHistoriales] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [nuevoHistorial, setNuevoHistorial] = useState({ Promedio_Anual: 0 });
@@ -354,6 +359,11 @@ const ListaHistoriales = () => {
     // Puede ser una descarga o visualización de un nuevo componente/modal, por ejemplo:
     console.log('Generando reporte...');
   };
+
+   // Verificar permisos
+   if (!canSelect) {
+    return <AccessDenied />;
+  }
 
   return (
     <CContainer>

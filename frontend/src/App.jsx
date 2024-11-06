@@ -63,6 +63,8 @@ const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/Pagina
 const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhijo')) 
 const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
 const Procedencia = React.lazy(() => import('./views/pages/matricula/ListaHistoricoProc')) 
+const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
+
 
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
@@ -132,6 +134,8 @@ const App = () => {
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
                 <Route path="/ListaHistoricoProc" element={<Procedencia />} />
+                <Route path="/ListaHistoriales" element={<ListaHistoriales />} />
+
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
                 <Route path="/ListaEstadoasistencia" element={<ListaEstadoasistencia />} />
                 <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />

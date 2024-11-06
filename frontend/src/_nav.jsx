@@ -119,8 +119,8 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Permisos',
-        to: '/ListaPermisos',
+        name: 'Historial Academico',
+        to: '/ListaHistoriales',
       },
       {
         component: CNavItem,
@@ -165,7 +165,7 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Lista de Actividades',
-        to: '/ListaActivex',
+        to: '/actividades',
       },
       {
         component: CNavItem,
@@ -177,6 +177,12 @@ const _nav = [
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
       },
+
+      {
+        component: CNavItem,
+        name: 'Cuentas Contables',
+        to: '/Contabilidad',
+      },
     ],
   },
   {
@@ -186,24 +192,20 @@ const _nav = [
     items: [
       {
         component: CNavItem,
-        name: 'Pagos',
-        to: '/ListaPagos',
+        name: 'Pagos Matricula',
+        to: '/ListaPagosMatricula',
       },
       {
         component: CNavItem,
-        name: 'Historial de Pagos',
-        to: '/HistorialPagos',
+        name: 'Historial de Pagos Mensuales',
+        to: '/HistorialPagosMensuales',
       },
-      {
-        component: CNavItem,
-        name: 'Estado de Cuenta',
-        to: '/Contabilidad',
-      },
+     
       {
         component: CNavItem,
         name: 'Libro Diario', // Nueva opción agregada
         to: '/LibroDiario', // Ruta del libro diario
-        icon: cilBook, // Puedes agregar un icono si lo deseas
+         // Puedes agregar un icono si lo deseas
       },
     ],
   },
@@ -239,11 +241,7 @@ const _nav = [
         name: 'Usuarios',
         to: '/UserMagnament',
       },
-      {
-        component: CNavItem,
-        name: 'Roles',
-        to: '/ListaRoles',
-      },
+     
       {
         component: CNavItem,
         name: 'Permisos',

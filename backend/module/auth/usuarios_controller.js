@@ -1046,7 +1046,7 @@ export const getPermisos = async (req, res) => {
     }
 
     try {
-        // Consulta para obtener los permisos directamente
+        // Consulta para obtener los permisos directamenteeeeeeeeeeeeee
         const [rows] = await pool.query(
             `SELECT
                 sa.Permiso_Modulo,
@@ -1074,7 +1074,7 @@ export const getPermisos = async (req, res) => {
         // Devolver los permisos encontrados
         res.status(200).json({
             success: true,
-            permissions: rows // Devuelve el array completo de permisos
+            permissions: rows // Devuelve el array completo de permisoszssssssss
         });
     } catch (error) {
         console.error('Error en el controlador:', error);

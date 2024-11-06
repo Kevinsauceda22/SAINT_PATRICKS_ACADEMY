@@ -27,7 +27,8 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaTipoContratos = () => {
   const [tiposContratos, setTiposContratos] = useState([]);
@@ -342,6 +343,12 @@ const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
   }
 }
+
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
+
   return (
     <CContainer>
       {/*Contenedor del hi y boton "nuevo" */}

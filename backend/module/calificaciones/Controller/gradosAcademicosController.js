@@ -5,7 +5,7 @@ const pool = await conectarDB();
 // Obtener todos los grados académicos
 export const obtenerGradosAcademicos = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL get_all_grado_academico()');
+        const [rows] = await pool.query('CALL get_all_grado_academico()'); 
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);

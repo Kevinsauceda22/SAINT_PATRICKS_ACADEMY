@@ -26,9 +26,13 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaGrados = () => {
+  const { canSelect, loading, error } = usePermission('ListaGrados');
+
   const [grados, setGrados] = useState([]);
   const [ciclos, setCiclos] = useState([]); // Estado para almacenar los ciclos
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear grado
@@ -365,6 +369,11 @@ const ListaGrados = () => {
       setCurrentPage(pageNumber);
     }
   };
+
+   // Verificar permisos
+   if (!canSelect) {
+    return <AccessDenied />;
+  }
 
   return (
     <CContainer>

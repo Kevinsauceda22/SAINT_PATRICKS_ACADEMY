@@ -30,8 +30,12 @@ import {
   CTableBody,
   CTableDataCell,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaActividades = () => {
+  const { canSelect } = usePermission('actividades');
+
   const [actividades, setActividades] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
@@ -330,6 +334,12 @@ const ListaActividades = () => {
       setCurrentPage(pageNumber);
     }
   };
+     // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
+
 
   return (
     <CContainer>

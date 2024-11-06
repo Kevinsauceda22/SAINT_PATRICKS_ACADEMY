@@ -26,9 +26,13 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaPonderaciones = () => {
+  const { canSelect, loading, error } = usePermission('ListaPonderaciones');
+
   const [Ponderaciones, setPonderaciones] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ponderaciones
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar ponderaciones
@@ -332,6 +336,12 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
   setCurrentPage(pageNumber);
 }
 }
+
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
+
 
   return (
     <CContainer>

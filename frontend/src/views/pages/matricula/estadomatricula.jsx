@@ -33,8 +33,12 @@ import { BsCheckCircle, BsExclamationCircle, BsDashCircle, BsXCircle } from 'rea
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const EstadoMatricula = () => {
+  const { canSelect } = usePermission('estadomatricula');
   const [estados, setEstados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -214,6 +218,12 @@ const EstadoMatricula = () => {
   const currentItems = filteredEstados.slice(indexOfFirstItem, indexOfLastItem);
 
   const pageCount = Math.ceil(filteredEstados.length / itemsPerPage);
+
+     // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
 
   return (
     <CContainer>

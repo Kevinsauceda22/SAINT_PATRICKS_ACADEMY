@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const styles = `
   .catalogo-container {
@@ -220,6 +222,7 @@ const styles = `
 `;
 
 const CatalogoContable = () => {
+  const { canSelect } = usePermission('Contabilidad');
   const [cuentas, setCuentas] = useState([]);
   const [filteredCuentas, setFilteredCuentas] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -409,6 +412,11 @@ const CatalogoContable = () => {
   
     doc.save('catalogo-cuentas.pdf');
   };
+
+       // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
 
   return (
     <div className="catalogo-container">

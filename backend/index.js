@@ -38,6 +38,7 @@ import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
 import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
 import catalogoCuentasRoutes from './module/Contabilidad/Contabilidad_routes.js'; // Cambia la ruta según tu estructura de carpetas
 import libroDiarioRoutes from './module/Contabilidad/librodiario_routes.js'; // Asegúrate de usar la ruta correcta
+import PermisosRoutes from './module/Permisos/Permisos_routes.js'; // Asegúrate de usar la ruta correcta
 
 
 
@@ -72,6 +73,8 @@ app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes
 // Autenticación y seguridad
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/usuarios', usuariosRoutes); 
+
+app.use('/api/roles', PermisosRoutes); 
 
 // Calificaciones
 // Rutas para los profesores para poder agregar, modificar, eliminar y obtener profesores

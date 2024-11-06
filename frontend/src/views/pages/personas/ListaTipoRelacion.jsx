@@ -35,7 +35,12 @@ import {
   CDropdownItem
 } from '@coreui/react';
 
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 const ListaTipoRelacion = () => {
+  const { canSelect, loading, error } = usePermission('ListaRelacion');
+
   const [tipoRelacion, setTipoRelacion] = useState([]);
   const [errors, setErrors] = useState({ tipo_relacion: ''});
   const [relacionError, setRelacionError] = useState('');
@@ -440,6 +445,10 @@ const exportToPDF = () => {
   // Descarga el archivo PDF
   doc.save('reporte_tipo_relación.pdf');
 };
+ // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
 
   return (
     <CContainer>

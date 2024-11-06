@@ -26,9 +26,13 @@ import {
   CRow,
   CCol,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaParciales = () => {
+  const { canSelect, loading, error } = usePermission('ListaParciales');
+
   const [Parciales, setParciales] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ciclo
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar ciclo
@@ -347,6 +351,13 @@ const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
   }
 }
+
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
+
+  
  return (//boton de busqueda
   <CContainer>
     {/* Contenedor del h1 y botón "Nuevo" */}

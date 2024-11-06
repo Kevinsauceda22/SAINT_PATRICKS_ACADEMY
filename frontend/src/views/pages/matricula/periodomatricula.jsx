@@ -32,8 +32,12 @@ import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const PeriodosMatricula = () => {
+  const { canSelect } = usePermission('periodomatricula');
+
   const [periodos, setPeriodos] = useState([]);
   const [filteredPeriodos, setFilteredPeriodos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -301,7 +305,10 @@ const PeriodosMatricula = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Periodos de Matrícula');
     XLSX.writeFile(workbook, 'Reporte_Periodos_Matricula.xlsx');
   };
-
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
   return (
     <CContainer>
       <CRow className="align-items-center mb-5">

@@ -34,8 +34,12 @@ import {
     CTableBody,
     CTableDataCell,
   } from '@coreui/react';
+  import usePermission from '../../../../context/usePermission';
+  import AccessDenied from "../AccessDenied/AccessDenied"
+  
 
   const ListaDias = () => {
+    const { canSelect } = usePermission('dias');
   const [dias, setDias] = useState([{ dias: '' }]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear un nuevo día
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar un día
@@ -385,6 +389,12 @@ const handleDeleteDia = async () => {
       setCurrentPage(pageNumber);
     }
   };
+
+     // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
 
 
 

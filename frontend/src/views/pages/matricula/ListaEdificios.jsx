@@ -30,8 +30,13 @@ import {
   CTableBody,
   CTableDataCell,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const ListaEdificios = () => {
+  const { canSelect } = usePermission('edificios');
+
   // Estados de la aplicación
   const [edificios, setEdificios] = useState([]); // Estado que almacena la lista de edificios
   const [errors, setErrors] = useState({ Numero_pisos: '', Aulas_disponibles: '', pisosVsAulas: '' }); // Estado para gestionar los errores de validación
@@ -417,6 +422,10 @@ const ListaEdificios = () => {
       setCurrentPage(pageNumber);
     }
   };
+   // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
 
   return (
     <CContainer>

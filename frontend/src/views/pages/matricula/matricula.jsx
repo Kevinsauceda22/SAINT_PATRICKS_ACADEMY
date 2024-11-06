@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const MatriculaList = () => {
+
     const navigate = useNavigate();
     const [matriculas, setMatriculas] = useState([]);
     const [error, setError] = useState('');
@@ -25,6 +28,8 @@ const MatriculaList = () => {
         Codificacion_matricula: '',
         fecha_matricula: '',
     });
+
+    
     
     const [currentPage, setCurrentPage] = useState(0);
     const totalPages = 4; // Total de secciones
@@ -247,6 +252,12 @@ const MatriculaList = () => {
     useEffect(() => {
         obtenerMatriculas();
     }, []);
+
+    // Verificar permisos
+ if (!canSelect) {
+    return <AccessDenied />;
+  }
+  
 
     return (
 <div className="container mt-4">
