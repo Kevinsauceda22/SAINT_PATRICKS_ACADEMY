@@ -4,8 +4,7 @@ import {
         obtenerDetallePersona,
         crearPersona,
         actualizarPersona,
-        eliminarPersona,
-        obtenerDetallePersona
+        eliminarPersona
 
 } from '../Controllers/personasController.js'; // Asegúrate de que esta ruta sea correcta
 
