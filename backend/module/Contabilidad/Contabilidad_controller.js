@@ -5,9 +5,10 @@ const pool = await conectarDB();
 
 // Función para agregar una nueva cuenta
 export const agregarCuenta = async (req, res) => {
-    const { nombre_cuenta, descripcion, naturaleza_cuenta, nivel } = req.body;
+    const { nombre_cuenta, descripcion, tipo, naturaleza_cuenta, estado_sf, nivel } = req.body;
     try {
-        const [result] = await pool.query('CALL sp_agregar_catalogo_cuenta(?, ?, ?, ?)', [nombre_cuenta, descripcion, naturaleza_cuenta, nivel]);
+    const { nombre_cuenta, descripcion, tipo, naturaleza_cuenta, estado_sf, nivel } = req.body;
+        const [result] = await pool.query('CALL sp_agregar_catalogo_cuenta(?, ?, ?, ?, ?, ?)', [nombre_cuenta, descripcion, tipo ,naturaleza_cuenta, estado_sf, nivel]);
         res.status(201).json({ cod_cuenta: result[0].cod_cuenta });
     } catch (error) {
         console.error(error);
@@ -17,19 +18,21 @@ export const agregarCuenta = async (req, res) => {
 
 export const editarCuenta = async (req, res) => {
     const { cod_cuenta } = req.params;
-    const { nombre_cuenta, descripcion, naturaleza_cuenta, nivel } = req.body;
+    const { nombre_cuenta, descripcion, tipo, naturaleza_cuenta, estado_sf, nivel } = req.body;
 
     // Agregar un log para verificar los valores que se están pasando
     console.log('Actualizando cuenta con:', {
         cod_cuenta,
         nombre_cuenta,
+        tipo,
         descripcion,
         naturaleza_cuenta,
+        estado_sf,
         nivel
     });
 
     try {
-        const [result] = await pool.query('CALL sp_editar_catalogo_cuenta(?, ?, ?, ?, ?)', [cod_cuenta, nombre_cuenta, descripcion, naturaleza_cuenta, nivel]);
+        const [result] = await pool.query('CALL sp_editar_catalogo_cuenta(?, ?, ?, ?, ?, ?, ?)', [nombre_cuenta, descripcion, tipo, naturaleza_cuenta, estado_sf, nivel]);
         
         res.status(200).json({ message: 'Cuenta actualizada correctamente' });
     } catch (error) {

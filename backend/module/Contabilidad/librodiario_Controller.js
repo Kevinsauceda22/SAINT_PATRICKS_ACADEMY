@@ -5,9 +5,9 @@ const pool = await conectarDB();
 
 // Función para agregar un nuevo registro en el libro diario
 export const agregarRegistro = async (req, res) => {
-    const { Fecha, Descripcion, Cod_cuenta, Monto, Tipo_transaccion } = req.body;
+    const { Fecha, Descripcion, Cod_cuenta, Monto } = req.body;
     try {
-        const [result] = await pool.query('CALL sp_agregar_libro_diario(?, ?, ?, ?, ?)', [Fecha, Descripcion, Cod_cuenta, Monto, Tipo_transaccion]);
+        const [result] = await pool.query('CALL sp_agregar_libro_diario(?, ?, ?, ?)', [Fecha, Descripcion, Cod_cuenta, Monto]);
         res.status(201).json({ cod_libro_diario: result[0].Cod_libro_diario });
     } catch (error) {
         console.error(error);
@@ -18,7 +18,7 @@ export const agregarRegistro = async (req, res) => {
 // Función para editar un registro en el libro diario
 export const editarRegistro = async (req, res) => {
     const { cod_libro_diario } = req.params;
-    const { Fecha, Descripcion, Cod_cuenta, Monto, Tipo_transaccion } = req.body;
+    const { Fecha, Descripcion, Cod_cuenta, Monto} = req.body;
 
     // Agregar un log para verificar los valores que se están pasando
     console.log('Actualizando registro con:', {
@@ -26,12 +26,11 @@ export const editarRegistro = async (req, res) => {
         Fecha,
         Descripcion,
         Cod_cuenta,
-        Monto,
-        Tipo_transaccion
+        Monto
     });
 
     try {
-        await pool.query('CALL sp_editar_libro_diario(?, ?, ?, ?, ?, ?)', [cod_libro_diario, Fecha, Descripcion, Cod_cuenta, Monto, Tipo_transaccion]);
+        await pool.query('CALL sp_editar_libro_diario(?, ?, ?, ?, ?)', [cod_libro_diario, Fecha, Descripcion, Cod_cuenta, Monto]);
         res.status(200).json({ message: 'Registro actualizado correctamente' });
     } catch (error) {
         console.error(error);
