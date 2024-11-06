@@ -18,6 +18,7 @@ export const obtenerPersonas = async (req, res) => {
     }
 };
 
+
 // Mostrar detalle de una persona
 export const obtenerDetallePersona = async (req, res) => {
     const { cod_persona } = req.params; // Obtiene el código de la persona desde la URL
@@ -35,6 +36,8 @@ export const obtenerDetallePersona = async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
 };
+
+
 
 //API para crear persona
 export const crearPersona = async (req, res) => {
@@ -54,84 +57,67 @@ export const crearPersona = async (req, res) => {
     } = req.body;
 
     const connection = await pool.getConnection();
-    const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/; // Solo letras, acentos y espacios
+    const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
+
+    const tieneLetrasRepetidas = (texto) => {
+        const regex = /(.)\1{3,}/; 
+        return regex.test(texto.replace(/\s/g, '')); 
+    };
+
+    const tieneEspaciosMultiples = (texto) => {
+        return /\s{2,}/.test(texto); 
+    };
 
     try {
-        // Validación de DNI (13 dígitos exactos)
+        // Validación de DNI
         if (!/^\d{13}$/.test(dni_persona)) {
             return res.status(400).json({ mensaje: 'El DNI debe tener exactamente 13 dígitos.' });
         }
 
-        // Validación de los primeros cuatro dígitos del DNI (rango 0101 a 0909)
+        // Validación de los primeros cuatro dígitos del DNI
         const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
         if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
             return res.status(400).json({ mensaje: 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.' });
         }
 
-        // Validación del año de nacimiento en el DNI (1920 a 2020)
+        // Validación del año de nacimiento en el DNI
         const añoNacimientoDNI = parseInt(dni_persona.substring(4, 8));
         if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
             return res.status(400).json({ mensaje: 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.' });
         }
 
-        // Validación del campo "Nombre"
-        if (Nombre.length < 2 || Nombre.length > 50) {
-            return res.status(400).json({ mensaje: 'El nombre debe tener entre 2 y 50 caracteres.' });
-        }
-        if (!soloLetrasRegex.test(Nombre)) {
-            return res.status(400).json({ mensaje: 'Nombre no válido. El nombre solo puede contener letras y acentos.' });
-        }
-
-        // Validación del campo "Segundo_nombre" (si está presente)
-        if (Segundo_nombre && Segundo_nombre.length > 0) {
-            if (Segundo_nombre.length < 2 || Segundo_nombre.length > 50) {
-                return res.status(400).json({ mensaje: 'Segundo nombre debe tener entre 2 y 50 caracteres.' });
+        // Función para validar un campo de texto
+        const validarCampo = (campo, nombreCampo) => {
+            if (tieneLetrasRepetidas(campo)) {
+                return res.status(400).json({ mensaje: `${nombreCampo} no puede contener la misma letra más de 3 veces consecutivas.` });
             }
-            if (!soloLetrasRegex.test(Segundo_nombre)) {
-                return res.status(400).json({ mensaje: 'Segundo nombre no válido. El segundo nombre solo puede contener letras y acentos.' });
+            if (tieneEspaciosMultiples(campo)) {
+                return res.status(400).json({ mensaje: `${nombreCampo} no puede tener más de un espacio consecutivo.` });
             }
-        }
+        };
 
-        // Validación del campo "Primer_apellido"
-        if (Primer_apellido.length < 2 || Primer_apellido.length > 50) {
-            return res.status(400).json({ mensaje: 'Primer apellido debe tener entre 2 y 50 caracteres.' });
-        }
-        if (!soloLetrasRegex.test(Primer_apellido)) {
-            return res.status(400).json({ mensaje: 'Primer apellido no válido. El primer apellido solo puede contener letras y acentos.' });
-        }
-
-        // Validación del campo "Segundo_apellido" (si está presente)
-        if (Segundo_apellido && Segundo_apellido.length > 0) {
-            if (Segundo_apellido.length < 2 || Segundo_apellido.length > 50) {
-                return res.status(400).json({ mensaje: 'Segundo apellido debe tener entre 2 y 50 caracteres.' });
-            }
-            if (!soloLetrasRegex.test(Segundo_apellido)) {
-                return res.status(400).json({ mensaje: 'Segundo apellido no válido. El segundo apellido solo puede contener letras y acentos.' });
-            }
-        }
-
-        // Validación del campo "Nacionalidad" (si está presente)
-        if (Nacionalidad && Nacionalidad.length > 0) {
-            if (!soloLetrasRegex.test(Nacionalidad)) {
-                return res.status(400).json({ mensaje: 'Nacionalidad no válida. La nacionalidad solo puede contener letras y acentos.' });
-            }
-        }
-
-        // Validación de la fecha de nacimiento (entre 1920 y 2020)
+        // Validación de la fecha de nacimiento
         const fechaNacimiento = new Date(fecha_nacimiento);
         const añoNacimiento = fechaNacimiento.getFullYear();
         if (añoNacimiento < 1920 || añoNacimiento > 2020) {
             return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1920 y 2020.' });
         }
 
-        // Verificación si el DNI ya existe
-        const [existingPerson] = await connection.query(
-            'SELECT * FROM tbl_personas WHERE dni_persona = ?',
-            [dni_persona]
-        );
+        // Validaciones
+        const validaciones = [
+            { campo: Nombre, nombreCampo: 'El nombre' },
+            { campo: Segundo_nombre, nombreCampo: 'El segundo nombre', optional: true },
+            { campo: Primer_apellido, nombreCampo: 'El primer apellido' },
+            { campo: Segundo_apellido, nombreCampo: 'El segundo apellido', optional: true },
+            { campo: Nacionalidad, nombreCampo: 'La nacionalidad' },
+            { campo: direccion_persona, nombreCampo: 'La dirección' } // Validación para dirección
+        ];
 
-        if (existingPerson.length > 0) {
-            return res.status(400).json({ mensaje: 'El DNI ya existe en el sistema' });
+        for (const { campo, nombreCampo, optional } of validaciones) {
+            if (campo || optional) { // Solo validar si el campo es obligatorio o está presente
+                const error = validarCampo(campo, nombreCampo);
+                if (error) return error; // Si hay un error, retorna la respuesta y evita continuar
+            }
         }
 
         // Crear la nueva persona con el procedimiento almacenado
@@ -156,11 +142,14 @@ export const crearPersona = async (req, res) => {
         res.status(201).json({ mensaje: 'Persona creada exitosamente' });
     } catch (error) {
         console.error('Error al crear la persona:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+        if (!res.headersSent) { // Verifica si los encabezados ya han sido enviados
+            res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+        }
     } finally {
         connection.release();
     }
 };
+
 
 
 
@@ -185,6 +174,17 @@ export const actualizarPersona = async (req, res) => {
 
     const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/; // Solo letras, acentos y espacios
 
+    // Función para validar letras repetidas
+    const tieneLetrasRepetidas = (texto) => {
+        const regex = /(.)\1{3,}/; 
+        return regex.test(texto.replace(/\s/g, '')); // Elimina espacios para la validación
+    };
+
+    // Función para validar espacios múltiples
+    const tieneEspaciosMultiples = (texto) => {
+        return /\s{2,}/.test(texto); 
+    };
+
     try {
         // Validación de DNI (13 dígitos exactos)
         if (!/^\d{13}$/.test(dni_persona)) {
@@ -204,20 +204,27 @@ export const actualizarPersona = async (req, res) => {
         }
 
         // Validaciones de longitud y formato para los campos de texto
-        if (Nombre.length < 2 || Nombre.length > 50 || !soloLetrasRegex.test(Nombre)) {
-            return res.status(400).json({ mensaje: 'Nombre no válido. Debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.' });
-        }
-        if (Segundo_nombre && (Segundo_nombre.length < 2 || Segundo_nombre.length > 50 || !soloLetrasRegex.test(Segundo_nombre))) {
-            return res.status(400).json({ mensaje: 'Segundo nombre no válido. Debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.' });
-        }
-        if (Primer_apellido.length < 2 || Primer_apellido.length > 50 || !soloLetrasRegex.test(Primer_apellido)) {
-            return res.status(400).json({ mensaje: 'Primer apellido no válido. Debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.' });
-        }
-        if (Segundo_apellido && (Segundo_apellido.length < 2 || Segundo_apellido.length > 50 || !soloLetrasRegex.test(Segundo_apellido))) {
-            return res.status(400).json({ mensaje: 'Segundo apellido no válido. Debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.' });
-        }
-        if (Nacionalidad && !soloLetrasRegex.test(Nacionalidad)) {
-            return res.status(400).json({ mensaje: 'Nacionalidad no válida. Solo puede contener letras y acentos.' });
+        const validaciones = [
+            { campo: Nombre, nombreCampo: 'El nombre' },
+            { campo: Segundo_nombre, nombreCampo: 'El segundo nombre', optional: true },
+            { campo: Primer_apellido, nombreCampo: 'El primer apellido' },
+            { campo: Segundo_apellido, nombreCampo: 'El segundo apellido', optional: true },
+            { campo: Nacionalidad, nombreCampo: 'La nacionalidad', optional: true },
+            { campo: direccion_persona, nombreCampo: 'La dirección' } // Validación para dirección
+        ];
+
+        for (const { campo, nombreCampo, optional } of validaciones) {
+            if (campo || optional) { // Solo validar si el campo es obligatorio o está presente
+                if (tieneLetrasRepetidas(campo)) {
+                    return res.status(400).json({ mensaje: `${nombreCampo} no puede contener la misma letra más de 3 veces consecutivas.` });
+                }
+                if (tieneEspaciosMultiples(campo)) {
+                    return res.status(400).json({ mensaje: `${nombreCampo} no puede tener más de un espacio consecutivo.` });
+                }
+                if (campo.length < 2 || campo.length > 50 || !soloLetrasRegex.test(campo)) {
+                    return res.status(400).json({ mensaje: `${nombreCampo} no válido. Debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.` });
+                }
+            }
         }
 
         // Validación de la fecha de nacimiento
@@ -270,3 +277,4 @@ export const eliminarPersona = async (req, res) => {
         connection.release();
     }
 };
+
