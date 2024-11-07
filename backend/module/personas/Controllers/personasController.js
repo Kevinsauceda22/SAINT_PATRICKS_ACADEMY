@@ -19,6 +19,7 @@ export const obtenerPersonas = async (req, res) => {
 };
 
 
+
 // Mostrar detalle de una persona
 export const obtenerDetallePersona = async (req, res) => {
     const { cod_persona } = req.params; // Obtiene el código de la persona desde la URL
@@ -37,6 +38,50 @@ export const obtenerDetallePersona = async (req, res) => {
     }
 };
 
+export const obtenerDepartamentos = async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL Seleccionar_Departamento()');
+
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ message: 'No se encontraron departamentos' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las departamentos:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
+
+export const obtenerTipoPersona = async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL 	Seleccionar_Tipo_Persona()');
+
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ message: 'No se encontraron departamentos' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las departamentos:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
+
+export const obtenerGeneros= async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL Seleccionar_Generos()');
+
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ message: 'No se encontraron departamentos' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las departamentos:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
 
 
 //API para crear persona

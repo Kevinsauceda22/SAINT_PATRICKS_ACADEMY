@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
-import {cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription, cilInfo, cilPeople } from '@coreui/icons'
+import {
+  cilSearch,
+  cilBrushAlt,
+  cilPen,
+  cilTrash,
+  cilPlus,
+  cilSave,
+  cilDescription,
+  cilInfo,
+  cilPeople,
+} from '@coreui/icons'
 import swal from 'sweetalert2' // Importar SweetAlert
 import axios from 'axios'
 import { jsPDF } from 'jspdf' // Para generar archivos PDF
@@ -61,35 +71,101 @@ const ListaPersonas = () => {
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [recordsPerPage, setRecordsPerPage] = useState(10)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [departamentos, setDepartamentos] = useState([]);
+  const [tipoPersona, setTipoPersona] = useState([]);
+  const [generos, setGeneros] = useState([]);
+  const [fechaNacimiento, setFechaNacimiento] = useState(''); // Estado para la fecha de nacimiento
 
-  
   useEffect(() => {
-    fetchPersonas();
-  }, []);
-  
-  
+    fetchPersonas()
+    fetchDepartamentos();
+    fetchTipoPersona();
+    fetchGeneros();
+  }, [])
+
+  // Función para formatear la fecha (fecha_nacimiento)
+  const formatearFecha = (fecha_nacimiento) => {
+    const fechaObj = new Date(fecha_nacimiento); // Crear objeto Date
+    return fechaObj.toISOString().split('T')[0]; // Formatear como yyyy-mm-dd
+  };
+
+  // Asignar la fecha formateada solo si 'personaToUpdate.fecha_nacimiento' existe
+  const fechaFormateada = personaToUpdate.fecha_nacimiento
+    ? personaToUpdate.fecha_nacimiento.slice(0, 10) // Obtener solo la fecha (sin hora)
+    : ''; // Si no existe, asignar un valor vacío
+
+  // useEffect para actualizar personaToUpdate cuando personas cambian
+  useEffect(() => {
+    if (personas.length > 0) {
+      console.log('Fecha recibida:', personas[0]?.fecha_nacimiento); // Comprobar si la fecha existe
+
+      // Asignar la fecha formateada a personaToUpdate
+      setPersonaToUpdate({
+        ...personaToUpdate,
+        fecha_nacimiento: formatearFecha(personas[0]?.fecha_nacimiento),
+      });
+
+      // Actualizar el estado de la fecha de nacimiento para el formulario
+      setFechaNacimiento(formatearFecha(personas[0]?.fecha_nacimiento));
+    }
+  }, [personas]); // Ejecutar cuando 'personas' cambia
+
   // Fetch personas from API
   const fetchPersonas = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/persona/verPersonas')
       const data = await response.json()
-  
+
       // Agrega un console.log aquí para ver los datos originales
       console.log('Datos recibidos del servidor:', data)
-  
+
       const dataWithIndex = data.map((persona, index) => ({
         ...persona,
         originalIndex: index + 1,
       }))
-  
+
       // Agrega otro console.log aquí para ver los datos con el índice adicional
       console.log('Datos con índice añadido:', dataWithIndex)
-  
+
       setPersonas(dataWithIndex)
     } catch (error) {
       console.error('Error al obtener las personas:', error)
     }
   }
+
+  const fetchDepartamentos = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/persona/verDepartamentos');
+      const data = await response.json();
+      console.log('Datos recibidos de departamentos:', data);
+      setDepartamentos(data);
+    } catch (error) {
+      console.error('Error al obtener los departamentos:', error);
+    }
+  };
+  
+  const fetchTipoPersona = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/persona/verTipoPersona');
+      const data = await response.json();
+      console.log('Datos recibidos de tipo de persona:', data);
+      setTipoPersona(data);
+    } catch (error) {
+      console.error('Error al obtener los tipos de persona:', error);
+    }
+  };
+  
+  const fetchGeneros = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/persona/verGeneros');
+      const data = await response.json();
+      console.log('Datos recibidos de géneros:', data);
+      setGeneros(data);
+    } catch (error) {
+      console.error('Error al obtener los géneros:', error);
+    }
+  };
   
 
   const validateEmptyFields = () => {
@@ -103,6 +179,21 @@ const ListaPersonas = () => {
       return false
     }
     return true
+  }
+
+  // Función para formatear el DNI con guiones automáticamente
+  const formatDNI = (value) => {
+    // Elimina cualquier carácter que no sea un número
+    value = value.replace(/\D/g, '')
+
+    // Agrega guiones después de cada cuatro dígitos
+    if (value.length <= 4) {
+      return value
+    } else if (value.length <= 8) {
+      return `${value.slice(0, 4)}-${value.slice(4)}`
+    } else {
+      return `${value.slice(0, 4)}-${value.slice(4, 8)}-${value.slice(8, 13)}`
+    }
   }
 
   // Deshabilitar copiar y pegar
@@ -142,23 +233,26 @@ const ListaPersonas = () => {
 
   // Si todas las validaciones pasan, se procede con la creación
   const handleCreatePersona = async () => {
+    // Eliminar guiones del DNI antes de enviarlo
+    const dniSinGuiones = nuevaPersona.dni_persona.replace(/-/g, '')
+
     try {
       const response = await fetch('http://localhost:4000/api/persona/crearPersona', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          p_Dni_persona: nuevaPersona.dni_persona,
-          p_Nombre: nuevaPersona.Nombre,
-          p_Segundo_nombre: nuevaPersona.Segundo_nombre,
-          p_Primer_apellido: nuevaPersona.Primer_apellido,
-          p_Segundo_apellido: nuevaPersona.Segundo_apellido,
-          p_Nacionalidad: nuevaPersona.Nacionalidad,
-          p_Direccion_persona: nuevaPersona.direccion_persona,
-          p_Fecha_nacimiento: nuevaPersona.fecha_nacimiento,
-          p_Estado_Persona: nuevaPersona.Estado_Persona,
-          p_Cod_tipo_persona: nuevaPersona.cod_tipo_persona,
-          p_Cod_departamento: nuevaPersona.cod_departamento,
-          p_Cod_genero: nuevaPersona.cod_genero,
+          dni_persona: dniSinGuiones, // Enviar el DNI sin guiones al backend
+          Nombre: nuevaPersona.Nombre,
+          Segundo_nombre: nuevaPersona.Segundo_nombre,
+          Primer_apellido: nuevaPersona.Primer_apellido,
+          Segundo_apellido: nuevaPersona.Segundo_apellido,
+          Nacionalidad: nuevaPersona.Nacionalidad,
+          direccion_persona: nuevaPersona.direccion_persona,
+          fecha_nacimiento: nuevaPersona.fecha_nacimiento,
+          Estado_Persona: nuevaPersona.Estado_Persona,
+          cod_tipo_persona: nuevaPersona.cod_tipo_persona,
+          cod_departamento: nuevaPersona.cod_departamento,
+          cod_genero: nuevaPersona.cod_genero,
         }),
       })
 
@@ -169,8 +263,8 @@ const ListaPersonas = () => {
           text: 'La persona ha sido creada correctamente.',
         })
         setModalVisible(false)
-        fetchPersonas() // Cambia esto para que recargue las personas
-        resetNuevaPersona()
+        fetchPersonas() // Recargar la lista de personas
+        resetNuevaPersona() // Limpiar el formulario
       } else {
         const errorData = await response.json()
         swal.fire({
@@ -190,26 +284,48 @@ const ListaPersonas = () => {
   }
 
   const handleUpdatePersona = async () => {
+    // Eliminar guiones del DNI antes de enviarlo
+    const dniSinGuiones = personaToUpdate.dni_persona.replace(/-/g, '')
+
     try {
-      const response = await fetch('http://localhost:4000/api/persona/actualizarPersona', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p_Cod_persona: personaToUpdate.cod_persona,
-          p_Dni_persona: personaToUpdate.dni_persona,
-          p_Nombre: personaToUpdate.Nombre,
-          p_Segundo_nombre: personaToUpdate.Segundo_nombre,
-          p_Primer_apellido: personaToUpdate.Primer_apellido,
-          p_Segundo_apellido: personaToUpdate.Segundo_apellido,
-          p_Nacionalidad: personaToUpdate.Nacionalidad,
-          p_Direccion_persona: personaToUpdate.direccion_persona,
-          p_Fecha_nacimiento: personaToUpdate.fecha_nacimiento,
-          p_Estado_Persona: personaToUpdate.Estado_Persona,
-          p_Cod_tipo_persona: personaToUpdate.cod_tipo_persona,
-          p_Cod_departamento: personaToUpdate.cod_departamento,
-          p_Cod_genero: personaToUpdate.cod_genero,
-        }),
+      console.log('Actualizando persona con datos:', {
+        cod_persona: personaToUpdate.cod_persona,
+        dni_persona: dniSinGuiones,
+        Nombre: personaToUpdate.Nombre,
+        Segundo_nombre: personaToUpdate.Segundo_nombre,
+        Primer_apellido: personaToUpdate.Primer_apellido,
+        Segundo_apellido: personaToUpdate.Segundo_apellido,
+        Nacionalidad: personaToUpdate.Nacionalidad,
+        direccion_persona: personaToUpdate.direccion_persona,
+        fecha_nacimiento: personaToUpdate.fecha_nacimiento,
+        Estado_Persona: personaToUpdate.Estado_Persona,
+        cod_tipo_persona: personaToUpdate.cod_tipo_persona,
+        cod_departamento: personaToUpdate.cod_departamento,
+        cod_genero: personaToUpdate.cod_genero,
       })
+
+      const response = await fetch(
+        `http://localhost:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            cod_persona: personaToUpdate.cod_persona,
+            dni_persona: dniSinGuiones,
+            Nombre: personaToUpdate.Nombre,
+            Segundo_nombre: personaToUpdate.Segundo_nombre,
+            Primer_apellido: personaToUpdate.Primer_apellido,
+            Segundo_apellido: personaToUpdate.Segundo_apellido,
+            Nacionalidad: personaToUpdate.Nacionalidad,
+            direccion_persona: personaToUpdate.direccion_persona,
+            fecha_nacimiento: personaToUpdate.fecha_nacimiento,
+            Estado_Persona: personaToUpdate.Estado_Persona,
+            cod_tipo_persona: personaToUpdate.cod_tipo_persona,
+            cod_departamento: personaToUpdate.cod_departamento,
+            cod_genero: personaToUpdate.cod_genero,
+          }),
+        },
+      )
 
       if (response.ok) {
         swal.fire({
@@ -218,7 +334,8 @@ const ListaPersonas = () => {
           text: 'La persona ha sido actualizada correctamente.',
         })
         setModalUpdateVisible(false)
-        fetchPersonas() // Cambia esto para que recargue las personas
+        resetPersonaToUpdate()
+        await fetchPersonas() // Cambia esto para que recargue las personas
       } else {
         swal.fire({
           icon: 'error',
@@ -239,7 +356,7 @@ const ListaPersonas = () => {
   const handleDeletePersona = async () => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/personas/${encodeURIComponent(personaToDelete.cod_persona)}`,
+        `http://localhost:4000/api/persona/eliminarPersona/${encodeURIComponent(personaToDelete.cod_persona)}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -481,85 +598,121 @@ const ListaPersonas = () => {
             </CTableRow>
           </CTableHead>
           <CTableBody>
-  {console.log('currentRecords:', currentRecords)} {/* Verifica el contenido de currentRecords */}
-  {currentRecords.length > 0 ? (
-    currentRecords.map((persona, index) => {
-      console.log('Datos actuales de la persona:', persona); // Ver cada persona
-      return (
-        <CTableRow key={persona.cod_persona}>
-          <CTableDataCell>{persona.originalIndex}</CTableDataCell>
-          <CTableDataCell>{persona.dni_persona}</CTableDataCell>
-          <CTableDataCell>{persona.Nombre ? persona.Nombre.toUpperCase() : 'N/A'}</CTableDataCell>
-          <CTableDataCell>{persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/A'}</CTableDataCell>
-          <CTableDataCell>{persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/A'}</CTableDataCell>
-          <CTableDataCell>{persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/A'}</CTableDataCell>
-          <CTableDataCell>{persona.Nacionalidad ? persona.Nacionalidad.toUpperCase() : 'N/A'}</CTableDataCell>
-          <CTableDataCell>{persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/A'}</CTableDataCell>
-          <CTableDataCell>{persona.fecha_nacimiento}</CTableDataCell>
-          <CTableDataCell>{persona.Estado_Persona ? persona.Estado_Persona.toUpperCase() : 'N/A'}</CTableDataCell>
-          <CTableDataCell>{persona.cod_tipo_persona}</CTableDataCell>
-          <CTableDataCell>{persona.cod_departamento}</CTableDataCell>
-          <CTableDataCell>{persona.cod_genero}</CTableDataCell>
-          <CTableDataCell className="text-center">
-            <div className="d-flex justify-content-center">
-              <CButton color="warning" onClick={() => openUpdateModal(persona)} style={{ marginRight: '10px' }}>
-                <CIcon icon={cilPen} />
-              </CButton>
-              <CButton color="danger" onClick={() => openDeleteModal(persona)}>
-                <CIcon icon={cilTrash} />
-              </CButton>
-              <CButton color="info" onClick={() => openDetailModal(persona)} style={{ marginLeft: '10px' }}>
-                <CIcon icon={cilInfo} /> {/* Cambia a un icono disponible para "Ver" */}
-              </CButton>
-              <CButton color="secondary" onClick={() => openFamilyStructureModal(persona)} style={{ marginLeft: '10px' }}>
-                <CIcon icon={cilPeople} /> {/* Cambia a un icono disponible para "Familias" */}
-              </CButton>
-            </div>
-          </CTableDataCell>
-        </CTableRow>
-      );
-    })
-  ) : (
-    <CTableRow>
-      <CTableDataCell colSpan="13" className="text-center">No hay datos para mostrar</CTableDataCell>
-    </CTableRow>
-  )}
-</CTableBody>
-
+            {console.log('currentRecords:', currentRecords)}{' '}
+            {/* Verifica el contenido de currentRecords */}
+            {currentRecords.length > 0 ? (
+              currentRecords.map((persona) => {
+                console.log('Datos actuales de la persona:', persona) // Ver cada persona
+                return (
+                  <CTableRow key={persona.cod_persona}>
+                    <CTableDataCell>{persona.originalIndex}</CTableDataCell>
+                    <CTableDataCell>{persona.dni_persona ? persona.dni_persona.toUpperCase() : 'N/D'}</CTableDataCell>
+                    <CTableDataCell>
+                      {persona.Nombre ? persona.Nombre.toUpperCase() : 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {persona.Nacionalidad ? persona.Nacionalidad.toUpperCase() : 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {' '}{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {persona.Estado_Persona ? persona.Estado_Persona.toUpperCase() : 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {departamentos.find(depto => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell>
+                      {generos.find(genero => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}
+                    </CTableDataCell>
+                    <CTableDataCell className="text-center">
+                      <div className="d-flex justify-content-center">
+                        <CButton
+                          color="warning"
+                          onClick={() => openUpdateModal(persona)}
+                          style={{ marginRight: '10px' }}
+                        >
+                          <CIcon icon={cilPen} />
+                        </CButton>
+                        <CButton color="danger" onClick={() => openDeleteModal(persona)}>
+                          <CIcon icon={cilTrash} />
+                        </CButton>
+                        <CButton
+                          color="info"
+                          onClick={() => openDetailModal(persona)}
+                          style={{ marginLeft: '10px' }}
+                        >
+                          <CIcon icon={cilInfo} /> 
+                        </CButton>
+                        <CButton
+                          color="secondary"
+                          onClick={() => openFamilyStructureModal(persona)}
+                          style={{ marginLeft: '10px' }}
+                        >
+                          <CIcon icon={cilPeople} />{' '}
+                        </CButton>
+                      </div>
+                    </CTableDataCell>
+                  </CTableRow>
+                )
+              })
+            ) : (
+              <CTableRow>
+                <CTableDataCell colSpan="13" className="text-center">
+                  No hay datos para mostrar
+                </CTableDataCell>
+              </CTableRow>
+            )}
+          </CTableBody>
         </CTable>
       </div>
 
-      {/* Paginación */}
-      <CPagination
-        align="center"
-        aria-label="Page navigation example"
-        activePage={currentPage}
-        pages={Math.ceil(personas.length / recordsPerPage)} // Cambiado a personas
-        onActivePageChange={paginate}
-      />
-
-      <div className="d-flex justify-content-center align-items-center mt-3">
-        <CButton
-          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === 1}
-          onClick={() => paginate(currentPage - 1)}
-        >
-          Anterior
-        </CButton>
-        <CButton
-          style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === Math.ceil(personas.length / recordsPerPage)} // Cambiado a personas
-          onClick={() => paginate(currentPage + 1)}
-        >
-          Siguiente
-        </CButton>
-        <div style={{ marginLeft: '10px' }}>
+      <div
+        className="pagination-container"
+        style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+      >
+        <CPagination aria-label="Page navigation">
+          <CButton
+            style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+            disabled={currentPage === 1} // Desactiva si es la primera página
+            onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+          >
+            Anterior
+          </CButton>
+          <CButton
+            style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+            disabled={currentPage === Math.ceil(personas.length / recordsPerPage)} // Desactiva si es la última página
+            onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+          >
+            Siguiente
+          </CButton>
+        </CPagination>
+        <span style={{ marginLeft: '10px' }}>
           Página {currentPage} de {Math.ceil(personas.length / recordsPerPage)}
-        </div>
+        </span>
       </div>
 
-      {/* Modal para Crear Persona */}
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
+      {/* Modal para agregar persona */}
+      <CModal
+        visible={modalVisible}
+        onClose={() => handleCloseModal(setModalVisible, resetNuevaPersona)}
+        backdrop="static"
+      >
         <CModalHeader closeButton>
           <CModalTitle>Agregar Persona</CModalTitle>
         </CModalHeader>
@@ -571,7 +724,12 @@ const ListaPersonas = () => {
                 type="text"
                 placeholder="DNI de la persona"
                 value={nuevaPersona.dni_persona}
-                onChange={(e) => setNuevaPersona({ ...nuevaPersona, dni_persona: e.target.value })}
+                onChange={(e) => {
+                  const formattedDNI = formatDNI(e.target.value)
+                  setNuevaPersona({ ...nuevaPersona, dni_persona: formattedDNI })
+                }}
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -582,6 +740,8 @@ const ListaPersonas = () => {
                 placeholder="Nombre"
                 value={nuevaPersona.Nombre}
                 onChange={(e) => setNuevaPersona({ ...nuevaPersona, Nombre: e.target.value })}
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -594,6 +754,8 @@ const ListaPersonas = () => {
                 onChange={(e) =>
                   setNuevaPersona({ ...nuevaPersona, Segundo_nombre: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
               />
             </CInputGroup>
             <CInputGroup className="mb-3">
@@ -605,6 +767,8 @@ const ListaPersonas = () => {
                 onChange={(e) =>
                   setNuevaPersona({ ...nuevaPersona, Primer_apellido: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -617,6 +781,8 @@ const ListaPersonas = () => {
                 onChange={(e) =>
                   setNuevaPersona({ ...nuevaPersona, Segundo_apellido: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
               />
             </CInputGroup>
             <CInputGroup className="mb-3">
@@ -626,6 +792,8 @@ const ListaPersonas = () => {
                 placeholder="Nacionalidad"
                 value={nuevaPersona.Nacionalidad}
                 onChange={(e) => setNuevaPersona({ ...nuevaPersona, Nacionalidad: e.target.value })}
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -638,6 +806,8 @@ const ListaPersonas = () => {
                 onChange={(e) =>
                   setNuevaPersona({ ...nuevaPersona, direccion_persona: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
               />
             </CInputGroup>
             <CInputGroup className="mb-3">
@@ -652,58 +822,98 @@ const ListaPersonas = () => {
               />
             </CInputGroup>
             <CInputGroup className="mb-3">
-              <CInputGroupText>Rol</CInputGroupText>
-              <CFormInput
-                type="text"
-                placeholder="Rol"
-                value={nuevaPersona.cod_tipo_persona}
-                onChange={(e) => setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: e.target.value })}
+              <CInputGroupText>Estado</CInputGroupText>
+              <CFormSelect
+                value={nuevaPersona.Estado_Persona || ""}
+                onChange={(e) =>
+                  setNuevaPersona({ ...nuevaPersona, Estado_Persona: e.target.value })
+                }
                 required
-              />
+              >
+                <option value="">Seleccione un estado</option>
+                <option value="A">ACTIVO</option>
+                <option value="S">SUSPENDIDO</option>
+              </CFormSelect>
             </CInputGroup>
             <CInputGroup className="mb-3">
-              <CInputGroupText>Departamento</CInputGroupText>
-              <CFormInput
-                type="text"
-                placeholder="Departamento"
-                value={nuevaPersona.cod_departamento}
-                onChange={(e) => setNuevaPersona({ ...nuevaPersona, cod_departamento: e.target.value })}
-                required
-              />
-            </CInputGroup>
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Género</CInputGroupText>
-              <CFormInput
-                type="text"
-                placeholder="Género"
-                value={nuevaPersona.cod_genero}
-                onChange={(e) => setNuevaPersona({ ...nuevaPersona, cod_genero: e.target.value })}
-                required
-              />
-            </CInputGroup>
-            <CModalFooter>
-              <CButton
-                style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
-                onClick={() => setModalVisible(false)}
-              >
-                Cancelar
-              </CButton>
-              <CButton
-                style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
-                type="submit"
-              >
-                <CIcon icon={cilSave} /> Guardar
-              </CButton>
-            </CModalFooter>
+            <CInputGroupText>Rol</CInputGroupText>
+            <CFormSelect
+              value={nuevaPersona.cod_tipo_persona || ""}
+              onChange={(e) =>
+                setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: e.target.value })
+              }
+              required
+            >
+              <option value="">Seleccione un rol</option>
+              {tipoPersona && tipoPersona.map((tipo) => (
+                <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
+                  {tipo.Tipo.toUpperCase()}
+                </option>
+              ))}
+            </CFormSelect>
+          </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Departamento</CInputGroupText>
+            <CFormSelect
+              value={nuevaPersona.cod_departamento || ""}
+              onChange={(e) =>
+                setNuevaPersona({ ...nuevaPersona, cod_departamento: e.target.value })
+              }
+              required
+            >
+              <option value="">Seleccione un departamento</option>
+              {departamentos && departamentos.map((depto) => (
+                <option key={depto.Cod_departamento} value={depto.Cod_departamento}>
+                  {depto.Nombre_departamento.toUpperCase()}
+                </option>
+              ))}
+            </CFormSelect>
+          </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Género</CInputGroupText>
+            <CFormSelect
+              value={nuevaPersona.cod_genero || ""}
+              onChange={(e) =>
+                setNuevaPersona({ ...nuevaPersona, cod_genero: e.target.value })
+              }
+              required
+            >
+              <option value="">Seleccione un género</option>
+              {generos && generos.map((genero) => (
+                <option key={genero.Cod_genero} value={genero.Cod_genero}>
+                  {genero.Tipo_genero.toUpperCase()}
+                </option>
+              ))}
+            </CFormSelect>
+          </CInputGroup>
           </CForm>
         </CModalBody>
+        <CModalFooter>
+          <CButton
+            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+            onClick={() => handleCloseModal(setModalVisible, resetNuevaPersona)}
+          >
+            Cancelar
+          </CButton>
+          <CButton
+            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+            onClick={() => {
+              handleCreatePersona()
+            }}
+          >
+            <CIcon icon={cilSave} /> Guardar
+          </CButton>
+        </CModalFooter>
       </CModal>
-      {/* Fin del Modal para Crear Persona */}
+      {/* Fin del Modal Agregar persona */}
 
       {/* Modal para Actualizar Persona */}
       <CModal
         visible={modalUpdateVisible}
-        onClose={() => setModalUpdateVisible(false)}
+        onClose={() => {
+          setModalUpdateVisible(false)
+          resetPersonaToUpdate() // Resetear los datos al cerrar el modal
+        }}
         backdrop="static"
       >
         <CModalHeader closeButton>
@@ -711,16 +921,22 @@ const ListaPersonas = () => {
         </CModalHeader>
         <CModalBody>
           <CForm>
-            <CFormInput label="Identificador" value={personaToUpdate.cod_persona} readOnly />
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Identificador</CInputGroupText>
+              <CFormInput value={personaToUpdate.cod_persona} readOnly />
+            </CInputGroup>
             <CInputGroup className="mb-3">
               <CInputGroupText>DNI</CInputGroupText>
               <CFormInput
                 type="text"
                 placeholder="DNI de la persona"
                 value={personaToUpdate.dni_persona}
-                onChange={(e) =>
-                  setPersonaToUpdate({ ...personaToUpdate, dni_persona: e.target.value })
-                }
+                onChange={(e) => {
+                  const formattedDNI = formatDNI(e.target.value)
+                  setPersonaToUpdate({ ...personaToUpdate, dni_persona: formattedDNI })
+                }}
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -730,7 +946,9 @@ const ListaPersonas = () => {
                 type="text"
                 placeholder="Nombre"
                 value={personaToUpdate.Nombre}
-                onChange={(e) => setPersonaToDelete({ ...personaToUpdate, Nombre: e.target.value })}
+                onChange={(e) => setPersonaToUpdate({ ...personaToUpdate, Nombre: e.target.value })}
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -741,8 +959,10 @@ const ListaPersonas = () => {
                 placeholder="Segundo Nombre"
                 value={personaToUpdate.Segundo_nombre}
                 onChange={(e) =>
-                  setpersonaToUpdate({ ...personaToUpdate, Segundo_nombre: e.target.value })
+                  setPersonaToUpdate({ ...personaToUpdate, Segundo_nombre: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
               />
             </CInputGroup>
             <CInputGroup className="mb-3">
@@ -754,6 +974,8 @@ const ListaPersonas = () => {
                 onChange={(e) =>
                   setPersonaToUpdate({ ...personaToUpdate, Primer_apellido: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -766,6 +988,8 @@ const ListaPersonas = () => {
                 onChange={(e) =>
                   setPersonaToUpdate({ ...personaToUpdate, Segundo_apellido: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
               />
             </CInputGroup>
             <CInputGroup className="mb-3">
@@ -775,8 +999,10 @@ const ListaPersonas = () => {
                 placeholder="Nacionalidad"
                 value={personaToUpdate.Nacionalidad}
                 onChange={(e) =>
-                  setpersonaToUpdate({ ...personaToUpdate, Nacionalidad: e.target.value })
+                  setPersonaToUpdate({ ...personaToUpdate, Nacionalidad: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
                 required
               />
             </CInputGroup>
@@ -787,74 +1013,111 @@ const ListaPersonas = () => {
                 placeholder="Dirección"
                 value={personaToUpdate.direccion_persona}
                 onChange={(e) =>
-                  setpersonaToUpdate({ ...personaToUpdate, direccion_persona: e.target.value })
+                  setPersonaToUpdate({ ...personaToUpdate, direccion_persona: e.target.value })
                 }
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
               />
             </CInputGroup>
             <CInputGroup className="mb-3">
-              <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
-              <CFormInput
-                type="date"
-                value={personaToUpdate.fecha_nacimiento}
-                onChange={(e) =>
-                  setpersonaToUpdate({ ...personaToUpdate, fecha_nacimiento: e.target.value })
-                }
-                required
-              />
-            </CInputGroup>
-                  {/* Campo para Tipo de Persona */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Tipo de Persona</CInputGroupText>
-        <CFormInput
-          type="text"
-          placeholder="Código Tipo Persona"
-          value={personaToUpdate.cod_tipo_persona}
-          onChange={(e) =>
-            setPersonaToUpdate({ ...personaToUpdate, cod_tipo_persona: e.target.value })
-          }
-          required
-        />
-      </CInputGroup>
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Departamento</CInputGroupText>
-          <CFormInput
-            type="text"
-            placeholder="Código Departamento"
-            value={personaToUpdate.cod_departamento}
-            onChange={(e) =>
-              setPersonaToUpdate({ ...personaToUpdate, cod_departamento: e.target.value })
-            }
-            required
-          />
-        </CInputGroup>
-
-        {/* Campo para Género */}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Género</CInputGroupText>
-          <CFormInput
-            type="text"
-            placeholder="Código Género"
-            value={personaToUpdate.cod_genero}
-            onChange={(e) => setPersonaToUpdate({ ...personaToUpdate, cod_genero: e.target.value })}
-            required
-          />
-        </CInputGroup>
-            <CModalFooter>
-              <CButton
-                style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
-                onClick={() => setUpdateModalVisible(false)}
-              >
-                Cancelar
-              </CButton>
-              <CButton
-                style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
-                type="submit"
-              >
-                <CIcon icon={cilSave} /> Guardar
-              </CButton>
-            </CModalFooter>
+            <CInputGroupText>Fecha de nacimiento</CInputGroupText>
+            <CFormInput
+              type="date"
+              value={fechaNacimiento} // Usar el estado 'fechaNacimiento'
+              onChange={(e) => {
+                setFechaNacimiento(e.target.value); // Actualizar el estado de fecha de nacimiento
+                setPersonaToUpdate({
+                  ...personaToUpdate,
+                  fecha_nacimiento: e.target.value, // Actualizar la persona a actualizar con la nueva fecha
+                });
+              }}
+              required
+            />
+          </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Estado</CInputGroupText>
+            <CFormSelect
+              value={personaToUpdate.Estado_Persona || ""}
+              onChange={(e) =>
+                setPersonaToUpdate({ ...personaToUpdate, Estado_Persona: e.target.value })
+              }
+              required
+            >
+              <option value="">Seleccione un estado</option>
+              <option value="A">ACTIVO</option>
+              <option value="S">SUSPENDIDO</option>
+            </CFormSelect>
+          </CInputGroup>  
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Rol</CInputGroupText>
+                <CFormSelect
+                  value={personaToUpdate.cod_tipo_persona || ""}
+                  onChange={(e) =>
+                    setPersonaToUpdate({ ...personaToUpdate, cod_tipo_persona: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">Seleccione un rol</option>
+                  {tipoPersona && tipoPersona.map((tipo) => (
+                    <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
+                      {tipo.Tipo.toUpperCase()}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CInputGroup>
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Departamento</CInputGroupText>
+                <CFormSelect
+                  value={personaToUpdate.cod_departamento || ""}
+                  onChange={(e) =>
+                    setPersonaToUpdate({ ...personaToUpdate, cod_departamento: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">Seleccione un departamento</option>
+                  {departamentos && departamentos.map((depto) => (
+                    <option key={depto.Cod_departamento} value={depto.Cod_departamento}>
+                      {depto.Nombre_departamento.toUpperCase()}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CInputGroup>
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Género</CInputGroupText>
+                <CFormSelect
+                  value={personaToUpdate.cod_genero || ""}
+                  onChange={(e) =>
+                    setPersonaToUpdate({ ...personaToUpdate, cod_genero: e.target.value })
+                  }
+                  required
+                >
+                  <option value="">Seleccione un género</option>
+                  {generos && generos.map((genero) => (
+                    <option key={genero.Cod_genero} value={genero.Cod_genero}>
+                      {genero.Tipo_genero.toUpperCase()}
+                    </option>
+                  ))}
+                </CFormSelect>
+          </CInputGroup>
           </CForm>
         </CModalBody>
+        <CModalFooter>
+          <CButton
+            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+            onClick={() => {
+              setModalUpdateVisible(false)
+              resetPersonaToUpdate() // Restablecer valores cuando se cierra el modal
+            }}
+          >
+            Cancelar
+          </CButton>
+          <CButton
+            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+            onClick={handleUpdatePersona} // Llamar a la función para actualizar los datos
+          >
+            <CIcon icon={cilSave} /> Guardar
+          </CButton>
+        </CModalFooter>
       </CModal>
       {/* Fin del Modal para Actualizar Persona */}
 
@@ -868,10 +1131,7 @@ const ListaPersonas = () => {
           <CModalTitle>Eliminar Persona</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          <p>
-            ¿Estás seguro de que deseas eliminar a la persona {personaToDelete.codigo_persona}? Esta
-            acción no se puede deshacer.
-          </p>
+          <p>¿Estás seguro de que deseas eliminar a la persona {personaToDelete.codigo_persona}?</p>
         </CModalBody>
         <CModalFooter>
           <CButton
