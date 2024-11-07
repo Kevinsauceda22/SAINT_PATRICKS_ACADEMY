@@ -156,6 +156,7 @@ const App = () => {
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/actividades" element={<ListaActivex />} />
                 <Route path="/historico" element={<ListaDias />} />
+                
                 <Route path="/ListaEstructura" element={<ListaEstructuraFamiliar />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />

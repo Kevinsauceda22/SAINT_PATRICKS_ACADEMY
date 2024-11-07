@@ -57,12 +57,6 @@ const _nav = [
     icon: cilFile,
   },
   {
-    component: CNavItem,
-    name: 'Familias',
-    to: '/ListaEstructura',
-    icon: cilPeople,
-  },
-  {
     component: CNavGroup,
     name: 'Mantenimientos',
     icon: cilListRich,
@@ -144,16 +138,6 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Departamento',
-        to: '/departamento',
-      },
-      {
-        component: CNavItem,
-        name: 'Tipo persona',
-        to: '/tipopersona',
-      },
-      {
-        component: CNavItem,
         name: 'Edificios',
         to: '/edificios',
       },
@@ -172,12 +156,6 @@ const _nav = [
         name: 'Historial Procedencia',
         to: '/ListaHistoricoProc',
       },
-      {
-        component: CNavItem,
-        name: 'Tipo de Relaciones',
-        to: 'ListaRelacion',
-      },
-
       {
         component: CNavItem,
         name: 'Cuentas Contables',
@@ -209,6 +187,41 @@ const _nav = [
       },
     ],
   },
+
+  {
+    component: CNavGroup,
+    name: 'Personas',
+    icon: cilUser,
+    items: [
+      {
+        component: CNavItem,
+        name: 'Personas',
+        to: '/ListaPersonas',
+      },
+      {
+        component: CNavItem,
+        name: 'Familias',
+        to: '/ListaEstructura',
+      },
+      {
+        component: CNavItem,
+        name: 'Tipo de Relaciones',
+        to: 'ListaRelacion',
+      },
+      {
+        component: CNavItem,
+        name: 'Tipo persona',
+        to: '/tipopersona',
+      },
+      {
+        component: CNavItem,
+        name: 'Departamento',
+        to: '/departamento',
+      },
+    ],
+  },
+
+
   {
     component: CNavGroup,
     name: 'Reportes de Bitácora',
