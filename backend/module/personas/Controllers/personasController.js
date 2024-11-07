@@ -70,7 +70,7 @@ export const obtenerTipoPersona = async (req, res) => {
 
 export const obtenerGeneros= async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL Seleccionar_Generos()');
+        const [rows] = await pool.query('CALL P_Get_Genero_Persona()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
