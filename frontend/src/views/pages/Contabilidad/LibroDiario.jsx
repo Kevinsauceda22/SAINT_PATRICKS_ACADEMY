@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { AlertCircle, Check, FileText, Edit2, Trash2 } from 'lucide-react';
+import { AlertCircle, Check, FileText, Edit2, Trash2, Calendar, DollarSign, List } from 'lucide-react';
+import './LibroDiario.css';
+
+
 
 const LibroDiario = () => {
   const [registros, setRegistros] = useState([]);
@@ -17,6 +20,7 @@ const LibroDiario = () => {
     Monto: '',
     Tipo_transaccion: ''
   });
+  const [formErrors, setFormErrors] = useState({});
   const [cuentasMap, setCuentasMap] = useState({});
 
   useEffect(() => {
@@ -71,10 +75,45 @@ const LibroDiario = () => {
     }
   };
 
+  const validateForm = () => {
+    const errors = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(formData.Fecha);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    if (selectedDate > today) {
+      errors.Fecha = "No se puede seleccionar una fecha futura";
+    }
+
+    if (!formData.Descripcion.trim()) {
+      errors.Descripcion = "La descripción es requerida";
+    }
+
+    if (!formData.Cod_cuenta) {
+      errors.Cod_cuenta = "Debe seleccionar una cuenta";
+    }
+
+    if (!formData.Monto || parseFloat(formData.Monto) <= 0) {
+      errors.Monto = "El monto debe ser mayor a 0";
+    }
+
+    if (!formData.Tipo_transaccion) {
+      errors.Tipo_transaccion = "Debe seleccionar un tipo de transacción";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
+    
+    if (!validateForm()) {
+      return;
+    }
     
     try {
       const url = editingId 
@@ -108,6 +147,7 @@ const LibroDiario = () => {
         Tipo_transaccion: ''
       });
       setEditingId(null);
+      setFormErrors({});
       await fetchRegistros();
     } catch (err) {
       setError('Error al procesar la operación: ' + err.message);
@@ -135,9 +175,6 @@ const LibroDiario = () => {
     }
   };
 
-  
-
-
   const handleEdit = (registro) => {
     setFormData({
       Fecha: registro.Fecha.split('T')[0],
@@ -147,10 +184,10 @@ const LibroDiario = () => {
       Tipo_transaccion: registro.Tipo_transaccion
     });
     setEditingId(registro.cod_libro_diario);
-    // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const generatePDF = async () => {
+
+  const generatePDF = () => {
     try {
       const doc = new jsPDF();
       
@@ -164,13 +201,12 @@ const LibroDiario = () => {
       doc.setFontSize(16);
       doc.text("Libro Diario", doc.internal.pageSize.width/2, 30, { align: 'center' });
       
-      // Datos de la tabla
-      const tableColumn = ["Fecha", "Descripción", "Cuenta", "Monto", "Tipo"];
+      const tableColumn = ["Fecha", "Descripción", "Cuenta", "Monto (L)", "Tipo"];
       const tableRows = registros.map(registro => [
         new Date(registro.Fecha).toLocaleDateString(),
         registro.Descripcion,
         `${registro.Cod_cuenta} - ${cuentasMap[registro.Cod_cuenta] || 'Sin nombre'}`,
-        `$${parseFloat(registro.Monto).toLocaleString('es-ES', {
+        `L ${parseFloat(registro.Monto).toLocaleString('es-HN', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
         })}`,
@@ -200,59 +236,77 @@ const LibroDiario = () => {
     }
   };
 
-
   return (
-    <div className="libro-diario">
-      <div className="header">
-        <h1>Libro Diario</h1>
+    <div className="max-w-7xl mx-auto p-4">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Libro Diario</h1>
+        <p className="text-gray-600 mt-1">Gestión de transacciones diarias</p>
       </div>
 
       {error && (
-        <div className="alert error">
-          {error}
-          <button className="close-button" onClick={() => setError(null)}>×</button>
+        <div className="mb-4 p-4 bg-red-50 border border-red-400 rounded-lg flex items-center">
+          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+          <p className="text-red-700">{error}</p>
+          <button className="ml-auto text-red-700" onClick={() => setError(null)}>×</button>
         </div>
       )}
 
       {success && (
-        <div className="alert success">
-          {success}
-          <button className="close-button" onClick={() => setSuccess(null)}>×</button>
+        <div className="mb-4 p-4 bg-green-50 border border-green-400 rounded-lg flex items-center">
+          <Check className="h-5 w-5 text-green-500 mr-2" />
+          <p className="text-green-700">{success}</p>
+          <button className="ml-auto text-green-700" onClick={() => setSuccess(null)}>×</button>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={`form ${editingId ? 'editing' : ''}`}>
-        <div className="form-grid">
-          <div className="input-group">
-            <label htmlFor="fecha">Fecha:</label>
+      <form onSubmit={handleSubmit} className={`bg-white rounded-lg shadow p-6 mb-6 ${editingId ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <label className="flex items-center text-sm font-medium text-gray-700">
+              <Calendar className="w-4 h-4 mr-2" />
+              Fecha
+            </label>
             <input
-              id="fecha"
               type="date"
+              max={new Date().toISOString().split('T')[0]}
               value={formData.Fecha}
               onChange={(e) => setFormData({...formData, Fecha: e.target.value})}
-              required
+              className={`w-full rounded-md border ${formErrors.Fecha ? 'border-red-500' : 'border-gray-300'} 
+                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
             />
+            {formErrors.Fecha && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.Fecha}</p>
+            )}
           </div>
 
-          <div className="input-group">
-            <label htmlFor="descripcion">Descripción:</label>
+          <div className="space-y-2">
+            <label className="flex items-center text-sm font-medium text-gray-700">
+              <List className="w-4 h-4 mr-2" />
+              Descripción
+            </label>
             <input
-              id="descripcion"
               type="text"
               value={formData.Descripcion}
               onChange={(e) => setFormData({...formData, Descripcion: e.target.value})}
+              className={`w-full rounded-md border ${formErrors.Descripcion ? 'border-red-500' : 'border-gray-300'} 
+                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
               placeholder="Ingrese la descripción"
-              required
             />
+            {formErrors.Descripcion && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.Descripcion}</p>
+            )}
           </div>
 
-          <div className="input-group">
-            <label htmlFor="cuenta">Cuenta:</label>
+          <div className="space-y-2">
+            <label className="flex items-center text-sm font-medium text-gray-700">
+              <FileText className="w-4 h-4 mr-2" />
+              Cuenta
+            </label>
             <select
-              id="cuenta"
               value={formData.Cod_cuenta}
               onChange={(e) => setFormData({...formData, Cod_cuenta: e.target.value})}
-              required
+              className={`w-full rounded-md border ${formErrors.Cod_cuenta ? 'border-red-500' : 'border-gray-300'} 
+                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
             >
               <option value="">Seleccione una cuenta</option>
               {cuentas.map((cuenta) => (
@@ -261,260 +315,173 @@ const LibroDiario = () => {
                 </option>
               ))}
             </select>
+            {formErrors.Cod_cuenta && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.Cod_cuenta}</p>
+            )}
           </div>
 
-          <div className="input-group">
-            <label htmlFor="monto">Monto:</label>
+          <div className="space-y-2">
+            <label className="flex items-center text-sm font-medium text-gray-700">
+              <DollarSign className="w-4 h-4 mr-2" />
+              Monto (L)
+            </label>
             <input
-              id="monto"
               type="number"
               value={formData.Monto}
               onChange={(e) => setFormData({...formData, Monto: e.target.value})}
+              className={`w-full rounded-md border ${formErrors.Monto ? 'border-red-500' : 'border-gray-300'} 
+                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
               placeholder="0.00"
               step="0.01"
               min="0"
-              required
             />
+            {formErrors.Monto && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.Monto}</p>
+            )}
           </div>
 
-          <div className="input-group">
-            <label htmlFor="tipo">Tipo de Transacción:</label>
+          <div className="space-y-2">
+            <label className="flex items-center text-sm font-medium text-gray-700">
+              <FileText className="w-4 h-4 mr-2" />
+              Tipo de Transacción
+            </label>
             <select
-              id="tipo"
               value={formData.Tipo_transaccion}
               onChange={(e) => setFormData({...formData, Tipo_transaccion: e.target.value})}
-              required
+              className={`w-full rounded-md border ${formErrors.Tipo_transaccion ? 'border-red-500' : 'border-gray-300'} 
+                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
             >
               <option value="">Seleccione el tipo</option>
               <option value="Ingreso">Ingreso</option>
               <option value="Egreso">Egreso</option>
-            </select>
+              </select>
+            {formErrors.Tipo_transaccion && (
+              <p className="text-red-500 text-xs mt-1">{formErrors.Tipo_transaccion}</p>
+            )}
           </div>
-        </div>
 
-        <div className="button-group">
-          <button type="submit" className="btn primary">
-            {editingId ? 'Actualizar Registro' : 'Agregar Registro'}
-          </button>
-          
-          {editingId && (
-            <button 
-              type="button" 
-              className="btn secondary"
-              onClick={() => {
-                setEditingId(null);
-                setFormData({
-                  Fecha: '',
-                  Descripcion: '',
-                  Cod_cuenta: '',
-                  Monto: '',
-                  Tipo_transaccion: ''
-                });
-              }}
+          <div className="flex items-end space-x-4">
+            <button
+              type="submit"
+              className="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
             >
-              Cancelar Edición
+              {editingId ? 'Actualizar' : 'Registrar'}
             </button>
-          )}
-          
-          <button 
-            type="button" 
-            onClick={generatePDF} 
-            className="btn secondary"
-          >
-            Generar PDF
-          </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingId(null);
+                  setFormData({
+                    Fecha: '',
+                    Descripcion: '',
+                    Cod_cuenta: '',
+                    Monto: '',
+                    Tipo_transaccion: ''
+                  });
+                  setFormErrors({});
+                }}
+                className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+              >
+                Cancelar
+              </button>
+            )}
+          </div>
         </div>
       </form>
 
-      {loading ? (
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>Cargando registros...</p>
+      <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <h2 className="text-xl font-semibold text-gray-800">Registros</h2>
+          <button
+            onClick={generatePDF}
+            className="flex items-center bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Generar PDF
+          </button>
         </div>
-      ) : registros.length === 0 ? (
-        <div className="empty-state">
-          <p>No hay registros disponibles</p>
-          <p>Comience agregando un nuevo registro</p>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table>
-            <thead>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th>Fecha</th>
-                <th>Descripción</th>
-                <th>Cuenta</th>
-                <th>Monto</th>
-                <th>Tipo</th>
-                <th>Acciones</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cuenta</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto (L)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
-            <tbody>
-              {registros.map((registro) => (
-                <tr 
-                  key={registro.cod_libro_diario}
-                  className={registro.cod_libro_diario === editingId ? 'editing-row' : ''}
-                >
-                  <td>{new Date(registro.Fecha).toLocaleDateString()}</td>
-                  <td>{registro.Descripcion}</td>
-                  <td>
-                    {registro.Cod_cuenta} - {cuentasMap[registro.Cod_cuenta] || 'Sin nombre'}
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    Cargando registros...
                   </td>
-                  <td className={registro.Tipo_transaccion === 'Ingreso' ? 'monto-ingreso' : 'monto-egreso'}>
-                    ${parseFloat(registro.Monto).toLocaleString('es-ES', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
-                    })}
+                </tr>
+              ) : registros.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
+                    No hay registros disponibles
                   </td>
-                  <td>
-                    <span className={`badge ${registro.Tipo_transaccion.toLowerCase()}`}>
-                      {registro.Tipo_transaccion}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
+                </tr>
+              ) : (
+                registros.map((registro) => (
+                  <tr key={registro.cod_libro_diario}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {new Date(registro.Fecha).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{registro.Descripcion}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {registro.Cod_cuenta} - {cuentasMap[registro.Cod_cuenta] || 'Sin nombre'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        L {parseFloat(registro.Monto).toLocaleString('es-HN', {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2
+                        })}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        registro.Tipo_transaccion === 'Ingreso' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {registro.Tipo_transaccion}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
                         onClick={() => handleEdit(registro)}
-                        className="btn edit"
-                        title="Editar registro"
+                        className="text-green-600 hover:text-green-900"
                       >
-                        Editar
+                        <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(registro.cod_libro_diario)}
-                        className="btn delete"
-                        title="Eliminar registro"
+                        className="text-red-600 hover:text-red-900"
                       >
-                        Eliminar
+                        <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
-      )}
-
-<style jsx>{`
-        .libro-diario {
-          max-width: 1200px;
-          margin: 0 auto;
-        }
-
-        .form {
-          background: white;
-          padding: 1.5rem;
-          border-radius: 0.5rem;
-          border: 1px solid #e5e7eb;
-          margin-bottom: 1.5rem;
-        }
-
-        .form.editing {
-          border-color: #22c55e;
-          background-color: #f0fdf4;
-        }
-
-        .input-group label {
-          color: #374151;
-          font-weight: 500;
-          margin-bottom: 0.5rem;
-        }
-
-        input, select {
-          border: 1px solid #e5e7eb;
-          border-radius: 0.375rem;
-          padding: 0.5rem;
-          width: 100%;
-        }
-
-        input:focus, select:focus {
-          border-color: #22c55e;
-          box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
-          outline: none;
-        }
-
-        .btn {
-          padding: 0.5rem 1rem;
-          border-radius: 0.375rem;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-
-        .btn.primary {
-          background-color: #22c55e;
-          color: white;
-        }
-
-        .btn.primary:hover {
-          background-color: #16a34a;
-        }
-
-        .table-container {
-          border: 1px solid #e5e7eb;
-          border-radius: 0.5rem;
-          overflow: hidden;
-        }
-
-        table th {
-          background-color: #f9fafb;
-          color: #374151;
-          font-weight: 600;
-          text-align: left;
-          padding: 0.75rem 1rem;
-        }
-
-        table td {
-          padding: 0.75rem 1rem;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .badge {
-          padding: 0.25rem 0.75rem;
-          border-radius: 9999px;
-          font-size: 0.875rem;
-          font-weight: 500;
-        }
-
-        .badge.ingreso {
-          background-color: #dcfce7;
-          color: #166534;
-        }
-
-        .badge.egreso {
-          background-color: #fee2e2;
-          color: #991b1b;
-        }
-
-        .monto-ingreso {
-          color: #16a34a;
-        }
-
-        .monto-egreso {
-          color: #dc2626;
-        }
-
-        .alert {
-          border-radius: 0.375rem;
-          padding: 0.75rem 1rem;
-          margin-bottom: 1rem;
-        }
-
-        .alert.success {
-          background-color: #f0fdf4;
-          border: 1px solid #22c55e;
-          color: #166534;
-        }
-
-        .alert.error {
-          background-color: #fef2f2;
-          border: 1px solid #dc2626;
-          color: #991b1b;
-        }
-      `}</style>
+      </div>
     </div>
   );
 };
 
-
 export default LibroDiario;
+              
