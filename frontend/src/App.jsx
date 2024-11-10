@@ -56,6 +56,7 @@ const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopa
 const ListaEdificios = React.lazy(() => import('./views/pages/matricula/ListaEdificios'));
 const ListaActivex = React.lazy(() => import('./views/pages/matricula/ListaActivex')); 
 const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias'));
+const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
@@ -157,7 +158,8 @@ const App = () => {
                 <Route path="/actividades" element={<ListaActivex />} />
                 <Route path="/historico" element={<ListaDias />} />
                 
-                <Route path="/ListaEstructura" element={<ListaEstructuraFamiliar />} />
+                <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
+                <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
               </Route>

@@ -205,6 +205,11 @@ const _nav = [
       },
       {
         component: CNavItem,
+        name: 'Estructuras',
+        to: '/ListaEstructura',
+      },
+      {
+        component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
       },
