@@ -2,7 +2,9 @@ import express from 'express';
 import {
     obtenerActividadesAcademicas,
     crearActividadAcademica,
-    actualizarActividadAcademica
+    actualizarActividadAcademica,
+    getActividadesPorProfesor,
+    eliminarActividadAcademica
 } from '../Controller/activiades_AcademicasController.js'; // Importamos las funciones del controlador
 
 const router = express.Router();
@@ -15,5 +17,10 @@ router.post('/crearactividadacademica', crearActividadAcademica);
 
 // Ruta para actualizar una actividad académica
 router.put('/actualizaractividad', actualizarActividadAcademica);
+
+// Ruta para obtener las actividades por Cod_profesor
+router.get('/veractividadesProfesor/:Cod_profesor', getActividadesPorProfesor);
+
+router.delete('/eliminarActividad', eliminarActividadAcademica);
 
 export default router;

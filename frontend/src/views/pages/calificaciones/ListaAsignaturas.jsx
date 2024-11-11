@@ -626,11 +626,5 @@ const paginate = (pageNumber) => {
     </CModal>
  </CContainer>
   );
-
-
-
-
 };
-
-
 export default ListaAsignaturas;

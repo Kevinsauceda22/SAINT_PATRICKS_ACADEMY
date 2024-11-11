@@ -2,20 +2,21 @@ import express from 'express';
 import {
     obtenerAsistencias,
     crearAsistencia,
-    actualizarAsistencia,
-    eliminarAsistencia
+    recuento,
+    //actualizarAsistencia,
+    eliminarAsistencia,
 } from '../Controller/asistenciaController.js'; // Importamos las funciones del controlador
 
 const router = express.Router();
 
 // Ruta para obtener todas las asistencias
-router.get('/asistencias', obtenerAsistencias);
-
+router.get('/asistencias',  obtenerAsistencias);
+router.get('/recuento',  recuento);
 // Ruta para crear una nueva asistencia
 router.post('/crearasistencias', crearAsistencia);
 
 // Ruta para actualizar una asistencia
-router.put('/actualizarasistencias', actualizarAsistencia);
+//router.put('/actualizarasistencias', actualizarAsistencia);
 
 // Ruta para eliminar una asistencia
 router.delete('/eliminarasistencias', eliminarAsistencia);

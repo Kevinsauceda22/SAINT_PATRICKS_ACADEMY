@@ -1,5 +1,3 @@
-import React from 'react';
-import CIcon from '@coreui/icons-react';
 import {
   cilSpeedometer,
   cilPeople,
@@ -24,142 +22,169 @@ const _nav = [
     component: CNavItem,
     name: 'Panel de control',
     to: '/PaginaPrincipal',
-    icon: cilSpeedometer, // Puedes usar otro ícono si lo deseas
+    icon: cilSpeedometer,
+    nameobject: 'navPanelControl',
   },
   {
     component: CNavItem,
     name: 'Dashboard',
     to: '/dashboard',
     icon: cilSpeedometer,
+    nameobject: 'navDashboard',
   },
   {
     component: CNavItem,
     name: 'Asistencia',
     to: '/ListaAsistencia',
     icon: cilClipboard,
+    nameobject: 'navAsistencia',
   },
   {
     component: CNavItem,
     name: 'Profesores',
     to: '/ListaProfesores',
     icon: cilPeople,
+    nameobject: 'navProfesores',
   },
   {
     component: CNavItem,
     name: 'Actividades académicas',
     to: '/ListaActividadesAca',
     icon: cilTask,
+    nameobject: 'navActividadesAcademicas',
   },
   {
     component: CNavItem,
     name: 'Notas',
     to: '/ListaEstadonota',
     icon: cilFile,
+    nameobject: 'navNotas',
   },
   {
     component: CNavGroup,
     name: 'Mantenimientos',
     icon: cilListRich,
+    nameobject: 'navMantenimientos',
     items: [
       {
         component: CNavItem,
         name: 'Asignaturas',
         to: '/ListaAsignaturas',
+        nameobject: 'navAsignaturas',
       },
       {
         component: CNavItem,
         name: 'Ciclos',
         to: '/ListaCiclos',
+        nameobject: 'navCiclos',
       },
       {
         component: CNavItem,
         name: 'Especialidades',
         to: '/ListaEspecialidades',
+        nameobject: 'navEspecialidades',
       },
       {
         component: CNavItem,
         name: 'Estado asistencia',
         to: '/ListaEstadoasistencia',
+        nameobject: 'navEstadoAsistencia',
       },
       {
         component: CNavItem,
         name: 'Estado nota',
         to: '/ListaEstadonota',
+        nameobject: 'navEstadoNota',
       },
       {
         component: CNavItem,
         name: 'Grados',
         to: '/ListaGrados',
+        nameobject: 'navGrados',
       },
       {
         component: CNavItem,
         name: 'Grado académico',
         to: '/ListaGradoAcademico',
+        nameobject: 'navGradoAcademico',
       },
       {
         component: CNavItem,
         name: 'Parciales',
         to: '/ListaParciales',
+        nameobject: 'navParciales',
       },
       {
         component: CNavItem,
         name: 'Ponderaciones',
         to: '/ListaPonderaciones',
+        nameobject: 'navPonderaciones',
       },
       {
         component: CNavItem,
         name: 'Tipo de contrato',
         to: '/ListaTipoContrato',
+        nameobject: 'navTipoContrato',
       },
       {
         component: CNavItem,
         name: 'Historial Academico',
         to: '/ListaHistoriales',
+        nameobject: 'navHistorialAcademico',
       },
       {
         component: CNavItem,
         name: 'Tipo matricula',
         to: '/tipomatricula',
+        nameobject: 'navTipoMatricula',
       },
       {
         component: CNavItem,
         name: 'Periodo matricula',
         to: '/periodomatricula',
+        nameobject: 'navPeriodoMatricula',
       },
       {
         component: CNavItem,
         name: 'Estado matricula',
         to: '/estadomatricula',
+        nameobject: 'navEstadoMatricula',
       },
       {
         component: CNavItem,
         name: 'Concepto pago',
         to: '/conceptopago',
+        nameobject: 'navConceptoPago',
       },
       {
         component: CNavItem,
         name: 'Edificios',
         to: '/edificios',
+        nameobject: 'navEdificios',
       },
       {
         component: CNavItem,
         name: 'Dias',
         to: '/dias',
+        nameobject: 'navDias',
       },
       {
         component: CNavItem,
         name: 'Lista de Actividades',
         to: '/actividades',
+        nameobject: 'navListaActividades',
       },
       {
         component: CNavItem,
         name: 'Historial Procedencia',
         to: '/ListaHistoricoProc',
+        nameobject: 'navHistorialProcedencia',
       },
       {
         component: CNavItem,
         name: 'Cuentas Contables',
         to: '/Contabilidad',
+        nameobject: 'navCuentasContables',
       },
     ],
   },
@@ -167,85 +192,95 @@ const _nav = [
     component: CNavGroup,
     name: 'Contabilidad y Pagos',
     icon: cilDollar,
+    nameobject: 'navContabilidadYPagos',
     items: [
       {
         component: CNavItem,
         name: 'Pagos Matricula',
         to: '/ListaPagosMatricula',
+        nameobject: 'navPagosMatricula',
       },
       {
         component: CNavItem,
         name: 'Historial de Pagos Mensuales',
         to: '/HistorialPagosMensuales',
+        nameobject: 'navHistorialPagosMensuales',
       },
-     
       {
         component: CNavItem,
-        name: 'Libro Diario', // Nueva opción agregada
-        to: '/LibroDiario', // Ruta del libro diario
-         // Puedes agregar un icono si lo deseas
+        name: 'Libro Diario',
+        to: '/LibroDiario',
+        nameobject: 'navLibroDiario',
       },
     ],
   },
-
   {
     component: CNavGroup,
     name: 'Personas',
     icon: cilUser,
+    nameobject: 'navPersonas',
     items: [
       {
         component: CNavItem,
         name: 'Personas',
         to: '/ListaPersonas',
+        nameobject: 'navPersonasList',
       },
       {
         component: CNavItem,
         name: 'Familias',
         to: '/ListaEstructura',
+        nameobject: 'navFamilias',
       },
       {
         component: CNavItem,
         name: 'Estructuras',
         to: '/ListaEstructura',
+        nameobject: 'navEstructuras',
       },
       {
         component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
+        nameobject: 'navTipoRelaciones',
       },
       {
         component: CNavItem,
         name: 'Tipo persona',
         to: '/tipopersona',
+        nameobject: 'navTipoPersona',
       },
       {
         component: CNavItem,
         name: 'Departamento',
         to: '/departamento',
+        nameobject: 'navDepartamento',
       },
     ],
   },
-
-
   {
     component: CNavGroup,
     name: 'Reportes de Bitácora',
     icon: cilGraph,
+    nameobject: 'navReportesBitacora',
     items: [
       {
         component: CNavItem,
         name: 'Actividades del Sistema',
         to: '/ReporteActividades',
+        nameobject: 'navActividadesSistema',
       },
       {
         component: CNavItem,
         name: 'Historial de Inicios de Sesión',
         to: '/ReporteIniciosSesion',
+        nameobject: 'navIniciosSesion',
       },
       {
         component: CNavItem,
         name: 'Cambios en Datos',
         to: '/ReporteCambiosDatos',
+        nameobject: 'navCambiosDatos',
       },
     ],
   },
@@ -253,17 +288,19 @@ const _nav = [
     component: CNavGroup,
     name: 'Administrador de Usuarios',
     icon: cilUser,
+    nameobject: 'navAdministradorUsuarios',
     items: [
       {
         component: CNavItem,
         name: 'Usuarios',
         to: '/UserMagnament',
+        nameobject: 'navUsuarios',
       },
-     
       {
         component: CNavItem,
         name: 'Permisos',
         to: '/rolesandpermissions',
+        nameobject: 'navPermisos',
       },
     ],
   },

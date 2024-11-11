@@ -38,7 +38,7 @@ export const crearGrado = async (req, res) => {
 export const actualizarGrado = async (req, res) => {
     const { Cod_grado, Cod_ciclo, Nombre_grado } = req.body;
 
-    console.log('Datos recibidos para actualizar el grado:', req.body); 
+  //  console.log('Datos recibidos para actualizar el grado:', req.body); 
 
     try {
         await pool.query('CALL update_grados(?, ?, ?)', [

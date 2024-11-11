@@ -39,7 +39,7 @@ export const crearAsignatura = async (req, res) => {
 export const actualizarAsignatura = async (req, res) => {
     const { Cod_asignatura, Nombre_asignatura, Descripcion_asignatura } = req.body;
 
-    console.log('Datos recibidos:', req.body); // Agregado para verificar datos
+   // console.log('Datos recibidos:', req.body); // Agregado para verificar datos
 
     try {
         await pool.query('CALL update_asignatura(?, ?, ?)', [

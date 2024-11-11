@@ -4,6 +4,8 @@ import { useSelector } from 'react-redux';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
 import { AuthProvider } from "../context/AuthProvider";
+import { usePermission } from '../context/usePermission';  // Asegúrate de importar correctamente
+
 
 import RutaProtegida from './layout/RutaProtegida'; // Importa el componente RutaProtegida
 import RutaPublica from './layout/RutaPublica'; // Componente de rutas públicas
@@ -90,6 +92,7 @@ const App = () => {
 
   return (
     <Router>
+       <usePermission>
       <AuthProvider>
         <Suspense
           fallback={
@@ -171,6 +174,7 @@ const App = () => {
         </Suspense>
 
       </AuthProvider>
+      </usePermission>
     </Router>
   );
 };
