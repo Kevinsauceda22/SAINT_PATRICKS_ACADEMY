@@ -13,16 +13,56 @@ const LibroDiario = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [editingId, setEditingId] = useState(null);
-  const [formData, setFormData] = useState({
-    Fecha: '',
-    Descripcion: '',
-    Cod_cuenta: '',
-    Monto: '',
-    Tipo_transaccion: ''
+  const [formDataDeudor, setFormDataDeudor] = useState({
+    fecha: '',
+    descripcion: '',
+    cuenta: '',
+    monto: ''
   });
-  const [formErrors, setFormErrors] = useState({});
-  const [cuentasMap, setCuentasMap] = useState({});
 
+  const [formDataAcreedor, setFormDataAcreedor] = useState({
+    fecha: '',
+    descripcion: '',
+    cuenta: '',
+    monto: ''
+  });
+
+  const [formErrors, setFormErrors] = useState({
+    deudor: {},
+    acreedor: {}
+  });
+  const [cuentasMap, setCuentasMap] = useState({});
+  const [registroCount, setRegistroCount] = useState(0);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+  const [type, setType] = useState('deudor'); // o 'acreedor'
+  const [formErrorsDeudor, setFormErrorsDeudor] = useState({});
+  const [formErrorsAcreedor, setFormErrorsAcreedor] = useState({});
+  const checkIfButtonShouldBeDisabled = () => {
+    // Verifica si hay errores en el formulario que corresponde al tipo actual (deudor o acreedor)
+    const currentErrors = type === 'deudor' ? formErrorsDeudor : formErrorsAcreedor;
+  
+    // Si hay errores (es decir, si el objeto tiene alguna propiedad), deshabilita el botón
+    setIsButtonDisabled(Object.keys(currentErrors).length > 0);
+  };
+
+  // Computar si los formularios están completos
+  const formDataDeudorCompleto = formDataDeudor.Fecha && formDataDeudor.Descripcion && formDataDeudor.Cod_cuenta && formDataDeudor.Monto;
+  const formDataAcreedorCompleto = formDataAcreedor.Fecha && formDataAcreedor.Descripcion && formDataAcreedor.Cod_cuenta && formDataAcreedor.Monto;
+
+  // Actualiza el estado de isButtonDisabled cada vez que cambian los datos
+  useEffect(() => {
+    const isButtonDisabledTemp = registroCount < 2
+      ? !(formDataDeudorCompleto && formDataAcreedorCompleto) // ambos completos
+      : !(formDataDeudorCompleto || formDataAcreedorCompleto); // al menos uno completo
+
+    setIsButtonDisabled(isButtonDisabledTemp);
+  }, [formDataDeudor, formDataAcreedor, registroCount]);
+
+  useEffect(() => {
+    checkIfButtonShouldBeDisabled();
+  }, [formErrorsDeudor, formErrorsAcreedor]); // Cada vez que los errores cambian, actualizamos el estado
+  
+  
   useEffect(() => {
     fetchRegistros();
     fetchCuentas();
@@ -75,53 +115,58 @@ const LibroDiario = () => {
     }
   };
 
-  const validateForm = () => {
-    const errors = {};
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const selectedDate = new Date(formData.Fecha);
-    selectedDate.setHours(0, 0, 0, 0);
-
-    if (selectedDate > today) {
-      errors.Fecha = "No se puede seleccionar una fecha futura";
+  const validateForm = (type) => {
+    let errors = {};
+  
+    if (type === 'deudor') {
+      errors = validateDeudor();
+    } else if (type === 'acreedor') {
+      errors = validateAcreedor();
     }
-
-    if (!formData.Descripcion.trim()) {
-      errors.Descripcion = "La descripción es requerida";
-    }
-
-    if (!formData.Cod_cuenta) {
-      errors.Cod_cuenta = "Debe seleccionar una cuenta";
-    }
-
-    if (!formData.Monto || parseFloat(formData.Monto) <= 0) {
-      errors.Monto = "El monto debe ser mayor a 0";
-    }
-
-    if (!formData.Tipo_transaccion) {
-      errors.Tipo_transaccion = "Debe seleccionar un tipo de transacción";
-    }
-
-    setFormErrors(errors);
+  
+    setFormErrors(prevErrors => ({ ...prevErrors, [type]: errors }));
+  
     return Object.keys(errors).length === 0;
   };
+  
+  const validateDeudor = () => {
+    let errors = {};
+    if (!formDataDeudor.fecha) errors.fecha = 'Fecha es requerida';
+    if (!formDataDeudor.descripcion) errors.descripcion = 'Descripción es requerida';
+    if (!formDataDeudor.cuenta) errors.cuenta = 'Cuenta es requerida';
+    if (!formDataDeudor.monto || isNaN(formDataDeudor.monto)) errors.monto = 'Monto es requerido y debe ser un número';
+    return errors;
+  };
+  
+  const validateAcreedor = () => {
+    let errors = {};
+    if (!formDataAcreedor.fecha) errors.fecha = 'Fecha es requerida';
+    if (!formDataAcreedor.descripcion) errors.descripcion = 'Descripción es requerida';
+    if (!formDataAcreedor.cuenta) errors.cuenta = 'Cuenta es requerida';
+    if (!formDataAcreedor.monto || isNaN(formDataAcreedor.monto)) errors.monto = 'Monto es requerido y debe ser un número';
+    return errors;
+  };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setSuccess(null);
     
-    if (!validateForm()) {
+    // Validación de datos
+    if (!validateForm(type)) {
       return;
     }
-    
+
     try {
+      // URL y método HTTP dependiendo de si se está editando
       const url = editingId 
         ? `http://localhost:4000/api/Librodiario/${editingId}`
         : 'http://localhost:4000/api/Librodiario';
       
       const method = editingId ? 'PUT' : 'POST';
       
+      // Realiza la petición al servidor
       const response = await fetch(url, {
         method,
         headers: {
@@ -129,32 +174,46 @@ const LibroDiario = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          ...formData,
-          Monto: parseFloat(formData.Monto)
+          ...(type === "deudor" ? formDataDeudor : formDataAcreedor),
+          Monto: parseFloat((type === "deudor" ? formDataDeudor : formDataAcreedor).Monto) // Asegurarse de que Monto sea un número
         })
       });
 
+      // Si la respuesta del servidor no es satisfactoria, lanza un error
       if (!response.ok) {
         throw new Error('Error en la respuesta del servidor');
       }
 
+      // Mensaje de éxito
       setSuccess(editingId ? 'Registro actualizado con éxito' : 'Registro agregado con éxito');
-      setFormData({
-        Fecha: '',
+      
+      // Limpia el formulario después de un registro exitoso
+      setFormDataDeudor({
+        Fecha: new Date().toISOString().split('T')[0],
         Descripcion: '',
         Cod_cuenta: '',
-        Monto: '',
-        Tipo_transaccion: ''
+        Monto: ''
+      });
+      setFormDataAcreedor({
+        Fecha: new Date().toISOString().split('T')[0],
+        Descripcion: '',
+        Cod_cuenta: '',
+        Monto: ''
       });
       setEditingId(null);
       setFormErrors({});
+
+      // Llama a la función para obtener los registros actualizados
       await fetchRegistros();
     } catch (err) {
+      // Manejo de errores
       setError('Error al procesar la operación: ' + err.message);
       console.error('Error en submit:', err);
     }
   };
 
+
+  
   const handleDelete = async (cod_libro_diario) => {
     if (!window.confirm('¿Está seguro de eliminar este registro?')) return;
     
@@ -175,17 +234,31 @@ const LibroDiario = () => {
     }
   };
 
-  const handleEdit = (registro) => {
-    setFormData({
-      Fecha: registro.Fecha.split('T')[0],
-      Descripcion: registro.Descripcion,
-      Cod_cuenta: registro.Cod_cuenta,
-      Monto: registro.Monto.toString(),
-      Tipo_transaccion: registro.Tipo_transaccion
-    });
+  const handleEdit = (registro, type) => {
+    // Verifica si el tipo es 'deudor' o 'acreedor' y asigna los datos correspondientes
+    if (type === "deudor") {
+      setFormDataDeudor({
+        Fecha: registro.Fecha.split('T')[0],
+        Descripcion: registro.Descripcion,
+        Cod_cuenta: registro.Cod_cuenta,
+        Monto: registro.Monto.toString()
+      });
+    } else if (type === "acreedor") {
+      setFormDataAcreedor({
+        Fecha: registro.Fecha.split('T')[0],
+        Descripcion: registro.Descripcion,
+        Cod_cuenta: registro.Cod_cuenta,
+        Monto: registro.Monto.toString()
+      });
+    }
+  
+    // Establece el ID de edición
     setEditingId(registro.cod_libro_diario);
+  
+    // Desplázate hacia la parte superior de la página
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  
 
   const generatePDF = () => {
     try {
@@ -209,8 +282,7 @@ const LibroDiario = () => {
         `L ${parseFloat(registro.Monto).toLocaleString('es-HN', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2
-        })}`,
-        registro.Tipo_transaccion
+        })}`
       ]);
 
       doc.autoTable({
@@ -236,6 +308,26 @@ const LibroDiario = () => {
     }
   };
 
+  const handleRegister = () => {
+    setRegistroCount(prevCount => prevCount + 1); // Incrementa el contador
+    
+    // Reinicia los formularios de Deudor y Acreedor
+    setFormDataDeudor({
+      Fecha: new Date().toISOString().split('T')[0],
+      Descripcion: '',
+      Cod_cuenta: '',
+      Monto: ''
+    });
+    setFormDataAcreedor({
+      Fecha: new Date().toISOString().split('T')[0],
+      Descripcion: '',
+      Cod_cuenta: '',
+      Monto: ''
+    });
+  };
+  
+  
+
   return (
     <div className="max-w-7xl mx-auto p-4">
       <div className="mb-6">
@@ -259,136 +351,221 @@ const LibroDiario = () => {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className={`bg-white rounded-lg shadow p-6 mb-6 ${editingId ? 'border-2 border-green-500' : 'border border-gray-200'}`}>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <Calendar className="w-4 h-4 mr-2" />
-              Fecha
-            </label>
-            <input
-              type="date"
-              max={new Date().toISOString().split('T')[0]}
-              value={formData.Fecha}
-              onChange={(e) => setFormData({...formData, Fecha: e.target.value})}
-              className={`w-full rounded-md border ${formErrors.Fecha ? 'border-red-500' : 'border-gray-300'} 
-                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
-            />
-            {formErrors.Fecha && (
-              <p className="text-red-500 text-xs mt-1">{formErrors.Fecha}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <List className="w-4 h-4 mr-2" />
-              Descripción
-            </label>
-            <input
-              type="text"
-              value={formData.Descripcion}
-              onChange={(e) => setFormData({...formData, Descripcion: e.target.value})}
-              className={`w-full rounded-md border ${formErrors.Descripcion ? 'border-red-500' : 'border-gray-300'} 
-                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
-              placeholder="Ingrese la descripción"
-            />
-            {formErrors.Descripcion && (
-              <p className="text-red-500 text-xs mt-1">{formErrors.Descripcion}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <FileText className="w-4 h-4 mr-2" />
-              Cuenta
-            </label>
-            <select
-              value={formData.Cod_cuenta}
-              onChange={(e) => setFormData({...formData, Cod_cuenta: e.target.value})}
-              className={`w-full rounded-md border ${formErrors.Cod_cuenta ? 'border-red-500' : 'border-gray-300'} 
-                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
-            >
-              <option value="">Seleccione una cuenta</option>
-              {cuentas.map((cuenta) => (
-                <option key={cuenta.Cod_cuenta} value={cuenta.Cod_cuenta}>
-                  {cuenta.Cod_cuenta} - {cuenta.Nombre_cuenta || 'Sin nombre'}
-                </option>
-              ))}
-            </select>
-            {formErrors.Cod_cuenta && (
-              <p className="text-red-500 text-xs mt-1">{formErrors.Cod_cuenta}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <DollarSign className="w-4 h-4 mr-2" />
-              Monto (L)
-            </label>
-            <input
-              type="number"
-              value={formData.Monto}
-              onChange={(e) => setFormData({...formData, Monto: e.target.value})}
-              className={`w-full rounded-md border ${formErrors.Monto ? 'border-red-500' : 'border-gray-300'} 
-                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
-              placeholder="0.00"
-              step="0.01"
-              min="0"
-            />
-            {formErrors.Monto && (
-              <p className="text-red-500 text-xs mt-1">{formErrors.Monto}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <label className="flex items-center text-sm font-medium text-gray-700">
-              <FileText className="w-4 h-4 mr-2" />
-              Tipo de Transacción
-            </label>
-            <select
-              value={formData.Tipo_transaccion}
-              onChange={(e) => setFormData({...formData, Tipo_transaccion: e.target.value})}
-              className={`w-full rounded-md border ${formErrors.Tipo_transaccion ? 'border-red-500' : 'border-gray-300'} 
-                       px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
-            >
-              <option value="">Seleccione el tipo</option>
-              <option value="Ingreso">Ingreso</option>
-              <option value="Egreso">Egreso</option>
-              </select>
-            {formErrors.Tipo_transaccion && (
-              <p className="text-red-500 text-xs mt-1">{formErrors.Tipo_transaccion}</p>
-            )}
-          </div>
-
-          <div className="flex items-end space-x-4">
-            <button
-              type="submit"
-              className="bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200"
-            >
-              {editingId ? 'Actualizar' : 'Registrar'}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingId(null);
-                  setFormData({
-                    Fecha: '',
-                    Descripcion: '',
-                    Cod_cuenta: '',
-                    Monto: '',
-                    Tipo_transaccion: ''
-                  });
-                  setFormErrors({});
-                }}
-                className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
-              >
-                Cancelar
-              </button>
-            )}
-          </div>
+<form onSubmit={handleSubmit} className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-200">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Columna Deudor */}
+    <div>
+      <h2 className="text-lg font-semibold mb-4 text-left">Deudor</h2>
+      <div className="space-y-4">
+        {/* Fecha */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <Calendar className="w-4 h-4 mr-2" />
+            Fecha
+          </label>
+          <input
+            type="date"
+            max={new Date().toISOString().split('T')[0]}
+            value={formDataDeudor.Fecha}
+            onChange={(e) => setFormDataDeudor({...formDataDeudor, Fecha: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Fecha ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+          />
+          {formErrors.Fecha && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Fecha}</p>
+          )}
         </div>
-      </form>
+
+        {/* Descripción */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <List className="w-4 h-4 mr-2" />
+            Descripción
+          </label>
+          <input
+            type="text"
+            value={formDataDeudor.Descripcion}
+            onChange={(e) => setFormDataDeudor({...formDataDeudor, Descripcion: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Descripcion ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+            placeholder="Ingrese la descripción"
+          />
+          {formErrors.Descripcion && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Descripcion}</p>
+          )}
+        </div>
+
+        {/* Cuenta */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <FileText className="w-4 h-4 mr-2" />
+            Cuenta
+          </label>
+          <select
+            value={formDataDeudor.Cod_cuenta}
+            onChange={(e) => setFormDataDeudor({...formDataDeudor, Cod_cuenta: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Cod_cuenta ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+          >
+            <option value="">Seleccione una cuenta</option>
+            {cuentas.map((cuenta) => (
+              <option key={cuenta.Cod_cuenta} value={cuenta.Cod_cuenta}>
+                {cuenta.Cod_cuenta} - {cuenta.Nombre_cuenta || 'Sin nombre'}
+              </option>
+            ))}
+          </select>
+          {formErrors.Cod_cuenta && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Cod_cuenta}</p>
+          )}
+        </div>
+
+        {/* Monto */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Monto (L)
+          </label>
+          <input
+            type="number"
+            value={formDataDeudor.Monto}
+            onChange={(e) => setFormDataDeudor({...formDataDeudor, Monto: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Monto ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+          />
+          {formErrors.Monto && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Monto}</p>
+          )}
+        </div>
+      </div>
+    </div>
+
+    {/* Columna Acreedor */}
+    <div>
+      <h2 className="text-lg font-semibold mb-4 text-left">Acreedor</h2>
+      <div className="space-y-4">
+        {/* Fecha */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <Calendar className="w-4 h-4 mr-2" />
+            Fecha
+          </label>
+          <input
+            type="date"
+            max={new Date().toISOString().split('T')[0]}
+            value={formDataAcreedor.Fecha}
+            onChange={(e) => setFormDataAcreedor({...formDataAcreedor, Fecha: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Fecha ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+          />
+          {formErrors.Fecha && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Fecha}</p>
+          )}
+        </div>
+
+        {/* Descripción */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <List className="w-4 h-4 mr-2" />
+            Descripción
+          </label>
+          <input
+            type="text"
+            value={formDataAcreedor.Descripcion}
+            onChange={(e) => setFormDataAcreedor({...formDataAcreedor, Descripcion: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Descripcion ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+            placeholder="Ingrese la descripción"
+          />
+          {formErrors.Descripcion && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Descripcion}</p>
+          )}
+        </div>
+
+        {/* Cuenta */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <FileText className="w-4 h-4 mr-2" />
+            Cuenta
+          </label>
+          <select
+            value={formDataAcreedor.Cod_cuenta}
+            onChange={(e) => setFormDataAcreedor({...formDataAcreedor, Cod_cuenta: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Cod_cuenta ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+          >
+            <option value="">Seleccione una cuenta</option>
+            {cuentas.map((cuenta) => (
+              <option key={cuenta.Cod_cuenta} value={cuenta.Cod_cuenta}>
+                {cuenta.Cod_cuenta} - {cuenta.Nombre_cuenta || 'Sin nombre'}
+              </option>
+            ))}
+          </select>
+          {formErrors.Cod_cuenta && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Cod_cuenta}</p>
+          )}
+        </div>
+
+        {/* Monto */}
+        <div className="space-y-2">
+          <label className="flex items-center text-sm font-medium text-gray-700">
+            <DollarSign className="w-4 h-4 mr-2" />
+            Monto (L)
+          </label>
+          <input
+            type="number"
+            value={formDataAcreedor.Monto}
+            onChange={(e) => setFormDataAcreedor({...formDataAcreedor, Monto: e.target.value})}
+            className={`w-full rounded-md border ${formErrors.Monto ? 'border-red-500' : 'border-gray-300'} 
+                     px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500`}
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+          />
+          {formErrors.Monto && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.Monto}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div className="mt-6 flex justify-between">
+    <button
+      type="button"
+      onClick={() => {
+        setEditingId(null);
+        setFormDataDeudor({
+          Fecha: new Date().toISOString().split('T')[0],
+          Descripcion: '',
+          Cod_cuenta: '',
+          Monto: ''
+        });
+        setFormDataAcreedor({
+          Fecha: new Date().toISOString().split('T')[0],
+          Descripcion: '',
+          Cod_cuenta: '',
+          Monto: ''
+        });
+        setFormErrors({});
+      }}
+      className="bg-gray-500 text-black px-6 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors duration-200"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      disabled={isButtonDisabled}
+      className={`bg-green-500 text-black px-6 py-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors duration-200 ${isButtonDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+    >
+      {editingId ? 'Actualizar' : (registroCount >= 2 ? 'Registrar' : 'Registrar')}
+    </button>
+  </div>
+</form>
+
+
 
       <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex justify-between items-center">
@@ -448,15 +625,6 @@ const LibroDiario = () => {
                           maximumFractionDigits: 2
                         })}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        registro.Tipo_transaccion === 'Ingreso' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {registro.Tipo_transaccion}
-                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                       <button
