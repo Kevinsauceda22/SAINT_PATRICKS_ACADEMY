@@ -3,6 +3,7 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { AlertCircle, Check, FileText, Edit2, Trash2, Calendar, DollarSign, List } from 'lucide-react';
 import './LibroDiario.css';
+import Swal from 'sweetalert2';
 
 
 
@@ -34,6 +35,7 @@ const LibroDiario = () => {
   const [cuentasMap, setCuentasMap] = useState({});
   const [registroCount, setRegistroCount] = useState(0);
   const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+
   const [type, setType] = useState('deudor'); // o 'acreedor'
   const [formErrorsDeudor, setFormErrorsDeudor] = useState({});
   const [formErrorsAcreedor, setFormErrorsAcreedor] = useState({});
@@ -147,26 +149,23 @@ const LibroDiario = () => {
     return errors;
   };
   
-
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault(); // Importante para evitar que el formulario se envíe por defecto
     setError(null);
     setSuccess(null);
-    
+  
     // Validación de datos
     if (!validateForm(type)) {
       return;
     }
-
+  
     try {
-      // URL y método HTTP dependiendo de si se está editando
       const url = editingId 
         ? `http://localhost:4000/api/Librodiario/${editingId}`
         : 'http://localhost:4000/api/Librodiario';
       
       const method = editingId ? 'PUT' : 'POST';
-      
-      // Realiza la petición al servidor
+  
       const response = await fetch(url, {
         method,
         headers: {
@@ -175,19 +174,17 @@ const LibroDiario = () => {
         },
         body: JSON.stringify({
           ...(type === "deudor" ? formDataDeudor : formDataAcreedor),
-          Monto: parseFloat((type === "deudor" ? formDataDeudor : formDataAcreedor).Monto) // Asegurarse de que Monto sea un número
+          Monto: parseFloat((type === "deudor" ? formDataDeudor : formDataAcreedor).Monto)
         })
       });
-
-      // Si la respuesta del servidor no es satisfactoria, lanza un error
+  
       if (!response.ok) {
         throw new Error('Error en la respuesta del servidor');
       }
-
-      // Mensaje de éxito
+  
       setSuccess(editingId ? 'Registro actualizado con éxito' : 'Registro agregado con éxito');
-      
-      // Limpia el formulario después de un registro exitoso
+  
+      // Limpieza después de éxito
       setFormDataDeudor({
         Fecha: new Date().toISOString().split('T')[0],
         Descripcion: '',
@@ -202,21 +199,35 @@ const LibroDiario = () => {
       });
       setEditingId(null);
       setFormErrors({});
-
-      // Llama a la función para obtener los registros actualizados
+      
+      // Llamar a la función para obtener los registros actualizados
       await fetchRegistros();
     } catch (err) {
-      // Manejo de errores
       setError('Error al procesar la operación: ' + err.message);
       console.error('Error en submit:', err);
     }
   };
+  
 
 
   
   const handleDelete = async (cod_libro_diario) => {
-    if (!window.confirm('¿Está seguro de eliminar este registro?')) return;
+    console.log('Cod_libro_diario:', cod_libro_diario); // Verifica si el valor es correcto
     
+    // Mostrar la alerta de confirmación con SweetAlert
+    const result = await Swal.fire({
+      title: '¿Está seguro de eliminar este registro?',
+      text: "¡No podrás revertir esta acción!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    });
+  
+    if (!result.isConfirmed) return;
+  
     try {
       const response = await fetch(`http://localhost:4000/api/Librodiario/${cod_libro_diario}`, {
         method: 'DELETE',
@@ -224,15 +235,27 @@ const LibroDiario = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-
+  
       if (!response.ok) throw new Error('Error al eliminar el registro');
-
-      setSuccess('Registro eliminado con éxito');
-      await fetchRegistros();
+  
+      // Mostrar mensaje de éxito
+      Swal.fire(
+        '¡Eliminado!',
+        'El registro ha sido eliminado con éxito.',
+        'success'
+      );
+  
+      await fetchRegistros(); // Recargar la lista de registros
     } catch (err) {
-      setError('Error al eliminar: ' + err.message);
+      // Mostrar mensaje de error
+      Swal.fire(
+        'Error',
+        'Error al eliminar: ' + err.message,
+        'error'
+      );
     }
   };
+  
 
   const handleEdit = (registro, type) => {
     // Verifica si el tipo es 'deudor' o 'acreedor' y asigna los datos correspondientes
@@ -606,7 +629,7 @@ const LibroDiario = () => {
                 </tr>
               ) : (
                 registros.map((registro) => (
-                  <tr key={registro.cod_libro_diario}>
+                  <tr key={registro.Cod_libro_diario}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {new Date(registro.Fecha).toLocaleDateString()}
                     </td>
@@ -634,11 +657,13 @@ const LibroDiario = () => {
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(registro.cod_libro_diario)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+  onClick={() => handleDelete(registro.Cod_libro_diario)}
+  className="text-red-600 hover:text-red-900"
+>
+  <Trash2 className="w-4 h-4" />
+</button>
+
+
                     </td>
                   </tr>
                 ))

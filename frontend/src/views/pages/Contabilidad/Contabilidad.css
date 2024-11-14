@@ -1,0 +1,278 @@
+/* Variables globales */
+:root {
+    --primary-color: #1e40af;
+    --primary-hover: #1e3a8a;
+    --secondary-color: #64748b;
+    --danger-color: #dc2626;
+    --warning-color: #d97706;
+    --success-color: #16a34a;
+    --background-color: #f8fafc;
+    --border-color: #e2e8f0;
+    --text-color: #1e293b;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Estilos generales del contenedor */
+  .catalogo-container {
+    padding: 2rem;
+    max-width: 1280px;
+    margin: 0 auto;
+    background-color: white;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Card principal */
+  .catalogo-card {
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    background-color: white;
+    box-shadow: var(--shadow-sm);
+  }
+  
+  /* Header del catálogo */
+  .catalogo-header {
+    background-color: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .catalogo-title {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+  }
+  
+  /* Contenedor de botones */
+  .button-container {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Estilos de botones */
+  .btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--primary-hover);
+  }
+  
+  .btn-secondary {
+    background-color: white;
+    border: 1px solid var(--border-color);
+    color: var(--secondary-color);
+  }
+  
+  .btn-secondary:hover {
+    background-color: var(--background-color);
+  }
+  
+  .btn-warning {
+    background-color: var(--warning-color);
+    color: white;
+  }
+  
+  .btn-warning:hover {
+    background-color: #b45309;
+  }
+  
+  .btn-danger {
+    background-color: var(--danger-color);
+    color: white;
+  }
+  
+  .btn-danger:hover {
+    background-color: #b91c1c;
+  }
+  
+  /* Campo de búsqueda */
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+  
+  .search-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.2);
+  }
+  
+  /* Tabla */
+  .table-container {
+    overflow-x: auto;
+    margin: 1rem 0;
+  }
+  
+  .catalogo-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  
+  .catalogo-table th {
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-weight: 500;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+  }
+  
+  .catalogo-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-color);
+  }
+  
+  .catalogo-table tr:hover {
+    background-color: var(--background-color);
+  }
+  
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background-color: white;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    width: 100%;
+    max-width: 32rem;
+    box-shadow: var(--shadow-md);
+  }
+  
+  /* Formulario */
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+  
+  .form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(30, 64, 175, 0.2);
+  }
+  
+  .form-select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    background-color: white;
+    cursor: pointer;
+  }
+  
+  /* Acciones en la tabla */
+  .table-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Loader */
+  .loader {
+    border: 3px solid var(--border-color);
+    border-radius: 50%;
+    border-top: 3px solid var(--primary-color);
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  /* Mensajes de error */
+  .error-message {
+    background-color: #fee2e2;
+    border: 1px solid #fecaca;
+    color: var(--danger-color);
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin: 1rem 0;
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .catalogo-header {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+    }
+  
+    .button-container {
+      flex-direction: column;
+    }
+  
+    .table-actions {
+      flex-direction: column;
+    }
+  
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  .button-container-top {
+    margin: 20px 0;
+    display: flex;
+    justify-content: flex-start;
+  }
+  
+  .button-container-top .btn {
+    margin-right: 10px;
+  }
+  

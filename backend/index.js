@@ -46,6 +46,7 @@ import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamilia
 import catalogoCuentasRoutes from './module/Contabilidad/Contabilidad_routes.js'; // Cambia la ruta según tu estructura de carpetas
 import libroDiarioRoutes from './module/Contabilidad/librodiario_routes.js'; // Asegúrate de usar la ruta correcta
 import PermisosRoutes from './module/Permisos/Permisos_routes.js'; // Asegúrate de usar la ruta correcta
+import departamento from './module/personas/Routes/departamento_routes.js';
 
 
 
@@ -148,7 +149,7 @@ app.use('/api/periodomatricula', periodomatriculaRoutes);
 // Usar las rutas de solicitud
 app.use('/api/estadomatricula', estadomatriculaRoutes);
 // Usar las rutas de solicitud
-app.use('/api/departamento', departamentoRoutes);
+app.use('/api/departamento', departamento);
 // Usar las rutas de solicitud
 app.use('/api/conceptopago', conceptopagoRoutes);
 // Usar las rutas de solicitud

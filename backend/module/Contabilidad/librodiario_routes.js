@@ -14,10 +14,10 @@ const router = express.Router();
 router.post('/',checkAuth, agregarRegistro);
 
 // Ruta para editar un registro existente del libro diario
-router.put('/:cod_libro_diario',checkAuth, editarRegistro);
+router.put('/:Cod_libro_diario',checkAuth, editarRegistro);
 
 // Ruta para eliminar un registro del libro diario
-router.delete('/:cod_libro_diario',checkAuth, eliminarRegistro);
+router.delete('/:Cod_libro_diario',checkAuth, eliminarRegistro);
 
 // Ruta para obtener todos los registros del libro diario
 router.get('/', checkAuth,obtenerRegistros);

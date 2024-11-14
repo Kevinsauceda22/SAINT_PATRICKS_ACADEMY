@@ -1,12 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, ShieldOff, AlertCircle, Search, ChevronDown } from 'lucide-react';
+import { 
+  Shield, 
+  ShieldOff, 
+  AlertCircle, 
+  Search, 
+  ChevronDown,
+  UserPlus,
+  BookOpen,
+  Users,
+  Briefcase,
+  UserCog
+} from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import Swal from 'sweetalert2';
 import './UserManagement.css';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
-
 //GestionUsuarios
 const UserManagement = () => {
   const { canSelect, loading, error } = usePermission('GestionUsuarios');
@@ -19,11 +29,81 @@ const UserManagement = () => {
 
   const [processingUsers, setProcessingUsers] = useState(new Set());
   const loggedInUserId = localStorage.getItem('userId');
+  const [showUserMenu, setShowUserMenu] = useState(false);
+
   const loggedInUserRole = localStorage.getItem('userRole');
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+
+  const userTypes = [
+    {
+      id: 2,
+      title: 'Administrador',
+      description: 'Acceso completo al sistema',
+      icon: UserCog,
+      color: 'bg-blue-500'
+    },
+    {
+      id: 4,
+      title: 'Manager',
+      description: 'Gestión de recursos y usuarios',
+      icon: Briefcase,
+      color: 'bg-green-500'
+    },
+    {
+      id: 1,
+      title: 'Padre',
+      description: 'Acceso a información de estudiantes',
+      icon: Users,
+      color: 'bg-orange-500'
+    },
+    {
+      id: 3,
+      title: 'Docente',
+      description: 'Gestión de clases y calificaciones',
+      icon: BookOpen,
+      color: 'bg-purple-500'
+    }
+  ];
+
+
+
+
+ const handleAddUser = (roleType) => {
+    let roleText = userTypes.find(type => type.id === roleType)?.title || '';
+
+    Swal.fire({
+      title: `Agregar ${roleText}`,
+      html: `
+        <input id="name" class="swal2-input" placeholder="Nombre completo">
+        <input id="email" class="swal2-input" placeholder="Correo electrónico">
+        <input id="password" type="password" class="swal2-input" placeholder="Contraseña">
+      `,
+      showCancelButton: true,
+      confirmButtonText: 'Agregar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const name = document.getElementById('name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        if (!name || !email || !password) {
+          Swal.showValidationMessage('Por favor complete todos los campos');
+        }
+        return { name, email, password };
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        // Aquí iría la lógica para agregar el usuario
+        Swal.fire('¡Éxito!', `${roleText} agregado correctamente`, 'success');
+        setShowUserMenu(false);
+      }
+    });
+  };
+
+  
 
   const fetchUsers = async () => {
     setLoadingg(true);
@@ -49,12 +129,7 @@ const UserManagement = () => {
       setUsers(userData);
 
       if (userData.length > 0) {
-        Swal.fire({
-          title: 'Éxito',
-          text: 'Usuarios cargados correctamente',
-          icon: 'success',
-          confirmButtonText: 'Aceptar',
-        });
+       
       } else {
         Swal.fire({
           title: 'Aviso',
@@ -269,8 +344,37 @@ const UserManagement = () => {
   }
   return (
     <div className="user-management">
-      <div className="header">
-        <h1>Gestión de Usuarios</h1>
+    <div className="header">
+      <div className="header-top">
+          <h1>Gestión de Usuarios</h1>
+          <button 
+            className="btn btn-primary add-user-main"
+            onClick={() => setShowUserMenu(!showUserMenu)}
+          >
+            <UserPlus size={20} className="me-2" />
+            Agregar Usuario
+          </button>
+        </div>
+        {showUserMenu && (
+          <div className="user-types-grid">
+            {userTypes.map((type) => (
+              <div 
+                key={type.id}
+                className="user-type-card"
+                onClick={() => handleAddUser(type.id)}
+              >
+                <div className={`icon-wrapper ${type.color}`}>
+                  <type.icon size={24} className="text-white" />
+                </div>
+                <div className="user-type-info">
+                  <h3>{type.title}</h3>
+                  <p>{type.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {errorMessage && <div className="error-message">{errorMessage}</div>}
 
         <div className="controls">

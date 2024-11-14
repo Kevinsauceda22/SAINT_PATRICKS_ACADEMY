@@ -2,242 +2,29 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { Plus } from 'lucide-react';
 import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
+import AccessDenied from "../AccessDenied/AccessDenied";
+import '../Contabilidad/Contabilidad.css';
 
-const styles = `
-  .catalogo-container {
-    padding: 30px;
-    max-width: 1400px;
-    margin: 0 auto;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f0f4f8;
-    min-height: 100vh;
-  }
-
-  .panel {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-    transition: transform 0.2s;
-  }
-
-  .panel:hover {
-    transform: translateY(-2px);
-  }
-
-  .panel-header {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    color: white;
-    padding: 25px 30px;
-    border-radius: 16px 16px 0 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
-  }
-
-  .panel-title {
-    font-size: 28px;
-    font-weight: 600;
-    margin: 0;
-    letter-spacing: -0.5px;
-  }
-
-  .button-group {
-    display: flex;
-    gap: 12px;
-  }
-
-  .btn {
-    padding: 10px 20px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-weight: 600;
-    font-size: 15px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .btn-white {
-    background: rgba(255, 255, 255, 0.9);
-    color: #2563eb;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-
-  .btn-white:hover {
-    background: white;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-  }
-
-  .panel-content {
-    padding: 30px;
-  }
-
-  .search-container {
-    margin-bottom: 25px;
-    position: relative;
-  }
-
-  .search-input {
-    width: 100%;
-    padding: 15px 25px 15px 50px;
-    border: 2px solid #e2e8f0;
-    border-radius: 12px;
-    font-size: 16px;
-    transition: all 0.3s ease;
-    background: #f8fafc;
-  }
-
-  .search-input:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-    background: white;
-  }
-
-  .search-icon {
-    position: absolute;
-    left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #64748b;
-    font-size: 20px;
-  }
-
-  .table-container {
-    overflow-x: auto;
-    border-radius: 12px;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-  }
-
-  .table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    text-align: left;
-  }
-
-  .table th {
-    background: #f1f5f9;
-    padding: 16px 20px;
-    font-weight: 600;
-    color: #334155;
-    border-bottom: 2px solid #e2e8f0;
-    text-transform: uppercase;
-    font-size: 14px;
-    letter-spacing: 0.5px;
-  }
-
-  .table td {
-    padding: 16px 20px;
-    border-bottom: 1px solid #e2e8f0;
-    color: #334155;
-    font-size: 15px;
-  }
-
-  .table tbody tr {
-    transition: all 0.2s ease;
-  }
-
-  .table tbody tr:nth-child(even) {
-    background: #f8fafc;
-  }
-
-  .table tbody tr:hover {
-    background: #f1f5f9;
-    transform: scale(1.001);
-  }
-
-  .badge {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-  }
-
-  .badge-deudora {
-    background: #dcfce7;
-    color: #166534;
-  }
-
-  .badge-acreedora {
-    background: #dbeafe;
-    color: #1e40af;
-  }
-
-  .error-message {
-    margin-top: 20px;
-    padding: 16px;
-    background: #fef2f2;
-    color: #dc2626;
-    border-radius: 12px;
-    border: 1px solid #fee2e2;
-    font-weight: 500;
-  }
-
-  .chart-container {
-    margin-top: 30px;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
-  }
-
-  @media (max-width: 768px) {
-    .catalogo-container {
-      padding: 15px;
-    }
-
-    .panel-header {
-      flex-direction: column;
-      gap: 20px;
-      padding: 20px;
-    }
-
-    .button-group {
-      width: 100%;
-      justify-content: stretch;
-    }
-
-    .btn {
-      flex: 1;
-      justify-content: center;
-    }
-
-    .table td, .table th {
-      padding: 12px 15px;
-      font-size: 14px;
-    }
-  }
-`;
 
 const CatalogoContable = () => {
-  const { canSelect } = usePermission('Contabilidad');
+  const [canCreate, setCanCreate] = useState(true);  // Asegúrate de que esto sea true para ver el botón
+
+  const { canSelect, canUpdate, canDelete } = usePermission('Contabilidad');
   const [cuentas, setCuentas] = useState([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+
   const [filteredCuentas, setFilteredCuentas] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingCuenta, setEditingCuenta] = useState(null);
+
+  
 
   useEffect(() => {
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = styles;
-    document.head.appendChild(styleSheet);
-    
     fetchCuentas();
-    
-    return () => {
-      document.head.removeChild(styleSheet);
-    };
   }, []);
 
   useEffect(() => {
@@ -249,6 +36,7 @@ const CatalogoContable = () => {
     );
   }, [searchTerm, cuentas]);
 
+  
   const fetchCuentas = async () => {
     try {
       const response = await axios.get('http://localhost:4000/api/catalogoCuentas', {
@@ -263,8 +51,77 @@ const CatalogoContable = () => {
     }
   };
 
+  const handleCreate = () => {
+    setEditingCuenta({
+      Cod_cuenta: '',
+      Nombre_cuenta: '',
+      Descripcion: '',
+      Naturaleza_cuenta: 'DEUDORA',
+      Nivel: '1'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEdit = (cuenta) => {
+    setEditingCuenta(cuenta);
+    setShowEditModal(true);
+  };
+
+  const handleDelete = async (cuenta) => {
+    if (window.confirm('¿Está seguro de eliminar esta cuenta?')) {
+      try {
+        await axios.delete(`http://localhost:4000/api/catalogoCuentas/${cuenta.Cod_cuenta}`, {
+          headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          }
+        });
+        fetchCuentas();
+      } catch (err) {
+        setError('Error al eliminar la cuenta: ' + err.message);
+      }
+    }
+  };
+
+ 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingCuenta.Cod_cuenta) {
+        await axios.put(
+          `http://localhost:4000/api/catalogoCuentas/${editingCuenta.Cod_cuenta}`,
+          editingCuenta,
+          {
+            headers: {
+              'Authorization': 'Bearer ' + localStorage.getItem('token')
+            }
+          }
+        );
+      } else {
+        await axios.post(
+          'http://localhost:4000/api/catalogoCuentas',
+          editingCuenta,
+          {
+            headers: {
+              'Authorization': 'Bearer ' + localStorage.getItem('token')
+            }
+          }
+        );
+      }
+      setShowEditModal(false);
+      fetchCuentas();
+    } catch (err) {
+      setError('Error al guardar la cuenta: ' + err.message);
+    }
+  };
+ // Función que maneja la creación de la cuenta
+ const handleCreateAccount = () => {
+  setShowCreateForm(true);
+  // Aquí puedes agregar más lógica, como redirigir a otro formulario, etc.
+  console.log('Creando nueva cuenta');
+};
+
+
   const generateChartData = () => {
-    // Contar cuentas por nivel
     const niveles = {};
     cuentas.forEach(cuenta => {
       niveles[cuenta.Nivel] = (niveles[cuenta.Nivel] || 0) + 1;
@@ -280,43 +137,29 @@ const CatalogoContable = () => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
     
-    // Colores corporativos
-    const colorVerdePrimario = [46, 125, 50];  // #2E7D32
-    const colorVerdeSecundario = [129, 199, 132]; // #81C784
+    const colorVerdePrimario = [46, 125, 50];
+    const colorVerdeSecundario = [129, 199, 132];
     
-    // Agregar logo (ajusta las coordenadas y dimensiones según tu logo)
-    // doc.addImage('/ruta/logo-escuela.png', 'PNG', 15, 10, 40, 20);
-    
-    // Encabezado con diseño
     doc.setFillColor(...colorVerdePrimario);
     doc.rect(0, 0, pageWidth, 40, 'F');
     
-    // Título
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(24);
     doc.text('Catálogo de Cuentas Contables', pageWidth/2, 25, { align: 'center' });
     
-    // Información del generador
     const usuario = localStorage.getItem('nombreUsuario') || 'Usuario del Sistema';
     doc.setFontSize(11);
     doc.setTextColor(80);
     doc.text(`Generado por: ${usuario}`, 15, 50);
     doc.text(`Fecha: ${new Date().toLocaleDateString()}`, pageWidth - 15, 50, { align: 'right' });
     
-    // Función para ofuscar datos sensibles
     const ofuscarDato = (texto) => {
       if (!texto) return '';
       return texto.length > 4 ? texto.substring(0, 2) + '*'.repeat(texto.length - 4) + texto.slice(-2) : texto;
     };
   
-    // Tabla con estilo mejorado
-    const tableColumn = [
-      "Código", 
-      "Nombre", 
-      "Naturaleza", 
-      "Nivel"
-    ];
+    const tableColumn = ["Código", "Nombre", "Naturaleza", "Nivel"];
     
     const tableRows = filteredCuentas.map(cuenta => [
       cuenta.Cod_cuenta,
@@ -325,7 +168,6 @@ const CatalogoContable = () => {
       cuenta.Nivel
     ]);
   
-    // Configuración de la tabla
     doc.autoTable({
       startY: 60,
       head: [tableColumn],
@@ -352,43 +194,35 @@ const CatalogoContable = () => {
       },
     });
   
-    // Añadir gráfico de distribución
     const chartData = generateChartData();
     const chartStartY = doc.lastAutoTable.finalY + 20;
   
-    // Título de la sección de gráficos
     doc.setFillColor(...colorVerdeSecundario);
     doc.rect(15, chartStartY, pageWidth - 30, 10, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.text('Distribución de Cuentas por Nivel', pageWidth/2, chartStartY + 7, { align: 'center' });
   
-    // Gráfico de barras
     const maxValue = Math.max(...chartData.data);
     const barWidth = 20;
     const barMaxHeight = 60;
     let x = 30;
   
-    // Dibujar barras
     chartData.labels.forEach((label, index) => {
       const barHeight = (chartData.data[index] / maxValue) * barMaxHeight;
       
-      // Barra
       doc.setFillColor(...colorVerdePrimario);
       doc.rect(x, chartStartY + 20 + (barMaxHeight - barHeight), barWidth, barHeight, 'F');
       
-      // Etiqueta
       doc.setFontSize(8);
       doc.setTextColor(80);
       doc.text(`Nivel ${label}`, x + barWidth/2, chartStartY + barMaxHeight + 30, { align: 'center' });
       
-      // Valor
       doc.text(chartData.data[index].toString(), x + barWidth/2, chartStartY + 15 + (barMaxHeight - barHeight), { align: 'center' });
       
       x += barWidth + 15;
     });
   
-    // Pie de página
     const pageCount = doc.internal.getNumberOfPages();
     doc.setFontSize(8);
     doc.setTextColor(100);
@@ -402,7 +236,6 @@ const CatalogoContable = () => {
       );
     }
   
-    // Agregar marca de agua
     doc.setTextColor(230);
     doc.setFontSize(60);
     doc.text('CONFIDENCIAL', pageWidth/2, doc.internal.pageSize.height/2, {
@@ -413,26 +246,45 @@ const CatalogoContable = () => {
     doc.save('catalogo-cuentas.pdf');
   };
 
-       // Verificar permisos
- if (!canSelect) {
-  return <AccessDenied />;
-}
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
 
+  
   return (
     <div className="catalogo-container">
-      <div className="panel">
-        <div className="panel-header">
-          <h1 className="panel-title">Catálogo de Cuentas Contables</h1>
-          <div className="button-group">
-            <button className="btn btn-white" onClick={exportToPDF}>
-              <span>📄</span> Exportar PDF
+      <div className="catalogo-card">
+        {/* Agregamos el botón "Crear nueva cuenta" arriba del encabezado */}
+        <div className="button-container-top">
+         
+        </div>
+  
+        <div className="catalogo-header">
+          <h1 className="catalogo-title">Catálogo de Cuentas</h1>
+          <div className="button-container">
+          {canCreate && (
+      <button
+        onClick={handleCreateAccount}
+        className="btn btn-primary"
+      >
+        <Plus className="icon" />
+        Crear Cuenta Contable
+      </button>
+    )}
+        
+            <button
+              onClick={exportToPDF}
+              className="btn btn-secondary"
+            >
+              Exportar PDF
             </button>
           </div>
         </div>
-        
-        <div className="panel-content">
+  
+        <div className="catalogo-content">
+          {error && <div className="error-message">{error}</div>}
+          
           <div className="search-container">
-            <span className="search-icon">🔍</span>
             <input
               type="text"
               className="search-input"
@@ -441,9 +293,9 @@ const CatalogoContable = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
+  
           <div className="table-container">
-            <table className="table">
+            <table className="catalogo-table">
               <thead>
                 <tr>
                   <th>Código</th>
@@ -452,40 +304,102 @@ const CatalogoContable = () => {
                   <th>Naturaleza</th>
                   <th>Nivel</th>
                   <th>Fecha</th>
+                  {(canUpdate || canDelete) && <th>Acciones</th>}
                 </tr>
               </thead>
               <tbody>
-                {filteredCuentas.map((cuenta) => (
+                {filteredCuentas.map(cuenta => (
                   <tr key={cuenta.Cod_cuenta}>
-                    <td style={{ paddingLeft: `${(cuenta.Nivel || 0) * 20}px` }}>
-                      {cuenta.Cod_cuenta}
-                    </td>
+                    <td>{cuenta.Cod_cuenta}</td>
                     <td>{cuenta.Nombre_cuenta}</td>
                     <td>{cuenta.Descripcion}</td>
-                    <td>
-                      <span className={`badge ${
-                        cuenta.Naturaleza_cuenta === 'DEUDORA' ? 'badge-deudora' : 'badge-acreedora'
-                      }`}>
-                        {cuenta.Naturaleza_cuenta}
-                      </span>
-                    </td>
+                    <td>{cuenta.Naturaleza_cuenta}</td>
                     <td>{cuenta.Nivel}</td>
-                    <td>{new Date(cuenta.Fecha_creacion).toLocaleDateString()}</td>
+                    <td>{new Date(cuenta.Fecha_creacion).toLocaleDateString('es-ES', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric'
+})}</td>
+
+                    {(canUpdate || canDelete) && (
+                      <td>
+                        <div className="table-actions">
+                          {canUpdate && (
+                            <button
+                              onClick={() => handleEdit(cuenta)}
+                              className="btn btn-warning"
+                            >
+                              Editar
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={() => handleDelete(cuenta)}
+                              className="btn btn-danger"
+                            >
+                              Eliminar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
         </div>
+        
+        {showEditModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+               
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editingCuenta.Nombre_cuenta}
+                    onChange={(e) => setEditingCuenta({ ...editingCuenta, Nombre_cuenta: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Descripción</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={editingCuenta.Descripcion}
+                    onChange={(e) => setEditingCuenta({ ...editingCuenta, Descripcion: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Naturaleza</label>
+                  <select
+                    className="form-select"
+                    value={editingCuenta.Naturaleza_cuenta}
+                    onChange={(e) => setEditingCuenta({ ...editingCuenta, Naturaleza_cuenta: e.target.value })}
+                  >
+                    <option value="DEUDORA">Deudora</option>
+                    <option value="ACREEDORA">Acreedora</option>
+                  </select>
+                </div>
+                <button type="submit" className="btn btn-primary">
+                  Guardar
+                </button>
+              </form>
+              <button onClick={() => setShowEditModal(false)} className="btn btn-secondary">
+                Cancelar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
+  
 };
 
 export default CatalogoContable;

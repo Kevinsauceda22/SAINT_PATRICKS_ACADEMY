@@ -48,6 +48,8 @@ const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones
 const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabilidad'));
 const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDiario'));
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
+const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
+
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
 const Tipopersona = React.lazy(() => import('./views/pages/matricula/tipopersona'));
 const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
@@ -120,6 +122,7 @@ const App = () => {
             <Route path="/active-session" element={<ActiveSessionPage />} />
             <Route path="/CompletarDatos" element={<Register />} />
             <Route path="/RegistrarHijo" element={<RegistrarHijo />} />
+            <Route path="/CompletarDatos" element={<CompletarDatos />} />
             <Route path="/AccesoDenegado" element={<AccesoDenegado />} />
               <Route path="/CuentaenRevision" element={<VerificaciónCuenta />} />
               <Route path="/CuentaSuspendida" element={<CuentaSupendida />} />
@@ -149,6 +152,8 @@ const App = () => {
                 <Route path="/ListaParciales" element={<ListaParciales />} />
                 <Route path="/ListaPonderaciones" element={<ListaPonderaciones />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
+                <Route path="/VistaListaProfesor" element={<VistaListaProfesor />} />
+
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
                 <Route path="/tipopersona" element={<Tipopersona />} />
                 <Route path="/tipomatricula" element={<Tipomatricula />} />
