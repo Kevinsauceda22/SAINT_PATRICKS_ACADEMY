@@ -34,6 +34,12 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Matrícula',
+    to: '/matricula', // La ruta que deseas para la matrícula
+    icon: cilSchool,
+  },
+  {
+    component: CNavItem,
     name: 'Asistencia',
     to: '/ListaAsistencia',
     icon: cilClipboard,

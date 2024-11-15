@@ -1,658 +1,969 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
+import Swal from 'sweetalert2';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilBrushAlt, cilFile, cilInfo } from '@coreui/icons';
+import CIcon from '@coreui/icons-react';
+import {
+  CButton,
+  CContainer,
+  CForm,
+  CFormInput,
+  CFormSelect,
+  CInputGroup,
+  CInputGroupText,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
+  CTable,
+  CTableHead,
+  CTableRow,
+  CTableHeaderCell,
+  CTableBody,
+  CTableDataCell,
+  CPagination,
+  CRow,
+  CCol,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
+  CSpinner,
+  CCard,
+  CCardBody,
+  CCardTitle,
+  CCardText,
+} from '@coreui/react';
+import { cilUser, cilCalendar, cilCheckCircle, cilUserFemale, cilEducation } from '@coreui/icons';
+import axios from 'axios';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
+import * as XLSX from 'xlsx';
+import logo from 'src/assets/brand/logo_saint_patrick.png';
 
-const MatriculaList = () => {
+const MatriculaForm = () => {
+  const [loading, setLoading] = useState(true);
+  const [opciones, setOpciones] = useState({});
+  const [hijos, setHijos] = useState([]);
+  const [dniPadre, setDniPadre] = useState('');
+  const [nombrePadre, setNombrePadre] = useState('');
+  const [apellidoPadre, setApellidoPadre] = useState('');
+  const [step, setStep] = useState(1); // Estado para el paso actual
+  const [selectedSeccion, setSelectedSeccion] = useState(''); // Añadir esta línea
+  const [secciones, setSecciones] = useState([]); // Estado para almacenar las secciones disponibles
+  const [selectedGrado, setSelectedGrado] = useState(''); // Define el estado para el grado seleccionado
+  const [periodoActivo, setPeriodoActivo] = useState(null); // Nuevo estado para el período activo
+  const [matriculaData, setMatriculaData] = useState({
+    fecha_matricula: '',
+    cod_grado: '',
+    cod_seccion: '',
+    cod_estado_matricula: '',
+    cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '', // Asegura que se asigne el período activo
+    cod_tipo_matricula: '',
+    cod_hijo: '',
+    primer_nombre_hijo: '',      // Nuevo campo
+    segundo_nombre_hijo: '',     // Nuevo campo
+    primer_apellido_hijo: '',    // Nuevo campo
+    segundo_apellido_hijo: '',   // Nuevo campo
+    fecha_nacimiento_hijo: '',   // Nuevo campo
+  });
 
-    const navigate = useNavigate();
-    const [matriculas, setMatriculas] = useState([]);
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [matriculas, setMatriculas] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const nextStep = () => setStep((prev) => prev + 1);
+  const prevStep = () => setStep((prev) => prev - 1);
 
-    // Estados para los modales
-    const [showModalAgregar, setShowModalAgregar] = useState(false);
-    const [showModalDetalles, setShowModalDetalles] = useState(false);
-    const [showModalDescuento, setShowModalDescuento] = useState(false);
-    const [formData, setFormData] = useState({
-        Cod_genealogia: '', // Asegúrate de que esta propiedad esté aquí
-        tipo_estado: '',
-        Fecha_inicio: '',
-        Fecha_fin: '',
-        anio_academico: '',
-        tipo_matricula: '',
-        Tipo_transaccion: '',
-        Monto: '',
-        Descripcion_caja: '',
-        Cod_concepto: '',
-        Codificacion_matricula: '',
-        fecha_matricula: '',
-    });
-
-    
-    
-    const [currentPage, setCurrentPage] = useState(0);
-    const totalPages = 4; // Total de secciones
-
-    const handleNext = () => {
-        if (currentPage < totalPages - 1) {
-            setCurrentPage(currentPage + 1);
-        }
-    };
-
-    const handlePrev = () => {
-        if (currentPage > 0) {
-            setCurrentPage(currentPage - 1);
-        }
-    };
-
-    const [matriculaSeleccionada, setMatriculaSeleccionada] = useState(null); // Estado para matrícula seleccionada
-
-    // Datos del descuento
-    const [descuentoData, setDescuentoData] = useState({
-        nombre_descuento: '',
-        valor: '',
-        fecha_inicio: '',
-        fecha_fin: '',
-        descripcion: '',
-        cod_matricula: null, // Se asignará cuando selecciones la matrícula
-    });
-
-    const obtenerMatriculas = async () => {
-        try {
-            const response = await fetch('http://localhost:4000/api/matricula/matriculas', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`Error HTTP: ${response.status}`);
-            }
-
-            const data = await response.json();
-            setMatriculas(data);
-            setLoading(false);
-        } catch (error) {
-            console.error('Error fetching matriculas:', error);
-            setError('Hubo un problema al obtener las matrículas.');
-            setLoading(false);
-        }
-    };
-
-    const agregarMatricula = async (e) => {
-        e.preventDefault();
-    
-        const requestData = {
-            p_Cod_genealogia: Number(formData.Cod_genealogia), // Usar Cod_genealogia aquí
-            p_tipo_estado: formData.tipo_estado.toLowerCase(),
-            p_Fecha_inicio: formData.Fecha_inicio,
-            p_Fecha_fin: formData.Fecha_fin,
-            p_anio_academico: Number(formData.anio_academico),
-            p_tipo_matricula: formData.tipo_matricula,
-            p_Tipo_transaccion: formData.Tipo_transaccion,
-            p_Monto: parseFloat(formData.Monto),
-            p_Descripcion_caja: formData.Descripcion_caja,
-            p_Cod_concepto: Number(formData.Cod_concepto),
-            p_Codificacion_matricula: formData.Codificacion_matricula,
-            p_fecha_matricula: formData.fecha_matricula,
-        };
-    
-        try {
-            const response = await fetch('http://localhost:4000/api/matricula/crearMatricula', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestData),
-            });
-    
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Error HTTP: ${response.status}, Mensaje: ${errorData.message || 'Error desconocido'}`);
-            }
-    
-            // Alerta de éxito
-            Swal.fire({
-                title: 'Éxito!',
-                text: 'Matrícula creada exitosamente',
-                icon: 'success',
-                confirmButtonText: 'Aceptar'
-            });
-    
-            // Reiniciar el formulario
-            setFormData({
-                Cod_genealogia: '',
-                tipo_estado: '',
-                Fecha_inicio: '',
-                Fecha_fin: '',
-                anio_academico: '',
-                tipo_matricula: '',
-                Tipo_transaccion: '',
-                Monto: '',
-                Descripcion_caja: '',
-                Cod_concepto: '',
-                Codificacion_matricula: '',
-                fecha_matricula: ''
-            });
-            setShowModalAgregar(false);
-            obtenerMatriculas();
-        } catch (error) {
-            console.error('Error al crear la matrícula:', error);
-            
-            // Alerta de error
-            Swal.fire({
-                title: 'Error!',
-                text: 'Hubo un problema al crear la matrícula.',
-                icon: 'error',
-                confirmButtonText: 'Aceptar'
-            });
-    
-            setError('Hubo un problema al crear la matrícula.');
-        }
-    };
-
-    const mostrarDetalles = (matricula) => {
-        setMatriculaSeleccionada(matricula);
-        setShowModalDetalles(true);
-    };
-
-    // Función para gestionar el descuento
-    const gestionarDescuento = (cod_matricula) => {
-        setDescuentoData((prev) => ({ ...prev, cod_matricula })); // Asigna el código de matrícula al descuento
-        setShowModalDescuento(true); // Abre el modal de descuento
-    };
-
-    // Función para agregar un descuento
-    const agregarDescuento = async (e) => {
-        e.preventDefault();
-        try {
-            const response = await fetch('http://localhost:4000/api/matricula/descuentos', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(descuentoData),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Error HTTP: ${response.status}, Mensaje: ${errorData.message || 'Error desconocido'}`);
-            }
-
-            // Alerta de éxito
-            Swal.fire({
-                title: 'Éxito!',
-                text: 'Descuento agregado exitosamente',
-                icon: 'success',
-                confirmButtonText: 'Aceptar'
-            });
-
-            // Reiniciar el formulario de descuento
-            setDescuentoData({
-                nombre_descuento: '',
-                valor: '',
-                fecha_inicio: '',
-                fecha_fin: '',
-                descripcion: '',
-                cod_matricula: null,
-            });
-
-            setShowModalDescuento(false);
-            obtenerMatriculas(); // Vuelve a obtener matrículas para reflejar el nuevo descuento
-        } catch (error) {
-            console.error('Error al agregar el descuento:', error);
-            Swal.fire({
-                title: 'Error!',
-                text: 'Hubo un problema al agregar el descuento.',
-                icon: 'error',
-                confirmButtonText: 'Aceptar'
-            });
-        }
-    };
-
-    const eliminarMatricula = async (Cod_matricula) => {
-        const result = await Swal.fire({
-            title: '¿Estás seguro?',
-            text: "¡No podrás revertir esto!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sí, eliminar!',
-            cancelButtonText: 'Cancelar'
-        });
-    
-        if (result.isConfirmed) {
-            try {
-                const response = await fetch(`http://localhost:4000/api/matricula/matriculas/${Cod_matricula}`, {
-                    method: 'DELETE',
-                });
-    
-                if (response.ok) {
-                    const data = await response.json(); // Asegúrate de leer la respuesta
-                    console.log('Respuesta del servidor:', data);
-                    
-                    // Actualiza el estado local para reflejar la eliminación
-                    setMatriculas(prevMatriculas => prevMatriculas.filter(matricula => matricula.Cod_matricula !== Cod_matricula));
-    
-                    Swal.fire('Eliminado!', 'La matrícula ha sido eliminada.', 'success');
-                } else {
-                    const errorData = await response.json();
-                    Swal.fire('Error!', `Hubo un problema al eliminar la matrícula: ${errorData.message || 'Error desconocido'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Error al eliminar la matrícula:', error);
-                Swal.fire('Error!', 'Hubo un problema al eliminar la matrícula.', 'error');
-            }
-        }
-    };
-
-    useEffect(() => {
-        obtenerMatriculas();
-    }, []);
-
-    // Verificar permisos
- if (!canSelect) {
-    return <AccessDenied />;
-  }
+  const obtenerOpciones = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+      const opcionesData = response.data;
+      
+      // Verificar los datos completos recibidos desde el servidor
+      console.log("Opciones de matrícula recibidas:", opcionesData);
+  
+      // Verificar específicamente los datos de periodos_matricula
+      if (opcionesData.periodos_matricula && opcionesData.periodos_matricula.length > 0) {
+        console.log("Periodos de matrícula activos:", opcionesData.periodos_matricula);
+      } else {
+        console.log("No se encontraron períodos de matrícula activos");
+      }
+  
+      // Detectar el primer período activo disponible
+      const periodoActivoEncontrado = opcionesData.periodos_matricula?.[0];
+      if (periodoActivoEncontrado) {
+        console.log("Período activo encontrado:", periodoActivoEncontrado);
+  
+        // Guardar el período activo en el estado
+        setPeriodoActivo(periodoActivoEncontrado);
+        setMatriculaData((prev) => ({
+          ...prev,
+          cod_periodo_matricula: periodoActivoEncontrado.Cod_periodo_matricula, // Asigna el período activo
+        }));
+      } else {
+        setPeriodoActivo(null); // No hay período activo encontrado
+      }
+  
+      setOpciones(opcionesData); // Guarda todas las opciones en el estado
+      
+    } catch (error) {
+      console.error('Error al cargar las opciones de matrícula:', error);
+      Swal.fire('Error', 'Error al cargar las opciones de matrícula.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
+  
+  useEffect(() => {
+    if (modalVisible) {
+      setMatriculaData((prev) => ({
+        ...prev,
+        fecha_matricula: getCurrentDate(), // Asigna la fecha actual automáticamente
+      }));
+    }
+  }, [modalVisible]);
   
 
-    return (
-<div className="container mt-4">
-    <h1 className="mb-4">Matrículas</h1>
-    <button className="btn btn-success btn-sm me-1" onClick={() => setShowModalAgregar(true)}>Agregar Matrícula</button>
-    {matriculas.length > 0 ? (
-        <table className="table table-striped table-hover">
-            <thead className="table-dark">
-                <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Código Inscripción</th>
-                    <th scope="col">Año Académico</th>
-                    <th scope="col">Monto</th>
-                    <th scope="col">Tipo de Matrícula</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {matriculas.map((matricula, index) => (
-                    <tr key={matricula.Cod_matricula}>
-                        <th scope="row">{index + 1}</th>
-                        <td>{matricula.Codificacion_matricula}</td>
-                        <td>{matricula.anio_academico}</td>
-                        <td>L.{matricula.Monto}</td> {/* L. antes del monto */}
-                        <td>{matricula.tipo_matricula}</td>
-                        <td>
-                            {matricula.tipo_estado === 'Activa' ? (
-                                <span className="badge bg-success">&#10003; Activa</span>
-                            ) : matricula.tipo_estado === 'Pendiente' ? (
-                                <span className="badge bg-warning">&#9888; Pendiente</span>
-                            ) : matricula.tipo_estado === 'Cancelada' ? (
-                                <span className="badge bg-secondary">&#10006; Cancelada</span>
-                            ) : matricula.tipo_estado === 'Inactiva' ? (
-                                <span className="bi bi-pause-circle">&#10006; Inactiva</span>
-                            ) : null}
-                        </td>
-                        <td>
-                            <button className="btn btn-success btn-sm me-1" onClick={() => mostrarDetalles(matricula)}>
-                                <i className="fas fa-eye me-1"></i> 
-                            </button>
-                            <button className="btn btn-warning btn-sm me-1" onClick={() => editarMatricula(matricula.Cod_matricula)}>
-                                <i className="fas fa-edit me-1"></i> 
-                            </button>
-                            <button className="btn btn-light btn-sm me-1" onClick={() => eliminarMatricula(matricula.Cod_matricula)}>
-                                <i className="fas fa-trash-alt me-1"></i> 
-                            </button>
-                            <button className="btn btn-info btn-sm me-1" onClick={() => gestionarDescuento(matricula.Cod_matricula)}>
-                                <i className="fas fa-dollar-sign me-1"></i> 
-                            </button>
-                        </td>
-                    </tr>
+  const obtenerMatriculas = async () => {
+    try {
+      const response = await axios.get('http://localhost:4000/api/matricula/matriculas');
+      const matriculasCargadas = response.data.data || [];
+  
+      // Asocia el año académico a cada matrícula
+      const matriculasConAnio = matriculasCargadas.map((matricula) => {
+        const periodo = opciones.periodos_matricula?.find(
+          (p) => String(p.Cod_periodo_matricula) === String(matricula.Cod_periodo_matricula)
+        );
+        return {
+          ...matricula,
+          Anio_academico: periodo?.Anio_academico || 'N/A', // Asignar el año académico
+        };
+      });
+  
+      setMatriculas(matriculasConAnio);
+    } catch (error) {
+      console.error('Error al obtener las matrículas:', error);
+    }
+  };
+  
+
+  const obtenerHijos = async () => {
+    if (!dniPadre) return;
+    try {
+      const response = await axios.get(`http://localhost:4000/api/matricula/hijos/${dniPadre}`);
+      const { padre, hijos } = response.data;
+  
+      // Asignar valores para el nombre y apellido del padre
+      setHijos(hijos.map(hijo => ({
+        ...hijo,
+        NombreCompleto: `${hijo.Primer_nombre} ${hijo.Segundo_nombre || ''} ${hijo.Primer_apellido} ${hijo.Segundo_apellido || ''}`.trim(),
+        FechaNacimiento: hijo.fecha_nacimiento_hijo 
+          ? new Date(hijo.fecha_nacimiento_hijo).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
+          : 'N/A'
+      })));
+  
+      setNombrePadre(padre.Nombre_Padre || '');
+      setApellidoPadre(padre.Apellido_Padre || '');
+  
+      if (hijos.length === 0) {
+        Swal.fire('Advertencia', 'No se encontraron hijos asociados.', 'warning');
+      }
+    } catch (error) {
+      Swal.fire('Error', 'Error al obtener los hijos asociados.', 'error');
+    }
+  };
+  
+  
+ // Función para obtener las secciones por grado seleccionado
+const obtenerSeccionesPorGrado = async (codGrado) => {
+  if (!codGrado) {
+    setSecciones([]); // Limpiar las secciones si no se selecciona un grado
+    return;
+  }
+
+  try {
+    const response = await axios.get(`http://localhost:4000/api/matricula/secciones/${codGrado}`);
+    console.log('Secciones obtenidas:', response.data.data); // Verificar la respuesta de secciones
+    setSecciones(response.data.data || []);
+  } catch (error) {
+    console.error('Error al obtener las secciones del grado seleccionado:', error);
+    alert('Error al obtener las secciones del grado seleccionado');
+  }
+};
+
+const handleGradoChange = (e) => {
+  const codGrado = e.target.value;
+  setSelectedGrado(codGrado);
+  obtenerSeccionesPorGrado(codGrado);
+};
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  // Crear el objeto con solo los datos necesarios para el backend
+  const dataToSend = {
+    dni_padre: dniPadre,
+    fecha_matricula: matriculaData.fecha_matricula,
+    cod_grado: selectedGrado,
+    cod_seccion: selectedSeccion,
+    cod_estado_matricula: matriculaData.cod_estado_matricula,
+    cod_periodo_matricula: matriculaData.cod_periodo_matricula,
+    cod_tipo_matricula: matriculaData.cod_tipo_matricula,
+    cod_hijo: matriculaData.cod_hijo, // Asegúrate de enviar el `cod_hijo`
+  };
+
+  // Verificar que todos los campos requeridos estén llenos, excepto los asignados automáticamente
+  const requiredFields = ['dni_padre', 'cod_grado', 'cod_seccion', 'cod_estado_matricula', 'cod_tipo_matricula', 'cod_hijo'];
+  const missingFields = requiredFields.filter((field) => !dataToSend[field]);
+
+  if (!dataToSend.fecha_matricula) {
+    Swal.fire('Error', 'La fecha de matrícula no está asignada automáticamente.', 'error');
+    return;
+  }
+
+  if (missingFields.length > 0) {
+    Swal.fire('Error', 'Todos los campos son requeridos.', 'error');
+    return;
+  }
+
+  try {
+    const response = await axios.post('http://localhost:4000/api/matricula/crearmatricula', dataToSend);
+    Swal.fire('Éxito', response.data.message, 'success');
+    setModalVisible(false);
+    setStep(1); // Reinicia el paso al cerrar el modal
+    obtenerMatriculas();
+  } catch (error) {
+    console.error('Error al crear la matrícula:', error.response?.data);
+    Swal.fire('Error', error.response?.data?.message || 'Error al crear la matrícula.', 'error');
+  }
+};
+
+const getCurrentDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0'); // Mes comienza en 0
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+
+
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value.toLowerCase());
+    setCurrentPage(0);
+  };
+  const handleHijoChange = (e) => {
+    const codHijo = e.target.value;
+    setMatriculaData((prevData) => ({ ...prevData, cod_hijo: codHijo }));
+  
+    // Buscar los datos del hijo seleccionado
+    const hijoSeleccionado = hijos.find(hijo => hijo.Cod_persona === parseInt(codHijo));
+    if (hijoSeleccionado) {
+      setMatriculaData(prevData => ({
+        ...prevData,
+        primer_nombre_hijo: hijoSeleccionado.Primer_nombre || '', // Manejar null con cadena vacía
+        segundo_nombre_hijo: hijoSeleccionado.Segundo_nombre || '', // Manejar null con cadena vacía
+        primer_apellido_hijo: hijoSeleccionado.Primer_apellido || '', // Manejar null con cadena vacía
+        segundo_apellido_hijo: hijoSeleccionado.Segundo_apellido || '', // Manejar null con cadena vacía
+        fecha_nacimiento_hijo: hijoSeleccionado.fecha_nacimiento
+          ? hijoSeleccionado.fecha_nacimiento.split('T')[0] // Formatear la fecha si no es null
+          : '', // Si la fecha es null, usar cadena vacía
+      }));
+    }
+  };
+  
+
+  const filteredMatriculas = matriculas.filter((matricula) =>
+    matricula.codificacion_matricula.toLowerCase().includes(searchTerm)
+  );
+
+  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredMatriculas.slice(indexOfFirstItem, indexOfLastItem);
+
+
+  useEffect(() => {
+    obtenerOpciones();
+    obtenerMatriculas();
+  }, []);
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+
+    // Insertar el logo
+    const img = new Image();
+    img.src = logo;  // Usar el logo importado desde el directorio
+    img.onload = () => {
+        doc.addImage(img, 'PNG', 10, 10, 30, 30); // Colocar el logo en la esquina superior izquierda
+
+        // Encabezado del reporte
+        doc.setFontSize(18);
+        doc.text('Reporte General de Matrículas', doc.internal.pageSize.width / 2, 20, { align: 'center' });
+        
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.line(10, 35, doc.internal.pageSize.width - 10, 35);
+
+        // Detalles de la institución
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        doc.text('Saint Patrick Academy', 50, 45);
+        doc.text('Dirección: 123 Calle Principal, Ciudad', 50, 50);
+        doc.text('Teléfono: (555) 123-4567', 50, 55);
+        doc.text('Correo: info@saintpatrickacademy.edu', 50, 60);
+
+        // Línea divisoria después del encabezado
+        doc.setLineWidth(0.2);
+        doc.line(10, 65, doc.internal.pageSize.width - 10, 65);
+
+        // Título de la tabla
+        doc.setFontSize(14);
+        doc.setTextColor(0, 51, 102);  // Color azul oscuro
+        doc.text('Detalles de Matrículas', doc.internal.pageSize.width / 2, 75, { align: 'center' });
+
+        // Tabla de detalles de matrícula con diseño mejorado
+        doc.autoTable({
+            startY: 80,
+            head: [['#', 'Cod Matrícula', 'Fecha Matrícula', 'Estado', 'Período', 'Grado', 'Sección']],
+            body: matriculas.map((matricula, index) => [
+                index + 1,
+                matricula.codificacion_matricula,
+                matricula.fecha_matricula.split('T')[0],
+                opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A',
+                opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A',
+                matricula.Nombre_grado || 'N/A',
+                matricula.Nombre_seccion || 'N/A',
+            ]),
+            styles: {
+                fontSize: 10,
+                textColor: [34, 34, 34],
+                cellPadding: 4,
+                valign: 'middle',
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: [22, 160, 133],  // Verde azulado para los encabezados
+                textColor: [255, 255, 255],
+                fontSize: 12,
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] }, // Color azul claro alternado para las filas
+            margin: { left: 10, right: 10 },
+        });
+
+        // Pie de página con fecha de generación
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const date = new Date().toLocaleDateString();
+        doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+
+        // Guardar el PDF con un nombre específico
+        doc.save('Reporte_General_Matriculas.pdf');
+    };
+
+    img.onerror = () => {
+        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    };
+};
+
+
+const exportToExcel = () => {
+  const workbook = XLSX.utils.book_new();
+
+  // Datos de las matrículas con encabezado
+  const worksheetData = [
+      ['#', 'Cod Matrícula', 'Fecha Matrícula', 'Estado', 'Período', 'Grado', 'Sección'],
+      ...matriculas.map((matricula, index) => [
+          index + 1,
+          matricula.codificacion_matricula,
+          matricula.fecha_matricula.split('T')[0],
+          opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A',
+          opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A',
+          matricula.Nombre_grado || 'N/A',
+          matricula.Nombre_seccion || 'N/A',
+      ])
+  ];
+
+  // Crear la hoja de cálculo
+  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+  // Aplicar estilos personalizados
+  const range = XLSX.utils.decode_range(worksheet['!ref']);
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+      if (!worksheet[cellAddress]) continue;
+      
+      // Establecer estilos en el encabezado
+      worksheet[cellAddress].s = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "16A085" } }, // Fondo verde azulado
+          alignment: { horizontal: "center", vertical: "center" }
+      };
+  }
+
+  // Ajustar el ancho de las columnas para un mejor aspecto
+  const columnWidths = [
+      { wpx: 30 },   // #
+      { wpx: 100 },  // Cod Matrícula
+      { wpx: 100 },  // Fecha Matrícula
+      { wpx: 80 },   // Estado
+      { wpx: 80 },   // Período
+      { wpx: 80 },   // Grado
+      { wpx: 80 }    // Sección
+  ];
+  worksheet['!cols'] = columnWidths;
+
+  // Añadir la hoja al libro de trabajo
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Matrículas');
+
+  // Exportar el archivo
+  XLSX.writeFile(workbook, 'Reporte_General_Matriculas.xlsx');
+};
+
+
+  const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
+  
+  const handleViewPDF = (matricula) => {
+    const doc = new jsPDF();
+ 
+    // Convertimos la imagen importada en base64 y la añadimos al PDF
+    const img = new Image();
+    img.src = logo;  // Usamos la imagen importada
+ 
+    img.onload = () => {
+       doc.addImage(img, 'PNG', 10, 10, 30, 30); // Insertar el logo
+ 
+       // Encabezado con título de la institución
+       doc.setFontSize(18);
+       doc.text('Saint Patrick Academy', 50, 20);
+ 
+       // Título del documento
+       doc.setFontSize(14);
+       doc.text(`Detalle de Matrícula`, doc.internal.pageSize.width / 2, 50, { align: 'center' });
+ 
+       // Línea divisoria
+       doc.setLineWidth(0.5);
+       doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+ 
+       // Información general del estudiante
+       doc.setFontSize(12);
+       doc.text('Información del Estudiante:', 10, 65);
+       doc.setFontSize(10);
+       doc.text(`Código de Matrícula: ${matricula.codificacion_matricula}`, 10, 75);
+       doc.text(`Fecha de Matrícula: ${matricula.fecha_matricula.split('T')[0]}`, 10, 80);
+       
+       // Información adicional del estudiante
+       doc.text(`Nombre Completo: ${matricula.Nombre_Hijo} ${matricula.Segundo_nombre_Hijo || ''} ${matricula.Apellido_Hijo} ${matricula.Segundo_apellido_Hijo || ''}`, 10, 85);
+       doc.text(`Fecha de Nacimiento: ${matriculaData.fecha_nacimiento_hijo || ''}`, 10, 90);
+
+       // Información del alumno y tutor
+       doc.text(`Padre/Madre/Tutor: ${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`, 10, 95);
+ 
+       // Sección de Detalles de Matrícula
+       doc.setFontSize(12);
+       doc.text('Detalles de Matrícula:', 10, 105);
+ 
+       // Tabla con detalles específicos usando autoTable
+       doc.autoTable({
+          startY: 110,
+          head: [['Campo', 'Valor']],
+          body: [
+             ['Estado', opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A'],
+             ['Período', opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A'],
+             ['Tipo de Matrícula', opciones.tipos_matricula?.find(t => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula)?.Tipo || 'N/A'],
+             ['Grado', matricula.Nombre_grado || 'N/A'],
+             ['Sección', matricula.Nombre_seccion || 'N/A'],
+          ],
+          styles: { fontSize: 10, textColor: [40, 40, 40] },
+          headStyles: { fillColor: [22, 160, 133] },
+          alternateRowStyles: { fillColor: [240, 240, 240] },
+       });
+ 
+       // Pie de página con nota
+       doc.setFontSize(10);
+       doc.text('Este documento es solo para fines informativos. Contacte a la administración para más detalles.', 10, doc.internal.pageSize.height - 20);
+ 
+       // Guardar el PDF con el nombre específico de la matrícula
+       doc.save(`Detalle_Matricula_${matricula.codificacion_matricula}.pdf`);
+    };
+ 
+    img.onerror = () => {
+       Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    };
+
+    const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
+  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredMatriculas.slice(indexOfFirstItem, indexOfLastItem);
+
+ };
+
+useEffect(() => {
+  if (opciones.periodos_activos && opciones.periodos_activos.length > 0) {
+    // Seleccionar el primer período que esté activo
+    setPeriodoActivo(opciones.periodos_activos[0]);
+  }
+}, [opciones.periodos_activos]);
+
+  return (
+    <CContainer>
+ <CRow className="justify-content-between align-items-center mb-2">
+  <CCol xs={12} md={6}>
+    <h3>Matrículas</h3>
+  </CCol>
+  <CCol xs={12} md={6} className="d-flex justify-content-end align-items-center">
+  <CButton 
+  color="dark" 
+  onClick={() => {
+    // Verificar si hay un período activo
+    const hayPeriodoActivo = opciones.periodos_matricula?.some(
+      (p) => p.estado === 'activo'
+    );
+
+    if (hayPeriodoActivo) {
+      // Si hay un período activo, abrir el modal
+      setModalVisible(true);
+    } else {
+      // Si no hay un período activo, mostrar un mensaje de advertencia
+      Swal.fire('Advertencia', 'No hay un período de matrícula activo.', 'warning');
+    }
+  }} 
+  className="me-2" 
+  style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}
+>
+  <CIcon icon={cilPlus} /> Matrícula
+</CButton>
+
+
+<CDropdown>
+  <CDropdownToggle 
+    color="success" 
+    style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}
+  >
+    <CIcon icon={cilFile} /> Reporte
+  </CDropdownToggle>
+  <CDropdownMenu>
+    <CDropdownItem onClick={exportToPDF}>Exportar a PDF</CDropdownItem>
+    <CDropdownItem onClick={exportToExcel}>Exportar a Excel</CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
+
+
+  </CCol>
+</CRow>
+{/* Barra de búsqueda alineada con la parte superior de la tabla */}
+<CRow className="align-items-center">
+  <CCol md={5}>
+    <CInputGroup>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput placeholder="Buscar matrícula" value={searchTerm} onChange={handleSearch} />
+      <CButton color="secondary" onClick={() => setSearchTerm('')}>
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
+</CRow>
+{/* Nueva fila para el selector de cantidad de registros, debajo de los botones */}
+<CRow className="justify-content-end mb-4">
+  <CCol xs="auto" className="d-flex align-items-center">
+    <span className="me-1">Mostrar</span>
+    <CFormSelect
+      value={itemsPerPage}
+      onChange={(e) => {
+        setItemsPerPage(Number(e.target.value));
+        setCurrentPage(0);
+      }}
+      style={{ width: '100px' }}
+    >
+      <option value="5">5</option>
+      <option value="10">10</option>
+      <option value="20">20</option>
+    </CFormSelect>
+    <span className="ms-1">registros</span>
+  </CCol>
+</CRow>
+
+
+      {loading ? (
+        <CSpinner color="primary" />
+      ) : (
+        <div className="table-container">
+<CTable striped responsive bordered hover style={{ textTransform: 'uppercase' }}>
+  <CTableHead>
+    <CTableRow>
+      <CTableHeaderCell>#</CTableHeaderCell>
+      <CTableHeaderCell>Cod Matrícula</CTableHeaderCell>
+      <CTableHeaderCell>Nombre Estudiante</CTableHeaderCell>
+      <CTableHeaderCell>Fecha Matrícula</CTableHeaderCell>
+      <CTableHeaderCell>Estado</CTableHeaderCell>
+      <CTableHeaderCell>Período</CTableHeaderCell>
+      <CTableHeaderCell>Acciones</CTableHeaderCell>
+    </CTableRow>
+  </CTableHead>
+  <CTableBody>
+    {currentItems.map((matricula, index) => {
+      // Encontrar el estado de matrícula correspondiente
+      const estadoMatricula = opciones.estados_matricula?.find(
+        (e) => e.Cod_estado_matricula === matricula.Cod_estado_matricula
+      );
+
+      // Encontrar el período de matrícula correspondiente
+      const periodoMatricula = opciones.periodos_matricula?.find(
+        (p) => String(p.Cod_periodo_matricula) === String(matricula.Cod_periodo_matricula)
+      );
+
+      // Obtener el año académico para mostrar en la tabla
+      const anioAcademico = periodoMatricula?.Anio_academico || 'N/A';
+
+      return (
+        <CTableRow key={matricula.Cod_matricula}>
+          <CTableDataCell>{index + 1 + indexOfFirstItem}</CTableDataCell>
+          <CTableDataCell>{matricula.codificacion_matricula}</CTableDataCell>
+          <CTableDataCell>
+            {matricula.Nombre_Hijo} {matricula.Apellido_Hijo}
+          </CTableDataCell>
+          <CTableDataCell>{matricula.fecha_matricula.split('T')[0]}</CTableDataCell>
+          <CTableDataCell>{estadoMatricula?.Tipo || 'N/A'}</CTableDataCell>
+          {/* Mostrar el año académico siempre, incluso si el período está inactivo */}
+          <CTableDataCell>{anioAcademico}</CTableDataCell>
+          <CTableDataCell>
+            {/* Botón para abrir el modal */}
+            <CButton
+              color="warning"
+              className="me-1"
+              onClick={() => {
+                // Verificar si hay algún período activo
+                const hayPeriodoActivo = opciones.periodos_matricula?.some(
+                  (p) => p.estado === 'activo'
+                );
+
+                if (hayPeriodoActivo) {
+                  // Solo abre el modal si hay un período activo
+                  abrirModal(); // Reemplaza esto con tu función para abrir el modal
+                } else {
+                  // Muestra una advertencia si no hay período activo
+                  Swal.fire('Advertencia', 'No hay un período activo disponible.', 'warning');
+                }
+              }}
+            >
+              <CIcon icon={cilPen} />
+            </CButton>
+            <CButton color="danger" className="me-1" onClick={() => {/* Lógica para eliminar */}}>
+              <CIcon icon={cilTrash} />
+            </CButton>
+            <CButton color="info" onClick={() => handleViewPDF(matricula)}>
+              <CIcon icon={cilInfo} />
+            </CButton>
+          </CTableDataCell>
+        </CTableRow>
+      );
+    })}
+  </CTableBody>
+</CTable>
+
+        </div>
+      )}
+{/* Sección de paginación */}
+<nav className="d-flex justify-content-center align-items-center mt-4">
+        <CPagination className="mb-0" style={{ gap: '0.3cm' }}>
+          <CButton
+            style={{ backgroundColor: 'gray', color: 'white', marginRight: '0.3cm' }}
+            disabled={currentPage === 0}
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            Anterior
+          </CButton>
+          <CButton
+            style={{ backgroundColor: 'gray', color: 'white' }}
+            disabled={currentPage === pageCount - 1}
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            Siguiente
+          </CButton>
+        </CPagination>
+        <span className="mx-2">Página {currentPage + 1} de {pageCount}</span>
+      </nav>      
+     
+ {/* Modal con el flujo en pasos */}
+<CModal 
+  visible={modalVisible} 
+  onClose={() => {
+    setModalVisible(false);
+    setStep(1); // Reinicia al primer paso
+    setMatriculaData({
+      fecha_matricula: getCurrentDate(), // Establece la fecha actual automáticamente
+      cod_grado: '',
+      cod_seccion: '',
+      cod_estado_matricula: '',
+      cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '', // Asigna el período activo automáticamente si existe
+      cod_tipo_matricula: '',
+      cod_hijo: '',
+      primer_nombre_hijo: '',     
+      segundo_nombre_hijo: '',    
+      primer_apellido_hijo: '',   
+      segundo_apellido_hijo: '',  
+      fecha_nacimiento_hijo: '',  
+    });
+    setDniPadre('');  // Reinicia el DNI del padre
+    setNombrePadre(''); // Reinicia el nombre del padre
+    setApellidoPadre(''); // Reinicia el apellido del padre
+    setSelectedGrado(''); // Reinicia el grado seleccionado
+    setSelectedSeccion(''); // Reinicia la sección seleccionada
+  }} 
+  backdrop="static" 
+  size="md" 
+>
+  <CModalHeader closeButton>
+    <CModalTitle>Registrar Nueva Matrícula - Paso {step}</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    {periodoActivo ? (
+      <>
+        {/* Paso 1: Información del Padre e Hijo */}
+        {step === 1 && (
+          <div>
+            <h5>Información del Padre</h5>
+            <hr />
+            <CInputGroup className="mb-3">
+              <CInputGroupText><CIcon icon={cilUser} /></CInputGroupText>
+              <CFormInput
+                type="text"
+                placeholder="DNI del Padre"
+                value={dniPadre}
+                onChange={(e) => setDniPadre(e.target.value)}
+                onBlur={obtenerHijos}
+                required
+              />
+            </CInputGroup>
+            <CRow className="mb-3">
+              <CCol>
+                <label>Nombre del Padre</label>
+                <CFormInput type="text" value={nombrePadre} readOnly />
+              </CCol>
+              <CCol>
+                <label>Apellido del Padre</label>
+                <CFormInput type="text" value={apellidoPadre} readOnly />
+              </CCol>
+            </CRow>
+
+            <h5>Información de la Hijo</h5>
+            <hr />
+            <CInputGroup className="mb-3">
+              <CInputGroupText><CIcon icon={cilUserFemale} /></CInputGroupText>
+              <CFormSelect name="cod_hijo" onChange={handleHijoChange} value={matriculaData.cod_hijo} required>
+                <option value="">Selecciona del hijo</option>
+                {hijos.map((hijo) => (
+                  <option key={hijo.Cod_persona} value={hijo.Cod_persona}>{hijo.NombreCompleto}</option>
                 ))}
-            </tbody>
-        </table>
-    ) : (
-        <div className="alert alert-warning" role="alert">No hay matrículas disponibles.</div>
-    )}
-{showModalAgregar && (
-    <div className="modal show" style={{ display: 'block' }} aria-modal="true">
-        <div className="modal-dialog modal-dialog-centered" style={{ maxWidth: '500px', margin: 'auto' }}>
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h5 className="modal-title">Agregar Matrícula</h5>
-                    <button type="button" className="btn-close" onClick={() => setShowModalAgregar(false)}></button>
-                </div>
-                <div className="modal-body" style={{ overflowX: 'hidden' }}>
-                    <div style={{ display: 'flex', transform: `translateX(-${currentPage * 100}%)`, transition: 'transform 0.5s' }}>
-                        {/* Información de Persona */}
-                        <div style={{ minWidth: '100%', padding: '20px' }}>
-                            <fieldset>
-                                <legend>Información de Persona</legend>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Código Genealogía</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={formData.p_Cod_genealogia} 
-                                            onChange={(e) => setFormData({ ...formData, Cod_genealogia: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                            </fieldset>
-                        </div>
-
-                        {/* Información de Matrícula */}
-                        <div style={{ minWidth: '100%', padding: '20px' }}>
-                            <fieldset>
-                                <legend>Información de Matrícula</legend>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Tipo Estado</label>
-                                    <div className="col-sm-8">
-                                        <select 
-                                            className="form-select" 
-                                            value={formData.tipo_estado} 
-                                            onChange={(e) => setFormData({ ...formData, tipo_estado: e.target.value })} 
-                                            required
-                                        >
-                                            <option value="">Selecciona el estado</option>
-                                            <option value="Activa">Activa</option>
-                                            <option value="Cancelada">Cancelada</option>
-                                            <option value="Pendiente">Pendiente</option>
-                                            <option value="Inactiva">Inactiva</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Fecha Matrícula</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="date" 
-                                            className="form-control" 
-                                            value={formData.fecha_matricula} 
-                                            onChange={(e) => setFormData({ ...formData, fecha_matricula: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Año Académico</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="number" 
-                                            className="form-control" 
-                                            value={formData.anio_academico} 
-                                            onChange={(e) => setFormData({ ...formData, anio_academico: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Tipo Matrícula</label>
-                                    <div className="col-sm-8">
-                                        <select 
-                                            className="form-select" 
-                                            value={formData.tipo_matricula} 
-                                            onChange={(e) => setFormData({ ...formData, tipo_matricula: e.target.value })} 
-                                            required
-                                        >
-                                            <option value="">Selecciona el tipo</option>
-                                            <option value="Estandar">Estandar</option>
-                                            <option value="Extraordinaria">Extraordinaria</option>
-                                            <option value="Beca">Beca</option>
-                                            <option value="Otras">Otras</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </fieldset>
-                        </div>
-
-                        {/* Información Financiera */}
-                        <div style={{ minWidth: '100%', padding: '20px' }}>
-                            <fieldset>
-                                <legend>Información Financiera</legend>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Tipo Transacción</label>
-                                    <div className="col-sm-8">
-                                        <select 
-                                            className="form-select" 
-                                            value={formData.Tipo_transaccion} 
-                                            onChange={(e) => setFormData({ ...formData, Tipo_transaccion: e.target.value })} 
-                                            required
-                                        >
-                                            <option value="">Selecciona el tipo</option>
-                                            <option value="Ingreso">Ingreso</option>
-                                            <option value="Egreso">Egreso</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Monto</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="number" 
-                                            className="form-control" 
-                                            value={formData.Monto} 
-                                            onChange={(e) => setFormData({ ...formData, Monto: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Descripción Caja</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={formData.Descripcion_caja} 
-                                            onChange={(e) => setFormData({ ...formData, Descripcion_caja: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Código Concepto</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="number" 
-                                            className="form-control" 
-                                            value={formData.Cod_concepto} 
-                                            onChange={(e) => setFormData({ ...formData, Cod_concepto: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                            </fieldset>
-                        </div>
-
-                        {/* Información Adicional */}
-                        <div style={{ minWidth: '100%', padding: '20px' }}>
-                            <fieldset>
-                                <legend>Información Adicional</legend>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Código Inscripción</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="text" 
-                                            className="form-control" 
-                                            value={formData.Codificacion_matricula} 
-                                            onChange={(e) => setFormData({ ...formData, Codificacion_matricula: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Fecha Inicio</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="date" 
-                                            className="form-control" 
-                                            value={formData.Fecha_inicio} 
-                                            onChange={(e) => setFormData({ ...formData, Fecha_inicio: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                                <div className="row mb-3">
-                                    <label className="col-sm-4 col-form-label">Fecha Fin</label>
-                                    <div className="col-sm-8">
-                                        <input 
-                                            type="date" 
-                                            className="form-control" 
-                                            value={formData.Fecha_fin} 
-                                            onChange={(e) => setFormData({ ...formData, Fecha_fin: e.target.value })} 
-                                            required 
-                                        />
-                                    </div>
-                                </div>
-                            </fieldset>
-                        </div>
-                    </div>
-                </div>
-                <div className="modal-footer">
-                    <button className="btn btn-secondary" onClick={handlePrev} disabled={currentPage === 0}>Anterior</button>
-                    <button className="btn btn-primary" onClick={handleNext} disabled={currentPage === totalPages - 1}>Siguiente</button>
-                    <button type="submit" className="btn btn-success" onClick={agregarMatricula}>Guardar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-)}
-
-            {/* Modal para mostrar detalles de la matrícula */}
-            {showModalDetalles && matriculaSeleccionada && (
-    <div className="modal show" style={{ display: 'block' }} aria-modal="true">
-        <div className="modal-dialog">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h5 className="modal-title">Detalles de Matrícula</h5>
-                    <button type="button" className="btn-close" onClick={() => setShowModalDetalles(false)}></button>
-                </div>
-                <div className="modal-body">
-                    <div className="card mb-3">
-                        <div className="card-header">Información General</div>
-                        <div className="card-body">
-                            <p><strong>Código Matrícula:</strong> {matriculaSeleccionada.Cod_matricula}</p>
-                            <p><strong>Código Inscripción:</strong> {matriculaSeleccionada.Codificacion_matricula}</p>
-                            <p><strong>Año Académico:</strong> {matriculaSeleccionada.anio_academico}</p>
-                        </div>
-                    </div>
-
-                    <div className="card mb-3">
-                        <div className="card-header">Detalles Financieros</div>
-                        <div className="card-body">
-                            <p><strong>Monto:</strong> {matriculaSeleccionada.Monto}</p>
-                            <p><strong>Tipo de Matrícula:</strong> {matriculaSeleccionada.tipo_matricula}</p>
-                            <p><strong>Tipo de Estado:</strong> {matriculaSeleccionada.tipo_estado}</p>
-                        </div>
-                    </div>
-
-                    <div className="card mb-3">
-                        <div className="card-header">Fechas Importantes</div>
-                        <div className="card-body">
-                            <p><strong>Fecha Inicio:</strong> {matriculaSeleccionada.Fecha_inicio}</p>
-                            <p><strong>Fecha Fin:</strong> {matriculaSeleccionada.Fecha_fin}</p>
-                            <p><strong>Fecha Matrícula:</strong> {matriculaSeleccionada.fecha_matricula}</p>
-                        </div>
-                    </div>
-
-                    <div className="card mb-3">
-                        <div className="card-header">Detalles de Transacción</div>
-                        <div className="card-body">
-                            <p><strong>Tipo Transacción:</strong> {matriculaSeleccionada.Tipo_transaccion}</p>
-                            <p><strong>Descripción Caja:</strong> {matriculaSeleccionada.descripcion_caja}</p>
-                            <p><strong>Código Concepto:</strong> {matriculaSeleccionada.Cod_concepto}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-)}
-{/* Modal para agregar descuento */}
-{showModalDescuento && (
-    <div className="modal show" style={{ display: 'block' }} aria-modal="true">
-        <div className="modal-dialog">
-            <div className="modal-content">
-                <div className="modal-header">
-                    <h5 className="modal-title">Agregar Descuento</h5>
-                    <button 
-                        type="button" 
-                        className="btn-close" 
-                        onClick={() => setShowModalDescuento(false)}
-                    ></button>
-                </div>
-                <div className="modal-body">
-                    <form onSubmit={agregarDescuento}>
-                        <div className="card mb-3">
-                            <div className="card-body">
-                                <div className="mb-3">
-                                    <label className="form-label">Nombre del Descuento</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={descuentoData.nombre_descuento}
-                                        onChange={(e) => setDescuentoData({ ...descuentoData, nombre_descuento: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Valor</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={descuentoData.valor}
-                                        onChange={(e) => setDescuentoData({ ...descuentoData, valor: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="row mb-3">
-                                    <div className="col">
-                                        <label className="form-label">Fecha de Inicio</label>
-                                        <input
-                                            type="date"
-                                            className="form-control"
-                                            value={descuentoData.fecha_inicio}
-                                            onChange={(e) => setDescuentoData({ ...descuentoData, fecha_inicio: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="col">
-                                        <label className="form-label">Fecha de Fin</label>
-                                        <input
-                                            type="date"
-                                            className="form-control"
-                                            value={descuentoData.fecha_fin}
-                                            onChange={(e) => setDescuentoData({ ...descuentoData, fecha_fin: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Descripción</label>
-                                    <textarea
-                                        className="form-control"
-                                        value={descuentoData.descripcion}
-                                        onChange={(e) => setDescuentoData({ ...descuentoData, descripcion: e.target.value })}
-                                    ></textarea>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="d-flex justify-content-between">
-                            <button type="submit" className="btn btn-primary">Agregar Descuento</button>
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowModalDescuento(false)}>Cancelar</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-      </div>
+              </CFormSelect>
+            </CInputGroup>
+            <CRow className="mb-3">
+              <CCol>
+                <label>Primer Nombre</label>
+                <CFormInput type="text" value={matriculaData.primer_nombre_hijo} readOnly />
+              </CCol>
+              <CCol>
+                <label>Segundo Nombre</label>
+                <CFormInput type="text" value={matriculaData.segundo_nombre_hijo} readOnly />
+              </CCol>
+            </CRow>
+            <CRow className="mb-3">
+              <CCol>
+                <label>Primer Apellido</label>
+                <CFormInput type="text" value={matriculaData.primer_apellido_hijo} readOnly />
+              </CCol>
+              <CCol>
+                <label>Segundo Apellido</label>
+                <CFormInput type="text" value={matriculaData.segundo_apellido_hijo} readOnly />
+              </CCol>
+            </CRow>
+            <label>Fecha de Nacimiento</label>
+            <CInputGroup className="mb-3">
+              <CInputGroupText><CIcon icon={cilCalendar} /></CInputGroupText>
+              <CFormInput type="date" value={matriculaData.fecha_nacimiento_hijo} readOnly />
+            </CInputGroup>
+          </div>
         )}
 
-        </div>
-    );
+        {/* Paso 2: Información Académica */}
+        {step === 2 && (
+          <div>
+            <h5>Información Académica</h5>
+            <hr />
+            <CRow className="mb-3">
+  <CCol>
+    <label>Fecha de Matrícula</label>
+    <CFormInput
+      type="date"
+      name="fecha_matricula"
+      value={matriculaData.fecha_matricula} // Se debe asignar automáticamente
+      readOnly
+      required
+    />
+  </CCol>
+</CRow>
+
+ {/* selelctor de gra */}
+<div className="mb-3">
+  {opciones.grados.map((grado) => (
+    <CButton
+      color={selectedGrado === grado.Cod_grado ? 'dark' : 'secondary'}
+      key={grado.Cod_grado}
+      onClick={() => {
+        setSelectedGrado(grado.Cod_grado);
+        obtenerSeccionesPorGrado(grado.Cod_grado);
+      }}
+      className="m-1"
+      style={{
+        backgroundColor: selectedGrado === grado.Cod_grado ? '#4B6251' : '#6C757D', // Color de fondo
+        borderColor: selectedGrado === grado.Cod_grado ? '#0F463A' : '#495057',    // Color de borde
+        color: '#FFF', // Color del texto en blanco
+      }}
+    >
+      {grado.Nombre_grado}
+    </CButton>
+  ))}
+</div>
+ {/* selector de seccion */}
+<CRow className="mt-3">
+  {secciones.length > 0 ? (
+    secciones.map((seccion) => (
+      <CCol md={6} lg={4} className="mb-3" key={seccion.Cod_secciones}>
+        <CCard
+          className={selectedSeccion === seccion.Cod_secciones ? 'border-primary' : ''}
+          style={{
+            borderColor: selectedSeccion === seccion.Cod_secciones ? '#0F463A' : '#CED4DA',
+            backgroundColor: selectedSeccion === seccion.Cod_secciones ? '#4B6251' : '#FFF', // Color de fondo
+          }}
+        >
+          <CCardBody>
+            <CCardTitle style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
+              {seccion.Nombre_seccion}
+            </CCardTitle>
+            <CCardText style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
+              <strong>Aula:</strong> {seccion.Numero_aula || "No disponible"} <br />
+              <strong>Edificio:</strong> {seccion.Nombre_edificios || "No disponible"} <br />
+              <strong>Profesor:</strong> {seccion.Nombre_profesor ? `${seccion.Nombre_profesor} ${seccion.Apellido_profesor}` : "No disponible"} <br />
+            </CCardText>
+            <CButton
+              color="primary"
+              onClick={() => setSelectedSeccion(seccion.Cod_secciones)}
+              style={{
+                backgroundColor: '#4B6251', // Color de fondo
+                borderColor: '#0F463A',     // Color de borde
+                color: '#FFF',              // Color del texto en blanco
+              }}
+            >
+              Seleccionar
+            </CButton>
+          </CCardBody>
+        </CCard>
+      </CCol>
+    ))
+  ) : (
+    <p>No hay secciones disponibles para el grado seleccionado.</p>
+  )}
+            </CRow>
+          </div>
+        )}
+
+        {/* Paso 3: Estado, Período y Tipo de Matrícula */}
+        {step === 3 && (
+          <div>
+            <h5>Estado, Período y Tipo de Matrícula</h5>
+            <hr />
+            <CRow className="mb-3">
+              <CCol>
+                <label>Estado de Matrícula</label>
+                <CFormSelect
+                  name="cod_estado_matricula"
+                  onChange={(e) => setMatriculaData({ ...matriculaData, cod_estado_matricula: e.target.value })}
+                  value={matriculaData.cod_estado_matricula}
+                  required
+                >
+                  <option value="">Selecciona el Estado</option>
+                  {opciones.estados_matricula?.map((estado) => (
+                    <option key={estado.Cod_estado_matricula} value={estado.Cod_estado_matricula}>{estado.Tipo}</option>
+                  ))}
+                </CFormSelect>
+              </CCol>
+              <CCol>
+  <label>Período Académico</label>
+  <CFormInput
+    type="text"
+    value={periodoActivo ? periodoActivo.Anio_academico : 'No disponible'}
+    readOnly
+  />
+</CCol>
+
+            </CRow>
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Tipo Matrícula</CInputGroupText>
+              <CFormSelect
+                name="cod_tipo_matricula"
+                onChange={(e) => setMatriculaData({ ...matriculaData, cod_tipo_matricula: e.target.value })}
+                value={matriculaData.cod_tipo_matricula}
+                required
+              >
+                <option value="">Selecciona el Tipo</option>
+                {opciones.tipos_matricula?.map((tipo) => (
+                  <option key={tipo.Cod_tipo_matricula} value={tipo.Cod_tipo_matricula}>{tipo.Tipo}</option>
+                ))}
+              </CFormSelect>
+            </CInputGroup>
+          </div>
+        )}
+      </>
+    ) : (
+      <div>
+        <h5>No hay un período de matrícula activo en este momento.</h5>
+        <p>Por favor, contacte a la administración para más detalles.</p>
+      </div>
+    )}
+  </CModalBody>
+
+  {/* Footer de navegación */}
+  <CModalFooter>
+    {step > 1 && (
+      <CButton color="secondary" onClick={prevStep}>Atrás</CButton>
+    )}
+    {step < 3 ? (
+      <CButton color="primary" onClick={nextStep}>Siguiente</CButton>
+    ) : (
+      <CButton color="success" onClick={handleSubmit} disabled={!periodoActivo}>Finalizar y Guardar</CButton>
+    )}
+  </CModalFooter>
+</CModal>
+
+
+      <style jsx>{`
+        .table-container {
+          max-height: 400px;
+          overflow-y: auto;
+        }
+
+        .table-container::-webkit-scrollbar {
+          width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+          background-color: #6c757d;
+          border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+          background-color: #4B6251;
+        }
+      `}</style>
+    </CContainer>
+  );
 };
-export default MatriculaList;
+
+export default MatriculaForm;
