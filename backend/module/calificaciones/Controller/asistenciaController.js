@@ -4,10 +4,10 @@ const pool = await conectarDB();
 
 // Obtener asistencias por sección
 export const obtenerAsistencias = async (req, res) => {
-  const { codSeccion } = req.query; // Obtener `Cod_seccion` de los parámetros de consulta
+  const { cod_seccion,fecha } = req.query; // Obtener `Cod_seccion` de los parámetros de consulta
 
   try {
-      const [rows] = await pool.query('CALL get_all_asistencias(?)', [codSeccion]);
+      const [rows] = await pool.query('CALL get_all_asistencias(?,?)', [cod_seccion, fecha]);
       if (rows[0].length > 0) {
           res.status(200).json(rows[0]);
       } else {
@@ -22,68 +22,53 @@ export const obtenerAsistencias = async (req, res) => {
 
 // Crear una nueva asistencia
 export const crearAsistencia = async (req, res) => {
-  const { Observacion, Cod_estado_asistencia, Cod_seccion_matricula, Fechas } = req.body;
+  const asistencias = req.body; // Array de objetos con las asistencias a insertar
 
   try {
-    // Buscar asistencia existente para la fecha y sección especificadas (comparando solo la parte de la fecha)
-    const [existingRows] = await pool.query(
-      'SELECT Cod_asistencias, Observacion, Cod_estado_asistencia FROM tbl_asistencias WHERE Cod_seccion_matricula = ? AND DATE(Fecha) = DATE(?)',
-      [Cod_seccion_matricula, Fechas] // Compara solo la fecha, no la hora
+    // Verificar que asistencias sea un array y tenga elementos
+    if (!Array.isArray(asistencias) || asistencias.length === 0) {
+      return res.status(400).json({ Mensaje: 'No se enviaron asistencias para insertar' });
+    }
+
+    // Realizar inserciones para cada asistencia en el array
+    for (const asistencia of asistencias) {
+      const { Observacion, Cod_estado_asistencia, Cod_seccion_matricula, Fechas } = asistencia;
+
+      // Ejecutar el procedimiento almacenado para insertar cada asistencia
+      await pool.query('CALL insert_asistencia(?, ?, ?, ?)', [
+        Observacion,
+        Cod_estado_asistencia,
+        Cod_seccion_matricula,
+        Fechas,
+      ]);
+    }
+
+    res.status(201).json({ Mensaje: 'Asistencias agregadas exitosamente', tipo: 'creacion' });
+  } catch (error) {
+    console.error('Error al agregar asistencias:', error);
+    res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+  }
+};
+  
+
+// Verificar si existen asistencias para una fecha y sección
+export const verificarExistenciaAsistencias = async (req, res) => {
+  const { fecha, codSeccion } = req.body;
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT COUNT(*) AS count FROM tbl_asistencias WHERE Cod_seccion_matricula = ? AND DATE(Fecha) = DATE(?)',
+      [codSeccion, fecha]
     );
 
-    if (existingRows.length > 0) {
-      const Cod_asistencias = existingRows[0].Cod_asistencias;
-
-      // Determina si hay cambios en Observacion o Cod_estado_asistencia
-      const needsUpdate =
-        existingRows[0].Observacion !== Observacion ||
-        existingRows[0].Cod_estado_asistencia !== Cod_estado_asistencia;
-
-      if (needsUpdate) {
-        // Llama al procedimiento de actualización solo si hay cambios
-        const [updateResult] = await pool.query('CALL update_asistencia(?, ?, ?, ?, ?)', [
-          Cod_asistencias,
-          Observacion || null,
-          Cod_estado_asistencia || null,
-          Cod_seccion_matricula || null,
-          Fechas, // Usa "Fechas" aquí para la actualización
-        ]);
-
-        // Verifica que se haya actualizado solo un registro
-        if (updateResult.affectedRows === 1) {
-          return res.status(200).json({
-            Mensaje: 'Asistencia actualizada exitosamente',
-            tipo: 'actualizacion',
-          });
-        }
-      } else {
-        return res.status(200).json({
-          Mensaje: 'No hubo cambios para actualizar',
-          tipo: 'sin cambios',
-        });
-      }
-    }
-
-    // Si no existe, inserta una nueva asistencia
-    await pool.query('CALL insert_asistencia(?, ?, ?, ?)', [
-      Observacion,
-      Cod_estado_asistencia,
-      Cod_seccion_matricula,
-      Fechas, // Incluye "Fechas" como parámetro para la inserción
-    ]);
-
-    res.status(201).json({ Mensaje: 'Asistencia agregada exitosamente', tipo: 'creacion' });
+    const existe = rows[0].count > 0;
+    res.status(200).json({ existe });
   } catch (error) {
-    console.error('Error al agregar o actualizar la asistencia:', error);
-    if (error.code === 'ER_SIGNAL_EXCEPTION') {
-      res.status(400).json({ Mensaje: error.sqlMessage });
-    } else {
-      res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
-    }
+    console.error('Error al verificar existencia de asistencias:', error);
+    res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
   }
 };
 
-  
 
 export const recuento = async (req, res) => {
   const { codSeccion } = req.query; // Obtener `Cod_seccion` de los parámetros de consulta
@@ -114,30 +99,49 @@ export const recuento = async (req, res) => {
 
   
 
-
-/* Actualizar una asistencia
 export const actualizarAsistencia = async (req, res) => {
-    const { Cod_asistencias, Fecha, Observacion, Cod_estado_asistencia, Cod_seccion_persona } = req.body;
+  const asistencias = req.body; // Array de objetos con las asistencias a actualizar
 
-    try {
-        await pool.query('CALL update_asistencia(?, ?, ?, ?, ?)', [
-            Cod_asistencias,
-            Fecha,
-            Observacion,
-            Cod_estado_asistencia,
-            Cod_seccion_persona
-        ]);
-        res.status(200).json({ Mensaje: 'Asistencia actualizada exitosamente' });
-    } catch (error) {
-        console.error('Error al actualizar la asistencia:', error);
-        if (error.code === 'ER_SIGNAL_EXCEPTION') {
-            res.status(400).json({ Mensaje: error.sqlMessage });
-        } else {
-            res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
-        }
+  try {
+    // Verificar que asistencias sea un array y tenga elementos
+    if (!Array.isArray(asistencias) || asistencias.length === 0) {
+      return res.status(400).json({ Mensaje: 'No se enviaron asistencias para actualizar' });
     }
+
+    // Realizar actualizaciones para cada asistencia en el array
+    for (const asistencia of asistencias) {
+      const {
+        Cod_asistencias,
+        Observacion,
+        Cod_estado_asistencia,
+        Cod_seccion_matricula
+      } = asistencia;
+
+      // Ejecutar el procedimiento almacenado para actualizar cada asistencia
+      const [result] = await pool.query('CALL update_asistencia(?, ?, ?, ?)', [
+        Cod_asistencias,
+        Observacion || null,
+        Cod_estado_asistencia || null,
+        Cod_seccion_matricula || null
+      ]);
+
+      // Verificar que se haya actualizado solo un registro
+      if (result.affectedRows === 0) {
+        throw new Error(
+          `No se pudo actualizar la asistencia con Cod_asistencias: ${Cod_asistencias}`
+        );
+      }
+    }
+
+    res.status(200).json({ Mensaje: 'Asistencias actualizadas exitosamente', tipo: 'actualizacion' });
+  } catch (error) {
+    console.error('Error al actualizar asistencias:', error);
+    res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+  }
 };
-*/
+
+
+
 // Eliminar una asistencia
 export const eliminarAsistencia = async (req, res) => {
     const { Cod_asistencias } = req.body;

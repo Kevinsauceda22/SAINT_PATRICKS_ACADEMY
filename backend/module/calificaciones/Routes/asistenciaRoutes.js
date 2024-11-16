@@ -3,7 +3,8 @@ import {
     obtenerAsistencias,
     crearAsistencia,
     recuento,
-    //actualizarAsistencia,
+    actualizarAsistencia,
+    verificarExistenciaAsistencias,
     eliminarAsistencia,
 } from '../Controller/asistenciaController.js'; // Importamos las funciones del controlador
 
@@ -14,9 +15,10 @@ router.get('/asistencias',  obtenerAsistencias);
 router.get('/recuento',  recuento);
 // Ruta para crear una nueva asistencia
 router.post('/crearasistencias', crearAsistencia);
+router.post('/verificarExistencia', verificarExistenciaAsistencias);
 
 // Ruta para actualizar una asistencia
-//router.put('/actualizarasistencias', actualizarAsistencia);
+router.put('/actualizarasistencias', actualizarAsistencia);
 
 // Ruta para eliminar una asistencia
 router.delete('/eliminarasistencias', eliminarAsistencia);
