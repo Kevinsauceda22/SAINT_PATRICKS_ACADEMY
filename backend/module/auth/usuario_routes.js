@@ -20,7 +20,11 @@ import {
     updateTwoFactorAuthStatus,
     actualizarOtp,
     mostrarRolYCorreo,
-    getPermisos
+    getPermisos,
+    obtenerDatosPreRegistro,
+    completarPerfilPadre,
+    verificarEstadoPerfil
+
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -54,6 +58,18 @@ router.post('/update-2fa-status',checkAuth, updateTwoFactorAuthStatus);
 router.put('/actualizarOtp/:cod_usuario', checkAuth, actualizarOtp);
 // Nueva ruta para obtener solo el rol y el correo del usuario
 router.get('/rol-correo/:cod_usuario', checkAuth, mostrarRolYCorreo);
+
+// Ruta para obtener datos pre-registrados
+router.get('/padre/datos-preregistro/:cod_usuario', checkAuth, obtenerDatosPreRegistro);
+
+// Ruta para completar el perfil
+router.put('/padre/completar-perfil/:cod_usuario', checkAuth, completarPerfilPadre);
+
+// Ruta para verificar el estado del perfil
+router.get('/padre/verificar-estado/:cod_usuario', checkAuth, verificarEstadoPerfil);
+
+
+
 //obtenerPermisosPorRolYObjeto
 router.get('/permisos', getPermisos);
 

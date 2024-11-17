@@ -262,6 +262,13 @@ const _nav = [
         to: '/departamento',
         nameobject: 'navDepartamento',
       },
+
+      {
+        component: CNavItem,
+        name: 'Municipios',
+        to: '/municipios',
+        nameobject: 'navMunicipios',
+      },
     ],
   },
   {

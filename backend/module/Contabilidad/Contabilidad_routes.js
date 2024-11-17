@@ -19,8 +19,8 @@ router.post('/',checkAuth, agregarCuenta);
 // Ruta para obtener todas las cuentas
 router.get('/',checkAuth, obtenerCuentas);
 
-// Ruta para editar una cuenta
-router.put('/:cod_cuenta',checkAuth, editarCuenta);
+router.put('/:cod_cuenta', checkAuth, editarCuenta);
+
 
 // Ruta para eliminar una cuenta
 router.delete('/:cod_cuenta',checkAuth, eliminarCuenta);

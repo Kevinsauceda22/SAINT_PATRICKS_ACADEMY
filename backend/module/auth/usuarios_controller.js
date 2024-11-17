@@ -1086,6 +1086,245 @@ export const getPermisos = async (req, res) => {
     }
 };
 
-  
+// Controlador para obtener datos pre-registrados
+export const obtenerDatosPreRegistro = async (req, res) => {
+    const { cod_usuario } = req.params;
+    
+    try {
+        const [usuario] = await pool.query(
+            `SELECT 
+                u.cod_usuario,
+                u.nombre_usuario,
+                u.correo_usuario,
+                u.cod_persona,
+                p.Nombre,
+                p.Primer_apellido,
+                p.Estado_Persona
+            FROM tbl_usuarios u
+            INNER JOIN tbl_personas p ON u.cod_persona = p.cod_persona
+            WHERE u.cod_usuario = ?`,
+            [cod_usuario]
+        );
+
+        if (!usuario || usuario.length === 0) {
+            return res.status(404).json({
+                success: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        // Verificar el estado del usuario
+        if (usuario[0].Estado_Persona !== 'A') {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'El usuario no está en estado activo'
+            });
+        }
+
+        res.json({
+            success: true,
+            datos: {
+                cod_usuario: usuario[0].cod_usuario,
+                nombre_usuario: usuario[0].nombre_usuario,
+                correo_usuario: usuario[0].correo_usuario,
+                nombre: usuario[0].Nombre,
+                primer_apellido: usuario[0].Primer_apellido,
+                cod_persona: usuario[0].cod_persona
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al obtener datos pre-registro:', error);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al obtener los datos del pre-registro'
+        });
+    }
+};
+
+// Controlador para completar el perfil del padre
+export const completarPerfilPadre = async (req, res) => {
+    const connection = await pool.getConnection();
+    const { cod_usuario } = req.params;
+
+    try {
+        await connection.beginTransaction();
+
+        const {
+            dni_persona,
+            Nombre,
+            Segundo_nombre,
+            Primer_apellido,
+            Segundo_apellido,
+            Nacionalidad,
+            direccion_persona,
+            fecha_nacimiento,
+            cod_departamento,
+            cod_municipio, // Asegurarnos de recibir el cod_municipio
+            cod_genero
+        } = req.body;
+
+        // 1. Validaciones
+        if (!dni_persona || !/^\d{13}$/.test(dni_persona)) {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'El DNI debe tener exactamente 13 dígitos'
+            });
+        }
+
+        // 2. Verificar que el usuario existe y obtener su cod_persona
+        const [usuario] = await connection.query(
+            'SELECT cod_persona, Cod_estado_usuario FROM tbl_usuarios WHERE cod_usuario = ?',
+            [cod_usuario]
+        );
+
+        if (!usuario || usuario.length === 0) {
+            return res.status(404).json({
+                success: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        const cod_persona = usuario[0].cod_persona;
+
+        // 3. Verificar que el DNI no esté en uso por otra persona
+        const [dniExistente] = await connection.query(
+            'SELECT cod_persona FROM tbl_personas WHERE dni_persona = ? AND cod_persona != ?',
+            [dni_persona, cod_persona]
+        );
+
+        if (dniExistente.length > 0) {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'El DNI ya está registrado en el sistema'
+            });
+        }
+
+        // 4. Actualizar la información de la persona
+        await connection.query(
+            `UPDATE tbl_personas SET 
+                dni_persona = ?,
+                Nombre = ?,
+                Segundo_nombre = ?,
+                Primer_apellido = ?,
+                Segundo_apellido = ?,
+                Nacionalidad = ?,
+                direccion_persona = ?,
+                fecha_nacimiento = ?,
+                Estado_Persona = 'A',
+                cod_departamento = ?,
+                cod_municipio = ?,
+                cod_genero = ?
+            WHERE cod_persona = ?`,
+            [
+                dni_persona,
+                Nombre,
+                Segundo_nombre || null,
+                Primer_apellido,
+                Segundo_apellido || null,
+                Nacionalidad,
+                direccion_persona,
+                fecha_nacimiento,
+                cod_departamento,
+                cod_municipio,     // Y aquí debe coincidir con el orden de arriba
+                cod_genero,
+                cod_persona
+            ]
+        );
+
+        // 5. Actualizar el estado del usuario si es necesario
+        await connection.query(
+            `UPDATE tbl_usuarios SET 
+                Cod_estado_usuario = 1,
+                Primer_ingreso = CASE 
+                    WHEN Primer_ingreso IS NULL THEN CURRENT_TIMESTAMP
+                    ELSE Primer_ingreso
+                END
+            WHERE cod_usuario = ?`,
+            [cod_usuario]
+        );
+
+        
+
+        await connection.query(
+            'CALL sp_actualizar_datos_completados(?)',
+            [cod_usuario]
+        );
+        
+
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            mensaje: 'Perfil completado exitosamente',
+            datos: {
+                cod_usuario,
+                cod_persona
+            }
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al completar perfil:', error);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al completar el perfil'
+        });
+    } finally {
+        connection.release();
+    }
+};
+
+// Controlador para verificar el estado del perfil
+export const verificarEstadoPerfil = async (req, res) => {
+    const { cod_usuario } = req.params;
+
+    try {
+        const [usuario] = await pool.query(
+            `SELECT 
+                u.Cod_estado_usuario,
+                u.confirmacion_email,
+                p.dni_persona,
+                p.Estado_Persona
+            FROM tbl_usuarios u
+            INNER JOIN tbl_personas p ON u.cod_persona = p.cod_persona
+            WHERE u.cod_usuario = ?`,
+            [cod_usuario]
+        );
+
+        if (!usuario || usuario.length === 0) {
+            return res.status(404).json({
+                success: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        const perfilCompleto = 
+            usuario[0].dni_persona !== null && 
+            usuario[0].Estado_Persona === 'A' &&
+            usuario[0].Cod_estado_usuario === 1 &&
+            usuario[0].confirmacion_email === 1;
+
+        res.json({
+            success: true,
+            perfilCompleto,
+            estado: {
+                usuario: usuario[0].Cod_estado_usuario,
+                persona: usuario[0].Estado_Persona,
+                emailConfirmado: usuario[0].confirmacion_email === 1,
+                dniRegistrado: usuario[0].dni_persona !== null
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al verificar estado del perfil:', error);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al verificar el estado del perfil'
+        });
+    }
+};
+
 
 

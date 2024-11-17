@@ -55,6 +55,8 @@ const Tipopersona = React.lazy(() => import('./views/pages/matricula/tipopersona
 const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
 const Periodomatricula = React.lazy(() => import('./views/pages/matricula/periodomatricula'));
 const Departamento = React.lazy(() => import('./views/pages/matricula/departamento'));
+const Municipios = React.lazy(() => import('./views/pages/matricula/municipios'));
+
 const Estadomatricula = React.lazy(() => import('./views/pages/matricula/estadomatricula'));
 const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopago'));
 const ListaEdificios = React.lazy(() => import('./views/pages/matricula/ListaEdificios'));
@@ -159,6 +161,8 @@ const App = () => {
                 <Route path="/tipomatricula" element={<Tipomatricula />} />
                 <Route path="/periodomatricula" element={<Periodomatricula />} />
                 <Route path="/departamento" element={<Departamento />} />
+                <Route path="/municipios" element={<Municipios />} />
+
                 <Route path="/estadomatricula" element={<Estadomatricula />} />
                 <Route path="/conceptopago" element={<Conceptopago />} />
                 <Route path="/edificios" element={<ListaEdificios />} />
