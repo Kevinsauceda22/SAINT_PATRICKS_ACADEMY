@@ -47,6 +47,8 @@ import catalogoCuentasRoutes from './module/Contabilidad/Contabilidad_routes.js'
 import libroDiarioRoutes from './module/Contabilidad/librodiario_routes.js'; // Asegúrate de usar la ruta correcta
 import PermisosRoutes from './module/Permisos/Permisos_routes.js'; // Asegúrate de usar la ruta correcta
 import departamento from './module/personas/Routes/departamento_routes.js';
+import cuentasRouter from './module/auth/creacioncuentas_Routes.js';
+
 
 
 
@@ -82,8 +84,9 @@ app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes
 // Autenticación y seguridad
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/usuarios', usuariosRoutes); 
-
 app.use('/api/roles', PermisosRoutes); 
+// Registrar las rutas
+app.use('/api/usuarios', cuentasRouter);
 
 // Calificaciones
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario

@@ -13,6 +13,8 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+
+
 const getEmailTemplate = (content, title) => `
 <!DOCTYPE html>
 <html lang="es">
@@ -185,6 +187,65 @@ const getEmailTemplate = (content, title) => `
 </html>
 `;
 
+// Añadir la nueva función de envío de credenciales temporales
+const enviarCorreoCredencialesTemporales = async (correo_usuario, nombre_usuario, temporaryPassword) => {
+    const content = `
+        <div class="welcome-text">
+            ¡Bienvenido a nuestra comunidad educativa, ${nombre_usuario}!
+        </div>
+        <div class="message-box">
+            Nos complace darte la bienvenida a Saint Patrick's Academy. A continuación, encontrarás tus credenciales temporales de acceso:
+        </div>
+
+        <div class="message-box" style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
+            <p style="margin: 0;"><strong>Credenciales de acceso:</strong></p>
+            <div style="margin: 15px 0;">
+                <p style="margin: 5px 0;"><strong>Usuario:</strong> ${nombre_usuario}</p>
+                <p style="margin: 5px 0;"><strong>Contraseña temporal:</strong> ${temporaryPassword}</p>
+            </div>
+        </div>
+
+        <div class="message-box" style="background-color: #fff3e0; border-left: 4px solid #ff9800;">
+            <p><strong>⚠️ Importante:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Esta contraseña es temporal y deberás cambiarla en tu primer inicio de sesión.</li>
+                <li>Por seguridad, no compartas estas credenciales con nadie.</li>
+                <li>Te recomendamos usar una contraseña segura que incluya letras, números y símbolos.</li>
+            </ul>
+        </div>
+
+        <div class="message-box">
+            <p><strong>Pasos para comenzar:</strong></p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+                <li>Ingresa a la plataforma usando las credenciales proporcionadas</li>
+                <li>Cambia tu contraseña temporal</li>
+                <li>Completa tu perfil con la información requerida</li>
+                <li>¡Comienza a explorar nuestra plataforma educativa!</li>
+            </ol>
+        </div>
+
+        <div class="message-box" style="text-align: center;">
+            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/login" class="verify-button">
+                Iniciar Sesión
+            </a>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+            to: correo_usuario,
+            subject: '¡Bienvenido! Tus Credenciales de Acceso - Saint Patrick\'s Academy',
+            html: getEmailTemplate(content, 'Credenciales de Acceso'),
+        });
+        console.log('Correo de credenciales enviado correctamente');
+        return true;
+    } catch (error) {
+        console.error('Error al enviar el correo de credenciales:', error.message);
+        throw new Error('Error al enviar el correo con las credenciales');
+    }
+};
+
 const enviarCorreoVerificacion = async (correo_usuario, nombre_usuario, token_usuario) => {
     const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
     const verificationLink = `${baseUrl}/verificar-cuenta/${token_usuario}`;
@@ -260,4 +321,4 @@ const enviarCorreoRecuperacion = async (correo, token) => {
     }
 };
 
-export { enviarCorreoVerificacion, enviarCorreoRecuperacion };
+export { enviarCorreoVerificacion, enviarCorreoRecuperacion, enviarCorreoCredencialesTemporales };

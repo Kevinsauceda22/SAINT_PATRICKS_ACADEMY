@@ -33,8 +33,11 @@ import {
   CCol,
 } from '@coreui/react';
 import Swal from 'sweetalert2';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaProfesores = () => {
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaProfesores');
   const [profesores, setProfesores] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
@@ -587,7 +590,10 @@ const handleExportExcel = () => {
 
 
 //=======================================================================================================
-  
+     // Verificar permisos
+     if (!canSelect) {
+      return <AccessDenied />;
+    }
 
 
 
@@ -604,6 +610,8 @@ const handleExportExcel = () => {
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
       {/* Botón "Nuevo" alineado a la derecha */}
+
+    {canInsert && (
       <CButton
         style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
         className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -615,6 +623,8 @@ const handleExportExcel = () => {
            <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
             Nuevo
            </CButton>
+
+          )}
 
            
 {/*Boton reporte */}
@@ -721,22 +731,31 @@ const handleExportExcel = () => {
         <CTableDataCell>{profesor.Hora_entrada}</CTableDataCell>
         <CTableDataCell>{profesor.Hora_salida}</CTableDataCell>
         <CTableDataCell>
+
+
+          {canUpdate && (
           <CButton
-            style={{ backgroundColor: '#F9B64E',marginRight: '10px', marginBottom: '10px' }} onClick={() => openUpdateModal(profesor)}>
-            
+            style={{ backgroundColor: '#F9B64E',marginRight: '10px', marginBottom: '10px' }} onClick={() => openUpdateModal(profesor)}> 
             <CIcon icon={cilPen} />
           </CButton>
+          )}
+
+
+{canUpdate && (
           <CButton
             style={{ backgroundColor: '#E57368', marginRight: '10px', marginBottom: '10px' }} onClick={() => openDeleteModal(profesor)}>
             <CIcon icon={cilTrash} />
               </CButton>
+                  )}
                <CButton
+               
                   color="primary" style={{ marginRight: '10px', marginBottom: '10px' }}
                   onClick={() => {
                     setProfesorToReportar(profesor);
                     setModalReporteVisible(true);
                   }}
                 >
+                  
                   <CIcon icon={cilInfo} />
                 </CButton>
                </CTableDataCell>

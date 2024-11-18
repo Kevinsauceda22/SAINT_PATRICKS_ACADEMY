@@ -71,39 +71,321 @@ const UserManagement = () => {
 
 
 
+  const handleAddUser = async (roleType) => {
+    const roleMap = {
+      1: 'Padre',
+      2: 'Administrador',
+      3: 'Docente',
+      4: 'Manager'
+    };
+    let roleText = roleMap[roleType] || '';
 
- const handleAddUser = (roleType) => {
-    let roleText = userTypes.find(type => type.id === roleType)?.title || '';
+  
 
+    
+    // Cargar departamentos...
+    let departamentos = [];
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        'http://localhost:4000/api/departamento/departamentos',
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      if (response.data) {
+        departamentos = response.data
+          .reduce((acc, current) => {
+            const x = acc.find(item => item.cod_departamento === current.cod_departamento);
+            if (!x) return acc.concat([current]);
+            return acc;
+          }, [])
+          .sort((a, b) => a.nombre_departamento.localeCompare(b.nombre_departamento));
+      }
+    } catch (error) {
+      console.error('Error al cargar departamentos:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al cargar los departamentos',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
+      return;
+    }
+  
     Swal.fire({
       title: `Agregar ${roleText}`,
       html: `
-        <input id="name" class="swal2-input" placeholder="Nombre completo">
-        <input id="email" class="swal2-input" placeholder="Correo electrónico">
-        <input id="password" type="password" class="swal2-input" placeholder="Contraseña">
+        <div class="modal-form-container">
+          <div class="modal-section">
+            <div class="section-title">Información Personal</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <input 
+                  id="Nombre" 
+                  class="swal2-input" 
+                  placeholder="Primer nombre *" 
+                  required
+                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+              </div>
+              <div class="form-group">
+                <input 
+                  id="Segundo_nombre" 
+                  class="swal2-input" 
+                  placeholder="Segundo nombre"
+                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+              </div>
+              <div class="form-group">
+                <input 
+                  id="Primer_apellido" 
+                  class="swal2-input" 
+                  placeholder="Primer apellido *" 
+                  required
+                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+              </div>
+              <div class="form-group">
+                <input 
+                  id="Segundo_apellido" 
+                  class="swal2-input" 
+                  placeholder="Segundo apellido"
+                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+              </div>
+            </div>
+          </div>
+  
+          <div class="modal-section">
+            <div class="section-title">DNI</div>
+            <div class="form-group">
+              <input 
+                id="dni_persona" 
+                class="swal2-input" 
+                placeholder="Número de documento *" 
+                required 
+                maxlength="13"
+                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+              <small class="helper-text">El DNI debe tener exactamente 13 dígitos</small>
+            </div>
+          </div>
+  
+          <div class="modal-section">
+            <div class="section-title">Información Adicional</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <input 
+                  id="Nacionalidad" 
+                  class="swal2-input" 
+                  placeholder="Nacionalidad"
+                  oninput="this.value = this.value.toUpperCase()">
+              </div>
+              <div class="form-group">
+                <select id="cod_genero" class="swal2-select" required>
+                  <option value="">Género *</option>
+                  <option value="1">MASCULINO</option>
+                  <option value="2">FEMENINO</option>
+                  <option value="3">OTRO</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <input 
+                id="direccion_persona" 
+                class="swal2-input" 
+                placeholder="Dirección"
+                oninput="this.value = this.value.toUpperCase()">
+            </div>
+            <div class="form-group">
+              <label class="date-label">Fecha de nacimiento</label>
+              <input type="date" id="fecha_nacimiento" class="swal2-input">
+            </div>
+          </div>
+  
+          <div class="modal-section">
+            <div class="section-title">Ubicación</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <select id="cod_departamento" class="swal2-select" required onchange="handleDepartamentoChange(this.value)">
+                  <option value="">Departamento *</option>
+                  ${departamentos.map(depto => `
+                    <option value="${depto.cod_departamento}">
+                      ${depto.nombre_departamento.toUpperCase()}
+                    </option>
+                  `).join('')}
+                </select>
+              </div>
+              <div class="form-group">
+                <select id="cod_municipio" class="swal2-select" required disabled>
+                  <option value="">Municipio *</option>
+                </select>
+              </div>
+            </div>
+          </div>
+  
+          <div class="modal-section">
+            <div class="section-title">Información de Cuenta</div>
+            <div class="form-group">
+              <input 
+                id="correo_usuario" 
+                class="swal2-input" 
+                placeholder="Correo electrónico *" 
+                required>
+              <small class="helper-text">Se enviará un correo con las credenciales temporales</small>
+            </div>
+            
+          </div>
+        </div>
       `,
       showCancelButton: true,
-      confirmButtonText: 'Agregar',
+      confirmButtonText: 'Crear Usuario',
       cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'swal2-popup',
+        confirmButton: 'swal2-confirm',
+        cancelButton: 'swal2-cancel'
+      },
+      didOpen: () => {
+        // Función para manejar cambio de departamento
+        window.handleDepartamentoChange = async (departamentoId) => {
+          const municipioSelect = document.getElementById('cod_municipio');
+          
+          if (!departamentoId) {
+            municipioSelect.innerHTML = '<option value="">Municipio *</option>';
+            municipioSelect.disabled = true;
+            return;
+          }
+  
+          try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get(
+              `http://localhost:4000/api/departamento/municipios/${departamentoId}`,
+              {
+                headers: { Authorization: `Bearer ${token}` }
+              }
+            );
+  
+            if (response.data) {
+              municipioSelect.innerHTML = `
+                <option value="">Municipio *</option>
+                ${response.data.map(municipio => `
+                  <option value="${municipio.cod_municipio}">
+                    ${municipio.nombre_municipio.toUpperCase()}
+                  </option>
+                `).join('')}
+              `;
+              municipioSelect.disabled = false;
+            }
+          } catch (error) {
+            console.error('Error al cargar municipios:', error);
+            municipioSelect.innerHTML = '<option value="">Error al cargar municipios</option>';
+            municipioSelect.disabled = true;
+          }
+        };
+      },
+      willClose: () => {
+        delete window.handleDepartamentoChange;
+      },
       preConfirm: () => {
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        if (!name || !email || !password) {
-          Swal.showValidationMessage('Por favor complete todos los campos');
+        // Validar longitud de DNI
+        const dni = document.getElementById('dni_persona').value;
+        if (dni.length !== 13) {
+          Swal.showValidationMessage('El DNI debe tener exactamente 13 dígitos');
+          return false;
         }
-        return { name, email, password };
+  
+        // Recolectar datos de persona
+        const personData = {
+          dni_persona: dni,
+          Nombre: document.getElementById('Nombre').value,
+          Segundo_nombre: document.getElementById('Segundo_nombre').value,
+          Primer_apellido: document.getElementById('Primer_apellido').value,
+          Segundo_apellido: document.getElementById('Segundo_apellido').value,
+          Nacionalidad: document.getElementById('Nacionalidad').value,
+          direccion_persona: document.getElementById('direccion_persona').value,
+          fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
+          Estado_Persona: 'A',
+          cod_tipo_persona: "1", // Valor fijo ya que solo manejamos DNI
+          cod_departamento: document.getElementById('cod_departamento').value,
+          cod_municipio: document.getElementById('cod_municipio').value,
+          cod_genero: document.getElementById('cod_genero').value
+        };
+    
+        // Recolectar datos de usuario
+        const userData = {
+          correo_usuario: document.getElementById('correo_usuario').value,
+          Cod_rol: roleType,
+          Cod_estado_usuario: 1,
+          datos_completados: 0,
+          Primer_ingreso: null
+        };
+    
+        // Validar campos requeridos
+        const requiredFields = [
+          'dni_persona', 'Nombre', 'Primer_apellido', 'correo_usuario',
+          'cod_genero', 'cod_departamento', 'cod_municipio'
+        ];
+    
+        const emptyFields = requiredFields.filter(field => !document.getElementById(field).value);
+    
+        if (emptyFields.length > 0) {
+          Swal.showValidationMessage('Por favor complete todos los campos marcados con *');
+          return false;
+        }
+    
+        // Validar formato de correo
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(userData.correo_usuario)) {
+          Swal.showValidationMessage('Por favor ingrese un correo electrónico válido');
+          return false;
+        }
+    
+        return {
+          personData,
+          userData
+        };
       }
     }).then((result) => {
       if (result.isConfirmed) {
-        // Aquí iría la lógica para agregar el usuario
-        Swal.fire('¡Éxito!', `${roleText} agregado correctamente`, 'success');
-        setShowUserMenu(false);
+        const token = localStorage.getItem('token');
+        
+        Swal.fire({
+          title: 'Creando usuario...',
+          html: 'Se enviará un correo con las credenciales temporales',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        
+        axios.post('http://localhost:4000/api/usuarios/crear-usuario', 
+          result.value,
+          {
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+        .then(response => {
+          Swal.fire({
+            title: '¡Usuario Creado!',
+            text: `Se ha enviado un correo a ${result.value.userData.correo_usuario} con las credenciales de acceso`,
+            icon: 'success',
+            confirmButtonText: 'Aceptar'
+          });
+          fetchUsers();
+          setShowUserMenu(false);
+        })
+        .catch(error => {
+          Swal.fire({
+            title: 'Error',
+            text: error.response?.data?.mensaje || 'Error al crear el usuario',
+            icon: 'error',
+            confirmButtonText: 'Aceptar'
+          });
+        });
       }
     });
   };
-
-  
 
   const fetchUsers = async () => {
     setLoadingg(true);

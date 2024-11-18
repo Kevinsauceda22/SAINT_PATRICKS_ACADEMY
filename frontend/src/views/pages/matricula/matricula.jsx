@@ -40,9 +40,15 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import AccessDenied from "../AccessDenied/AccessDenied"
+import usePermission from '../../../../context/usePermission';
+
+
 
 const MatriculaForm = () => {
-  const [loading, setLoading] = useState(true);
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('Matricula');
+
+  const [loadingg, setLoading] = useState(true);
   const [opciones, setOpciones] = useState({});
   const [hijos, setHijos] = useState([]);
   const [dniPadre, setDniPadre] = useState('');
@@ -510,6 +516,12 @@ useEffect(() => {
   }
 }, [opciones.periodos_activos]);
 
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+
+
   return (
     <CContainer>
  <CRow className="justify-content-between align-items-center mb-2">
@@ -517,6 +529,8 @@ useEffect(() => {
     <h3>Matrículas</h3>
   </CCol>
   <CCol xs={12} md={6} className="d-flex justify-content-end align-items-center">
+
+    {canInsert && (
   <CButton 
   color="dark" 
   onClick={() => {
@@ -538,6 +552,7 @@ useEffect(() => {
 >
   <CIcon icon={cilPlus} /> Matrícula
 </CButton>
+    )}
 
 
 <CDropdown>
@@ -591,7 +606,7 @@ useEffect(() => {
 </CRow>
 
 
-      {loading ? (
+      {loadingg ? (
         <CSpinner color="primary" />
       ) : (
         <div className="table-container">
@@ -635,6 +650,9 @@ useEffect(() => {
           <CTableDataCell>{anioAcademico}</CTableDataCell>
           <CTableDataCell>
             {/* Botón para abrir el modal */}
+
+
+{canUpdate && (
             <CButton
               color="warning"
               className="me-1"
@@ -655,9 +673,18 @@ useEffect(() => {
             >
               <CIcon icon={cilPen} />
             </CButton>
+
+)}
+
+
+
+
+            {canDelete && (
             <CButton color="danger" className="me-1" onClick={() => {/* Lógica para eliminar */}}>
               <CIcon icon={cilTrash} />
             </CButton>
+            )}
+
             <CButton color="info" onClick={() => handleViewPDF(matricula)}>
               <CIcon icon={cilInfo} />
             </CButton>

@@ -34,7 +34,7 @@ const UserProfile = () => {
     
     const fetchData = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/personas/${auth.cod_persona}`);
+        const response = await axios.get(`59${API_BASE_URL}/personas/${auth.cod_persona}`);
         setPersonData(response.data || {});
       } catch (error) {
         Swal.fire({ icon: 'error', title: 'Error', text: 'Error al obtener tus datos. Por favor, inténtalo más tarde.' });

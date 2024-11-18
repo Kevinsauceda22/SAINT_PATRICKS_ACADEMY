@@ -26,6 +26,7 @@ const ConfirmacionEmail = React.lazy(() => import('./views/pages/email-confirmat
 const CorreoVerificado = React.lazy(() => import('./views/pages/email-check/email-check'));
 const VerificarEmail = React.lazy(() => import('./views/pages/components/verificar cuenta/verificarCuenta'));
 const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPass"));
+const CambiarPassword = React.lazy(() => import("./views/pages/NewPassword/GuardarPassword"));
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
 const Perfil = React.lazy(() => import('./views/pages/profile/profile'));
 const TwoAuthFA = React.lazy(() => import('./views/pages/2FA/2fa'));
@@ -116,6 +117,7 @@ const App = () => {
               <Route path="/verificar-cuenta/:token_usuario" element={<VerificarEmail />} />
               <Route path="/404" element={<Page404 />} />
               <Route path="/olvide-password/:token" element={<NuevaContrasena />} />
+
               <Route path="/500" element={<Page500 />} />
             </Route>
 
@@ -123,6 +125,7 @@ const App = () => {
             <Route element={<RutaProtegida />}>
             <Route path="/active-session" element={<ActiveSessionPage />} />
             <Route path="/CompletarDatos" element={<Register />} />
+            <Route path="/NuevaContraseña" element={<CambiarPassword />} />
             <Route path="/RegistrarHijo" element={<RegistrarHijo />} />
             <Route path="/CompletarDatos" element={<CompletarDatos />} />
             <Route path="/AccesoDenegado" element={<AccesoDenegado />} />

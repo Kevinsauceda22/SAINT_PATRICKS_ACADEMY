@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
+import CIcon from '@coreui/icons-react';
+import { cilSearch, cilBrushAlt } from '@coreui/icons';
+
 
 const GestorDePermisos = ({ pathName }) => {
   const [mostrarAdvertencia, setMostrarAdvertencia] = useState(true);
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const MySwal = withReactContent(Swal);
+  
 
   // Mapeo de IDs de rol a nombres
   const rolNombres = {
@@ -23,6 +27,7 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '46', name: 'Página Principal', description: 'Dashboard para padres' },
     { id: '47', name: 'Lista Asistencia', description: 'Lista Asistencia' },
     { id: '48', name: 'Lista Profesores', description: 'Lista Profesores' },
+    { id: '79', name: 'ListaActividadesAca', description: 'ListaActividadesAca' },
     { id: '49', name: 'Lista Estado nota', description: 'Lista Estado nota' },
     { id: '50', name: 'Lista Estructura', description: 'Lista Estructura' },
     { id: '51', name: 'Lista Asignaturas', description: 'Lista Asignaturas' },
@@ -50,7 +55,8 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '73', name: 'Lista Historial', description: 'Lista Historial' },
     { id: '74', name: 'Actividades', description: 'actividades' },
     { id: '75', name: 'Contabilidad', description: 'Contabilidad' },
-    { id: '76', name: 'Login', description: 'Login' }
+    { id: '77', name: 'Matricula', description: 'Matricula' },
+    { id: '77', name: 'VistaProfesor', description: 'VistaProfesor' }
   ];
 
   const permisos = [

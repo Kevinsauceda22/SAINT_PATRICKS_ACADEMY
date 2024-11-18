@@ -31,7 +31,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaAsignaturas = () => {
-  const { canSelect, loading, error } = usePermission('ListaAsignaturas');
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaAsignaturas');
 
   const [Asignaturas, setAsignatura] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ciclo
@@ -356,6 +356,8 @@ const paginate = (pageNumber) => {
     if (!canSelect) {
       return <AccessDenied />;
     }
+
+    
  return (
   <CContainer>
     
@@ -470,12 +472,17 @@ const paginate = (pageNumber) => {
                 <CTableDataCell>{asignatura.Nombre_asignatura}</CTableDataCell>
                 <CTableDataCell>{asignatura.Descripcion_asignatura}</CTableDataCell>
                 <CTableDataCell style={{ display: 'flex', gap: '10px' }}>
+
+                  {canUpdate && (
                   <CButton style={{ backgroundColor: '#F9B64E' }} onClick={() => openUpdateModal(asignatura)}>
                     <CIcon icon={cilPen} />
                   </CButton>
+                  )}
+                  {canDelete && (
                   <CButton style={{ backgroundColor: '#E57368' }} onClick={() => openDeleteModal(asignatura)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
+)}
                 </CTableDataCell>
               </CTableRow>
             ))}

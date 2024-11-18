@@ -382,3 +382,750 @@
     grid-template-columns: 1fr;
   }
 }
+
+.modal-form-container {
+  padding: 1rem;
+}
+
+.modal-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.helper-text {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.date-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.swal2-select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.swal2-input, .swal2-select {
+  width: 100% !important;
+  margin: 0.5rem 0 !important;
+}
+.modal-form-container {
+  padding: 1rem;
+}
+
+.modal-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.helper-text {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.date-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.swal2-select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.swal2-input, .swal2-select {
+  width: 100% !important;
+  margin: 0.5rem 0 !important;
+}
+
+.modal-form-container {
+  padding: 1rem;
+}
+
+.modal-section {
+  margin-bottom: 1.5rem;
+}
+
+.section-title {
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #374151;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.helper-text {
+  display: block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.date-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.swal2-select:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.swal2-input, .swal2-select {
+  width: 100% !important;
+  margin: 0.5rem 0 !important;
+}
+/* Estilos del contenedor del modal */
+.swal2-popup {
+  padding: 2rem 1rem;
+  width: 42em !important; /* Modal más ancho */
+  border-radius: 12px;
+}
+
+/* Estilos del título del modal */
+.swal2-title {
+  color: #1a1a1a;
+  font-size: 1.5rem !important;
+  font-weight: 600 !important;
+  padding: 1rem 0 !important;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+/* Contenedor del formulario */
+.modal-form-container {
+  padding: 1rem;
+  max-height: 70vh;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+}
+
+/* Barra de desplazamiento personalizada */
+.modal-form-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-form-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.modal-form-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.modal-form-container::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
+/* Secciones del formulario */
+.modal-section {
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+/* Títulos de sección */
+.section-title {
+  color: #2563eb; /* Color azul para los títulos */
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Grid para campos */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+/* Grupos de formulario */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+/* Estilo para los inputs */
+.swal2-input {
+  height: 2.75rem !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  width: 100% !important;
+  margin: 0.25rem 0 !important;
+  font-size: 0.95rem !important;
+  transition: border-color 0.2s ease-in-out;
+  background-color: #fff !important;
+}
+
+.swal2-input:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Estilo para los selects */
+.swal2-select {
+  height: 2.75rem !important;
+  padding: 0.5rem 1rem !important;
+  border: 1px solid #d1d5db !important;
+  border-radius: 6px !important;
+  width: 100% !important;
+  margin: 0.25rem 0 !important;
+  font-size: 0.95rem !important;
+  background-color: #fff !important;
+  cursor: pointer;
+}
+
+.swal2-select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+.swal2-select:disabled {
+  background-color: #f3f4f6 !important;
+  cursor: not-allowed;
+  color: #6b7280;
+}
+
+/* Textos de ayuda */
+.helper-text {
+  display: block;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* Etiquetas */
+.date-label {
+  display: block;
+  color: #374151;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+/* Contenedor de checkbox */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.checkbox-container span {
+  font-size: 0.9rem;
+  color: #374151;
+}
+
+/* Botones del modal */
+.swal2-confirm {
+  background-color: #2563eb !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  transition: background-color 0.2s ease-in-out !important;
+}
+
+.swal2-confirm:hover {
+  background-color: #1d4ed8 !important;
+}
+
+.swal2-cancel {
+  background-color: #ef4444 !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+  transition: background-color 0.2s ease-in-out !important;
+}
+
+.swal2-cancel:hover {
+  background-color: #dc2626 !important;
+}
+
+/* Campos requeridos */
+.required-field::after {
+  content: ' *';
+  color: #ef4444;
+}
+
+/* Estilos para inputs con error */
+.swal2-input.error {
+  border-color: #ef4444 !important;
+}
+
+/* Mensaje de validación */
+.swal2-validation-message {
+  background-color: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-radius: 6px !important;
+  padding: 0.75rem !important;
+  margin-top: 1rem !important;
+  font-size: 0.9rem !important;
+}
+
+/* Responsividad */
+@media (max-width: 640px) {
+  .swal2-popup {
+    width: 90% !important;
+    padding: 1rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-section {
+    padding: 1rem;
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-section {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Estado hover para inputs */
+.swal2-input:hover:not(:disabled),
+.swal2-select:hover:not(:disabled) {
+  border-color: #94a3b8 !important;
+}
+
+/* Estado activo para inputs */
+.swal2-input:active:not(:disabled),
+.swal2-select:active:not(:disabled) {
+  border-color: #2563eb !important;
+}
+
+/* Estilo para placeholder */
+.swal2-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
+}
+
+/* Estilo para el texto seleccionado */
+.swal2-input::selection {
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* Ancho del modal */
+.swal2-popup-wide {
+  width: 60em !important; /* Modal más ancho */
+  max-width: 95vw !important; /* Responsive en móviles */
+  padding: 2rem !important;
+}
+
+/* Contenedor del formulario con mejor espaciado */
+.modal-form-container {
+  padding: 1rem 2rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  margin: 1rem 0;
+}
+
+/* Mejoras en el diseño de las secciones */
+.modal-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+/* Títulos de sección más prominentes */
+.section-title {
+  color: #1e40af;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Grid con más espacio */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Inputs más grandes y modernos */
+.swal2-input {
+  height: 3rem !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 1rem !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #d1d5db !important;
+}
+
+/* Select más grandes y modernos */
+.swal2-select {
+  height: 3rem !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 1rem !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #d1d5db !important;
+}
+
+/* Botones más grandes */
+.swal2-confirm, .swal2-cancel {
+  padding: 1rem 2rem !important;
+  font-size: 1rem !important;
+  border-radius: 8px !important;
+}
+
+/* Mensaje de ayuda más visible */
+.helper-text {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-top: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+/* Responsividad mejorada */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .modal-section {
+    padding: 1.5rem;
+  }
+  
+  .swal2-popup-wide {
+    padding: 1rem !important;
+    margin: 0.5rem;
+  }
+}
+
+/* Animación suave al abrir */
+.swal2-show {
+  animation: fadeInAndGrow 0.3s ease-out;
+}
+
+@keyframes fadeInAndGrow {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Mejoras en hover y focus */
+.swal2-input:focus,
+.swal2-select:focus {
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+/* Campos requeridos */
+.required-field::after {
+  content: ' *';
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* Estilos mejorados y modernos */
+.swal2-popup {
+  width: 60em !important;
+  max-width: 95vw !important;
+  padding: 0 !important;
+  border-radius: 16px !important;
+  background: #f8fafc !important;
+}
+
+.swal2-title {
+  padding: 2rem !important;
+  margin: 0 !important;
+  font-size: 1.5rem !important;
+  color: #1e293b !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: #fff !important;
+  border-radius: 16px 16px 0 0 !important;
+}
+
+.modal-form-container {
+  padding: 2rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+/* Barra de desplazamiento personalizada */
+.modal-form-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-form-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.modal-form-container::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
+
+.modal-form-container::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.modal-section {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+}
+
+.section-title {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 50px;
+  height: 2px;
+  background: #3b82f6;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
+}
+
+/* Inputs mejorados */
+.swal2-input {
+  height: 3rem !important;
+  padding: 0.75rem 1rem !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  font-size: 0.95rem !important;
+  transition: all 0.2s ease-in-out !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  width: 100% !important;
+  margin: 0.25rem 0 !important;
+}
+
+.swal2-input:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+  outline: none !important;
+}
+
+.swal2-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Select mejorados */
+.swal2-select {
+  height: 3rem !important;
+  padding: 0 1rem !important;
+  border: 1.5px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  font-size: 0.95rem !important;
+  background: #fff !important;
+  color: #0f172a !important;
+  width: 100% !important;
+  margin: 0.25rem 0 !important;
+  cursor: pointer !important;
+  appearance: none !important;
+  background-image: url("data:image/svg+xml,...") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 1rem center !important;
+  background-size: 1em !important;
+}
+
+.swal2-select:disabled {
+  background-color: #f8fafc !important;
+  cursor: not-allowed !important;
+  color: #94a3b8 !important;
+}
+
+/* Helper text */
+.helper-text {
+  display: block;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+}
+
+/* Checkbox container */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin-top: 0.5rem;
+}
+
+.checkbox-container input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-right: 0.75rem;
+  border: 2px solid #64748b;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.checkbox-container span {
+  color: #334155;
+  font-size: 0.95rem;
+}
+
+/* Botones */
+.swal2-actions {
+  padding: 1.5rem !important;
+  background: #fff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  margin-top: 0 !important;
+}
+
+.swal2-confirm {
+  background: #3b82f6 !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s !important;
+}
+
+.swal2-confirm:hover {
+  background: #2563eb !important;
+  transform: translateY(-1px) !important;
+}
+
+.swal2-cancel {
+  background: #ef4444 !important;
+  padding: 0.75rem 1.5rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s !important;
+}
+
+.swal2-cancel:hover {
+  background: #dc2626 !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Validación */
+.swal2-validation-message {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  padding: 1rem !important;
+  border-radius: 8px !important;
+  font-size: 0.9rem !important;
+  margin-top: 1rem !important;
+}

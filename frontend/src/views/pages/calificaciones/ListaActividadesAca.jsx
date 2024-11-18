@@ -32,8 +32,13 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importa la extensión para tablas
 import * as XLSX from 'xlsx';
 
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const ListaActividadesAca = () => {
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaActividadesAca');
+
   const [actividades, setActividades] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
@@ -702,6 +707,12 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredActividades.length / recor
 }
 };
 
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
+  
+
   return (
     <CContainer>
 
@@ -727,6 +738,7 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredActividades.length / recor
           <h1 className="mb-0">Actividades académicas</h1>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
+{canInsert && (
           <CButton
             style={{ backgroundColor: '#4B6251', color: 'white' }}
             className="mb-3 mb-md-0 me-md-3"
@@ -734,6 +746,9 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredActividades.length / recor
           >
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
+      )}
+
+          
           <CButton
             style={{ backgroundColor: '#6C8E58', color: 'white' }}
             onClick={() => setModalPDFVisible(true)} // Abre el modal de PDF
@@ -837,6 +852,8 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredActividades.length / recor
                {/*<CTableDataCell> {`${new Date(actividad.Fechayhora_Inicio).toLocaleString()} - ${new Date(actividad.Fechayhora_Fin).toLocaleString()}`}</CTableDataCell>*/}
               <CTableDataCell>{actividad.Valor}</CTableDataCell>
               <CTableDataCell>
+
+                {canUpdate && (
                 <CButton
                   color="info" style={{ backgroundColor: '#F9B64E',marginRight: '10px', marginBottom: '10px' }}
                   onClick={() => {
@@ -846,6 +863,9 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredActividades.length / recor
                 >
                   <CIcon icon={cilPen} />
                 </CButton>
+          )}
+
+{canDelete && (
                 <CButton
                   color="danger" style={{ marginRight: '10px', marginBottom: '10px' }}
                   onClick={() => {
@@ -855,6 +875,9 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredActividades.length / recor
                 >
                   <CIcon icon={cilTrash} />
                 </CButton>
+      )}
+
+
                 <CButton
                   color="primary" style={{ marginRight: '10px', marginBottom: '10px' }}
                   onClick={() => {

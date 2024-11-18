@@ -24,7 +24,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaAsistencia = () => {
-  const { canSelect, loading, error } = usePermission('ListaAsistencia');
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaActividadesAca');
    const [secciones, setSecciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -819,6 +819,8 @@ const handleObservacionChangeActualizar = (index, value) => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
             {/* Botón "Nuevo" alineado al lado derecho */}
             <div style={{ marginLeft: 'auto' }}>
+
+              {canInsert && (
               <CButton
                 className="d-flex align-items-center gap-1 rounded"
                 onClick={() => setMostrarModalNuevo(true)}
@@ -829,6 +831,7 @@ const handleObservacionChangeActualizar = (index, value) => {
                 <CIcon icon={cilPlus} className="me-2" />
                 Nuevo
               </CButton>
+              )}
               
             </div>
           </div>
@@ -1115,9 +1118,13 @@ const handleObservacionChangeActualizar = (index, value) => {
                       trigger="click"
                       style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
                     >
+
+                      {canUpdate && (
                       <CButton color="link">
                         <CIcon icon={cilPencil} style={{ color: 'black' }} />
                       </CButton>
+                      )}
+
                     </CPopover>
                     </CTableDataCell>
                   </CTableRow>
@@ -1370,9 +1377,13 @@ const handleObservacionChangeActualizar = (index, value) => {
                       trigger="click"
                       style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
                     >
+                      
+                      {canUpdate && (
                       <CButton color="link">
                         <CIcon icon={cilPencil} style={{ color: 'black' }} />
                       </CButton>
+                      )}
+
                     </CPopover>
                     </CTableDataCell>
                   </CTableRow>

@@ -30,7 +30,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaEstadonota = () => {
-  const { canSelect, loading, error } = usePermission('ListaEstadonota');
+  const {canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaEstadonota');
   const [estadonota, setEstadonota] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear un estado nota
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar un estado nota
@@ -409,6 +409,8 @@ return (
       </CCol>
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
         {/* Botón Nuevo para abrir el modal */}
+
+        {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -418,6 +420,7 @@ return (
         >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
+        )}
 
         {/* Botón de Reporte */}
         <CButton 
@@ -507,9 +510,14 @@ return (
               <CTableDataCell>{estadonota.originalIndex}</CTableDataCell>
               <CTableDataCell>{estadonota.Descripcion}</CTableDataCell>
               <CTableDataCell>
+
+{canUpdate && (
                 <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(estadonota)}>
                   <CIcon icon={cilPen} />
                 </CButton>
+)}
+
+
                 <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(estadonota)}>
                   <CIcon icon={cilTrash} />
                 </CButton>
