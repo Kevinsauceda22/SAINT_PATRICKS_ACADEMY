@@ -52,7 +52,7 @@ const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/List
 const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
 
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
-const Tipopersona = React.lazy(() => import('./views/pages/matricula/tipopersona'));
+
 const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
 const Periodomatricula = React.lazy(() => import('./views/pages/matricula/periodomatricula'));
 const Departamento = React.lazy(() => import('./views/pages/matricula/departamento'));
@@ -68,6 +68,7 @@ const ListaSecciones_Asignatura = React.lazy(() => import('./views/pages/matricu
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
+const Tipopersona = React.lazy(() => import('./views/pages/personas/Tipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
@@ -162,7 +163,7 @@ const App = () => {
                 <Route path="/VistaListaProfesor" element={<VistaListaProfesor />} />
 
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
-                <Route path="/tipopersona" element={<Tipopersona />} />
+               
                 <Route path="/tipomatricula" element={<Tipomatricula />} />
                 <Route path="/periodomatricula" element={<Periodomatricula />} />
                 <Route path="/departamento" element={<Departamento />} />
@@ -178,6 +179,7 @@ const App = () => {
                 <Route path="/historico" element={<ListaDias />} />
                 
                 <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
+                 <Route path="/Tipopersona" element={<Tipopersona />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
