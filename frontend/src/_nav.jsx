@@ -71,6 +71,7 @@ const _nav = [
      name: 'Secciones asignaturas',
      icon: cilFile,
      to: '/pages/matricula/ListaSecciones_Asignatura',
+    nameobject: 'navSecciones_Asingnaturas',
     },
   {
     component: CNavGroup,
@@ -173,6 +174,12 @@ const _nav = [
         name: 'Edificios',
         to: '/edificios',
         nameobject: 'navEdificios',
+      },
+      {
+        component: CNavItem,
+        name: 'Aulas',
+        to: '/pages/matricula/ListaAulas',
+        nameobject: 'navAulas',
       },
       {
         component: CNavItem,
