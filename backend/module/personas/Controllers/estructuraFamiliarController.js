@@ -206,3 +206,4 @@ export const eliminarEstructuraFamiliar = async (req, res) => {
         return res.status(500).json({ message: 'Ocurrió un error al intentar eliminar Estructura Familiar.', error });
     }
 };
+
