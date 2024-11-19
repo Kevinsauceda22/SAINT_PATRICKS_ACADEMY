@@ -66,6 +66,12 @@ const _nav = [
     icon: cilFile,
     nameobject: 'navNotas',
   },
+    {
+     component: CNavItem,
+     name: 'Secciones asignaturas',
+     icon: cilFile,
+     to: '/pages/matricula/ListaSecciones_Asignatura',
+    },
   {
     component: CNavGroup,
     name: 'Mantenimientos',
