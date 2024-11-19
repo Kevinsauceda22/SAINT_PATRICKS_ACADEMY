@@ -18,6 +18,34 @@ export const obtenerEstructuraFamiliar = async (req, res) => {
     }
 };
 
+
+
+export const obtenerEstructurasFamiliares = async (req, res) => {
+  try {
+    const { cod_persona } = req.params; // Obtener el ID de la persona desde los parámetros de la URL
+
+    if (!cod_persona) {
+      return res.status(400).json({ error: 'El código de la persona es obligatorio.' });
+    }
+
+    // Llamada al procedimiento almacenado
+    const [resultados] = await pool.query('CALL P_Get_Estructuras_Familiares(?)', [cod_persona]);
+
+    // Verificar si hay datos
+    if (resultados[0].length === 0) {
+      return res.status(404).json({ message: 'No se encontraron estructuras familiares para esta persona.' });
+    }
+
+    // Responder con los datos obtenidos
+    res.json(resultados[0]);
+  } catch (error) {
+    console.error('Error al obtener estructuras familiares:', error);
+    res.status(500).json({ error: 'Error al obtener estructuras familiares.' });
+  }
+};
+
+
+
 export const obtenerTipoRelacion = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL P_Get_TipoRelacion()');
@@ -38,29 +66,18 @@ export const obtenerTipoRelacion = async (req, res) => {
     }
 };
 
-// Controlador para obtener las personas
 export const obtenerPersonas = async (req, res) => {
-    const { rol } = req.query; // Obtenemos el rol de los parámetros de consulta (opcional)
-
     try {
-        let query = 'CALL P_Get_Personas()';
-        
-        if (rol) {
-            query += ` WHERE Cod_tipo_persona = ?`; // Filtrar por rol si se proporciona
-        }
-        
-        const [rows] = rol 
-            ? await pool.query(query, [rol]) 
-            : await pool.query(query);
+        const [rows] = await pool.query('CALL P_Get_Personas()');
+        const personas = rows[0];
 
-        if (rows[0].length > 0) {
-            const personas = rows[0].map(persona => ({
+        if (personas.length > 0) {
+            const resultado = personas.map(persona => ({
                 cod_persona: persona.cod_persona,
-                fullName: `${persona.Nombre} ${persona.Segundo_nombre} ${persona.Primer_apellido} ${persona.Segundo_Apellido}`,
-                dni: persona.dni_persona,
-                rol: persona.Cod_tipo_persona
+                fullName: `${persona.Nombre} ${persona.Segundo_nombre || ''} ${persona.Primer_apellido} ${persona.Segundo_apellido || ''}`.trim(),
+                dni_persona: persona.dni_persona, // Agregado el dni_persona
             }));
-            res.status(200).json(personas);
+            res.status(200).json(resultado);
         } else {
             res.status(404).json({ message: 'No se encontraron personas' });
         }
@@ -70,28 +87,67 @@ export const obtenerPersonas = async (req, res) => {
     }
 };
 
+
+export const obtenerPersonasPorRol= async (req, res) => {
+    const { rol } = req.params; // Obtener el rol de req.params
+    const { dni, nombre } = req.query; // Obtener DNI y nombre de los parámetros de consulta
+
+    try {
+        let personas = [];
+        let query = 'SELECT cod_persona, Nombre, Segundo_nombre, Primer_apellido, Segundo_Apellido FROM tbl_personas WHERE Cod_tipo_persona = ?';
+        let params = [parseInt(rol)]; // Asegúrate de que rol sea un número si es necesario
+
+        // Añadir filtro por DNI si se proporciona
+        if (dni) {
+            query += ' AND DNI = ?'; // Asegúrate de que el campo DNI existe en tu tabla
+            params.push(dni);
+        }
+
+        // Añadir filtro por nombre si se proporciona
+        if (nombre) {
+            query += ' AND (Nombre LIKE ? OR Segundo_nombre LIKE ? OR Primer_apellido LIKE ? OR Segundo_Apellido LIKE ?)';
+            const nombreWildcard = `%${nombre}%`; // Utiliza wildcards para buscar coincidencias parciales
+            params.push(nombreWildcard, nombreWildcard, nombreWildcard, nombreWildcard);
+        }
+
+        const [rows] = await pool.query(query, params);
+        personas = rows;
+
+        if (personas.length > 0) {
+            const resultado = personas.map(persona => ({
+                cod_persona: persona.cod_persona,
+                fullName: `${persona.Nombre} ${persona.Segundo_nombre || ''} ${persona.Primer_apellido} ${persona.Segundo_Apellido || ''}`.trim(),
+            }));
+            res.status(200).json(resultado);
+        } else {
+            res.status(404).json({ message: 'No se encontraron personas para este rol' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las personas:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
+
+
+
+
+
+
 //Controlador para crear 
 export const crearEstructuraFamiliar = async (req, res) => {
     const {
-        descripcion,
         cod_persona_padre,
         cod_persona_estudiante,
-        cod_tipo_relacion
+        cod_tipo_relacion,
+        descripcion,
     } = req.body;
-
-    // Validar que el padre/tutor y el estudiante no sean la misma persona
-    if (cod_persona_padre === cod_persona_estudiante) {
-        return res.status(400).json({
-            mensaje: 'No se puede seleccionar la misma persona como Padre/Tutor y Estudiante.'
-        });
-    }
 
     try {
         await pool.query('CALL P_Post_EstructuraFamiliar(?, ?, ?, ?)', [
-            descripcion,
             cod_persona_padre,
             cod_persona_estudiante,
-            cod_tipo_relacion
+            cod_tipo_relacion,
+            descripcion
         ]);
 
         res.status(201).json({ mensaje: 'Estructura Familiar creada exitosamente' });
