@@ -30,6 +30,7 @@ import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
 import historicoprocRoutes from './module/matricula/Routes/historicoprocRoutes.js';
+import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personaRoutes from "./module/personas/Routes/personasRoutes.js";
@@ -137,6 +138,8 @@ app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
 app.use('/api/edificio', edificiosRoutes);
 // Rutas para las aulas
 app.use('/api/aula', aulasRoutes);
+// Rutas para secciones y asignaturas
+app.use('/api/secciones_asignaturas', secc_asigRoutes);
 // Rutas para las actividades extracurriculares
 app.use('/api', actividadesextraRoutes);
 // Rutas para el día
