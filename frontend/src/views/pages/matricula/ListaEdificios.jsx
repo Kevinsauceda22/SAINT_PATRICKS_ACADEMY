@@ -30,8 +30,13 @@ import {
   CTableBody,
   CTableDataCell,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const ListaEdificios = () => {
+  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('edificios');
+
   // Estados de la aplicación
   const [edificios, setEdificios] = useState([]); // Estado que almacena la lista de edificios
   const [errors, setErrors] = useState({ Numero_pisos: '', Aulas_disponibles: '', pisosVsAulas: '' }); // Estado para gestionar los errores de validación
@@ -417,6 +422,10 @@ const ListaEdificios = () => {
       setCurrentPage(pageNumber);
     }
   };
+   // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
 
   return (
     <CContainer>
@@ -502,6 +511,8 @@ const ListaEdificios = () => {
                 <CTableDataCell className="text-center">{edificio.Aulas_disponibles}</CTableDataCell>
                 <CTableDataCell className="text-center">
                   <div className="d-flex justify-content-center">
+
+{canUpdate &&(
                     <CButton
                       color="warning"
                       onClick={() => openUpdateModal(edificio)}
@@ -509,9 +520,12 @@ const ListaEdificios = () => {
                     >
                       <CIcon icon={cilPen} />
                     </CButton>
+)}
+                    {canDelete && (
                     <CButton color="danger" onClick={() => openDeleteModal(edificio)}>
                       <CIcon icon={cilTrash} />
                     </CButton>
+                    )}
                   </div>
                 </CTableDataCell>
               </CTableRow>

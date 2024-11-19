@@ -8,10 +8,23 @@ import cors from 'cors';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
 
+//con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
+export const obtenerUsuarioPorId = async (req, res) => {
+    try {
+        const [usuario] = await pool.query('CALL ObtenerUsuarioPorID(?)', [req.params.cod_usuario]);
 
-//importar el envio de correo
+        // Verifica que el resultado tenga longitud y que contenga resultados
+        if (!usuario || usuario.length === 0 || usuario[0].length === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
 
-
+        // Devuelve el primer usuario encontrado
+        res.status(200).json(usuario[0][0]); // Asegúrate de acceder al primer usuario
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ mensaje: 'Error al obtener el usuario' });
+    }
+};
 
 //este es el controlador de usuarios para creacion de usuarios al crear un usuario se crea una persona y un usuario
 export const crearUsuario = async (req, res) => {
@@ -390,6 +403,68 @@ export const obtenerUsuarios = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener los usuarios' });
     }
 };
+
+export const cambiarEstadoUsuario = async (req, res) => {
+    const { userId, Cod_estado_usuario } = req.body;
+
+    // Validación de datos
+    if (!userId || !Cod_estado_usuario) {
+        return res.status(400).json({ 
+            mensaje: 'Se requieren userId y Cod_estado_usuario' 
+        });
+    }
+
+    // Validar que el estado sea válido
+    if (![1, 2, 3].includes(Number(Cod_estado_usuario))) {
+        return res.status(400).json({ 
+            mensaje: 'Estado de usuario no válido' 
+        });
+    }
+
+    try {
+        // Verificar si el usuario existe
+        const [userExists] = await pool.query(
+            'SELECT cod_usuario FROM tbl_usuarios WHERE cod_usuario = ?',
+            [userId]
+        );
+
+        if (!userExists.length) {
+            return res.status(404).json({ 
+                mensaje: 'Usuario no encontrado' 
+            });
+        }
+
+        // Actualizar el estado
+        const [result] = await pool.query(
+            'UPDATE tbl_usuarios SET Cod_estado_usuario = ? WHERE cod_usuario = ?',
+            [Cod_estado_usuario, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ 
+                mensaje: 'No se pudo actualizar el estado del usuario' 
+            });
+        }
+
+        // Obtener el estado actualizado
+        const [updatedUser] = await pool.query(
+            'SELECT cod_usuario, Cod_estado_usuario FROM tbl_usuarios WHERE cod_usuario = ?',
+            [userId]
+        );
+
+        res.status(200).json({
+            mensaje: 'Estado del usuario actualizado correctamente',
+            usuario: updatedUser[0]
+        });
+
+    } catch (error) {
+        console.error('Error en la base de datos:', error);
+        res.status(500).json({
+            mensaje: 'Error interno del servidor al actualizar el estado',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
 // controllers/usuarioController.js
 export const confirmarCuenta = async (req, res) => {
     const { token_usuario } = req.params; // Leer el token desde los parámetros de la URL
@@ -416,47 +491,8 @@ export const confirmarCuenta = async (req, res) => {
         return res.status(500).json({ message: 'Error en la confirmación de cuenta.' });
     }
 };
-//con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
-export const obtenerUsuarioPorId = async (req, res) => {
-    try {
-        const [usuario] = await pool.query('CALL ObtenerUsuarioPorID(?)', [req.params.cod_usuario]);
 
-        // Verifica que el resultado tenga longitud y que contenga resultados
-        if (!usuario || usuario.length === 0 || usuario[0].length === 0) {
-            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
-        }
 
-        // Devuelve el primer usuario encontrado
-        res.status(200).json(usuario[0][0]); // Asegúrate de acceder al primer usuario
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ mensaje: 'Error al obtener el usuario' });
-    }
-};
-//con este controlador se actualiza un usuario por su id y tiene una ruta protegida que requiere un token jwt
-export const actualizarUsuario = async (req, res) => {
-    const { nombre_usuario, correo_usuario, contraseña_usuario, rol_usuario, confirmacion_email, token_usuario } = req.body;
-
-    const connection = await pool.getConnection();
-    try {
-        let queryParams = [req.params.cod_usuario, nombre_usuario, correo_usuario, rol_usuario, confirmacion_email, token_usuario];
-        if (contraseña_usuario) {
-            const hashedPassword = await bcrypt.hash(contraseña_usuario, 10);
-            queryParams.splice(2, 0, hashedPassword);
-        }
-
-        const [result] = await connection.query('CALL sp_actualizar_usuario(?, ?, ?, ?, ?, ?, ?)', queryParams);
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
-        }
-        res.status(200).json({ mensaje: 'Usuario actualizado correctamente' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ mensaje: 'Error al actualizar el usuario' });
-    } finally {
-        connection.release();
-    }
-};
 
 export const eliminarUsuarioCompleto = async (req, res) => {
     const { cod_usuario } = req.params; // Obtener el cod_usuario de los parámetros de la URL
@@ -507,61 +543,84 @@ export const eliminarUsuarioCompleto = async (req, res) => {
         connection.release();  // Liberar la conexión
     }
 };
-// Con este controlador se autentica un usuario y se genera un token jwt y que si la contraseña ingresada coincide con una contraseña antigua, devolver un error
+
 export const autenticarUsuario = async (req, res) => {
-    const { identificador, contraseña_usuario, twoFactorCode } = req.body;
+    const { identificador, contraseña_usuario } = req.body;
+
+    // Validar datos de entrada
+    if (!identificador || !contraseña_usuario) {
+        return res.status(400).json({ mensaje: 'Identificador y contraseña son requeridos' });
+    }
 
     try {
         // Verificar si el usuario existe por nombre de usuario o correo
-        const [user] = await pool.query(
+        const [users] = await pool.query(
             'SELECT * FROM tbl_usuarios WHERE nombre_usuario = ? OR correo_usuario = ?',
             [identificador, identificador]
         );
 
-        if (user.length === 0) {
+        if (users.length === 0) {
             return res.status(404).json({ mensaje: 'Usuario no encontrado' });
         }
 
-        const usuario = user[0];
+        const usuario = users[0];
 
-        // Verificar la contraseña actual primero
+        // Verificar la contraseña actual
         const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
-        
         if (!contraseñaValida) {
             return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
         }
 
+        // Verificar contraseñas anteriores (excluyendo la contraseña actual)
+        const [contraseñasAnteriores] = await pool.query(
+            `SELECT Contraseña 
+             FROM tbl_hist_contraseña 
+             WHERE cod_usuario = ? 
+             AND Contraseña != ?`,
+            [usuario.cod_usuario, usuario.contraseña_usuario] // Remove ORDER BY for now
+        );
+
+        for (const contraseñaAnt of contraseñasAnteriores) {
+            const esContraseñaAntigua = await bcrypt.compare(contraseña_usuario, contraseñaAnt.Contraseña);
+            if (esContraseñaAntigua) {
+                return res.status(401).json({ mensaje: 'La contraseña ingresada coincide con una contraseña anterior. Por favor, usa una contraseña nueva.' });
+            }
+        }
+
         // Verificar si el usuario ha confirmado su cuenta
-        if (usuario.confirmacion_email !== 1) {
+        if (!usuario.confirmacion_email) {
             return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
         }
 
-        // Verificar si tiene habilitado el 2FA
-        if (usuario.is_two_factor_enabled) {
-            if (!twoFactorCode) {
-                return res.status(400).json({ mensaje: 'El código de 2FA es requerido' });
-            }
-
-            // Validar el código de 2FA usando el código secreto almacenado
-            const isCodeValid = speakeasy.totp.verify({
-                secret: usuario.two_factor_code,  // El código secreto almacenado en la base de datos
-                encoding: 'base32',
-                token: twoFactorCode
-            });
-
-            if (!isCodeValid) {
-                return res.status(401).json({ mensaje: 'Código 2FA incorrecto' });
+        if (usuario.cod_estado_usuario === 1) {
+            // Usuario activo, continuar con la lógica
+        
+            // Verificar si la autenticación de dos factores está habilitada
+            if (usuario.is_two_factor_enabled==1) {
+                // Lógica para manejar la autenticación de dos factores
+                // Por ejemplo, enviar un código de verificación al usuario
+                return res.status(200).json({ mensaje: 'La autenticación de dos factores está habilitada. Se ha enviado un código de verificación.' });
+            } else {
+                // Lógica para usuarios que no tienen 2FA habilitado
+                return res.status(200).json({ mensaje: 'Acceso concedido. La autenticación de dos factores no está habilitada.' });
             }
         }
+        
+        // Verificar el estado del usuario
+        if (usuario.cod_estado_usuario === 2) {
+            return res.status(403).json({ mensaje: 'Tu cuenta está en revisión. Por favor, contacta al administrador.' });
+        } else if (usuario.cod_estado_usuario === 3) {
+            return res.status(403).json({ mensaje: 'Tu cuenta ha sido suspendida. Por favor, contacta al administrador.' });
+        }
 
-          // Actualizar el campo Fecha_ultima_conexion con la fecha y hora actual
-          const fechaConexion = new Date();
-          await pool.query(
-              'UPDATE tbl_usuarios SET Fecha_ultima_conexion = ? WHERE cod_usuario = ?',
-              [fechaConexion, usuario.cod_usuario]
-          );
+        // Actualizar Fecha de última conexión
+        const fechaConexion = new Date();
+        await pool.query(
+            'UPDATE tbl_usuarios SET Fecha_ultima_conexion = ? WHERE cod_usuario = ?',
+            [fechaConexion, usuario.cod_usuario]
+        );
 
-           // Si el campo Primer_ingreso está vacío o es NULL, actualizarlo
+        // Actualizar Primer_ingreso si está vacío
         if (!usuario.Primer_ingreso) {
             await pool.query(
                 'UPDATE tbl_usuarios SET Primer_ingreso = ? WHERE cod_usuario = ?',
@@ -569,16 +628,13 @@ export const autenticarUsuario = async (req, res) => {
             );
         }
 
-
-        // Calcular la fecha de vencimiento sumando 12 años a la fecha actual
+        // Actualizar Fecha de vencimiento
         const fechaVencimiento = new Date();
-        fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 12);  // Sumar 12 años
-        const fechaVencimientoFormateada = fechaVencimiento.toISOString().slice(0, 19).replace('T', ' ');
-
-        // Actualizar el campo Fecha_vencimiento
+        fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 12);
+        
         await pool.query(
             'UPDATE tbl_usuarios SET Fecha_vencimiento = ? WHERE cod_usuario = ?',
-            [fechaVencimientoFormateada, usuario.cod_usuario]
+            [fechaVencimiento, usuario.cod_usuario]
         );
 
         // Generar el token si la autenticación es exitosa
@@ -586,16 +642,19 @@ export const autenticarUsuario = async (req, res) => {
             { 
                 cod_usuario: usuario.cod_usuario, 
                 nombre_usuario: usuario.nombre_usuario, 
-                rol_usuario: usuario.rol_usuario, 
-                cod_persona: usuario.cod_persona 
+                rol_usuario: usuario.cod_rol,
+                cod_persona: usuario.cod_persona,
+                is_two_factor_enabled: usuario.is_two_factor_enabled // Agrega esta línea
             },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
+        // Retornar respuesta con el token y el estado del usuario
         return res.status(200).json({
             mensaje: 'Autenticación exitosa',
-            token
+            token,
+            cod_estado_usuario: usuario.cod_estado_usuario,
         });
 
     } catch (error) {
@@ -636,83 +695,6 @@ export const mostrarPerfil = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener el perfil del usuario' });
     }
 };
-export const generarCodigo2FA = async (req, res) => {
-    const usuarioId = req.usuario.cod_usuario;  // Se obtiene del token autenticado
-
-    try {
-        // Generar un código secreto de 2FA
-        const secret = speakeasy.generateSecret({ length: 20 });
-
-        // Guardar el código secreto en la base de datos
-        await pool.query('UPDATE tbl_usuarios SET two_factor_code = ? WHERE cod_usuario = ?', [secret.base32, usuarioId]);
-
-        // Generar un código QR que el usuario pueda escanear con una app 2FA
-        const urlQR = await qrcode.toDataURL(secret.otpauth_url);
-
-        res.json({ qrCode: urlQR, secret: secret.base32 });
-    } catch (error) {
-        console.error('Error al generar el código 2FA:', error);
-        res.status(500).json({ mensaje: 'Error al generar el código 2FA' });
-    }
-};
-// Generar el código QR para habilitar 2FA
-export const generar2FA = async (req, res) => {
-    const { cod_usuario } = req.body;
-  
-    try {
-      const secret = speakeasy.generateSecret({ name: "SaintPatrickAcademy" });
-  
-      // Guardar el secreto en la base de datos y establecer is_two_factor_enabled en 0
-      await db.query('UPDATE tbl_usuarios SET two_factor_code = ?, is_two_factor_enabled = 0 WHERE cod_usuario = ?', [secret.base32, cod_usuario]);
-  
-      // Generar el código QR
-      qrcode.toDataURL(secret.otpauth_url, (err, data_url) => {
-        if (err) {
-          return res.status(500).json({ message: 'Error al generar el código QR.' });
-        }
-  
-        // Enviar el código QR al frontend
-        res.json({ qrCodeUrl: data_url });
-      });
-    } catch (error) {
-      console.error('Error al habilitar 2FA:', error);
-      res.status(500).json({ message: 'Error al habilitar 2FA. Inténtalo nuevamente.' });
-    }
-  };
-  
-  // Verificar el código de 2FA ingresado
-  export const verificar2FA = async (req, res) => {
-    const { cod_usuario, twoFactorCode } = req.body;
-  
-    try {
-      // Obtener el código secreto de la base de datos
-      const [user] = await db.query('SELECT two_factor_code FROM tbl_usuarios WHERE cod_usuario = ?', [cod_usuario]);
-  
-      if (!user) {
-        return res.status(404).json({ message: 'Usuario no encontrado.' });
-      }
-  
-      // Verificar el código 2FA ingresado
-      const verified = speakeasy.totp.verify({
-        secret: user.two_factor_code,
-        encoding: 'base32',
-        token: twoFactorCode
-      });
-  
-      if (verified) {
-        // Actualizar el campo para habilitar 2FA
-        await db.query('UPDATE tbl_usuarios SET is_two_factor_enabled = 1 WHERE cod_usuario = ?', [cod_usuario]);
-        res.json({ success: true, message: 'Autenticación de dos factores habilitada con éxito.' });
-      } else {
-        res.status(400).json({ success: false, message: 'Código de verificación incorrecto.' });
-      }
-    } catch (error) {
-      console.error('Error al verificar 2FA:', error);
-      res.status(500).json({ message: 'Error al verificar 2FA. Inténtalo nuevamente.' });
-    }
-  };
-
-
 
 export const OlvidePasssword = async (req, res) => {
     const { correo_usuario } = req.body;
@@ -765,13 +747,11 @@ export const comprobarToken = async (req, res) => {
 };
 
 // Controlador para cambiar la contraseña del usuario
-// Controlador para cambiar la contraseña del usuario
 export const cambiarContrasena = async (req, res) => {
-    const { token } = req.params; // Obtener el token de la URL
-    const { contraseña_usuario, confirmar_contrasena } = req.body; // Obtener la nueva contraseña del cuerpo de la solicitud
+    const { token } = req.params;
+    const { contraseña_usuario, confirmar_contrasena } = req.body;
 
     try {
-        // Verificar que las contraseñas coinciden
         if (contraseña_usuario !== confirmar_contrasena) {
             return res.status(400).json({ mensaje: 'Las contraseñas no coinciden' });
         }
@@ -779,16 +759,21 @@ export const cambiarContrasena = async (req, res) => {
         // Verificar si el token es válido
         const [usuario] = await pool.query('SELECT * FROM tbl_usuarios WHERE token_usuario = ?', [token]);
 
-        if (usuario.length === 0) {
+        if (!usuario || usuario.length === 0) {
             return res.status(404).json({ mensaje: 'Token inválido o expirado' });
         }
 
-        // Verificar que la nueva contraseña no haya sido usada antes (evitar reutilización)
+        // Verificar el historial de contraseñas
         const [historial] = await pool.query('SELECT Contraseña FROM tbl_hist_contraseña WHERE Cod_usuario = ?', [usuario[0].cod_usuario]);
 
-        const contraseñaReutilizada = await Promise.all(historial.map(async (registro) => {
-            return await bcrypt.compare(contraseña_usuario, registro.Contraseña);
-        }));
+        const contraseñaReutilizada = await Promise.all(
+            historial.map(async (registro) => {
+                if (registro.Contraseña) {  // Verifica que no sea undefined o null
+                    return await bcrypt.compare(contraseña_usuario, registro.Contraseña);
+                }
+                return false; // Si es undefined o null, evita llamar a bcrypt.compare
+            })
+        );
 
         if (contraseñaReutilizada.includes(true)) {
             return res.status(400).json({ mensaje: 'No puedes reutilizar una contraseña anterior' });
@@ -803,11 +788,543 @@ export const cambiarContrasena = async (req, res) => {
         // Agregar la nueva contraseña al historial de contraseñas
         await pool.query('INSERT INTO tbl_hist_contraseña (Cod_usuario, Contraseña, Fecha_creacion) VALUES (?, ?, NOW())', [usuario[0].cod_usuario, hashedPassword]);
 
-        // Respuesta de éxito
         res.status(200).json({ mensaje: 'Contraseña actualizada correctamente' });
     } catch (error) {
         console.error(error);
         res.status(500).json({ mensaje: 'Error al cambiar la contraseña' });
     }
 };
+
+export const enableTwoFactorAuth = async (req, res) => {
+    const userId = req.usuario.cod_usuario;
+
+    try {
+        // Generar un secreto para el TOTP
+        const secret = speakeasy.generateSecret({ length: 20 });
+
+        // Guardar el secreto en la base de datos
+        const connection = await pool.getConnection();
+        await connection.query('UPDATE tbl_usuarios SET two_factor_code = ?, is_two_factor_enabled = ? WHERE cod_usuario = ?', [
+            secret.base32, // Guardamos el secreto en base32
+            0, // Inicialmente no está habilitado, podrías cambiar a 1 si ya deseas habilitarlo aquí
+            userId,
+        ]);
+        connection.release();
+
+        // Generar un código QR para el usuario
+        const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
+
+        // Retornar el código QR y el secreto
+        res.status(200).json({ qrCodeUrl, secret: secret.base32 });
+    } catch (error) {
+        console.error('Error al habilitar 2FA:', error);
+        res.status(500).json({ message: 'Error al habilitar 2FA' });
+    }
+};
+
+export const verifyTwoFactorAuthCode = async (req, res) => {
+    const { twoFactorCode } = req.body;
+    const userId = req.usuario.cod_usuario; // Assuming the user ID is set in the request object
+
+    console.log('Código recibido:', twoFactorCode);
+    console.log('Usuario ID:', userId);
+
+    try {
+        const connection = await pool.getConnection();
+        const [user] = await connection.query('SELECT two_factor_code, is_two_factor_enabled FROM tbl_usuarios WHERE cod_usuario = ?', [userId]);
+        
+        // Release the connection immediately after the query
+        connection.release();
+        
+        if (!user || user.length === 0) {
+            console.log('Usuario no encontrado en la base de datos');
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        const secret = user[0].two_factor_code;
+        console.log('Secret recuperado:', secret);
+
+        // Verificar que el secret no sea null o undefined
+        if (!secret) {
+            console.log('Secret no encontrado para el usuario');
+            return res.status(400).json({ message: 'Configuración 2FA incompleta' });
+        }
+
+        // Verificar el código TOTP
+        const verified = speakeasy.totp.verify({
+            secret,
+            encoding: 'base32',
+            token: twoFactorCode,
+            window: 5 // Allow a window for timing issues
+        });
+
+        console.log('Resultado de verificación:', verified);
+
+        if (verified) {
+            // Si la verificación es exitosa, actualiza otp_verified a 1
+            const updateResult = await pool.query('UPDATE tbl_usuarios SET otp_verified = 1 WHERE cod_usuario = ?', [userId]);
+            console.log('Resultado de la actualización:', updateResult);
+
+            // Envía una respuesta exitosa
+            return res.status(200).json({ message: 'Código TOTP válido. Verificación exitosa.' });
+        } else {
+            return res.status(401).json({ 
+                message: 'Código TOTP inválido',
+                debug: {
+                    receivedToken: twoFactorCode,
+                    timestamp: new Date().toISOString()
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Error detallado:', error);
+        return res.status(500).json({ 
+            message: 'Error al verificar el código TOTP',
+            error: error.message 
+        });
+    }
+};
+
+export const updateTwoFactorAuthStatus = async (req, res) => {
+    const { is_two_factor_enabled  } = req.body;
+    const userId = req.usuario.cod_usuario;
+    
+   
+    // Asegurarnos de que el valor sea numérico
+    const newStatus = is_two_factor_enabled ? 1 : 0;
+
+
+    try {
+        const connection = await pool.getConnection();
+        
+        // Log de la consulta SQL antes de ejecutarla
+        const query = 'UPDATE tbl_usuarios SET is_two_factor_enabled = ? WHERE cod_usuario = ?';
+        const params = [newStatus, userId];
+     
+        const [result] = await connection.query(query, params);
+        
+    
+        connection.release();
+
+        if (result.affectedRows === 0) {
+            console.log('No se encontró el usuario para actualizar');
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Verificar el estado actual después de la actualización
+        const [verification] = await connection.query(
+            'SELECT is_two_factor_enabled FROM tbl_usuarios WHERE cod_usuario = ?',
+            [userId]
+        );
+
+        res.status(200).json({ 
+            message: 'Estado de 2FA actualizado exitosamente',
+            currentStatus: verification[0].is_two_factor_enabled
+        });
+    } catch (error) {
+        console.error('Error detallado al actualizar el estado de 2FA:', error);
+        res.status(500).json({
+            message: 'Error al actualizar el estado de 2FA',
+            error: error.message,
+            stack: error.stack
+        });
+    }
+};
+
+
+export const disableTwoFactorAuth = async (req, res) => {
+    const userId = req.usuario.cod_usuario;
+
+    try {
+        const connection = await pool.getConnection();
+        await connection.query('UPDATE tbl_usuarios SET two_factor_code = NULL, is_two_factor_enabled = 0 WHERE cod_usuario = ?', [userId]);
+        connection.release();
+
+        res.status(200).json({ success: true, message: '2FA deshabilitado' });
+    } catch (error) {
+        console.error('Error al deshabilitar 2FA:', error);
+        res.status(500).json({ success: false, message: 'Error al deshabilitar 2FA' });
+    }
+};
+
+export const getTwoFactorStatus = async (req, res) => {
+    const userId = req.usuario.cod_usuario;
+
+    try {
+        const connection = await pool.getConnection();
+        
+        const [result] = await connection.query(
+            'SELECT is_two_factor_enabled FROM tbl_usuarios WHERE cod_usuario = ?', 
+            [userId]
+        );
+        
+        connection.release();
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                message: 'Usuario no encontrado',
+                success: false
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            is2FAEnabled: result[0].is_two_factor_enabled === 1
+        });
+
+    } catch (error) {
+        console.error('Error obteniendo estado 2FA:', error);
+        res.status(500).json({
+            message: 'Error obteniendo estado 2FA',
+            success: false,
+            error: error.message
+        });
+    }
+};
+
+// Controlador para actualizar el estado de otp_verified
+export const actualizarOtp = async (req, res) => {
+    const { cod_usuario } = req.params; // Captura el parámetro de la URL
+    const { otp_verified } = req.body; // Captura el cuerpo de la solicitud
+
+    try {
+        // Actualiza el campo otp_verified y ultima_actualizacion en la base de datos
+        await pool.query(
+            'UPDATE tbl_usuarios SET otp_verified = ?, ultima_actualizacion = NOW() WHERE cod_usuario = ?',
+            [otp_verified, cod_usuario]
+        );
+        res.status(200).json({ message: 'Otp verified actualizado exitosamente.' });
+    } catch (error) {
+        console.error('Error al actualizar otp_verified:', error);
+        res.status(500).json({ message: 'Error en el servidor.' });
+    }
+};
+
+// Para mostrar solo el rol y el correo del usuario
+export const mostrarRolYCorreo = async (req, res) => {
+    const cod_usuario = parseInt(req.params.cod_usuario, 10); // Asegúrate de que el ID sea un número entero
+    const usuarioAutenticado = req.usuario.cod_usuario; // ID del usuario autenticado desde el token
+
+    // Verificar si cod_usuario es un número válido
+    if (isNaN(cod_usuario)) {
+        return res.status(400).json({ mensaje: 'ID de usuario inválido' });
+    }
+
+    // Verificar que el usuario autenticado solo acceda a su propio rol y correo
+    if (cod_usuario !== usuarioAutenticado) {
+        return res.status(403).json({ mensaje: 'Acceso denegado. No puedes ver los datos de otro usuario' });
+    }
+
+    try {
+        // Ejecutar la consulta almacenada 'ObtenerRolYCorreo'
+        const [usuario] = await pool.query('CALL ObtenerRolYCorreo(?)', [cod_usuario]);
+        console.log("Resultado de la base de datos:", usuario);
+
+        // Verificar si no se encontró el usuario
+        if (!usuario || !usuario[0] || usuario[0].length === 0) {
+            return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+        }
+
+        // Enviar los datos del usuario encontrado
+        res.status(200).json(usuario[0][0]);
+    } catch (error) {
+        console.error('Error al obtener el rol y correo del usuario:', error);
+        res.status(500).json({ mensaje: 'Error al obtener el rol y correo del usuario' });
+    }
+};
+
+// OBTENER TODOS LOS PERMISOS DE UN ROL
+export const getPermisos = async (req, res) => {
+    const { Cod_rol, Nom_objeto } = req.query;
+
+    // Validación de parámetros
+    if (!Cod_rol || !Nom_objeto) {
+        return res.status(400).json({
+            success: false,
+            message: "Cod_rol y Nom_objeto son parámetros requeridos",
+        });
+    }
+
+    try {
+        // Consulta para obtener los permisos directamenteeeeeeeeeeeeee
+        const [rows] = await pool.query(
+            `SELECT
+                sa.Permiso_Modulo,
+                sa.Permiso_Consultar,
+                sa.Permiso_Insercion,
+                sa.Permiso_Actualizacion,
+                sa.Permiso_Eliminacion
+            FROM
+                tbl_permisos sa
+            JOIN tbl_objetos so ON
+                sa.Cod_Objeto = so.Cod_Objeto
+            WHERE
+                sa.Cod_Rol = ? AND so.Nom_objeto = ?`,
+            [Cod_rol, Nom_objeto]
+        );
+
+        // Verificar si hay resultados
+        if (rows.length === 0) {
+            return res.status(200).json({
+                success: true,
+                permissions: []
+            });
+        }
+
+        // Devolver los permisos encontrados
+        res.status(200).json({
+            success: true,
+            permissions: rows // Devuelve el array completo de permisoszssssssss
+        });
+    } catch (error) {
+        console.error('Error en el controlador:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Error al procesar la solicitud de permisos",
+            error: error.message
+        });
+    }
+};
+
+// Controlador para obtener datos pre-registrados
+export const obtenerDatosPreRegistro = async (req, res) => {
+    const { cod_usuario } = req.params;
+    
+    try {
+        const [usuario] = await pool.query(
+            `SELECT 
+                u.cod_usuario,
+                u.nombre_usuario,
+                u.correo_usuario,
+                u.cod_persona,
+                p.Nombre,
+                p.Primer_apellido,
+                p.Estado_Persona
+            FROM tbl_usuarios u
+            INNER JOIN tbl_personas p ON u.cod_persona = p.cod_persona
+            WHERE u.cod_usuario = ?`,
+            [cod_usuario]
+        );
+
+        if (!usuario || usuario.length === 0) {
+            return res.status(404).json({
+                success: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        // Verificar el estado del usuario
+        if (usuario[0].Estado_Persona !== 'A') {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'El usuario no está en estado activo'
+            });
+        }
+
+        res.json({
+            success: true,
+            datos: {
+                cod_usuario: usuario[0].cod_usuario,
+                nombre_usuario: usuario[0].nombre_usuario,
+                correo_usuario: usuario[0].correo_usuario,
+                nombre: usuario[0].Nombre,
+                primer_apellido: usuario[0].Primer_apellido,
+                cod_persona: usuario[0].cod_persona
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al obtener datos pre-registro:', error);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al obtener los datos del pre-registro'
+        });
+    }
+};
+
+// Controlador para completar el perfil del padre
+export const completarPerfilPadre = async (req, res) => {
+    const connection = await pool.getConnection();
+    const { cod_usuario } = req.params;
+
+    try {
+        await connection.beginTransaction();
+
+        const {
+            dni_persona,
+            Nombre,
+            Segundo_nombre,
+            Primer_apellido,
+            Segundo_apellido,
+            Nacionalidad,
+            direccion_persona,
+            fecha_nacimiento,
+            cod_departamento,
+            cod_municipio, // Asegurarnos de recibir el cod_municipio
+            cod_genero
+        } = req.body;
+
+        // 1. Validaciones
+        if (!dni_persona || !/^\d{13}$/.test(dni_persona)) {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'El DNI debe tener exactamente 13 dígitos'
+            });
+        }
+
+        // 2. Verificar que el usuario existe y obtener su cod_persona
+        const [usuario] = await connection.query(
+            'SELECT cod_persona, Cod_estado_usuario FROM tbl_usuarios WHERE cod_usuario = ?',
+            [cod_usuario]
+        );
+
+        if (!usuario || usuario.length === 0) {
+            return res.status(404).json({
+                success: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        const cod_persona = usuario[0].cod_persona;
+
+        // 3. Verificar que el DNI no esté en uso por otra persona
+        const [dniExistente] = await connection.query(
+            'SELECT cod_persona FROM tbl_personas WHERE dni_persona = ? AND cod_persona != ?',
+            [dni_persona, cod_persona]
+        );
+
+        if (dniExistente.length > 0) {
+            return res.status(400).json({
+                success: false,
+                mensaje: 'El DNI ya está registrado en el sistema'
+            });
+        }
+
+        // 4. Actualizar la información de la persona
+        await connection.query(
+            `UPDATE tbl_personas SET 
+                dni_persona = ?,
+                Nombre = ?,
+                Segundo_nombre = ?,
+                Primer_apellido = ?,
+                Segundo_apellido = ?,
+                Nacionalidad = ?,
+                direccion_persona = ?,
+                fecha_nacimiento = ?,
+                Estado_Persona = 'A',
+                cod_departamento = ?,
+                cod_municipio = ?,
+                cod_genero = ?
+            WHERE cod_persona = ?`,
+            [
+                dni_persona,
+                Nombre,
+                Segundo_nombre || null,
+                Primer_apellido,
+                Segundo_apellido || null,
+                Nacionalidad,
+                direccion_persona,
+                fecha_nacimiento,
+                cod_departamento,
+                cod_municipio,     // Y aquí debe coincidir con el orden de arriba
+                cod_genero,
+                cod_persona
+            ]
+        );
+
+        // 5. Actualizar el estado del usuario si es necesario
+        await connection.query(
+            `UPDATE tbl_usuarios SET 
+                Cod_estado_usuario = 1,
+                Primer_ingreso = CASE 
+                    WHEN Primer_ingreso IS NULL THEN CURRENT_TIMESTAMP
+                    ELSE Primer_ingreso
+                END
+            WHERE cod_usuario = ?`,
+            [cod_usuario]
+        );
+
+        
+
+        await connection.query(
+            'CALL sp_actualizar_datos_completados(?)',
+            [cod_usuario]
+        );
+        
+
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            mensaje: 'Perfil completado exitosamente',
+            datos: {
+                cod_usuario,
+                cod_persona
+            }
+        });
+
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al completar perfil:', error);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al completar el perfil'
+        });
+    } finally {
+        connection.release();
+    }
+};
+
+// Controlador para verificar el estado del perfil
+export const verificarEstadoPerfil = async (req, res) => {
+    const { cod_usuario } = req.params;
+
+    try {
+        const [usuario] = await pool.query(
+            `SELECT 
+                u.Cod_estado_usuario,
+                u.confirmacion_email,
+                p.dni_persona,
+                p.Estado_Persona
+            FROM tbl_usuarios u
+            INNER JOIN tbl_personas p ON u.cod_persona = p.cod_persona
+            WHERE u.cod_usuario = ?`,
+            [cod_usuario]
+        );
+
+        if (!usuario || usuario.length === 0) {
+            return res.status(404).json({
+                success: false,
+                mensaje: 'Usuario no encontrado'
+            });
+        }
+
+        const perfilCompleto = 
+            usuario[0].dni_persona !== null && 
+            usuario[0].Estado_Persona === 'A' &&
+            usuario[0].Cod_estado_usuario === 1 &&
+            usuario[0].confirmacion_email === 1;
+
+        res.json({
+            success: true,
+            perfilCompleto,
+            estado: {
+                usuario: usuario[0].Cod_estado_usuario,
+                persona: usuario[0].Estado_Persona,
+                emailConfirmado: usuario[0].confirmacion_email === 1,
+                dniRegistrado: usuario[0].dni_persona !== null
+            }
+        });
+
+    } catch (error) {
+        console.error('Error al verificar estado del perfil:', error);
+        res.status(500).json({
+            success: false,
+            mensaje: 'Error al verificar el estado del perfil'
+        });
+    }
+};
+
+
 

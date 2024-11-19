@@ -1,4 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { CIcon } from '@coreui/icons-react';
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
+import swal from 'sweetalert2';
+import { left } from '@popperjs/core';
 import {
   CButton,
   CContainer,
@@ -18,23 +23,29 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CFormSelect,
+  CRow,
+  CCol,
 } from '@coreui/react';
-import { cilPen, cilTrash , cilPlus, cilSave } from '@coreui/icons';
-import CIcon from '@coreui/icons-react';
-import Swal from 'sweetalert2';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaTipoContratos = () => {
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaTipoContrato');
+
   const [tiposContratos, setTiposContratos] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
-  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [nuevoContrato, setNuevoContrato] = useState({ Descripcion: '' });
+  const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear 
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // estado para el modal de actualizar
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // estado para el modo eliminar
+  const [nuevoContrato, setNuevoContrato] = useState({ Descripcion: '' }); 
   const [contratoToUpdate, setContratoToUpdate] = useState({});
   const [contratoToDelete, setContratoToDelete] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
-
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
-  const [recordsPerPage] = useState(5); // Mostrar 5 registros por página
+  const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinamico el número de registro de paginas
+  const inputRef = useRef(null); // referencia para el input
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+
 
   useEffect(() => {
     fetchTipoContratos();
@@ -56,27 +67,127 @@ const ListaTipoContratos = () => {
     }
   };
 
-  const isDuplicate = (descripcion) => {
-    return tiposContratos.some((tiposContratos) => tiposContratos.Descripcion.toLowerCase() === descripcion.toLowerCase());
+   // Función para manejar cambios en el input
+   const handleInputChange = (e, setFunction) => {
+    const input = e.target;
+    const cursorPosition = input.selectionStart; // Guarda la posición actual del cursor
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
+
+    const regex =/^[A-Z-Ñ\s]*$/; // Solo letras, espacios y la Ñ
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar solo letras y espacios
+    if (!regex.test(value)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Caracteres no permitidos',
+        text: 'Solo se permiten letras y espacios.',
+      });
+      return;
+    }
+
+    // Validación: no permitir letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          });
+          return;
+        }
+      }
+    }
+
+    // Asigna el valor en el input manualmente para evitar el salto de transición
+    input.value = value;
+
+    // Establecer el valor con la función correspondiente
+    setFunction(value);
+    setHasUnsavedChanges(true); // Asegúrate de marcar que hay cambios sin guardar
+
+    // Restaurar la posición del cursor
+    requestAnimationFrame(() => {
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    });
   };
+
+// Deshabilitar copiar y pegar
+const disableCopyPaste =(e) => {
+  e.preventDefault();
+  swal.fire({
+    icon: 'warning',
+    title: 'Accion bloquear',
+    text:'Copiar y pegar no esta permitido'
+  });
+};
+
+// Función para cerrar el modal con advertencia si hay cambios sin guardar
+  const handleCloseModal = (closeFunction, resetFields) => {
+    if (hasUnsavedChanges) {
+      swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cerrar',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          closeFunction(false);     // Cerrar el modal
+          resetFields();            // Limpiar los campos
+          setHasUnsavedChanges(false); // Resetear el indicador de cambios no guardados
+        }
+      });
+    } else {
+      closeFunction(false);         // Cerrar el modal directamente
+      resetFields();                // Limpiar los campos
+      setHasUnsavedChanges(false);  // Resetear el indicador de cambios no guardados
+    }
+  };
+const resetNuevoContrato = () => setNuevoContrato({ Descripcion: '' });
+const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
+
 
   const handleCreateTipoContrato = async () => {
     // Validar si el campo "Descripcion" está vacío
     if (!nuevoContrato.Descripcion || nuevoContrato.Descripcion.trim() === '') {
-      Swal.fire({
+      swal.fire({
         icon: 'error',
-        title: 'Campo vacío',
-        text: 'Por favor, rellene el campo de descripción.',
+        title: 'Error',
+        text: 'El campo "Tipo Contrato" no puede estar vacío',
       });
       return; // Detener la ejecución si el campo está vacío
     }
   
+    // Verificar si ya existe una especialidad con la misma descripción
+  const Duplicada = tiposContratos.some(
+    (contrato) => contrato.Descripcion.toLowerCase() === nuevoContrato.Descripcion.toLowerCase()
+  );
+
     // Verificar si el tipo de contrato ya existe
-    if (isDuplicate(nuevoContrato.Descripcion)) {
-      Swal.fire({
+    if (Duplicada) {
+      swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'El tipo de contrato ya existe.',
+        text: `El tipo de contrato "${nuevoContrato.Descripcion}" ya existe`,
       });
       return;
     }
@@ -93,38 +204,47 @@ const ListaTipoContratos = () => {
       if (response.ok) {
         fetchTipoContratos();
         setModalVisible(false);
+        resetNuevoContrato();
+        setHasUnsavedChanges(false)
         setNuevoContrato({ Descripcion: '' });
   
-        Swal.fire({
+        swal.fire({
           icon: 'success',
-          title: 'Éxito',
-          text: 'Tipo de contrato creado con éxito.',
+          title: '¡Éxito!',
+          text: 'El tipo de contrato se ha creado correctamente',
         });
       } else {
-        console.error('Error al crear el tipo de contrato:', response.statusText);
+        console.error('Hubo un problema al crear el tipo de contrato:', response.statusText);
       }
     } catch (error) {
-      console.error('Error al crear el tipo de contrato:', error);
+      console.error('Hubo un problema al crear el tipo de contrato:', error);
     }
   };
   
   const handleUpdateTipoContrato = async () => {
     // Validar si el campo "Descripcion" está vacío
     if (!contratoToUpdate.Descripcion || contratoToUpdate.Descripcion.trim() === '') {
-      Swal.fire({
+      swal.fire({
         icon: 'error',
-        title: 'Campo vacío',
-        text: 'Por favor, rellene el campo de descripción.',
+        title: 'Error',
+        text: 'El campo "Tipo Contrato" no puede estar vacío',
       });
       return; // Detener la ejecución si el campo está vacío
     }
   
+    // Verificar si ya existe una especialidad con la misma descripción
+  const Duplicada = tiposContratos.some(
+    (contrato) => 
+      contrato.Descripcion.toLowerCase() === contratoToUpdate.Descripcion.toLowerCase() &&
+      contrato.Cod_tipo_contrato !== contratoToUpdate.Cod_tipo_contrato
+  );
+
     // Verificar si el tipo de contrato ya existe
-    if (isDuplicate(contratoToUpdate.Descripcion)) {
-      Swal.fire({
+    if (Duplicada) {
+      swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'El tipo de contrato ya existe.',
+        text: `El tipo de contrato "${contratoToUpdate.Descripcion}" ya existe`,
       });
       return;
     }
@@ -141,24 +261,26 @@ const ListaTipoContratos = () => {
       if (response.ok) {
         fetchTipoContratos();
         setModalUpdateVisible(false);
+        resetContratoToUpdate();
+        setHasUnsavedChanges(false); // reiciniar el estado de cambios no guardados 
         setContratoToUpdate({});
   
-        Swal.fire({
+        swal.fire({
           icon: 'success',
-          title: 'Éxito',
-          text: 'Tipo de contrato actualizado con éxito.',
+          title: '¡Éxito!',
+          text: 'El tipo de contrato se ha actualizado correctamente',
         });
       } else {
-        console.error('Error al actualizar el tipo de contrato:', response.statusText);
+        console.error('Hubo un problema alactualizar el tipo de contrato:', response.statusText);
       }
     } catch (error) {
-      console.error('Error al actualizar el tipo de contrato:', error);
+      console.error('Hubo un problema al actualizar el tipo de contrato:', error);
     }
   };
   
   const handleDeleteTipoContrato = async () => {
     if (!contratoToDelete.Cod_tipo_contrato) {
-      Swal.fire({
+      swal.fire({
         icon: 'error',
         title: 'Error',
         text: 'No se pudo encontrar el contrato a eliminar.',
@@ -167,7 +289,7 @@ const ListaTipoContratos = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/contratos/eliminartiposContrato', {
+      const response = await fetch('http://localhost:4000/api/contratos/eliminartiposcontrato', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -179,27 +301,16 @@ const ListaTipoContratos = () => {
         fetchTipoContratos();
         setModalDeleteVisible(false);
         setContratoToDelete({});
-        Swal.fire({
+        swal.fire({
           icon: 'success',
-          title: 'Éxito',
-          text: 'Tipo de contrato eliminado con éxito.',
+          title: '¡Éxito!',
+          text: 'El tipo de contrato se ha eliminado correctamente',
         });
       } else {
-        const errorMessage = await response.text();
-        console.error('Error al eliminar el tipo de contrato:', errorMessage);
-        Swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: `No se pudo eliminar el tipo de contrato: ${errorMessage}`,
-        });
+        console.error('Hubo un problema al eliminar el tipo de contrato', response.statusText);
       }
     } catch (error) {
-      console.error('Error al eliminar el tipo de contrato:', error);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Error de conexión al intentar eliminar el tipo de contrato.',
-      });
+      console.error('Hubo un problema al eliminar el tipo de contrato', error);
     }
   };
 
@@ -219,6 +330,15 @@ const ListaTipoContratos = () => {
  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
  const currentRecords = filteredTiposContratos.slice(indexOfFirstRecord, indexOfLastRecord);
 
+// Validar el buscador
+ const handleSearchInputChange = (e) => {
+  const value = e.target.value
+  .toUpperCase() // Convertir a mayúsculas
+  .trimStart() // Evitar espacios al inicio
+  .replace(/[^a-zA-Z0-9\s]/g, ' '); // Elimina cualquier símbolo, permitiendo solo letras, números y espacios
+  setSearchTerm(value); // Actualiza el estado searchTerm con el valor validado
+};
+
  // Cambiar página
 const paginate = (pageNumber) => {
   if (pageNumber > 0 && pageNumber <= Math.ceil(filteredTiposContratos.length / recordsPerPage)) {
@@ -226,43 +346,123 @@ const paginate = (pageNumber) => {
   }
 }
 
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
+
   return (
     <CContainer>
-      <h1>Mantenimiento Tipos de Contrato</h1>
-       {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
-      {/* Barra de búsqueda */}
-      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
-        <CInputGroupText>Buscar</CInputGroupText>
-        <CFormInput placeholder="Buscar tipo contrato..." onChange={handleSearch} value={searchTerm} />
-        {/* Botón para limpiar la búsqueda */}
-        <CButton
-          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
-          onClick={() => {
-            setSearchTerm(''); // Limpiar el campo de búsqueda
-            setCurrentPage(1); // Resetear a la primera página
-          }}
-        >
-          Limpiar
-        </CButton>
-      </CInputGroup>
+      {/*Contenedor del hi y boton "nuevo" */}
+<CRow className='align-items-center mb-5'>
+<CCol xs="8" md="9"> 
+  {/* Titulo de la pagina */}
+      <h1 className="mb-0">Mantenimiento Tipos de Contrato</h1>
+      </CCol>
 
+      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
+
+      {canInsert && (
       <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
-        onClick={() => setModalVisible(true)}
+        style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
+        className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+        onClick={() => {setModalVisible(true);
+          setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
+        }}
+        
       >
+        
         <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
         Nuevo
       </CButton>
-    </div>
+
+      )}
+
+{/*Boton reporte */}
+<CButton
+style={{backgroundColor:'#6C8E58', color: 'white'}}
+>
+  <CIcon icon={cilDescription} /> Reporte
+</CButton>
+     </CCol>
+      </CRow>
+
+
+       {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
+      <CRow className='align-items-center mt-4 mb-2'>
+      {/* Barra de búsqueda */}
+      <CCol xs="12" md="8" className='d-flex flex-wrap align-items-center'>
+        <CInputGroup className="me-3" style={{width: '400px' }}>
+        <CInputGroupText>
+           <CIcon icon={cilSearch} /> 
+        </CInputGroupText>
+        <CFormInput placeholder="Buscar tipo contrato..."
+         onChange={handleSearchInputChange} 
+         value={searchTerm} />
+        
+        {/* Botón para limpiar la búsqueda */}
+        <CButton
+            style={{border: '1px solid #ccc',
+              transition: 'all 0.1s ease-in-out', // Duración de la transición
+              backgroundColor: '#F3F4F7', // Color por defecto
+              color: '#343a40' // Color de texto por defecto
+            }}
+            onClick={() => {
+              setSearchTerm('');
+              setCurrentPage(1);
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
+              e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
+              e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
+            }}
+          >
+            <CIcon icon={cilBrushAlt} /> Limpiar
+          </CButton>
+        
+      </CInputGroup>
+      </CCol>
+     
+
+    {/*Selector dinamico a la par de la barra de busqueda */}
+    <CCol xs="12" md="4" className='text-md-end mt-2 mt-md-0'>
+      <CInputGroup className='mt-2 mt-md-0' style={{width:'auto', display:'inline-block'}}>
+        <div className='d-inline-flex align-items-center'>
+          <span>Mostrar&nbsp;</span>
+          <CFormSelect
+            style={{width: '80px', display: 'inline-block', textAlign:'center'}}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setRecordsPerPage(value);
+              setCurrentPage(1); // reinciar a la primera pagina cuando se cambia el numero de registros
+            }}
+            value={recordsPerPage}
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+          </CFormSelect>
+          <span>&nbsp;registros</span>
+        </div>
+      </CInputGroup>
+    </CCol>
+    </CRow>
+
+
+
+{/* Tabla para mostrar tipo contrato */}
+    
     <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
       <CTable striped bordered hover>
-        <CTableHead>
+        <CTableHead style={{position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff'}}>
           <CTableRow>
-            <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>Descripción</CTableHeaderCell>
-            <CTableHeaderCell>Acciones</CTableHeaderCell>
+            <CTableHeaderCell style={{width: '50px'}} >#</CTableHeaderCell>
+            <CTableHeaderCell style={{width: '300px'}}>Tipo contrato</CTableHeaderCell>
+            <CTableHeaderCell style={{width: '150px'}}>Acciones</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
@@ -274,21 +474,18 @@ const paginate = (pageNumber) => {
                 </CTableDataCell>
               <CTableDataCell>{tiposContratos.Descripcion}</CTableDataCell>
               <CTableDataCell>
-                <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => {
-                  setContratoToUpdate(tiposContratos);
-                  setModalUpdateVisible(true);
-                }}>
+
+                {canUpdate && (
+                <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => { setContratoToUpdate(tiposContratos); setModalUpdateVisible(true);setHasUnsavedChanges(false);}}>
                   <CIcon icon={cilPen} />
                 </CButton>
-                <CButton
-                  style={{ backgroundColor: '#E57368', marginRight: '10px' }}
-                  onClick={() => {
-                    setContratoToDelete(tiposContratos);
-                    setModalDeleteVisible(true);
-                  }}
-                >
+                )}
+
+{canDelete && (
+                <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }}   onClick={() => { setContratoToDelete(tiposContratos);setModalDeleteVisible(true); }}>
                   <CIcon icon={cilTrash} />
                 </CButton>
+                    )}
               </CTableDataCell>
             </CTableRow>
           ))}
@@ -320,23 +517,30 @@ const paginate = (pageNumber) => {
 
 
       {/* Modal Crear */}
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
-        <CModalHeader>
+      <CModal visible={modalVisible} backdrop="static">
+      <CModalHeader closeButton={false}>
           <CModalTitle>Nuevo Tipo de Contrato</CModalTitle>
+          <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoContrato)} /> 
         </CModalHeader>
         <CModalBody>
         <CForm>
           <CInputGroup className="mb-3">
-            <CInputGroupText>Descripción</CInputGroupText>
+            <CInputGroupText>Tipo Contrato</CInputGroupText>
             <CFormInput
+              ref={inputRef} // Asignar la referencia al input
+              type="text"
+              placeholder="Ingrese el tipo de contrato"
               value={nuevoContrato.Descripcion}
-              onChange={(e) => setNuevoContrato({ ...nuevoContrato, Descripcion: e.target.value })}
+              maxLength={50} // Limitar a 50 caracteres
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
+              onChange={(e) => handleInputChange(e, (value) => setNuevoContrato({ ...nuevoContrato, Descripcion: value }))} 
             />
           </CInputGroup>
           </CForm>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>
+          <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoContrato)}>
             Cancelar
           </CButton>
           <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateTipoContrato}>
@@ -346,23 +550,28 @@ const paginate = (pageNumber) => {
       </CModal>
 
       {/* Modal Actualizar */}
-      <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
-        <CModalHeader>
+      <CModal visible={modalUpdateVisible} backdrop="static">
+      <CModalHeader closeButton={false}>
           <CModalTitle>Actualizar Tipo de Contrato</CModalTitle>
+          <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetNuevoContrato)} />
         </CModalHeader>
         <CModalBody>
         <CForm>
           <CInputGroup className="mb-3">
-            <CInputGroupText>Descripción</CInputGroupText>
+            <CInputGroupText>Tipo contrato</CInputGroupText>
             <CFormInput
+            ref={inputRef} // Asignar la referencia al input
               value={contratoToUpdate.Descripcion || ''}
-              onChange={(e) => setContratoToUpdate({ ...contratoToUpdate, Descripcion: e.target.value })}
+              maxLength={50} // Limitar a 50 caracteres
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
+              onChange={(e) => handleInputChange(e, (value) => setContratoToUpdate({ ...contratoToUpdate, Descripcion: value }))}
             />
           </CInputGroup>
           </CForm>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
+        <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetContratoToUpdate)}>
             Cancelar
           </CButton>
           <CButton style={{  backgroundColor: '#F9B64E',color: 'white' }} onClick={handleUpdateTipoContrato}>

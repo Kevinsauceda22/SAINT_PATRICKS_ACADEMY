@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors'; // Importar cors
 import conectarDB from './config/db.js'; 
 import usuariosRoutes from './module/auth/usuario_routes.js'; 
+//----------------------------------------CALIFICACIONES RUTAS-----------------------------------------------------------
 import profesoresRoutes from './module/calificaciones/Routes/profesoresRoutes.js';
 import tiposContratoRoutes from './module/calificaciones/Routes/tiposContratosRoutes.js';
 import actividadesRoutes from './module/calificaciones/Routes/ActividadAcademica_Routes.js';
@@ -18,21 +19,40 @@ import asisntenciaRoutes from './module/calificaciones/Routes/asistenciaRoutes.j
 import estadonotaRoutes from './module/calificaciones/Routes/estadoNotaRoutes.js';
 import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
+import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
+
+import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
+import secciones from './module/calificaciones/Routes/seccionesRoutes.js'
+//-------------------------------------------------------------------------------------------------------
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
 import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
 import historicoprocRoutes from './module/matricula/Routes/historicoprocRoutes.js';
+import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
-import personasRoutes from "./module/personas/personaRoutes.js"
+import personaRoutes from "./module/personas/Routes/personasRoutes.js";
+
+import personasRoutes from "./module/personas/personaRoutes.js";
 import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
 import tipomatriculaRoutes from './module/matricula/Routes/tipomatriculaRoutes.js';
 import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRoutes.js';
 import estadomatriculaRoutes from './module/matricula/Routes/estadomatriculaRoutes.js';
 import departamentoRoutes from './module/matricula/Routes/departamentoRoutes.js';
 import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
+import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
+import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
+import catalogoCuentasRoutes from './module/Contabilidad/Contabilidad_routes.js'; // Cambia la ruta según tu estructura de carpetas
+import libroDiarioRoutes from './module/Contabilidad/librodiario_routes.js'; // Asegúrate de usar la ruta correcta
+import PermisosRoutes from './module/Permisos/Permisos_routes.js'; // Asegúrate de usar la ruta correcta
+import departamento from './module/personas/Routes/departamento_routes.js';
+import cuentasRouter from './module/auth/creacioncuentas_Routes.js';
+
+
+
+
 
 //importtacion de middleware
 
@@ -65,38 +85,52 @@ app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes
 // Autenticación y seguridad
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/usuarios', usuariosRoutes); 
+app.use('/api/roles', PermisosRoutes); 
+// Registrar las rutas
+app.use('/api/usuarios', cuentasRouter);
 
 // Calificaciones
+// Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
+app.use('/api/auth/', usuariosRoutes); 
 // Rutas para los profesores para poder agregar, modificar, eliminar y obtener profesores
 app.use('/api/profesores', profesoresRoutes); 
 // Rutas para tipos de contrato de los profesores 
 app.use('/api/contratos', tiposContratoRoutes); 
-// Rutas para actividades académicas
+//Rutas para actividades academicas para poder agregar, modificar, eliminar y obtener actividades academicas
 app.use('/api/actividadesAcademicas', actividadesRoutes);
-// Rutas para grados académicos de los profesores
+//Rutas para grados academicos de los profesores
 app.use('/api/gradosAcademicos', gradosAcademicosRoutes);
-// Rutas para especialidades de los profesores
+//Rutas para especialidades de los profesores
 app.use('/api/especialidades', especialidadRoutes);
-// Rutas para asignaturas de los grados
+//Rutas para asignaturas de los grados
 app.use('/api/asignaturas', asignaturaRoutes);
-// Rutas para parciales de las asignaturas
+//Rutas para parciales de las asignaturas
 app.use('/api/parciales', parcialesRoutes);
-// Rutas para grados de los estudiantes
+//Rutas para grados de los estudiantes
 app.use('/api/grados', gradoRoutes);
-// Rutas para ciclos de los grados
+//Rutas para ciclos de los grados
 app.use('/api/ciclos', ciclosRoutes);
-// Rutas para ponderaciones de las notas
+//Rutas para ponderaciones de las notas
 app.use('/api/ponderaciones', ponderacionRoutes);
-// Rutas para estado de asistencia de los estudiantes
+//Rutas para estado de asistencia de los estudiantes
 app.use('/api/estadoAsistencia', estadoasitenciaRoutes);
-// Rutas para asistencia de los estudiantes
+//Rutas para asistencia de los estudiantes
 app.use('/api/asistencia', asisntenciaRoutes);
-// Rutas para estado de notas de los estudiantes
+//Rutas para estado de notas de los estudiantes
 app.use('/api/estadoNotas', estadonotaRoutes);
-// Rutas para notas de los estudiantes
+//Rutas para notas de los estudiantes
 app.use('/api/notas', notaRoutes);
-// Rutas para historial académico de los estudiantes
+//Rutas para historial academico de los estudiantes
 app.use('/api/historialAcademico', historialAcademicoRoutes);
+//Rutas para obtener secciones y alumnos de los estudiantes
+app.use('/api/seccionalumno',seccionalumnoRoutes)
+//Rutas para asignar una ponderacion a un ciclo y su valor
+app.use('/api/ponderacionCiclo',Ponderaciones_CiclosRoutes);
+//Rutas para asignar un codigo a actividades
+app.use('/api/actividadesAcademicas', actividadesRoutes);
+//Ruta para secciones
+app.use('/api/secciones', secciones);
+
 
 // Matrícula
 app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
@@ -104,6 +138,8 @@ app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
 app.use('/api/edificio', edificiosRoutes);
 // Rutas para las aulas
 app.use('/api/aula', aulasRoutes);
+// Rutas para secciones y asignaturas
+app.use('/api/secciones_asignaturas', secc_asigRoutes);
 // Rutas para las actividades extracurriculares
 app.use('/api', actividadesextraRoutes);
 // Rutas para el día
@@ -119,7 +155,7 @@ app.use('/api/periodomatricula', periodomatriculaRoutes);
 // Usar las rutas de solicitud
 app.use('/api/estadomatricula', estadomatriculaRoutes);
 // Usar las rutas de solicitud
-app.use('/api/departamento', departamentoRoutes);
+app.use('/api/departamento', departamento);
 // Usar las rutas de solicitud
 app.use('/api/conceptopago', conceptopagoRoutes);
 // Usar las rutas de solicitud
@@ -128,7 +164,17 @@ app.use('/api/solicitud', solicitudRoutes);
 app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 
 // Rutas para manejar personas
+app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
+
+app.use('/api/tipoRelacion', tipoRelacionRoutes);
+app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
+
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
+
+
+//contabilidad
+app.use('/api/catalogoCuentas', catalogoCuentasRoutes);
+app.use('/api/Librodiario',libroDiarioRoutes);
 
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;

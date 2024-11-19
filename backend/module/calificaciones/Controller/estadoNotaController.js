@@ -25,10 +25,16 @@ export const crearEstadoNota = async (req, res) => {
         await pool.query('CALL insert_estado_nota(?)', [Descripcion]);
         res.status(201).json({ Mensaje: 'Estado nota agregada exitosamente' });
     } catch (error) {
-        console.error('Error al agregar el estado nota:', error);
-        if (error.code === 'ER_SIGNAL_EXCEPTION') {
+        if (error.code !== 'ER_SIGNAL_EXCEPTION') {
+            // Solo errores no relacionados con la validación se mostrarán en la consola
+            console.error('Error inesperado al agregar el estado de asistencia:', error);
+        }
+         // Devolver el mensaje del error que proviene del procedimiento almacenado
+         if (error.code === 'ER_SIGNAL_EXCEPTION') {
+            // No mostrar nada en la consola, pero enviar la respuesta con el mensaje de validación
             res.status(400).json({ Mensaje: error.sqlMessage });
         } else {
+            // Otro tipo de error (por ejemplo, de conexión o de sintaxis SQL)
             res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
         }
     }
@@ -39,13 +45,20 @@ export const actualizarEstadoNota = async (req, res) => {
     const { Cod_estado, Descripcion } = req.body;
 
     try {
-        await pool.query('CALL update_estado_nota(?, ?)', [Cod_estado, Descripcion]);
+        const [result] =  await pool.query('CALL update_estado_nota(?, ?)', [Cod_estado, Descripcion]);
+        // Verificar si no se actualizó ningún registro
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ Mensaje: 'No se encontró el estado de asistencia con el código proporcionado' });
+        }
+        // Si todo va bien
         res.status(200).json({ Mensaje: 'Estado nota actualizada exitosamente' });
     } catch (error) {
-        console.error('Error al actualizar el estado nota:', error);
+        // Filtrar errores de validación de procedimientos almacenados
         if (error.code === 'ER_SIGNAL_EXCEPTION') {
+            // Devolver el mensaje que proviene del procedimiento almacenado
             res.status(400).json({ Mensaje: error.sqlMessage });
         } else {
+            // Otro tipo de error (servidor, conexión, etc.)
             res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
         }
     }

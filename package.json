@@ -3,6 +3,7 @@
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",
     "react-icons": "^5.3.0",
+    "react-select": "^5.8.2",
     "sweetalert2": "^11.14.4",
     "xlsx": "^0.18.5"
   }

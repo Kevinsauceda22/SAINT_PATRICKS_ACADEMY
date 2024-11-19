@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import {  cilPen, cilTrash, cilPlus, cilSave } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
 import {
   CButton,
@@ -22,21 +22,27 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CFormSelect,
+  CRow,
+  CCol,
 } from '@coreui/react';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaEstadoasistencia = () => {
-  const [estadonasistencia, setEstadoasistencia] = useState([]);
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaEstadoasistencia');
+  const [estadoasistencia, setEstadoasistencia] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear un estado asistencia
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar un estado asistencia
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Estado para el modal de eliminar un estado asistencia
   const [nuevoEstadoasistencia, setNuevoEstadoasistencia] = useState(''); // Estado para el nuevo estado asistencia
-  const [estadonasistenciaToUpdate, setEstadoasistenciaToUpdate] = useState({}); // Estado para el estado asistencia actualizar
-  const [estadonasistenciaToDelete, setEstadoasistenciaToDelete] = useState({}); // Estado para el estado asistencia a eliminar
+  const [estadoasistenciaToUpdate, setEstadoasistenciaToUpdate] = useState({}); // Estado para el estado asistencia actualizar
+  const [estadoasistenciaToDelete, setEstadoasistenciaToDelete] = useState({}); // Estado para el estado asistencia a eliminar
   const [searchTerm, setSearchTerm] = useState('');
-
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
-  const [recordsPerPage] = useState(5); // Mostrar 5 registros por página
+  const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
+  const inputRef = useRef(null); // Referencia para el input
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
 
   useEffect(() => {
     fetchEstadoasistencia();
@@ -47,8 +53,8 @@ const ListaEstadoasistencia = () => {
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/estadoasistencias');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
-    const dataWithIndex = data.map((estadonasistencia, index) => ({
-      ...estadonasistencia,
+    const dataWithIndex = data.map((estadoasistencia, index) => ({
+      ...estadoasistencia,
       originalIndex: index + 1, // Guardamos la secuencia original
     }));
     
@@ -58,19 +64,139 @@ const ListaEstadoasistencia = () => {
     }
   };
 
-  const handleCreateEstadoasistencia = async () => {
-    // Convertir a formato "Primera letra mayúscula, el resto minúsculas"
-    const formattedEstado = nuevoEstadoasistencia
-      .toLowerCase()
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+  // Función para manejar cambios en el input
+  const handleInputChange = (e, setFunction) => {
+    const input = e.target;
+    const cursorPosition = input.selectionStart; // Guarda la posición actual del cursor
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
+
+    const regex = /^[A-ZÑ\s]*$/; // Solo letras y espacios
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar solo letras y espacios
+    if (!regex.test(value)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Caracteres no permitidos',
+        text: 'Solo se permiten letras y espacios.',
+      });
+      return;
+    }
+
+    // Validación: no permitir letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          });
+          return;
+        }
+      }
+    }
+
+    // Asigna el valor en el input manualmente para evitar el salto de transición
+    input.value = value;
+
+    // Establecer el valor con la función correspondiente
+    setFunction(value);
+    setHasUnsavedChanges(true); // Asegúrate de marcar que hay cambios sin guardar
+
+    // Restaurar la posición del cursor
+    requestAnimationFrame(() => {
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    });
+  };
   
+  // Deshabilitar copiar y pegar
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
+  };
+
+  // Función para cerrar el modal con advertencia si hay cambios sin guardar
+  const handleCloseModal = (closeFunction, resetFields) => {
+    if (hasUnsavedChanges) {
+      swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cerrar',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          closeFunction(false);
+          resetFields(); // Limpiar los campos al cerrar
+          setHasUnsavedChanges(false); // Resetear cambios no guardados
+        }
+      });
+    } else {
+      closeFunction(false);
+      resetFields();
+      setHasUnsavedChanges(false); // Asegurarse de resetear aquí también
+    }
+  };
+
+  const resetNuevoEstadoasistencia = () => setNuevoEstadoasistencia('');
+  const resetEstadoasistenciaToUpdate = () => setEstadoasistenciaToUpdate('');
+
+  const handleCreateEstadoasistencia = async () => {
+    // Validación para campos vacíos
+    if (!nuevoEstadoasistencia.trim()) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Descripción" no puede estar vacío',
+      });
+      return;
+    }
+
+    // Normalizar la entrada de usuario para evitar problemas de mayúsculas o espacios adicionales
+    const descripcionNormalizada = nuevoEstadoasistencia.trim().toLowerCase();
+    // Verificar si ya existe el estado de asistencia antes de hacer la solicitud
+    const existe = estadoasistencia.some(
+      (estado) => estado.Descripcion_asistencia.trim().toLowerCase() === descripcionNormalizada
+    );
+
+    if (existe) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El estado asistencia "${nuevoEstadoasistencia}" ya existe`,
+      });
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/crearestadoasistencias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Descripcion_asistencia: formattedEstado }),  // Enviar descripción formateada
+        body: JSON.stringify({ Descripcion_asistencia: nuevoEstadoasistencia }),  // Enviar descripción formateada
       });
   
       const result = await response.json();
@@ -78,36 +204,60 @@ const ListaEstadoasistencia = () => {
       if (response.ok) {
         fetchEstadoasistencia();  // Actualiza la lista de estados de asistencia
         setModalVisible(false);  // Cierra el modal
-        setNuevoEstadoasistencia('');  // Limpia el campo de entrada
+        resetNuevoEstadoasistencia();
+        setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
         swal.fire({
           icon: 'success',
-          title: 'Creación exitosa',
-          text: 'El estado asistencia se ha creado correctamente.',
+          title: '¡Éxito!',
+          text: 'El estado asistencia se ha creado correctamente',
         });
       } else {
         swal.fire({
           icon: 'error',
-          title: 'Error de validación',
-          text: result.Mensaje || 'Hubo un error al crear el estado asistencia.',
+          title: 'Error',
+          text: result.Mensaje || 'Hubo un problema al crear el estado asistencia',
         });
       }
     } catch (error) {
-      console.error('Error al crear el estado asistencia:', error);
+      console.error('Error al crear el estado asistencia', error);
       swal.fire({
         icon: 'error',
         title: 'Error en el servidor',
-        text: 'Hubo un error en el servidor. Inténtalo más tarde.',
+        text: 'Hubo un problema en el servidor. Inténtalo más tarde',
       });
     }
   };
   
   
   const handleUpdateEstadoasistencia = async () => {
-    // Convertir a formato "Primera letra mayúscula, el resto minúsculas"
-    const formattedEstado = estadonasistenciaToUpdate.Descripcion_asistencia
-      .toLowerCase()
-      .replace(/\b\w/g, (char) => char.toUpperCase());
-  
+    // Validación para campo vacío
+    if (!estadoasistenciaToUpdate.Descripcion_asistencia.trim()) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Descripción" no puede estar vacío',
+      });
+      return;
+    }
+
+    // Normalización de la descripción para evitar duplicados
+    const descripcionNormalizada = estadoasistenciaToUpdate.Descripcion_asistencia.trim().toLowerCase();
+
+    const existe = estadoasistencia.some(
+      (estado) => 
+        estado.Descripcion_asistencia.trim().toLowerCase() === descripcionNormalizada &&
+        estado.Cod_estado_asistencia !== estadoasistenciaToUpdate.Cod_estado_asistencia
+    );
+
+    if (existe) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El estado asistencia "${estadoasistenciaToUpdate.Descripcion_asistencia}" ya existe`,
+      });
+      return;
+    }
+
     try {
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/actualizarestadoasistencias', {
         method: 'PUT',
@@ -115,8 +265,8 @@ const ListaEstadoasistencia = () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          Cod_estado_asistencia: estadonasistenciaToUpdate.Cod_estado_asistencia,
-          Descripcion_asistencia: formattedEstado, // Usar la descripción formateada
+          Cod_estado_asistencia: estadoasistenciaToUpdate.Cod_estado_asistencia,
+          Descripcion_asistencia: estadoasistenciaToUpdate.Descripcion_asistencia, // Usar la descripción formateada
         }),
       });
   
@@ -125,172 +275,257 @@ const ListaEstadoasistencia = () => {
       if (response.ok) {
         fetchEstadoasistencia(); // Refrescar la lista de estados de asistencia
         setModalUpdateVisible(false); // Cerrar el modal de actualización
-        setEstadoasistenciaToUpdate({}); // Resetear el objeto a actualizar
+        resetEstadoasistenciaToUpdate();
+        setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+        
         swal.fire({
           icon: 'success',
-          title: 'Actualización exitosa',
-          text: 'El estado asistencia se ha actualizado correctamente.',
+          title: '¡Éxito!',
+          text: 'El estado asistencia se ha actualizado correctamente',
         });
       } else {
         swal.fire({
           icon: 'error',
           title: 'Error',
-          text: result.Mensaje || 'Hubo un error al actualizar el estado asistencia.',
+          text: result.Mensaje || 'Hubo un problema al actualizar el estado asistencia.',
         });
       }
     } catch (error) {
-      console.error('Error al actualizar el estado asistencia:', error);
+      console.error('Hubo un problema al actualizar el estado asistencia:', error);
       swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'Hubo un error en el servidor.',
+        text: 'Hubo un problema en el servidor. Inténtalo más tarde',
       });
     }
   };
   
 
-const handleDeleteEstadoasistencia = async () => {
-  try {
-    const response = await fetch('http://localhost:4000/api/estadoAsistencia/eliminarestadoasistencias', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        Cod_estado_asistencia: estadonasistenciaToDelete.Cod_estado_asistencia
-      }), // Enviar Cod_estado_asistencia en el cuerpo
-    });
-
-    // Parsear la respuesta JSON del servidor
-    const result = await response.json();
-
-    if (response.ok) {
-      // Si la respuesta es exitosa
-      fetchEstadoasistencia(); // Refrescar la lista de estados de asistencia
-      setModalDeleteVisible(false); // Cerrar el modal de confirmación
-      setEstadoasistenciaToDelete({}); // Resetear el objeto a eliminar
-      swal.fire({
-        icon: 'success',
-        title: 'Eliminación exitosa',
-        text: 'El estado asistencia se ha eliminado correctamente.',
+  const handleDeleteEstadoasistencia = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/estadoAsistencia/eliminarestadoasistencias', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Cod_estado_asistencia: estadoasistenciaToDelete.Cod_estado_asistencia
+        }), // Enviar Cod_estado_asistencia en el cuerpo
       });
-    } else {
-      // Si hubo un error, mostrar el mensaje devuelto por el servidor
+
+      // Parsear la respuesta JSON del servidor
+      const result = await response.json();
+
+      if (response.ok) {
+        // Si la respuesta es exitosa
+        fetchEstadoasistencia(); // Refrescar la lista de estados de asistencia
+        setModalDeleteVisible(false); // Cerrar el modal de confirmación
+        setEstadoasistenciaToDelete({}); // Resetear el objeto a eliminar
+        swal.fire({
+          icon: 'success',
+          title: '¡Éxito!',
+          text: 'El estado asistencia se ha eliminado correctamente.',
+        });
+      } else {
+        // Si hubo un error, mostrar el mensaje devuelto por el servidor
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: result.Mensaje || 'Hubo un problema al eliminar el estado asistencia.',
+        });
+      }
+    } catch (error) {
+      // Manejo de errores inesperados (como problemas de red)
+      console.error('Error al eliminar el estado asistencia:', error);
       swal.fire({
         icon: 'error',
         title: 'Error',
-        text: result.Mensaje || 'Hubo un error al eliminar el estado asistencia.',
+        text: 'Hubo un problema en el servidor. Inténtalo más tarde',
       });
     }
-  } catch (error) {
-    // Manejo de errores inesperados (como problemas de red)
-    console.error('Error al eliminar el estado asistencia:', error);
-    swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Hubo un error en el servidor.',
-    });
-  }
-};
-
-
-  const openUpdateModal = (estadonasistencia) => {
-    setEstadoasistenciaToUpdate(estadonasistencia); // Cargar los datos del estado asistencia a actualizar
-    setModalUpdateVisible(true); // Abrir el modal de actualización
   };
 
-  const openDeleteModal = (estadonasistencia) => {
-    setEstadoasistenciaToDelete(estadonasistencia); // Guardar el ciclo que se desea eliminar
+   // Función para abrir el modal de actualización
+  const openUpdateModal = (estadoasistencia) => {
+    setEstadoasistenciaToUpdate(estadoasistencia); // Cargar los datos del estado asistencia a actualizar
+    setModalUpdateVisible(true); // Abrir el modal de actualización
+    setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
+  };
+
+  const openDeleteModal = (estadoasistencia) => {
+    setEstadoasistenciaToDelete(estadoasistencia); // Guardar el ciclo que se desea eliminar
     setModalDeleteVisible(true); // Abrir el modal de confirmación
   };
 
- // Cambia el estado de la página actual después de aplicar el filtro
+  // Cambia el estado de la página actual después de aplicar el filtro
+  // Validar el buscador
   const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
+    const input = event.target.value.toUpperCase();
+    const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
+    
+    if (!regex.test(input)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Caracteres no permitidos',
+        text: 'Solo se permiten letras y espacios.',
+      });
+      return;
+    }
+    setSearchTerm(input);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
-  // Filtro de búsqueda
-  const filteredEstadoasistencia = estadonasistencia.filter((estadonasistencia) =>
-    estadonasistencia.Descripcion_asistencia.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filtrar los estados de asistencia según el término de búsqueda
+  const filteredEstadoasistencia = estadoasistencia.filter((estadoasistencia) =>
+    estadoasistencia.Descripcion_asistencia.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
- // Lógica de paginación
- const indexOfLastRecord = currentPage * recordsPerPage;
- const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
- const currentRecords = filteredEstadoasistencia.slice(indexOfFirstRecord, indexOfLastRecord);
+  // Lógica de paginación
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredEstadoasistencia.slice(indexOfFirstRecord, indexOfLastRecord);
 
- // Cambiar página
-const paginate = (pageNumber) => {
-  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstadoasistencia.length / recordsPerPage)) {
-    setCurrentPage(pageNumber);
-  }
-}
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstadoasistencia.length / recordsPerPage)) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
+     // Verificar permisos
+     if (!canSelect) {
+      return <AccessDenied />;
+    }
+  
+
  return (
   <CContainer>
-  {/* Contenedor del h1 */}
-    <h1 >Mantenimiento Estado asistencia</h1>
-    {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
-    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
-      {/* Barra de búsqueda */}
-      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
-        <CInputGroupText>Buscar</CInputGroupText>
-        <CFormInput placeholder="Buscar estado asistencia..." onChange={handleSearch} value={searchTerm} />
-        {/* Botón para limpiar la búsqueda */}
-        <CButton
-          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
-          onClick={() => {
-            setSearchTerm(''); // Limpiar el campo de búsqueda
-            setCurrentPage(1); // Resetear a la primera página
+    {/* Contenedor del h1 y botón "Nuevo" */}
+    <CRow className="align-items-center mb-5">
+      <CCol xs="8" md="9">
+        {/* Título de la página */}
+        <h1 className="mb-0">Mantenimiento Estado asistencia</h1>
+      </CCol>
+      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+        {/* Botón Nuevo para abrir el modal */}
+
+        {canInsert && (
+        <CButton 
+          style={{ backgroundColor: '#4B6251', color: 'white' }} 
+          className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+          onClick={() => { setModalVisible(true);
+            setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
           }}
         >
-          Limpiar
+          <CIcon icon={cilPlus} /> Nuevo
         </CButton>
-      </CInputGroup>
+        )}
 
-      {/* Botón "Nuevo" alineado a la derecha */}
-      <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
-        onClick={() => setModalVisible(true)}
-      >
-        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
-        Nuevo
-      </CButton>
-    </div>
+        {/* Botón de Reporte */}
+        <CButton 
+          style={{ backgroundColor: '#6C8E58', color: 'white' }}
+        >
+          <CIcon icon={cilDescription} /> Reporte
+        </CButton>
+      </CCol>
+    </CRow>
 
+    {/* Contenedor de la barra de búsqueda y el selector dinámico */}
+    <CRow className="align-items-center mt-4 mb-2">
+      {/* Barra de búsqueda  */}
+      <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+        <CInputGroup className="me-3" style={{ width: '400px' }}>
+          <CInputGroupText>
+            <CIcon icon={cilSearch} />
+          </CInputGroupText>
+          <CFormInput
+            placeholder="Buscar estado asistencia..."
+            onChange={handleSearch}
+            value={searchTerm}
+          />
+          <CButton
+            style={{border: '1px solid #ccc',
+              transition: 'all 0.1s ease-in-out', // Duración de la transición
+              backgroundColor: '#F3F4F7', // Color por defecto
+              color: '#343a40' // Color de texto por defecto
+            }}
+            onClick={() => {
+              setSearchTerm('');
+              setCurrentPage(1);
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
+              e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
+              e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
+            }}
+          >
+            <CIcon icon={cilBrushAlt} /> Limpiar
+          </CButton>
+        </CInputGroup>
+     </CCol>
+
+      {/* Selector dinámico a la par de la barra de búsqueda */}
+      <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+        <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+          <div className="d-inline-flex align-items-center">
+            <span>Mostrar&nbsp;</span>
+              <CFormSelect
+                style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                onChange={(e) => {
+                const value = Number(e.target.value);
+                setRecordsPerPage(value);
+                setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+              }}
+                value={recordsPerPage}
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </CFormSelect>
+            <span>&nbsp;registros</span>
+          </div>       
+       </CInputGroup>
+     </CCol>
+    </CRow>
 
 
     {/* Tabla para mostrar Estadoasistencia */}
     {/* Contenedor de tabla con scroll */}
     <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-        <CTable striped bordered hover>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>Descripción</CTableHeaderCell>
-              <CTableHeaderCell>Acciones</CTableHeaderCell>
+      <CTable striped bordered hover>
+        <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
+          <CTableRow> 
+            <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
+            <CTableHeaderCell style={{ width: '300px' }}>Descripción</CTableHeaderCell>
+            <CTableHeaderCell style={{ width: '150px' }}>Acciones</CTableHeaderCell>
+          </CTableRow>
+        </CTableHead>
+        <CTableBody>
+          {currentRecords.map((estadoasistencia) => (
+            <CTableRow key={estadoasistencia.Cod_estado_asistencia}>
+              <CTableDataCell>{estadoasistencia.originalIndex}</CTableDataCell>
+              <CTableDataCell>{estadoasistencia.Descripcion_asistencia}</CTableDataCell>
+              <CTableDataCell>
+
+
+                {canUpdate && (
+                <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(estadoasistencia)}>
+                  <CIcon icon={cilPen} />
+                </CButton>
+                )}
+
+                {canDelete && (
+                <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(estadoasistencia)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+                )}
+              </CTableDataCell>
             </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {currentRecords.map((estadonasistencia) => (
-              <CTableRow key={estadonasistencia.Cod_estado_asistencia}>
-                <CTableDataCell>
-                  {/* Mostrar el índice original en lugar del índice basado en la paginación */}
-                  {estadonasistencia.originalIndex} 
-                </CTableDataCell>
-                <CTableDataCell>{estadonasistencia.Descripcion_asistencia}</CTableDataCell>
-                <CTableDataCell>
-                  <CButton  style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(estadonasistencia)}>
-                    <CIcon icon={cilPen} />
-                  </CButton>
-                  <CButton  style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(estadonasistencia)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
-              </CTableRow>
-            ))}
-          </CTableBody>
-       </CTable>
+          ))}
+        </CTableBody>
+      </CTable>
     </div>
 
     {/* Paginación Fija */}
@@ -298,106 +533,88 @@ const paginate = (pageNumber) => {
       <CPagination aria-label="Page navigation">
         <CButton
           style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === 1} // Deshabilitar si estás en la primera página
-          onClick={() => paginate(currentPage - 1)}>
+          disabled={currentPage === 1} // Desactiva si es la primera página
+          onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+        >
           Anterior
         </CButton>
         <CButton
-          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === Math.ceil(filteredEstadoasistencia.length / recordsPerPage)} // Deshabilitar si estás en la última página
-          onClick={() => paginate(currentPage + 1)}>
+          style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+          disabled={currentPage === Math.ceil(filteredEstadoasistencia.length / recordsPerPage)} // Desactiva si es la última página
+          onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+        >
           Siguiente
-       </CButton>
-     </CPagination>
-      {/* Mostrar total de páginas */}
+        </CButton>
+      </CPagination>
       <span style={{ marginLeft: '10px' }}>
         Página {currentPage} de {Math.ceil(filteredEstadoasistencia.length / recordsPerPage)}
       </span>
-   </div>
-
+    </div>
 
     {/* Modal Crear Estado asistencia */}
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
-      <CModalHeader>
+    <CModal visible={modalVisible} backdrop="static">
+      <CModalHeader closeButton={false}>
         <CModalTitle>Nuevo Estado Asistencia</CModalTitle>
+        <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoEstadoasistencia)} />
         </CModalHeader>
-        <CModalBody>
-          <CForm>
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Descripción</CInputGroupText>
-              <CFormInput
-                placeholder="Ingrese la descripción del estado"
-                value={nuevoEstadoasistencia}
-                maxLength={50} // Limitar a 50 caracteres
-                onChange={(e) => {
-                  const value = e.target.value
-                    .trimStart() // Evitar espacios al inicio
-                    .replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
-
-                  const regex = /^[a-zA-Z\s]*$/; // Solo letras y espacios
-                  if (regex.test(value)) {
-                    setNuevoEstadoasistencia(value);
-                  } else {
-                    swal.fire({
-                      icon: 'warning',
-                      title: 'Caracteres no permitidos',
-                      text: 'Solo se permiten letras y espacios.',
-                    });
-                  }
-                }}
-              />
-            </CInputGroup>
-          </CForm>
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>
-            Cancelar
-          </CButton>
-          <CButton  style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateEstadoasistencia}>
-          <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
-          </CButton>
-        </CModalFooter>
-      </CModal>
+      <CModalBody>
+        <CForm>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Descripción</CInputGroupText>
+            <CFormInput
+              ref={inputRef} // Asignar la referencia al input
+              type="text"
+              placeholder="Ingrese la descripción del estado"
+              value={nuevoEstadoasistencia}
+              maxLength={50} // Limitar a 50 caracteres
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
+              onChange={(e) => handleInputChange(e, setNuevoEstadoasistencia)}
+          />
+          </CInputGroup>
+        </CForm>
+      </CModalBody>
+      <CModalFooter>
+        <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoEstadoasistencia)}>
+          Cancelar
+        </CButton>
+        <CButton  style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateEstadoasistencia}>
+        <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+        </CButton>
+      </CModalFooter>
+    </CModal>
 
     {/* Modal Actualizar Estado Asistencia*/}
-    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
-      <CModalHeader>
+    <CModal visible={modalUpdateVisible} backdrop="static">
+      <CModalHeader closeButton={false}>
       <CModalTitle>Actualizar Estado Asistencia</CModalTitle>
+      <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetEstadoasistenciaToUpdate)} />
       </CModalHeader>
       <CModalBody>
         <CForm>
           <CInputGroup className="mb-3">
             <CInputGroupText>Descripción</CInputGroupText>
             <CFormInput
+              ref={inputRef} // Asignar la referencia al input
+              type="text"
               placeholder="Ingrese la descripción del estado"
-              value={estadonasistenciaToUpdate.Descripcion_asistencia}
+              value={estadoasistenciaToUpdate.Descripcion_asistencia}
               maxLength={50} // Limitar a 50 caracteres
-              onChange={(e) => {
-                const value = e.target.value
-                  .trimStart() // Evitar espacios al inicio
-                  .replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
-
-                const regex = /^[a-zA-Z\s]*$/; // Solo letras y espacios
-                if (regex.test(value)) {
-                  setEstadoasistenciaToUpdate({ ...estadonasistenciaToUpdate, Descripcion_asistencia: value });
-                } else {
-                  swal.fire({
-                    icon: 'warning',
-                    title: 'Caracteres no permitidos',
-                    text: 'Solo se permiten letras y espacios.',
-                  });
-                }
-              }}
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
+              onChange={(e) => handleInputChange(e, (value) =>
+                setEstadoasistenciaToUpdate({ ...estadoasistenciaToUpdate, Descripcion_asistencia: value })
+              )}
             />
           </CInputGroup>
         </CForm>
       </CModalBody>
       <CModalFooter>
-        <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
+        <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetEstadoasistenciaToUpdate)}>
           Cancelar
         </CButton>
         <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }}  onClick={handleUpdateEstadoasistencia}>
-        <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
+          <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
         </CButton>
       </CModalFooter>
     </CModal>
@@ -408,20 +625,19 @@ const paginate = (pageNumber) => {
       <CModalTitle>Confirmar Eliminación</CModalTitle>
       </CModalHeader>
       <CModalBody>
-        <p>¿Estás seguro de que deseas eliminar el estado: <strong>{estadonasistenciaToDelete.Descripcion_asistencia}</strong>?</p>
+        <p>¿Estás seguro de que deseas eliminar el estado: <strong>{estadoasistenciaToDelete.Descripcion_asistencia}</strong>?</p>
       </CModalBody>
       <CModalFooter>
         <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
           Cancelar
         </CButton>
         <CButton  style={{  backgroundColor: '#E57368',color: 'white' }}  onClick={handleDeleteEstadoasistencia}>
-        <CIcon icon={cilTrash} style={{ marginRight: '5px' }} /> Eliminar
+          <CIcon icon={cilTrash} style={{ marginRight: '5px' }} /> Eliminar
         </CButton>
       </CModalFooter>
     </CModal>
  </CContainer>
   );
 };
-
 
 export default ListaEstadoasistencia;

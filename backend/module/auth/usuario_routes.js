@@ -2,8 +2,8 @@ import express from 'express';
 import {
     crearUsuario,
     obtenerUsuarios,
+    cambiarEstadoUsuario,
     obtenerUsuarioPorId,
-    actualizarUsuario,
     eliminarUsuarioCompleto,
     confirmarCuenta,
     autenticarUsuario,
@@ -13,7 +13,18 @@ import {
     OlvidePasssword,
     agregarEstudiante,
     preRegistroUsuario,
-    generarCodigo2FA
+    enableTwoFactorAuth,
+    verifyTwoFactorAuthCode,
+    disableTwoFactorAuth,
+    getTwoFactorStatus,
+    updateTwoFactorAuthStatus,
+    actualizarOtp,
+    mostrarRolYCorreo,
+    getPermisos,
+    obtenerDatosPreRegistro,
+    completarPerfilPadre,
+    verificarEstadoPerfil
+
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
@@ -25,16 +36,43 @@ const router = express.Router();
 // Obtener todos los usuarios y sus personas asociadas (Protegido por JWT)
 router.get('/Todos-los-usuarios', checkAuth, obtenerUsuarios);
 // Obtener un usuario por su cod_usuario (Protegido por JWT)
-router.get('/:cod_usuario', checkAuth, obtenerUsuarioPorId);
-// Actualizar un usuario por su cod_usuario (Protegido por JWT)
-router.put('/:cod_usuario', checkAuth, actualizarUsuario);
+router.get('user/:cod_usuario', checkAuth, obtenerUsuarioPorId);
 // Mostrar el perfil del usuario autenticado (Protegido por JWT)
 router.get('/perfil/:cod_usuario', checkAuth, mostrarPerfil);
 //ruta para eliminar un usuario completo
 router.delete('/eliminar-perfil/:cod_usuario', checkAuth, eliminarUsuarioCompleto);
 //RUTA PARA AGREGAR AL ESTUDIANTE 
 router.post('/agregar-estudiante/', checkAuth, agregarEstudiante);
-router.post('/generar-2fa', checkAuth, generarCodigo2FA);
+router.put('/cambiar-estado', checkAuth, cambiarEstadoUsuario);
+// Ruta para habilitar 2FA
+router.post('/enableTwoFactorAuth/:cod_usuario', checkAuth,enableTwoFactorAuth);
+// Ruta para habilitar 2FA
+router.post('/disableTwoFactorAuth', checkAuth,disableTwoFactorAuth);
+// Ruta para verificar el código TOTP
+router.post('/verifyTwoFactorAuthCode',checkAuth, verifyTwoFactorAuthCode);
+ // Add to routes
+ router.get('/2faStatus/:cod_usuario', checkAuth, getTwoFactorStatus);
+// Ruta para actualizar el estado de 2FA
+router.post('/update-2fa-status',checkAuth, updateTwoFactorAuthStatus);
+// Ruta para actualizar otp_verified
+router.put('/actualizarOtp/:cod_usuario', checkAuth, actualizarOtp);
+// Nueva ruta para obtener solo el rol y el correo del usuario
+router.get('/rol-correo/:cod_usuario', checkAuth, mostrarRolYCorreo);
+
+// Ruta para obtener datos pre-registrados
+router.get('/padre/datos-preregistro/:cod_usuario', checkAuth, obtenerDatosPreRegistro);
+
+// Ruta para completar el perfil
+router.put('/padre/completar-perfil/:cod_usuario', checkAuth, completarPerfilPadre);
+
+// Ruta para verificar el estado del perfil
+router.get('/padre/verificar-estado/:cod_usuario', checkAuth, verificarEstadoPerfil);
+
+
+
+//obtenerPermisosPorRolYObjeto
+router.get('/permisos', getPermisos);
+
 
 
 

@@ -2,6 +2,7 @@ import express from 'express';
 import { obtenerActividadesExtra,
          crearActividadesExtra,
          actualizarActividadesExtra,
+         cambiarEstadoActividad,
          eliminarActividadExtracurricular } from '../Controllers/actividades_extracurricularesController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
@@ -14,6 +15,9 @@ router.post('/actividades/extracurriculares', crearActividadesExtra);
 
 // Ruta para actualizar una actividad extracurricular
 router.put('/actividades/extracurriculares', actualizarActividadesExtra);
+
+// Ruta para cambiar el estado de una actividad extracurricular
+router.put('/actividades/cambiar_estado', cambiarEstadoActividad);
 
 // Ruta para eliminar una actividad extracurricular
 router.delete('/actividades/extracurriculares/:Cod_actividad', eliminarActividadExtracurricular);

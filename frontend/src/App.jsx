@@ -4,6 +4,9 @@ import { useSelector } from 'react-redux';
 import { CSpinner, useColorModes } from '@coreui/react';
 import './scss/style.scss';
 import { AuthProvider } from "../context/AuthProvider";
+import { usePermission } from '../context/usePermission';  // Asegúrate de importar correctamente
+
+
 import RutaProtegida from './layout/RutaProtegida'; // Importa el componente RutaProtegida
 import RutaPublica from './layout/RutaPublica'; // Componente de rutas públicas
 
@@ -23,6 +26,7 @@ const ConfirmacionEmail = React.lazy(() => import('./views/pages/email-confirmat
 const CorreoVerificado = React.lazy(() => import('./views/pages/email-check/email-check'));
 const VerificarEmail = React.lazy(() => import('./views/pages/components/verificar cuenta/verificarCuenta'));
 const NuevaContrasena = React.lazy(() => import("./views/pages/NewPassword/NewPass"));
+const CambiarPassword = React.lazy(() => import("./views/pages/NewPassword/GuardarPassword"));
 const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'));
 const Perfil = React.lazy(() => import('./views/pages/profile/profile'));
 const TwoAuthFA = React.lazy(() => import('./views/pages/2FA/2fa'));
@@ -34,26 +38,48 @@ const ListaEspecialidades = React.lazy(() => import('./views/pages/calificacione
 const ListaEstadoasistencia = React.lazy(() => import('./views/pages/calificaciones/ListaEstadoasistencia'));
 const ActiveSessionPage = React.lazy(() => import ("./views/pages/SesionActiva/SesionActiva"))
 const VerificaciónCuenta = React.lazy(() => import ("./views/pages/VerificarCuenta/VerificarCuenta"))
-
+const CuentaSupendida = React.lazy(() => import ("./views/pages/Suspendida/Accoutsuspended"))
+const ListaUsuarios = React.lazy(() => import('./views/pages/ListaUsuarios/ListaUsuarios'));
+const Permisos = React.lazy(() => import ("./views/pages/Permissions/Permissions"))
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
 const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
 const ListaParciales = React.lazy(() => import('./views/pages/calificaciones/ListaParciales'));
 const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones/ListaPonderaciones'));
-
+const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabilidad'));
+const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDiario'));
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
+const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
+
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
 
-const Tipopersona = React.lazy(() => import('./views/pages/matricula/tipopersona'));
 const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
 const Periodomatricula = React.lazy(() => import('./views/pages/matricula/periodomatricula'));
 const Departamento = React.lazy(() => import('./views/pages/matricula/departamento'));
+const Municipios = React.lazy(() => import('./views/pages/matricula/municipios'));
+
 const Estadomatricula = React.lazy(() => import('./views/pages/matricula/estadomatricula'));
 const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopago'));
-const ListaEdificios = React.lazy(() => import('./views/pages/matricula/ListaEdificios')) 
+const ListaEdificios = React.lazy(() => import('./views/pages/matricula/ListaEdificios'));
 const ListaActivex = React.lazy(() => import('./views/pages/matricula/ListaActivex')); 
-const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias')) 
+const ListaAulas = React.lazy(() => import('./views/pages/matricula/ListaAulas'));
+const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias'));
+const ListaSecciones_Asignatura = React.lazy(() => import('./views/pages/matricula/ListaSecciones_Asignatura'));
+const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
+const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
+const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
+const tipopersona = React.lazy(() => import('./views/pages/personas/tipopersona'));
+const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
+const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
+const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
+const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhijo')) 
+const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
+const Procedencia = React.lazy(() => import('./views/pages/matricula/ListaHistoricoProc')) 
+const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
 
+
+
+const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
 
 
 const App = () => {
@@ -74,6 +100,7 @@ const App = () => {
 
   return (
     <Router>
+       <usePermission>
       <AuthProvider>
         <Suspense
           fallback={
@@ -93,22 +120,38 @@ const App = () => {
               <Route path="/verificar-cuenta/:token_usuario" element={<VerificarEmail />} />
               <Route path="/404" element={<Page404 />} />
               <Route path="/olvide-password/:token" element={<NuevaContrasena />} />
+
               <Route path="/500" element={<Page500 />} />
             </Route>
 
             {/* Rutas protegidas */}
             <Route element={<RutaProtegida />}>
             <Route path="/active-session" element={<ActiveSessionPage />} />
-              <Route path="/2fa" element={<TwoAuthFA />} />
+            <Route path="/CompletarDatos" element={<Register />} />
+            <Route path="/NuevaContraseña" element={<CambiarPassword />} />
+            <Route path="/RegistrarHijo" element={<RegistrarHijo />} />
+            <Route path="/CompletarDatos" element={<CompletarDatos />} />
+            <Route path="/AccesoDenegado" element={<AccesoDenegado />} />
               <Route path="/CuentaenRevision" element={<VerificaciónCuenta />} />
+              <Route path="/CuentaSuspendida" element={<CuentaSupendida />} />
+              <Route path="/2fa" element={<TwoAuthFA />} />
               <Route path="/" element={<DefaultLayout />}>
                 <Route path="/matricula" element={<Matricula />} />
+                <Route path="/rolesandpermissions" element={<Permisos />} />
+                <Route path="/Contabilidad" element={<Contabilidad />} />
+                <Route path="/LibroDiario" element={<LibroDiario />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/PaginaPrincipal" element={<Dashboard2 />} />
                 <Route path="/profile" element={<Perfil />} />
+                <Route path="/MisPagos" element={<MisPagos />} />
                 <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />
                 <Route path="/ListaAsignaturas" element={<ListaAsigaturas />} />
                 <Route path="/ListaAsistencia" element={<ListaAsistencia />} />
+                <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
+                <Route path="/ListaHistoricoProc" element={<Procedencia />} />
+                <Route path="/ListaHistoriales" element={<ListaHistoriales />} />
+
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
                 <Route path="/ListaEstadoasistencia" element={<ListaEstadoasistencia />} />
                 <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />
@@ -117,19 +160,29 @@ const App = () => {
                 <Route path="/ListaParciales" element={<ListaParciales />} />
                 <Route path="/ListaPonderaciones" element={<ListaPonderaciones />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
+                <Route path="/VistaListaProfesor" element={<VistaListaProfesor />} />
+
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
-                <Route path="/tipopersona" element={<Tipopersona />} />
+               
                 <Route path="/tipomatricula" element={<Tipomatricula />} />
                 <Route path="/periodomatricula" element={<Periodomatricula />} />
                 <Route path="/departamento" element={<Departamento />} />
+                <Route path="/municipios" element={<Municipios />} />
+
                 <Route path="/estadomatricula" element={<Estadomatricula />} />
                 <Route path="/conceptopago" element={<Conceptopago />} />
                 <Route path="/edificios" element={<ListaEdificios />} />
+                <Route exact path="/aulas" element={<ListaAulas />} />
                 <Route path="/dias" element={<ListaDias />} />
+                <Route path="/secciones_asignaturas"  element={<ListaSecciones_Asignatura />} />
                 <Route path="/actividades" element={<ListaActivex />} />
                 <Route path="/historico" element={<ListaDias />} />
-          
-
+                
+                <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
+                 <Route path="/tipopersona" element={<tipopersona />} />
+                <Route path="/ListaEstructura" element={<ListaEstructura />} />
+                <Route path="/ListaPersonas" element={<ListaPersonas />} />
+                <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
               </Route>
             </Route>
 
@@ -137,7 +190,9 @@ const App = () => {
             <Route path="*" element={<Page404 />} /> {/* Manejo de rutas no encontradas */}
           </Routes>
         </Suspense>
+
       </AuthProvider>
+      </usePermission>
     </Router>
   );
 };

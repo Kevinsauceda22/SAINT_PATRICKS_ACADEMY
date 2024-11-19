@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilBrushAlt, cilFile } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilFile  } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
+import { jsPDF } from 'jspdf';
+
+import 'jspdf-autotable';
+
 import {
   CButton,
   CContainer,
@@ -20,21 +24,20 @@ import {
   CTableRow,
   CTableHeaderCell,
   CTableBody,
-  CTableDataCell,
-  CFormSelect,
   CRow,
+  
+  CFormSelect ,
   CCol,
+  CTableDataCell,
   CSpinner,
-  CDropdown,
-  CDropdownToggle,
-  CDropdownMenu,
-  CDropdownItem,
 } from '@coreui/react';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-import * as XLSX from 'xlsx';
+import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
-const Departamento = () => {
+const DepartamentoMantenimiento = () => {
+  const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('departamento');
+
   const [departamentos, setDepartamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,16 +47,30 @@ const Departamento = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [modalVisible, setModalVisible] = useState(false);
   const [editar, setEditar] = useState(false);
-  const [departamentoActual, setDepartamentoActual] = useState({ codDepartamento: null, nombreDepartamento: '', nombreMunicipio: '' });
-  const [errorMsg, setErrorMsg] = useState({ nombreDepartamento: '', nombreMunicipio: '' });
+  const [departamentoActual, setDepartamentoActual] = useState({ codDepartamento: null, nombreDepartamento: '' });
 
   const obtenerDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamento');
+      const response = await fetch('http://localhost:4000/api/departamento/departamentos');
       const data = await response.json();
       if (response.ok) {
-        setDepartamentos(data);
-        setFilteredDepartamentos(data);
+        // Filtrar departamentos únicos basados en cod_departamento
+        const departamentosUnicos = data.reduce((acc, current) => {
+          const x = acc.find(item => item.cod_departamento === current.cod_departamento);
+          if (!x) {
+            return acc.concat([current]);
+          } else {
+            return acc;
+          }
+        }, []);
+        
+        // Ordenar alfabéticamente
+        const departamentosOrdenados = departamentosUnicos.sort((a, b) => 
+          a.nombre_departamento.localeCompare(b.nombre_departamento)
+        );
+  
+        setDepartamentos(departamentosOrdenados);
+        setFilteredDepartamentos(departamentosOrdenados);
       } else {
         throw new Error(data.message || 'Error al obtener los departamentos');
       }
@@ -66,17 +83,17 @@ const Departamento = () => {
   };
 
   const crearDepartamento = async () => {
-    const { nombreDepartamento, nombreMunicipio } = departamentoActual;
+    const { nombreDepartamento } = departamentoActual;
     if (!nombreDepartamento) {
       Swal.fire('Error', 'El nombre del departamento es requerido', 'error');
       return;
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamento', {
+      const response = await fetch('http://localhost:4000/api/departamento/departamentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Nombre_departamento: nombreDepartamento, Nombre_municipio: nombreMunicipio }),
+        body: JSON.stringify({ nombre_departamento: nombreDepartamento }),
       });
 
       if (response.ok) {
@@ -84,7 +101,7 @@ const Departamento = () => {
         obtenerDepartamentos();
       } else {
         const result = await response.json();
-        throw new Error(result.Mensaje || 'Error al crear el departamento');
+        throw new Error(result.message || 'Error al crear el departamento');
       }
     } catch (error) {
       Swal.fire('Error', error.message, 'error');
@@ -94,17 +111,17 @@ const Departamento = () => {
   };
 
   const actualizarDepartamento = async () => {
-    const { codDepartamento, nombreDepartamento, nombreMunicipio } = departamentoActual;
+    const { codDepartamento, nombreDepartamento } = departamentoActual;
     if (!nombreDepartamento) {
       Swal.fire('Error', 'El nombre del departamento es requerido', 'error');
       return;
     }
 
     try {
-      const response = await fetch(`http://localhost:4000/api/departamento/departamento/${codDepartamento}`, {
+      const response = await fetch(`http://localhost:4000/api/departamento/departamentos/${codDepartamento}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Nombre_departamento: nombreDepartamento, Nombre_municipio: nombreMunicipio }),
+        body: JSON.stringify({ nombre_departamento: nombreDepartamento }),
       });
 
       if (response.ok) {
@@ -112,7 +129,7 @@ const Departamento = () => {
         obtenerDepartamentos();
       } else {
         const result = await response.json();
-        throw new Error(result.Mensaje || 'Error al actualizar el departamento');
+        throw new Error(result.message || 'Error al actualizar el departamento');
       }
     } catch (error) {
       Swal.fire('Error', error.message, 'error');
@@ -123,7 +140,7 @@ const Departamento = () => {
 
   const eliminarDepartamento = async (codDepartamento) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/departamento/departamento/${codDepartamento}`, {
+      const response = await fetch(`http://localhost:4000/api/departamento/departamentos/${codDepartamento}`, {
         method: 'DELETE',
       });
 
@@ -137,6 +154,8 @@ const Departamento = () => {
       Swal.fire('Error', error.message, 'error');
     }
   };
+
+
 
   const confirmDelete = (codDepartamento) => {
     Swal.fire({
@@ -157,24 +176,22 @@ const Departamento = () => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
     const filtered = departamentos.filter((departamento) =>
-      departamento.Nombre_departamento.toLowerCase().includes(value)
+      departamento.nombre_departamento.toLowerCase().includes(value)
     );
     setFilteredDepartamentos(filtered);
     setCurrentPage(0);
   };
 
   const handleAddModal = () => {
-    setDepartamentoActual({ codDepartamento: null, nombreDepartamento: '', nombreMunicipio: '' });
-    setErrorMsg({ nombreDepartamento: '', nombreMunicipio: '' });
+    setDepartamentoActual({ codDepartamento: null, nombreDepartamento: '' });
     setEditar(false);
     setModalVisible(true);
   };
 
   const handleEditModal = (departamento) => {
     setDepartamentoActual({
-      codDepartamento: departamento.Cod_departamento,
-      nombreDepartamento: departamento.Nombre_departamento,
-      nombreMunicipio: departamento.Nombre_municipio,
+      codDepartamento: departamento.cod_departamento,
+      nombreDepartamento: departamento.nombre_departamento,
     });
     setEditar(true);
     setModalVisible(true);
@@ -182,23 +199,7 @@ const Departamento = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    const upperCaseValue = value.toUpperCase();
-
-    // Check for three consecutive identical letters
-    if (/(.)\1\1/.test(upperCaseValue)) {
-      setErrorMsg((prev) => ({ ...prev, [name]: 'No se permiten tres letras consecutivas iguales' }));
-      return;
-    } else if (!/^[A-Z\s]*$/.test(upperCaseValue)) {
-      setErrorMsg((prev) => ({ ...prev, [name]: 'Solo se permiten letras y espacios' }));
-      return;
-    } else if (upperCaseValue.length > 50) {
-      setErrorMsg((prev) => ({ ...prev, [name]: 'Máximo 50 caracteres permitidos' }));
-      return;
-    } else {
-      setErrorMsg((prev) => ({ ...prev, [name]: '' }));
-    }
-
-    setDepartamentoActual((prev) => ({ ...prev, [name]: upperCaseValue }));
+    setDepartamentoActual((prev) => ({ ...prev, [name]: value.toUpperCase() }));
   };
 
   const handleSubmit = (e) => {
@@ -210,36 +211,65 @@ const Departamento = () => {
     }
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.text('Reporte de Departamentos', 10, 10);
 
-    doc.autoTable({
-      head: [['#', 'Nombre del Departamento', 'Nombre del Municipio']],
-      body: departamentos.map((departamento, index) => [
-        index + 1,
-        departamento.Nombre_departamento.toUpperCase(),
-        departamento.Nombre_municipio.toUpperCase(),
-      ]),
+const generatePDFDepartments = () => {
+  const doc = new jsPDF('p', 'mm', 'letter');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    // Function to add improved watermark
+    const addWatermark = () => {
+      // ... (the watermark function code remains the same)
+    };
+
+    // Insert the logo
+    doc.addImage(img, 'PNG', 20, 15, 25, 25);
+
+    // Report header with better spacing
+    doc.setTextColor(22, 160, 133);
+    doc.setFontSize(16);
+    doc.text("SAINT PATRICK'S ACADEMY", 50, 25, { align: 'left' });
+    doc.setFontSize(12);
+    doc.text('Reporte de Departamentos', 50, 35, { align: 'left' });
+
+    // Institution details with better spacing
+    doc.setFontSize(9); // Increased for better readability
+    doc.setTextColor(68, 68, 68);
+    doc.text('Casa Club del periodista, Colonia del Periodista', 50, 45, { align: 'left' });
+    doc.text('Teléfono: (504) 2234-8871', 50, 52, { align: 'left' });
+    doc.text('Correo: info@saintpatrickacademy.edu', 50, 59, { align: 'left' });
+
+    // Add watermark
+    addWatermark();
+
+    // Main list with better formatting
+    let currentY = 70;
+    departamentos.forEach((departamento, index) => {
+      doc.setFontSize(10);
+      doc.setTextColor(68, 68, 68);
+      doc.text(`${index + 1}. ${departamento.nombre_departamento.toUpperCase()}`, 20, currentY, { maxWidth: pageWidth - 40 });
+      currentY += 12; // Adjust spacing between items
     });
 
+    // Improved footer
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    const date = new Date().toLocaleDateString('es-HN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    doc.text(`Fecha de generación: ${date}`, 20, pageHeight - 15);
+    doc.text(`Página ${doc.getCurrentPageInfo().pageNumber}`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+
+    // Save the PDF
     doc.save('Reporte_Departamentos.pdf');
   };
-
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      departamentos.map((departamento, index) => ({
-        '#': index + 1,
-        'Departamento': departamento.Nombre_departamento.toUpperCase(),
-        'Municipio': departamento.Nombre_municipio.toUpperCase(),
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Departamentos');
-    XLSX.writeFile(workbook, 'Reporte_Departamentos.xlsx');
-  };
-
+};
   useEffect(() => {
     obtenerDepartamentos();
   }, []);
@@ -247,7 +277,6 @@ const Departamento = () => {
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredDepartamentos.slice(indexOfFirstItem, indexOfLastItem);
-
   if (loading) {
     return (
       <CContainer>
@@ -275,6 +304,12 @@ const Departamento = () => {
 
   const pageCount = Math.ceil(filteredDepartamentos.length / itemsPerPage);
 
+
+    // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
   return (
     <CContainer>
       <CRow className="justify-content-between align-items-center mb-3 sticky-header">
@@ -282,18 +317,14 @@ const Departamento = () => {
           <h3>Mantenimeinto de Departamentos</h3>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
-          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#0F463A', borderColor: '#0F463A' }}>
+          {canInsert && ( 
+          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
-          <CDropdown className="report-dropdown">
-            <CDropdownToggle style={{ backgroundColor: '#617341', borderColor: '#617341', zIndex: '1050' }}>
-              <CIcon icon={cilFile} /> Reporte
-            </CDropdownToggle>
-            <CDropdownMenu>
-              <CDropdownItem onClick={exportToPDF}>Exportar a PDF</CDropdownItem>
-              <CDropdownItem onClick={exportToExcel}>Exportar a Excel</CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
+          )}
+          <CButton color="primary" onClick={generatePDFDepartments} style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
+            <CIcon icon={cilFile} /> Generar Reporte
+          </CButton>
         </CCol>
       </CRow>
 
@@ -304,16 +335,6 @@ const Departamento = () => {
               <CIcon icon={cilSearch} />
             </CInputGroupText>
             <CFormInput placeholder="Buscar departamento" value={searchTerm} onChange={handleSearch} />
-            <CButton
-              style={{
-                border: '1px solid #ccc',
-                backgroundColor: '#F3F4F7',
-                color: '#343a40',
-              }}
-              onClick={() => setSearchTerm('')}
-            >
-              <CIcon icon={cilBrushAlt} /> Limpiar
-            </CButton>
           </CInputGroup>
         </CCol>
         <CCol xs="12" md="7" className="text-md-end mt-2 mt-md-0">
@@ -344,23 +365,37 @@ const Departamento = () => {
             <CTableRow>
               <CTableHeaderCell>#</CTableHeaderCell>
               <CTableHeaderCell>Nombre del Departamento</CTableHeaderCell>
-              <CTableHeaderCell>Nombre del Municipio</CTableHeaderCell>
               <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
             {currentItems.map((departamento, index) => (
-              <CTableRow key={departamento.Cod_departamento}>
+              <CTableRow key={departamento.cod_departamento}>
                 <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
-                <CTableDataCell>{departamento.Nombre_departamento.toUpperCase()}</CTableDataCell>
-                <CTableDataCell>{departamento.Nombre_municipio.toUpperCase()}</CTableDataCell>
+                <CTableDataCell>{departamento.nombre_departamento.toUpperCase()}</CTableDataCell>
                 <CTableDataCell className="text-end">
-                  <CButton color="warning" size="sm" onClick={() => handleEditModal(departamento)}>
+
+
+                  {canUpdate && (
+                  <CButton
+                    color="warning"
+                    size="sm"
+                    style={{ opacity: 0.8 }}
+                    onClick={() => handleEditModal(departamento)}
+                  >
                     <CIcon icon={cilPen} />
-                  </CButton>{' '}
-                  <CButton color="danger" size="sm" onClick={() => confirmDelete(departamento.Cod_departamento)}>
+                  </CButton>)}{' '}
+
+                  {canDelete && (
+                  <CButton
+                    color="danger"
+                    size="sm"
+                    style={{ opacity: 0.8 }}
+                    onClick={() => confirmDelete(departamento.cod_departamento)}
+                  >
                     <CIcon icon={cilTrash} />
                   </CButton>
+                  )}
                 </CTableDataCell>
               </CTableRow>
             ))}
@@ -405,24 +440,12 @@ const Departamento = () => {
                 required
               />
             </CInputGroup>
-            {errorMsg.nombreDepartamento && <p className="text-danger">{errorMsg.nombreDepartamento}</p>}
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Nombre del Municipio</CInputGroupText>
-              <CFormInput
-                type="text"
-                name="nombreMunicipio"
-                placeholder="Nombre del municipio"
-                value={departamentoActual.nombreMunicipio}
-                onChange={handleInputChange}
-              />
-            </CInputGroup>
-            {errorMsg.nombreMunicipio && <p className="text-danger">{errorMsg.nombreMunicipio}</p>}
             <CModalFooter>
               <CButton color="secondary" onClick={() => setModalVisible(false)}>
                 Cancelar
               </CButton>
               <CButton style={{ backgroundColor: '#617341', color: 'white' }} type="submit">
-                <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Crear'}
+                <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
               </CButton>
             </CModalFooter>
           </CForm>
@@ -435,14 +458,9 @@ const Departamento = () => {
           overflow-y: ${filteredDepartamentos.length >= 5 ? 'auto' : 'hidden'};
           overflow-x: hidden;
         }
-
-
-        .report-dropdown .dropdown-menu {
-          z-index: 1050;
-        }
       `}</style>
     </CContainer>
   );
 };
 
-export default Departamento;
+export default DepartamentoMantenimiento;

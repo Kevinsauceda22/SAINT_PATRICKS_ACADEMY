@@ -1,5 +1,7 @@
 import React from 'react'
 import classNames from 'classnames'
+import usePermission from '../../../context/usePermission';
+import AccessDenied from "../pages/AccessDenied/AccessDenied"
 
 import {
   CAvatar,
@@ -55,6 +57,8 @@ import WidgetsDropdown from '../widgets/WidgetsDropdown'
 import MainChart from './MainChart'
 
 const Dashboard = () => {
+  const { canSelect, loading, error } = usePermission('Dashboard');
+
   const progressExample = [
     { title: 'Visits', value: '29.703 Users', percent: 40, color: 'success' },
     { title: 'Unique', value: '24.093 Users', percent: 20, color: 'info' },
@@ -175,6 +179,30 @@ const Dashboard = () => {
       activity: 'Last week',
     },
   ]
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '200px' }}>
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Manejar errores
+  if (error) {
+    return (
+      <div className="alert alert-danger" role="alert">
+        Error al cargar los permisos. Por favor, intente nuevamente.
+      </div>
+    );
+  }
+
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
 
   return (
     <>

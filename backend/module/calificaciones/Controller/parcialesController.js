@@ -39,7 +39,7 @@ export const crearParcial = async (req, res) => {
 export const actualizarParcial = async (req, res) => {
     const { Cod_parcial, Nombre_parcial, Nota_recuperacion } = req.body;
 
-    console.log('Datos recibidos:', req.body); // Agregado para verificar datos
+   // console.log('Datos recibidos:', req.body); // Agregado para verificar datos
 
     try {
         await pool.query('CALL update_parcial(?, ?, ?)', [

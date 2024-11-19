@@ -1,53 +1,150 @@
 /* CorreoVerificado.css */
-.verificado-container {
+.verification-container {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #EBF4FF 0%, #E1EFFE 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    font-family: 'Arial', sans-serif;
+}
+
+.verification-card {
+    max-width: 480px;
+    width: 100%;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.verification-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+}
+
+.content-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
+    text-align: center;
+}
+
+.icon-circle {
+    background-color: #E6FFE6;
+    border-radius: 50%;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
     justify-content: center;
-    min-height: 100vh; /* Ocupa toda la altura de la ventana */
-    background: linear-gradient(135deg, #f0f4f8, #d9e7ff); /* Degradado de fondo */
-    font-family: 'Arial', sans-serif; /* Fuente */
-    text-align: center; /* Centrar el texto */
-    padding: 40px; /* Espaciado interior */
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); /* Sombra */
-    border-radius: 15px; /* Bordes redondeados */
-    margin: 20px auto; /* Margen para centrarse horizontalmente */
-    width: 90%; /* Ancho responsive */
-    max-width: 500px; /* Ancho máximo */
 }
 
-.title {
-    font-size: 2.2rem; /* Tamaño del título */
-    margin-bottom: 15px; /* Espacio inferior */
-    color: #ffffff; /* Color del texto */
-    background-color: #4CAF50; /* Color de fondo del título */
-    padding: 20px; /* Espacio interior */
-    border-radius: 10px; /* Bordes redondeados */
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); /* Sombra */
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3); /* Sombra de texto */
+.check-icon {
+    width: 4rem;
+    height: 4rem;
+    color: #22C55E;
 }
 
-.message {
-    font-size: 1.1rem; /* Tamaño del mensaje */
-    color: #333; /* Color de texto */
-    margin-bottom: 20px; /* Espacio inferior */
-    line-height: 1.6; /* Espaciado entre líneas */
+.verification-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #1F2937;
+    margin-bottom: 0.5rem;
 }
 
-.link {
-    font-size: 1.1rem; /* Tamaño del enlace */
-    color: #4CAF50; /* Color del enlace */
-    text-decoration: none; /* Sin subrayado */
-    padding: 10px 20px; /* Espaciado interior */
-    border: 2px solid #4CAF50; /* Borde */
-    border-radius: 5px; /* Bordes redondeados */
-    transition: background-color 0.3s, color 0.3s; /* Transición suave */
-    margin-top: 20px; /* Espacio superior */
-    background-color: #ffffff; /* Fondo blanco */
+.divider {
+    width: 4rem;
+    height: 4px;
+    background-color: #22C55E;
+    border-radius: 2px;
+    margin: 1.5rem 0;
 }
 
-.link:hover {
-    background-color: #4CAF50; /* Color de fondo en hover */
-    color: #ffffff; /* Color del texto en hover */
-    border: 2px solid transparent; /* Sin borde en hover */
+.verification-message {
+    color: #4B5563;
+    font-size: 1.125rem;
+    line-height: 1.6;
+    margin-bottom: 2rem;
+}
+
+.timer-container {
+    background-color: #F0F9FF;
+    border-radius: 8px;
+    padding: 1rem;
+    width: 100%;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.timer-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: #3B82F6;
+}
+
+.timer-text {
+    color: #2563EB;
+}
+
+.timer-count {
+    font-weight: bold;
+}
+
+.login-button {
+    width: 100%;
+    background-color: #22C55E;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: #16A34A;
+}
+
+.login-button:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.verification-card {
+    animation: fadeIn 0.6s ease-out;
+}
+
+/* Media Queries para responsividad */
+@media (max-width: 640px) {
+    .verification-card {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+
+    .verification-title {
+        font-size: 1.5rem;
+    }
+
+    .verification-message {
+        font-size: 1rem;
+    }
 }

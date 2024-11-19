@@ -1,11 +1,12 @@
+import axios from 'axios';
 import { Navigate, Outlet } from 'react-router-dom';
-import useAuth from '../../hooks/useAuth'; // Asegúrate de que el hook useAuth esté correcto
-import { CSpinner } from '@coreui/react'; // Spinner de CoreUI
-import PropTypes from 'prop-types'; // Validación de propiedades
-import './AuthError.css'; // Asegúrate de crear o editar este archivo CSS
+import useAuth from '../../hooks/useAuth';
+import { CSpinner } from '@coreui/react';
+import PropTypes from 'prop-types';
+import './AuthError.css';
 
 const RutaProtegida = () => {
-  const { auth, loading, error } = useAuth(); // Asegúrate de que useAuth devuelva error
+  const { auth, loading, error } = useAuth();
 
   // Pantalla de carga mientras se verifica la autenticación
   if (loading) {
@@ -31,9 +32,26 @@ const RutaProtegida = () => {
       </div>
     );
   }
-
-  // Verifica si el usuario está autenticado
+  console.log()
+  // Verifica si el usuario no está autenticado
   if (!auth || !auth.cod_usuario) {
+    // Lógica para actualizar otp_verified antes de redirigir
+    const actualizarEstadoOtp = async () => {
+      try {
+        await axios.put(
+          `http://localhost:4000/api/usuarios/actualizarOtp/${auth?.cod_usuario}`,
+          { otp_verified: 0 }
+        );
+        console.log('Estado otp_verified actualizado correctamente');
+      } catch (error) {
+        console.error('Error al actualizar otp_verified:', error);
+      }
+    };
+
+    // Llama a la función de actualización
+    actualizarEstadoOtp();
+
+    // Redirige al usuario a la página de inicio de sesión
     return <Navigate to="/login" replace />;
   }
 
@@ -41,9 +59,8 @@ const RutaProtegida = () => {
   return <Outlet />;
 };
 
-// Agregar validaciones de tipo (opcional)
 RutaProtegida.propTypes = {
-  children: PropTypes.node, // No es necesario si solo usas Outlet
+  children: PropTypes.node,
 };
 
 export default RutaProtegida;

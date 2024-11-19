@@ -33,8 +33,13 @@ import { BsCheckCircle, BsExclamationCircle, BsDashCircle, BsXCircle } from 'rea
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const EstadoMatricula = () => {
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('estadomatricula');
+
   const [estados, setEstados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -215,6 +220,12 @@ const EstadoMatricula = () => {
 
   const pageCount = Math.ceil(filteredEstados.length / itemsPerPage);
 
+     // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
+
   return (
     <CContainer>
 <CRow className="justify-content-between align-items-center mb-4">
@@ -223,18 +234,21 @@ const EstadoMatricula = () => {
   </CCol>
   <CCol xs={12} md={4} className="text-end">
     {/* Botón Nuevo */}
+
+    {canInsert && (
     <CButton 
-      style={{ backgroundColor: '#0F463A', color: 'white', borderColor: '#0F463A' }} 
+      style={{ backgroundColor: '#0F463A', color: 'white', borderColor: '#4B6251' }} 
       onClick={handleAddModal} 
       className="me-2"
     >
       <CIcon icon={cilPlus} /> Nuevo
     </CButton>
+    )}
     
     {/* Botón de Reporte con menú desplegable */}
     <CDropdown className="d-inline ms-2">
       <CDropdownToggle 
-        style={{ backgroundColor: '#617341', color: 'white', borderColor: '#617341', width: 'auto', height: '38px' }} // Ajuste del tamaño
+        style={{ backgroundColor: '#6C8E58', color: 'white', borderColor: '#617341', width: 'auto', height: '38px' }} // Ajuste del tamaño
       >
         <CIcon icon={cilFile} /> Reporte
       </CDropdownToggle>
@@ -312,14 +326,31 @@ const EstadoMatricula = () => {
                   {estado.Tipo === 'Inactiva' && <BsDashCircle className="text-secondary me-2" />}
                   {estado.Tipo}
                 </CTableDataCell>
-                <CTableDataCell>
-                  <CButton color="warning" size="sm" onClick={() => handleEditModal(estado)}>
-                    <CIcon icon={cilPen} />
-                  </CButton>{' '}
-                  <CButton color="danger" size="sm" onClick={() => handleDelete(estado.Cod_estado_matricula)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                </CTableDataCell>
+                <CTableDataCell className="text-end">
+
+                  {canUpdate && (
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleEditModal(estado)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton> )}{' '}
+
+  {canDelete && (
+
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleDelete(estado.Cod_estado_matricula)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+  )}
+</CTableDataCell>
+
               </CTableRow>
             ))}
           </CTableBody>
@@ -374,7 +405,7 @@ const EstadoMatricula = () => {
   style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
   type="submit"
 >
-  <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Guardar'}
+  <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
 </CButton>
 
             </CModalFooter>

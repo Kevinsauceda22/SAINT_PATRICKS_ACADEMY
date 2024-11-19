@@ -32,8 +32,12 @@ import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const PeriodosMatricula = () => {
+  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('ListaHistorial');
+
   const [periodos, setPeriodos] = useState([]);
   const [filteredPeriodos, setFilteredPeriodos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -301,7 +305,10 @@ const PeriodosMatricula = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Periodos de Matrícula');
     XLSX.writeFile(workbook, 'Reporte_Periodos_Matricula.xlsx');
   };
-
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
   return (
     <CContainer>
       <CRow className="align-items-center mb-5">
@@ -309,11 +316,14 @@ const PeriodosMatricula = () => {
           <h1>Mantenimiento Periodo Matrícula</h1>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
-  <CButton color="dark" onClick={() => setModalVisible(true)} className="me-2" style={{ backgroundColor: '#0F463A', borderColor: '#0F463A' }}>
+
+          {canInsert && (
+  <CButton color="dark" onClick={() => setModalVisible(true)} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
     <CIcon icon={cilPlus} /> Nuevo
   </CButton>
+          )}
   <CDropdown>
-    <CDropdownToggle style={{ backgroundColor: '#617341', borderColor: '#617341' }}>
+    <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
       <CIcon icon={cilFile} /> Reporte
     </CDropdownToggle>
     <CDropdownMenu>
@@ -404,14 +414,30 @@ const PeriodosMatricula = () => {
                       <CIcon icon={cilXCircle} className="text-danger" />
                     )}
                   </CTableDataCell>
-                  <CTableDataCell>
-                    <CButton color="warning" className="me-2" onClick={() => handleEditClick(periodo)}>
-                      <CIcon icon={cilPen} />
-                    </CButton>
-                    <CButton color="danger" onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}>
-                      <CIcon icon={cilTrash} />
-                    </CButton>
-                  </CTableDataCell>
+                  <CTableDataCell className="text-end">
+
+                    {canUpdate && (
+  <CButton
+    color="warning"
+    className="me-2"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleEditClick(periodo)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>
+  )}
+
+  {canDelete && (
+  <CButton
+    color="danger"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+  )}
+</CTableDataCell>
+
                 </CTableRow>
               ))
             ) : (
@@ -509,7 +535,7 @@ const PeriodosMatricula = () => {
   style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
   type="submit"
 >
-  <CIcon icon={cilSave} /> {editar ? 'Actualizar' : 'Agregar'}
+  <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
 </CButton>
 
             </CModalFooter>

@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilPen, cilTrash,cilPlus,cilSave } from '@coreui/icons'; // Importar iconos específicos
+import Swal from 'sweetalert2';
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
 
 import {
   CButton,
@@ -22,21 +23,34 @@ import {
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CFormSelect,
+  CRow,
+  CCol,
 } from '@coreui/react';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaAsignaturas = () => {
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaAsignaturas');
+
   const [Asignaturas, setAsignatura] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ciclo
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar ciclo
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Estado para el modal de eliminar ciclo
-  const [nueva_Asignatura, setNueva_Asignatura] = useState(''); // Estado para el nuevo ciclo
+  const [nueva_Asignatura, setNueva_Asignatura] = useState({
+    Nombre_asignatura: '',
+    Descripcion_asignatura: ''
+  });
   const [asignaturaToUpdate, setAsignaturaToUpdate] = useState({}); // Estado para el ciclo a actualizar
   const [AsignaturaToDelete, setAsignaturaToDelete] = useState({}); // Estado para el ciclo a eliminar
   const [searchTerm, setSearchTerm] = useState('');
-
+  const inputRefNombre = useRef(null); // Referencia para el input
+  const inputRefDescripcion = useRef(null);
+  const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
-  const [recordsPerPage] = useState(5); // Mostrar 5 registros por página
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+  const resetAsignatura = () => setNueva_Asignatura({ Nombre_asignatura: '', Descripcion_asignatura: '' });
+  const resetAsignaturatoUpdate = () => setAsignaturaToUpdate({ Nombre_asignatura: '', Descripcion_asignatura: '' });
 
   useEffect(() => {
     fetchAsignaturas();
@@ -58,7 +72,166 @@ const ListaAsignaturas = () => {
     }
   };
 
+  // Validación de creación de asignatura
+  const validateAsignatura = () => {
+    const nombreasignatura = typeof nueva_Asignatura === 'string' ? nueva_Asignatura : nueva_Asignatura.Nombre_asignatura;
+    const descripcionasignatura = typeof nueva_Asignatura === 'string' ? nueva_Asignatura : nueva_Asignatura.Descripcion_asignatura;
+
+    // Comprobación de vacío
+    if (!nombreasignatura || nombreasignatura.trim() === '') {
+      Swal.fire('Error', 'El campo "Nombre de la Asignatura" no puede estar vacío', 'error');
+      return false;
+    }
+    if (!descripcionasignatura || descripcionasignatura.trim() === '') {
+      Swal.fire('Error', 'El campo "Descripción de la Asignatura" no puede estar vacío', 'error');
+      return false;
+    }
+
+    // Verificar si ya existe una asignatura con el mismo nombre
+    const asignaturaexiste = Asignaturas.some(
+      (asignatura) => asignatura.Nombre_asignatura.toLowerCase() === nombreasignatura.toLowerCase()
+    );
+    const descripcionexiste = Asignaturas.some(
+      (asignatura) => asignatura.Descripcion_asignatura.toLowerCase() === descripcionasignatura.toLowerCase()
+    );
+
+    if (asignaturaexiste) {
+      Swal.fire('Error', `La asignatura "${nombreasignatura}" ya existe `, 'error');
+      return false;
+    }
+    if (descripcionexiste) {
+      Swal.fire('Error', `La descipción "${descripcionasignatura}" ya existe `, 'error');
+      return false;
+    }
+    return true;
+  };
+
+  // Validación de actualización de asignatura
+  const validarAsignaturaUpdate = () => {
+    if (!asignaturaToUpdate.Nombre_asignatura) {
+      Swal.fire('Error', 'El campo "Nombre de la Asignatura" no puede estar vacío', 'error');
+      return false;
+    }
+    if (!asignaturaToUpdate.Descripcion_asignatura) {
+      Swal.fire('Error', 'El campo "Descripción de la Asignatura" no puede estar vacío', 'error');
+      return false;
+    }
+
+    // Verificar si el nombre del parcial ya existe (excluyendo el parcial actual que se está editando)
+    const asignaturaExistente = Asignaturas.some(
+      (asignatura) =>
+        asignatura.Nombre_asignatura.toLowerCase() === asignaturaToUpdate.Nombre_asignatura.toLowerCase() &&
+        asignatura.Cod_asignatura !== asignaturaToUpdate.Cod_asignatura // Excluir su propio código
+    );
+
+    if (asignaturaExistente) {
+      Swal.fire('Error', `La asignatura "${asignaturaToUpdate.Nombre_asignatura}" ya existe `, 'error');
+      return false;
+    }
+
+    return true;
+  };
+
+
+  // Función para manejar cambios en el input
+  const handleInputChange = (e, setFunction, inputRef) => {
+    const input = e.target;
+    const cursorPosition = input.selectionStart; // Guarda la posición actual del cursor
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
+
+    const regex = /^[A-ZÑ\s]*$/; // Solo letras y espacios y la letra ñ
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar solo letras y espacios
+    if (!regex.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Caracteres no permitidos',
+        text: 'Solo se permiten letras y espacios.',
+      });
+      return;
+    }
+
+    // Validación: no permitir letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          });
+          return;
+        }
+      }
+    }
+
+    // Asigna el valor en el input manualmente para evitar el salto de transición
+    input.value = value;
+
+    // Establecer el valor con la función correspondiente
+    setFunction(value);
+    setHasUnsavedChanges(true); // Asegúrate de marcar que hay cambios sin guardar
+
+   // Restaurar la posición del cursor
+   requestAnimationFrame(() => {
+    if (inputRef && inputRef.current) {
+      inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+    }
+  });
+  };
+
+  // Deshabilitar copiar y pegar
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    Swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
+  };
+
+  // Función para cerrar el modal con advertencia si hay cambios sin guardar
+  const handleCloseModal = (closeFunction, resetFields) => {
+    if (hasUnsavedChanges) {
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cerrar',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          closeFunction(false);
+          resetFields(); // Limpiar los campos al cerrar
+          setHasUnsavedChanges(false); // Resetear cambios no guardados
+        }
+      });
+    } else {
+      closeFunction(false);
+      resetFields();
+      setHasUnsavedChanges(false); // Asegurarse de resetear aquí también
+    }
+  };
+
+
   const handleCreateAsignatura = async () => {
+    if (!validateAsignatura()) return;
     try {
       const response = await fetch('http://localhost:4000/api/asignaturas/crearAsignatura', {
         method: 'POST',
@@ -71,18 +244,21 @@ const ListaAsignaturas = () => {
       if (response.ok) {
         fetchAsignaturas();
         setModalVisible(false);
-        setNueva_Asignatura('');
+        resetAsignatura();
+        setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+        Swal.fire('¡Éxito!', 'La asignatura se ha creado correctamente', 'success');
       } else {
-        console.error('Error al crear la asignatura:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al crear la asignatura', 'error');
       }
     } catch (error) {
-      console.error('Error al crear la asignatura:', error);
+      Swal.fire('Error', 'Hubo un problema al crear la asignatura', 'error');
     }
-  };
+  }; 
 
 
   
   const handleUpdateAsignatura = async () => {
+    if (!validarAsignaturaUpdate()) return;
     try {
       const response = await fetch('http://localhost:4000/api/asignaturas/actualizarAsignatura', {
         method: 'PUT',
@@ -95,12 +271,14 @@ const ListaAsignaturas = () => {
       if (response.ok) {
         fetchAsignaturas(); // Refrescar la lista de ciclos después de la actualización
         setModalUpdateVisible(false); // Cerrar el modal de actualización
-        setAsignaturaToUpdate({}); // Resetear el ciclo a actualizar
+        resetAsignaturatoUpdate(); // Resetear la asignatura a actualizar
+        setHasUnsavedChanges(false);
+        Swal.fire('¡Éxito!', 'La asignatura se ha actualizado correctamente', 'success');
       } else {
-        console.error('Error al actualizar la asignatura:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al actualizar la asignatura', 'error');
       }
     } catch (error) {
-      console.error('Error al actualizar la asignatura:', error);
+      Swal.fire('Error', 'Hubo un problema al actualizar la asignatura', 'error');
     }
   };
 
@@ -119,17 +297,19 @@ const ListaAsignaturas = () => {
         fetchAsignaturas(); // Refrescar la lista de ciclos después de la eliminación
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
         setAsignaturaToDelete({}); // Resetear el ciclo a eliminar
+        Swal.fire('¡Éxito!', 'La asignatura se ha eliminado correctamente', 'success');
       } else {
-        console.error('Error al eliminar la asignatura:', response.statusText);
+        Swal.fire('Error', 'Hubo un problema al eliminar la asignatura', 'error');
       }
     } catch (error) {
-      console.error('Error al eliminar la asignatura:', error);
+      Swal.fire('Error', 'Hubo un problema al eliminar la asignatura', 'error');
     }
   };
 
   const openUpdateModal = (asignatura) => {
     setAsignaturaToUpdate(asignatura); // Cargar los datos del ciclo a actualizar
     setModalUpdateVisible(true); // Abrir el modal de actualización
+    setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
   };
 
   const openDeleteModal = (asignatura) => {
@@ -137,9 +317,21 @@ const ListaAsignaturas = () => {
     setModalDeleteVisible(true); // Abrir el modal de confirmación
   };
 
- // Cambia el estado de la página actual después de aplicar el filtro
+  // Cambia el estado de la página actual después de aplicar el filtro
+  // Validar el buscador
   const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
+    const input = event.target.value.toUpperCase();
+    const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
+    
+    if (!regex.test(input)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Caracteres no permitidos',
+        text: 'Solo se permiten letras y espacios.',
+      });
+      return;
+    }
+    setSearchTerm(input);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
@@ -159,37 +351,106 @@ const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
   }
 }
+
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+
+    
  return (
   <CContainer>
-    <h1>Mantenimiento Asignaturas</h1>
-     {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
-     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px', justifyContent: 'space-between' }}>
-      {/* Barra de búsqueda */}
-      <CInputGroup style={{ marginTop: '30px', width: '400px' }}>
-        <CInputGroupText>Buscar</CInputGroupText>
-        <CFormInput placeholder="Buscar asignatura..." onChange={handleSearch} value={searchTerm} />
-        {/* Botón para limpiar la búsqueda */}
-        <CButton
-          style={{ backgroundColor: '#E0E0E0', color: 'black' }}
-          onClick={() => {
-            setSearchTerm(''); // Limpiar el campo de búsqueda
-            setCurrentPage(1); // Resetear a la primera página
+    
+    {/* Contenedor del h1 y botón "Nuevo" */}
+    <CRow className="align-items-center mb-5">
+      <CCol xs="8" md="9">
+        {/* Título de la página */}
+        <h1 className="mb-0">Mantenimiento Asignatura</h1>
+      </CCol>
+      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+        {/* Botón Nuevo para abrir el modal */}
+
+        {canInsert && (
+        <CButton 
+          style={{ backgroundColor: '#4B6251', color: 'white' }} 
+          className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+          onClick={() => { setModalVisible(true);
+            setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
           }}
         >
-          Limpiar
+          <CIcon icon={cilPlus} /> Nuevo
         </CButton>
-      </CInputGroup>
+        )}
 
-      {/* Botón "Nuevo" alineado a la derecha */}
-      <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white', marginTop: '30px' }} // Ajusta la altura para alinearlo con la barra de búsqueda
-        onClick={() => setModalVisible(true)}
-      >
-        <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
-        Nuevo
-      </CButton>
-    </div>
+        {/* Botón de Reporte */}
+        <CButton 
+          style={{ backgroundColor: '#6C8E58', color: 'white' }}
+        >
+          <CIcon icon={cilDescription} /> Reporte
+        </CButton>
+      </CCol>
+    </CRow>
 
+    {/* Contenedor de la barra de búsqueda y el selector dinámico */}
+    <CRow className="align-items-center mt-4 mb-2">
+      {/* Barra de búsqueda  */}
+      <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+        <CInputGroup className="me-3" style={{ width: '400px' }}>
+          <CInputGroupText>
+            <CIcon icon={cilSearch} />
+          </CInputGroupText>
+          <CFormInput
+            placeholder="Buscar estado parciales..."
+            onChange={handleSearch}
+            value={searchTerm}
+          />
+          <CButton
+            style={{border: '1px solid #ccc',
+              transition: 'all 0.1s ease-in-out', // Duración de la transición
+              backgroundColor: '#F3F4F7', // Color por defecto
+              color: '#343a40' // Color de texto por defecto
+            }}
+            onClick={() => {
+              setSearchTerm('');
+              setCurrentPage(1);
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
+              e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
+              e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
+            }}
+          >
+            <CIcon icon={cilBrushAlt} /> Limpiar
+          </CButton>
+        </CInputGroup>
+     </CCol>
+
+      {/* Selector dinámico a la par de la barra de búsqueda */}
+      <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+        <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+          <div className="d-inline-flex align-items-center">
+            <span>Mostrar&nbsp;</span>
+              <CFormSelect
+                style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                onChange={(e) => {
+                const value = Number(e.target.value);
+                setRecordsPerPage(value);
+                setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+              }}
+                value={recordsPerPage}
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </CFormSelect>
+            <span>&nbsp;registros</span>
+          </div>       
+       </CInputGroup>
+     </CCol>
+    </CRow>
 
 
     {/* Tabla para mostrar ciclos */}
@@ -214,12 +475,17 @@ const paginate = (pageNumber) => {
                 <CTableDataCell>{asignatura.Nombre_asignatura}</CTableDataCell>
                 <CTableDataCell>{asignatura.Descripcion_asignatura}</CTableDataCell>
                 <CTableDataCell style={{ display: 'flex', gap: '10px' }}>
+
+                  {canUpdate && (
                   <CButton style={{ backgroundColor: '#F9B64E' }} onClick={() => openUpdateModal(asignatura)}>
                     <CIcon icon={cilPen} />
                   </CButton>
+                  )}
+                  {canDelete && (
                   <CButton style={{ backgroundColor: '#E57368' }} onClick={() => openDeleteModal(asignatura)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
+)}
                 </CTableDataCell>
               </CTableRow>
             ))}
@@ -251,9 +517,10 @@ const paginate = (pageNumber) => {
 
 
     {/* Modal Crear Asignatura*/}
-    <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
-      <CModalHeader>
+    <CModal visible={modalVisible} backdrop="static">
+      <CModalHeader closeButton={false}>
         <CModalTitle>Nueva Asignatura</CModalTitle>
+        <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetAsignatura)} />
         </CModalHeader>
         <CModalBody>
         <CForm>
@@ -262,7 +529,14 @@ const paginate = (pageNumber) => {
             <CFormInput
               type="text"
               value={nueva_Asignatura.Nombre_asignatura}
-              onChange={(e) => setNueva_Asignatura({ ...nueva_Asignatura, Nombre_asignatura: e.target.value })}
+              maxLength={20}
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
+              onChange={(e) => handleInputChange(e, (value) => setNueva_Asignatura({
+                ...nueva_Asignatura,
+                Nombre_asignatura: value }),inputRefNombre
+              )}
+              ref={inputRefNombre}
             />
           </CInputGroup>
           <CInputGroup className="mb-3">
@@ -270,14 +544,20 @@ const paginate = (pageNumber) => {
             <CFormInput
               type="text"
               value={nueva_Asignatura.Descripcion_asignatura}
-              onChange={(e) => setNueva_Asignatura({ ...nueva_Asignatura, Descripcion_asignatura: e.target.value })}
+              maxLength={20}
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
+              onChange={(e) => handleInputChange(e, (value) => setNueva_Asignatura({
+                ...nueva_Asignatura,
+                Descripcion_asignatura: value}),inputRefDescripcion)}
+              ref={inputRefDescripcion}
             />
           </CInputGroup>
         </CForm>
 
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>
+          <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetAsignatura)}>
             Cancelar
           </CButton>
           <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateAsignatura}>
@@ -287,33 +567,48 @@ const paginate = (pageNumber) => {
       </CModal>
 
     {/* Modal Actualizar Asignatura */}
-    <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
-      <CModalHeader>
+    <CModal visible={modalUpdateVisible}  backdrop="static">
+      <CModalHeader closeButton={false}>
       <CModalTitle>Actualizar Asignatura</CModalTitle>
+      <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetAsignaturatoUpdate)} />
       </CModalHeader>
       <CModalBody>
         <CForm>
           <CInputGroup className="mb-3">
             <CInputGroupText>Nombre de la Asignatura</CInputGroupText>
             <CFormInput
+              type="text"
+              maxLength={20}
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
               placeholder="Ingrese la nueva asignatura"
               value={asignaturaToUpdate.Nombre_asignatura}
-              onChange={(e) => setAsignaturaToUpdate({ ...asignaturaToUpdate, Nombre_asignatura: e.target.value })}
-            />
+              onChange={(e) => handleInputChange(e, (value) =>
+                setAsignaturaToUpdate({ ...asignaturaToUpdate, Nombre_asignatura: value })
+              )}
+              ref={inputRefNombre}
+              />
           </CInputGroup>
 
           <CInputGroup className="mb-3">
             <CInputGroupText>Descripcion de la Asignatura</CInputGroupText>
-            <CFormInput
+            <CFormInput 
+              type="text"
+              maxLength={20}
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
               placeholder="Ingrese una descripcion nueva"
               value={asignaturaToUpdate.Descripcion_asignatura}
-              onChange={(e) => setAsignaturaToUpdate({ ...asignaturaToUpdate, Descripcion_asignatura: e.target.value })}
+              onChange={(e) => handleInputChange(e, (value) =>
+                setAsignaturaToUpdate({ ...asignaturaToUpdate, Descripcion_asignatura: value })
+              )}
+              ref={inputRefDescripcion} // Asignar la referencia al input
             />
           </CInputGroup>
         </CForm>
       </CModalBody>
       <CModalFooter>
-        <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
+        <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetAsignaturatoUpdate)}>
           Cancelar
         </CButton>
         <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }}   onClick={handleUpdateAsignatura}>
@@ -342,6 +637,4 @@ const paginate = (pageNumber) => {
  </CContainer>
   );
 };
-
-
 export default ListaAsignaturas;
