@@ -1198,3 +1198,111 @@
 .bg-purple-500 {
   background-color: #a855f7;
 }
+
+.user-cell {
+  background-color: #f8fafc;
+  min-width: 250px;
+  padding: 1.5rem !important;
+}
+
+.user-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.user-info-header {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.user-role {
+  color: #4a5568;
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+.user-permissions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.user-permissions .permission-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.25rem 0;
+}
+
+.user-permissions .permission-label {
+  color: #4a5568;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Mejorar estilos del switch para esta sección */
+.user-cell .switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  margin-left: 1rem;
+}
+
+.user-cell .slider {
+  background-color: #e2e8f0;
+}
+
+.user-cell input:checked + .slider {
+  background-color: #4CAF50;
+}
+
+.user-cell {
+  background-color: #f8fafc;
+  min-width: 200px;
+  padding: 1rem;
+}
+
+.user-info-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.user-info-header {
+  margin-bottom: 0.5rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #2d3748;
+  margin: 0;
+}
+
+.user-role {
+  color: #4a5568;
+  font-size: 0.875rem;
+}
+
+.sidebar-permission {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.permission-label {
+  color: #4a5568;
+  font-size: 0.875rem;
+  flex: 1;
+}

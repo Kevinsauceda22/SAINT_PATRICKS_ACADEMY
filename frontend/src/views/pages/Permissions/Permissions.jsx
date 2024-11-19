@@ -29,11 +29,11 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '46', name: 'Dashboard Padres', description: 'Dashboard para padres' },
     { id: '47', name: 'Lista Asistencia', description: 'Lista Asistencia' },
     { id: '48', name: 'Lista Profesores', description: 'Lista Profesores' },
-    { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' },
     { id: '73', name: 'Lista Historial', description: 'Lista Historial' },
     { id: '74', name: 'Actividades', description: 'actividades' },
     { id: '77', name: 'Matricula', description: 'Matricula' },
-    { id: '79', name: 'VistaProfesor', description: 'VistaProfesor' }
+    { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' }
+
   ];
 
   const paginasPagos = [
@@ -73,6 +73,7 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '67', name: 'Días', description: 'dias' },
     { id: '68', name: 'Lista Historico Proc', description: 'Lista Historico Proc' },
     { id: '70', name: 'Contabilidad', description: 'Contabilidad' }
+    
   ];
 
   const permisos = [
@@ -190,18 +191,23 @@ const GestorDePermisos = ({ pathName }) => {
       const actualizaciones = {};
   
       if (Cod_Permiso === 'Permiso_Modulo') {
+        // Si estamos desactivando el módulo
         if (permisoActual) {
           actualizaciones.Permiso_Modulo = "0";
           actualizaciones.Permiso_Consultar = "0";
           actualizaciones.Permiso_Insercion = "0";
           actualizaciones.Permiso_Actualizacion = "0";
           actualizaciones.Permiso_Eliminacion = "0";
-          actualizaciones.Permiso_Nav = "0";
+          // NO desactivamos Permiso_Nav aquí
         } else {
           actualizaciones.Permiso_Modulo = "1";
         }
+      } else if (Cod_Permiso === 'Permiso_Nav') {
+        // Permiso_Nav puede cambiarse independientemente del estado del módulo
+        actualizaciones.Permiso_Nav = !permisoActual ? "1" : "0";
       } else {
-        if (!permisosObjeto.Permiso_Modulo && Cod_Permiso !== 'Permiso_Nav') {
+        // Para otros permisos, mantener la validación del módulo
+        if (!permisosObjeto.Permiso_Modulo) {
           MySwal.fire({
             icon: 'warning',
             title: 'Advertencia',
@@ -209,12 +215,13 @@ const GestorDePermisos = ({ pathName }) => {
           });
           return;
         }
+        // Mantener los permisos actuales
         actualizaciones.Permiso_Modulo = permisosObjeto.Permiso_Modulo ? "1" : "0";
         actualizaciones.Permiso_Consultar = permisosObjeto.Permiso_Consultar ? "1" : "0";
         actualizaciones.Permiso_Insercion = permisosObjeto.Permiso_Insercion ? "1" : "0";
         actualizaciones.Permiso_Actualizacion = permisosObjeto.Permiso_Actualizacion ? "1" : "0";
         actualizaciones.Permiso_Eliminacion = permisosObjeto.Permiso_Eliminacion ? "1" : "0";
-        actualizaciones.Permiso_Nav = permisosObjeto.Permiso_Nav ? "1" : "0";
+        actualizaciones.Permiso_Nav = permisosObjeto.Permiso_Nav ? "1" : "0"; // Mantener el estado actual
         actualizaciones[Cod_Permiso] = !permisoActual ? "1" : "0";
       }
   
@@ -654,10 +661,26 @@ const GestorDePermisos = ({ pathName }) => {
           <tbody>
             {usuariosFiltrados.map(usuario => (
               <tr key={usuario.id}>
-                <td className="user-cell">
-                  <p className="user-name">{usuario.nombre}</p>
-                  <p className="user-role">{usuario.rol}</p>
-                </td>
+   <td className="user-cell">
+  <div className="user-info-container">
+    <div className="user-info-header">
+      <p className="user-name">{usuario.nombre}</p>
+      <p className="user-role">{usuario.rol}</p>
+    </div>
+    <div className="sidebar-permission">
+      <span className="permission-label">Mostrar en el Nav</span>
+      <label className="switch">
+        <input
+          type="checkbox"
+          checked={usuario.permisos['global']?.Permiso_Nav || false}
+          onChange={() => cambiarPermiso(usuario.id, 'global', 'Permiso_Nav')}
+        />
+        <span className="slider"></span>
+      </label>
+    </div>
+  </div>
+</td>
+
                 {paginasActuales.map(pagina => (
                   <td key={pagina.id} className="permission-cell">
                     <div className="permission-group">

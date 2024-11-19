@@ -37,7 +37,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaActividadesAca = () => {
-  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaActividadesAca');
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaActividadesAca');
 
   const [actividades, setActividades] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);

@@ -22,7 +22,7 @@ import historialAcademicoRoutes from './module/calificaciones/Routes/historialAc
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
-import secciones from './module/calificaciones/Routes/seccionesRoutes.js'
+import secciones from './module/matricula/Routes/seccion_Routes.js'
 //-------------------------------------------------------------------------------------------------------
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
 import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
@@ -168,6 +168,7 @@ app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 
+app.use('/api/secciones', secciones);
 
 //contabilidad
 app.use('/api/catalogoCuentas', catalogoCuentasRoutes);

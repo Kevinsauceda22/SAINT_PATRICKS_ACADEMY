@@ -17,6 +17,7 @@ import Swal from 'sweetalert2';
 import './UserManagement.css';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
+
 //GestionUsuarios
 const UserManagement = () => {
   const { canSelect, canUpdate, canDelete, canInsert, loading, error } = usePermission('GestionUsuarios');
@@ -27,7 +28,8 @@ const UserManagement = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loadingg, setLoadingg] = useState(true);
 
-  const [processingUsers, ssetProcessingUsers] = useState(new Set());
+  // Fixed: Corrected the state setter name from ssetProcessingUsers to setProcessingUsers
+  const [processingUsers, setProcessingUsers] = useState(new Set());
   const loggedInUserId = localStorage.getItem('userId');
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -36,7 +38,6 @@ const UserManagement = () => {
   useEffect(() => {
     fetchUsers();
   }, []);
-
 
   const userTypes = [
     {
@@ -69,8 +70,6 @@ const UserManagement = () => {
     }
   ];
 
-
-
   const handleAddUser = async (roleType) => {
     const roleMap = {
       1: 'Padre',
@@ -79,9 +78,6 @@ const UserManagement = () => {
       4: 'Manager'
     };
     let roleText = roleMap[roleType] || '';
-
-  
-
     
     // Cargar departamentos...
     let departamentos = [];
@@ -127,14 +123,14 @@ const UserManagement = () => {
                   class="swal2-input" 
                   placeholder="Primer nombre *" 
                   required
-                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+                  oninput="this.value = this.value.replace(/\\s/g, '').toUpperCase()">
               </div>
               <div class="form-group">
                 <input 
                   id="Segundo_nombre" 
                   class="swal2-input" 
                   placeholder="Segundo nombre"
-                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+                  oninput="this.value = this.value.replace(/\\s/g, '').toUpperCase()">
               </div>
               <div class="form-group">
                 <input 
@@ -142,14 +138,14 @@ const UserManagement = () => {
                   class="swal2-input" 
                   placeholder="Primer apellido *" 
                   required
-                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+                  oninput="this.value = this.value.replace(/\\s/g, '').toUpperCase()">
               </div>
               <div class="form-group">
                 <input 
                   id="Segundo_apellido" 
                   class="swal2-input" 
                   placeholder="Segundo apellido"
-                  oninput="this.value = this.value.replace(/\s/g, '').toUpperCase()">
+                  oninput="this.value = this.value.replace(/\\s/g, '').toUpperCase()">
               </div>
             </div>
           </div>
@@ -231,7 +227,6 @@ const UserManagement = () => {
                 required>
               <small class="helper-text">Se enviará un correo con las credenciales temporales</small>
             </div>
-            
           </div>
         </div>
       `,
@@ -332,7 +327,7 @@ const UserManagement = () => {
         }
     
         // Validar formato de correo
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;  // Esta es la correcta
         if (!emailRegex.test(userData.correo_usuario)) {
           Swal.showValidationMessage('Por favor ingrese un correo electrónico válido');
           return false;
@@ -410,9 +405,7 @@ const UserManagement = () => {
       const userData = Array.isArray(response.data[0]) ? response.data[0] : response.data;
       setUsers(userData);
 
-      if (userData.length > 0) {
-       
-      } else {
+      if (!userData.length) {
         Swal.fire({
           title: 'Aviso',
           text: 'No se encontraron usuarios',
@@ -611,7 +604,6 @@ const UserManagement = () => {
     );
   }
 
-  // Manejar errores
   if (error) {
     return (
       <div className="alert alert-danger" role="alert">
@@ -620,14 +612,14 @@ const UserManagement = () => {
     );
   }
 
-  // Verificar permisos
   if (!canSelect) {
     return <AccessDenied />;
   }
+
   return (
     <div className="user-management">
-    <div className="header">
-      <div className="header-top">
+      <div className="header">
+        <div className="header-top">
           <h1>Gestión de Usuarios</h1>
           <button 
             className="btn btn-primary add-user-main"
@@ -638,34 +630,31 @@ const UserManagement = () => {
           </button>
         </div>
         {showUserMenu && (
-  <div className="user-types-grid">
-    {userTypes
-      .filter(type => {
-        // Si no tiene permiso de inserción, oculta Administrador y Manager
-        if (!canInsert) {
-          return type.id !== 2 && type.id !== 4;
-        }
-        return true;
-      })
-      .map((type) => (
-
-        
-        <button 
-          key={type.id}
-          className="user-type-button"
-          onClick={() => handleAddUser(type.id)}
-        >
-          <div className={`icon-wrapper ${type.color}`}>
-            <type.icon size={24} className="text-white" />
+          <div className="user-types-grid">
+            {userTypes
+              .filter(type => {
+                if (!canInsert) {
+                  return type.id !== 2 && type.id !== 4;
+                }
+                return true;
+              })
+              .map((type) => (
+                <button 
+                  key={type.id}
+                  className="user-type-button"
+                  onClick={() => handleAddUser(type.id)}
+                >
+                  <div className={`icon-wrapper ${type.color}`}>
+                    <type.icon size={24} className="text-white" />
+                  </div>
+                  <div className="user-type-info">
+                    <h3>{type.title}</h3>
+                    <p>{type.description}</p>
+                  </div>
+                </button>
+              ))}
           </div>
-          <div className="user-type-info">
-            <h3>{type.title}</h3>
-            <p>{type.description}</p>
-          </div>
-        </button>
-      ))}
-  </div>
-)}
+        )}
 
         {errorMessage && <div className="error-message">{errorMessage}</div>}
 

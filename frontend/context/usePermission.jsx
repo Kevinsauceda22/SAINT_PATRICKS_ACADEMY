@@ -33,7 +33,7 @@ export const usePermission = (objectName) => {
       };
 
       const response = await axios.get(`http://localhost:4000/api/usuarios/permisos`, config);
-      
+
       // Verificar si hay datos en la respuesta
       if (response.data && response.data.permissions && response.data.permissions.length > 0) {
         setPermissions(response.data.permissions[0]); // Tomar el primer elemento del array
@@ -59,17 +59,21 @@ export const usePermission = (objectName) => {
   const canInsert = Boolean(canSelect && permissions?.Permiso_Insercion === '1');
   const canUpdate = Boolean(canSelect && permissions?.Permiso_Actualizacion === '1');
   const canDelete = Boolean(canSelect && permissions?.Permiso_Eliminacion === '1');
+  const canNavigate = Boolean(permissions?.Permiso_Nav === '1');
+  const canView = Boolean(permissions?.Permiso_Ver === '1');
   const hasAccess = canSelect;
 
-  return { 
-    canSelect, 
-    canInsert, 
-    canUpdate, 
-    canDelete, 
-    hasAccess, 
+  return {
+    canSelect,
+    canInsert,
+    canUpdate,
+    canDelete,
+    canNavigate,
+    canView,
+    hasAccess,
     loading,
     error,
-    permissions 
+    permissions
   };
 };
 

@@ -23,19 +23,21 @@ const _nav = [
     name: 'Panel de control',
     to: '/PaginaPrincipal',
     icon: cilSpeedometer,
-    nameobject: 'navPanelControl',
+    nameobject: 'PaginaPrincipal',
   },
   {
     component: CNavItem,
     name: 'Dashboard',
     to: '/dashboard',
     icon: cilSpeedometer,
-    nameobject: 'navDashboard',
+    nameobject: 'Dashboard',
   },
   {
     component: CNavItem,
     name: 'Matrícula',
     to: '/matricula', // La ruta que deseas para la matrícula
+    nameobject: 'navMatricula',
+
     icon: cilSchool,
   },
   {
