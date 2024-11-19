@@ -155,7 +155,7 @@ const ListaActividades = () => {
   const handleCloseModal = (setModalVisibility, resetData, formData) => {
     const { Nombre, Descripcion, Hora_inicio, Hora_final, Nombre_seccion, Fecha } = formData;
     if (Nombre || Descripcion || Hora_inicio || Hora_final || Nombre_seccion || Fecha) {
-      Swal.fire({
+      swal.fire({
         title: '¿Estás seguro?',
         text: 'Si cierras este formulario, perderás todos los datos ingresados.',
         icon: 'warning',

@@ -1,3 +1,4 @@
+
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -174,7 +175,7 @@ const App = () => {
                 <Route path="/edificios" element={<ListaEdificios />} />
                 <Route exact path="/aulas" element={<ListaAulas />} />
                 <Route path="/dias" element={<ListaDias />} />
-                <Route path="/secciones_asignaturas"  element={<ListaSecciones_Asignatura />} />
+                <Route path="/ListaSecciones_Asignatura"  element={<ListaSecciones_Asignatura />} />
                 <Route path="/actividades" element={<ListaActivex />} />
                 <Route path="/historico" element={<ListaDias />} />
                 

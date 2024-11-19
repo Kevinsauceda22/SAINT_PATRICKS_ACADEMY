@@ -34,6 +34,7 @@ import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personaRoutes from "./module/personas/Routes/personasRoutes.js";
+import seccionesRoutes from "./module/matricula/Routes/seccionesRoutes.js";
 
 import personasRoutes from "./module/personas/personaRoutes.js";
 import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
@@ -162,6 +163,8 @@ app.use('/api/conceptopago', conceptopagoRoutes);
 app.use('/api/solicitud', solicitudRoutes);
 // Pagos y finanzas
 app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
+// Rutas para secciones
+app.use('/api/secciones', seccionesRoutes);
 
 // Rutas para manejar personas
 app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2

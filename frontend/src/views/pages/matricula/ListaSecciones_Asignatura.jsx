@@ -47,7 +47,6 @@ const ListaSecciones_Asignaturas= () =>{
     p_Hora_fin: '',
     });
     const [modalVisible, setModalVisible] = useState(false);
-    const [errors, setErrors] = useState({ p_Cod_grados_asignaturas: '', p_Cod_secciones: '', p_Cod_dias: '', p_Hora_inicio: '', p_Hora_fin: '',});
     const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
     const [seccionAsignaturaToUpdate, setSeccionesAsignaturasToUpdate] = useState({})
     const [mensajeError, setMensajeError] = useState(''); // Estado para el mensaje de error
@@ -55,8 +54,7 @@ const ListaSecciones_Asignaturas= () =>{
     const [currentPage, setCurrentPage] = useState(1);
     const [recordsPerPage, setRecordsPerPage] = useState(10);
     const [searchField, setSearchField] = useState("Nombre_seccion, Nombre_grado, Nombre_asignatura");
-    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
-    const resetSeccionAsignatura = () => setNuevaSeccionAsignatura('');
+   const resetSeccionAsignatura = () => setNuevaSeccionAsignatura('');
     
     useEffect(() => {
       fetchSeccionAsignatura();

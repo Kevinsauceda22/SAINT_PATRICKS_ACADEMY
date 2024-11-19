@@ -61,6 +61,13 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Actividades extracurriculares',
+    to: '/actividades',
+    icon: cilSchool,
+    nameobject: 'navListaActividades',
+  },
+  {
+    component: CNavItem,
     name: 'Notas',
     to: '/ListaEstadonota',
     icon: cilFile,
@@ -69,9 +76,9 @@ const _nav = [
     {
      component: CNavItem,
      name: 'Secciones asignaturas',
+     to: '/ListaSecciones_Asignatura',
      icon: cilFile,
-     to: '/pages/matricula/ListaSecciones_Asignatura',
-    nameobject: 'navSecciones_Asingnaturas',
+    nameobject: 'navListaSecciones_Asignaturas',
     },
   {
     component: CNavGroup,
@@ -187,13 +194,7 @@ const _nav = [
         to: '/dias',
         nameobject: 'navDias',
       },
-      {
-        component: CNavItem,
-        name: 'Lista de Actividades',
-        to: '/actividades',
-        nameobject: 'navListaActividades',
-      },
-      {
+     {
         component: CNavItem,
         name: 'Cuentas Contables',
         to: '/Contabilidad',
