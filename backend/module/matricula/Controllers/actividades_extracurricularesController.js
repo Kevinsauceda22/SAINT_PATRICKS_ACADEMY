@@ -3,31 +3,27 @@ const pool = await conectarDB();
 
 // Controlador para obtener actividades extracurriculares
 export const obtenerActividadesExtra = async (req, res) => {
-    const { Cod_actividades_extracurriculares } = req.params; // Extraemos el parámetro de la URL
+    const { Cod_actividades_extracurriculares } = req.params;
 
     try {
         let query;
         let params;
 
-        // Si se proporciona un código de actividad, busca una actividad específica, de lo contrario, busca todas las actividades
         if (Cod_actividades_extracurriculares) {
-            query = 'CALL sp_obtener_actividad_extracurricular(?)'; // Procedimiento almacenado para una actividad específica
+            query = 'CALL sp_obtener_actividad_extracurricular(?)';
             params = [Cod_actividades_extracurriculares];
         } else {
-            query = 'CALL sp_obtener_actividad_extracurricular(?)'; // Procedimiento para todas las actividades
-            params = [0]; // Pasamos 0 para obtener todas las actividades
+            query = 'CALL sp_obtener_actividad_extracurricular(?)';
+            params = [0];
         }
 
-        // Ejecuta la consulta en la base de datos
         const [rows] = await pool.query(query, params);
 
-        // Verificar si se encontraron registros
         if (!rows || rows[0].length === 0) {
             return res.status(404).json({ mensaje: 'No se encontraron actividades extracurriculares.' });
         }
 
-        // Devuelve los resultados al cliente
-        res.status(200).json(rows[0]); // Solo toma el primer resultado que contiene las filas
+        res.status(200).json(rows[0]); // Asegúrate de enviar toda la información, incluido Nombre_seccion
     } catch (error) {
         console.error('Error al obtener las actividades extracurriculares:', error);
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
@@ -96,6 +92,43 @@ export const actualizarActividadesExtra = async (req, res) => {
 };
 
 
+// Controlador para cambiar el estado de una actividad extracurricular
+export const cambiarEstadoActividad = async (req, res) => {
+    const { p_Cod_actividades_extracurriculares, p_Estado } = req.body;
+
+    try {
+        // Validar que se reciban los parámetros necesarios
+        if (!p_Cod_actividades_extracurriculares || !p_Estado) {
+            return res.status(400).json({ mensaje: 'Todos los campos son requeridos.' });
+        }
+
+        // Validar que el estado sea válido ("Activa" o "Cancelada")
+        if (!['Activa', 'Cancelada'].includes(p_Estado)) {
+            return res.status(400).json({ mensaje: 'Estado no válido. Debe ser "Activa" o "Cancelada".' });
+        }
+
+        // Llamar al procedimiento almacenado para cambiar el estado
+        const [result] = await pool.query(
+            'CALL sp_cambiar_estado_actividad(?, ?)',
+            [p_Cod_actividades_extracurriculares, p_Estado]
+        );
+
+        // Responder con éxito
+        return res.status(200).json({ mensaje: `Estado de la actividad actualizado a ${p_Estado}.`, data: result });
+    } catch (error) {
+        console.error('Error al cambiar el estado de la actividad extracurricular:', error);
+
+        // Si el error es personalizado (proveniente del procedimiento almacenado)
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ mensaje: error.message });
+        }
+
+        // Otros errores de servidor
+        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+
 // Controlador para eliminar una actividad extracurricular
 export const eliminarActividadExtracurricular = async (req, res) => {
     const { Cod_actividad } = req.params; // Asegúrate de que el nombre del parámetro coincide con lo que envías en la ruta
@@ -120,4 +153,3 @@ export const eliminarActividadExtracurricular = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
-
