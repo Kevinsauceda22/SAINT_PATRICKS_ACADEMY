@@ -32,9 +32,12 @@ import {
   CSpinner,
 } from '@coreui/react';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const DepartamentoMantenimiento = () => {
+  const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('departamento');
+
   const [departamentos, setDepartamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -301,6 +304,12 @@ const generatePDFDepartments = () => {
 
   const pageCount = Math.ceil(filteredDepartamentos.length / itemsPerPage);
 
+
+    // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
   return (
     <CContainer>
       <CRow className="justify-content-between align-items-center mb-3 sticky-header">
@@ -308,9 +317,11 @@ const generatePDFDepartments = () => {
           <h3>Mantenimeinto de Departamentos</h3>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
+          {canInsert && ( 
           <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
+          )}
           <CButton color="primary" onClick={generatePDFDepartments} style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
             <CIcon icon={cilFile} /> Generar Reporte
           </CButton>
@@ -363,6 +374,9 @@ const generatePDFDepartments = () => {
                 <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
                 <CTableDataCell>{departamento.nombre_departamento.toUpperCase()}</CTableDataCell>
                 <CTableDataCell className="text-end">
+
+
+                  {canUpdate && (
                   <CButton
                     color="warning"
                     size="sm"
@@ -370,7 +384,9 @@ const generatePDFDepartments = () => {
                     onClick={() => handleEditModal(departamento)}
                   >
                     <CIcon icon={cilPen} />
-                  </CButton>{' '}
+                  </CButton>)}{' '}
+
+                  {canDelete && (
                   <CButton
                     color="danger"
                     size="sm"
@@ -379,6 +395,7 @@ const generatePDFDepartments = () => {
                   >
                     <CIcon icon={cilTrash} />
                   </CButton>
+                  )}
                 </CTableDataCell>
               </CTableRow>
             ))}

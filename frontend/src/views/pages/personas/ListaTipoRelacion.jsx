@@ -39,7 +39,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaTipoRelacion = () => {
-  const { canSelect, loading, error } = usePermission('ListaRelacion');
+  const {canSelect, canUpdate, canDelete, canInsert } = usePermission('ListaRelacion');
 
   const [tipoRelacion, setTipoRelacion] = useState([]);
   const [errors, setErrors] = useState({ tipo_relacion: ''});
@@ -460,6 +460,8 @@ const exportToPDF = () => {
       </CCol>
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
         {/* Botón Nuevo para abrir el modal */}
+
+        {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -467,6 +469,7 @@ const exportToPDF = () => {
         >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
+        )}
 
         {/* Botón de Reporte */}
         <CDropdown>
@@ -561,6 +564,8 @@ const exportToPDF = () => {
       <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.tipo_relacion.toUpperCase()}  {/* Convert to uppercase */}</CTableDataCell>
       <CTableDataCell className="text-center">
         <div className="d-flex justify-content-center">
+
+          {canUpdate && (
           <CButton
             color="warning"
             onClick={() => openUpdateModal(tipoRelacion)}
@@ -568,9 +573,13 @@ const exportToPDF = () => {
           >
             <CIcon icon={cilPen} />
           </CButton>
+          )}
+
+          {canDelete && (
           <CButton color="danger" onClick={() => openDeleteModal(tipoRelacion)}>
             <CIcon icon={cilTrash} />
           </CButton>
+          )}
         </div>
       </CTableDataCell>
     </CTableRow>

@@ -38,7 +38,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const TipoPersona = () => {
-  const { canSelect } = usePermission('tipopersona');
+  const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('tipopersona');
 
   const [tiposPersona, setTiposPersona] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -284,9 +284,11 @@ const TipoPersona = () => {
           <h3>Mantenimiento Tipo de Personas</h3>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
+          {canInsert && ( 
           <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
+          )}
           <CDropdown className="report-dropdown">
             <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#6C8E58', zIndex: '1050' }}>
               <CIcon icon={cilFile} /> Reporte
@@ -355,6 +357,8 @@ const TipoPersona = () => {
                 <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
                 <CTableDataCell>{getTipoLabel(tipo.Tipo)}</CTableDataCell>
                 <CTableDataCell className="text-end">
+
+                  {canUpdate && ( 
   <CButton
     color="warning"
     size="sm"
@@ -362,7 +366,9 @@ const TipoPersona = () => {
     onClick={() => handleEditModal(tipo)}
   >
     <CIcon icon={cilPen} />
-  </CButton>{' '}
+  </CButton>)}{' '}
+
+  {canDelete && (
   <CButton
     color="danger"
     size="sm"
@@ -371,6 +377,7 @@ const TipoPersona = () => {
   >
     <CIcon icon={cilTrash} />
   </CButton>
+  )}
 </CTableDataCell>
 
               </CTableRow>

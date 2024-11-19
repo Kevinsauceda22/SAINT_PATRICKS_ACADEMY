@@ -1129,3 +1129,72 @@
   font-size: 0.9rem !important;
   margin-top: 1rem !important;
 }
+
+.user-types-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.user-type-button {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.user-type-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.user-type-button .icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  margin-right: 1rem;
+}
+
+.user-type-button .user-type-info {
+  flex: 1;
+}
+
+.user-type-button .user-type-info h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.user-type-button .user-type-info p {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: #718096;
+}
+
+/* Colores para los iconos */
+.bg-blue-500 {
+  background-color: #3b82f6;
+}
+
+.bg-green-500 {
+  background-color: #22c55e;
+}
+
+.bg-orange-500 {
+  background-color: #f97316;
+}
+
+.bg-purple-500 {
+  background-color: #a855f7;
+}

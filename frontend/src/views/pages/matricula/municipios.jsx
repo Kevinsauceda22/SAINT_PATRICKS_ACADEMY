@@ -30,8 +30,13 @@ import {
   CSpinner,
 } from '@coreui/react';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const MunicipioMantenimiento = () => {
+  const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('Municipios');
+
   const [municipios, setMunicipios] = useState([]);
   const [departamentos, setDepartamentos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -329,16 +334,24 @@ const MunicipioMantenimiento = () => {
 
   const pageCount = Math.ceil(filteredMunicipios.length / itemsPerPage);
 
+
+      // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
   return (
     <CContainer>
       <CRow className="justify-content-between align-items-center mb-3 sticky-header">
         <CCol xs={12} md={8}>
           <h3>Mantenimiento de Municipios</h3>
         </CCol>
+
         <CCol xs="4" md="3" className="text-end">
+          {canInsert &&(
           <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
           <CIcon icon={cilPlus} /> Nuevo
           </CButton>
+          )}
           <CButton color="primary" onClick={generatePDFMunicipios} style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
             <CIcon icon={cilFile} /> Generar Reporte
           </CButton>
@@ -393,6 +406,8 @@ const MunicipioMantenimiento = () => {
                 <CTableDataCell>{municipio.nombre_municipio.toUpperCase()}</CTableDataCell>
                 <CTableDataCell>{municipio.nombre_departamento.toUpperCase()}</CTableDataCell>
                 <CTableDataCell className="text-end">
+
+                  {canUpdate && (
                   <CButton
                     color="warning"
                     size="sm"
@@ -400,7 +415,9 @@ const MunicipioMantenimiento = () => {
                     onClick={() => handleEditModal(municipio)}
                   >
                     <CIcon icon={cilPen} />
-                  </CButton>{' '}
+                  </CButton>)}{' '}
+
+                  {canDelete && (
                   <CButton
                     color="danger"
                     size="sm"
@@ -409,6 +426,7 @@ const MunicipioMantenimiento = () => {
                   >
                     <CIcon icon={cilTrash} />
                   </CButton>
+                  )}
                 </CTableDataCell>
               </CTableRow>
             ))}

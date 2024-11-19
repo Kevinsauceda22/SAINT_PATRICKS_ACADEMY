@@ -47,8 +47,12 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react'
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaPersonas = () => {
+  const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('ListaPersonas');
+
   const [personas, setPersonas] = useState([])
   const [modalVisible, setModalVisible] = useState(false)
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false)
@@ -643,11 +647,20 @@ const ListaPersonas = () => {
     }
   }
 
+       // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
+
+
   return (
     <CContainer>
       <h1>Personas</h1>
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}
       <div className="d-flex justify-content-end mb-3">
+
+        {canInsert && (
         <CButton
           style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '10px' }}
           onClick={() => {
@@ -656,6 +669,7 @@ const ListaPersonas = () => {
         >
           + Nueva
         </CButton>
+        )}
         <CDropdown>
           <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
             Reporte
@@ -781,6 +795,8 @@ const ListaPersonas = () => {
                     </CTableDataCell>
                     <CTableDataCell className="text-center">
                       <div className="d-flex justify-content-center">
+
+                        {canUpdate && (
                         <CButton
                           color="warning"
                           onClick={() => openUpdateModal(persona)}
@@ -788,9 +804,12 @@ const ListaPersonas = () => {
                         >
                           <CIcon icon={cilPen} />
                         </CButton>
+                        )}
+                        {canDelete && (
                         <CButton color="danger" onClick={() => openDeleteModal(persona)}>
                           <CIcon icon={cilTrash} />
                         </CButton>
+                        )}
                         <CButton
                           color="info"
                           onClick={() => openDetailModal(persona)}

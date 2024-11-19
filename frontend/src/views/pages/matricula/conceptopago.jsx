@@ -39,7 +39,8 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ConceptoPago = () => {
-c
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('conceptopago');
+
   const [conceptos, setConceptos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -401,9 +402,12 @@ c
           <h3>Mantenimiento de Conceptos de Pago</h3>
           </CCol>
         <CCol xs="4" md="3" className="text-end">
+
+          {canInsert &&  (
   <CButton color="dark" onClick={() => handleAddModal(true)} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
     <CIcon icon={cilPlus} /> Nuevo
   </CButton>
+  )}
   <CDropdown>
     <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
       <CIcon icon={cilFile} /> Reporte
@@ -482,6 +486,8 @@ c
                   {concepto.Activo.toUpperCase() === 'SI' ? <FaCheck color="green" /> : <FaTimes color="red" />}
                 </CTableDataCell>
                 <CTableDataCell className="text-end">
+
+                  {canUpdate && (
   <CButton
     color="warning"
     size="sm"
@@ -489,7 +495,9 @@ c
     onClick={() => handleEditModal(concepto)}
   >
     <CIcon icon={cilPen} />
-  </CButton>{' '}
+  </CButton> )}{' '}
+  {canDelete && (
+
   <CButton
     color="danger"
     size="sm"
@@ -498,6 +506,7 @@ c
   >
     <CIcon icon={cilTrash} />
   </CButton>
+  )}
 </CTableDataCell>
 
               </CTableRow>

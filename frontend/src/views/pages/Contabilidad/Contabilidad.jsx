@@ -10,8 +10,7 @@ import logo from 'src/assets/brand/logo_saint_patrick.png';
 
 
 const CatalogoContable = () => {
-  const [canCreate, setCanCreate] = useState(true);
-  const { canSelect, canUpdate, canDelete } = usePermission('Contabilidad');
+  const { canSelect, canUpdate, canDelete, canInsert } = usePermission('Contabilidad');
   const [cuentas, setCuentas] = useState([]);
   const [filteredCuentas, setFilteredCuentas] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -375,7 +374,7 @@ const exportToPDF = () => {
           <h1 className="catalogo-title">Catálogo de Cuentas</h1>
           <div className="button-container">
           {/* Botón para abrir el formulario de creación de cuenta */}
-          {canCreate && (
+          {canInsert && (
                 <button onClick={handleCreateAccount} className="btn btn-primary">
                     Crear Cuenta Contable
                 </button>
@@ -578,6 +577,8 @@ const exportToPDF = () => {
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-actions">
+
+          {canInsert}
           <button type="submit" className="btn btn-primary">
             {editingCuenta.Cod_cuenta ? "Actualizar Cuenta" : "Crear Cuenta"}
           </button>

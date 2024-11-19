@@ -30,7 +30,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaEstadoasistencia = () => {
-  const { canSelect, loading, error } = usePermission('ListaEspecialidades');
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaEstadoasistencia');
   const [estadoasistencia, setEstadoasistencia] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear un estado asistencia
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar un estado asistencia
@@ -407,6 +407,8 @@ const ListaEstadoasistencia = () => {
       </CCol>
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
         {/* Botón Nuevo para abrir el modal */}
+
+        {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -416,6 +418,7 @@ const ListaEstadoasistencia = () => {
         >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
+        )}
 
         {/* Botón de Reporte */}
         <CButton 
@@ -505,12 +508,19 @@ const ListaEstadoasistencia = () => {
               <CTableDataCell>{estadoasistencia.originalIndex}</CTableDataCell>
               <CTableDataCell>{estadoasistencia.Descripcion_asistencia}</CTableDataCell>
               <CTableDataCell>
+
+
+                {canUpdate && (
                 <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(estadoasistencia)}>
                   <CIcon icon={cilPen} />
                 </CButton>
+                )}
+
+                {canDelete && (
                 <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(estadoasistencia)}>
                   <CIcon icon={cilTrash} />
                 </CButton>
+                )}
               </CTableDataCell>
             </CTableRow>
           ))}

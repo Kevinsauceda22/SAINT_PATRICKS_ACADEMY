@@ -40,7 +40,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaHistoricoProc = () => {
-  const { canSelect } = usePermission('ListaHistoricoProc');
+  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('ListaHistoricoProc');
 
    // Estados de la aplicación
   const [historicoProcedencia, setHistoricoProcedencia] = useState([]); // Estado que almacena la lista de histórico de procedencia
@@ -324,6 +324,8 @@ const handleCreateHistorico = async () => {
       </CCol>
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+
+{canInsert &&  (
       <CButton 
               style={{ backgroundColor: '#4B6251', color: 'white' }} 
               className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -331,6 +333,8 @@ const handleCreateHistorico = async () => {
             >
               <CIcon icon={cilPlus} /> Nuevo
             </CButton>
+    )}
+
               {/* Botón Reportes con dropdown */}
         <CDropdown>
           <CDropdownToggle
@@ -426,6 +430,8 @@ const handleCreateHistorico = async () => {
                 <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Instituto}</CTableDataCell>
                 <CTableDataCell className="text-center">
                     <div className="d-flex justify-content-center">
+
+                      {canUpdate && (
                     <CButton
                         color="warning"
                         onClick={() => openUpdateModal(historico)}
@@ -433,9 +439,12 @@ const handleCreateHistorico = async () => {
                     >
                         <CIcon icon={cilPen} />
                     </CButton>
+                    )}
+                    {canDelete && (
                     <CButton color="danger" onClick={() => openDeleteModal(historico)}>
                         <CIcon icon={cilTrash} />
                     </CButton>
+                    )}
                     </div>
                 </CTableDataCell>
                 </CTableRow>

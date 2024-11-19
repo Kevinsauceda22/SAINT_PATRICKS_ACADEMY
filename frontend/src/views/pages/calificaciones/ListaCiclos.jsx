@@ -31,7 +31,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaCiclos = () => {
-  const { canSelect, loading, error } = usePermission('ListaCiclos');
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaCiclos');
   const [ciclos, setCiclos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ciclo
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar ciclo
@@ -347,6 +347,8 @@ const paginate = (pageNumber) => {
       </CCol>
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
         {/* Botón Nuevo para abrir el modal */}
+
+     {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -356,6 +358,7 @@ const paginate = (pageNumber) => {
         >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
+     )}
 
         {/* Botón de Reporte */}
         <CButton 
@@ -447,12 +450,18 @@ const paginate = (pageNumber) => {
                 </CTableDataCell>
                 <CTableDataCell>{ciclo.Nombre_ciclo}</CTableDataCell>
                 <CTableDataCell>
+ {canUpdate && (
                   <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(ciclo)}>
                     <CIcon icon={cilPen} />
                   </CButton>
+ )}
+
+{canDelete && (
                   <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(ciclo)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
+)}
+
                 </CTableDataCell>
               </CTableRow>
             ))}

@@ -31,7 +31,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaHistoriales = () => {
-  const { canSelect, loading } = usePermission('ListaHistorial');
+  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('ListaHistorial');
 
   const [historiales, setHistoriales] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -370,6 +370,8 @@ const ListaHistoriales = () => {
             <h1>Mantenimiento Historiales</h1>
       {/* Botón de Agregar Historial arriba de la barra de búsqueda */}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+
+        {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3"
@@ -380,6 +382,7 @@ const ListaHistoriales = () => {
           >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
+        )}
         <CButton
           style={{ backgroundColor: '#6C8E58', color: 'white' }}
         >
@@ -457,12 +460,18 @@ const ListaHistoriales = () => {
               <CTableDataCell>{new Date(historial.Fecha_Registro).toLocaleDateString('es-ES')}</CTableDataCell>
               <CTableDataCell>{historial.Instituto}</CTableDataCell>
               <CTableDataCell>
+
+                {canUpdate && (
                 <CButton color="warning" onClick={() => handleEditHistorial(historial)} className="me-2">
                   <CIcon icon={cilPen} />
                 </CButton>
+                )}
+
+{canDelete && (
                 <CButton color="danger" onClick={() => handleDeleteHistorial(historial.Cod_historial_academico)}>
                   <CIcon icon={cilTrash} />
                 </CButton>
+                             )}
               </CTableDataCell>
             </CTableRow>
           ))}

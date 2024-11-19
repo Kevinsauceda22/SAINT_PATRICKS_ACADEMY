@@ -35,7 +35,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaEdificios = () => {
-  const { canSelect } = usePermission('edificios');
+  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('edificios');
 
   // Estados de la aplicación
   const [edificios, setEdificios] = useState([]); // Estado que almacena la lista de edificios
@@ -511,6 +511,8 @@ const ListaEdificios = () => {
                 <CTableDataCell className="text-center">{edificio.Aulas_disponibles}</CTableDataCell>
                 <CTableDataCell className="text-center">
                   <div className="d-flex justify-content-center">
+
+{canUpdate &&(
                     <CButton
                       color="warning"
                       onClick={() => openUpdateModal(edificio)}
@@ -518,9 +520,12 @@ const ListaEdificios = () => {
                     >
                       <CIcon icon={cilPen} />
                     </CButton>
+)}
+                    {canDelete && (
                     <CButton color="danger" onClick={() => openDeleteModal(edificio)}>
                       <CIcon icon={cilTrash} />
                     </CButton>
+                    )}
                   </div>
                 </CTableDataCell>
               </CTableRow>

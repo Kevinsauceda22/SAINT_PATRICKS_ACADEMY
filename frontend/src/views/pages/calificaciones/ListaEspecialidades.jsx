@@ -31,7 +31,8 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaEspecialidades = () => {
-  const { canSelect, loading, error } = usePermission('ListaEspecialidades');
+
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaEspecialidades');
   const [especialidades, setEspecialidades] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
@@ -369,7 +370,7 @@ const valdiarEspecialidad = () => {
       </CCol>
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
-
+{canInsert && (
       <CButton
         style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
         className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -381,6 +382,7 @@ const valdiarEspecialidad = () => {
         <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
         Nuevo
       </CButton>
+)}
 {/*Boton reporte */}
 <CButton
 style={{backgroundColor:'#6C8E58', color: 'white'}}
@@ -478,6 +480,8 @@ style={{backgroundColor:'#6C8E58', color: 'white'}}
                 </CTableDataCell>
               <CTableDataCell>{especialidades.Nombre_especialidad}</CTableDataCell>
               <CTableDataCell>
+
+                {canUpdate && (
                 <CButton
                   style={{ backgroundColor: '#F9B64E',marginRight: '10px' }}
                   onClick={() => {
@@ -488,6 +492,9 @@ style={{backgroundColor:'#6C8E58', color: 'white'}}
                 >
                   <CIcon icon={cilPen} />
                 </CButton>
+                )}
+
+                {canDelete  && (
                 <CButton
                   style={{ backgroundColor: '#E57368', marginRight: '10px' }}
                   onClick={() => {
@@ -497,6 +504,7 @@ style={{backgroundColor:'#6C8E58', color: 'white'}}
                 >
                   <CIcon icon={cilTrash} />
                 </CButton>
+                )}
               </CTableDataCell>
             </CTableRow>
           ))}

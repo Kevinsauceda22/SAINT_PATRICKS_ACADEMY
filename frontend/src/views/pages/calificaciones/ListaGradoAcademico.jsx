@@ -34,7 +34,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaGradoAcademico = () => {
-  const { canSelect, loading, error } = usePermission('ListaGradoAcademico');
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaGradoAcademico');
 
   const [gradosAcademicos, setGradosAcademicos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -367,6 +367,8 @@ const paginate = (pageNumber) => {
 
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
+
+      {canInsert && (
       <CButton
         style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
         className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -378,6 +380,7 @@ const paginate = (pageNumber) => {
          <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
          Nuevo
         </CButton>
+      )}
  {/*Boton reporte */}
 <CButton
 style={{backgroundColor:'#6C8E58', color: 'white'}}
@@ -576,10 +579,14 @@ style={{backgroundColor:'#6C8E58', color: 'white'}}
         <CModalFooter>
         <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetgradoToUpdate)}>
             Cancelar
+
+          
           </CButton>
+          {canUpdate && (
           <CButton style={{  backgroundColor: '#F9B64E',color: 'white' }} onClick={handleUpdateGrado}>
           <CIcon icon={cilPen} style={{ marginRight: '5px' }} />Actualizar
           </CButton>
+            )}
         </CModalFooter>
       </CModal>
 
@@ -595,9 +602,11 @@ style={{backgroundColor:'#6C8E58', color: 'white'}}
           <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
             Cancelar
           </CButton>
+          {canDelete && (
           <CButton style={{  backgroundColor: '#E57368',color: 'white' }} onClick={handleDeleteGrado}>
           <CIcon icon={cilTrash} style={{ marginRight: '5px' }} /> Eliminar 
           </CButton>
+          )}
         </CModalFooter>
       </CModal>
     </CContainer>

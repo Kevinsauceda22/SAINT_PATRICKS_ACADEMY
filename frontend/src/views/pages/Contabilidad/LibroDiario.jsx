@@ -16,9 +16,12 @@ import {
 import Swal from 'sweetalert2';
 import './LibroDiario.css'
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied";
 
 
 const CuentasSelector = ({ 
+  
   cuentas, 
   naturaleza, 
   value, 
@@ -77,6 +80,8 @@ const CuentasSelector = ({
 };
 
 const LibroDiario = () => {
+  const { canSelect, canUpdate, canDelete, canInsert } = usePermission('LibroDiario');
+
   // Estado principal
   const [registros, setRegistros] = useState([]);
   const [filteredRegistros, setFilteredRegistros] = useState([]);
@@ -602,6 +607,11 @@ const calcularTotales = (registros) => {
         ]
     ];
 };
+
+if (!canSelect) {
+  return <AccessDenied />;
+}
+
   return (
     <div className="libro-diario-container">
       <div className="header-section">
@@ -796,6 +806,7 @@ const calcularTotales = (registros) => {
           >
             Cancelar
           </button>
+          {canInsert && (
           <button
             type="submit"
             disabled={isButtonDisabled}
@@ -803,6 +814,7 @@ const calcularTotales = (registros) => {
           >
             {editingId ? 'Actualizar' : 'Registrar'}
           </button>
+          )}
         </div>
       </form>
 
@@ -895,6 +907,8 @@ const calcularTotales = (registros) => {
                       </span>
                     </td>
                     <td className="table-actions-cell">
+
+                      {canUpdate && (
                     <button
   onClick={() => handleEdit(registro)}
   className="action-button edit-button"
@@ -903,6 +917,10 @@ const calcularTotales = (registros) => {
   <Edit2 className="h-5 w-5 mr-2" />
   Editar
 </button>
+
+                      )}
+
+                      {canDelete && (
 <button
   onClick={() => handleDelete(registro.Cod_libro_diario)}
   className="action-button delete-button"
@@ -911,6 +929,8 @@ const calcularTotales = (registros) => {
   <Trash2 className="h-5 w-5 mr-2" />
   Eliminar
 </button>
+
+                      )}
                     </td>
                   </tr>
                 ))

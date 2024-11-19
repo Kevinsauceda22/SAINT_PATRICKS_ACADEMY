@@ -31,7 +31,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaParciales = () => {
-  const { canSelect, loading, error } = usePermission('ListaParciales');
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaParciales');
 
   const [Parciales, setParciales] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ciclo
@@ -368,6 +368,8 @@ const paginate = (pageNumber) => {
       </CCol>
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
         {/* Botón Nuevo para abrir el modal */}
+
+        {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -377,6 +379,7 @@ const paginate = (pageNumber) => {
         >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
+        )}
 
         {/* Botón de Reporte */}
         <CButton 
@@ -473,12 +476,17 @@ const paginate = (pageNumber) => {
                 <CTableDataCell>{parcial.Nombre_parcial}</CTableDataCell>
                 <CTableDataCell>{parcial.Nota_recuperacion}</CTableDataCell>
                 <CTableDataCell>
+
+                  {canUpdate &&(
                   <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(parcial)}>
                     <CIcon icon={cilPen} />
                   </CButton>
+                  )}
+                    {canDelete &&(
                   <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(parcial)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
+                    )}
                 </CTableDataCell>
               </CTableRow>
             ))}

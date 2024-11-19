@@ -34,7 +34,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaActividades = () => {
-  const { canSelect } = usePermission('actividades');
+  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('actividades');
 
   const [actividades, setActividades] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -347,6 +347,7 @@ const ListaActividades = () => {
 
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}
       <div className="d-flex justify-content-end mb-3">
+        {canInsert && (
         <CButton
           style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '10px' }}
           onClick={() => {
@@ -355,6 +356,7 @@ const ListaActividades = () => {
         >
           + Nueva
         </CButton>
+        )}
         <CDropdown>
           <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>Reporte</CDropdownToggle>
           <CDropdownMenu>
@@ -445,12 +447,17 @@ const ListaActividades = () => {
       </CTableDataCell>
       <CTableDataCell className="text-center">
         <div className="d-flex justify-content-center">
+{canUpdate && (
           <CButton color="warning" onClick={() => openUpdateModal(actividad)} style={{ marginRight: '10px' }}>
             <CIcon icon={cilPen} />
           </CButton>
+)}
+
+{canDelete && (
           <CButton color="danger" onClick={() => openDeleteModal(actividad)}>
             <CIcon icon={cilTrash} />
           </CButton>
+          )}
         </div>
       </CTableDataCell>
     </CTableRow>

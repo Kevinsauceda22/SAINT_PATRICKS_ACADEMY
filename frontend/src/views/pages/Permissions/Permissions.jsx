@@ -3,31 +3,66 @@ import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import CIcon from '@coreui/icons-react';
 import { cilSearch, cilBrushAlt } from '@coreui/icons';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const GestorDePermisos = ({ pathName }) => {
+  const { canSelect, canUpdate, canDelete, canInsert, loading, error } = usePermission('rolesandpermissions');
+
   const [mostrarAdvertencia, setMostrarAdvertencia] = useState(true);
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
+  const [busquedaObjeto, setBusquedaObjeto] = useState('');
+  const [busquedaRol, setBusquedaRol] = useState('');
+  const [vistaActual, setVistaActual] = useState('general'); // 'general' o 'mantenimiento'
   const MySwal = withReactContent(Swal);
-  
 
   // Mapeo de IDs de rol a nombres
   const rolNombres = {
     1: 'Padre',
-    2: 'ADMIN',
+    2: 'Administrador',
     3: 'Docente',
     4: 'Manager'
   };
 
-  // Definición de los objetos del sistema
-  const paginas = [
+  // Definición de los objetos del sistema separados por categoría
+  const paginasGenerales = [
     { id: '12', name: 'Dashboard', description: 'Página del tablero de control' },
-    { id: '45', name: 'Gestión Usuarios', description: 'Gestión Usuarios' },
-    { id: '46', name: 'Página Principal', description: 'Dashboard para padres' },
+    { id: '46', name: 'Dashboard Padres', description: 'Dashboard para padres' },
     { id: '47', name: 'Lista Asistencia', description: 'Lista Asistencia' },
     { id: '48', name: 'Lista Profesores', description: 'Lista Profesores' },
-    { id: '79', name: 'ListaActividadesAca', description: 'ListaActividadesAca' },
+    { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' },
+    { id: '72', name: 'Roles y Permisos', description: 'roles and permissions' },
+    { id: '73', name: 'Lista Historial', description: 'Lista Historial' },
+    { id: '74', name: 'Actividades', description: 'actividades' },
+    { id: '77', name: 'Matricula', description: 'Matricula' },
+    { id: '79', name: 'VistaProfesor', description: 'VistaProfesor' },
+
+
+    //ESTE SEPRALALO
+    { id: '71', name: 'MODULO PAGOS Y FINANZAS Libro Diario', description: 'Libro Diario' },
+
+
+    //ESTE SEPRALALO PERSONAS
+    { id: '80', name: 'MODULO PERSONAS Personas', description: 'ListaPersonas' },
+    { id: '69', name: 'MODULO PERSONAS Lista Relacion', description: 'Lista Relacion' },
+    { id: '65', name: 'MODULO PERSONAS Tipo persona', description: 'tipo persona' },
+    { id: '64', name: 'MODULO PERSONAS Departamento', description: 'departamento' },
+    { id: '81', name: 'MODULO PERSONAS Municipios', description: 'Muinicipios' },
+
+
+    //ESTE ES USUARIOS Y PERMISOS 
+    { id: '45', name: ' MODULO USUARIOS Admin. de Usuarios', description: 'Gestión Usuarios' },
+    { id: '72', name: 'MODULO USUARIOS Roles y Permisos', description: 'roles and permissions' },
+
+  
+
+
+
+
+  ];
+
+  const paginasMantenimiento = [
     { id: '49', name: 'Lista Estado nota', description: 'Lista Estado nota' },
     { id: '50', name: 'Lista Estructura', description: 'Lista Estructura' },
     { id: '51', name: 'Lista Asignaturas', description: 'Lista Asignaturas' },
@@ -39,32 +74,24 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '57', name: 'Lista Parciales', description: 'Lista Parciales' },
     { id: '58', name: 'Lista Ponderaciones', description: 'Lista Ponderaciones' },
     { id: '59', name: 'Lista Tipo Contrato', description: 'Lista Tipo Contrato' },
-    { id: '60', name: 'Tipo matrícula', description: 'tipo matricula' },
+    { id: '60', name: ' Tipo matrícula', description: 'tipo matricula' },
     { id: '61', name: 'Periodo matrícula', description: 'periodo matricula' },
     { id: '62', name: 'Estado matrícula', description: 'estado matricula' },
     { id: '63', name: 'Concepto pago', description: 'concepto pago' },
-    { id: '64', name: 'Departamento', description: 'departamento' },
-    { id: '65', name: 'Tipo persona', description: 'tipo persona' },
     { id: '66', name: 'Edificios', description: 'edificios' },
     { id: '67', name: 'Días', description: 'dias' },
     { id: '68', name: 'Lista Historico Proc', description: 'Lista Historico Proc' },
-    { id: '69', name: 'Lista Relacion', description: 'Lista Relacion' },
     { id: '70', name: 'Contabilidad', description: 'Contabilidad' },
-    { id: '71', name: 'Libro Diario', description: 'Libro Diario' },
-    { id: '72', name: 'Roles y Permisos', description: 'roles and permissions' },
-    { id: '73', name: 'Lista Historial', description: 'Lista Historial' },
-    { id: '74', name: 'Actividades', description: 'actividades' },
-    { id: '75', name: 'Contabilidad', description: 'Contabilidad' },
-    { id: '77', name: 'Matricula', description: 'Matricula' },
-    { id: '77', name: 'VistaProfesor', description: 'VistaProfesor' }
+
   ];
 
   const permisos = [
-    { id: 'Permiso_Modulo', name: 'Módulo' },  // Añadido el permiso de módulo
+    { id: 'Permiso_Modulo', name: 'Módulo' },
     { id: 'Permiso_Consultar', name: 'Ver' },
     { id: 'Permiso_Insercion', name: 'Crear' },
     { id: 'Permiso_Actualizacion', name: 'Editar' },
     { id: 'Permiso_Eliminacion', name: 'Eliminar' },
+    { id: 'Permiso_Nav', name: 'Mostrar en Nav' } // Nuevo permiso para controlar visibilidad en nav
   ];
 
   const cerrarAdvertencia = () => {
@@ -115,11 +142,12 @@ const GestorDePermisos = ({ pathName }) => {
     }, {...permisosPorRol});
 
     return Object.entries(rolesCompletos).map(([rolId, permisosRol]) => {
+      const paginasActuales = vistaActual === 'general' ? paginasGenerales : paginasMantenimiento;
       return {
         id: parseInt(rolId),
         nombre: rolNombres[rolId] || `Rol ${rolId}`,
         rol: rolNombres[rolId] || `Rol ${rolId}`,
-        permisos: paginas.reduce((acc, pagina) => {
+        permisos: paginasActuales.reduce((acc, pagina) => {
           const permisoObjeto = permisosRol.find(p => p.Cod_Objeto.toString() === pagina.id);
           
           return {
@@ -130,6 +158,7 @@ const GestorDePermisos = ({ pathName }) => {
               Permiso_Insercion: permisoObjeto?.Permiso_Insercion === "1",
               Permiso_Actualizacion: permisoObjeto?.Permiso_Actualizacion === "1",
               Permiso_Eliminacion: permisoObjeto?.Permiso_Eliminacion === "1",
+              Permiso_Nav: permisoObjeto?.Permiso_Nav === "1" // Nuevo campo
             }
           };
         }, {})
@@ -139,8 +168,7 @@ const GestorDePermisos = ({ pathName }) => {
 
   useEffect(() => {
     cargarPermisos();
-  }, []);
-
+  }, [vistaActual]);
 
   const cambiarPermiso = async (Cod_usuario, Cod_Objeto, Cod_Permiso) => {
     try {
@@ -168,13 +196,14 @@ const GestorDePermisos = ({ pathName }) => {
           actualizaciones.Permiso_Insercion = "0";
           actualizaciones.Permiso_Actualizacion = "0";
           actualizaciones.Permiso_Eliminacion = "0";
+          actualizaciones.Permiso_Nav = "0";
         } else {
           // Si estamos activando el módulo, solo activamos el módulo
           actualizaciones.Permiso_Modulo = "1";
         }
       } else {
         // Si el módulo está desactivado, no permitimos cambiar otros permisos
-        if (!permisosObjeto.Permiso_Modulo) {
+        if (!permisosObjeto.Permiso_Modulo && Cod_Permiso !== 'Permiso_Nav') {
           MySwal.fire({
             icon: 'warning',
             title: 'Advertencia',
@@ -188,6 +217,7 @@ const GestorDePermisos = ({ pathName }) => {
         actualizaciones.Permiso_Insercion = permisosObjeto.Permiso_Insercion ? "1" : "0";
         actualizaciones.Permiso_Actualizacion = permisosObjeto.Permiso_Actualizacion ? "1" : "0";
         actualizaciones.Permiso_Eliminacion = permisosObjeto.Permiso_Eliminacion ? "1" : "0";
+        actualizaciones.Permiso_Nav = permisosObjeto.Permiso_Nav ? "1" : "0";
         actualizaciones[Cod_Permiso] = !permisoActual ? "1" : "0";
       }
   
@@ -264,7 +294,7 @@ const GestorDePermisos = ({ pathName }) => {
       });
 
       if (result.isConfirmed) {
-        await cargarPermisos(); // Recargar los permisos desde el servidor
+        await cargarPermisos();
 
         MySwal.fire({
           icon: 'success',
@@ -284,174 +314,266 @@ const GestorDePermisos = ({ pathName }) => {
     }
   };
 
+  const usuariosFiltrados = usuarios.filter(usuario =>
+    usuario.nombre.toLowerCase().includes(busquedaRol.toLowerCase()) ||
+    usuario.rol.toLowerCase().includes(busquedaRol.toLowerCase())
+  );
+
+  const paginasActuales = vistaActual === 'general' ? paginasGenerales : paginasMantenimiento;
+
   if (cargando) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      <div className="loader-container">
+        <div className="loader"></div>
       </div>
     );
   }
 
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
   return (
-    <div className="container mx-auto px-4 py-8">
-      <style>{`
-        .warning-message {
-          background-color: #fff3cd;
-          border: 1px solid #ffeeba;
-          color: #856404;
-          padding: 1rem;
-          margin-bottom: 1rem;
-          border-radius: 0.25rem;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
+    <div className="permisos-container">
+      <style>
+        {`
+          .permisos-container {
+            padding: 2rem;
+            max-width: 100%;
+            margin: 0 auto;
+          }
 
-        .close-button {
-          background-color: transparent;
-          border: none;
-          color: #856404;
-          cursor: pointer;
-          padding: 0.5rem;
-        }
+          .warning-message {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
 
-        .permissions-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 2rem;
-        }
+          .close-button {
+            background: none;
+            border: none;
+            color: #856404;
+            cursor: pointer;
+            padding: 0.5rem;
+          }
 
-        .title {
-          font-size: 1.5rem;
-          font-weight: bold;
-          color: #2d3748;
-        }
+          .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+          }
 
-        .subtitle {
-          color: #718096;
-          margin-top: 0.5rem;
-        }
+          .title-section h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 0;
+          }
 
-        .save-button {
-          background-color: #4CAF50;
-          color: white;
-          padding: 0.75rem 1.5rem;
-          border-radius: 0.375rem;
-          border: none;
-          cursor: pointer;
-          font-weight: 600;
-          transition: background-color 0.2s;
-        }
+          .title-section p {
+            color: #718096;
+            margin-top: 0.5rem;
+          }
 
-        .save-button:hover {
-          background-color: #45a049;
-        }
+          .control-section {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+          }
 
-        .table-container {
-          overflow-x: auto;
-          margin-top: 1rem;
-          background-color: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        }
+          .search-container {
+            position: relative;
+            width: 300px;
+          }
 
-        .minimal-table {
-          width: 100%;
-          border-collapse: collapse;
-          min-width: 800px;
-        }
+          .search-input {
+            width: 100%;
+            padding: 0.5rem 1rem 0.5rem 2.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+          }
 
-        .minimal-table th,
-        .minimal-table td {
-          padding: 1rem;
-          border: 1px solid #e2e8f0;
-        }
+          .search-icon {
+            position: absolute;
+            left: 0.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #718096;
+          }
 
-        .minimal-table th {
-          background-color: #f8fafc;
-          font-weight: 600;
-          text-align: left;
-          color: #4a5568;
-        }
+          .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+          }
 
-        .user-cell {
-          min-width: 200px;
-          background-color: #f8fafc;
-        }
+          .view-button {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.375rem;
+            background-color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+          }
 
-        .permission-cell {
-          min-width: 150px;
-        }
+          .view-button.active {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+          }
 
-        .user-name {
-          font-weight: 600;
-          color: #2d3748;
-        }
+          .save-button {
+            padding: 0.75rem 1.5rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-weight: 600;
+          }
 
-        .permission-label {
-          color: #718096;
-          font-size: 0.875rem;
-        }
+          .save-button:hover {
+            background-color: #45a049;
+          }
 
-        .permission-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.5rem;
-        }
+          .table-container {
+            overflow-x: auto;
+            margin-top: 1rem;
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          }
 
-        .permission-row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
+          .permisos-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+          }
 
-        /* Switch styles */
-        .switch {
-          position: relative;
-          display: inline-block;
-          width: 40px;
-          height: 20px;
-        }
+          .permisos-table th,
+          .permisos-table td {
+            padding: 1rem;
+            border: 1px solid #e2e8f0;
+          }
 
-        .switch input {
-          opacity: 0;
-          width: 0;
-          height: 0;
-        }
+          .permisos-table th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            text-align: left;
+            color: #4a5568;
+          }
 
-        .slider {
-          position: absolute;
-          cursor: pointer;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background-color: #ccc;
-          transition: .4s;
-          border-radius: 20px;
-        }
+          .user-cell {
+            background-color: #f8fafc;
+            min-width: 200px;
+          }
 
-        .slider:before {
-          position: absolute;
-          content: "";
-          height: 16px;
-          width: 16px;
-          left: 2px;
-          bottom: 2px;
-          background-color: white;
-          transition: .4s;
-          border-radius: 50%;
-        }
+          .user-name {
+            font-weight: 600;
+            color: #2d3748;
+            margin: 0;
+          }
 
-        input:checked + .slider {
-          background-color: #4CAF50;
-        }
+          .user-role {
+            color: #718096;
+            font-size: 0.875rem;
+            margin: 0;
+          }
 
-        input:checked + .slider:before {
-          transform: translateX(20px);
-        }
-      `}</style>
+          .permission-cell {
+            min-width: 150px;
+          }
+
+          .permission-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+          }
+
+          .permission-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          .permission-label {
+            color: #718096;
+            font-size: 0.875rem;
+          }
+
+          .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+          }
+
+          .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+          }
+
+          .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+          }
+
+          .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+          }
+
+          input:checked + .slider {
+            background-color: #4CAF50;
+          }
+
+          input:checked + .slider:before {
+            transform: translateX(20px);
+          }
+
+          .loader-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+          }
+
+          .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
 
       {mostrarAdvertencia && (
         <div className="warning-message">
@@ -459,27 +581,56 @@ const GestorDePermisos = ({ pathName }) => {
             ADVERTENCIA: MODIFICAR ALGO EN ESTA PÁGINA AFECTARÁ LOS PERMISOS DE OTROS USUARIOS.
           </span>
           <button onClick={cerrarAdvertencia} className="close-button">
-            Cerrar
+            ×
           </button>
         </div>
       )}
 
-      <div className="permissions-header">
-        <div>
-          <h1 className="title">{pathName}</h1>
-          <p className="subtitle">Gestión de permisos por módulo y rol</p>
+      <div className="header-container">
+        <div className="title-section">
+          <h1>{pathName}</h1>
+          <p>Gestión de permisos por módulo y rol</p>
         </div>
-        <button className="save-button" onClick={guardarCambios}>
-          Guardar Cambios
-        </button>
+        
+        <div className="control-section">
+          <div className="search-container">
+            <CIcon icon={cilSearch} className="search-icon" />
+            <input
+              type="text"
+              placeholder="Buscar por rol..."
+              value={busquedaRol}
+              onChange={(e) => setBusquedaRol(e.target.value)}
+              className="search-input"
+            />
+          </div>
+
+          <div className="view-toggle">
+            <button
+              className={`view-button ${vistaActual === 'general' ? 'active' : ''}`}
+              onClick={() => setVistaActual('general')}
+            >
+              General
+            </button>
+            <button
+              className={`view-button ${vistaActual === 'mantenimiento' ? 'active' : ''}`}
+              onClick={() => setVistaActual('mantenimiento')}
+            >
+              Mantenimiento
+            </button>
+          </div>
+
+          <button className="save-button" onClick={guardarCambios}>
+            Guardar Cambios
+          </button>
+        </div>
       </div>
 
       <div className="table-container">
-        <table className="minimal-table">
+        <table className="permisos-table">
           <thead>
             <tr>
               <th className="user-cell">Usuario</th>
-              {paginas.map(pagina => (
+              {paginasActuales.map(pagina => (
                 <th key={pagina.id} className="permission-cell" title={pagina.description}>
                   {pagina.name}
                 </th>
@@ -487,18 +638,18 @@ const GestorDePermisos = ({ pathName }) => {
             </tr>
           </thead>
           <tbody>
-            {usuarios.map(usuario => (
+            {usuariosFiltrados.map(usuario => (
               <tr key={usuario.id}>
                 <td className="user-cell">
                   <p className="user-name">{usuario.nombre}</p>
-                  <p className="permission-label">{usuario.rol}</p>
+                  <p className="user-role">{usuario.rol}</p>
                 </td>
-                {paginas.map(pagina => (
+                {paginasActuales.map(pagina => (
                   <td key={pagina.id} className="permission-cell">
                     <div className="permission-group">
                       {permisos.map(permiso => (
                         <div className="permission-row" key={permiso.id}>
-                          <label className="permission-label">{permiso.name}</label>
+                          <span className="permission-label">{permiso.name}</span>
                           <label className="switch">
                             <input
                               type="checkbox"
@@ -521,4 +672,4 @@ const GestorDePermisos = ({ pathName }) => {
   );
 };
 
-export default GestorDePermisos;          
+export default GestorDePermisos;

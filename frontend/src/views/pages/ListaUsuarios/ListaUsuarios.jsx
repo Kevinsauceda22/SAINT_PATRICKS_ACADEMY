@@ -19,7 +19,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 //GestionUsuarios
 const UserManagement = () => {
-  const { canSelect, loading, error } = usePermission('GestionUsuarios');
+  const { canSelect, canUpdate, canDelete, canInsert, loading, error } = usePermission('GestionUsuarios');
 
   const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -27,7 +27,7 @@ const UserManagement = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loadingg, setLoadingg] = useState(true);
 
-  const [processingUsers, setProcessingUsers] = useState(new Set());
+  const [processingUsers, ssetProcessingUsers] = useState(new Set());
   const loggedInUserId = localStorage.getItem('userId');
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -638,24 +638,34 @@ const UserManagement = () => {
           </button>
         </div>
         {showUserMenu && (
-          <div className="user-types-grid">
-            {userTypes.map((type) => (
-              <div 
-                key={type.id}
-                className="user-type-card"
-                onClick={() => handleAddUser(type.id)}
-              >
-                <div className={`icon-wrapper ${type.color}`}>
-                  <type.icon size={24} className="text-white" />
-                </div>
-                <div className="user-type-info">
-                  <h3>{type.title}</h3>
-                  <p>{type.description}</p>
-                </div>
-              </div>
-            ))}
+  <div className="user-types-grid">
+    {userTypes
+      .filter(type => {
+        // Si no tiene permiso de inserción, oculta Administrador y Manager
+        if (!canInsert) {
+          return type.id !== 2 && type.id !== 4;
+        }
+        return true;
+      })
+      .map((type) => (
+
+        
+        <button 
+          key={type.id}
+          className="user-type-button"
+          onClick={() => handleAddUser(type.id)}
+        >
+          <div className={`icon-wrapper ${type.color}`}>
+            <type.icon size={24} className="text-white" />
           </div>
-        )}
+          <div className="user-type-info">
+            <h3>{type.title}</h3>
+            <p>{type.description}</p>
+          </div>
+        </button>
+      ))}
+  </div>
+)}
 
         {errorMessage && <div className="error-message">{errorMessage}</div>}
 

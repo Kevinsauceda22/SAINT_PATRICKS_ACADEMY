@@ -31,6 +31,8 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaTipoContratos = () => {
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaTipoContrato');
+
   const [tiposContratos, setTiposContratos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear 
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // estado para el modal de actualizar
@@ -360,6 +362,8 @@ const paginate = (pageNumber) => {
 
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
+
+      {canInsert && (
       <CButton
         style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
         className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -372,6 +376,8 @@ const paginate = (pageNumber) => {
         <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
         Nuevo
       </CButton>
+
+      )}
 
 {/*Boton reporte */}
 <CButton
@@ -468,12 +474,18 @@ style={{backgroundColor:'#6C8E58', color: 'white'}}
                 </CTableDataCell>
               <CTableDataCell>{tiposContratos.Descripcion}</CTableDataCell>
               <CTableDataCell>
+
+                {canUpdate && (
                 <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => { setContratoToUpdate(tiposContratos); setModalUpdateVisible(true);setHasUnsavedChanges(false);}}>
                   <CIcon icon={cilPen} />
                 </CButton>
+                )}
+
+{canDelete && (
                 <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }}   onClick={() => { setContratoToDelete(tiposContratos);setModalDeleteVisible(true); }}>
                   <CIcon icon={cilTrash} />
                 </CButton>
+                    )}
               </CTableDataCell>
             </CTableRow>
           ))}

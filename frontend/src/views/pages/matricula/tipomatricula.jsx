@@ -39,7 +39,8 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const TipoMatricula = () => {
-  const { canSelect } = usePermission('tipomatricula');
+  
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('tipomatricula');
 
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -246,9 +247,11 @@ const TipoMatricula = () => {
           <h3>Mantenimientos Tipos de Matrícula</h3>
         </CCol>
         <CCol xs={12} md={4} className="text-end">
+
+          {canInsert && (
           <CButton style={{ backgroundColor: '#4B6251', color: 'white', width: 'auto', height: '38px' }} onClick={openAddModal}>
             <CIcon icon={cilPlus} /> Nuevo
-          </CButton>
+          </CButton>)}
           <CDropdown className="d-inline ms-2">
             <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', width: 'auto', height: '38px' }}>
               <CIcon icon={cilFile} /> Reporte
@@ -328,6 +331,8 @@ const TipoMatricula = () => {
                 {tipo.Tipo.toUpperCase()}
               </CTableDataCell>
               <CTableDataCell className="text-end">
+
+          {canUpdate && (
   <CButton
     color="warning"
     size="sm"
@@ -335,7 +340,11 @@ const TipoMatricula = () => {
     onClick={() => openEditModal(tipo)}
   >
     <CIcon icon={cilPen} />
-  </CButton>{' '}
+  </CButton>
+          )}
+  {' '}
+
+  {canDelete && (
   <CButton
     color="danger"
     size="sm"
@@ -344,6 +353,7 @@ const TipoMatricula = () => {
   >
     <CIcon icon={cilTrash} />
   </CButton>
+  )}
 </CTableDataCell>
 
             </CTableRow>

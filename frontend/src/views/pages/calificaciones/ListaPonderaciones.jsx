@@ -31,7 +31,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaPonderaciones = () => {
-  const { canSelect, loading, error } = usePermission('ListaPonderaciones');
+  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaPonderaciones');
 
   const [Ponderaciones, setPonderaciones] = useState([]);
   const [modalVisible, setModalVisible] = useState(false); // Estado para el modal de crear ponderaciones
@@ -352,6 +352,8 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
       </CCol>
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
         {/* Botón Nuevo para abrir el modal */}
+
+        {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -360,6 +362,8 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
         >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
+
+          )}
 
         {/* Botón de Reporte */}
         <CButton 
@@ -452,12 +456,17 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
                 </CTableDataCell>
                 <CTableDataCell>{ponderacion.Descripcion_ponderacion}</CTableDataCell>
                 <CTableDataCell>
+                {canUpdate && (
                   <CButton style={{ backgroundColor: '#F9B64E',marginRight: '10px' }} onClick={() => openUpdateModal(ponderacion)}>
                     <CIcon icon={cilPen} />
                   </CButton>
+                )}
+
+                {canDelete && (
                   <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(ponderacion)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
+                )}
                 </CTableDataCell>
               </CTableRow>
             ))}

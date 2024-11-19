@@ -38,7 +38,8 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const EstadoMatricula = () => {
-  const { canSelect } = usePermission('estadomatricula');
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('estadomatricula');
+
   const [estados, setEstados] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -233,6 +234,8 @@ const EstadoMatricula = () => {
   </CCol>
   <CCol xs={12} md={4} className="text-end">
     {/* Botón Nuevo */}
+
+    {canInsert && (
     <CButton 
       style={{ backgroundColor: '#0F463A', color: 'white', borderColor: '#4B6251' }} 
       onClick={handleAddModal} 
@@ -240,6 +243,7 @@ const EstadoMatricula = () => {
     >
       <CIcon icon={cilPlus} /> Nuevo
     </CButton>
+    )}
     
     {/* Botón de Reporte con menú desplegable */}
     <CDropdown className="d-inline ms-2">
@@ -323,6 +327,8 @@ const EstadoMatricula = () => {
                   {estado.Tipo}
                 </CTableDataCell>
                 <CTableDataCell className="text-end">
+
+                  {canUpdate && (
   <CButton
     color="warning"
     size="sm"
@@ -330,7 +336,10 @@ const EstadoMatricula = () => {
     onClick={() => handleEditModal(estado)}
   >
     <CIcon icon={cilPen} />
-  </CButton>{' '}
+  </CButton> )}{' '}
+
+  {canDelete && (
+
   <CButton
     color="danger"
     size="sm"
@@ -339,6 +348,7 @@ const EstadoMatricula = () => {
   >
     <CIcon icon={cilTrash} />
   </CButton>
+  )}
 </CTableDataCell>
 
               </CTableRow>

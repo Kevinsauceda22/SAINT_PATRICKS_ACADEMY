@@ -36,7 +36,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const PeriodosMatricula = () => {
-  const { canSelect } = usePermission('periodomatricula');
+  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('ListaHistorial');
 
   const [periodos, setPeriodos] = useState([]);
   const [filteredPeriodos, setFilteredPeriodos] = useState([]);
@@ -316,9 +316,12 @@ const PeriodosMatricula = () => {
           <h1>Mantenimiento Periodo Matrícula</h1>
         </CCol>
         <CCol xs="4" md="3" className="text-end">
+
+          {canInsert && (
   <CButton color="dark" onClick={() => setModalVisible(true)} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
     <CIcon icon={cilPlus} /> Nuevo
   </CButton>
+          )}
   <CDropdown>
     <CDropdownToggle style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
       <CIcon icon={cilFile} /> Reporte
@@ -412,6 +415,8 @@ const PeriodosMatricula = () => {
                     )}
                   </CTableDataCell>
                   <CTableDataCell className="text-end">
+
+                    {canUpdate && (
   <CButton
     color="warning"
     className="me-2"
@@ -420,6 +425,9 @@ const PeriodosMatricula = () => {
   >
     <CIcon icon={cilPen} />
   </CButton>
+  )}
+
+  {canDelete && (
   <CButton
     color="danger"
     style={{ opacity: 0.8 }}  // Opacidad ajustada
@@ -427,6 +435,7 @@ const PeriodosMatricula = () => {
   >
     <CIcon icon={cilTrash} />
   </CButton>
+  )}
 </CTableDataCell>
 
                 </CTableRow>

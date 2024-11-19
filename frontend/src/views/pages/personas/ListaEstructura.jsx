@@ -38,8 +38,12 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react'
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaEstructura = () => {
+  const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('ListaEstructura');
+
   const [estructuraFamiliar, setEstructuraFamiliar] = useState([])
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -233,6 +237,13 @@ useEffect(() => {
     }
   }
 
+         // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
+
+
   return (
     <CContainer>
       <CRow className="align-items-center mb-5">
@@ -245,6 +256,7 @@ useEffect(() => {
   <CButton color="secondary" onClick={volverAListaPersonas} style={{ marginRight: '10px', minWidth: '120px' }}>
     <CIcon icon={cilArrowLeft} /> Personas 
   </CButton>
+  {canInsert &&(
   <CButton
     style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px' }}
     className="mb-3 mb-md-0 me-md-3"
@@ -252,6 +264,7 @@ useEffect(() => {
   >
     <CIcon icon={cilPlus} /> Nuevo
   </CButton>
+  )}
   <CDropdown>
     <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px' }}>
       Reportes
@@ -431,6 +444,8 @@ useEffect(() => {
                   {' '}
                   <div className="d-flex justify-content-center">
                     {' '}
+
+                    {canUpdate && (
                     <CButton
                       color="warning"
                       onClick={() => alert('Modificar')}
@@ -438,11 +453,13 @@ useEffect(() => {
                     >
                       {' '}
                       <CIcon icon={cilPen} />{' '}
-                    </CButton>{' '}
+                    </CButton> )}{' '}
+
+                    {canDelete  &&( 
                     <CButton color="danger" onClick={() => alert('Eliminar')}>
                       {' '}
                       <CIcon icon={cilTrash} />{' '}
-                    </CButton>{' '}
+                    </CButton> )}{' '}
                   </div>{' '}
                 </CTableDataCell>{' '}
               </CTableRow>
