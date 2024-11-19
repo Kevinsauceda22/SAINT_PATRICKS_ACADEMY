@@ -195,12 +195,6 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Historial Procedencia',
-        to: '/ListaHistoricoProc',
-        nameobject: 'navHistorialProcedencia',
-      },
-      {
-        component: CNavItem,
         name: 'Cuentas Contables',
         to: '/Contabilidad',
         nameobject: 'navCuentasContables',
@@ -268,6 +262,11 @@ const _nav = [
         name: 'Tipo persona',
         to: '/tipopersona',
         nameobject: 'navTipoPersona',
+      },{
+        component: CNavItem,
+        name: 'Historial Procedencia',
+        to: '/ListaHistoricoProc',
+        nameobject: 'navHistorialProcedencia',
       },
       {
         component: CNavItem,
