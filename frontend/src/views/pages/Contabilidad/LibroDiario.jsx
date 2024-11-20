@@ -421,66 +421,67 @@ const LibroDiario = () => {
         const pageWidth = doc.internal.pageSize.width;
         const pageHeight = doc.internal.pageSize.height;
         
-        // Función para añadir marca de agua mejorada
+        // Función para marca de agua mejorada
         const addWatermark = () => {
-            const fontSize = 50; // Aumentado para mayor visibilidad
+            const fontSize = 50;
             const text = 'CONFIDENCIAL';
             
-            // Guardar el estado actual
-            const originalState = {
-                fillColor: doc.getFillColor(),
-                textColor: doc.getTextColor(),
-                fontSize: doc.getFontSize()
-            };
-            
-            // Configurar estilo para la marca de agua
-            doc.setTextColor(220, 53, 69); // Rojo
-            doc.setFontSize(fontSize);
-            doc.setFont('helvetica', 'bold');
-            
-            // Calcular dimensiones para un mejor centrado
-            const textWidth = doc.getStringUnitWidth(text) * fontSize / doc.internal.scaleFactor;
-            
-            // Añadir múltiples marcas de agua para mejor cobertura
             doc.saveGraphicsState();
-            doc.setGState(new doc.GState({ opacity: 0.15 })); // Aumentada la opacidad
+            doc.setGState(new doc.GState({ opacity: 0.15 }));
+            doc.setTextColor(220, 53, 69);
+            doc.setFontSize(fontSize);
+            doc.setFont('helvetica', 'bold')
 
-            // Marca de agua central
-            doc.text(text, pageWidth / 2, pageHeight / 2, {
-                angle: -45,
-                align: 'center',
-                renderingMode: 'fill'
-            });
-
-            doc.restoreGraphicsState();
+            // Añadir múltiples marcas de agua para mejor cobertura
+            for (let i = 0; i < pageHeight; i += fontSize * 2) {
+                for (let j = 0; j < pageWidth; j += fontSize * 4) {
+                    doc.text(text, j, i, {
+                        angle: -45,
+                        renderingMode: 'fill'
+                    });
+                }
+            }
             
-            // Restaurar el estado original
-            doc.setFillColor(originalState.fillColor);
-            doc.setTextColor(originalState.textColor);
-            doc.setFontSize(originalState.fontSize);
-        };
-
-        // Insertar el logo
+            doc.restoreGraphicsState();
+ }
+        // Header mejorado con logo y diseño más profesional
         doc.addImage(img, 'PNG', 10, 5, 25, 25);
         
-        // Encabezado del reporte con mejor espaciado
+        // Encabezado con mejor espaciado y diseño
         doc.setTextColor(22, 160, 133);
         doc.setFontSize(22);
         doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 15, { align: 'center' });
-        doc.setFontSize(16);
-        doc.text('Libro Diario', pageWidth / 2, 25, { align: 'center' });
+        doc.setFontSize(18);
+        doc.text('LIBRO DIARIO', pageWidth / 2, 25, { align: 'center' });
         
-        // Detalles de la institución con mejor espaciado
-        doc.setFontSize(9); // Aumentado para mejor legibilidad
+        // Información de contacto con mejor formato
+        doc.setFontSize(10);
         doc.setTextColor(68, 68, 68);
-        doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 33, { align: 'center' });
-        doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 38, { align: 'center' });
-        doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 43, { align: 'center' });
+        doc.text([
+            'Casa Club del periodista, Colonia del Periodista',
+            'Teléfono: (504) 2234-8871',
+            'Correo: info@saintpatrickacademy.edu'
+        ], pageWidth / 2, 33, { align: 'center', lineHeightFactor: 1.5 });
 
         // Añadir marca de agua
         addWatermark();
 
-        // Tabla principal con mejor formato
+        // Calcular totales y balance
+        const totales = filteredRegistros.reduce((acc, registro) => {
+            const monto = parseFloat(registro.Monto) || 0;
+            const tipo = (registro.Tipo || registro.tipo || '').toString().toUpperCase();
+            
+            if (tipo.includes('DEUDOR')) {
+                acc.totalDeudor += monto;
+            } else if (tipo.includes('ACREEDOR')) {
+                acc.totalAcreedor += monto;
+            }
+            return acc;
+        }, { totalDeudor: 0, totalAcreedor: 0 });
+
+        const balance = totales.totalDeudor - totales.totalAcreedor;
+
+        // Tabla principal mejorada
         doc.autoTable({
             startY: 50,
             head: [['#', 'Fecha', 'Descripción', 'Cuenta', 'Monto (L)', 'Tipo']],
@@ -489,79 +490,128 @@ const LibroDiario = () => {
                     const tipo = (registro.Tipo || registro.tipo || '').toString().toUpperCase();
                     return [
                         index + 1,
-                        new Date(registro.Fecha).toLocaleDateString('es-HN', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit'
-                        }),
-                        registro.Descripcion || '',
-                        `${registro.Cod_cuenta} - ${cuentasMap[registro.Cod_cuenta] || 'Sin nombre'}`,
-                        `L ${(parseFloat(registro.Monto) || 0).toLocaleString('es-HN', {
+                        new Date(registro.Fecha).toLocaleDateString('es-HN'),
+                        registro.Descripcion,
+                        `${registro.Cod_cuenta} - ${cuentasMap[registro.Cod_cuenta] || ''}`,
+                        `L ${parseFloat(registro.Monto).toLocaleString('es-HN', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2
                         })}`,
                         tipo.includes('DEUDOR') ? 'DEUDOR' : 'ACREEDOR'
                     ];
                 }),
-                [{ content: '', colSpan: 6, styles: { fillColor: [255, 255, 255], minCellHeight: 3 } }],
+                // Espaciador
+                [{ content: '', colSpan: 6, styles: { fillColor: [255, 255, 255], minCellHeight: 5 } }],
+                // Sección de resumen
                 [{
-                    content: 'RESUMEN DE TOTALES',
+                    content: 'RESUMEN DE TRANSACCIONES',
                     colSpan: 6,
                     styles: {
                         fillColor: [22, 160, 133],
                         textColor: [255, 255, 255],
                         fontSize: 12,
                         fontStyle: 'bold',
-                        halign: 'center',
-                        cellPadding: { top: 6, bottom: 6, left: 10, right: 10 }
+                        halign: 'center'
                     }
                 }],
-                ...calcularTotales(filteredRegistros)
+                [
+                    { content: 'Total Cargos (Debe)', colSpan: 3, styles: { fontStyle: 'bold' } },
+                    { 
+                        content: `L ${totales.totalDeudor.toLocaleString('es-HN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })}`,
+                        colSpan: 3,
+                        styles: { halign: 'right', fontStyle: 'bold' }
+                    }
+                ],
+                [
+                    { content: 'Total Abonos (Haber)', colSpan: 3, styles: { fontStyle: 'bold' } },
+                    { 
+                        content: `L ${totales.totalAcreedor.toLocaleString('es-HN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })}`,
+                        colSpan: 3,
+                        styles: { halign: 'right', fontStyle: 'bold' }
+                    }
+                ],
+                // Espaciador
+                [{ content: '', colSpan: 6, styles: { fillColor: [255, 255, 255], minCellHeight: 5 } }],
+                // Balance de valoración
+                [{
+                    content: 'BALANCE DE VALORACIÓN',
+                    colSpan: 6,
+                    styles: {
+                        fillColor: [22, 160, 133],
+                        textColor: [255, 255, 255],
+                        fontSize: 12,
+                        fontStyle: 'bold',
+                        halign: 'center'
+                    }
+                }],
+                [
+                    { content: 'Balance', colSpan: 3, styles: { fontStyle: 'bold' } },
+                    { 
+                        content: `L ${Math.abs(balance).toLocaleString('es-HN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })} ${balance >= 0 ? '(Deudor)' : '(Acreedor)'}`,
+                        colSpan: 3,
+                        styles: { 
+                            halign: 'right',
+                            fontStyle: 'bold',
+                            textColor: balance === 0 ? [0, 128, 0] : [0, 0, 0]
+                        }
+                    }
+                ],
+                [
+                    { 
+                        content: balance === 0 ? 'Las cuentas están balanceadas' : 'Las cuentas no están balanceadas',
+                        colSpan: 6,
+                        styles: { 
+                            halign: 'center',
+                            fontStyle: 'bold',
+                            textColor: balance === 0 ? [0, 128, 0] : [220, 53, 69]
+                        }
+                    }
+                ]
             ],
             styles: {
-                fontSize: 10, // Aumentado para mejor legibilidad
-                textColor: [68, 68, 68],
+                fontSize: 10,
                 cellPadding: 5
             },
             headStyles: {
                 fillColor: [22, 160, 133],
                 textColor: [255, 255, 255],
                 fontSize: 11,
-                fontStyle: 'bold',
-                halign: 'center',
-                cellPadding: { top: 6, bottom: 6, left: 4, right: 4 }
-            },
-            columnStyles: {
-                0: { halign: 'center', cellWidth: 15 },
-                1: { halign: 'center', cellWidth: 30 },
-                2: { cellWidth: 65 },
-                3: { cellWidth: 65 },
-                4: { halign: 'right', cellWidth: 35 },
-                5: { halign: 'center', cellWidth: 30 }
+                fontStyle: 'bold'
             },
             alternateRowStyles: {
                 fillColor: [240, 248, 255]
             },
-            margin: { top: 15, right: 15, bottom: 20, left: 15 },
+            margin: { top: 15 },
             didDrawPage: function(data) {
                 addWatermark();
                 // Pie de página mejorado
-                doc.setFontSize(9);
-                doc.setTextColor(100);
+                doc.setFontSize(8);
+                doc.setTextColor(128);
                 const date = new Date().toLocaleDateString('es-HN', {
                     year: 'numeric',
                     month: 'long',
-                    day: 'numeric'
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                 });
-                doc.text(`Fecha de generación: ${date}`, 15, pageHeight - 15);
-                doc.text(`Página ${data.pageCount}`, pageWidth - 25, pageHeight - 15, { align: 'right' });
+                doc.text(`Generado el: ${date}`, 15, pageHeight - 10);
+                doc.text(`Página ${data.pageCount}`, pageWidth - 20, pageHeight - 10);
             }
         });
 
-        // Guardar el PDF
+
         doc.save('Reporte_Libro_Diario.pdf');
     };
-    
+
     img.onerror = () => {
         Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
     };
