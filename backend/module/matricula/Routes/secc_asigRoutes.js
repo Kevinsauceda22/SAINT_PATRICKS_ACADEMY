@@ -1,5 +1,6 @@
 import express from 'express';
-import { obtenerDetalleSeccionAsignatura, obtenerSecciones, obtenerDias, obtenerGradosAsignaturas,crearHorarioSeccionAsignatura, actualizarSeccionAsignatura} from '../Controllers/secc_asigController.js';
+import { obtenerDetalleSeccionAsignatura, obtenerSecciones, obtenerDias, obtenerGradosAsignaturas,crearHorarioSeccionAsignatura, actualizarSeccionAsignatura, obtenerAsignaturasPorProfesor, obtenerAsignaturasPorSeccion
+} from '../Controllers/secc_asigController.js';
 
 const router = express.Router();
 
@@ -21,5 +22,10 @@ router.post('/crear_seccion_asig', crearHorarioSeccionAsignatura);
 // Ruta para actualizar una sección
 router.put('/actualizar_seccion_asig', actualizarSeccionAsignatura);
 
+// Ruta para obtener las asignaturas por codSeccion y profesor
+router.get('/verseccionesasignaturas/:codSeccion', obtenerAsignaturasPorProfesor);
+
+// Definir la ruta para obtener asignaturas por sección
+router.get('/porseccion/:codSeccion', obtenerAsignaturasPorSeccion);
 
 export default router;
