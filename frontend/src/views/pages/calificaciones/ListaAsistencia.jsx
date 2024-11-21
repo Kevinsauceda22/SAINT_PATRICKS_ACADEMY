@@ -1,9 +1,9 @@
 import React, { useEffect, useState} from 'react';
-import { cilCheckCircle, cilSearch, cilSave, cilFile,cilSpreadsheet,cilPencil,cilInfo,cilPlus,cilPen } from '@coreui/icons';
+import { cilCheckCircle,cilArrowLeft, cilSearch, cilSave, cilFile,cilSpreadsheet,cilPencil,cilInfo,cilPlus,cilPen } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import Swal from 'sweetalert2';
 
-import {CContainer,CRow,CCol,CCard,CFormSelect,CSpinner,CTable,CTableHeaderCell,CTableBody,CTableRow,CTableDataCell,
+import {CContainer,CRow,CCol,CInputGroup,CCardBody,CFormSelect,CSpinner,CTable,CTableHead,CTableHeaderCell,CTableBody,CTableRow,CTableDataCell,
   CButton,CFormInput,CModal,CModalHeader,CModalBody,CModalFooter,CPopover,CPagination,CDropdownItem,CDropdown,CDropdownToggle,CDropdownMenu
 } from '@coreui/react';
 
@@ -24,7 +24,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaAsistencia = () => {
-  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaActividadesAca');
+  const { canSelect, canInsert, canUpdate } = usePermission('ListaAsistencia');
    const [secciones, setSecciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -43,6 +43,9 @@ const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea
   const [mesBusqueda, setMesBusqueda] = useState('');
   const [añoBusqueda, setAñoBusqueda] = useState('');
   const [tipoFiltro, setTipoFiltro] = useState('dia');
+  const [currentView, setCurrentView] = useState('secciones');
+  const [nombreSeccionSeleccionada, setNombreSeccionSeleccionada] = useState('');
+
   //Paginacion
   const [currentPage, setCurrentPage] = useState(1); // Página actual
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Registros por página
@@ -250,37 +253,6 @@ useEffect(() => {
     });
   };
 
-  // actualiza la sección seleccionada, limpia la lista de alumnos 
-  //y el recuento de asistencias para asegurar que se carguen 
-  //correctamente los nuevos datos al cambiar de sección.
-  const handleSeccionChange = async (e) => {
-    const codSeccion = e.target.value;
-    setCodSeccionSeleccionada(codSeccion);
-    setAlumnos([]);
-    setRecuentoAsistencias([]); // Limpiar el estado del recuento
-
-    if (codSeccion) {
-        try {
-            // Hacer una solicitud fetch para obtener la nomenclatura
-            const response = await fetch(`http://localhost:4000/api/seccionalumno/nomenclatura?codSeccion=${codSeccion}`);
-            if (!response.ok) throw new Error('Error al obtener la nomenclatura.');
-
-            const data = await response.json();
-            if (data) {
-                setNomenclaturaSeleccionada(data.Nomenclatura); // Guarda la nomenclatura en el estado
-            } else {
-                setNomenclaturaSeleccionada(''); // Si no se encuentra, limpiar el estado
-            }
-        } catch (error) {
-            console.error('Error al obtener la nomenclatura:', error);
-        }
-    } else {
-        setNomenclaturaSeleccionada(''); // Si no hay sección seleccionada, limpiar la nomenclatura
-    }
-};
-
-  
-  
   
   // Función para manejar cambios en el input con validaciones
   const handleInputChange = (e, setFunction) => {
@@ -679,183 +651,274 @@ const handleObservacionChangeActualizar = (index, value) => {
     const img = new Image();
     img.src = logo;
   
-     // Obtener la nomenclatura de la sección y la fecha del primer registro de asistencia
-     const fechaRegistro = todasAsistencias.length > 0 ? formatDateTime(todasAsistencias[0].Fecha) : 'sin_fecha';
-    
-     // Crear el nombre del archivo usando la nomenclatura y la fecha del registro
-     const nombreArchivo = `${nomenclaturaSeleccionada}_${fechaRegistro}.pdf`;
-
+    // Obtener la nomenclatura de la sección y la fecha del primer registro de asistencia
+    const fechaRegistro = todasAsistencias.length > 0 ? formatDateTime(todasAsistencias[0].Fecha) : 'sin_fecha';
+  
     img.onload = () => {
-      agregarLogo(doc, img);
-      agregarEncabezado(doc);
+      // Agregar logo
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
   
-      // Agregar tabla con numeración dinámica
-      agregarTablaConNumeracion(doc);
+      let yPosition = 20; // Posición inicial en el eje Y
   
-      // Descargar el archivo PDF
-      doc.save(nombreArchivo);
+      // Título principal
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51); // Verde
+      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 12; // Espaciado más amplio para resaltar el título
+  
+      // Subtítulo
+      doc.setFontSize(16);
+      doc.text('Reporte de Asistencia', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 10; // Espaciado entre subtítulo y detalles
+  
+      // Detalles de la sección
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+      doc.text(`Sección: ${nomenclaturaSeleccionada}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 8; // Espaciado entre líneas de detalle
+  
+      // Fecha del registro (si está disponible)
+      if (fechaRegistro !== 'sin_fecha') {
+        doc.text(`Fecha del registro: ${fechaRegistro.split(' ')[0]}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+        yPosition += 8; // Espaciado solo si la fecha está presente
+      }
+  
+      // Información adicional
+      doc.setFontSize(10);
+      doc.setTextColor(100); // Gris para texto secundario
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 6; // Espaciado antes de la línea divisoria
+  
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51); // Verde
+      doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+  
+      // Configuración para la tabla
+      const pageHeight = doc.internal.pageSize.height; // Altura de la página
+      let pageNumber = 1; // Página inicial
+  
+      // Agregar tabla con auto-paginación
+      doc.autoTable({
+        startY: yPosition + 4,
+        head: [['#', 'Nombre del Alumno', 'Estado', 'Observación']],
+        body: todasAsistencias.map((asistencia, index) => [
+          index + 1,
+          `${asistencia.Nombre_Completo || ''}`.trim(),
+          asistencia.DescripcionEstado,
+          asistencia.Observacion || "Sin Observación",
+        ]),
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+        didDrawPage: (data) => {
+          // Pie de página
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+          doc.text(`Página ${pageNumber}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          pageNumber += 1; // Incrementar el número de página
+        },
+      });
+  
+      // Abrir el PDF en lugar de descargarlo automáticamente
+      window.open(doc.output('bloburl'), '_blank');
     };
   
     img.onerror = () => {
-      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+      // Abrir el PDF sin el logo
+      window.open(doc.output('bloburl'), '_blank');
     };
   };
   
-  // Función para agregar el logo
-  const agregarLogo = (doc, img) => {
-    doc.addImage(img, 'PNG', 10, 10, 25, 25); // Tamaño discreto y alineado
-  };
   
-  // Función para agregar el encabezado
-  const agregarEncabezado = (doc) => {
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.text('Saint Patrick Academy', doc.internal.pageSize.width / 2, 15, { align: 'center' });
-  
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.text('Reporte de Asistencia', doc.internal.pageSize.width / 2, 25, { align: 'center' });
     
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Sección: ${nomenclaturaSeleccionada}`, doc.internal.pageSize.width / 2, 35, { align: 'center' });
-    
-    doc.setLineWidth(0.5);
-    doc.line(10, 38, doc.internal.pageSize.width - 10, 38);
-  };
-  
-  // Función para agregar la tabla con numeración dinámica y pie de página
-  const agregarTablaConNumeracion = (doc) => {
-    const encabezados = ["Nombre Completo", "Fecha", "Estado", "Observación"];
-    const filas = todasAsistencias.map((asistencia) => [
-      asistencia.Nombre_Completo,
-      formatDateTime(asistencia.Fecha),
-      asistencia.DescripcionEstado,
-      asistencia.Observacion || ""
-    ]);
-  
-    autoTable(doc, {
-      head: [encabezados],
-      body: filas,
-      startY: 40,
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-      },
-      columnStyles: {
-        0: { cellWidth: 60 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 50 },
-      },
-      headStyles: {
-        fillColor: [21, 62, 33],
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-      },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      tableWidth: 'wrap', // La tabla se ajusta al contenido
-      margin: { left: (doc.internal.pageSize.width - 190) / 2 },
-      
-      // Evento para agregar pie de página con fecha y número de página
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-        const pageHeight = doc.internal.pageSize.height;
-        const currentDate = new Date().toLocaleDateString();
-  
-        // Pie de página con fecha y número de página
-        doc.setFontSize(10);
-        const footerText = `Fecha de generación: ${currentDate} - Página ${currentPage} de ${pageCount}`;
-        doc.text(footerText, doc.internal.pageSize.width / 2, pageHeight - 10, { align: 'center' });
-      },
-    });
-  };
+
+    const handleViewAsistencia = async (Cod_secciones, nombreSeccion) => {
+      setCodSeccionSeleccionada(Cod_secciones); // Asegúrate de actualizar la sección seleccionada
+      setNombreSeccionSeleccionada(nombreSeccion); // Establecer el nombre de la sección seleccionada
+      fetchRecuentoAsistencias(); // Cargar los datos de asistencia
+      setCurrentView('asistencias'); // Cambiar a la vista de asistencias
+
+      if (Cod_secciones) {
+        try {
+            // Hacer una solicitud fetch para obtener la nomenclatura
+            const response = await fetch(`http://localhost:4000/api/seccionalumno/nomenclatura?codSeccion=${Cod_secciones}`);
+            if (!response.ok) throw new Error('Error al obtener la nomenclatura.');
+
+            const data = await response.json();
+            if (data) {
+                setNomenclaturaSeleccionada(data.Nomenclatura); // Guarda la nomenclatura en el estado
+            } else {
+                setNomenclaturaSeleccionada(''); // Si no se encuentra, limpiar el estado
+            }
+        } catch (error) {
+            console.error('Error al obtener la nomenclatura:', error);
+        }
+    } else {
+        setNomenclaturaSeleccionada(''); // Si no hay sección seleccionada, limpiar la nomenclatura
+    }
+    };
+
+    const handleBackToSecciones = () => {
+      setCurrentView('secciones');
+    };
+
     // Verificar permisos
     if (!canSelect) {
       return <AccessDenied />;
     }
-
-
+    
   return (
     <CContainer className="py-1">
-    <CRow className="justify-content-center" >
-      <CCol xs="11" className="text-center mb-4">
-        <h2 className="fw-bold pb-3" style={{ borderBottom: "2px solid #4CAF50"}}>Asistencia</h2>{/* Encabezado */}
-      </CCol>
-      {/* Tarjeta de selección de sección */}
-      <CCol  xs="12" sm="6" md="3" className="mb-4"> 
-        <CCard className="p-3 shadow-lg rounded" style={{ border: "none",  maxWidth: "300px", overflow: "hidden"  }} >
-          <h5 className="mb-3"><CIcon icon={cilCheckCircle} className="me-2" />Sección</h5>
-          {cargando ? (
-                    <CSpinner color="primary" />
-                  ) : secciones.length === 0 ? (
-                    <p className="text-muted">No hay secciones disponibles.</p>
-                  ) : (
-            <CFormSelect
-              aria-label="Seleccionar sección"
-              value={codSeccionSeleccionada}
-              onChange={handleSeccionChange}
-              className="rounded"
-              style={{ borderColor: "#D1D9E6", transition: "border-color 0.3s" }}
-            >
-              <option value="">Selecciona una sección</option>
-              {secciones.map((seccion) => (
-                <option key={seccion.Cod_seccion} value={seccion.Cod_seccion}>
-                  {seccion.Nomenclatura}
-                </option>
-              ))}
-            </CFormSelect>
-          )}
-        </CCard>
-      </CCol>
+      {cargando && (
+        <div className="text-center my-5">
+          <CSpinner color="primary" aria-label="Cargando información..." />
+        </div>
+      )}
+      {!cargando && currentView === "secciones" && (
+        <>
+          <CRow className="align-items-center mb-5">
+            <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+              <div className="flex-grow-1 text-center">
+                <h3 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50" }}> Lista de Secciones</h3>
+              </div>
+              <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+                <CDropdownToggle
+                  style={{backgroundColor: '#6C8E58',color: 'white',fontSize: '0.85rem',cursor: 'pointer',transition: 'all 0.3s ease', }}
+                  onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
+                  onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
+                  Reporte
+                </CDropdownToggle>
+                <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
+                  <CDropdownItem
+                    // onClick={generarReportePDF}
+                    style={{cursor: "pointer",outline: "none",backgroundColor: "transparent",padding: "0.5rem 1rem",fontSize: "0.85rem",color: "#333",borderBottom: "1px solid #eaeaea",transition: "background-color 0.3s",}}
+                    onMouseOver={(e) =>(e.target.style.backgroundColor = "#f5f5f5")} onMouseOut={(e) =>(e.target.style.backgroundColor = "transparent")}>
+                    <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+                  </CDropdownItem>
+                  <CDropdownItem
+                    // onClick={generarReporteExcel}
+                    style={{cursor: "pointer",outline: "none",backgroundColor: "transparent",padding: "0.5rem 1rem",fontSize: "0.85rem",color: "#333",transition: "background-color 0.3s",}}
+                    onMouseOver={(e) =>(e.target.style.backgroundColor = "#f5f5f5")}
+                    onMouseOut={(e) =>(e.target.style.backgroundColor = "transparent")}>
+                    <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+                  </CDropdownItem>
+                </CDropdownMenu>
+              </CDropdown>
+            </CCol>
+          </CRow>
 
-
-
-      {/* Tarjeta de tabla de recuento con el botón "Nuevo" dentro */}
-      <CCol xs="12" sm="12" md="8">
-        <CCard className="p-4 shadow-lg rounded position-relative" style={{ border: "none" }}>
-          {/* Contenedor principal para boton Nuevo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-            {/* Botón "Nuevo" alineado al lado derecho */}
-            <div style={{ marginLeft: 'auto' }}>
-
-              {canInsert && (
-              <CButton
-                className="d-flex align-items-center gap-1 rounded"
-                onClick={() => setMostrarModalNuevo(true)}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")}
-                style={{ backgroundColor: '#4B6251', color: '#FFFFFF', padding: '5px 10px', fontSize: '0.9rem' }}
-              >
-                <CIcon icon={cilPlus} className="me-2" />
-                Nuevo
-              </CButton>
-              )}
-              
-            </div>
+          <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
+            <CTable striped bordered hover responsive >
+              <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
+                <CTableRow>
+                  <CTableHeaderCell>#</CTableHeaderCell>
+                  <CTableHeaderCell>SECCIÓN</CTableHeaderCell>
+                  <CTableHeaderCell>GRADO</CTableHeaderCell>
+                  <CTableHeaderCell>AÑO ACADÉMICO</CTableHeaderCell>
+                  <CTableHeaderCell>PROFESOR</CTableHeaderCell>
+                  <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
+                </CTableRow>
+              </CTableHead>
+              <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
+                {secciones.map((seccion, index) => (
+                  <CTableRow key={index}>
+                    <CTableDataCell >{index + 1}</CTableDataCell>
+                    <CTableDataCell>{seccion.Seccion}</CTableDataCell>
+                    <CTableDataCell>{seccion.Grado}</CTableDataCell>
+                    <CTableDataCell>{seccion.Anio_Academico}</CTableDataCell>
+                    <CTableDataCell>{seccion.Nombre_Profesor}</CTableDataCell>
+                    <CTableDataCell>
+                      <CButton size="sm"style={{backgroundColor: "#F0F4F3",color: "#153E21",border: "1px solid #A2B8A9",borderRadius: "6px",padding: "5px 12px",boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",}}
+                        onMouseEnter={(e) =>(e.target.style.backgroundColor = "#dce3dc")}onMouseLeave={(e) =>(e.target.style.backgroundColor = "#F0F4F3")}
+                        onClick={() =>handleViewAsistencia(seccion.Cod_secciones, seccion.Seccion)}>
+                        Ver Asistencia
+                      </CButton>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
           </div>
-
-          {/* Contenedor para los filtros y el paginado */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
+        </>
+      )}
+      {!cargando && currentView === 'asistencias' && (
+        <>
+          <CRow className="align-items-center mb-5">
+            {/* Botón "Volver a Secciones" a la izquierda */}
+            <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+              <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
+                style={{backgroundColor: "#656565",color: "#FFFFFF",padding: "6px 12px",fontSize: "0.9rem",transition: "background-color 0.2s ease, box-shadow 0.3s ease",boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",}}
+                onClick={handleBackToSecciones}>
+                <CIcon icon={cilArrowLeft} /> Volver a Secciones
+              </CButton>
+              <div className="d-flex justify-content-center align-items-center flex-grow-1">
+                <h3 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",}}> Asistencias de Sección: {nombreSeccionSeleccionada || "Selecciona una sección"}</h3>
+              </div>
+              {/* Botón "Nuevo" a la derecha */}
+              {canInsert && (
+                <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
+                  onClick={() => setMostrarModalNuevo(true)}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")}
+                  style={{backgroundColor: "#4B6251",color: "#FFFFFF",padding: "5px 10px",fontSize: "0.9rem",}}>
+                  <CIcon icon={cilPlus} className="me-2" />
+                  Nuevo
+                </CButton>
+              )}
+            </CCol>
+          </CRow>
+         {/* Filtros y paginación */}
+         <CRow className="align-items-center mt-4 mb-2">
+          {/* Barra de búsqueda y selector de tipo de filtro */}
+          <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center gap-3">
             {/* Selector de tipo de filtro */}
-            <CFormSelect
-              value={tipoFiltro}
-              onChange={(e) => {setTipoFiltro(e.target.value);setMesBusqueda(''); setAñoBusqueda('');setDiaBusqueda('');}}
-              style={{ width: '110px', padding: '0.2rem', fontSize: '0.8rem', height: '35px', lineHeight: '2' }}
-            >
-              <option value="">Buscar por:</option>
-              <option value="mes">Mes</option>
-              <option value="anio">Año</option>
-            </CFormSelect>
-
-            {/* Condicionales para mostrar el filtro de mes o año */}
+            <CInputGroup className="me-1" style={{ maxWidth: '150px' }}>
+              <CFormSelect
+                value={tipoFiltro}
+                onChange={(e) => {
+                  setTipoFiltro(e.target.value);
+                  setMesBusqueda('');
+                  setAñoBusqueda('');
+                  setDiaBusqueda('');
+                }}
+                style={{ padding: '0.2rem', fontSize: '0.8rem', height: '35px', lineHeight: '2' }}
+              >
+                <option value="">Buscar por:</option>
+                <option value="mes">Mes</option>
+                <option value="anio">Año</option>
+              </CFormSelect>
+            </CInputGroup>
+            {/* Filtros condicionales */}
             {tipoFiltro === 'mes' && (
-              <>
+              <CInputGroup className="me-3" style={{ maxWidth: '250px' }}>
                 <CFormSelect
                   value={mesBusqueda}
                   onChange={(e) => setMesBusqueda(e.target.value)}
-                  style={{ width: '150px', padding: '0.2rem', fontSize: '0.8rem', height: '35px', lineHeight: '2' }}
+                  style={{ padding: '0.2rem', fontSize: '0.8rem', height: '35px', lineHeight: '2' }}
                 >
                   <option value="">Selecciona un mes</option>
                   {[...Array(12).keys()].map((i) => (
@@ -867,558 +930,496 @@ const handleObservacionChangeActualizar = (index, value) => {
                 {mesBusqueda && (
                   <CFormInput
                     type="number"
-                    placeholder="Día(opcional)"
+                    placeholder="Día (opcional)"
                     value={diaBusqueda}
                     onChange={(e) => setDiaBusqueda(e.target.value)}
                     min="1"
                     max="31"
-                    style={{ width: '110px', padding: '0.2rem', fontSize: '0.8rem', height: '35px', lineHeight: '2' }}
+                    style={{
+                      padding: '0.2rem',
+                      fontSize: '0.8rem',
+                      height: '35px',
+                      lineHeight: '2',
+                    }}
                   />
                 )}
-              </>
+              </CInputGroup>
             )}
             {tipoFiltro === 'anio' && (
-              <CFormSelect
-                value={añoBusqueda}
-                onChange={(e) => setAñoBusqueda(e.target.value)}
-                style={{ width: '150px', padding: '0.2rem', fontSize: '0.8rem',height: '35px', lineHeight: '2' }}
-              >
-                <option value="">Selecciona un año</option>
-                {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map(
-                  (year) => (
+              <CInputGroup className="me-3" style={{ maxWidth: '250px' }}>
+                <CFormSelect
+                  value={añoBusqueda}
+                  onChange={(e) => setAñoBusqueda(e.target.value)}
+                  style={{ padding: '0.2rem', fontSize: '0.8rem', height: '35px', lineHeight: '2' }}
+                >
+                  <option value="">Selecciona un año</option>
+                  {Array.from({ length: 50 }, (_, i) => new Date().getFullYear() - i).map((year) => (
                     <option key={year} value={year}>
                       {year}
                     </option>
-                  )
-                )}
-              </CFormSelect>
-            )}
-
-            {/* Espaciador para empujar el paginado hacia la derecha */}
-            <div style={{ flexGrow: 1 }}></div>
-
-            {/* Selector de paginación dinámica */}
-            <span style={{ fontSize: '0.85rem' }}>Mostrar</span>
-            <CFormSelect
-              style={{ width: '80px', textAlign: 'center', padding: '0.2rem', fontSize: '0.85rem' }}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                setRecordsPerPage(value);
-                setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
-              }}
-              value={recordsPerPage}
-            >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-            </CFormSelect>
-            <span style={{ fontSize: '0.85rem' }}>registros</span>
-          </div>
-
-          {/* Contenido de la tarjeta con recuento de asistencias */}
-          {recuentoAsistencias.length === 0 ? (
-            <p className="text-center text-muted mt-2">
-              No se encontraron registros de asistencia para esta sección
-            </p>
-          ) : (
-            <>
-          <CTable bordered hover responsive className="shadow-sm mt-2">
-            <thead className="bg-light">
-              <tr>
-                <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem' }}>FECHA</CTableHeaderCell>
-                {estadosAsistencia.map((estado) => (
-                  <CTableHeaderCell key={estado.Cod_estado_asistencia} className="text-center" style={{ fontSize: '0.8rem' }}>
-                    {estado.Descripcion_asistencia}
-                  </CTableHeaderCell>
-                ))}
-                <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem' }}>ACCIÓN</CTableHeaderCell>
-              </tr>
-            </thead>
-            <CTableBody>
-              {currentRecords.map(([fecha, estados]) => (
-                <CTableRow key={fecha}>
-                  <CTableDataCell className="text-center" style={{ fontSize: '0.85rem' }}>
-                  {formatDate(fecha)}
-                  </CTableDataCell>
-                  {estadosAsistencia.map((estado) => (
-                    <CTableDataCell key={estado.Cod_estado_asistencia} className="text-center" style={{ fontSize: '0.85rem' }}>
-                      {estados[estado.Cod_estado_asistencia] || 0}
-                    </CTableDataCell>
                   ))}
-                  <CTableDataCell style={{ fontSize: '0.85rem', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}>
-                      <CButton
-                        onClick={() => cargarDatosParaActualizar(fecha)}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#dfa75b")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#F9B64E")}
-                        style={{ backgroundColor: '#F9B64E', color: '#FFFFFF', padding: '5px 10px', fontSize: '0.9rem' }}
-                      >
-                        <CIcon icon={cilPen} />
-                      </CButton>
-
-                      <CButton
-                        onClick={() => fetchTodasAsistencias(fecha)}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B6A7C")}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#5D8AA8")}
-                        style={{ backgroundColor: '#5D8AA8', color: '#FFFFFF', padding: '5px 10px', fontSize: '0.9rem' }}
-                      >
-                        <CIcon icon={cilInfo} />
-                      </CButton>
-                    </div>
-                  </CTableDataCell>
-                </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
-
-            {/* Paginación centrada en la CCard */}
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
-              <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
-                <CButton
-                  style={{backgroundColor: '#6f8173', color: '#D9EAD3' }}
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                >
-                  Anterior
-                </CButton>
-                <CButton
-                  style={{ marginLeft:'10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                >
-                  Siguiente
-                </CButton>
-              </CPagination>
-              <span style={{ marginLeft: '10px' }}>
-                Página {currentPage} de {totalPages}
-              </span>
-            </div>
-            </>
+                </CFormSelect>
+              </CInputGroup>
             )}
-         </CCard>
-      </CCol>
-
-
-    </CRow>
-
-    {/* Modal "Nuevo" */}
-    <CModal visible={mostrarModalNuevo} onClose={handleCerrarModalNuevo} size="lg" centered>
-      <CModalHeader closeButton={false}>
-        <h5 className="modal-title">Registrar Asistencia</h5>
-        <CButton type="button" className="btn-close" onClick={handleCerrarModalNuevo} />
-      </CModalHeader>
-      <CModalBody style={{ fontSize: '0.85rem' }}>
-        {/* Fecha de Asistencia */}
-        <CRow className="align-items-center mb-2">
-          <CCol xs="12" md="6" className="d-flex align-items-center">
-            <h6 className="mb-1 me-3">Fecha:</h6>
-            <CFormInput
-              type="date"
-              value={getTodayDate()}
-              disabled // Esto deshabilita el campo de entrada
-              className="rounded"
-              style={{ maxWidth: '150px', padding: '0.3rem', fontSize: '0.85rem' }}
-            />
-
           </CCol>
-          {/* Botón Guardar */}
-          <CCol xs="12" md="6" className="text-md-end text-center mt-2 mt-md-0">
-            
+          {/* Selector dinámico de registros */}
+          <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
+            <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
+              <div className="d-inline-flex align-items-center">
+                <span style={{ fontSize: '0.85rem' }}>Mostrar&nbsp;</span>
+                <CFormSelect
+                  style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                  onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setRecordsPerPage(value);
+                    setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+                  }}
+                  value={recordsPerPage}
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                </CFormSelect>
+                <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
+              </div>
+            </CInputGroup>
           </CCol>
-        </CRow>
-
-        {/* Tabla de Estudiantes */}
-        {alumnos.length === 0 ? (
-          <p className="text-muted">No hay estudiantes en esta sección.</p>
-        ) : (
-          <div className="table-responsive" style={{ maxHeight: '350px', overflowY: 'auto', overflowX: 'auto' }}>
-            <CTable bordered hover responsive small>
-              <thead className="bg-light">
-                <tr>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>ALUMNO</CTableHeaderCell>
-                  {/* Encabezado para los íconos de estado */}
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.9rem', padding: '2px', verticalAlign: 'middle' }}>
-                    <div className="d-flex justify-content-center gap-4">
-                      {estadosAsistencia.map((estado) => {
-                        const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray', icono: '❓' };
-                        const allSelected = asistencias.every(
-                          (asistencia) => asistencia.Cod_estado_asistencia === estado.Cod_estado_asistencia
-                        );
-                        const titleMessage = allSelected
-                          ? `Haga clic para deseleccionar todos como: ${estado.Descripcion_asistencia}`
-                          : `Haga clic para marcar todos como: ${estado.Descripcion_asistencia}`;
-                        
-                        return (
-                          <span
-                            key={estado.Cod_estado_asistencia}
-                            style={{ color: estilo.color, fontSize: '1.2rem', cursor: 'pointer' }}
-                            title={titleMessage}
-                            onClick={() => handleSelectAll(estado.Cod_estado_asistencia)}
-                          >
-                            {estilo.icono}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>OBSERVACIÓN</CTableHeaderCell>
-                </tr>
-              </thead>
-              <CTableBody>
-                {alumnos.map((alumno, index) => (
-                  <CTableRow key={alumno.Cod_seccion_matricula}>
-                    <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
-                    <CTableDataCell style={{ fontSize: '0.8rem', padding: '4px', verticalAlign: 'middle' }}>{alumno.Nombre_Completo}</CTableDataCell>
-                    {/* Celda de checkboxes */}
-                    <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '32px' }}>
-                        {estadosAsistencia.map((estado) => {
-                          const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray' };
-                          return (
-                            <input
-                              key={estado.Cod_estado_asistencia}
-                              type="checkbox"
-                              checked={asistencias[index].Cod_estado_asistencia === estado.Cod_estado_asistencia}
-                              onChange={() => handleEstadoCheckboxChange(index, estado.Cod_estado_asistencia)}
-                              style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: estilo.color, marginTop: '8px' }}
-                            />
-                          );
-                        })}
-                      </div>
-                    </CTableDataCell>
-                    <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '4px' }}>
-                    <CPopover
-                      content={
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <textarea
-                            placeholder="Escribe tu observación"
-                            value={asistencias[index].Observacion}
-                            maxLength={50}
-                            onChange={(e) => handleInputChange(e, (value) => handleObservacionChange(index, value))}
-                            onPaste={disableCopyPaste}
-                            onCopy={disableCopyPaste}
-                            style={{
-                              width: '280px', // Ancho del área de texto
-                              height: '40px', // Altura del área de texto
-                              padding: '0.5rem',
-                              resize: 'none', // Para deshabilitar el redimensionamiento
-                              overflow: 'hidden', // Para ocultar el desbordamiento
-                              whiteSpace: 'pre-wrap', // Para que el texto se envuelva y se muestre en nuevas líneas
-                              border: '1px solid #ccc', // Color de borde más suave
-                              outline: 'none', // Eliminar el color de borde por defecto al hacer clic
-                              fontSize: '0.75rem', // Tamaño de la letra
-                            }}
-                            onFocus={(e) => (e.target.style.border = '1px solid #aaa')} // Borde menos pronunciado al enfocar
-                            onBlur={(e) => (e.target.style.border = '1px solid #ccc')} // Volver al borde original al desenfocar
-                          />
-                        </div>
-                      }
-                      placement="right"
-                      trigger="click"
-                      style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
-                    >
-
-                      {canUpdate && (
-                      <CButton color="link">
-                        <CIcon icon={cilPencil} style={{ color: 'black' }} />
-                      </CButton>
-                      )}
-
-                    </CPopover>
-                    </CTableDataCell>
-                  </CTableRow>
-                ))}
-              </CTableBody>
-            </CTable>
-          </div>
-        )}
-      </CModalBody>
-      <CModalFooter>
-        <CButton color="secondary"  onClick={handleCerrarModalNuevo}>
-          Cerrar
-        </CButton>
-        <CButton
-              onClick={handleGuardarAsistencias}
-              style={{ backgroundColor: '#4B6251', color: '#FFFFFF'}}
-            >
-              <CIcon icon={cilSave}  /> Guardar
-            </CButton>
-      </CModalFooter>
-    </CModal>
+         </CRow>
 
 
-    {/* Modal para mostrar todas las asistencias */}
-    <CModal visible={mostrarModal} onClose={() => setMostrarModal(false)} size="xl" backdrop="static" centered>
-      <CModalHeader closeButton={false}>
-        <h5 className="modal-title">Asistencias de la Sección </h5>
-        <CButton type="button" className="btn-close" onClick={() => setMostrarModal(false)} />
-      </CModalHeader>
-      <CModalBody style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'auto', padding: '1.5rem' }}>
-        {/* Filtro por nombre */}
-        <CRow className="mb-3 justify-content-center align-items-center">
-          <CCol xs="12" md="6" className="d-flex align-items-center">
-            <CIcon icon={cilSearch} style={{ marginRight: '8px', fontSize: '1.2rem', color: '#6C8E58' }} />
-            <CFormInput
-              placeholder="Buscar por nombre"
-              value={nombreBusqueda}
-              onChange={(e) => setNombreBusqueda(e.target.value)}
-              style={{ fontSize: '0.85rem', flex: 1 }}
-            />
-          </CCol>
-          <CCol xs="auto">
-            <CDropdown>
-              <CDropdownToggle
-                style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }}
-              >
-                Reporte
-              </CDropdownToggle>
-              <CDropdownMenu>
-              <CDropdownItem
-              onClick={generarReportePDF}
-              style={{
-                cursor: 'pointer',
-                outline: 'none',
-                backgroundColor: 'transparent',
-                padding: '0.5rem 1rem',
-                fontSize: '0.85rem',
-                color: '#333',
-                borderBottom: '1px solid #eaeaea',
-                transition: 'background-color 0.3s',
-              }}
-              onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
-              onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
-            >
-              <CIcon icon={cilFile} size="sm" /> Descargar PDF
-            </CDropdownItem>
-            <CDropdownItem
-              onClick={generarReporteExcel}
-              style={{
-                cursor: 'pointer',
-                outline: 'none',
-                backgroundColor: 'transparent',
-                padding: '0.5rem 1rem',
-                fontSize: '0.85rem',
-                color: '#333',
-                transition: 'background-color 0.3s',
-              }}
-              onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
-              onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
-            >
-              <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-            </CDropdownItem>
-              </CDropdownMenu>
-            </CDropdown>
-          </CCol>
-        </CRow>
-        {asistenciasFiltradas.length > 0 ? (
-          <CTable bordered hover responsive className="shadow-sm">
-            <thead className="bg-light">
-              <tr>
-                <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
-                <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Nombre Completo</CTableHeaderCell>
-                <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Fecha</CTableHeaderCell>
-                <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Estado</CTableHeaderCell>
-                <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Observación</CTableHeaderCell>
-              </tr>
-            </thead>
-            <CTableBody>
-              {asistenciasFiltradas.map((asistencia, index) => (
-                <CTableRow key={asistencia.Cod_asistencias}>
-                  <CTableDataCell className="text-center" style={{ fontSize: '1rem', padding: '3px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
-                  <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Nombre_Completo}</CTableDataCell>
-                  <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{formatDateTime(asistencia.Fecha)}</CTableDataCell>
-                  <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.DescripcionEstado}</CTableDataCell>
-                  <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Observacion}</CTableDataCell>
+
+          {/* Contenido de la tabla de recuento de asistencias */}
+          {recuentoAsistencias.length === 0 ? (
+            <p className="text-center text-muted mt-2">No se encontraron registros de asistencia para esta sección</p>
+          ) : (
+          <>
+          <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto',marginBottom: '20px',boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)'}}>
+            <CTable striped bordered hover responsive>
+              <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem',}}>
+                <CTableRow>
+                  <CTableHeaderCell >#</CTableHeaderCell>
+                    <CTableHeaderCell >FECHA</CTableHeaderCell>
+                    {estadosAsistencia.map((estado) => (<CTableHeaderCell key={estado.Cod_estado_asistencia}className="text-center">{estado.Descripcion_asistencia}</CTableHeaderCell>))}
+                    <CTableHeaderCell  >ACCIÓN</CTableHeaderCell>
                 </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
-        ) : (
-          <p className="text-center text-muted">No hay registros de asistencia para esta fecha</p>
-        )}
-      </CModalBody>
-      <CModalFooter>
-        <CButton color="secondary" onClick={() => setMostrarModal(false)}>
-          Cerrar
-        </CButton>
-      </CModalFooter>
-    </CModal>
-
-
-    {/* Modal "Actualizar" */}
-    <CModal visible={mostrarModalActualizar} onClose={() => setMostrarModalActualizar(false)} size="lg" centered>
-      <CModalHeader closeButton={false}>
-        <h5 className="modal-title">Actualizar Asistencia</h5>
-        <CButton type="button" className="btn-close" onClick={() => setMostrarModalActualizar(false)} />
-      </CModalHeader>
-      <CModalBody style={{ fontSize: '0.85rem' }}>
-        {/* Fecha de Asistencia */}
-        <CRow className="align-items-center mb-2">
-          <CCol xs="12" md="6" className="d-flex align-items-center">
-            <h6 className="mb-1 me-3">Fecha:</h6>
-            <CFormInput
-              type="date"
-              value={fecha}
-              disabled // Esto deshabilita el campo de entrada
-              className="rounded"
-              style={{ maxWidth: '150px', padding: '0.3rem', fontSize: '0.85rem' }}
-            />
-
-          </CCol>
-          {/* Botón Guardar */}
-          <CCol xs="12" md="6" className="text-md-end text-center mt-2 mt-md-0">
-            
-          </CCol>
-        </CRow>
-
-        {/* Tabla de Estudiantes */}
-        {asistenciasActualizar.length === 0 ? (
-          <p className="text-muted">No hay estudiantes en esta sección.</p>
-        ) : (
-          <div className="table-responsive" style={{ maxHeight: '350px', overflowY: 'auto', overflowX: 'auto' }}>
-            <CTable bordered hover responsive small>
-              <thead className="bg-light">
-                <tr>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>ALUMNO</CTableHeaderCell>
-                  {/* Encabezado para los íconos de estado */}
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.9rem', padding: '2px', verticalAlign: 'middle' }}>
-                    <div className="d-flex justify-content-center gap-4">
-                      {estadosAsistencia.map((estado) => {
-                        const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray', icono: '❓' };
-                        const allSelected = asistenciasActualizar.every(
-                          (asistencia) => asistencia.Cod_estado_asistencia === estado.Cod_estado_asistencia
-                        );
-                        const titleMessage = allSelected
-                          ? `Haga clic para deseleccionar todos como: ${estado.Descripcion_asistencia}`
-                          : `Haga clic para marcar todos como: ${estado.Descripcion_asistencia}`;
-                        
-                        return (
-                          <span
-                            key={estado.Cod_estado_asistencia}
-                            style={{ color: estilo.color, fontSize: '1.2rem', cursor: 'pointer' }}
-                            title={titleMessage}
-                            onClick={() =>  handleSelectAllActualizar(estado.Cod_estado_asistencia)}
-                          >
-                            {estilo.icono}
-                          </span>
-                        );
-                      })}
-                    </div>
-                  </CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>OBSERVACIÓN</CTableHeaderCell>
-                </tr>
-              </thead>
-              <CTableBody>
-                {asistenciasActualizar.map((asistencia, index) => (
-                  <CTableRow key={asistencia.Cod_asistencias}>
-                    <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
-                    <CTableDataCell style={{ fontSize: '0.8rem', padding: '4px', verticalAlign: 'middle' }}>{asistencia.Nombre_Completo}</CTableDataCell>
-                    {/* Celda de checkboxes */}
-                    <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '32px' }}>
-                        {estadosAsistencia.map((estado) => {
-                          const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray' };
-                          return (
-                            <input
-                              key={estado.Cod_estado_asistencia}
-                              type="checkbox"
-                              checked={asistenciasActualizar[index].Cod_estado_asistencia === estado.Cod_estado_asistencia}
-                              onChange={() => handleEstadoCheckboxChangeActualizar(index, estado.Cod_estado_asistencia)}
-                              style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: estilo.color, marginTop: '8px' }}
-                            />
-                          );
-                        })}
+              </CTableHead>
+              <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
+                {currentRecords.map(([fecha, estados], index) => (
+                  <CTableRow key={fecha} >
+                    <CTableDataCell >{index + 1}</CTableDataCell>
+                    <CTableDataCell>{formatDate(fecha)}</CTableDataCell>
+                    {estadosAsistencia.map((estado) => (<CTableDataCell key={estado.Cod_estado_asistencia}>{estados[estado.Cod_estado_asistencia] || 0}</CTableDataCell> ))}
+                  <CTableDataCell style={{ padding: '10px' }}>
+                      <div style={{display: 'flex',gap: '10px',justifyContent: 'center',alignItems: 'center', }}>
+                        {canUpdate && (
+                          <CButton
+                            onClick={() => cargarDatosParaActualizar(fecha)}
+                            onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
+                            onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
+                            style={{backgroundColor: '#F9B64E',color: '#5C4044',border: 'none', transition: 'all 0.2s ease',padding: '5px 10px',height: '38px',width: '45px',}}>
+                            <CIcon icon={cilPen} />
+                          </CButton>
+                        )}
+                        <CButton
+                          onClick={() => fetchTodasAsistencias(fecha)}
+                          onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0px 4px 10px rgba(93, 138, 168, 0.6)';e.currentTarget.style.color = '#000000'; }}
+                          onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
+                          style={{backgroundColor: '#5D8AA8',marginRight: '10px',color: '#5C4044',border: 'none', transition: 'all 0.2s ease',padding: '5px 10px', height: '38px',width: '45px', }}>
+                          <CIcon icon={cilInfo} />
+                        </CButton>
                       </div>
-                    </CTableDataCell>
-                    <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '4px' }}>
-                    <CPopover
-                      content={
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          <textarea
-                            placeholder="Escribe tu observación"
-                            value={asistencia.Observacion === 'BORRAR' ? '' : asistencia.Observacion}
-                            maxLength={50}
-                            onChange={(e) => handleInputChange(e, (value) => handleObservacionChangeActualizar(index, value))}
-                            onPaste={disableCopyPaste}
-                            onCopy={disableCopyPaste}
-                            style={{
-                              width: '280px',
-                              height: '40px',
-                              padding: '0.5rem',
-                              resize: 'none',
-                              overflow: 'hidden',
-                              whiteSpace: 'pre-wrap',
-                              border: '1px solid #ccc',
-                              outline: 'none',
-                              fontSize: '0.75rem',
-                            }}
-                            onFocus={(e) => (e.target.style.border = '1px solid #aaa')}
-                            onBlur={(e) => (e.target.style.border = '1px solid #ccc')}
-                          />
-                          <button
-                            onClick={() => handleObservacionChangeActualizar(index, 'BORRAR')}
-                            style={{
-                              backgroundColor: '#f44336',
-                              color: '#fff',
-                              border: 'none',
-                              padding: '0.1rem 0.3rem',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '0.75rem',
-                            }}
-                          >
-                            Borrar
-                          </button>
-                        </div>
-                      }
-                      placement="right"
-                      trigger="click"
-                      style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
-                    >
-                      
-                      {canUpdate && (
-                      <CButton color="link">
-                        <CIcon icon={cilPencil} style={{ color: 'black' }} />
-                      </CButton>
-                      )}
-
-                    </CPopover>
                     </CTableDataCell>
                   </CTableRow>
                 ))}
               </CTableBody>
             </CTable>
           </div>
-        )}
-      </CModalBody>
-      <CModalFooter>
-        <CButton color="secondary" onClick={() => setMostrarModalActualizar(false)}>
-          Cerrar
-        </CButton>
-        <CButton
-              onClick={handleActualizarAsistencias}
-              style={{ backgroundColor: '#4B6251', color: '#FFFFFF'}}
-            >
-              <CIcon icon={cilPen}  /> Actualizar
-            </CButton>
-      </CModalFooter>
-    </CModal>
+          {/* Paginación */}
+          <div style={{ display: 'flex',  justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
+            <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
+              <CButton
+                style={{ backgroundColor: '#6f8173', color: '#D9EAD3'}}
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
+              >
+                Anterior
+              </CButton>
+              <CButton
+                style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
+              >
+                Siguiente
+              </CButton>
+            </CPagination>
+            <span style={{  marginLeft: '10px'}}>
+              Página {currentPage} de {totalPages}
+            </span>
+          </div>
+          </>
+          )}
+        </>
+      )}
 
-  </CContainer>
-);
-  return { 
-    canSelect, 
-    canInsert, 
-    canUpdate, 
-    canDelete, 
-    hasAccess, 
-    loading,
-    error,
-    permissions 
-  };
+        
+      {/* Modal "Nuevo" */}
+      <CModal visible={mostrarModalNuevo} onClose={handleCerrarModalNuevo} size="lg" centered backdrop="static">
+        <CModalHeader closeButton={false}>
+          <h5 className="modal-title">Registrar Asistencia</h5>
+          <CButton type="button" className="btn-close" onClick={handleCerrarModalNuevo} />
+        </CModalHeader>
+        <CModalBody style={{ fontSize: '0.85rem' }}>
+          {/* Fecha de Asistencia */}
+          <CRow className="align-items-center mb-2">
+            <CCol xs="12" md="6" className="d-flex align-items-center">
+              <h6 className="mb-1 me-3">Fecha:</h6>
+              <CFormInput
+                type="date"
+                value={getTodayDate()}
+                disabled // Esto deshabilita el campo de entrada
+                className="rounded"
+                style={{ maxWidth: '150px', padding: '0.3rem', fontSize: '0.85rem' }}
+              />
+            </CCol>
+            {/* Botón Guardar */}
+            <CCol xs="12" md="6" className="text-md-end text-center mt-2 mt-md-0">
+            </CCol>
+          </CRow>
 
+          {/* Tabla de Estudiantes */}
+          {alumnos.length === 0 ? (
+            <p className="text-muted">No hay estudiantes en esta sección.</p>
+          ) : (
+            <div className="table-responsive" style={{ maxHeight: '350px', overflowY: 'auto', overflowX: 'auto' }}>
+              <CTable bordered hover responsive small>
+                <thead className="bg-light">
+                  <tr>
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>ALUMNO</CTableHeaderCell>
+                    {/* Encabezado para los íconos de estado */}
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.9rem', padding: '2px', verticalAlign: 'middle' }}>
+                      <div className="d-flex justify-content-center gap-4">
+                        {estadosAsistencia.map((estado) => {
+                          const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray', icono: '❓' };
+                          const allSelected = asistencias.every(
+                            (asistencia) => asistencia.Cod_estado_asistencia === estado.Cod_estado_asistencia
+                          );
+                          const titleMessage = allSelected
+                            ? `Haga clic para deseleccionar todos como: ${estado.Descripcion_asistencia}`
+                            : `Haga clic para marcar todos como: ${estado.Descripcion_asistencia}`;
+                          
+                          return (
+                            <span
+                              key={estado.Cod_estado_asistencia}
+                              style={{ color: estilo.color, fontSize: '1.2rem', cursor: 'pointer' }}
+                              title={titleMessage}
+                              onClick={() => handleSelectAll(estado.Cod_estado_asistencia)}
+                            >
+                              {estilo.icono}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>OBSERVACIÓN</CTableHeaderCell>
+                  </tr>
+                </thead>
+                <CTableBody>
+                  {alumnos.map((alumno, index) => (
+                    <CTableRow key={alumno.Cod_seccion_matricula}>
+                      <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
+                      <CTableDataCell style={{ fontSize: '0.8rem', padding: '4px', verticalAlign: 'middle' }}>{alumno.Nombre_Completo}</CTableDataCell>
+                      {/* Celda de checkboxes */}
+                      <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '32px' }}>
+                          {estadosAsistencia.map((estado) => {
+                            const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray' };
+                            return (
+                              <input
+                                key={estado.Cod_estado_asistencia}
+                                type="checkbox"
+                                checked={asistencias[index].Cod_estado_asistencia === estado.Cod_estado_asistencia}
+                                onChange={() => handleEstadoCheckboxChange(index, estado.Cod_estado_asistencia)}
+                                style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: estilo.color, marginTop: '8px' }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </CTableDataCell>
+                      <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '4px' }}>
+                        <CPopover
+                          content={
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              <textarea
+                                placeholder="Escribe tu observación"
+                                value={asistencias[index].Observacion}
+                                maxLength={50}
+                                onChange={(e) => handleInputChange(e, (value) => handleObservacionChange(index, value))}
+                                onPaste={disableCopyPaste}
+                                onCopy={disableCopyPaste}
+                                style={{
+                                  width: '280px', // Ancho del área de texto
+                                  height: '40px', // Altura del área de texto
+                                  padding: '0.5rem',
+                                  resize: 'none', // Para deshabilitar el redimensionamiento
+                                  overflow: 'hidden', // Para ocultar el desbordamiento
+                                  whiteSpace: 'pre-wrap', // Para que el texto se envuelva y se muestre en nuevas líneas
+                                  border: '1px solid #ccc', // Color de borde más suave
+                                  outline: 'none', // Eliminar el color de borde por defecto al hacer clic
+                                  fontSize: '0.75rem', // Tamaño de la letra
+                                }}
+                                onFocus={(e) => (e.target.style.border = '1px solid #aaa')} // Borde menos pronunciado al enfocar
+                                onBlur={(e) => (e.target.style.border = '1px solid #ccc')} // Volver al borde original al desenfocar
+                              />
+                            </div>
+                          }
+                          placement="right"
+                          trigger="click"
+                          style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
+                        >
+                          <CButton color="link">
+                            <CIcon icon={cilPencil} style={{ color: 'black' }} />
+                          </CButton>
+                        </CPopover>
+                      </CTableDataCell>
+                    </CTableRow>
+                  ))}
+                </CTableBody>
+              </CTable>
+            </div>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary"  onClick={handleCerrarModalNuevo}>
+            Cerrar
+          </CButton>
+          <CButton
+            onClick={handleGuardarAsistencias}
+            onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = "#3C4B43";  }}
+            onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = "#4B6251"; }}
+            style={{backgroundColor: '#4B6251',color: '#FFFFFF',padding: '6px 12px',transition: 'background-color 0.2s ease, box-shadow 0.3s ease', }}>
+            <CIcon icon={cilSave} /> Guardar
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+
+      {/* Modal para mostrar todas las asistencias */}
+      <CModal visible={mostrarModal} onClose={() => setMostrarModal(false)} size="xl" backdrop="static" centered>
+        <CModalHeader closeButton={false}>
+          <h5 className="modal-title">Asistencias de la Sección </h5>
+          <CButton type="button" className="btn-close" onClick={() => setMostrarModal(false)} />
+        </CModalHeader>
+        <CModalBody style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'auto', padding: '1.5rem' }}>
+          {/* Filtro por nombre */}
+          <CRow className="mb-3 justify-content-center align-items-center">
+            <CCol xs="12" md="6" className="d-flex align-items-center">
+              <CIcon icon={cilSearch} style={{ marginRight: '8px', fontSize: '1.2rem', color: '#6C8E58' }} />
+              <CFormInput
+                placeholder="Buscar por nombre"
+                value={nombreBusqueda}
+                onChange={(e) => setNombreBusqueda(e.target.value)}
+                style={{ fontSize: '0.85rem', flex: 1 }}
+              />
+            </CCol>
+            <CCol xs="auto">
+              <CDropdown>
+               <CDropdownToggle
+                  style={{ backgroundColor: '#6C8E58',color: 'white',fontSize: '0.85rem',cursor: 'pointer',transition: 'all 0.3s ease', }}
+                  onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)'; }}
+                  onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none';}}>
+                  Reporte
+                </CDropdownToggle>
+                <CDropdownMenu>
+                  <CDropdownItem
+                    onClick={generarReportePDF}
+                    style={{cursor: 'pointer',outline: 'none', backgroundColor: 'transparent',padding: '0.5rem 1rem',fontSize: '0.85rem',color: '#333',borderBottom: '1px solid #eaeaea',transition: 'background-color 0.3s',}}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}>
+                    <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+                 </CDropdownItem>
+                  <CDropdownItem
+                    onClick={generarReporteExcel}
+                    style={{cursor: 'pointer',outline: 'none',backgroundColor: 'transparent',padding: '0.5rem 1rem',fontSize: '0.85rem',color: '#333', transition: 'background-color 0.3s',}}
+                    onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}>
+                    <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+                  </CDropdownItem>
+                </CDropdownMenu>
+              </CDropdown>
+            </CCol>
+          </CRow>
+          {asistenciasFiltradas.length > 0 ? (
+            <CTable bordered hover responsive className="shadow-sm">
+              <thead className="bg-light">
+                <tr>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Nombre Completo</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Fecha</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Estado</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Observación</CTableHeaderCell>
+                </tr>
+              </thead>
+              <CTableBody>
+                {asistenciasFiltradas.map((asistencia, index) => (
+                  <CTableRow key={asistencia.Cod_asistencias}>
+                    <CTableDataCell className="text-center" style={{ fontSize: '1rem', padding: '3px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Nombre_Completo}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{formatDateTime(asistencia.Fecha)}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.DescripcionEstado}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Observacion}</CTableDataCell>
+                  </CTableRow>
+                ))}
+              </CTableBody>
+            </CTable>
+          ) : (
+            <p className="text-center text-muted">No hay registros de asistencia para esta fecha</p>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setMostrarModal(false)}>
+            Cerrar
+          </CButton>
+        </CModalFooter>
+      </CModal>
+
+
+      {/* Modal "Actualizar" */}
+      <CModal visible={mostrarModalActualizar} onClose={() => setMostrarModalActualizar(false)} size="lg" centered backdrop="static">
+        <CModalHeader closeButton={false}>
+          <h5 className="modal-title">Actualizar Asistencia</h5>
+          <CButton type="button" className="btn-close" onClick={() => setMostrarModalActualizar(false)} />
+        </CModalHeader>
+        <CModalBody style={{ fontSize: '0.85rem' }}>
+          {/* Fecha de Asistencia */}
+          <CRow className="align-items-center mb-2">
+            <CCol xs="12" md="6" className="d-flex align-items-center">
+              <h6 className="mb-1 me-3">Fecha:</h6>
+              <CFormInput
+                type="date"
+                value={fecha}
+                disabled // Esto deshabilita el campo de entrada
+                className="rounded"
+                style={{ maxWidth: '150px', padding: '0.3rem', fontSize: '0.85rem' }}
+              />
+
+            </CCol>
+            {/* Botón Guardar */}
+            <CCol xs="12" md="6" className="text-md-end text-center mt-2 mt-md-0"> 
+            </CCol>
+          </CRow>
+
+          {/* Tabla de Estudiantes */}
+          {asistenciasActualizar.length === 0 ? (
+            <p className="text-muted">No hay estudiantes en esta sección.</p>
+          ) : (
+            <div className="table-responsive" style={{ maxHeight: '350px', overflowY: 'auto', overflowX: 'auto' }}>
+              <CTable bordered hover responsive small>
+                <thead className="bg-light">
+                  <tr>
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>ALUMNO</CTableHeaderCell>
+                    {/* Encabezado para los íconos de estado */}
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.9rem', padding: '2px', verticalAlign: 'middle' }}>
+                      <div className="d-flex justify-content-center gap-4">
+                        {estadosAsistencia.map((estado) => {
+                          const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray', icono: '❓' };
+                          const allSelected = asistenciasActualizar.every(
+                            (asistencia) => asistencia.Cod_estado_asistencia === estado.Cod_estado_asistencia
+                          );
+                          const titleMessage = allSelected
+                            ? `Haga clic para deseleccionar todos como: ${estado.Descripcion_asistencia}`
+                            : `Haga clic para marcar todos como: ${estado.Descripcion_asistencia}`;
+                          
+                          return (
+                            <span
+                              key={estado.Cod_estado_asistencia}
+                              style={{ color: estilo.color, fontSize: '1.2rem', cursor: 'pointer' }}
+                              title={titleMessage}
+                              onClick={() =>  handleSelectAllActualizar(estado.Cod_estado_asistencia)}
+                            >
+                              {estilo.icono}
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </CTableHeaderCell>
+                    <CTableHeaderCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>OBSERVACIÓN</CTableHeaderCell>
+                  </tr>
+                </thead>
+                <CTableBody>
+                  {asistenciasActualizar.map((asistencia, index) => (
+                    <CTableRow key={asistencia.Cod_asistencias}>
+                      <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
+                      <CTableDataCell style={{ fontSize: '0.8rem', padding: '4px', verticalAlign: 'middle' }}>{asistencia.Nombre_Completo}</CTableDataCell>
+                      {/* Celda de checkboxes */}
+                      <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '2px', verticalAlign: 'middle' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '32px' }}>
+                          {estadosAsistencia.map((estado) => {
+                            const estilo = estadoAsistenciaEstilos[estado.Cod_estado_asistencia] || { color: 'gray' };
+                            return (
+                              <input
+                                key={estado.Cod_estado_asistencia}
+                                type="checkbox"
+                                checked={asistenciasActualizar[index].Cod_estado_asistencia === estado.Cod_estado_asistencia}
+                                onChange={() => handleEstadoCheckboxChangeActualizar(index, estado.Cod_estado_asistencia)}
+                                style={{ cursor: 'pointer', width: '16px', height: '16px', accentColor: estilo.color, marginTop: '8px' }}
+                              />
+                            );
+                          })}
+                        </div>
+                      </CTableDataCell>
+                      <CTableDataCell className="text-center" style={{ fontSize: '0.8rem', padding: '4px' }}>
+                      <CPopover
+                        content={
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <textarea
+                              placeholder="Escribe tu observación"
+                              value={asistencia.Observacion === 'BORRAR' ? '' : asistencia.Observacion}
+                              maxLength={50}
+                              onChange={(e) => handleInputChange(e, (value) => handleObservacionChangeActualizar(index, value))}
+                              onPaste={disableCopyPaste}
+                              onCopy={disableCopyPaste}
+                              style={{ width: '280px',height: '40px',padding: '0.5rem',resize: 'none',overflow: 'hidden',whiteSpace: 'pre-wrap',border: '1px solid #ccc',outline: 'none',fontSize: '0.75rem',}}
+                              onFocus={(e) => (e.target.style.border = '1px solid #aaa')}
+                              onBlur={(e) => (e.target.style.border = '1px solid #ccc')}
+                            />
+                            <button
+                              onClick={() => handleObservacionChangeActualizar(index, 'BORRAR')}
+                              style={{ backgroundColor: '#f44336',color: '#fff',border: 'none',padding: '0.1rem 0.3rem',borderRadius: '4px',cursor: 'pointer',fontSize: '0.75rem',}}>
+                              Borrar
+                            </button>
+                          </div>
+                        }
+                        placement="right"
+                        trigger="click"
+                        style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
+                      >
+                        
+                        {canUpdate && (
+                        <CButton color="link">
+                          <CIcon icon={cilPencil} style={{ color: 'black' }} />
+                        </CButton>
+                        )}
+
+                      </CPopover>
+                      </CTableDataCell>
+                    </CTableRow>
+                  ))}
+                </CTableBody>
+              </CTable>
+            </div>
+          )}
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setMostrarModalActualizar(false)}>
+            Cerrar
+          </CButton>
+          <CButton onClick={handleActualizarAsistencias}style={{ backgroundColor: '#9f7536', color: '#FFFFFF'}}>
+            <CIcon icon={cilPen}  /> Actualizar
+          </CButton>
+        </CModalFooter>
+      </CModal>
+    </CContainer>
+ );
 };
 
 export default ListaAsistencia;
