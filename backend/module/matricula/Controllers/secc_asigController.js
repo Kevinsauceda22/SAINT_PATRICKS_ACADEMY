@@ -1,4 +1,5 @@
 import conectarDB from '../../../config/db.js';
+import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
 
 
@@ -155,5 +156,68 @@ export const actualizarSeccionAsignatura = async (req, res) => {
             return res.status(400).json({ mensaje: error.message });
         }
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+export const obtenerAsignaturasPorProfesor = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ mensaje: 'Token no proporcionado' });
+        }
+
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const codPersona = decodedToken.cod_persona;
+        if (!codPersona) {
+            return res.status(400).json({ mensaje: 'El token no contiene cod_persona' });
+        }
+
+        const [profesorResult] = await pool.query(
+            'SELECT Cod_Profesor FROM tbl_profesores WHERE Cod_Persona = ?',
+            [codPersona]
+        );
+
+        if (profesorResult.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontró un profesor con este cod_persona' });
+        }
+
+        const codProfesor = profesorResult[0].Cod_Profesor;
+
+        // Asegúrate de obtener `Cod_secciones` del cliente
+        const { codSeccion } = req.params; // `codSeccion` debería ser el nombre correcto del parámetro
+
+        // Llama al procedimiento almacenado con ambos parámetros
+        const [asignaturas] = await pool.query('CALL ObtenerAsignaturasPorProfesor(?, ?)', [codProfesor, codSeccion]);
+
+        if (!asignaturas || asignaturas.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección' });
+        }
+
+        res.status(200).json(asignaturas[0]); // Devuelve el resultado correcto
+    } catch (error) {
+        console.error('Error al obtener las asignaturas:', error);
+        res.status(500).json({ mensaje: 'Error al obtener las asignaturas' });
+    }
+};
+
+
+export const obtenerAsignaturasPorSeccion = async (req, res) => {
+    try {
+        const { codSeccion } = req.params;
+
+        if (!codSeccion) {
+            return res.status(400).json({ mensaje: 'Cod_seccion es requerido' });
+        }
+
+        // Llama al procedimiento almacenado con el parámetro adecuado
+        const [asignaturas] = await pool.query('CALL getAsignaturasPorSeccion(?)', [codSeccion]);
+
+        if (!asignaturas[0] || asignaturas[0].length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección' });
+        }
+
+        res.status(200).json(asignaturas[0]); // Devuelve los resultados
+    } catch (error) {
+        console.error('Error al obtener las asignaturas de la sección:', error);
+        res.status(500).json({ mensaje: 'Error al obtener las asignaturas de la sección' });
     }
 };
