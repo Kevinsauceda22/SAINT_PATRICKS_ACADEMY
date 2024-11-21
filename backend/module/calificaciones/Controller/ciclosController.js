@@ -34,7 +34,7 @@ export const crearCiclo = async (req, res) => {
 export const actualizarCiclo = async (req, res) => {
     const { Cod_ciclo, Nombre_ciclo } = req.body;
 
-    console.log('Datos recibidos para actualizar el ciclo:', req.body); 
+    //console.log('Datos recibidos para actualizar el ciclo:', req.body); 
 
     try {
         await pool.query('CALL update_ciclos(?, ?)', [Cod_ciclo, Nombre_ciclo]);

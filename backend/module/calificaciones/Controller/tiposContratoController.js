@@ -33,13 +33,29 @@ export const crearTipoContrato = async (req, res) => {
 
 // Actualizar un tipo de contrato
 export const actualizarTipoContrato = async (req, res) => {
-    const { Cod_tipo_contrato, nombre } = req.body;
+    const { Cod_tipo_contrato, Descripcion } = req.body;
 
     try {
-        await pool.query('CALL update_tipo_contrato(?, ?)', [Cod_tipo_contrato, nombre]);
+        await pool.query('CALL update_tipo_contrato(?, ?)', [Cod_tipo_contrato, Descripcion]);
         res.status(200).json({ Mensaje: 'Tipo de contrato actualizado exitosamente' });
     } catch (error) {
         console.error('Error al actualizar el tipo de contrato:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+export const eliminarTipoContrato = async (req, res) => {
+    const { Cod_tipo_contrato } = req.body;
+
+    if (!Cod_tipo_contrato) {
+        return res.status(400).json({ Mensaje: 'Cod_tipo_contrato es requerido' });
+    }
+
+    try {
+        await pool.query('CALL delete_tipo_contrato(?)', [Cod_tipo_contrato]);
+        res.status(200).json({ Mensaje: 'Tipo de contrato eliminado exitosamente' });
+    } catch (error) {
+        console.error('Error al eliminar el tipo de contrato:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };

@@ -33,7 +33,7 @@ export const crearPonderacion = async (req, res) => {
 export const actualizarPonderacion = async (req, res) => {
     const { Cod_ponderacion, Descripcion_ponderacion } = req.body;
 
-    console.log('Datos recibidos para actualizar la ponderación:', req.body); 
+   // console.log('Datos recibidos para actualizar la ponderación:', req.body); 
 
     try {
         await pool.query('CALL update_ponderacion(?, ?)', [Cod_ponderacion, Descripcion_ponderacion]);
