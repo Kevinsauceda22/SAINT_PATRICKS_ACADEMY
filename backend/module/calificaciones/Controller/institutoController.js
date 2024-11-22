@@ -30,3 +30,32 @@ export const crearInstituto = async (req, res) => {
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+//Actualizar un Instituto
+export const actualizarinstituto = async (req, res) => {
+    const {Cod_Instituto, Nom_Instituto } = req.body;
+
+    try {
+        await pool.query('CALL update_instituto(?, ?)', [
+            Cod_Instituto,
+            Nom_Instituto
+        ]);
+        res.status(200).json({Mensaje: 'Instituto actualizado exitosamente' });
+    } catch (error) {
+        console.error('Error al actualizar el instituto: ', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+//Eliminar un instituto
+export const eliminarinstituto = async (req, res) => {
+    const { Cod_Instituto } = req.body;
+
+    try {
+        await pool.query('CALL delete_instituto(?)', [Cod_Instituto]);
+        res.status(200).json({ Mensaje: 'Instituto eliminado exitosamente' });
+    } catch (error) {
+        console.error('Error al eliminar el instituto:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
