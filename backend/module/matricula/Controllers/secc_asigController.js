@@ -45,13 +45,14 @@ export const obtenerSecciones = async (req, res) => {
 // Controlador para obtener todos los días
 export const obtenerDias = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT Cod_dias, dias, prefijo_dia FROM tbl_dias');
+        const [rows] = await pool.query('SELECT Cod_dias, dias FROM tbl_dias');
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener dias:', error);
         res.status(500).json({ mensaje: 'Error al obtener dias' });
     }
 };
+
 // Controlador para obtener todos los grados y asignaturas
 export const obtenerGradosAsignaturas = async (req, res) => {
     try {
@@ -90,7 +91,7 @@ export const crearHorarioSeccionAsignatura = async (req, res) => {
 
         // Llamada al procedimiento almacenado para insertar el horario
         const [result] = await pool.query(
-            'CALL sp_insertar_seccion_asignatura(?, ?, ?, ?, ?)',
+            'CALL sp_insertar_horario_seccion_asignatura(?, ?, ?, ?, ?)',
             [p_Cod_grados_asignaturas, p_Cod_secciones, p_Cod_dias, p_Hora_inicio, p_Hora_fin]
         );
 
@@ -158,6 +159,13 @@ export const actualizarSeccionAsignatura = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+
+
+
+
+
+
 export const obtenerAsignaturasPorProfesor = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -202,22 +210,27 @@ export const obtenerAsignaturasPorProfesor = async (req, res) => {
 
 export const obtenerAsignaturasPorSeccion = async (req, res) => {
     try {
-        const { codSeccion } = req.params;
-
-        if (!codSeccion) {
-            return res.status(400).json({ mensaje: 'Cod_seccion es requerido' });
-        }
-
-        // Llama al procedimiento almacenado con el parámetro adecuado
-        const [asignaturas] = await pool.query('CALL getAsignaturasPorSeccion(?)', [codSeccion]);
-
-        if (!asignaturas[0] || asignaturas[0].length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección' });
-        }
-
-        res.status(200).json(asignaturas[0]); // Devuelve los resultados
+      const { codSeccion } = req.params;
+  
+      if (!codSeccion) {
+        return res.status(400).json({ mensaje: 'Cod_seccion es requerido' });
+      }
+  
+      // Llama al procedimiento almacenado
+      const [asignaturas] = await pool.query('CALL getAsignaturasPorSeccion(?)', [codSeccion]);
+  
+      if (!asignaturas[0] || asignaturas[0].length === 0) {
+        return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección' });
+      }
+  
+      res.status(200).json(asignaturas[0]);
     } catch (error) {
-        console.error('Error al obtener las asignaturas de la sección:', error);
-        res.status(500).json({ mensaje: 'Error al obtener las asignaturas de la sección' });
+      console.error('Error al obtener las asignaturas de la sección:', error);
+      res.status(500).json({ mensaje: 'Error al obtener las asignaturas de la sección' });
     }
-};
+  };
+  ;
+
+
+
+  
