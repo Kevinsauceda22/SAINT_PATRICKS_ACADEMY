@@ -47,6 +47,13 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Asistencia',
+    to: '/ListaAsistenciaProfesor',
+    icon: cilClipboard,
+    nameobject: 'navAsistenciaProfesor',
+  },
+  {
+    component: CNavItem,
     name: 'Profesores',
     to: '/ListaProfesores',
     icon: cilPeople,

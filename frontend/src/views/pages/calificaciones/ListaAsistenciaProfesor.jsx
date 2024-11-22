@@ -24,7 +24,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaAsistencia = () => {
-  const { canSelect, canInsert, canUpdate } = usePermission('ListaAsistencia');
+  const { canSelect, canInsert, canUpdate } = usePermission('ListaAsistenciaProfesor');
    const [secciones, setSecciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -83,18 +83,43 @@ useEffect(() => {
 }, [codSeccionSeleccionada]); 
 
   //trae las secciones
+  // Trae las secciones
   const fetchSecciones = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/seccionalumno/secciones');
-      if (!response.ok) throw new Error('Error al cargar secciones.');
-      const data = await response.json();
-      setSecciones(data);
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Token no disponible.');
+        }
+
+        const response = await fetch('http://localhost:4000/api/seccionalumno/seccionesporprofe', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al cargar secciones.');
+        }
+
+        const data = await response.json();
+        console.log('Datos obtenidos de la API:', data); // Verifica la estructura de los datos
+
+        // Valida que `data.secciones` sea un arreglo antes de actualizar el estado
+        if (Array.isArray(data.secciones)) {
+            setSecciones(data.secciones);
+        } else {
+            console.error('La API no devolvió un arreglo de secciones:', data);
+            setSecciones([]);
+        }
     } catch (error) {
-      console.error('Error al obtener las secciones:', error);
+        console.error('Error al obtener las secciones:', error.message);
     } finally {
-      setCargando(false);
+        setCargando(false);
     }
-  };
+};
+
   //trae los estados asistencia y les aplica un estilo(color e icono)
   const fetchEstadosAsistencia = async () => {
     try {
@@ -803,7 +828,7 @@ const handleObservacionChangeActualizar = (index, value) => {
           <CRow className="align-items-center mb-5">
             <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
               <div className="flex-grow-1 text-center">
-                <h3 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50" }}> Lista de Secciones</h3>
+                <h3 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50" }}> Mi Lista de Secciones</h3>
               </div>
               <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
                 <CDropdownToggle
@@ -839,7 +864,6 @@ const handleObservacionChangeActualizar = (index, value) => {
                   <CTableHeaderCell>SECCIÓN</CTableHeaderCell>
                   <CTableHeaderCell>GRADO</CTableHeaderCell>
                   <CTableHeaderCell>AÑO ACADÉMICO</CTableHeaderCell>
-                  <CTableHeaderCell>PROFESOR</CTableHeaderCell>
                   <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
                 </CTableRow>
               </CTableHead>
@@ -850,7 +874,6 @@ const handleObservacionChangeActualizar = (index, value) => {
                     <CTableDataCell>{seccion.Seccion}</CTableDataCell>
                     <CTableDataCell>{seccion.Grado}</CTableDataCell>
                     <CTableDataCell>{seccion.Anio_Academico}</CTableDataCell>
-                    <CTableDataCell>{seccion.Nombre_Profesor}</CTableDataCell>
                     <CTableDataCell>
                       <CButton size="sm"style={{backgroundColor: "#F0F4F3",color: "#153E21",border: "1px solid #A2B8A9",borderRadius: "6px",padding: "5px 12px",boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",}}
                         onMouseEnter={(e) =>(e.target.style.backgroundColor = "#dce3dc")}onMouseLeave={(e) =>(e.target.style.backgroundColor = "#F0F4F3")}
