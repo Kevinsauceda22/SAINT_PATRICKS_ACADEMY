@@ -34,6 +34,7 @@ const TwoAuthFA = React.lazy(() => import('./views/pages/2FA/2fa'));
 const ListaActiviadesAca = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAca'));
 const ListaAsigaturas = React.lazy(() => import('./views/pages/calificaciones/ListaAsignaturas'));
 const ListaAsistencia = React.lazy(() => import('./views/pages/calificaciones/ListaAsistencia'));
+const ListaAsistenciaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaAsistenciaProfesor'));
 const ListaCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaCiclos'));
 const ListaEspecialidades = React.lazy(() => import('./views/pages/calificaciones/ListaEspecialidades'));
 const ListaEstadoasistencia = React.lazy(() => import('./views/pages/calificaciones/ListaEstadoasistencia'));
@@ -148,6 +149,7 @@ const App = () => {
                 <Route path="/ListaActividadesAca" element={<ListaActiviadesAca />} />
                 <Route path="/ListaAsignaturas" element={<ListaAsigaturas />} />
                 <Route path="/ListaAsistencia" element={<ListaAsistencia />} />
+                <Route path="/ListaAsistenciaProfesor" element={<ListaAsistenciaProfesor />} />
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
                 <Route path="/ListaHistoricoProc" element={<Procedencia />} />
