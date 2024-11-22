@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
+import { cilXCircle, cilCheckCircle } from '@coreui/icons';
 import {
   cilSearch,
   cilBrushAlt,
@@ -40,6 +41,7 @@ import {
   CForm,
   CFormLabel,
   CFormSelect,
+  CFormCheck,
   CRow,
   CCol,
   CDropdown,
@@ -47,12 +49,8 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react'
-import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaPersonas = () => {
-  const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('ListaPersonas');
-
   const [personas, setPersonas] = useState([])
   const [modalVisible, setModalVisible] = useState(false)
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false)
@@ -70,6 +68,7 @@ const ListaPersonas = () => {
     cod_tipo_persona: '',
     cod_departamento: '',
     cod_genero: '',
+    principal: '',
   })
   const [personaToUpdate, setPersonaToUpdate] = useState({})
   const [personaToDelete, setPersonaToDelete] = useState({})
@@ -93,7 +92,9 @@ const ListaPersonas = () => {
     Estado_Persona: '',
     cod_tipo_persona: '',
     cod_departamento: '',
+    cod_municipio: '',
     cod_genero: '',
+    principal: ''
   })
 
   const [showDetailModal, setShowDetailModal] = useState(false) // Estado para abrir/cerrar el modal
@@ -381,6 +382,7 @@ const ListaPersonas = () => {
           cod_tipo_persona: nuevaPersona.cod_tipo_persona,
           cod_departamento: nuevaPersona.cod_departamento,
           cod_genero: nuevaPersona.cod_genero,
+          principal: nuevaPersona.principal,
         }),
       })
 
@@ -435,7 +437,9 @@ const ListaPersonas = () => {
         Estado_Persona: personaToUpdate.Estado_Persona,
         cod_tipo_persona: personaToUpdate.cod_tipo_persona,
         cod_departamento: personaToUpdate.cod_departamento,
+        cod_municipio: personaToUpdate.cod_municipio,
         cod_genero: personaToUpdate.cod_genero,
+        principal: personaToUpdate.principal,
       })
 
       const response = await fetch(
@@ -456,7 +460,9 @@ const ListaPersonas = () => {
             Estado_Persona: personaToUpdate.Estado_Persona,
             cod_tipo_persona: personaToUpdate.cod_tipo_persona,
             cod_departamento: personaToUpdate.cod_departamento,
+            cod_municipio: personaToUpdate.cod_municipio,
             cod_genero: personaToUpdate.cod_genero,
+            principal: personaToUpdate.principal,
           }),
         },
       )
@@ -526,7 +532,9 @@ const ListaPersonas = () => {
       Estado_Persona: '',
       cod_tipo_persona: '',
       cod_departamento: '',
+      cod_municipio: '',
       cod_genero: '',
+      principal: '',
     })
   }
 
@@ -544,7 +552,9 @@ const ListaPersonas = () => {
       Estado_Persona: '',
       cod_tipo_persona: '',
       cod_departamento: '',
+      cod_municipio: '',
       cod_genero: '',
+      principal: '',
     })
   }
 
@@ -575,7 +585,9 @@ const ListaPersonas = () => {
           'Estado',
           'Tipo de Persona',
           'Departamento',
+          'Municipio',
           'Género',
+          'Principal'
         ],
       ],
       body: currentRecords.map((persona, index) => [
@@ -589,7 +601,9 @@ const ListaPersonas = () => {
         persona.Estado_Persona,
         persona.cod_tipo_persona,
         persona.cod_departamento,
+        persona.cod_municipio,
         persona.cod_genero,
+        persona.principal,
       ]),
     })
     doc.save('reporte_personas.pdf')
@@ -609,7 +623,9 @@ const ListaPersonas = () => {
       Estado_Persona: persona.Estado_Persona,
       cod_tipo_persona: persona.cod_tipo_persona,
       cod_departamento: persona.cod_departamento,
+      cod_municipio: persona.cod_municipio,
       cod_genero: persona.cod_genero,
+      principal: persona.principal,
     })
     setModalUpdateVisible(true)
   }
@@ -647,20 +663,11 @@ const ListaPersonas = () => {
     }
   }
 
-       // Verificar permisos
- if (!canSelect) {
-  return <AccessDenied />;
-}
-
-
-
   return (
     <CContainer>
       <h1>Personas</h1>
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}
       <div className="d-flex justify-content-end mb-3">
-
-        {canInsert && (
         <CButton
           style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '10px' }}
           onClick={() => {
@@ -669,7 +676,6 @@ const ListaPersonas = () => {
         >
           + Nueva
         </CButton>
-        )}
         <CDropdown>
           <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
             Reporte
@@ -686,7 +692,7 @@ const ListaPersonas = () => {
         <CInputGroup style={{ maxWidth: '400px' }}>
           <CInputGroupText>Buscar</CInputGroupText>
           <CFormInput
-            placeholder="Buscar por actividad"
+            placeholder="Buscar"
             onChange={handleSearch}
             value={searchTerm}
           />
@@ -722,120 +728,114 @@ const ListaPersonas = () => {
       </div>
 
       <div className="table-container">
-        <CTable striped bordered hover>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>DNI</CTableHeaderCell>
-              <CTableHeaderCell>Nombre</CTableHeaderCell>
-              <CTableHeaderCell>Segundo Nombre</CTableHeaderCell>
-              <CTableHeaderCell>Primer Apellido</CTableHeaderCell>
-              <CTableHeaderCell>Segundo Apellido</CTableHeaderCell>
-              <CTableHeaderCell>Nacionalidad</CTableHeaderCell>
-              <CTableHeaderCell>Dirección</CTableHeaderCell>
-              <CTableHeaderCell>Fecha de Nacimiento</CTableHeaderCell>
-              <CTableHeaderCell>Estado</CTableHeaderCell>
-              <CTableHeaderCell>Tipo de Persona</CTableHeaderCell>
-              <CTableHeaderCell>Departamento</CTableHeaderCell>
-              <CTableHeaderCell>Género</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {console.log('currentRecords:', currentRecords)}{' '}
-            {/* Verifica el contenido de currentRecords */}
-            {currentRecords.length > 0 ? (
-              currentRecords.map((persona) => {
-                console.log('Datos actuales de la persona:', persona) // Ver cada persona
-                return (
-                  <CTableRow key={persona.cod_persona}>
-                    <CTableDataCell>{persona.originalIndex}</CTableDataCell>
-                    <CTableDataCell>
-                      {persona.dni_persona ? persona.dni_persona.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {persona.Nombre ? persona.Nombre.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {persona.Nacionalidad ? persona.Nacionalidad.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {' '}
-                      {new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {persona.Estado_Persona ? persona.Estado_Persona.toUpperCase() : 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {tipoPersona
-                        .find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)
-                        ?.Tipo.toUpperCase() || 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {departamentos
-                        .find((depto) => depto.Cod_departamento === persona.cod_departamento)
-                        ?.Nombre_departamento.toUpperCase() || 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell>
-                      {generos
-                        .find((genero) => genero.Cod_genero === persona.cod_genero)
-                        ?.Tipo_genero.toUpperCase() || 'N/D'}
-                    </CTableDataCell>
-                    <CTableDataCell className="text-center">
-                      <div className="d-flex justify-content-center">
+      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
+  <CTable striped bordered hover>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell>DNI</CTableHeaderCell>
+        <CTableHeaderCell>Nombre</CTableHeaderCell>
+        <CTableHeaderCell>Segundo Nombre</CTableHeaderCell>
+        <CTableHeaderCell>Primer Apellido</CTableHeaderCell>
+        <CTableHeaderCell>Segundo Apellido</CTableHeaderCell>
+        <CTableHeaderCell>Nacionalidad</CTableHeaderCell>
+        <CTableHeaderCell>Dirección</CTableHeaderCell>
+        <CTableHeaderCell>Fecha de Nacimiento</CTableHeaderCell>
+        <CTableHeaderCell>Principal</CTableHeaderCell>
+        <CTableHeaderCell>Estado</CTableHeaderCell>
+        <CTableHeaderCell>Tipo de Persona</CTableHeaderCell>
+        <CTableHeaderCell>Departamento</CTableHeaderCell>
+        <CTableHeaderCell>Género</CTableHeaderCell>
+        <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {console.log('currentRecords:', currentRecords)}{' '}
+      {/* Verifica el contenido de currentRecords */}
+      {currentRecords.length > 0 ? (
+        currentRecords.map((persona) => {
+          console.log('Datos actuales de la persona:', persona) // Ver cada persona
+          return (
+            <CTableRow key={persona.cod_persona}>
+              <CTableDataCell>{persona.originalIndex}</CTableDataCell>
+              <CTableDataCell>{persona.dni_persona ? persona.dni_persona.toUpperCase() : 'N/D'}</CTableDataCell>
+              <CTableDataCell>{persona.Nombre ? persona.Nombre.toUpperCase() : 'N/D'}</CTableDataCell>
+              <CTableDataCell>{persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/D'}</CTableDataCell>
+              <CTableDataCell>{persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/D'}</CTableDataCell>
+              <CTableDataCell>{persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/D'}</CTableDataCell>
+              <CTableDataCell>{persona.Nacionalidad ? persona.Nacionalidad.toUpperCase() : 'N/D'}</CTableDataCell>
+              <CTableDataCell>{persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/D'}</CTableDataCell>
+              <CTableDataCell>{' '}{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}</CTableDataCell>
 
-                        {canUpdate && (
-                        <CButton
-                          color="warning"
-                          onClick={() => openUpdateModal(persona)}
-                          style={{ marginRight: '10px' }}
-                        >
-                          <CIcon icon={cilPen} />
-                        </CButton>
-                        )}
-                        {canDelete && (
-                        <CButton color="danger" onClick={() => openDeleteModal(persona)}>
-                          <CIcon icon={cilTrash} />
-                        </CButton>
-                        )}
-                        <CButton
-                          color="info"
-                          onClick={() => openDetailModal(persona)}
-                          style={{ marginLeft: '10px' }}
-                        >
-                          <CIcon icon={cilInfo} />
-                        </CButton>
-                        <CButton
-                          color="secondary"
-                          onClick={() => abrirEstructuraFamiliarModal(persona)}
-                          style={{ marginLeft: '10px' }}
-                        >
-                          <CIcon icon={cilPeople} />{' '}
-                        </CButton>
-                      </div>
-                    </CTableDataCell>
-                  </CTableRow>
-                )
-              })
+          {/* Columna Principal */}
+
+          <CTableDataCell className="text-center">
+  {persona.principal ? (
+    <CIcon
+      icon={cilCheckCircle} // Ícono de check-circle para principal
+      style={{ fontSize: '2em', color: '#28a745' }} // Hacemos el ícono más grande y verde
+    />
+  ) : (
+    <CIcon
+      icon={cilXCircle} // Ícono de X-circle para no principal
+      style={{ fontSize: '2em', color: '#dc3545' }} // Hacemos el ícono más grande y rojo
+    />
+  )}
+</CTableDataCell>
+
+          {/* Columna Estado */}
+          <CTableDataCell className="text-center">
+            {persona.Estado_Persona === 'A' ? (
+              <span className="badge bg-success">Activo</span>
             ) : (
-              <CTableRow>
-                <CTableDataCell colSpan="13" className="text-center"></CTableDataCell>
-              </CTableRow>
+              <span className="badge bg-warning text-dark">Suspendido</span>
             )}
-          </CTableBody>
-        </CTable>
+          </CTableDataCell>
+              <CTableDataCell>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell>{municipio.find((municipio) => municipio.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell className="text-center">
+                <div className="d-flex justify-content-center">
+                  <CButton
+                    color="warning"
+                    onClick={() => openUpdateModal(persona)}
+                    style={{ marginRight: '10px' }}
+                  >
+                    <CIcon icon={cilPen} />
+                  </CButton>
+                  <CButton color="danger" onClick={() => openDeleteModal(persona)}>
+                    <CIcon icon={cilTrash} />
+                  </CButton>
+                  <CButton
+                    color="info"
+                    onClick={() => openDetailModal(persona)}
+                    style={{ marginLeft: '10px' }}
+                  >
+                    <CIcon icon={cilInfo} />
+                  </CButton>
+                  <CButton
+                    color="secondary"
+                    onClick={() => abrirEstructuraFamiliarModal(persona)}
+                    style={{ marginLeft: '10px' }}
+                  >
+                    <CIcon icon={cilPeople} />{' '}
+                  </CButton>
+                </div>
+              </CTableDataCell>
+            </CTableRow>
+          )
+        })
+      ) : (
+        <CTableRow>
+          <CTableDataCell colSpan="13" className="text-center"></CTableDataCell>
+        </CTableRow>
+      )}
+    </CTableBody>
+  </CTable>
+</div>
+
+
 
         {/* --- INICIO DEL MODAL DE DETALLE DE LA PERSONA --- */}
         <CModal
@@ -846,307 +846,65 @@ const ListaPersonas = () => {
         >
           <CModalHeader
             onClose={closeDetailModal}
-            style={{ backgroundColor: '#5dd55d', color: '#ffffff' }} // Encabezado en verde claro
+            style={{ backgroundColor: '#4B6251', color: '#ffffff' }} // Encabezado en verde claro
           >
             <CModalTitle>DETALLES DE LA PERSONA</CModalTitle>
           </CModalHeader>
           <CModalBody>
             {selectedPersona ? (
-              <table
-                style={{
-                  width: '100%',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '8px',
-                  borderCollapse: 'separate',
-                  borderSpacing: '0',
-                }}
-              >
+              <table style={{ width: '100%', backgroundColor: '#f8f9fa', borderRadius: '8px', borderCollapse: 'separate', borderSpacing: '0', }}>
                 <tbody>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        width: '35%',
-                      }}
-                    >
-                      DNI:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                        width: '65%',
-                      }}
-                    >
-                      {selectedPersona.dni_persona.toUpperCase()}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', width: '35%', }}> DNI: </td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold', width: '65%', }}>{selectedPersona.dni_persona.toUpperCase()}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      NOMBRE:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {selectedPersona.Nombre.toUpperCase()}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}> Nombre: </td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold', }}>{selectedPersona.Nombre.toUpperCase()}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      SEGUNDO NOMBRE:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {selectedPersona.Segundo_nombre?.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}>Segundo nombre:</td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold', }}> {selectedPersona.Segundo_nombre?.toUpperCase() || 'N/D'} </td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      PRIMER APELLIDO:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {selectedPersona.Primer_apellido.toUpperCase()}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}}>Primer Apellido: </td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold', }}> {selectedPersona.Primer_apellido.toUpperCase()}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      SEGUNDO APELLIDO:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {selectedPersona.Segundo_apellido?.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }} > Segundo Apellido: </td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold', }}> {selectedPersona.Segundo_apellido?.toUpperCase() || 'N/D'}</td>
+                  </tr>
+                  <tr> 
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}} >Nacionalidad:</td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {selectedPersona.Nacionalidad?.toUpperCase() || 'N/D'}</td> 
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      NACIONALIDAD:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {selectedPersona.Nacionalidad?.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}> Dirección:</td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {selectedPersona.direccion_persona?.toUpperCase() || 'N/D'}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      DIRECCIÓN:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {selectedPersona.direccion_persona?.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}> Fecha de nacimiento: </td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {new Date(selectedPersona.fecha_nacimiento).toLocaleDateString('en-CA')}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      FECHA DE NACIMIENTO:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {new Date(selectedPersona.fecha_nacimiento).toLocaleDateString('en-CA')}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}> Principal:</td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {selectedPersona.principal || 'N/D'}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      ESTADO:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {selectedPersona.Estado_Persona?.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}> Estado:</td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {selectedPersona.Estado_Persona?.toUpperCase() || 'N/D'}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      TIPO DE PERSONA:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {tipoPersona
-                        .find((tipo) => tipo.Cod_tipo_persona === selectedPersona.cod_tipo_persona)
-                        ?.Tipo.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}>Tipo Persona:</td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {tipoPersona.find((tipo) => tipo.Cod_tipo_persona === selectedPersona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      DEPARTAMENTO:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {departamentos
-                        .find(
-                          (depto) => depto.Cod_departamento === selectedPersona.cod_departamento,
-                        )
-                        ?.Nombre_departamento.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}}> Departamento:</td>
+                    <td style={{padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {departamentos.find((depto) => depto.Cod_departamento === selectedPersona.cod_departamento,)?.Nombre_departamento.toUpperCase() || 'N/D'}</td>
                   </tr>
                   <tr>
-                    <td
-                      style={{
-                        backgroundColor: '#e9ecef',
-                        fontWeight: 'bold',
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                      }}
-                    >
-                      GÉNERO:
-                    </td>
-                    <td
-                      style={{
-                        padding: '10px',
-                        border: '1px solid #dee2e6',
-                        color: '#495057',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      {generos
-                        .find((genero) => genero.Cod_genero === selectedPersona.cod_genero)
-                        ?.Tipo_genero.toUpperCase() || 'N/D'}
-                    </td>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}}>Género:</td>
+                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}>{generos.find((genero) => genero.Cod_genero === selectedPersona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -1316,6 +1074,27 @@ const ListaPersonas = () => {
                 {errorMessages.Nacionalidad && (
                   <div style={{ color: 'red' }}>{errorMessages.Nacionalidad}</div>
                 )}
+
+<div className="col-md-6">
+  <CInputGroup className="mb-3 align-items-center">
+    <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span>Principal</span>
+      <CFormCheck
+        type="checkbox"
+        label=""
+        checked={nuevaPersona.principal}
+        onChange={(e) =>
+          setNuevaPersona({ ...nuevaPersona, principal: e.target.checked })
+        }
+        style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+      />
+    </CInputGroupText>
+  </CInputGroup>
+  {errorMessages.principal && (
+    <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
+  )}
+</div>
+
               </div>
 
               {/* Columna 2 */}
@@ -1553,7 +1332,29 @@ const ListaPersonas = () => {
                     onPaste={disableCopyPaste}
                   />
                 </CInputGroup>
+                <div className="col-md-6">
+  <CInputGroup className="mb-3 align-items-center">
+    <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <span>Principal</span>
+      <CFormCheck
+        type="checkbox"
+        label=""
+        checked={personaToUpdate.principal} // Utiliza personaToUpdate.principal para reflejar el estado actual en el formulario de actualización
+        onChange={(e) =>
+          setPersonaToUpdate({ ...personaToUpdate, principal: e.target.checked })
+        }
+        style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+      />
+    </CInputGroupText>
+  </CInputGroup>
+  {errorMessages.principal && (
+    <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
+  )}
+</div>
+
               </CCol>
+
+
 
               {/* Columna Derecha */}
               <CCol md={6}>
@@ -1724,3 +1525,4 @@ const ListaPersonas = () => {
 }
 
 export default ListaPersonas
+

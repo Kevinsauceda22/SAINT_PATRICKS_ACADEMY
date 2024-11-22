@@ -43,12 +43,16 @@ const ListaEstructura = () => {
   // Estados principales
   const [estructuraFamiliar, setEstructuraFamiliar] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
   const [nuevaEstructura, setNuevaEstructuraFamiliar] = useState({
     cod_persona_padre: '',
     cod_persona_estudiante: '',
     cod_tipo_relacion: '',
     descripcion: '',
   });
+  const [estructuraToUpdate, setEstructuraToUpdate] = useState({});
+  const [estructuraToDelete, setEstructuraToDelete] = useState({});
   const [personas, setPersonas] = useState([]);
   const [personasFiltradas, setPersonasFiltradas] = useState([]);
   const [tipoRelacion, setTipoRelacion] = useState([]);
@@ -69,10 +73,86 @@ const ListaEstructura = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [estructurasFamiliares, setEstructurasFamiliares] = useState([]);
 
+
+  {/* Estados para el modal de actualizar  */}
+
+  const [nuevaEstructuraActualizar, setNuevaEstructuraActualizar] = useState(false);
+  const [modalVisibleActualizar, setModalVisibleActualizar] = useState(false);
+  const [buscadorRelacionEstudianteActualizar, setBuscadorRelacionEstudianteActualizar] = useState('');
+  const [buscadorRelacionPadreActualizar, setBuscadorRelacionPadreActualizar] = useState('');
+  const [personasFiltradasEstudianteActualizar, setPersonasFiltradasEstudianteActualizar] = useState([]);
+  const [personasFiltradasPadreActualizar, setPersonasFiltradasPadreActualizar] = useState([]);
+  const [isDropdownOpenEstudianteActualizar, setIsDropdownOpenEstudianteActualizar] = useState(false);
+  const [isDropdownOpenPadreActualizar, setIsDropdownOpenPadreActualizar] = useState(false);
+  
+  const handleBuscarRelacionEstudianteActualizar = (e) => {
+    const filtro = e.target.value.toLowerCase();
+    setBuscadorRelacionEstudianteActualizar(filtro);
+  
+    if (filtro.trim() === '') {
+      setPersonasFiltradasEstudianteActualizar([]);
+      setIsDropdownOpenEstudianteActualizar(false);
+      return;
+    }
+  
+    const filtradas = personas.filter(persona =>
+      (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
+      (persona.dni_persona && persona.dni_persona.includes(filtro))
+    );
+  
+    setPersonasFiltradasEstudianteActualizar(filtradas);
+    setIsDropdownOpenEstudianteActualizar(filtradas.length > 0);
+  };
+  
+  const handleSeleccionarPersonaEstudianteActualizar = (persona) => {
+    setCodPersonaEstudianteActualizar(persona.cod_persona);
+    setNuevaEstructuraActualizar(prev => ({
+      ...prev,
+      cod_persona_estudiante: persona.cod_persona,
+    }));
+    setEstructuraToUpdate(prev => ({
+      ...prev,
+      nombreEstudiante: persona.fullName,
+    }));
+    setBuscadorRelacionEstudianteActualizar(persona.fullName); // Mostramos el nombre seleccionado
+    setIsDropdownOpenEstudianteActualizar(false);
+  };
+  
+  const handleBuscarRelacionPadreActualizar = (e) => {
+    const filtro = e.target.value.toLowerCase();
+    setBuscadorRelacionPadreActualizar(filtro);
+  
+    if (filtro.trim() === '') {
+      setPersonasFiltradasPadreActualizar([]);
+      setIsDropdownOpenPadreActualizar(false);
+      return;
+    }
+  
+    const filtradas = personas.filter(persona =>
+      (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
+      (persona.dni_persona && persona.dni_persona.includes(filtro))
+    );
+  
+    setPersonasFiltradasPadreActualizar(filtradas);
+    setIsDropdownOpenPadreActualizar(filtradas.length > 0);
+  };
+  
+  const handleSeleccionarPersonaPadreActualizar = (persona) => {
+    setCodPersonaPadreActualizar(persona.cod_persona);
+    setNuevaEstructuraActualizar(prev => ({
+      ...prev,
+      cod_persona_padre: persona.cod_persona,
+    }));
+    setEstructuraToUpdate(prev => ({
+      ...prev,
+      nombrePadre: persona.fullName,
+    }));
+    setBuscadorRelacionPadreActualizar(persona.fullName); // Mostramos el nombre seleccionado
+    setIsDropdownOpenPadreActualizar(false);
+  };
   
 
-
-
+  
   // Navegación y ubicación
   const location = useLocation();
   const navigate = useNavigate();
@@ -140,24 +220,6 @@ const ListaEstructura = () => {
     setBuscadorRelacion(event.target.value);
   };
 
-  const handleSeleccionarPersona = (persona) => {
-    if (rolActual === 'ESTUDIANTE') {
-      setNuevaEstructuraFamiliar((prev) => ({
-        ...prev,
-        cod_persona_estudiante: persona.cod_persona,
-        cod_persona_padre: prev.cod_persona_padre, // Mantener el valor actual del padre
-      }));
-    } else if (rolActual === 'PADRE') {
-      setNuevaEstructuraFamiliar((prev) => ({
-        ...prev,
-        cod_persona_padre: persona.cod_persona,
-        cod_persona_estudiante: prev.cod_persona_estudiante, // Mantener el valor actual del estudiante
-      }));
-    }
-  
-    setBuscadorRelacion(`${persona.dni_persona} - ${persona.fullName}`);
-    setIsDropdownOpen(false);
-  };
   
 {/* ------------------------------------------------------------------------------------------------------------------------------------- */}
 
@@ -185,6 +247,7 @@ const handleSeleccionarPersonaEstudiante = (persona) => {
   setNuevaEstructuraFamiliar(prev => ({
     ...prev,
     cod_persona_estudiante: persona.cod_persona,
+    
   }));
   setIsDropdownOpenEstudiante(false);
   setBuscadorRelacionEstudiante(`${persona.dni_persona} - ${persona.fullName}`);
@@ -305,6 +368,112 @@ const handleSeleccionarPersonaPadre = (persona) => {
     }
   }
 
+  {/* ------------------------------------------------------------------------------------------------------------------------------------------------ */}
+  const handleChange = (event) => {
+    // Convertimos el valor a mayúsculas y lo guardamos en el estado
+    setDescripcion(event.target.value.toUpperCase());
+  };
+  
+  const validateDescripcion = (descripcion) => {
+    const regex = /^[a-zA-Z\s.,áéíóúÁÉÍÓÚñÑ]*$/; // Solo letras, espacios, puntos, comas y acentos
+    if (!regex.test(descripcion));
+    const noMultipleSpaces = !/\s{2,}/.test(descripcion); // No permite más de un espacio consecutivo
+    const trimmedDescripcion = descripcion.trim().replace(/\s+/g, ' ');
+  
+    if (!regex.test(trimmedDescripcion)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Descripción inválida',
+        text: 'La descripción solo puede contener letras, comas, puntos y espacios.',
+      });
+      return false;
+    }
+  
+    if (!noMultipleSpaces) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+      });
+      return false;
+    }
+
+      // Validar que ninguna letra se repita más de 4 veces seguidas
+    const words = trimmedDescripcion.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 5) {
+          swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 5 veces en la palabra "${word}".`,
+          });
+          return false; // Retornar falso si se encuentra una letra repetida más de 4 veces
+        }
+      }
+    }
+  
+    return true; // Retornar verdadero si la descripción es válida
+  };
+  
+    // Capitalizar la primera letra de cada palabra
+    const capitalizeWords = (str) => {
+      return str.replace(/\b\w/g, (char) => char.toUpperCase());
+    };
+
+    const validateEmptyFields = () => {
+      const { descripcion, cod_persona_padre, cod_persona_estudiante, cod_tipo_relacion } = nuevaEstructura;
+      if (!descripcion || !cod_persona_padre || !cod_persona_estudiante || !cod_tipo_relacion) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Campos vacíos',
+          text: 'Todos los campos deben estar llenos para poder crear una nueva estructura',
+        });
+        return false;
+      }
+      return true;
+    };
+
+      // Función para controlar la entrada de texto en los campos de nombre del edificio
+  const handleDescripcionInputChange = (e, setFunction) => {
+    let value = e.target.value;
+
+    const upperCaseValue = e.target.value.toUpperCase();
+    setDescripcion(upperCaseValue);
+
+    // No permitir más de un espacio consecutivo
+    value = value.replace(/\s{2,}/g, ' ');
+    
+
+    // No permitir que una letra se repita más de 4 veces consecutivamente
+    const wordArray = value.split(' ');
+    const isValid = wordArray.every(word => !/(.)\1{4,}/.test(word));
+
+    if (!isValid) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Repetición de letras',
+        text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+      });
+      return;
+    }
+
+    if (value.length <= 3) {
+      setDescripcionError('La descripción debe tener menos de 3 letras.');
+    } else {
+      setDescripcionError(''); // No hay error
+    }
+    
+    setFunction((prevState) => ({
+      ...prevState,
+      descripcion: value,
+    }));
+    setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+  };
+
+
 {/* ----------------------------------------------------------------------------------------------------------------------------------------- */}
 
  {/* Función para crear estructura */}
@@ -337,8 +506,8 @@ const handleSeleccionarPersonaPadre = (persona) => {
   try {
     // Preparación del cuerpo de la solicitud
     const estructuraData = {
-      cod_persona_padre: nuevaEstructura.cod_persona_padre || null, // Permitir null si no está definido
-      cod_persona_estudiante: nuevaEstructura.cod_persona_estudiante || null, // Permitir null si no está definido
+      cod_persona_padre: nuevaEstructura.cod_persona_padre, // Permitir null si no está definido
+      cod_persona_estudiante: nuevaEstructura.cod_persona_estudiante, // Permitir null si no está definido
       cod_tipo_relacion: nuevaEstructura.cod_tipo_relacion,
       descripcion: nuevaEstructura.descripcion,
     };
@@ -388,57 +557,78 @@ const handleSeleccionarPersonaPadre = (persona) => {
 
 {/* Función para actualizar estructura */}
 const handleUpdateEstructura = async () => {
-    const descripcionCapitalizado = capitalizeWords(estructuraToUpdate.descripcion.trim().replace(/\s+/g, ' '));
+  const descripcionCapitalizado = capitalizeWords(estructuraToUpdate.descripcion.trim().replace(/\s+/g, ' '));
 
-    if (!estructuraToUpdate.descripcion.trim()) { // Verificar si la descripción está vacía
+  if (!estructuraToUpdate.descripcion.trim()) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Campo obligatorio',
+      text: 'La descripción no puede estar vacía.',
+    });
+    return;
+  }
+
+  if (!validateDescripcion(descripcionCapitalizado)) {
+    return;
+  }
+
+  if (!estructuraToUpdate.cod_persona_padre || !estructuraToUpdate.cod_persona_estudiante) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Faltan datos',
+      text: 'Debes seleccionar un estudiante y un padre/tutor antes de actualizar.',
+    });
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        descripcion: descripcionCapitalizado,
+        cod_persona_padre: estructuraToUpdate.cod_persona_padre,
+        cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante,
+        cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion,
+      }),
+    });
+
+    if (response.ok) {
+      fetchEstructuraFamiliar();
+      setModalUpdateVisible(false);
+      resetEstructuraToUpdate();
+      setHasUnsavedChanges(false);
       swal.fire({
-        icon: 'warning',
-        title: 'Campo obligatorio',
-        text: 'La descripción no puede estar vacía.',
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: 'La estructura familiar ha sido actualizada correctamente.',
       });
-      return; // Detener la función si está vacía
-    } 
-    if (!validateDescripcion(descripcionCapitalizado)) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          descripcion: descripcionCapitalizado, 
-          cod_persona_padre: estructuraToUpdate.cod_persona_padre, 
-          cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante, 
-          cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion
-       })
+    } else {
+      const errorMessage = await response.text();
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `No se pudo actualizar la estructura familiar: ${errorMessage}`,
       });
-
-      if (response.ok) {
-        fetchEstructuraFamiliar();
-        setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
-        resetEstructuraToUpdate();
-        setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
-        swal.fire({
-          icon: 'success',
-          title: 'Actualización exitosa',
-          text: 'La estructura familiar ha sido actualizado correctamente.',
-        });
-      } else {
-        swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo actualizar el la estructura familiar.',
-        });
-      }
-    } catch (error) {
-      console.error('Error al actualizar la estructura familiar:', error);
     }
-  };
+  } catch (error) {
+    console.error('Error al actualizar la estructura familiar:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error inesperado',
+      text: 'Ocurrió un error al intentar actualizar la estructura familiar.',
+    });
+  }
+};
+
 
   {/* Fin de la función para actualizar estructura */}
+
+  const resetEstructuraToUpdate = () => {
+    setEstructuraToUpdate({ descripcion: '', cod_persona_padre: '', cod_persona_estudiante: '', cod_tipo_relacion: ''  });
+  };
 
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -458,7 +648,7 @@ const handleUpdateEstructura = async () => {
       if (response.ok) {
         fetchEstructuraFamiliar();
         setModalDeleteVisible(false);
-        setEdificioToDelete({});
+        setEstructuraToDelete({});
         swal.fire({
           icon: 'success',
           title: 'Eliminación exitosa',
@@ -503,12 +693,35 @@ const handleCloseModal = (closeFunction, resetFields) => {
 };
 
 
+const handleOpenUpdateModal = (estructura) => {
+  setEstructuraToUpdate({
+    descripcion: estructura.descripcion || '',
+    cod_persona_padre: estructura.cod_persona_padre || '',
+    cod_persona_estudiante: estructura.cod_persona_estudiante || '',
+    cod_tipo_relacion: estructura.cod_tipo_relacion || '',
+    Cod_genealogia: estructura.Cod_genealogia || '',
+  });
+  setModalUpdateVisible(true);
+};
+
 
 const openUpdateModal = (estructura) => {
-  setEstructuraToUpdate(estructura);
-  setModalUpdateVisible(true);
-  setHasUnsavedChanges(false);
+  setEstructuraToUpdate({
+    ...estructura,
+    nombreEstudiante: personas.find(persona => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName || '',
+    nombrePadre: personas.find(persona => persona.cod_persona === estructura.cod_persona_padre)?.fullName || '',
+  });
+  setNuevaEstructuraActualizar({
+    cod_persona_padre: estructura.cod_persona_padre,
+    cod_persona_estudiante: estructura.cod_persona_estudiante,
+    cod_tipo_relacion: estructura.cod_tipo_relacion,
+    descripcion: estructura.descripcion,
+  });
+  setBuscadorRelacionEstudianteActualizar(estructura.nombreEstudiante || '');
+  setBuscadorRelacionPadreActualizar(estructura.nombrePadre || '');
+  setModalVisibleActualizar(true);
 };
+
 
 const openDeleteModal = (estructura) => {
   setEstructuraToDelete(estructura);
@@ -726,7 +939,7 @@ return (
   </CTable>
 </div>
 
-
+{/* Modal para agregar estructura familiar */}
 <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Nueva Estructura Familiar</CModalTitle>
@@ -845,7 +1058,143 @@ return (
     <CButton color="primary" onClick={handleCreateEstructura}>Guardar</CButton>
   </CModalFooter>
 </CModal>
+{/* Fin del modal de agregar estructura familiar */}
 
+
+{/* Modal para actualizar estrucutra familiar */}
+{/* Modal para actualizar estructura familiar */}
+<CModal visible={modalVisibleActualizar} onClose={() => setModalVisibleActualizar(false)} backdrop="static">
+  <CModalHeader closeButton>
+    <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+{/* Campo de búsqueda para Estudiante */}
+<div className="mb-3">
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Estudiante</CInputGroupText>
+    <CFormInput
+      type="text"
+      value={buscadorRelacionEstudianteActualizar}
+      onChange={handleBuscarRelacionEstudianteActualizar}
+      placeholder={estructuraToUpdate?.nombreEstudiante || 'Buscar por DNI o nombre'}
+    />
+    <CInputGroupText>
+      <CIcon icon={cilSearch} />
+    </CInputGroupText>
+  </CInputGroup>
+
+  {isDropdownOpenEstudianteActualizar && personasFiltradasEstudianteActualizar.length > 0 && (
+    <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+      {personasFiltradasEstudianteActualizar.map(persona => (
+        <div
+          key={persona.cod_persona}
+          className="dropdown-item"
+          style={{ cursor: 'pointer' }}
+          onClick={() => handleSeleccionarPersonaEstudianteActualizar(persona)}
+        >
+          {persona.dni_persona} - {persona.fullName}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+{/* Campo de búsqueda para Padre/Tutor */}
+<div className="mb-3">
+  <CInputGroup className="mb-3">
+  <CInputGroupText>Padre/Tutor</CInputGroupText>
+    <CFormInput
+      type="text"
+      value={buscadorRelacionPadreActualizar}
+      onChange={handleBuscarRelacionPadreActualizar}
+      placeholder={estructuraToUpdate?.nombrePadre || 'Buscar por DNI o nombre'}
+    />
+    <CInputGroupText>
+      <CIcon icon={cilSearch} />
+    </CInputGroupText>
+  </CInputGroup>
+
+  {isDropdownOpenPadreActualizar && personasFiltradasPadreActualizar.length > 0 && (
+    <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+      {personasFiltradasPadreActualizar.map(persona => (
+        <div
+          key={persona.cod_persona}
+          className="dropdown-item"
+          style={{ cursor: 'pointer' }}
+          onClick={() => handleSeleccionarPersonaPadreActualizar(persona)}
+        >
+          {persona.dni_persona} - {persona.fullName}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
+
+
+      {/* Otros campos */}
+      <CInputGroup className="mt-3">
+        <CInputGroupText>Tipo Relación</CInputGroupText>
+        <CFormSelect
+          value={nuevaEstructuraActualizar.cod_tipo_relacion}
+          onChange={e => setNuevaEstructuraActualizar(prev => ({
+            ...prev,
+            cod_tipo_relacion: e.target.value,
+          }))}
+        >
+          <option value="">Tipo de Relación</option>
+          {tipoRelacion.map(tipo => (
+            <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
+              {tipo.tipo_relacion.toUpperCase()}
+            </option>
+          ))}
+        </CFormSelect>
+      </CInputGroup>
+
+      <CInputGroup className="mt-3">
+        <CInputGroupText>Descripción</CInputGroupText>
+        <CFormInput
+          type="text"
+          value={nuevaEstructuraActualizar.descripcion}
+          onChange={e => setNuevaEstructuraActualizar(prev => ({
+            ...prev,
+            descripcion: e.target.value,
+          }))}
+          placeholder="Descripción de la relación"
+        />
+      </CInputGroup>
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalVisibleActualizar(false)}>Cerrar</CButton>
+    <CButton color="primary" onClick={handleUpdateEstructura}>Guardar</CButton>
+  </CModalFooter>
+</CModal>
+
+
+{/* Fin del modal actualizar */}
+
+
+      {/* Modal para eliminar una estructura */}
+      <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+        <CModalHeader>
+          <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          ¿Estás seguro de que deseas eliminar la estructura familiar con el código{' '}
+          {estructuraToDelete.Cod_genealogia}?
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+            Cancelar
+          </CButton>
+          <CButton color="danger" onClick={handleDeleteEstructura}>
+            Eliminar
+          </CButton>
+        </CModalFooter>
+      </CModal>
+      {/* Fin de eliminar  */}
 
 
     </CContainer>

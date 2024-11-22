@@ -51,6 +51,8 @@ import PermisosRoutes from './module/Permisos/Permisos_routes.js'; // Asegúrate
 import departamento from './module/personas/Routes/departamento_routes.js';
 import cuentasRouter from './module/auth/creacioncuentas_Routes.js';
 
+import municipioRoutes from './module/personas/Routes/municipiosRoutes.js';
+
 
 
 
@@ -171,7 +173,7 @@ app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
 
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
-
+app.use('/api/municipio', municipioRoutes);
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 
 
