@@ -2,73 +2,72 @@
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
+// Obtener todas las solicitudes o una solicitud por Cod_solicitud
+export const obtenerSolicitudesx = async (req, res) => {
+    const { Cod_solicitud } = req.query;
 
-
-export const obtenerSolicitudes = async (req, res) => {
     try {
-        const { Cod_solicitud } = req.query; // Parámetro opcional
-        const cod_persona = req.usuario?.cod_persona; // Extraer Cod_persona del token decodificado
-
-        if (!cod_persona && !Cod_solicitud) {
-            return res.status(400).json({
-                message: 'Se requiere Cod_persona para listar solicitudes o Cod_solicitud para una específica.',
-            });
-        }
-
         let query;
         let params;
 
         if (Cod_solicitud) {
-            // Obtener una solicitud específica
-            query = 'CALL obtener_solicitudes(?)';
+            query = 'CALL obtener_solicitudes(?)'; // Llama al procedimiento almacenado para una solicitud específica
             params = [Cod_solicitud];
         } else {
-            // Obtener solicitudes para el usuario autenticado
-            query = 'CALL obtener_solicitudes_por_usuario(?)';
-            params = [cod_persona];
+            query = 'CALL obtener_solicitudes()'; // Llama al procedimiento almacenado para obtener todas las solicitudes
+            params = [];
         }
 
         const [results] = await pool.query(query, params);
 
+        // Verificar si hay resultados
         if (!results || results[0].length === 0) {
-            return res.status(404).json({ message: 'No se encontraron solicitudes.' });
+            return res.status(404).json({ message: 'No se encontraron solicitudes' });
         }
 
-        return res.status(200).json(results[0]);
+        // Formatear las fechas correctamente y mantener las horas como cadenas
+        const formattedResults = results[0].map((solicitud) => {
+            let formattedFechaSolicitud = null;
+
+            // Intentar convertir la fecha y verificar si es válida
+            if (solicitud.Fecha_solicitud) {
+                const fechaSolicitud = new Date(solicitud.Fecha_solicitud);
+                if (!isNaN(fechaSolicitud)) {
+                    formattedFechaSolicitud = fechaSolicitud.toISOString().split('T')[0]; // Fecha en formato ISO sin hora
+                }
+            }
+
+            // Dejar las horas como cadenas, ya que son valores de tipo TIME
+            const formattedHoraInicio = solicitud.Hora_Inicio || null;
+            const formattedHoraFin = solicitud.Hora_fin || null;
+
+            return {
+                ...solicitud,
+                Fecha_solicitud: formattedFechaSolicitud,
+                Hora_Inicio: formattedHoraInicio,
+                Hora_fin: formattedHoraFin,
+            };
+        });
+
+        // Si se solicita una sola solicitud, retornar un objeto
+        if (Cod_solicitud) {
+            return res.status(200).json(formattedResults[0]); // Retorna solo la primera solicitud
+        }
+
+        return res.status(200).json(formattedResults); // Retornar todas las solicitudes formateadas
     } catch (error) {
-        console.error('Error al obtener las solicitudes:', error);
-        return res.status(500).json({ message: 'Error al obtener las solicitudes.' });
+        console.error('Error al obtener la solicitud:', error);
+        return res.status(500).json({ message: 'Error al obtener las solicitudes', error: error.message });
     }
 };
 
-
-
 export const insertarSolicitud = async (req, res) => {
+    const { Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto, Persona_requerida } = req.body;
+
     try {
-        // Extraer cod_persona del usuario autenticado
-        const cod_persona = req.usuario?.cod_persona;
-
-        // Validar que cod_persona está disponible
-        if (!cod_persona) {
-            return res.status(400).json({
-                message: 'El usuario no está autenticado o falta el código de persona.',
-            });
-        }
-
-        // Extraer los demás datos del cuerpo de la solicitud
-        const { Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto, Persona_requerida } = req.body;
-
-        // Validar que los campos requeridos están presentes
-        if (!Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Hora_Fin || !Asunto || !Persona_requerida) {
-            return res.status(400).json({
-                message: 'Faltan datos requeridos para insertar la solicitud.',
-            });
-        }
-
-        // Preparar la consulta y los parámetros
         const query = 'CALL insertar_solicitud(?, ?, ?, ?, ?, ?, ?)';
         const params = [
-            cod_persona, // Usar cod_persona del token
+            Cod_persona,
             Nombre_solicitud,
             Fecha_solicitud,
             Hora_Inicio,
@@ -77,21 +76,18 @@ export const insertarSolicitud = async (req, res) => {
             Persona_requerida,
         ];
 
-        // Ejecutar la consulta
         const [results] = await pool.query(query, params);
 
-        // Retornar respuesta exitosa
         return res.status(201).json({ message: 'Solicitud insertada exitosamente' });
     } catch (error) {
-        // Manejo de errores
         console.error('Error al insertar la solicitud:', error);
+
         return res.status(500).json({
             message: 'Error al insertar la solicitud.',
             error: error.message,
         });
     }
 };
-
 
 
 export const actualizarSolicitud = async (req, res) => {

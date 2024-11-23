@@ -90,12 +90,18 @@ const _nav = [
     },
     {
       component: CNavItem,
-      name: 'Solicitudes',
+      name: 'Solicitudes Padres',
+      to: '/Solicitud',
+      icon: cilCalendar, 
+      
+    },
+    {
+      component: CNavItem,
+      name: 'Solicitudes Admin',
       to: '/Solicitud_admin',
       icon: cilCalendar, 
       
     },
-    
   {
     component: CNavGroup,
     name: 'Mantenimientos',

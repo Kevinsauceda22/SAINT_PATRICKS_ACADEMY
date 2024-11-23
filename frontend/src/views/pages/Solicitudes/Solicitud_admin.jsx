@@ -75,7 +75,7 @@ const Solicitud = () => {
   const fetchSolicitudes = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:4000/api/solicitud/solicitudes');
+      const response = await fetch('http://localhost:4000/api/Solicitud_admin/solicitudess');
       if (!response.ok) throw new Error('Error al obtener las solicitudes');
       const data = await response.json();
       const solicitudesData = (Array.isArray(data) ? data : []).map((solicitud) => ({
@@ -225,7 +225,7 @@ const Solicitud = () => {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          const response = await fetch(`http://localhost:4000/api/solicitud/solicitudes/${citaId}`, {
+          const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -345,8 +345,8 @@ const Solicitud = () => {
   
       const response = await fetch(
         selectedCita
-          ? `http://localhost:4000/api/solicitud/solicitudes/${selectedCita.id}`
-          : 'http://localhost:4000/api/solicitud/solicitudes',
+          ? `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
+          : 'http://localhost:4000/api/Solicitud_admin/solicitudes',
         {
           method: selectedCita ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },

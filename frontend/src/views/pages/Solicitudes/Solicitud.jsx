@@ -1,7 +1,8 @@
 // Path: src/views/pages/solicitud/Solicitud.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
 import { cilPen, cilPlus, cilSave, cilFile, cilSearch, cilWarning, cilCheckCircle, cilXCircle } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import {
@@ -46,7 +47,27 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 
+
+// Función para decodificar JWT
+const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error al decodificar el token JWT:', error);
+    return null;
+  }
+};
+
 const Solicitud = () => {
+  const { auth } = useContext(AuthContext); // Obtener el usuario autenticado desde AuthContext
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,7 +84,7 @@ const Solicitud = () => {
     fecha: '',
     horaInicio: '',
     horaFin: '',
-    Cod_persona:'',
+    cod_persona: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -71,14 +92,39 @@ const Solicitud = () => {
   useEffect(() => {
     fetchSolicitudes();
   }, []);
-
   const fetchSolicitudes = async () => {
     setLoading(true);
+    setError('');
     try {
-      const response = await fetch('http://localhost:4000/api/solicitud/solicitudes');
-      if (!response.ok) throw new Error('Error al obtener las solicitudes');
+      // Obtener el token del almacenamiento local
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
+      }
+  
+      // Realizar la solicitud al backend
+      const response = await fetch('http://localhost:4000/api/solicitud/solicitudes', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`, // Enviar token al backend
+        },
+      });
+  
+      // Manejo de errores HTTP
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Acceso no autorizado. Por favor, inicia sesión nuevamente.');
+        } else if (response.status === 400) {
+          throw new Error('Solicitud incorrecta. Verifica los datos enviados.');
+        }
+        throw new Error('Error al obtener las solicitudes.');
+      }
+  
       const data = await response.json();
-      const solicitudesData = (Array.isArray(data) ? data : []).map((solicitud) => ({
+      console.log('Datos recibidos del backend:', data);
+  
+      // Transformar las solicitudes recibidas del backend
+      const solicitudesData = data.map((solicitud) => ({
         id: solicitud.Cod_solicitud || '',
         title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
         start: solicitud.Fecha_solicitud || '',
@@ -89,23 +135,51 @@ const Solicitud = () => {
         horaFin: solicitud.Hora_Fin ? solicitud.Hora_Fin.slice(0, 5) : '00:00',
         estado: solicitud.Estado || 'Pendiente',
         important: solicitud.Importante === 1,
-        Cod_persona: solicitud.Cod_persona || '',
-
+        cod_persona: solicitud.cod_persona || '',
       }));
-      setSolicitudes(solicitudesData);
-      setFilteredCitas(solicitudesData);
+  
+      console.log('Solicitudes transformadas:', solicitudesData);
+  
+      // Filtrar solicitudes por usuario autenticado
+      const citasFiltradas = solicitudesData.filter(
+        (cita) => cita.Cod_persona === auth?.Cod_persona
+      );
+  
+      setSolicitudes(citasFiltradas);
+      setFilteredCitas(citasFiltradas);
     } catch (error) {
+      console.error('Error al obtener las solicitudes:', error.message);
       setError(error.message);
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: `No se pudieron cargar las solicitudes. ${error.message}`,
+        text: error.message,
         confirmButtonColor: '#6C8E58',
       });
     } finally {
       setLoading(false);
     }
   };
+  
+  
+  
+  const decodeJWT = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error('Error al decodificar el token JWT:', error);
+      return null;
+    }
+  };
+    
 
   const getColorByEstado = (estado) => {
     switch (estado) {
@@ -314,71 +388,81 @@ const Solicitud = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!areFieldsValid()) return;
-  
+
     const [horaInicio, minutoInicio] = formValues.horaInicio.split(':').map(Number);
     const [horaFin, minutoFin] = formValues.horaFin.split(':').map(Number);
+
     if (horaFin < horaInicio || (horaFin === horaInicio && minutoFin <= minutoInicio)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Advertencia',
-        text: 'La hora de fin debe ser mayor que la hora de inicio.',
-        confirmButtonColor: '#6C8E58',
-      });
-      return;
+        Swal.fire({
+            icon: 'warning',
+            title: 'Advertencia',
+            text: 'La hora de fin debe ser mayor que la hora de inicio.',
+            confirmButtonColor: '#6C8E58',
+        });
+        return;
     }
-  
+
     setIsSubmitting(true);
     try {
-      const requestData = {
-        Cod_persona: selectedCita ? selectedCita.Cod_persona : formValues.Cod_persona || '1',
-        Nombre_solicitud: formValues.title || 'SIN TÍTULO',
-        Fecha_solicitud: formValues.fecha || '1899-11-30',
-        Hora_Inicio: formValues.horaInicio,
-        Hora_Fin: formValues.horaFin,
-        Asunto: formValues.description || 'SIN ASUNTO',
-        Persona_requerida: formValues.personaRequerida || 'DESCONOCIDO',
-        Estado: selectedCita ? selectedCita.estado : 'Pendiente', // Solo relevante para actualización
-      };
-  
-      const response = await fetch(
-        selectedCita
-          ? `http://localhost:4000/api/solicitud/solicitudes/${selectedCita.id}`
-          : 'http://localhost:4000/api/solicitud/solicitudes',
-        {
-          method: selectedCita ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData),
+        // Asegúrate de que auth contiene el usuario autenticado con el cod_persona
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
         }
-      );
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al procesar la solicitud.');
-      }
-  
-      Swal.fire({
-        icon: 'success',
-        title: selectedCita ? 'Actualizado' : 'Creado',
-        text: selectedCita
-          ? 'La cita fue actualizada correctamente.'
-          : 'La cita fue creada correctamente.',
-        confirmButtonColor: '#4B6251',
-      });
-  
-      setFormModalVisible(false);
-      await fetchSolicitudes();
+
+        const requestData = {
+            Nombre_solicitud: formValues.title || 'SIN TÍTULO',
+            Fecha_solicitud: formValues.fecha || '1899-11-30',
+            Hora_Inicio: formValues.horaInicio,
+            Hora_Fin: formValues.horaFin,
+            Asunto: formValues.description || 'SIN ASUNTO',
+            Persona_requerida: formValues.personaRequerida || 'DESCONOCIDO',
+        };
+
+        const response = await fetch(
+            selectedCita
+                ? `http://localhost:4000/api/solicitud/solicitudes/${selectedCita.id}`
+                : 'http://localhost:4000/api/solicitud/solicitudes',
+            {
+                method: selectedCita ? 'PUT' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(requestData),
+            }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al procesar la solicitud.');
+        }
+
+        Swal.fire({
+            icon: 'success',
+            title: selectedCita ? 'Actualizado' : 'Creado',
+            text: selectedCita
+                ? 'La cita fue actualizada correctamente.'
+                : 'La cita fue creada correctamente.',
+            confirmButtonColor: '#4B6251',
+        });
+
+        setFormModalVisible(false);
+        await fetchSolicitudes();
     } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message,
-        confirmButtonColor: '#6C8E58',
-      });
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message,
+            confirmButtonColor: '#6C8E58',
+        });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+};
+
 
   const handleVerTodasCitas = () => {
     setAllCitasModalVisible(true);
@@ -711,22 +795,6 @@ const Solicitud = () => {
             />
           </CCol>
         </CRow>
-        {!selectedCita && ( // Mostrar solo al crear una nueva cita
-          <CRow className="mb-3">
-            <CCol md={12}>
-              <CFormLabel>Cod Persona</CFormLabel>
-              <CFormInput
-                type="text"
-                name="Cod_persona"
-                value={formValues.Cod_persona}
-                onChange={handleInputChange}
-                placeholder="Ingrese el Cod Persona"
-                required
-                style={{ borderColor: '#6C8E58' }}
-              />
-            </CCol>
-          </CRow>
-        )}
         {selectedCita && (
           <CRow className="mb-3">
             <CCol md={12}>
@@ -738,7 +806,6 @@ const Solicitud = () => {
                 style={{ width: '100%', padding: '10px', borderColor: '#6C8E58' }}
               >
                 <option value="Pendiente">Pendiente</option>
-                
                 <option value="Cancelada">Cancelada</option>
               </select>
             </CCol>
@@ -761,6 +828,7 @@ const Solicitud = () => {
     </CForm>
   </CModalBody>
 </CModal>
+
 
       <CModal size="lg" visible={allCitasModalVisible} onClose={handleModalClose} backdrop="static">
         <CModalHeader closeButton style={{ backgroundColor: '#4B6251', color: 'white' }}>

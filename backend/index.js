@@ -52,6 +52,7 @@ import departamento from './module/personas/Routes/departamento_routes.js';
 import cuentasRouter from './module/auth/creacioncuentas_Routes.js';
 
 import municipioRoutes from './module/personas/Routes/municipiosRoutes.js';
+import Solicitud_adminRoutes from './module/matricula/Routes/Solicitud_adminRoutes.js';
 
 
 
@@ -163,6 +164,9 @@ app.use('/api/departamento', departamento);
 app.use('/api/conceptopago', conceptopagoRoutes);
 // Usar las rutas de solicitud
 app.use('/api/solicitud', solicitudRoutes);
+app.use('/api/conceptopago', conceptopagoRoutes);
+// Usar las rutas de solicitud
+app.use('/api/Solicitud_admin', Solicitud_adminRoutes);
 // Pagos y finanzas
 app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 // Rutas para secciones
