@@ -49,6 +49,13 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Asistencia',
+    to: '/ListaAsistenciaProfesor',
+    icon: cilClipboard,
+    nameobject: 'navAsistenciaProfesor',
+  },
+  {
+    component: CNavItem,
     name: 'Profesores',
     to: '/ListaProfesores',
     icon: cilPeople,
@@ -61,6 +68,14 @@ const _nav = [
     icon: cilTask,
     nameobject: 'navActividadesAcademicas',
   },
+  
+  {
+    component: CNavItem,
+    name: 'Actividades extracurriculares',
+    to: '/actividades',
+    icon: cilSchool,
+    nameobject: 'navListaActividades',
+  },
   {
     component: CNavItem,
     name: 'Notas',
@@ -68,6 +83,27 @@ const _nav = [
     icon: cilFile,
     nameobject: 'navNotas',
   },
+    {
+     component: CNavItem,
+     name: 'Secciones asignaturas',
+     to: '/ListaSecciones_Asignatura',
+     icon: cilFile,
+    nameobject: 'navListaSecciones_Asignaturas',
+    },
+    {
+      component: CNavItem,
+      name: 'Solicitudes Padres',
+      to: '/Solicitud',
+      icon: cilCalendar, 
+      
+    },
+    {
+      component: CNavItem,
+      name: 'Solicitudes Admin',
+      to: '/Solicitud_admin',
+      icon: cilCalendar, 
+      
+    },
   {
     component: CNavGroup,
     name: 'Mantenimientos',
@@ -172,23 +208,17 @@ const _nav = [
       },
       {
         component: CNavItem,
+        name: 'Aulas',
+        to: '/pages/matricula/ListaAulas',
+        nameobject: 'navAulas',
+      },
+      {
+        component: CNavItem,
         name: 'Dias',
         to: '/dias',
         nameobject: 'navDias',
       },
-      {
-        component: CNavItem,
-        name: 'Lista de Actividades',
-        to: '/actividades',
-        nameobject: 'navListaActividades',
-      },
-      {
-        component: CNavItem,
-        name: 'Historial Procedencia',
-        to: '/ListaHistoricoProc',
-        nameobject: 'navHistorialProcedencia',
-      },
-      {
+     {
         component: CNavItem,
         name: 'Cuentas Contables',
         to: '/Contabilidad',
@@ -257,6 +287,11 @@ const _nav = [
         name: 'Tipo persona',
         to: '/tipopersona',
         nameobject: 'navTipoPersona',
+      },{
+        component: CNavItem,
+        name: 'Historial Procedencia',
+        to: '/ListaHistoricoProc',
+        nameobject: 'navHistorialProcedencia',
       },
       {
         component: CNavItem,

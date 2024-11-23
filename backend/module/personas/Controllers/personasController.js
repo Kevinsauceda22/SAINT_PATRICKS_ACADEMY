@@ -98,7 +98,9 @@ export const crearPersona = async (req, res) => {
         Estado_Persona,
         cod_tipo_persona,
         cod_departamento,
-        cod_genero 
+        cod_municipio,
+        cod_genero,
+        principal,
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -167,7 +169,7 @@ export const crearPersona = async (req, res) => {
 
         // Crear la nueva persona con el procedimiento almacenado
         await connection.query(
-            "CALL P_Post_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
+            "CALL P_Post_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
             [
                 dni_persona,
                 Nombre,
@@ -180,7 +182,9 @@ export const crearPersona = async (req, res) => {
                 Estado_Persona,
                 cod_tipo_persona,
                 cod_departamento,
-                cod_genero 
+                cod_municipio,
+                cod_genero,
+                principal 
             ]
         );
 
@@ -200,7 +204,7 @@ export const crearPersona = async (req, res) => {
 
 //API para actualizar personas 
 export const actualizarPersona = async (req, res) => {
-    const { cod_persona } = req.params; // Obtiene el código de la persona desde la URL
+    const { cod_persona } = req.params; // Código de persona desde la URL
 
     const {
         dni_persona,
@@ -214,73 +218,75 @@ export const actualizarPersona = async (req, res) => {
         Estado_Persona,
         cod_tipo_persona,
         cod_departamento,
-        cod_genero 
+        cod_municipio,
+        cod_genero,
+        principal
     } = req.body;
 
-    const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/; // Solo letras, acentos y espacios
-
-    // Función para validar letras repetidas
-    const tieneLetrasRepetidas = (texto) => {
-        const regex = /(.)\1{3,}/; 
-        return regex.test(texto.replace(/\s/g, '')); // Elimina espacios para la validación
-    };
-
-    // Función para validar espacios múltiples
-    const tieneEspaciosMultiples = (texto) => {
-        return /\s{2,}/.test(texto); 
-    };
+    // Regex para solo letras, acentos y espacios
+    const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
 
     try {
-        // Validación de DNI (13 dígitos exactos)
+        // Validaciones específicas
+
+        // Validar que cod_persona sea un número válido
+        if (!cod_persona || isNaN(cod_persona)) {
+            return res.status(400).json({ mensaje: 'El código de persona es inválido o no fue proporcionado.' });
+        }
+
+        // Validación de DNI
         if (!/^\d{13}$/.test(dni_persona)) {
             return res.status(400).json({ mensaje: 'El DNI debe tener exactamente 13 dígitos.' });
         }
 
-        // Validación de los primeros cuatro dígitos del DNI (rango 0101 a 0909)
         const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
         if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
-            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.' });
+            return res.status(400).json({ mensaje: 'El DNI no es válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.' });
         }
 
-        // Validación del año de nacimiento en el DNI (1920 a 2020)
         const añoNacimientoDNI = parseInt(dni_persona.substring(4, 8));
         if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
-            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.' });
+            return res.status(400).json({ mensaje: 'El DNI no es válido. El año debe estar entre 1920 y 2020.' });
         }
 
-        // Validaciones de longitud y formato para los campos de texto
+        // Validaciones de campos de texto
         const validaciones = [
             { campo: Nombre, nombreCampo: 'El nombre' },
             { campo: Segundo_nombre, nombreCampo: 'El segundo nombre', optional: true },
             { campo: Primer_apellido, nombreCampo: 'El primer apellido' },
             { campo: Segundo_apellido, nombreCampo: 'El segundo apellido', optional: true },
             { campo: Nacionalidad, nombreCampo: 'La nacionalidad', optional: true },
-            { campo: direccion_persona, nombreCampo: 'La dirección' } // Validación para dirección
+            { campo: direccion_persona, nombreCampo: 'La dirección' }
         ];
 
         for (const { campo, nombreCampo, optional } of validaciones) {
-            if (campo || optional) { // Solo validar si el campo es obligatorio o está presente
-                if (tieneLetrasRepetidas(campo)) {
-                    return res.status(400).json({ mensaje: `${nombreCampo} no puede contener la misma letra más de 3 veces consecutivas.` });
-                }
-                if (tieneEspaciosMultiples(campo)) {
-                    return res.status(400).json({ mensaje: `${nombreCampo} no puede tener más de un espacio consecutivo.` });
-                }
-                if (campo.length < 2 || campo.length > 50 || !soloLetrasRegex.test(campo)) {
-                    return res.status(400).json({ mensaje: `${nombreCampo} no válido. Debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.` });
-                }
+            if (!campo && !optional) {
+                return res.status(400).json({ mensaje: `${nombreCampo} es obligatorio.` });
+            }
+            if (campo && (campo.length < 2 || campo.length > 50 || !soloLetrasRegex.test(campo))) {
+                return res.status(400).json({ mensaje: `${nombreCampo} debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.` });
             }
         }
 
-        // Validación de la fecha de nacimiento
+        // Validación de fecha de nacimiento
         const fechaNacimiento = new Date(fecha_nacimiento);
         const añoNacimiento = fechaNacimiento.getFullYear();
         if (añoNacimiento < 1920 || añoNacimiento > 2020) {
             return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1920 y 2020.' });
         }
 
-        // Llamada al procedimiento almacenado para actualizar la persona
-        await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        // Validar Estado_Persona (debe ser 'A' o 'S')
+        if (!['A', 'S'].includes(Estado_Persona)) {
+            return res.status(400).json({ mensaje: 'El estado de la persona debe ser "A" (Activo) o "S" (Suspendido).' });
+        }
+
+        // Validar códigos relacionados (departamento, municipio, etc.)
+        if ([cod_tipo_persona, cod_departamento, cod_municipio, cod_genero].some(codigo => isNaN(codigo))) {
+            return res.status(400).json({ mensaje: 'Los códigos proporcionados deben ser números válidos.' });
+        }
+
+        // Llamada al procedimiento almacenado para actualizar
+        await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             cod_persona,
             dni_persona,
             Nombre,
@@ -293,10 +299,13 @@ export const actualizarPersona = async (req, res) => {
             Estado_Persona,
             cod_tipo_persona,
             cod_departamento,
-            cod_genero
+            cod_municipio,
+            cod_genero,
+            principal
         ]);
 
         res.status(200).json({ mensaje: 'Persona actualizada exitosamente' });
+
     } catch (error) {
         console.error('Error al actualizar la persona:', error);
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });

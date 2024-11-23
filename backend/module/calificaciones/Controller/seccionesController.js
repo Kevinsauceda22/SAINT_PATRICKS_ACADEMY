@@ -1,6 +1,7 @@
 // Importar la conexión a la base de datos
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB(); // Establecer el pool de conexiones
+import jwt from 'jsonwebtoken';
 
 // Controlador para obtener todas las secciones
 export const get_seccionesP = async (req, res) => {
@@ -49,3 +50,107 @@ export const deleteSeccion = async (req, res) => {
         res.status(500).json({ message: error.message }); // Manejo de errores
     }
 };
+
+
+
+
+
+// Controlador para obtener las secciones filtradas por el profesor
+// Obtener las secciones de un profesor con nombres de grado y período
+export const obtenerSeccionesPorProfesor = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ mensaje: 'Token no proporcionado' });
+        }
+
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const codPersona = decodedToken.cod_persona;
+        if (!codPersona) {
+            return res.status(400).json({ mensaje: 'El token no contiene cod_persona' });
+        }
+
+        // Consulta para obtener el cod_profesor utilizando cod_persona
+        const [profesorResult] = await pool.query(
+            'SELECT Cod_Profesor FROM tbl_profesores WHERE Cod_Persona = ?',
+            [codPersona]
+        );
+
+        if (profesorResult.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontró un profesor con este cod_persona' });
+        }
+
+        const codProfesor = profesorResult[0].Cod_Profesor;
+       
+
+        // Obtener las secciones del profesor
+        const [secciones] = await pool.query(
+            'SELECT Cod_secciones, Nombre_seccion, Cod_aula, Cod_grado, Cod_periodo_matricula FROM tbl_secciones WHERE Cod_Profesor = ?',
+            [codProfesor]
+        );
+
+        // Obtener los nombres de grado y período para cada sección
+        for (let seccion of secciones) {
+            // Consulta para obtener el nombre del grado
+            const [gradoResult] = await pool.query(
+                'SELECT Nombre_grado FROM tbl_grados WHERE Cod_grado = ?',
+                [seccion.Cod_grado]
+                
+            );
+
+
+
+            
+            // Consulta para obtener el nombre del período
+            const [periodoResult] = await pool.query(
+                'SELECT Anio_academico FROM tbl_periodo_matricula WHERE Cod_periodo_matricula = ?',
+                [seccion.Cod_periodo_matricula]
+            );
+
+            // Añadir los nombres a la sección
+            seccion.Nombre_grado = gradoResult.length > 0 ? gradoResult[0].Nombre_grado : 'Sin nombre';
+            seccion.Anio_academico = periodoResult.length > 0 ? periodoResult[0].Anio_academico : 'Sin nombre';
+        }
+
+        // Enviar las secciones con los nombres completos y el código del profesor
+        res.status(200).json({
+            codProfesor, // Código del profesor
+            secciones,   // Lista de secciones
+        });
+    } catch (error) {
+        console.error('Error al obtener las secciones:', error);
+        res.status(500).json({ mensaje: 'Error al obtener las secciones' });
+    }
+};
+
+
+
+
+
+// Nueva función para obtener todas las secciones y profesores para el administrador
+
+
+export const obtenerTodasLasSeccionesYProfesoresAdmin = async (req, res) => {
+    try {
+      const { codProfesor } = req.params; // Obtener `Cod_Profesor` desde los parámetros de la URL
+      if (!codProfesor) {
+        return res.status(400).json({ mensaje: 'Cod_Profesor es requerido' });
+      }
+  
+      // Llamar al procedimiento almacenado `getSeccionesPorProfesor`
+      const [secciones] = await pool.query('CALL getSeccionesPorProfesor(?)', [codProfesor]);
+  
+      console.log(`Secciones obtenidas para Cod_Profesor ${codProfesor}:`, secciones[0]);
+  
+      res.status(200).json(secciones[0]); // Devolver las secciones con los datos completos
+    } catch (error) {
+      console.error('Error al obtener las secciones del profesor:', error);
+      res.status(500).json({ mensaje: 'Error al obtener las secciones del profesor' });
+    }
+  };
+  
+  
+  
+  
+  
+  

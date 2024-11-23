@@ -1,4 +1,5 @@
 import conectarDB from '../../../config/db.js';
+import jwt from 'jsonwebtoken'; // Importa jwt si no lo has hecho
 const pool = await conectarDB();
 
 // Obtener todos los profesores y sus datos asociados
@@ -107,4 +108,5 @@ export const eliminarProfesor = async (req, res) => {
         console.error('Error al eliminar el profesor:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
+    
 };

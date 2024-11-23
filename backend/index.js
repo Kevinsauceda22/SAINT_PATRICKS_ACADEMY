@@ -30,9 +30,11 @@ import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
 import historicoprocRoutes from './module/matricula/Routes/historicoprocRoutes.js';
+import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personaRoutes from "./module/personas/Routes/personasRoutes.js";
+import seccionesRoutes from "./module/matricula/Routes/seccionesRoutes.js";
 
 import personasRoutes from "./module/personas/personaRoutes.js";
 import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
@@ -48,6 +50,9 @@ import libroDiarioRoutes from './module/Contabilidad/librodiario_routes.js'; // 
 import PermisosRoutes from './module/Permisos/Permisos_routes.js'; // Asegúrate de usar la ruta correcta
 import departamento from './module/personas/Routes/departamento_routes.js';
 import cuentasRouter from './module/auth/creacioncuentas_Routes.js';
+
+import municipioRoutes from './module/personas/Routes/municipiosRoutes.js';
+import Solicitud_adminRoutes from './module/matricula/Routes/Solicitud_adminRoutes.js';
 
 
 
@@ -137,6 +142,8 @@ app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
 app.use('/api/edificio', edificiosRoutes);
 // Rutas para las aulas
 app.use('/api/aula', aulasRoutes);
+// Rutas para secciones y asignaturas
+app.use('/api/secciones_asignaturas', secc_asigRoutes);
 // Rutas para las actividades extracurriculares
 app.use('/api', actividadesextraRoutes);
 // Rutas para el día
@@ -157,15 +164,20 @@ app.use('/api/departamento', departamento);
 app.use('/api/conceptopago', conceptopagoRoutes);
 // Usar las rutas de solicitud
 app.use('/api/solicitud', solicitudRoutes);
+app.use('/api/conceptopago', conceptopagoRoutes);
+// Usar las rutas de solicitud
+app.use('/api/Solicitud_admin', Solicitud_adminRoutes);
 // Pagos y finanzas
 app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
+// Rutas para secciones
+app.use('/api/secciones', seccionesRoutes);
 
 // Rutas para manejar personas
 app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
 
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
-
+app.use('/api/municipio', municipioRoutes);
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 
 app.use('/api/secciones', secciones);

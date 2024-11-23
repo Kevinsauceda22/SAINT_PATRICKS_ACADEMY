@@ -33,11 +33,8 @@ import {
   CCol,
 } from '@coreui/react';
 import Swal from 'sweetalert2';
-import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaProfesores = () => {
-  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaProfesores');
   const [profesores, setProfesores] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
@@ -480,6 +477,81 @@ const indexOfLastRecord = currentPage * recordsPerPage;
 const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
 const currentRecords = filteredProfesores.slice(indexOfFirstRecord, indexOfLastRecord);
 
+// buscar la persona dentro del modal crear
+function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
+  const [busqueda, setBusqueda] = useState('');
+
+   // Manejar la selección de una persona
+   const handleSelectPersona = (persona) => {
+    console.log('Persona seleccionada:', persona); // Para verificar que se ejecuta
+    setNuevoProfesor((prev) => ({
+      ...prev,
+      cod_persona: persona.cod_persona,
+    }));
+    setBusqueda(`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`);
+  };
+
+  // Filtrar personas según la búsqueda y el tipo
+  const personasFiltradas = listaPersonas.filter(
+    (persona) =>
+      persona.cod_tipo_persona === 3 && // Asegúrate de que este valor sea correcto
+      (`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
+        .toLowerCase()
+        .includes(busqueda.toLowerCase()))
+  );
+
+  return (
+    <>
+      {/* Campo de búsqueda */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Nombre</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Buscar persona..."
+          value={busqueda}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </CInputGroup>
+
+      {/* Lista de resultados filtrados */}
+      {busqueda && (
+        <div
+          style={{
+            maxHeight: '150px',
+            overflowY: 'auto',
+            border: '1px solid #ddd',
+            borderRadius: '4px',
+            marginBottom: '15px',
+          }}
+        >
+          {personasFiltradas.length > 0 ? (
+            personasFiltradas.map((persona) => (
+              <div
+                key={persona.cod_persona}
+                onClick={() => handleSelectPersona(persona)}
+                style={{
+                  padding: '10px',
+                  cursor: 'pointer',
+                  backgroundColor:
+                    nuevoProfesor.cod_persona === persona.cod_persona ? '#e9ecef' : 'white',
+                }}
+              >
+                {persona.dni_persona} {persona.Nombre} {persona.Primer_apellido}
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: '10px' }}>No se encontraron resultados.</div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+
+
 console.log('Registros actuales en la página:', currentRecords); // Verificar registros paginados en la consola
 
  // Cambiar página
@@ -590,10 +662,7 @@ const handleExportExcel = () => {
 
 
 //=======================================================================================================
-     // Verificar permisos
-     if (!canSelect) {
-      return <AccessDenied />;
-    }
+  
 
 
 
@@ -610,8 +679,6 @@ const handleExportExcel = () => {
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
       {/* Botón "Nuevo" alineado a la derecha */}
-
-    {canInsert && (
       <CButton
         style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
         className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -623,8 +690,6 @@ const handleExportExcel = () => {
            <CIcon icon={cilPlus} /> {/* Ícono de "más" */}
             Nuevo
            </CButton>
-
-          )}
 
            
 {/*Boton reporte */}
@@ -718,7 +783,7 @@ const handleExportExcel = () => {
   {currentRecords.map((profesor, index) => {
     // Buscar la persona correspondiente al Cod_persona
     const persona = listaPersonas.find(p => p.cod_persona === profesor.cod_persona);
-    const nombreCompleto = persona ? `${persona.Nombre} ${persona.Primer_apellido}` : 'Desconocido';
+    const nombreCompleto = persona ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}` : 'Desconocido';
     
     return (
       <CTableRow key={profesor.Cod_profesor}>
@@ -731,31 +796,22 @@ const handleExportExcel = () => {
         <CTableDataCell>{profesor.Hora_entrada}</CTableDataCell>
         <CTableDataCell>{profesor.Hora_salida}</CTableDataCell>
         <CTableDataCell>
-
-
-          {canUpdate && (
           <CButton
-            style={{ backgroundColor: '#F9B64E',marginRight: '10px', marginBottom: '10px' }} onClick={() => openUpdateModal(profesor)}> 
+            style={{ backgroundColor: '#F9B64E',marginRight: '10px', marginBottom: '10px' }} onClick={() => openUpdateModal(profesor)}>
+            
             <CIcon icon={cilPen} />
           </CButton>
-          )}
-
-
-{canUpdate && (
           <CButton
             style={{ backgroundColor: '#E57368', marginRight: '10px', marginBottom: '10px' }} onClick={() => openDeleteModal(profesor)}>
             <CIcon icon={cilTrash} />
               </CButton>
-                  )}
                <CButton
-               
                   color="primary" style={{ marginRight: '10px', marginBottom: '10px' }}
                   onClick={() => {
                     setProfesorToReportar(profesor);
                     setModalReporteVisible(true);
                   }}
                 >
-                  
                   <CIcon icon={cilInfo} />
                 </CButton>
                </CTableDataCell>
@@ -853,25 +909,14 @@ const handleExportExcel = () => {
   </CModalHeader>
   <CModalBody>
     <CForm>
-      {/* Select para Código Persona */}
-      <CInputGroup className="mb-3">
-  <CInputGroupText>Nombre</CInputGroupText>
-  <CFormSelect
-    ref={inputRef} // Asignar la referencia al input
-    value={nuevoProfesor.cod_persona }
-    maxLength={50} // Limitar a 50 caracteres
-    onPaste={disableCopyPaste}
-    onCopy={disableCopyPaste}
-    onChange={(e) => handleInputChange(e, (value) => setNuevoProfesor({ ...nuevoProfesor, cod_persona : value }))}
-  >
-    <option value="">Seleccione una persona</option>
-    {listaPersonas.map((persona) => (
-      <option key={persona.cod_persona } value={persona.cod_persona }>
-        {persona.Nombre} {persona.Primer_apellido}
-      </option>
-    ))}
-  </CFormSelect>
-</CInputGroup>
+
+      {/* Aquí se usa el componente BuscadorDinamico */}
+          <BuscadorDinamico
+            listaPersonas={listaPersonas} // Pasa la lista de personas
+            nuevoProfesor={nuevoProfesor} // Pasa el estado actual de nuevoProfesor
+            setNuevoProfesor={setNuevoProfesor} // Pasa la función para actualizar nuevoProfesor
+          />
+
 
       {/* Select para Tipo de Contrato */}
       <CInputGroup className="mb-3">
@@ -1040,27 +1085,13 @@ const handleExportExcel = () => {
   </CModalHeader> 
   <CModalBody>
     <CForm>
-        {/* Select para Persona */}
-        <CInputGroup className="mb-3">
-        <CInputGroupText>Nombre</CInputGroupText>
-        <CFormSelect
-          ref={inputRef} // Asignar la referencia al input
-          value={profesorToUpdate.cod_persona}
-          maxLength={50} // Limitar a 50 caracteres
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          onChange={(e) => handleInputChange(e, (value) => setProfesorToUpdate({ ...profesorToUpdate, cod_persona: value }))}
-        >
-          <option value="">Seleccione una persona</option>
-          {listaPersonas.map((persona) => (
-            <option key={persona.cod_persona} value={persona.cod_persona}>
-              {persona.Nombre} {persona.Primer_apellido}
-            </option>
-          ))}
-        </CFormSelect>
-      </CInputGroup>
-          
-
+       
+      {/* Formulario de Actualización */}
+  <BuscadorDinamico
+    listaPersonas={listaPersonas} // Pasa la lista de personas
+    nuevoProfesor={profesorToUpdate} // Cambia 'nuevoProfesor' a 'profesorToUpdate'
+    setNuevoProfesor={setProfesorToUpdate} // Cambia 'setNuevoProfesor' a 'setProfesorToUpdate'
+  />
      
       {/* Select para Grado Académico */}
       <CInputGroup className="mb-3">

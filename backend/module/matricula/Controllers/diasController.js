@@ -1,3 +1,5 @@
+
+
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
@@ -37,16 +39,16 @@ export const obtenerDias = async (req, res) => {
 
 // Controlador para crear un día
 export const crearDia = async (req, res) => {
-    const { p_dias } = req.body; // Extraemos el valor de 'dias' del cuerpo de la petición
+    const { p_dias, p_prefijo_dia } = req.body; // Extraemos 'p_dias' y 'p_prefijo_dia' del cuerpo de la petición
 
     try {
-        // Verifica que se proporcione el parámetro requerido
-        if (!p_dias) {
-            return res.status(400).json({ mensaje: "El campo 'p_dias' es requerido." });
+        // Verifica que se proporcionen ambos parámetros
+        if (!p_dias || !p_prefijo_dia) {
+            return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
         }
 
         // Llama al procedimiento almacenado para insertar el día
-        const [result] = await pool.query('CALL sp_insertar_dias(?)', [p_dias]);
+        const [result] = await pool.query('CALL sp_insertar_dias(?, ?)', [p_dias, p_prefijo_dia]);
 
         // Obtiene el último ID insertado
         const [lastIdResult] = await pool.query('SELECT LAST_INSERT_ID() AS lastId');
@@ -66,21 +68,35 @@ export const crearDia = async (req, res) => {
     }
 };
 
+
 // Controlador para actualizar un día
 export const actualizarDia = async (req, res) => {
-    const { p_Cod_dias, p_Nuevo_dia } = req.body;
+    const { p_Cod_dias, p_Nuevo_dia, p_Nuevo_prefijo } = req.body; // Extraemos los parámetros necesarios
 
     try {
+        // Validación de campos requeridos
+        if (!p_Cod_dias || !p_Nuevo_dia || !p_Nuevo_prefijo) {
+            return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
+        }
+
         // Llamada al procedimiento almacenado para actualizar el día
-        const result = await pool.query('CALL sp_actualizar_dia(?, ?)', [
+        const result = await pool.query('CALL sp_actualizar_dia(?, ?, ?)', [
             p_Cod_dias,
             p_Nuevo_dia,
+            p_Nuevo_prefijo,
         ]);
 
         // Respuesta exitosa
         return res.status(200).json({ mensaje: 'Día actualizado correctamente.' });
     } catch (error) {
         console.error('Error al actualizar el día:', error); // Para depuración
+
+        if (error.sqlMessage) {
+            // Si el error tiene un mensaje SQL, lo enviamos al cliente
+            return res.status(400).json({ mensaje: error.sqlMessage });
+        }
+
+        // Respuesta genérica para otros errores
         return res.status(500).json({ mensaje: 'Error en el servidor' });
     }
 };
@@ -111,6 +127,14 @@ export const eliminarDia = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+
+
+
+
+
+
+
 
 
 

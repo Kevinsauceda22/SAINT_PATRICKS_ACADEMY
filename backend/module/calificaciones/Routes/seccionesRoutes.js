@@ -3,7 +3,9 @@ import {
     get_seccionesP,
     createSeccion,
     updateSeccion,
-    deleteSeccion
+    deleteSeccion,
+    obtenerSeccionesPorProfesor,
+    obtenerTodasLasSeccionesYProfesoresAdmin 
 } from '../Controller/seccionesController.js'; // Importa el controlador
 
 const router = express.Router();
@@ -19,5 +21,12 @@ router.put('/actuasecciones', updateSeccion);
 
 // Ruta para eliminar una sección
 router.delete('/eliminarsecciones/:id', deleteSeccion);
+
+
+// Ruta para obtener las secciones de un profesor usando el token
+router.get('/porprofesor', obtenerSeccionesPorProfesor);
+
+// Define la ruta para obtener las secciones por profesor
+router.get('/porprofesor/:codProfesor', obtenerTodasLasSeccionesYProfesoresAdmin);
 
 export default router;
