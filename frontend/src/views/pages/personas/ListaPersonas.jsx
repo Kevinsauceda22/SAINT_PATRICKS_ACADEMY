@@ -67,6 +67,7 @@ const ListaPersonas = () => {
     Estado_Persona: '',
     cod_tipo_persona: '',
     cod_departamento: '',
+    cod_municipio: '',
     cod_genero: '',
     principal: '',
   })
@@ -77,6 +78,7 @@ const ListaPersonas = () => {
   const [recordsPerPage, setRecordsPerPage] = useState(10)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [departamentos, setDepartamentos] = useState([])
+  const [municipio, setMunicipio] = useState([])
   const [tipoPersona, setTipoPersona] = useState([])
   const [generos, setGeneros] = useState([])
   const [fechaNacimiento, setFechaNacimiento] = useState('') // Estado para la fecha de nacimiento
@@ -123,6 +125,7 @@ const ListaPersonas = () => {
   useEffect(() => {
     fetchPersonas()
     fetchDepartamentos()
+    fetchMunicipio()
     fetchTipoPersona()
     fetchGeneros()
   }, [])
@@ -279,6 +282,20 @@ const ListaPersonas = () => {
   {
     /*--------------------------------------------------------------------------------------------------------------------------------------------- */
   }
+
+
+  const fetchMunicipio = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/municipio/verMunicipios')
+      const data = await response.json()
+      console.log('Datos recibidos de municipios:', data)
+      setMunicipio(data)
+    } catch (error) {
+      console.error('Error al obtener los municipios:', error)
+    }
+  }
+
+
   const fetchDepartamentos = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/persona/verDepartamentos')
@@ -363,8 +380,51 @@ const ListaPersonas = () => {
   }
 
   const handleCreatePersona = async () => {
-    const dniSinGuiones = nuevaPersona.dni_persona.replace(/-/g, '')
+    const dniSinGuiones = nuevaPersona.dni_persona.replace(/-/g, '');
+  
+    // Realizar las validaciones antes de enviar los datos
+    const errores = {};
+  
+    // Validación de DNI
+    if (!/^\d{13}$/.test(dniSinGuiones)) {
+      errores.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
+    }
+  
+    const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
+    if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
+      errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.';
+    }
+  
+    const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
+    if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
+      errores.dni_persona = 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.';
+    }
+  
+    // Validaciones de campos de texto
+    const campos = [
+      { campo: nuevaPersona.Nombre, nombreCampo: 'Nombre' },
+      { campo: nuevaPersona.Primer_apellido, nombreCampo: 'Primer apellido' },
+    ];
+  
+    campos.forEach(({ campo, nombreCampo }) => {
+      if (!campo || campo.length < 2 || campo.length > 50) {
+        errores[nombreCampo] = `${nombreCampo} debe tener entre 2 y 50 caracteres.`;
+      }
+    });
 
+    if (!nuevaPersona.cod_genero || nuevaPersona.cod_genero === '') {
+      setErrorMessages((prevErrors) => ({
+        ...prevErrors,
+        cod_genero: 'Debe seleccionar un género.',
+      }));
+      return; // Detener la ejecución si el género no es válido
+    }
+  
+    if (Object.keys(errores).length > 0) {
+      setErrorMessages(errores);  // Actualizar el estado de errores
+      return;  // Si hay errores, no continuar con la solicitud
+    }
+  
     try {
       const response = await fetch('http://localhost:4000/api/persona/crearPersona', {
         method: 'POST',
@@ -381,67 +441,85 @@ const ListaPersonas = () => {
           Estado_Persona: nuevaPersona.Estado_Persona,
           cod_tipo_persona: nuevaPersona.cod_tipo_persona,
           cod_departamento: nuevaPersona.cod_departamento,
+          cod_municipio: nuevaPersona.cod_municipio,
           cod_genero: nuevaPersona.cod_genero,
           principal: nuevaPersona.principal,
         }),
-      })
-
+      });
+  
       if (response.ok) {
         swal.fire({
           icon: 'success',
           title: 'Creación exitosa',
           text: 'La persona ha sido creada correctamente.',
-        })
-        setModalVisible(false)
-        fetchPersonas()
-        resetNuevaPersona()
-        setErrorMessages({}) // Limpiar los mensajes de error al crear exitosamente
+        });
+        setModalVisible(false);
+        fetchPersonas();
+        resetNuevaPersona();
+        setErrorMessages({}); // Limpiar los mensajes de error al crear exitosamente
       } else {
-        const errorData = await response.json()
-
+        const errorData = await response.json();
         if (errorData.errores) {
-          setErrorMessages(errorData.errores) // Actualizar el estado de errores con los mensajes específicos
+          setErrorMessages(errorData.errores); // Mostrar los errores del servidor
         } else {
           swal.fire({
             icon: 'error',
             title: 'Error',
             text: `No se pudo crear la persona. Detalle: ${errorData.mensaje}`,
-          })
+          });
         }
       }
     } catch (error) {
-      console.error('Error al crear la persona:', error)
+      console.error('Error al crear la persona:', error);
       swal.fire({
         icon: 'error',
         title: 'Error',
         text: 'Ocurrió un error al intentar crear la persona.',
-      })
+      });
     }
-  }
-
+  };
+  
   const handleUpdatePersona = async () => {
-    // Eliminar guiones del DNI antes de enviarlo
-    const dniSinGuiones = personaToUpdate.dni_persona.replace(/-/g, '')
-
+    const dniSinGuiones = personaToUpdate.dni_persona.replace(/-/g, '');
+  
+    // Realizar las validaciones antes de enviar los datos
+    const errores = {};
+  
+    // Validación de DNI
+    if (!/^\d{13}$/.test(dniSinGuiones)) {
+      errores.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
+    }
+  
+    const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
+    if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
+      errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.';
+    }
+  
+    const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
+    if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
+      errores.dni_persona = 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.';
+    }
+  
+    // Validaciones de campos de texto
+    const campos = [
+      { campo: personaToUpdate.Nombre, nombreCampo: 'Nombre' },
+      { campo: personaToUpdate.Primer_apellido, nombreCampo: 'Primer apellido' },
+    ];
+  
+    campos.forEach(({ campo, nombreCampo }) => {
+      if (!campo || campo.length < 2 || campo.length > 50) {
+        errores[nombreCampo] = `${nombreCampo} debe tener entre 2 y 50 caracteres.`;
+      }
+    });
+  
+    if (Object.keys(errores).length > 0) {
+      setErrorMessages(errores);  // Actualizar el estado de errores
+      return;  // Si hay errores, no continuar con la solicitud
+    
+    }
+  
+    
     try {
-      console.log('Actualizando persona con datos:', {
-        cod_persona: personaToUpdate.cod_persona,
-        dni_persona: dniSinGuiones,
-        Nombre: personaToUpdate.Nombre,
-        Segundo_nombre: personaToUpdate.Segundo_nombre,
-        Primer_apellido: personaToUpdate.Primer_apellido,
-        Segundo_apellido: personaToUpdate.Segundo_apellido,
-        Nacionalidad: personaToUpdate.Nacionalidad,
-        direccion_persona: personaToUpdate.direccion_persona,
-        fecha_nacimiento: personaToUpdate.fecha_nacimiento,
-        Estado_Persona: personaToUpdate.Estado_Persona,
-        cod_tipo_persona: personaToUpdate.cod_tipo_persona,
-        cod_departamento: personaToUpdate.cod_departamento,
-        cod_municipio: personaToUpdate.cod_municipio,
-        cod_genero: personaToUpdate.cod_genero,
-        principal: personaToUpdate.principal,
-      })
-
       const response = await fetch(
         `http://localhost:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`,
         {
@@ -464,34 +542,35 @@ const ListaPersonas = () => {
             cod_genero: personaToUpdate.cod_genero,
             principal: personaToUpdate.principal,
           }),
-        },
-      )
-
+        }
+      );
+  
       if (response.ok) {
         swal.fire({
           icon: 'success',
           title: 'Actualización exitosa',
           text: 'La persona ha sido actualizada correctamente.',
-        })
-        setModalUpdateVisible(false)
-        resetPersonaToUpdate()
-        await fetchPersonas() // Cambia esto para que recargue las personas
+        });
+        setModalUpdateVisible(false);
+        resetPersonaToUpdate();
+        await fetchPersonas(); // Recargar las personas
       } else {
         swal.fire({
           icon: 'error',
           title: 'Error',
           text: 'No se pudo actualizar la persona.',
-        })
+        });
       }
     } catch (error) {
-      console.error('Error al actualizar la persona:', error)
+      console.error('Error al actualizar la persona:', error);
       swal.fire({
         icon: 'error',
         title: 'Error',
         text: 'Ocurrió un error al intentar actualizar la persona.',
-      })
+      });
     }
-  }
+  };
+  
 
   const handleDeletePersona = async () => {
     try {
@@ -745,6 +824,7 @@ const ListaPersonas = () => {
         <CTableHeaderCell>Estado</CTableHeaderCell>
         <CTableHeaderCell>Tipo de Persona</CTableHeaderCell>
         <CTableHeaderCell>Departamento</CTableHeaderCell>
+        <CTableHeaderCell>Municipio</CTableHeaderCell>
         <CTableHeaderCell>Género</CTableHeaderCell>
         <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
       </CTableRow>
@@ -793,7 +873,7 @@ const ListaPersonas = () => {
           </CTableDataCell>
               <CTableDataCell>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
-              <CTableDataCell>{municipio.find((municipio) => municipio.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell>{municipio.find((municipio) => municipio.cod_municipio === persona.cod_municipio)?.nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell className="text-center">
                 <div className="d-flex justify-content-center">
@@ -901,6 +981,10 @@ const ListaPersonas = () => {
                   <tr>
                     <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}}> Departamento:</td>
                     <td style={{padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {departamentos.find((depto) => depto.Cod_departamento === selectedPersona.cod_departamento,)?.Nombre_departamento.toUpperCase() || 'N/D'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}}> Municipio:</td>
+                    <td style={{padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {municipio.find((municipio) => municipio.cod_municipio === selectedPersona.cod_municipio,)?.nombre_municipio.toUpperCase() || 'N/D'}</td>
                   </tr>
                   <tr>
                     <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}}>Género:</td>
@@ -1075,25 +1159,25 @@ const ListaPersonas = () => {
                   <div style={{ color: 'red' }}>{errorMessages.Nacionalidad}</div>
                 )}
 
-<div className="col-md-6">
-  <CInputGroup className="mb-3 align-items-center">
-    <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <span>Principal</span>
-      <CFormCheck
-        type="checkbox"
-        label=""
-        checked={nuevaPersona.principal}
-        onChange={(e) =>
-          setNuevaPersona({ ...nuevaPersona, principal: e.target.checked })
-        }
-        style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
-      />
-    </CInputGroupText>
-  </CInputGroup>
-  {errorMessages.principal && (
-    <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
-  )}
-</div>
+                  <div className="col-md-6">
+                    <CInputGroup className="mb-3 align-items-center">
+                      <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>Principal</span>
+                        <CFormCheck
+                          type="checkbox"
+                          label=""
+                          checked={nuevaPersona.principal}
+                          onChange={(e) =>
+                            setNuevaPersona({ ...nuevaPersona, principal: e.target.checked })
+                          }
+                          style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+                        />
+                      </CInputGroupText>
+                    </CInputGroup>
+                    {errorMessages.principal && (
+                      <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
+                    )}
+                  </div>
 
               </div>
 
@@ -1195,6 +1279,29 @@ const ListaPersonas = () => {
                 </CInputGroup>
                 {errorMessages.cod_departamento && (
                   <div style={{ color: 'red' }}>{errorMessages.cod_departamento}</div>
+                )}
+
+                  <CInputGroup className="mb-3">
+                  <CInputGroupText>Municipio</CInputGroupText>
+                  <CFormSelect
+                    value={nuevaPersona.cod_municipio || ''}
+                    onChange={(e) =>
+                      setNuevaPersona({ ...nuevaPersona, cod_municipio: e.target.value })
+                    }
+                    required
+                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
+                  >
+                    <option value="">Seleccione un municipio</option>
+                    {municipio &&
+                      municipio.map((municipio) => (
+                        <option key={municipio.cod_municipio} value={municipio.cod_municipio}>
+                          {municipio.nombre_municipio.toUpperCase()}
+                        </option>
+                      ))}
+                  </CFormSelect>
+                </CInputGroup>
+                {errorMessages.cod_municipio && (
+                  <div style={{ color: 'red' }}>{errorMessages.cod_municipio}</div>
                 )}
 
                 <CInputGroup className="mb-3">
@@ -1332,25 +1439,26 @@ const ListaPersonas = () => {
                     onPaste={disableCopyPaste}
                   />
                 </CInputGroup>
+
                 <div className="col-md-6">
-  <CInputGroup className="mb-3 align-items-center">
-    <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-      <span>Principal</span>
-      <CFormCheck
-        type="checkbox"
-        label=""
-        checked={personaToUpdate.principal} // Utiliza personaToUpdate.principal para reflejar el estado actual en el formulario de actualización
-        onChange={(e) =>
-          setPersonaToUpdate({ ...personaToUpdate, principal: e.target.checked })
-        }
-        style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
-      />
-    </CInputGroupText>
-  </CInputGroup>
-  {errorMessages.principal && (
-    <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
-  )}
-</div>
+                  <CInputGroup className="mb-3 align-items-center">
+                    <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span>Principal</span>
+                      <CFormCheck
+                        type="checkbox"
+                        label=""
+                        checked={personaToUpdate.principal} // Utiliza personaToUpdate.principal para reflejar el estado actual en el formulario de actualización
+                        onChange={(e) =>
+                          setPersonaToUpdate({ ...personaToUpdate, principal: e.target.checked })
+                        }
+                        style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+                      />
+                    </CInputGroupText>
+                  </CInputGroup>
+                  {errorMessages.principal && (
+                    <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
+                  )}
+                </div>
 
               </CCol>
 
@@ -1450,12 +1558,32 @@ const ListaPersonas = () => {
                       ))}
                   </CFormSelect>
                 </CInputGroup>
+
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>Municipio</CInputGroupText>
+                  <CFormSelect
+                    value={personaToUpdate.cod_municipio || ''}
+                    onChange={(e) =>
+                      setPersonaToUpdate({ ...personaToUpdate, cod_municipio: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="">Seleccione un departamento</option>
+                    {municipio &&
+                      municipio.map((municipio) => (
+                        <option key={municipio.cod_municipio} value={municipio.cod_municipio}>
+                          {municipio.nombre_municipio.toUpperCase()}
+                        </option>
+                      ))}
+                  </CFormSelect>
+                </CInputGroup>
+
                 <CInputGroup className="mb-3">
                   <CInputGroupText>Género</CInputGroupText>
                   <CFormSelect
                     value={personaToUpdate.cod_genero || ''}
                     onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, cod_genero: e.target.value })
+                    setPersonaToUpdate({ ...personaToUpdate, cod_genero: parseInt(e.target.value, 10) })
                     }
                     required
                   >
