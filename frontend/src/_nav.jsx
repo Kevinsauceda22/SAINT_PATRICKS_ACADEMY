@@ -66,6 +66,7 @@ const _nav = [
     icon: cilTask,
     nameobject: 'navActividadesAcademicas',
   },
+  
   {
     component: CNavItem,
     name: 'Actividades extracurriculares',
@@ -87,6 +88,14 @@ const _nav = [
      icon: cilFile,
     nameobject: 'navListaSecciones_Asignaturas',
     },
+    {
+      component: CNavItem,
+      name: 'Solicitudes',
+      to: '/Solicitud_admin',
+      icon: cilCalendar, 
+      
+    },
+    
   {
     component: CNavGroup,
     name: 'Mantenimientos',

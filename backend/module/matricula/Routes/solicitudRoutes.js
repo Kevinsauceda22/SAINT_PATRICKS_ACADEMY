@@ -1,3 +1,5 @@
+//RUTAS
+
 import express from 'express';
 import { obtenerSolicitudes, insertarSolicitud, actualizarSolicitud, obtenerSolicitudPorCod, eliminarSolicitud } from '../Controllers/solicitudController.js';
 

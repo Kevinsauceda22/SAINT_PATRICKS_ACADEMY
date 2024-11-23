@@ -78,6 +78,8 @@ const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhi
 const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
 const Procedencia = React.lazy(() => import('./views/pages/matricula/ListaHistoricoProc')) 
 const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
+const Solicitud= React.lazy(() => import('./views/pages/Solicitudes/Solicitud'))
+const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solicitud_admin'))
 
 
 
@@ -186,6 +188,8 @@ const App = () => {
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
+                <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
+                <Route path="/Solicitud" element={<Solicitud/>} />
               </Route>
             </Route>
 
