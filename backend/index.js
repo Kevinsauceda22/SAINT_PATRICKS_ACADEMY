@@ -29,7 +29,7 @@ import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
-import historicoprocRoutes from './module/matricula/Routes/historicoprocRoutes.js';
+import historicoprocRoutes from './module/personas/Routes/historicoprocRoutes.js';
 import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
