@@ -1,17 +1,14 @@
 // CONTROLLER
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
-
-
-
 export const obtenerSolicitudes = async (req, res) => {
     try {
         const { Cod_solicitud } = req.query; // Parámetro opcional
-        const cod_persona = req.usuario?.cod_persona; // Extraer Cod_persona del token decodificado
+        const cod_persona = req.usuario?.cod_persona; // Extraer cod_persona del usuario autenticado
 
         if (!cod_persona && !Cod_solicitud) {
             return res.status(400).json({
-                message: 'Se requiere Cod_persona para listar solicitudes o Cod_solicitud para una específica.',
+                message: 'Se requiere cod_persona para listar solicitudes o Cod_solicitud para una específica.',
             });
         }
 
@@ -34,7 +31,32 @@ export const obtenerSolicitudes = async (req, res) => {
             return res.status(404).json({ message: 'No se encontraron solicitudes.' });
         }
 
-        return res.status(200).json(results[0]);
+        // Procesar solicitudes para asegurar formato consistente
+        const formattedResults = results[0].map((solicitud) => {
+            const formattedFecha = solicitud.Fecha_solicitud
+                ? new Date(solicitud.Fecha_solicitud).toISOString().split('T')[0]
+                : null;
+
+            // Formatear Hora_Inicio y Hora_Fin correctamente
+            const formattedHoraInicio = solicitud.Hora_Inicio ? solicitud.Hora_Inicio.slice(0, 5) : '00:00';
+            const formattedHoraFin = solicitud.Hora_fin && solicitud.Hora_fin !== 'null'
+                ? solicitud.Hora_fin.slice(0, 5)
+                : '00:00'; // Si Hora_Fin es inválida, default "00:00"
+
+            return {
+                Cod_solicitud: solicitud.Cod_solicitud,
+                Cod_persona: solicitud.Cod_persona,
+                Nombre_solicitud: solicitud.Nombre_solicitud,
+                Fecha_solicitud: formattedFecha,
+                Hora_Inicio: formattedHoraInicio,
+                Hora_Fin: formattedHoraFin, // Solo esta Hora_Fin se envía a la vista
+                Asunto: solicitud.Asunto,
+                Persona_requerida: solicitud.Persona_requerida,
+                Estado: solicitud.Estado,
+            };
+        });
+
+        return res.status(200).json(formattedResults);
     } catch (error) {
         console.error('Error al obtener las solicitudes:', error);
         return res.status(500).json({ message: 'Error al obtener las solicitudes.' });
@@ -42,48 +64,56 @@ export const obtenerSolicitudes = async (req, res) => {
 };
 
 
-
 export const insertarSolicitud = async (req, res) => {
     try {
-        // Extraer cod_persona del usuario autenticado
-        const cod_persona = req.usuario?.cod_persona;
+        const cod_persona = req.usuario?.cod_persona; // Extraer cod_persona del usuario autenticado
 
-        // Validar que cod_persona está disponible
         if (!cod_persona) {
             return res.status(400).json({
                 message: 'El usuario no está autenticado o falta el código de persona.',
             });
         }
 
-        // Extraer los demás datos del cuerpo de la solicitud
+        // Extraer los datos del cuerpo de la solicitud
         const { Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto, Persona_requerida } = req.body;
 
-        // Validar que los campos requeridos están presentes
-        if (!Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Hora_Fin || !Asunto || !Persona_requerida) {
+        if (!Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Asunto || !Persona_requerida) {
             return res.status(400).json({
                 message: 'Faltan datos requeridos para insertar la solicitud.',
             });
         }
 
+        // Validar coherencia entre Hora_Inicio y Hora_Fin (si está presente)
+        if (Hora_Fin) {
+            const [horaInicioHoras, horaInicioMinutos] = Hora_Inicio.split(':').map(Number);
+            const [horaFinHoras, horaFinMinutos] = Hora_Fin.split(':').map(Number);
+
+            if (
+                horaFinHoras < horaInicioHoras ||
+                (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)
+            ) {
+                return res.status(400).json({
+                    message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
+                });
+            }
+        }
+
         // Preparar la consulta y los parámetros
         const query = 'CALL insertar_solicitud(?, ?, ?, ?, ?, ?, ?)';
         const params = [
-            cod_persona, // Usar cod_persona del token
+            cod_persona, // cod_persona autenticado
             Nombre_solicitud,
             Fecha_solicitud,
             Hora_Inicio,
-            Hora_Fin,
+            Hora_Fin || null, // Permitir Hora_Fin nula
             Asunto,
             Persona_requerida,
         ];
 
-        // Ejecutar la consulta
         const [results] = await pool.query(query, params);
 
-        // Retornar respuesta exitosa
-        return res.status(201).json({ message: 'Solicitud insertada exitosamente' });
+        return res.status(201).json({ message: 'Solicitud insertada exitosamente.' });
     } catch (error) {
-        // Manejo de errores
         console.error('Error al insertar la solicitud:', error);
         return res.status(500).json({
             message: 'Error al insertar la solicitud.',
@@ -95,7 +125,7 @@ export const insertarSolicitud = async (req, res) => {
 
 
 export const actualizarSolicitud = async (req, res) => {
-    const { Cod_solicitud } = req.params;
+    const { Cod_solicitud } = req.params; // Get the request parameter
     const {
         Cod_persona,
         Nombre_solicitud,
@@ -106,41 +136,45 @@ export const actualizarSolicitud = async (req, res) => {
         Persona_requerida,
     } = req.body;
 
+    // Validate the Cod_solicitud parameter
     if (isNaN(Cod_solicitud)) {
         return res.status(400).json({ message: 'Cod_solicitud debe ser un número válido.' });
     }
 
+    // Validate all required fields
     if (!Cod_persona || !Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Asunto || !Persona_requerida) {
         return res.status(400).json({
             message: 'Todos los campos son obligatorios, excepto Hora_Fin.',
         });
     }
 
-    // Validar coherencia de horas
-    if (Hora_Fin) {
-        const [horaInicioHoras, horaInicioMinutos] = Hora_Inicio.split(':').map(Number);
-        const [horaFinHoras, horaFinMinutos] = Hora_Fin.split(':').map(Number);
+    // Ensure Hora_Fin has a default value if not provided
+    const finalHoraFin = Hora_Fin || Hora_Inicio; // Use Hora_Inicio as fallback if Hora_Fin is not provided
 
-        if (
-            horaFinHoras < horaInicioHoras ||
-            (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)
-        ) {
-            return res.status(400).json({
-                message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
-            });
-        }
+    // Validate that Hora_Fin is greater than Hora_Inicio
+    const [horaInicioHoras, horaInicioMinutos] = Hora_Inicio.split(':').map(Number);
+    const [horaFinHoras, horaFinMinutos] = finalHoraFin.split(':').map(Number);
+
+    if (
+        horaFinHoras < horaInicioHoras ||
+        (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)
+    ) {
+        return res.status(400).json({
+            message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
+        });
     }
 
     try {
-        // Determinar el estado automáticamente
+        // Determine the status based on the date and time
         const currentDateTime = new Date();
-        const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${Hora_Fin || Hora_Inicio}`);
+        const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${finalHoraFin}`);
 
         let estado = 'Pendiente';
         if (citaDateTimeEnd <= currentDateTime) {
             estado = 'Finalizada';
         }
 
+        // Prepare the SQL query and parameters for the stored procedure
         const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?)';
         const params = [
             parseInt(Cod_solicitud, 10),
@@ -148,11 +182,12 @@ export const actualizarSolicitud = async (req, res) => {
             Nombre_solicitud,
             Fecha_solicitud,
             Hora_Inicio,
-            Hora_Fin || null,
+            finalHoraFin,
             Asunto,
             Persona_requerida,
         ];
 
+        // Execute the query
         const [results] = await pool.query(query, params);
 
         const affectedRows = results[0]?.[0]?.affectedRows;
@@ -163,7 +198,7 @@ export const actualizarSolicitud = async (req, res) => {
             });
         }
 
-        // Respuesta exitosa con el nuevo estado
+        // Return a success response
         res.status(200).json({
             message: 'Solicitud actualizada correctamente.',
             estado,
@@ -176,6 +211,7 @@ export const actualizarSolicitud = async (req, res) => {
         });
     }
 };
+
 
 export const actualizarEstadoCitas = async (req, res) => {
     try {

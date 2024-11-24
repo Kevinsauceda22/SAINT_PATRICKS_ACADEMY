@@ -34,14 +34,10 @@ import {
   CTableBody,
   CTableDataCell,
 } from '@coreui/react';
-import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 
 const ListaHistoricoProc = () => {
-  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('ListaHistoricoProc');
-
    // Estados de la aplicación
   const [historicoProcedencia, setHistoricoProcedencia] = useState([]); // Estado que almacena la lista de histórico de procedencia
   const [errors, setErrors] = useState({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' }); // Estado para gestionar los errores de validación
@@ -126,9 +122,75 @@ const ListaHistoricoProc = () => {
 
   const handleNombreInputChange = (e, setState) => {
     const { name, value } = e.target;
-    setState(prevState => ({ ...prevState, [name]: value }));
+  
+    // Validaciones
+    const isValid = validateNombre(value);
+  
+    if (isValid) {
+      setState(prevState => ({ ...prevState, [name]: value }));
+    }
+  };
+  
+  const validateNombre = (value) => {
+    // 1. No permitir caracteres especiales (solo letras y espacios)
+    const regexSpecialChars = /^[a-zA-Z\s]*$/;
+    if (!regexSpecialChars.test(value)) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Solo se permiten letras y espacios.',
+      });
+      return false;
+    }
+  
+    // 2. No permitir 4 letras consecutivas
+    const regexConsecutiveLetters = /(.)\1{3,}/; // Busca 4 letras iguales consecutivas
+    if (regexConsecutiveLetters.test(value)) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se permiten 4 letras consecutivas.',
+      });
+      return false;
+    }
+  
+    // 3. No permitir números
+    const regexNumbers = /\d/;
+    if (regexNumbers.test(value)) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se permiten números.',
+      });
+      return false;
+    }
+  
+    // 4. No permitir más de 3 espacios consecutivos
+    const regexSpaces = /( {3,})/; // Busca 3 o más espacios consecutivos
+    if (regexSpaces.test(value)) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se permiten más de 3 espacios consecutivos.',
+      });
+      return false;
+    }
+  
+    // 5. Opción: Limitar la cantidad de espacios consecutivos a 2
+    const regexTwoSpaces = /( {2,})/; // Busca 2 o más espacios
+    if (regexTwoSpaces.test(value)) {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se permiten más de 2 espacios consecutivos.',
+      });
+      return false;
+    }
+  
+    return true; // Si pasa todas las validaciones
   };
 
+ 
 
 
   // Deshabilita copiar y pegar
@@ -175,6 +237,8 @@ const handleCreateHistorico = async () => {
     console.log('Valor a enviar:', nuevoHistorico.Lugar_procedencia); // Verifica el valor
     console.log('Valor a enviar:', nuevoHistorico.Instituto); // Verifica el valor
   
+
+    
     try {
       const response = await fetch('http://localhost:4000/api/historial_proc/crear_historico', {
         method: 'POST',
@@ -185,19 +249,25 @@ const handleCreateHistorico = async () => {
           p_Instituto: nuevoHistorico.Instituto,
         }),
       });
-  
+      const errorData = await response.json(); // Captura el cuerpo de la respuesta
       if (response.ok) {
         fetchHistoricoProcedencia(); // Recargar la lista de registros
         setModalVisible(false); // Cerrar el modal
         resetNuevoHistorico(); // Resetear los campos
         setNuevoHistorico({Nombre_procedencia: '', Lugar_procedencia: '', Instituto: ''});
        
-        swal.fire({ icon: 'success', title: 'Creación exitosa', text: 'El registro ha sido creado correctamente.' });
+        swal.fire({ icon: 'success', title: 'Creación exitosa', text: 'La procedencia ha sido creado correctamente.' });
       } else {
-        swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo crear el registro.' });
+        swal.fire({ icon: 'error', title: 'Error', text: `${errorData.mensaje || 'Error desconocido'}` });
+        console.error('Hubo un error al crear la procedencia', response.statusText, errorData); 
       }
     } catch (error) {
-      console.error('Error al crear el registro de procedencia:', error);
+      console.error('Error al crear la procedencia:', error);
+      swal.fire({
+        icon: 'error',
+        title: 'Error de conexión',
+        text: 'Ocurrió un problema al conectarse con el servidor.',
+      });
     }
   };
   
@@ -310,11 +380,6 @@ const handleCreateHistorico = async () => {
       setCurrentPage(pageNumber);
     }
   };
-     // Verificar permisos
- if (!canSelect) {
-  return <AccessDenied />;
-}
-
 
     return(
         <CContainer>
@@ -324,8 +389,6 @@ const handleCreateHistorico = async () => {
       </CCol>
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}
       <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
-
-{canInsert &&  (
       <CButton 
               style={{ backgroundColor: '#4B6251', color: 'white' }} 
               className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
@@ -333,8 +396,6 @@ const handleCreateHistorico = async () => {
             >
               <CIcon icon={cilPlus} /> Nuevo
             </CButton>
-    )}
-
               {/* Botón Reportes con dropdown */}
         <CDropdown>
           <CDropdownToggle
@@ -358,7 +419,7 @@ const handleCreateHistorico = async () => {
                   <CIcon icon={cilSearch} />
                 </CInputGroupText>
                 <CFormInput
-                  placeholder="Buscar día..."
+                  placeholder="Buscar procedencia"
                   onChange={handleSearch}
                   value={searchTerm}
                 />
@@ -430,8 +491,6 @@ const handleCreateHistorico = async () => {
                 <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Instituto}</CTableDataCell>
                 <CTableDataCell className="text-center">
                     <div className="d-flex justify-content-center">
-
-                      {canUpdate && (
                     <CButton
                         color="warning"
                         onClick={() => openUpdateModal(historico)}
@@ -439,12 +498,9 @@ const handleCreateHistorico = async () => {
                     >
                         <CIcon icon={cilPen} />
                     </CButton>
-                    )}
-                    {canDelete && (
                     <CButton color="danger" onClick={() => openDeleteModal(historico)}>
                         <CIcon icon={cilTrash} />
                     </CButton>
-                    )}
                     </div>
                 </CTableDataCell>
                 </CTableRow>
@@ -499,6 +555,8 @@ const handleCreateHistorico = async () => {
             name="Nombre_procedencia" 
             value={nuevoHistorico.Nombre_procedencia}
             maxLength={80}
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
             style={{ textTransform: 'uppercase' }}
             
             onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
@@ -508,6 +566,8 @@ const handleCreateHistorico = async () => {
             name="Lugar_procedencia" 
             value={nuevoHistorico.Lugar_procedencia}
             maxLength={80}
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
             style={{ textTransform: 'uppercase' }}
             
             onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
@@ -517,6 +577,8 @@ const handleCreateHistorico = async () => {
             name="Instituto" 
             value={nuevoHistorico.Instituto}
             maxLength={80}
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
             style={{ textTransform: 'uppercase' }}
            
             onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
@@ -556,31 +618,31 @@ const handleCreateHistorico = async () => {
         label="Nombre de Procedencia"
         value={historicoToUpdate.Nombre_procedencia || ''}
         maxLength={80}
+        name="Nombre_procedencia"
+        onPaste={disableCopyPaste}
+        onCopy={disableCopyPaste}
         style={{ textTransform: 'uppercase' }}
-        onChange={(e) => setHistoricoToUpdate(prevState => ({
-          ...prevState,
-          Nombre_procedencia: e.target.value
-        }))}
+        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
       />
       <CFormInput
         label="Lugar de Procedencia"
         value={historicoToUpdate.Lugar_procedencia || ''}
         maxLength={80}
+        name="Lugar_procedencia"
+        onPaste={disableCopyPaste}
+        onCopy={disableCopyPaste}
         style={{ textTransform: 'uppercase' }}
-        onChange={(e) => setHistoricoToUpdate(prevState => ({
-          ...prevState,
-          Lugar_procedencia: e.target.value
-        }))}
+        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
       />
       <CFormInput
         label="Instituto"
         value={historicoToUpdate.Instituto || ''}
         maxLength={80}
+        name="Instituto"
+        onPaste={disableCopyPaste}
+        onCopy={disableCopyPaste}
         style={{ textTransform: 'uppercase' }}
-        onChange={(e) => setHistoricoToUpdate(prevState => ({
-          ...prevState,
-          Instituto: e.target.value
-        }))}
+        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
       />
     </CForm>
   </CModalBody>
@@ -589,10 +651,10 @@ const handleCreateHistorico = async () => {
       Cancelar
     </CButton>
     <CButton
-      style={{ backgroundColor: '#4B6251', color: 'white' }}
+      style={{ backgroundColor: '#F9B64E', color: 'white' }}
       onClick={handleUpdateHistorico}
     >
-       Guardar
+      <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
     </CButton>
   </CModalFooter>
 </CModal>
@@ -617,102 +679,8 @@ const handleCreateHistorico = async () => {
     </CButton>
   </CModalFooter>
 </CModal>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       </CContainer>
     );
 };
-
 
 export default ListaHistoricoProc;

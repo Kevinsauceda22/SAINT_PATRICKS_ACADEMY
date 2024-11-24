@@ -153,3 +153,24 @@ export const eliminarActividadExtracurricular = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+// Controlador para obtener las secciones
+export const obtenerSecciones = async (req, res) => {
+    try {
+        // Obtenemos el parámetro 'Cod_secciones' de la solicitud
+        const { Cod_secciones } = req.params;
+
+        // Llamamos al procedimiento almacenado con el parámetro
+        const [rows] = await pool.query('CALL sp_obtener_secciones(?)', [Cod_secciones]);
+
+        // Verificamos si se encontraron resultados
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ message: 'No se encontraron secciones' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las secciones:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};

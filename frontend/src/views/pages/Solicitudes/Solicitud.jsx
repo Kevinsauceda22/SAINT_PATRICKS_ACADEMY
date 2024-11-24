@@ -99,70 +99,51 @@ const Solicitud = () => {
     setLoading(true);
     setError('');
     try {
-      // Obtener el token del almacenamiento local
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
-      }
-  
-      // Realizar la solicitud al backend
-      const response = await fetch('http://localhost:4000/api/solicitud/solicitudes', {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`, // Enviar token al backend
-        },
-      });
-  
-      // Manejo de errores HTTP
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          throw new Error('Acceso no autorizado. Por favor, inicia sesión nuevamente.');
-        } else if (response.status === 400) {
-          throw new Error('Solicitud incorrecta. Verifica los datos enviados.');
+        const token = localStorage.getItem('token');
+        if (!token) {
+            throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
         }
-        throw new Error('Error al obtener las solicitudes.');
-      }
-  
-      const data = await response.json();
-      console.log('Datos recibidos del backend:', data);
-  
-      // Transformar las solicitudes recibidas del backend
-      const solicitudesData = data.map((solicitud) => ({
-        id: solicitud.Cod_solicitud || '',
-        title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
-        start: solicitud.Fecha_solicitud || '',
-        end: solicitud.Fecha_solicitud || '',
-        description: solicitud.Asunto || 'SIN ASUNTO',
-        personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
-        horaInicio: solicitud.Hora_Inicio ? solicitud.Hora_Inicio.slice(0, 5) : '00:00',
-        horaFin: solicitud.Hora_Fin ? solicitud.Hora_Fin.slice(0, 5) : '00:00',
-        estado: solicitud.Estado || 'Pendiente',
-        important: solicitud.Importante === 1,
-        cod_persona: solicitud.cod_persona || '',
-      }));
-  
-      console.log('Solicitudes transformadas:', solicitudesData);
-  
-      // Filtrar solicitudes por usuario autenticado
-      const citasFiltradas = solicitudesData.filter(
-        (cita) => cita.Cod_persona === auth?.Cod_persona
-      );
-  
-      setSolicitudes(citasFiltradas);
-      setFilteredCitas(citasFiltradas);
+
+        const response = await fetch('http://localhost:4000/api/solicitud/solicitudes', {
+            method: 'GET',
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Error al obtener las solicitudes.');
+        }
+
+        const data = await response.json();
+
+        const solicitudesData = data.map((solicitud) => ({
+            id: solicitud.Cod_solicitud || '',
+            title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
+            start: solicitud.Fecha_solicitud || '',
+            description: solicitud.Asunto || 'SIN ASUNTO',
+            personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
+            horaInicio: solicitud.Hora_Inicio || '00:00', // Siempre en formato HH:mm
+            horaFin: solicitud.Hora_Fin || '00:00', // Siempre en formato HH:mm
+            estado: solicitud.Estado || 'Pendiente',
+        }));
+
+        setSolicitudes(solicitudesData);
+        setFilteredCitas(solicitudesData);
     } catch (error) {
-      console.error('Error al obtener las solicitudes:', error.message);
-      setError(error.message);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message,
-        confirmButtonColor: '#6C8E58',
-      });
+        console.error('Error al obtener las solicitudes:', error.message);
+        setError(error.message);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message,
+            confirmButtonColor: '#6C8E58',
+        });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
   
   
   
@@ -188,7 +169,8 @@ const Solicitud = () => {
     switch (estado) {
       case 'Pendiente':
         return 'rgba(255, 215, 0, 0.7)';
-     
+      case 'Finalizada':
+        return 'rgba(0, 128, 0, 0.7)';
       case 'Cancelada':
         return 'rgba(255, 0, 0, 0.7)';
       default:
@@ -200,7 +182,8 @@ const Solicitud = () => {
     switch (estado) {
       case 'Pendiente':
         return cilWarning;
-     
+      case 'Finalizada':
+        return cilCheckCircle;
       case 'Cancelada':
         return cilXCircle;
       default:
@@ -282,60 +265,86 @@ const Solicitud = () => {
   };
 
   const handleEventDrop = async (info) => {
-    const newDate = info.event.startStr;
-    const citaId = parseInt(info.event.id, 10);
-    const cita = solicitudes.find((c) => c.id === citaId);
+    const citaId = parseInt(info.event.id, 10); // Event ID from FullCalendar
+    const newDate = new Date(info.event.startStr).toISOString().split('T')[0]; // Format new date as YYYY-MM-DD
+    const cita = solicitudes.find((c) => c.id === citaId); // Find the corresponding event in state
 
-    if (!cita) return;
-
-    Swal.fire({
-      title: 'Confirmación',
-      text: '¿Deseas cambiar la fecha de esta cita?',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sí, cambiar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4B6251',
-      cancelButtonColor: '#6C8E58',
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const response = await fetch(`http://localhost:4000/api/solicitud/solicitudes/${citaId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              Cod_persona: cita.Cod_persona,
-              Nombre_solicitud: cita.title || 'SIN TÍTULO',
-              Fecha_solicitud: newDate || '1899-11-30',
-              Hora_Inicio: cita.horaInicio,
-              Hora_fin: cita.horaFin,
-              Asunto: cita.description || 'SIN ASUNTO',
-              Persona_requerida: cita.personaRequerida || 'DESCONOCIDO',
-              Estado: cita.estado,
-            }),
-          });
-          if (!response.ok) throw new Error('No se pudo actualizar la fecha de la cita.');
-          Swal.fire({
-            icon: 'success',
-            title: 'Actualizado',
-            text: 'La fecha de la cita se actualizó con éxito.',
-            confirmButtonColor: '#4B6251',
-          });
-          await fetchSolicitudes();
-        } catch (error) {
-          Swal.fire({
+    if (!cita) {
+        Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: `No se pudo actualizar la fecha. ${error.message}`,
+            text: 'No se encontró la cita para actualizar.',
             confirmButtonColor: '#6C8E58',
-          });
-          info.revert();
+        });
+        return info.revert(); // Revert the event if no match is found
+    }
+
+    Swal.fire({
+        title: 'Confirmación',
+        text: `¿Deseas cambiar la fecha de esta cita a ${newDate}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, cambiar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#4B6251',
+        cancelButtonColor: '#6C8E58',
+    }).then(async (result) => {
+        if (!result.isConfirmed) {
+            info.revert(); // Revert the drag action if the user cancels
+            return;
         }
-      } else {
-        info.revert();
-      }
+
+        try {
+            // Prepare the payload for the PUT request
+            const requestData = {
+                Cod_persona: cita.cod_persona, // Ensure Cod_persona is included
+                Nombre_solicitud: cita.title || 'SIN TÍTULO', // Use default title if missing
+                Fecha_solicitud: newDate, // Update with the new date
+                Hora_Inicio: cita.horaInicio || '00:00', // Ensure Hora_Inicio is sent
+                Hora_Fin: cita.horaFin || null, // Optional Hora_Fin, send null if not present
+                Asunto: cita.description || 'SIN ASUNTO', // Default if Asunto is missing
+                Persona_requerida: cita.personaRequerida || 'DESCONOCIDO', // Default if missing
+            };
+
+            console.log('Sending PUT request with data:', requestData);
+
+            const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestData), // Send the request payload
+            });
+
+            const responseData = await response.json();
+            console.log('Response from server:', responseData);
+
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Error al actualizar la cita.');
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Actualizado',
+                text: 'La fecha de la cita se actualizó con éxito.',
+                confirmButtonColor: '#4B6251',
+            });
+
+            await fetchSolicitudes(); // Refresh the list of events after successful update
+        } catch (error) {
+            console.error('Error during update:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: `No se pudo actualizar la fecha. ${error.message}`,
+                confirmButtonColor: '#6C8E58',
+            });
+            info.revert(); // Revert the event position if the update fails
+        }
     });
-  };
+};
+
+
 
   const handleDateSelect = (selectInfo) => {
     setFormValues((prevValues) => ({
@@ -391,80 +400,99 @@ const Solicitud = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!areFieldsValid()) return;
-
-    const [horaInicio, minutoInicio] = formValues.horaInicio.split(':').map(Number);
-    const [horaFin, minutoFin] = formValues.horaFin.split(':').map(Number);
-
-    if (horaFin < horaInicio || (horaFin === horaInicio && minutoFin <= minutoInicio)) {
+  
+    // Validar los campos obligatorios
+    const { title, description, personaRequerida, fecha, horaInicio, horaFin } = formValues;
+    if (!title || !description || !personaRequerida || !fecha || !horaInicio) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'Todos los campos son obligatorios, excepto Hora_Fin.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return;
+    }
+  
+    // Validar coherencia de horas
+    const [horaInicioHoras, horaInicioMinutos] = horaInicio.split(':').map(Number);
+    if (horaFin) {
+      const [horaFinHoras, horaFinMinutos] = horaFin.split(':').map(Number);
+      if (
+        horaFinHoras < horaInicioHoras ||
+        (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)
+      ) {
         Swal.fire({
-            icon: 'warning',
-            title: 'Advertencia',
-            text: 'La hora de fin debe ser mayor que la hora de inicio.',
-            confirmButtonColor: '#6C8E58',
+          icon: 'warning',
+          title: 'Advertencia',
+          text: 'La hora de fin debe ser mayor que la hora de inicio.',
+          confirmButtonColor: '#6C8E58',
         });
         return;
+      }
     }
-
+  
     setIsSubmitting(true);
+  
     try {
-        // Asegúrate de que auth contiene el usuario autenticado con el cod_persona
-        const token = localStorage.getItem('token');
-        if (!token) {
-            throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
+      }
+  
+      // Construir datos de solicitud
+      const requestData = {
+        Nombre_solicitud: title || 'SIN TÍTULO',
+        Fecha_solicitud: fecha,
+        Hora_Inicio: horaInicio,
+        Hora_Fin: horaFin ,
+        Asunto: description || 'SIN ASUNTO',
+        Persona_requerida: personaRequerida || 'DESCONOCIDO',
+        Cod_persona: auth.cod_persona,
+      };
+  
+      const response = await fetch(
+        selectedCita
+          ? `http://localhost:4000/api/solicitud/solicitudes/${selectedCita.id}`
+          : 'http://localhost:4000/api/solicitud/solicitudes',
+        {
+          method: selectedCita ? 'PUT' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestData),
         }
-
-        const requestData = {
-            Nombre_solicitud: formValues.title || 'SIN TÍTULO',
-            Fecha_solicitud: formValues.fecha || '1899-11-30',
-            Hora_Inicio: formValues.horaInicio,
-            Hora_Fin: formValues.horaFin,
-            Asunto: formValues.description || 'SIN ASUNTO',
-            Persona_requerida: formValues.personaRequerida || 'DESCONOCIDO',
-        };
-
-        const response = await fetch(
-            selectedCita
-                ? `http://localhost:4000/api/solicitud/solicitudes/${selectedCita.id}`
-                : 'http://localhost:4000/api/solicitud/solicitudes',
-            {
-                method: selectedCita ? 'PUT' : 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(requestData),
-            }
-        );
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al procesar la solicitud.');
-        }
-
-        Swal.fire({
-            icon: 'success',
-            title: selectedCita ? 'Actualizado' : 'Creado',
-            text: selectedCita
-                ? 'La cita fue actualizada correctamente.'
-                : 'La cita fue creada correctamente.',
-            confirmButtonColor: '#4B6251',
-        });
-
-        setFormModalVisible(false);
-        await fetchSolicitudes();
+      );
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al procesar la solicitud.');
+      }
+  
+      Swal.fire({
+        icon: 'success',
+        title: selectedCita ? 'Actualizado' : 'Creado',
+        text: selectedCita
+          ? 'La cita fue actualizada correctamente.'
+          : 'La cita fue creada correctamente.',
+        confirmButtonColor: '#4B6251',
+      });
+  
+      setFormModalVisible(false);
+      await fetchSolicitudes();
     } catch (error) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message,
-            confirmButtonColor: '#6C8E58',
-        });
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message,
+        confirmButtonColor: '#6C8E58',
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
-};
+  };
+  
+
 
 
   const handleVerTodasCitas = () => {
@@ -478,61 +506,85 @@ const Solicitud = () => {
   };
 
   const exportarAPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('landscape'); // Set orientation to landscape
+  
     if (solicitudes.length === 0) {
-      console.warn('No hay datos de citas para exportar.');
-      return;
+        console.warn('No hay datos de citas para exportar.');
+        return;
     }
+  
     const img = new Image();
     img.src = logo;
+  
     img.onload = () => {
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('Reporte de Citas', doc.internal.pageSize.width / 2, 30, { align: 'center' });
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-      doc.autoTable({
-        startY: 60,
-        head: [['Título', 'Asunto', 'Persona Requerida', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Estado']],
-        body: solicitudes.map((cita) => [
-          cita.title.toUpperCase(),
-          cita.description.toUpperCase(),
-          cita.personaRequerida.toUpperCase(),
-          cita.start,
-          cita.horaInicio,
-          cita.horaFin,
-          cita.estado,
-        ]),
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 10,
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] },
-      });
-      const date = new Date().toLocaleDateString();
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-      doc.save('Reporte_Citas.pdf');
+        // Header with logo and institution details
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51);
+        doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
+        doc.setFontSize(14);
+        doc.text('Reporte Detallado de Citas', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+        doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+        doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51);
+        doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+  
+        // Generate table with the required fields
+        doc.autoTable({
+            startY: 60,
+            head: [
+                [
+                    'Título',
+                    'Asunto',
+                    'Persona Requerida',
+                    'Fecha',
+                    'Hora Inicio',
+                    'Hora Fin',
+                    'Estado',
+                ],
+            ],
+            body: solicitudes.map((cita) => [
+                cita.title || 'Título no disponible',
+                cita.description || 'Sin descripción',
+                cita.personaRequerida || 'No especificada',
+                cita.start || 'Fecha no disponible',
+                cita.horaInicio || 'Hora no disponible',
+                cita.horaFin || 'Hora no disponible',
+                cita.estado || 'Estado no disponible',
+            ]),
+            headStyles: {
+                fillColor: [0, 102, 51],
+                textColor: [255, 255, 255],
+                fontSize: 10,
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 3,
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] },
+        });
+  
+        // Footer with generation date
+        const date = new Date().toLocaleDateString();
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+  
+        // Open the PDF in a new tab
+        const pdfBlob = doc.output('blob');
+        const pdfUrl = URL.createObjectURL(pdfBlob);
+        window.open(pdfUrl, '_blank');
     };
+  
     img.onerror = () => {
-      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+        console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
     };
-  };
+};
+
 
   const exportarAExcel = () => {
     const hoja = XLSX.utils.json_to_sheet(
@@ -691,42 +743,43 @@ const Solicitud = () => {
           <CModalTitle>Detalles de la Cita</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          {selectedCita && (
-            <CCard>
-              <CCardHeader>
-                <strong>{selectedCita.title}</strong>
-                {selectedCita.important && (
-                  <CBadge color="danger" className="ms-2">
-                    Importante
-                  </CBadge>
-                )}
-              </CCardHeader>
-              <CCardBody>
-                <p><strong>Asunto:</strong> {selectedCita.description}</p>
-                <p><strong>Persona Requerida:</strong> {selectedCita.personaRequerida}</p>
-                <p><strong>Fecha:</strong> {selectedCita.start}</p>
-                <p><strong>Hora de Inicio:</strong> {selectedCita.horaInicio}</p>
-                <p><strong>Hora de Fin:</strong> {selectedCita.horaFin}</p>
-                <p><strong>Estado:</strong> {selectedCita.estado}</p>
-                <CButton
-                  color="warning"
-                  onClick={handleEditarCita}
-                  style={{ backgroundColor: '#6C8E58', color: 'white' }}
-                >
-                  <CIcon icon={cilPen} /> Editar
-                </CButton>
-                <CButton
-                  color="secondary"
-                  className="ms-2"
-                  onClick={() => exportarCitaAPDF(selectedCita)}
-                  style={{ backgroundColor: '#6C8E58', color: 'white', borderColor: '#6C8E58' }}
-                >
-                  <CIcon icon={cilFile} /> Exportar PDF
-                </CButton>
-              </CCardBody>
-            </CCard>
-          )}
-        </CModalBody>
+  {selectedCita && (
+    <CCard>
+      <CCardHeader>
+        <strong>{selectedCita.title}</strong>
+        {selectedCita.important && (
+          <CBadge color="danger" className="ms-2">
+            Importante
+          </CBadge>
+        )}
+      </CCardHeader>
+      <CCardBody>
+        <p><strong>Asunto:</strong> {selectedCita.description}</p>
+        <p><strong>Persona Requerida:</strong> {selectedCita.personaRequerida}</p>
+        <p><strong>Fecha:</strong> {selectedCita.start}</p>
+        <p><strong>Hora de Inicio:</strong> {selectedCita.horaInicio}</p>
+        <p><strong>Hora de Fin:</strong> {selectedCita.horaFin} </p>
+        <p><strong>Estado:</strong> {selectedCita.estado}</p>
+        <CButton
+          color="warning"
+          onClick={handleEditarCita}
+          style={{ backgroundColor: '#6C8E58', color: 'white' }}
+        >
+          <CIcon icon={cilPen} /> Editar
+        </CButton>
+        <CButton
+          color="secondary"
+          className="ms-2"
+          onClick={() => exportarCitaAPDF(selectedCita)}
+          style={{ backgroundColor: '#6C8E58', color: 'white', borderColor: '#6C8E58' }}
+        >
+          <CIcon icon={cilFile} /> Exportar PDF
+        </CButton>
+      </CCardBody>
+    </CCard>
+  )}
+</CModalBody>
+
       </CModal>
 
       <CModal visible={formModalVisible} onClose={handleModalClose} backdrop="static">

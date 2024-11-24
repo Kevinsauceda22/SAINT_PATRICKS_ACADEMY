@@ -1,10 +1,17 @@
+// Archivo: seccionesRoutes.js
 import express from 'express';
-import { obtenerSecciones, obtenerAulas, obtenerGrados, obtenerProfesores, obtenerPeriodoMatriculaActivo, crearSeccion, actualizarSeccion, eliminarSeccion, obtenerEdificios, obtenerAulasPorEdificio, obtenerEdificioPorId  } from '../Controllers/seccionesController.js';
+import { obtenerSecciones, obtenerEdificios, obtenerPeriodoActivo,obtenerSeccionesPorPeriodo,obtenerEdificioPorId, obtenerAulasPorEdificio, obtenerAulas, obtenerGrados, obtenerProfesores, obtenerPeriodos, crearSeccion, actualizarSeccion, eliminarSeccion } from '../Controllers/seccionesController.js';
 
 const router = express.Router();
 
-// Ruta para obtener todas las secciones o una específica
-router.get('/obtener_seccion/:Cod_secciones?', obtenerSecciones);
+// Ruta para obtener todas las secciones 
+router.get('/obtener_secciones/:Cod_secciones?', obtenerSecciones);
+
+// Ruta para obtener todas las secciones por el cod_periodo_matricula
+router.get('/obtener_seccperiodo/:Cod_periodo_matricula?', obtenerSeccionesPorPeriodo);
+
+// Ruta para obtener el período académico activo
+router.get('/periodo_academico/activo', obtenerPeriodoActivo);
 
 // Ruta para obtener todos los edificios
 router.get('/edificios', obtenerEdificios);
@@ -25,7 +32,7 @@ router.get('/grados', obtenerGrados);
 router.get('/profesores', obtenerProfesores);
 
 // Ruta para obtener el periodo de matrícula activo
-router.get('/periodo_academico/activo', obtenerPeriodoMatriculaActivo);
+router.get('/periodo_academico', obtenerPeriodos);
 
 // Ruta para crear una nueva sección
 router.post('/crear_seccion', crearSeccion);

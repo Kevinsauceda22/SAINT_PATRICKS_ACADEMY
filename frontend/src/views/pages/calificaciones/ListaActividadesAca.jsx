@@ -1,12 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { CIcon } from '@coreui/icons-react';
-import { cilSearch,cilInfo, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
-import swal from 'sweetalert2';
-import { left } from '@popperjs/core';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable'; // Importa el plugin para tablas
-import * as XLSX from 'xlsx';
 import {
   CButton,
   CCard,
@@ -46,7 +38,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 const ListaActividadesAca = () => {
   const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaActividadesAca');
 
-const VistaActividadesAcademicasAdmin = () => {
+
   const [profesores, setProfesores] = useState([]);
   const [secciones, setSecciones] = useState([]);
   const [asignaturas, setAsignaturas] = useState([]);
@@ -865,4 +857,4 @@ const handleEliminarActividad = async (Cod_actividad_academica) => {
   );
 };
 
-export default VistaActividadesAcademicasAdmin;
+export default ListaActividadesAca;

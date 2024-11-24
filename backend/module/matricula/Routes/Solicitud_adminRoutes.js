@@ -1,6 +1,13 @@
 
 import express from 'express';
-import { obtenerSolicitudesx, insertarSolicitud, actualizarSolicitud, obtenerSolicitudPorCod, eliminarSolicitud } from '../Controllers/Solicitud_adminController.js';
+import { 
+    obtenerSolicitudesx, 
+    insertarSolicitud, 
+    actualizarSolicitud, 
+    obtenerSolicitudPorCod, 
+    eliminarSolicitud, 
+    obtenerSolicitudConPersona // Importar el controlador para la nueva ruta
+} from '../Controllers/Solicitud_adminController.js';
 
 const router = express.Router();
 
@@ -16,7 +23,10 @@ router.post('/solicitudes', insertarSolicitud);
 // Ruta para actualizar una solicitud por Cod_solicitud
 router.put('/solicitudes/:Cod_solicitud', actualizarSolicitud);
 
+// Ruta para eliminar una solicitud por Cod_solicitud
 router.delete('/solicitud/:Cod_solicitud', eliminarSolicitud);
 
+// Nueva ruta para obtener solicitud con el nombre de la persona que la creó
+router.get('/solicitudes-persona/:Cod_solicitud', obtenerSolicitudConPersona);
 
 export default router;

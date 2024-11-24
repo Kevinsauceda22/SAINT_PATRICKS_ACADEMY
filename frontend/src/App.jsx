@@ -44,8 +44,11 @@ const CuentaSupendida = React.lazy(() => import ("./views/pages/Suspendida/Accou
 const ListaUsuarios = React.lazy(() => import('./views/pages/ListaUsuarios/ListaUsuarios'));
 const Permisos = React.lazy(() => import ("./views/pages/Permissions/Permissions"))
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
+const ListaNotasProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaNotasProfesor'));
+const ListaNotas = React.lazy(() => import('./views/pages/calificaciones/ListaNotas'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
 const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
+const ListaGradosAsignaturas = React.lazy(() => import('./views/pages/calificaciones/ListaGradosAsignaturas'))
 const ListaParciales = React.lazy(() => import('./views/pages/calificaciones/ListaParciales'));
 const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones/ListaPonderaciones'));
 const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabilidad'));
@@ -76,11 +79,14 @@ const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos'))
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
 const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhijo')) 
 const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
-const Procedencia = React.lazy(() => import('./views/pages/matricula/ListaHistoricoProc')) 
+const ListaHistoricoProc = React.lazy(() => import('./views/pages/personas/ListaHistoricoProc')); 
 const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
 const Solicitud= React.lazy(() => import('./views/pages/Solicitudes/Solicitud'))
 const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solicitud_admin'))
-
+// New Matricula Views
+const MatriculasPorGrado = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorGrado'));
+const MatriculasPorPeriodo = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorPeriodo'));
+const MatriculasAnioAnterior = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasAnioAnterior'));
 
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
@@ -154,14 +160,17 @@ const App = () => {
                 <Route path="/ListaAsistenciaProfesor" element={<ListaAsistenciaProfesor />} />
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
-                <Route path="/ListaHistoricoProc" element={<Procedencia />} />
+                <Route path="/historico" element={<ListaHistoricoProc />} />
                 <Route path="/ListaHistoriales" element={<ListaHistoriales />} />
 
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
                 <Route path="/ListaEstadoasistencia" element={<ListaEstadoasistencia />} />
                 <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />
+                <Route path="/ListaNotasProfesor" element={<ListaNotasProfesor />} />
+                <Route path="/ListaNotas" element={<ListaNotas />} />
                 <Route path="/ListaGradoAcademico" element={<ListaGradoAcademico />} />
                 <Route path="/ListaGrados" element={<ListaGrado />} />
+                <Route path="/ListaGradosAsignaturas" element={<ListaGradosAsignaturas />} />
                 <Route path="/ListaParciales" element={<ListaParciales />} />
                 <Route path="/ListaPonderaciones" element={<ListaPonderaciones />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
@@ -181,7 +190,7 @@ const App = () => {
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/ListaSecciones_Asignatura"  element={<ListaSecciones_Asignatura />} />
                 <Route path="/actividades" element={<ListaActivex />} />
-                <Route path="/historico" element={<ListaDias />} />
+                 <Route path="/dias"  element={<ListaDias />} />
                 
                 <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
                  <Route path="/tipopersona" element={<tipopersona />} />
@@ -190,6 +199,10 @@ const App = () => {
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
                 <Route path="/Solicitud" element={<Solicitud/>} />
+                {/* New Routes for Matriculas */}
+          <Route path="/matriculasPorGrado" element={<MatriculasPorGrado />} />
+          <Route path="/matriculasPorPeriodo" element={<MatriculasPorPeriodo />} />
+          <Route path="/matriculasAnioAnterior" element={<MatriculasAnioAnterior />} />
               </Route>
             </Route>
 

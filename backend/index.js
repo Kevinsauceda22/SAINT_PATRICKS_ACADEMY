@@ -12,6 +12,7 @@ import especialidadRoutes from './module/calificaciones/Routes/especialidadesRou
 import asignaturaRoutes from './module/calificaciones/Routes/asignaturasRoutes.js';
 import parcialesRoutes from './module/calificaciones/Routes/parcialesRoutes.js';
 import gradoRoutes from './module/calificaciones/Routes/gradosRoutes.js';
+import gradoAsignaturaRoutes from './module/calificaciones/Routes/grado_AsignaturaRoutes.js';
 import ciclosRoutes from './module/calificaciones/Routes/ciclosRoutes.js';
 import ponderacionRoutes from './module/calificaciones/Routes/ponderacionesRoutes.js';
 import estadoasitenciaRoutes from './module/calificaciones/Routes/estadoAsistenciaRoutes.js';
@@ -19,17 +20,18 @@ import asisntenciaRoutes from './module/calificaciones/Routes/asistenciaRoutes.j
 import estadonotaRoutes from './module/calificaciones/Routes/estadoNotaRoutes.js';
 import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
+import InstitutosRoutes from './module/calificaciones/Routes/InstitutosRoutes.js';
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
-import secciones from './module/matricula/Routes/seccion_Routes.js'
+
 //-------------------------------------------------------------------------------------------------------
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
 import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
-import historicoprocRoutes from './module/matricula/Routes/historicoprocRoutes.js';
+import historicoprocRoutes from './module/personas/Routes/historicoprocRoutes.js';
 import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
@@ -126,14 +128,16 @@ app.use('/api/estadoNotas', estadonotaRoutes);
 app.use('/api/notas', notaRoutes);
 //Rutas para historial academico de los estudiantes
 app.use('/api/historialAcademico', historialAcademicoRoutes);
+//rutas para obtener institutos
+app.use('/api/instituto', InstitutosRoutes);
 //Rutas para obtener secciones y alumnos de los estudiantes
 app.use('/api/seccionalumno',seccionalumnoRoutes)
 //Rutas para asignar una ponderacion a un ciclo y su valor
 app.use('/api/ponderacionCiclo',Ponderaciones_CiclosRoutes);
 //Rutas para asignar un codigo a actividades
 app.use('/api/actividadesAcademicas', actividadesRoutes);
-//Ruta para secciones
-app.use('/api/secciones', secciones);
+//Ruta para asignar asignaturas a un grado
+app.use('/api/gradoAsignatura',gradoAsignaturaRoutes);
 
 
 // Matrícula
@@ -180,7 +184,7 @@ app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 app.use('/api/municipio', municipioRoutes);
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 
-app.use('/api/secciones', secciones);
+
 
 //contabilidad
 app.use('/api/catalogoCuentas', catalogoCuentasRoutes);

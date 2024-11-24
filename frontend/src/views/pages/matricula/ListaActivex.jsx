@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription } from '@coreui/icons';
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription, cilBan, cilCheckCircle } from '@coreui/icons';
 import swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -72,21 +72,35 @@ const ListaActividades = () => {
     }
   };
 
-  // Función para obtener secciones de la base de datos
-  const fetchSecciones = async () => {
+  const fetchSecciones = async (Cod_secciones) => {
     try {
-      const response = await fetch('http://localhost:4000/api/secciones/versecciones');
-      if (!response.ok) throw new Error('Error al obtener las secciones');
+      //console.log(`Fetching: http://localhost:4000/api/secciones/obtener_seccion/${Cod_secciones}`);
+      const response = await fetch(`http://localhost:4000/api/obtener_secciones/${Cod_secciones}`);
+      
+      if (!response.ok) {
+        console.error(`HTTP Error: ${response.status}`);
+        throw new Error('Error al obtener las secciones');
+      }
+      
       const data = await response.json();
+      console.log('Datos obtenidos del servidor:', data); // Depuración
+      
+      if (!Array.isArray(data)) {
+        throw new Error('La respuesta del servidor no es un array');
+      }
+      
       const seccionesConGrado = data.map((seccion) => ({
         ...seccion,
         SeccionGrado: `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`, // Concatenar sección y grado
       }));
+      
+      console.log('Secciones procesadas:', seccionesConGrado);
       setSecciones(seccionesConGrado);
     } catch (error) {
-      console.error(error);
+      console.error('Error en fetchSecciones:', error.message);
     }
   };
+  
 
   // Cargar secciones al inicio
   useEffect(() => {
@@ -144,7 +158,7 @@ const ListaActividades = () => {
   // Bloquea copiar y pegar en campos
   const disableCopyPaste = (e) => {
     e.preventDefault();
-    Swal.fire({
+    swal.fire({
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
@@ -245,18 +259,9 @@ const ListaActividades = () => {
     });
   };
   
-  // Exportar datos a Excel
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(actividades);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Actividades');
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, 'reporte_actividades.xlsx');
-  };
 
-  // Exportar datos a PDF
-  const generatePDF = () => {
+// Exportar datos a PDF con visor personalizado
+const generatePDF = () => {
   const doc = new jsPDF({
     orientation: 'landscape',
     unit: 'mm',
@@ -264,63 +269,43 @@ const ListaActividades = () => {
   });
 
   const img = new Image();
-  img.src = logo; // Ruta del logo
+  img.src = logo; // Ruta válida del logo
 
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
     const pageHeight = doc.internal.pageSize.height;
 
-    // Función para añadir marca de agua
-  const addWatermark = () => {
-  const fontSize = 100; // Tamaño de fuente para la marca de agua
-  const text = 'CONFIDENCIAL';
-
-  doc.saveGraphicsState(); // Guardar estado gráfico actual
-  doc.setGState(new doc.GState({ opacity: 0.15 })); // Ajustar opacidad
-  doc.setTextColor(220, 53, 69); // Color rojo
-  doc.setFontSize(fontSize); // Aplicar tamaño de fuente
-  doc.setFont('helvetica', 'bold'); // Aplicar fuente
-
-  // Ajustar la posición del texto para centrarlo mejor
-  const adjustedX = pageWidth / 2 + 35; // Mover ligeramente a la derecha
-  const adjustedY = pageHeight / 2 + 95; // Mover ligeramente hacia abajo
-
-  // Agregar el texto inclinado
-  doc.text(text, adjustedX, adjustedY, {
-    angle: 40, // Inclinación a 45 grados
-    align: 'center',
-    renderingMode: 'fill',
-  });
-
-  doc.restoreGraphicsState(); // Restaurar estado gráfico original
-  };
-    // Insertar el logo
+    // Logo
     doc.addImage(img, 'PNG', 10, 10, 45, 45);
 
-    // Encabezado del reporte
-    doc.setTextColor(22, 160, 133);
+    // Encabezado principal
     doc.setFontSize(18);
-    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
-    doc.setFontSize(15);
-    doc.text('Listado de Actividades Extracurriculares', pageWidth / 2, 30, { align: 'center' });
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
 
-    // Detalles de la institución
+    // Información de contacto
     doc.setFontSize(10);
-    doc.setTextColor(68, 68, 68);
-    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 40, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 45, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 50, { align: 'center' });
+    doc.setTextColor(100); // Gris
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
 
-    // Información adicional
-    const usuario = localStorage.getItem('nombreUsuario') || 'Usuario del Sistema';
-    doc.setFontSize(9);
-    doc.text(`Generado por: ${usuario}`, 15, 60);
-    //doc.text(`Fecha: ${new Date().toLocaleDateString('es-HN')}`, pageWidth - 15, 60, { align: 'right' });
+    // Título del reporte
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.text('Reporte General de Actividades Extracurriculares', pageWidth / 2, 50, { align: 'center' });
 
-    // Añadir marca de agua
-    addWatermark();
+    // Línea divisoria
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51); // Verde
+    doc.line(10, 55, pageWidth - 10, 55);
 
-    // Configuración de la tabla principal
+    // Subtítulo
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text('Listado Detallado de Actividades', pageWidth / 2, 65, { align: 'center' });
+
+    // Tabla de datos
     const tableColumn = [
       '#',
       'Actividad',
@@ -331,83 +316,98 @@ const ListaActividades = () => {
       'Fecha',
       'Estado',
     ];
+
     const tableRows = currentRecords.map((actividad, index) => {
       const seccion = secciones.find((s) => s.Nombre_seccion === actividad.Nombre_seccion); // Buscar sección
       return [
-        (index + 1 + (currentPage - 1) * recordsPerPage).toString(), // Índice
-        (actividad.Nombre_actividad || 'Sin nombre').toUpperCase(),
-        (actividad.Descripcion || 'Sin descripción').toUpperCase(),
-        actividad.Hora_inicio.toUpperCase(),
-        actividad.Hora_final.toUpperCase(),
-        (seccion ? seccion.SeccionGrado : 'Sin sección').toUpperCase(),
-        new Date(actividad.Fecha).toLocaleDateString('es-ES').toUpperCase(),
-        (actividad.Estado || 'Desconocido').toUpperCase(),
+        { content: (index + 1 + (currentPage - 1) * recordsPerPage).toString(), styles: { halign: 'center' } }, // Centrado
+        { content: (actividad.Nombre_actividad || 'Sin nombre').toUpperCase(), styles: { halign: 'left' } }, // Izquierda
+        { content: (actividad.Descripcion || 'Sin descripción').toUpperCase(), styles: { halign: 'left' } }, // Izquierda
+        { content: actividad.Hora_inicio.toUpperCase(), styles: { halign: 'center' } }, // Centrado
+        { content: actividad.Hora_final.toUpperCase(), styles: { halign: 'center' } }, // Centrado
+        { content: (seccion ? seccion.SeccionGrado : 'Sin sección').toUpperCase(), styles: { halign: 'left' } }, // Centrado
+        { content: new Date(actividad.Fecha).toLocaleDateString('es-ES').toUpperCase(), styles: { halign: 'center' } }, // Centrado
+        { content: (actividad.Estado || 'Desconocido').toUpperCase(), styles: { halign: 'center' } }, // Centrado
       ];
     });
-    
+
     doc.autoTable({
+      startY: 75,
       head: [tableColumn],
       body: tableRows,
-      startY: 70,
+      headStyles: {
+        fillColor: [0, 102, 51], // Verde
+        textColor: [255, 255, 255], // Blanco
+        fontSize: 10,
+        halign: 'center', // Centrado por defecto
+      },
       styles: {
         fontSize: 10,
-        cellPadding: 4,
-        textColor: [68, 68, 68],
-      },
-      headStyles: {
-        fillColor: [22, 160, 133],
-        textColor: [255, 255, 255],
-        fontSize: 10,
-        fontStyle: 'bold',
-        halign: 'center', // Centra los encabezados
+        cellPadding: 3,
       },
       alternateRowStyles: {
-        fillColor: [240, 248, 255],
+        fillColor: [240, 248, 255], // Azul claro
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 15 }, // #
-        1: { halign: 'left', cellWidth: 30 }, // Actividad
-        2: { halign: 'left', cellWidth: 50 }, // Descripción
-        3: { halign: 'center', cellWidth: 30 }, // Inicio
-        4: { halign: 'center', cellWidth: 30 }, // Finalización
-        5: { halign: 'center', cellWidth: 50 }, // Sección y Grado
-        6: { halign: 'center', cellWidth: 30 }, // Fecha
-        7: { halign: 'center', cellWidth: 30 }, // Estado
+        1: { halign: 'left' }, // Nombre alineado a la izquierda
+        2: { halign: 'left' }, // Descripción alineada a la izquierda
+        3: { halign: 'left' }, // Seccion y grado alineada a la izquierda
       },
       margin: { top: 10, bottom: 30 },
       didDrawPage: function (data) {
-        addWatermark();
-    
-        // Añadir pie de página manual
-        const totalPages = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= totalPages; i++) {
-        doc.setPage(i);
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        // Pie de página
         doc.setFontSize(10);
-        doc.setTextColor(100);
-          const date = new Date().toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-         doc.text(`Fecha de generación: ${date}`, 10, pageHeight - 10);
-         doc.text(
-         `Página ${i} de ${totalPages}`,
+        doc.setTextColor(0, 102, 51); // Verde
+        doc.text(
+          `Página ${pageCurrent} de ${pageCount}`,
           pageWidth - 10,
           pageHeight - 10,
           { align: 'right' }
-          );
-        }
+        );
+
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
       },
     });
-    
-    // Guardar el PDF
-    doc.save('Reporte_Actividades.pdf');
-  };
-  img.onerror = () => {
-    Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-   };
+
+    // Convertir PDF en Blob
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    // Crear una nueva ventana con visor personalizado
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Actividades Extracurriculares</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:200px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_de_Actividades_Extracurriculares.pdf'; a.click();">
+              Descargar PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
   };
 
+  img.onerror = () => {
+    swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+  };
+};
 
   // FUNCIONES CRUD //
 
@@ -588,16 +588,16 @@ const ListaActividades = () => {
   return (
     <CContainer>
       {/* Contenedor del título y botón "Nuevo" */}
-      <CRow className="align-items-center mb-3">
-        <CCol xs="8" md="9">
-          {/* Título de la página */}
-          <h1 className="mb-0">Listado de Actividades Extracurriculares</h1>
-        </CCol>
-        <CCol
-          xs="4"
-          md="3"
-          className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center"
-        >
+        <CRow className="align-items-center mb-3">
+          <CCol xs="8" md="9">
+            {/* Título de la página */}
+            <h1 className="mb-0 fw-bold">Listado de Actividades Extracurriculares</h1>
+          </CCol>
+          <CCol
+            xs="4"
+            md="3"
+            className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center"
+          >
           {/* Botón Nuevo para abrir el modal */}
           <CButton
             style={{ backgroundColor: '#4B6251', color: 'white' }}
@@ -612,14 +612,21 @@ const ListaActividades = () => {
   
           {/* Botón de Reporte con opciones para Excel y PDF */}
           <CDropdown>
-            <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-              <CIcon icon={cilDescription} /> Reporte
-            </CDropdownToggle>
-            <CDropdownMenu>
-              <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-              <CDropdownItem onClick={generatePDF}>Descargar en PDF</CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
+        <CIcon icon={cilDescription} /> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem
+          onClick={generatePDF}
+          style={{
+            color: '#6C8E58', // Color verde para armonizar con el botón
+            fontWeight: 'bold',
+          }}
+        >
+          Ver Reporte en PDF
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
         </CCol>
       </CRow>
   
@@ -682,7 +689,7 @@ const ListaActividades = () => {
       {/* Tabla de actividades */}
       <div
         className="table-container"
-        style={{ height: '350px', overflowY: 'auto', marginBottom: '20px' }}
+        style={{ height: '300px', overflowY: 'auto', marginBottom: '20px' }}
       >
         <CTable striped bordered hover>
           <CTableHead
@@ -692,14 +699,18 @@ const ListaActividades = () => {
               <CTableHeaderCell style={{ width: '5%' }} className="text-center">
                 #
               </CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '15%' }}>Actividad</CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '30%' }}>Descripción</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '25%', wordBreak: 'break-word' }}>
+                Actividad
+              </CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '30%', wordBreak: 'break-word' }}>
+                Descripción
+              </CTableHeaderCell>
               <CTableHeaderCell style={{ width: '10%' }} className="text-center"> Inicio </CTableHeaderCell>
               <CTableHeaderCell style={{ width: '10%' }} className="text-center"> Finalización </CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '25%' }} className="text-center"> Sección y Grado </CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '20%' }} className="text-center"> Sección y Grado </CTableHeaderCell>
               <CTableHeaderCell style={{ width: '10%' }} className="text-center"> Fecha </CTableHeaderCell>
               <CTableHeaderCell style={{ width: '10%' }} className="text-center"> Estado </CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '10%' }} className="text-center"> Acciones </CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '5%' }} className="text-center"> Acciones </CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
@@ -712,11 +723,22 @@ const ListaActividades = () => {
                 <CTableRow key={actividad.Cod_actividades_extracurriculares}>
                   {/* Columna de índice ordenado */}
                   <CTableDataCell className="text-center">{rowIndex}</CTableDataCell>
-                  <CTableDataCell style={{ textTransform: 'uppercase' }}>
+                  {/* Columna de actividad con espacio horizontal definido */}
+                  <CTableDataCell
+                    style={{
+                      textTransform: 'uppercase',
+                      wordBreak: 'break-word',
+                      width: '15%', // Ancho definido
+                    }}
+                  >
                     {actividad.Nombre_actividad}
                   </CTableDataCell>
                   <CTableDataCell
-                    style={{ textTransform: 'uppercase', wordBreak: 'break-word' }}
+                    style={{
+                      textTransform: 'uppercase',
+                      wordBreak: 'break-word',
+                      width: '30%', // Ancho definido
+                    }}
                   >
                     {actividad.Descripcion}
                   </CTableDataCell>
@@ -742,35 +764,39 @@ const ListaActividades = () => {
                       {/* Botón Actualizar */}
                       <CButton
                         color="warning"
+                        size="sm" // Tamaño más compacto
                         onClick={() => openUpdateModal(actividad)}
-                        style={{ marginRight: '5px' }}
+                        style={{ marginRight: '5px', padding: '2px 8px', fontSize: '12px' }} // Ajuste de padding y texto pequeño
                       >
-                        <CIcon icon={cilPen} />
+                        <CIcon icon={cilPen} style={{ fontSize: '12px' }} /> {/* Ícono más pequeño */}
                       </CButton>
-  
+
                       {/* Botón Eliminar */}
                       <CButton
                         color="danger"
+                        size="sm" // Tamaño más compacto
                         onClick={() => openDeleteModal(actividad)}
-                        style={{ marginRight: '5px' }}
+                        style={{ marginRight: '5px', padding: '2px 8px', fontSize: '12px' }} // Ajuste de padding y texto pequeño
                       >
-                        <CIcon icon={cilTrash} />
+                        <CIcon icon={cilTrash} style={{ fontSize: '12px' }} /> {/* Ícono más pequeño */}
                       </CButton>
-  
-                      {/* Botón Cambiar Estado */}
+
+                      {/* Botón Cancelar / Activar */}
                       <CButton
                         color={actividad.Estado === 'Activa' ? 'danger' : 'success'}
+                        size="sm" // Tamaño más compacto
                         onClick={() =>
                           handleEstadoChange(
                             actividad.Cod_actividades_extracurriculares,
                             actividad.Estado
                           )
                         }
-                        style={{
-                          width: '100px', // Fija el ancho de los botones
-                          textAlign: 'center',
-                        }}
+                        style={{ padding: '2px 8px', fontSize: '12px', textAlign: 'center' }} // Ajuste de padding y texto pequeño
                       >
+                        <CIcon
+                          icon={actividad.Estado === 'Activa' ? cilBan : cilCheckCircle}
+                          style={{ fontSize: '12px', marginRight: '5px' }}
+                        />
                         {actividad.Estado === 'Activa' ? 'Cancelar' : 'Activar'}
                       </CButton>
                     </div>
@@ -781,6 +807,7 @@ const ListaActividades = () => {
           </CTableBody>
         </CTable>
       </div>
+
   
       {/* Paginación Fija */}
       <div
@@ -1103,3 +1130,6 @@ const ListaActividades = () => {
   );
 };
 export default ListaActividades;
+
+
+  

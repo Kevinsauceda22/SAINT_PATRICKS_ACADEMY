@@ -185,6 +185,64 @@ export const actualizarEstadoCitas = async (req, res) => {
     }
 };
 
+export const obtenerSolicitudConPersona = async (req, res) => {
+    try {
+        const { Cod_solicitud } = req.params; // Extraer Cod_solicitud desde los parámetros de la ruta
+
+        if (!Cod_solicitud) {
+            return res.status(400).json({
+                message: 'El parámetro Cod_solicitud es obligatorio.',
+            });
+        }
+
+        // Consulta SQL para obtener la solicitud, el nombre completo y el correo de la persona asociada
+        const query = `
+            SELECT 
+                s.Cod_solicitud, 
+                s.Cod_persona, 
+                s.Fecha_solicitud, 
+                s.Hora_Inicio, 
+                s.Hora_Fin, 
+                s.Asunto, 
+                s.Estado, 
+                p.Nombre AS Persona_Nombre,
+                p.Primer_apellido AS Persona_Apellido,
+                u.correo_usuario AS Persona_Correo
+            FROM 
+                tbl_solicitud s
+            INNER JOIN 
+                tbl_personas p 
+            ON 
+                s.Cod_persona = p.Cod_persona
+            LEFT JOIN 
+                tbl_usuarios u
+            ON 
+                p.Cod_persona = u.cod_persona
+            WHERE 
+                s.Cod_solicitud = ?;
+        `;
+
+        // Ejecutar la consulta con el Cod_solicitud como parámetro
+        const [results] = await pool.query(query, [Cod_solicitud]);
+
+        // Verificar si hay resultados
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Solicitud no encontrada.' });
+        }
+
+        // Devolver el resultado como respuesta
+        return res.status(200).json(results[0]);
+    } catch (error) {
+        console.error('Error al obtener la solicitud con persona:', error);
+        return res.status(500).json({
+            message: 'Ocurrió un error al obtener la solicitud con persona.',
+        });
+    }
+};
+
+
+
+
 
 
 // Obtener una solicitud por Cod_solicitud
