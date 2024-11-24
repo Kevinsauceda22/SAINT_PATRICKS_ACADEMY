@@ -145,13 +145,13 @@ const Solicitud = () => {
     img.src = logo;
   
     img.onload = async () => {
-      // Encabezado con logo e información institucional
+      // Cabecera con logo e información institucional
       doc.addImage(img, 'PNG', 10, 10, 30, 30);
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
       doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
       doc.setFontSize(14);
-      doc.text('Reporte Detallado de Citas', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+      doc.text('Detalles de la Cita', doc.internal.pageSize.width / 2, 30, { align: 'center' });
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
@@ -181,34 +181,22 @@ const Solicitud = () => {
         console.error('Error fetching details for selected cita:', error);
       }
   
-      // Agregar tabla con los detalles
+      // Generar la tabla con los datos de la cita seleccionada
       doc.autoTable({
         startY: 60,
         head: [
-          [
-            'Título',
-            'Asunto',
-            'Persona Requerida',
-            'Creador de la Cita',
-            'Correo Electrónico',
-            'Fecha',
-            'Hora Inicio',
-            'Hora Fin',
-            'Estado',
-          ],
+          ['Campo', 'Valor'],
         ],
         body: [
-          [
-            citaDetails.title || 'Título no disponible',
-            citaDetails.description || 'Sin descripción',
-            citaDetails.personaRequerida || 'No especificada',
-            `${citaDetails.Persona_Nombre || 'Nombre no disponible'} ${citaDetails.Persona_Apellido || ''}`.trim(),
-            citaDetails.Persona_Correo || 'Correo no disponible',
-            citaDetails.start || 'Fecha no disponible',
-            citaDetails.horaInicio || 'Hora no disponible',
-            citaDetails.horaFin || 'Hora no disponible',
-            citaDetails.estado || 'Estado no disponible',
-          ],
+          ['Título', citaDetails.title || 'Título no disponible'],
+          ['Asunto', citaDetails.description || 'Sin descripción'],
+          ['Persona Requerida', citaDetails.personaRequerida || 'No especificada'],
+          ['Creador de la Cita', `${citaDetails.Persona_Nombre || 'Nombre no disponible'} ${citaDetails.Persona_Apellido || ''}`.trim()],
+          ['Correo Electrónico', citaDetails.Persona_Correo || 'Correo no disponible'],
+          ['Fecha', citaDetails.start || 'Fecha no disponible'],
+          ['Hora Inicio', citaDetails.horaInicio || 'Hora no disponible'],
+          ['Hora Fin', citaDetails.horaFin || 'Hora no disponible'],
+          ['Estado', citaDetails.estado || 'Estado no disponible'],
         ],
         headStyles: {
           fillColor: [0, 102, 51],
@@ -516,7 +504,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
   };
 
   const exportarAPDF = async () => {
-    const doc = new jsPDF('landscape'); // Set orientation to landscape
+    const doc = new jsPDF('landscape'); // Orientación landscape
   
     if (solicitudes.length === 0) {
       console.warn('No hay datos de citas para exportar.');
@@ -527,7 +515,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
     img.src = logo;
   
     img.onload = async () => {
-      // Header with logo and institution details
+      // Cabecera con logo y detalles de institución
       doc.addImage(img, 'PNG', 10, 10, 30, 30);
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
@@ -543,7 +531,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
       doc.setDrawColor(0, 102, 51);
       doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
   
-      // Fetch detailed data for each solicitud
+      // Obtener datos detallados para cada solicitud
       const updatedSolicitudes = await Promise.all(
         solicitudes.map(async (cita) => {
           try {
@@ -560,12 +548,12 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
             };
           } catch (error) {
             console.error('Error fetching details:', error);
-            return cita; // Return the original cita if there's an error
+            return cita; // Si ocurre un error, retorna los datos originales
           }
         })
       );
   
-      // Generate table with all fields from backend
+      // Generar la tabla con los datos completos
       doc.autoTable({
         startY: 60,
         head: [
@@ -604,13 +592,13 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         alternateRowStyles: { fillColor: [240, 248, 255] },
       });
   
-      // Footer with generation date
+      // Pie de página con fecha de generación
       const date = new Date().toLocaleDateString();
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
   
-      // Open the PDF in a new tab
+      // Abrir el PDF en una nueva pestaña
       const pdfBlob = doc.output('blob');
       const pdfUrl = URL.createObjectURL(pdfBlob);
       window.open(pdfUrl, '_blank');
@@ -929,8 +917,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
            </div>
          </CCol>
        </CRow>
-       
-        
+           
         )}
         <CModalFooter>
           <CButton
