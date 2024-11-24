@@ -80,7 +80,7 @@ const Procedencia = React.lazy(() => import('./views/pages/matricula/ListaHistor
 const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
 const Solicitud= React.lazy(() => import('./views/pages/Solicitudes/Solicitud'))
 const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solicitud_admin'))
-
+const ListaSecciones = React.lazy(() => import('./views/pages/matricula/ListaSecciones')); // Importa el nuevo componente ListaSecciones
 
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
@@ -180,6 +180,7 @@ const App = () => {
                 <Route exact path="/aulas" element={<ListaAulas />} />
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/ListaSecciones_Asignatura"  element={<ListaSecciones_Asignatura />} />
+                <Route path="/lista-secciones" name="Lista Secciones" element={<ListaSecciones />} /> {/* Ruta para ListaSecciones */}
                 <Route path="/actividades" element={<ListaActivex />} />
                 <Route path="/historico" element={<ListaDias />} />
                 
