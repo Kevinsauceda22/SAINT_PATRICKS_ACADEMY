@@ -12,6 +12,7 @@ import especialidadRoutes from './module/calificaciones/Routes/especialidadesRou
 import asignaturaRoutes from './module/calificaciones/Routes/asignaturasRoutes.js';
 import parcialesRoutes from './module/calificaciones/Routes/parcialesRoutes.js';
 import gradoRoutes from './module/calificaciones/Routes/gradosRoutes.js';
+import gradoAsignaturaRoutes from './module/calificaciones/Routes/grado_AsignaturaRoutes.js';
 import ciclosRoutes from './module/calificaciones/Routes/ciclosRoutes.js';
 import ponderacionRoutes from './module/calificaciones/Routes/ponderacionesRoutes.js';
 import estadoasitenciaRoutes from './module/calificaciones/Routes/estadoAsistenciaRoutes.js';
@@ -132,7 +133,8 @@ app.use('/api/seccionalumno',seccionalumnoRoutes)
 app.use('/api/ponderacionCiclo',Ponderaciones_CiclosRoutes);
 //Rutas para asignar un codigo a actividades
 app.use('/api/actividadesAcademicas', actividadesRoutes);
-
+//Ruta para asignar asignaturas a un grado
+app.use('/api/gradoAsignatura',gradoAsignaturaRoutes);
 
 
 // Matrícula
