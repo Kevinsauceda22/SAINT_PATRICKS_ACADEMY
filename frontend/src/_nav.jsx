@@ -42,14 +42,14 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Asistencia',
+    name: 'Mis Asistencias',
     to: '/ListaAsistencia',
     icon: cilClipboard,
     nameobject: 'navAsistencia',
   },
   {
     component: CNavItem,
-    name: 'Asistencia',
+    name: 'Asistencias',
     to: '/ListaAsistenciaProfesor',
     icon: cilClipboard,
     nameobject: 'navAsistenciaProfesor',
@@ -78,8 +78,15 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Mis Notas',
+    to: '/ListaNotasProfesor',
+    icon: cilFile,
+    nameobject: 'navNotasProfesor',
+  },
+  {
+    component: CNavItem,
     name: 'Notas',
-    to: '/ListaEstadonota',
+    to: '/ListaNotas',
     icon: cilFile,
     nameobject: 'navNotas',
   },
