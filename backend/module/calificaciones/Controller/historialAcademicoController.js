@@ -19,11 +19,12 @@ export const obtenerHistoriales = async (req, res) => {
 
 // Crear un nuevo historial académico
 export const crearHistorial = async (req, res) => {
-    const { Cod_estado, Grado, Año_Academico, Promedio_Anual, Instituto } = req.body;
+    const {Cod_estado, Estudiante, Grado, Año_Academico, Promedio_Anual, Instituto } = req.body;
 
     try {
-        await pool.query('CALL insert_historial_academico(?, ?, ?, ?, ?)', [
+        await pool.query('CALL insert_historial_academico(?, ?, ?, ?, ?, ?)', [
             Cod_estado,
+            Estudiante,
             Grado,
             Año_Academico,
             Promedio_Anual,
@@ -38,12 +39,13 @@ export const crearHistorial = async (req, res) => {
 
 // Actualizar un historial académico
 export const actualizarHistorial = async (req, res) => {
-    const { Cod_historial_academico, Cod_estado, Grado, Año_Academico, Promedio_Anual, Instituto } = req.body;
+    const {Cod_historial_academico, Cod_estado, Estudiante, Grado, Año_Academico, Promedio_Anual, Instituto } = req.body;
 
     try {
-        await pool.query('CALL update_historial_academico(?,?,?,?,?,?)', [
+        await pool.query('CALL update_historial_academico(?, ?, ?, ?, ?, ?, ?)', [
             Cod_historial_academico,
             Cod_estado,
+            Estudiante,
             Grado,
             Año_Academico,
             Promedio_Anual,
