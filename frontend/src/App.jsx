@@ -82,7 +82,10 @@ const ListaHistoricoProc = React.lazy(() => import('./views/pages/personas/Lista
 const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
 const Solicitud= React.lazy(() => import('./views/pages/Solicitudes/Solicitud'))
 const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solicitud_admin'))
-
+// New Matricula Views
+const MatriculasPorGrado = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorGrado'));
+const MatriculasPorPeriodo = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorPeriodo'));
+const MatriculasAnioAnterior = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasAnioAnterior'));
 
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
@@ -194,6 +197,10 @@ const App = () => {
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
                 <Route path="/Solicitud" element={<Solicitud/>} />
+                {/* New Routes for Matriculas */}
+          <Route path="/matriculasPorGrado" element={<MatriculasPorGrado />} />
+          <Route path="/matriculasPorPeriodo" element={<MatriculasPorPeriodo />} />
+          <Route path="/matriculasAnioAnterior" element={<MatriculasAnioAnterior />} />
               </Route>
             </Route>
 
