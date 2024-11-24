@@ -20,6 +20,7 @@ import asisntenciaRoutes from './module/calificaciones/Routes/asistenciaRoutes.j
 import estadonotaRoutes from './module/calificaciones/Routes/estadoNotaRoutes.js';
 import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
+import InstitutosRoutes from './module/calificaciones/Routes/InstitutosRoutes.js';
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
@@ -127,6 +128,8 @@ app.use('/api/estadoNotas', estadonotaRoutes);
 app.use('/api/notas', notaRoutes);
 //Rutas para historial academico de los estudiantes
 app.use('/api/historialAcademico', historialAcademicoRoutes);
+//rutas para obtener institutos
+app.use('/api/instituto', InstitutosRoutes);
 //Rutas para obtener secciones y alumnos de los estudiantes
 app.use('/api/seccionalumno',seccionalumnoRoutes)
 //Rutas para asignar una ponderacion a un ciclo y su valor
