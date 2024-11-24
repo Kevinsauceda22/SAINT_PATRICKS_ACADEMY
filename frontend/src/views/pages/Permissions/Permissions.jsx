@@ -31,6 +31,7 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '84', name: 'Asistencia Profesor', description: 'Asistencia Profesor' },
     { id: '85', name: 'Notas Profesor', description: 'Notas Profesor' },
     { id: '87', name: 'Nota', description: 'Nota' },
+    { id: '88', name: 'Grados-Asignaturas', description: 'Grados-Asignaturas' },
     { id: '48', name: 'Lista Profesores', description: 'Lista Profesores' },
     { id: '73', name: 'Lista Historial', description: 'Lista Historial' },
     { id: '74', name: 'Actividades', description: 'actividades' },
