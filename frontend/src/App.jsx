@@ -185,7 +185,7 @@ const App = () => {
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/ListaSecciones_Asignatura"  element={<ListaSecciones_Asignatura />} />
                 <Route path="/actividades" element={<ListaActivex />} />
-                <Route path="/historico" element={<ListaDias />} />
+                 <Route path="/dias"  element={<ListaDias />} />
                 
                 <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
                  <Route path="/tipopersona" element={<tipopersona />} />
