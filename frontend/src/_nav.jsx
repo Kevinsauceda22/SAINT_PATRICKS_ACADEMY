@@ -299,7 +299,7 @@ const _nav = [
         component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
-        nameobject: 'ListaRelacion',
+        nameobject: 'Lista Relacion',
       },
       {
         component: CNavItem,
