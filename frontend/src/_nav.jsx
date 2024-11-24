@@ -42,14 +42,14 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Mis Asistencias',
+    name: 'Asistencias',
     to: '/ListaAsistencia',
     icon: cilClipboard,
     nameobject: 'navAsistencia',
   },
   {
     component: CNavItem,
-    name: 'Asistencias',
+    name: 'Mis Asistencias',
     to: '/ListaAsistenciaProfesor',
     icon: cilClipboard,
     nameobject: 'navAsistenciaProfesor',
