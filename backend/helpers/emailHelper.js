@@ -319,6 +319,113 @@ const enviarCorreoRecuperacion = async (correo, token) => {
     } catch (error) {
         console.error('Error al enviar el correo de recuperación:', error.message);
     }
+};const enviarNotificacionNuevaActividad = async (correo_padre, nombre_padre, actividad) => {
+    const content = `
+        <div class="welcome-text">
+            Estimado/a ${nombre_padre}
+        </div>
+        <div class="message-box">
+            Le informamos que se ha programado una nueva actividad académica para su hijo/a.
+        </div>
+
+        <div class="message-box" style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
+            <p style="margin: 0;"><strong>Detalles de la actividad:</strong></p>
+            <div style="margin: 15px 0;">
+                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${actividad.nombre}</p>
+                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${actividad.fecha}</p>
+                <p style="margin: 5px 0;"><strong>Hora:</strong> ${actividad.hora}</p>
+                <p style="margin: 5px 0;"><strong>Lugar:</strong> ${actividad.lugar}</p>
+                <p style="margin: 5px 0;"><strong>Descripción:</strong> ${actividad.descripcion}</p>
+            </div>
+        </div>
+
+        <div class="message-box" style="background-color: #fff3e0; border-left: 4px solid #ff9800;">
+            <p><strong>⚠️ Importante:</strong></p>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Por favor, tome nota de la fecha y hora de la actividad.</li>
+                <li>Asegúrese de que su hijo/a cuente con los materiales necesarios.</li>
+                <li>Si tiene alguna pregunta, no dude en contactar con el profesor responsable.</li>
+            </ul>
+        </div>
+
+        <div class="message-box" style="text-align: center;">
+            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/calendario" class="verify-button">
+                Ver Calendario de Actividades
+            </a>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+            to: correo_padre,
+            subject: 'Nueva Actividad Académica - Saint Patrick\'s Academy',
+            html: getEmailTemplate(content, 'Nueva Actividad Académica'),
+        });
+        console.log('Correo de nueva actividad enviado correctamente');
+        return true;
+    } catch (error) {
+        console.error('Error al enviar el correo de nueva actividad:', error.message);
+        throw new Error('Error al enviar el correo de notificación de nueva actividad');
+    }
 };
 
-export { enviarCorreoVerificacion, enviarCorreoRecuperacion, enviarCorreoCredencialesTemporales };
+const enviarNotificacionCancelacionActividad = async (correo_padre, nombre_padre, actividad, motivo) => {
+    const content = `
+        <div class="welcome-text">
+            Estimado/a ${nombre_padre}
+        </div>
+        <div class="message-box" style="background-color: #ffebee; border-left: 4px solid #ef5350;">
+            <p><strong>Aviso Importante:</strong></p>
+            <p>Le informamos que la siguiente actividad académica ha sido cancelada:</p>
+        </div>
+
+        <div class="message-box">
+            <p style="margin: 0;"><strong>Detalles de la actividad cancelada:</strong></p>
+            <div style="margin: 15px 0;">
+                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${actividad.nombre}</p>
+                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${actividad.fecha}</p>
+                <p style="margin: 5px 0;"><strong>Hora:</strong> ${actividad.hora}</p>
+                <p style="margin: 5px 0;"><strong>Lugar:</strong> ${actividad.lugar}</p>
+            </div>
+        </div>
+
+        <div class="message-box" style="background-color: #f5f5f5; border-left: 4px solid #9e9e9e;">
+            <p><strong>Motivo de la cancelación:</strong></p>
+            <p>${motivo}</p>
+        </div>
+
+        <div class="message-box">
+            <p>En caso de que la actividad sea reprogramada, se le notificará oportunamente a través de un nuevo correo electrónico.</p>
+            <p>Lamentamos cualquier inconveniente que esto pueda causar.</p>
+        </div>
+
+        <div class="message-box" style="text-align: center;">
+            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/calendario" class="verify-button">
+                Ver Calendario Actualizado
+            </a>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+            to: correo_padre,
+            subject: 'Cancelación de Actividad Académica - Saint Patrick\'s Academy',
+            html: getEmailTemplate(content, 'Cancelación de Actividad'),
+        });
+        console.log('Correo de cancelación de actividad enviado correctamente');
+        return true;
+    } catch (error) {
+        console.error('Error al enviar el correo de cancelación:', error.message);
+        throw new Error('Error al enviar el correo de notificación de cancelación');
+    }
+};
+
+export { 
+    enviarCorreoVerificacion, 
+    enviarCorreoRecuperacion, 
+    enviarCorreoCredencialesTemporales,
+    enviarNotificacionNuevaActividad,
+    enviarNotificacionCancelacionActividad 
+};

@@ -14,10 +14,9 @@ const GestorDePermisos = ({ pathName }) => {
   const [cargando, setCargando] = useState(true);
   const [busquedaObjeto, setBusquedaObjeto] = useState('');
   const [busquedaRol, setBusquedaRol] = useState('');
-  const [vistaActual, setVistaActual] = useState('general'); // 'general' o 'mantenimiento'
+  const [vistaActual, setVistaActual] = useState('general');
   const MySwal = withReactContent(Swal);
 
-  // Mapeo de IDs de rol a nombres
   const rolNombres = {
     1: 'Padre',
     2: 'Administrador',
@@ -25,42 +24,36 @@ const GestorDePermisos = ({ pathName }) => {
     4: 'Manager'
   };
 
-  // Definición de los objetos del sistema separados por categoría
   const paginasGenerales = [
     { id: '12', name: 'Dashboard', description: 'Página del tablero de control' },
     { id: '46', name: 'Dashboard Padres', description: 'Dashboard para padres' },
-    { id: '47', name: 'Lista Asistencia', description: 'Lista Asistencia' },
+    { id: '47', name: 'Asistencia', description: 'Asistencia' },
     { id: '84', name: 'Asistencia Profesor', description: 'Asistencia Profesor' },
+    { id: '85', name: 'Notas Profesor', description: 'Notas Profesor' },
+    { id: '87', name: 'Nota', description: 'Nota' },
     { id: '48', name: 'Lista Profesores', description: 'Lista Profesores' },
-    { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' },
-    { id: '72', name: 'Roles y Permisos', description: 'roles and permissions' },
     { id: '73', name: 'Lista Historial', description: 'Lista Historial' },
     { id: '74', name: 'Actividades', description: 'actividades' },
     { id: '77', name: 'Matricula', description: 'Matricula' },
-    { id: '79', name: 'VistaProfesor', description: 'VistaProfesor' },
+    { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' }
 
+  ];
 
-    //ESTE SEPRALALO
-    { id: '71', name: 'MODULO PAGOS Y FINANZAS Libro Diario', description: 'Libro Diario' },
+  const paginasPagos = [
+    { id: '71', name: 'Libro Diario', description: 'Libro Diario' }
+  ];
 
+  const paginasPersonas = [
+    { id: '80', name: 'Personas', description: 'ListaPersonas' },
+    { id: '69', name: 'Lista Relacion', description: 'Lista Relacion' },
+    { id: '65', name: 'Tipo persona', description: 'tipo persona' },
+    { id: '64', name: 'Departamento', description: 'departamento' },
+    { id: '81', name: 'Municipios', description: 'Muinicipios' }
+  ];
 
-    //ESTE SEPRALALO PERSONAS
-    { id: '80', name: 'MODULO PERSONAS Personas', description: 'ListaPersonas' },
-    { id: '69', name: 'MODULO PERSONAS Lista Relacion', description: 'Lista Relacion' },
-    { id: '65', name: 'MODULO PERSONAS Tipo persona', description: 'tipo persona' },
-    { id: '64', name: 'MODULO PERSONAS Departamento', description: 'departamento' },
-    { id: '81', name: 'MODULO PERSONAS Municipios', description: 'Muinicipios' },
-
-
-    //ESTE ES USUARIOS Y PERMISOS 
-    { id: '45', name: ' MODULO USUARIOS Admin. de Usuarios', description: 'Gestión Usuarios' },
-    { id: '72', name: 'MODULO USUARIOS Roles y Permisos', description: 'roles and permissions' },
-
-  
-
-
-
-
+  const paginasUsuarios = [
+    { id: '45', name: 'Admin. de Usuarios', description: 'Gestión Usuarios' },
+    { id: '72', name: 'Roles y Permisos', description: 'roles and permissions' }
   ];
 
   const paginasMantenimiento = [
@@ -75,15 +68,15 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '57', name: 'Lista Parciales', description: 'Lista Parciales' },
     { id: '58', name: 'Lista Ponderaciones', description: 'Lista Ponderaciones' },
     { id: '59', name: 'Lista Tipo Contrato', description: 'Lista Tipo Contrato' },
-    { id: '60', name: ' Tipo matrícula', description: 'tipo matricula' },
+    { id: '60', name: 'Tipo matrícula', description: 'tipo matricula' },
     { id: '61', name: 'Periodo matrícula', description: 'periodo matricula' },
     { id: '62', name: 'Estado matrícula', description: 'estado matricula' },
     { id: '63', name: 'Concepto pago', description: 'concepto pago' },
     { id: '66', name: 'Edificios', description: 'edificios' },
     { id: '67', name: 'Días', description: 'dias' },
     { id: '68', name: 'Lista Historico Proc', description: 'Lista Historico Proc' },
-    { id: '70', name: 'Contabilidad', description: 'Contabilidad' },
-
+    { id: '70', name: 'Contabilidad', description: 'Contabilidad' }
+    
   ];
 
   const permisos = [
@@ -92,9 +85,23 @@ const GestorDePermisos = ({ pathName }) => {
     { id: 'Permiso_Insercion', name: 'Crear' },
     { id: 'Permiso_Actualizacion', name: 'Editar' },
     { id: 'Permiso_Eliminacion', name: 'Eliminar' },
-    { id: 'Permiso_Nav', name: 'Mostrar en Nav' } // Nuevo permiso para controlar visibilidad en nav
+    { id: 'Permiso_Nav', name: 'Mostrar en Nav' }
   ];
 
+  const getPaginasActuales = () => {
+    switch (vistaActual) {
+      case 'mantenimiento':
+        return paginasMantenimiento;
+      case 'pagos':
+        return paginasPagos;
+      case 'personas':
+        return paginasPersonas;
+      case 'usuarios':
+        return paginasUsuarios;
+      default:
+        return paginasGenerales;
+    }
+  };
   const cerrarAdvertencia = () => {
     setMostrarAdvertencia(false);
   };
@@ -143,7 +150,7 @@ const GestorDePermisos = ({ pathName }) => {
     }, {...permisosPorRol});
 
     return Object.entries(rolesCompletos).map(([rolId, permisosRol]) => {
-      const paginasActuales = vistaActual === 'general' ? paginasGenerales : paginasMantenimiento;
+      const paginasActuales = getPaginasActuales();
       return {
         id: parseInt(rolId),
         nombre: rolNombres[rolId] || `Rol ${rolId}`,
@@ -159,7 +166,7 @@ const GestorDePermisos = ({ pathName }) => {
               Permiso_Insercion: permisoObjeto?.Permiso_Insercion === "1",
               Permiso_Actualizacion: permisoObjeto?.Permiso_Actualizacion === "1",
               Permiso_Eliminacion: permisoObjeto?.Permiso_Eliminacion === "1",
-              Permiso_Nav: permisoObjeto?.Permiso_Nav === "1" // Nuevo campo
+              Permiso_Nav: permisoObjeto?.Permiso_Nav === "1"
             }
           };
         }, {})
@@ -184,27 +191,26 @@ const GestorDePermisos = ({ pathName }) => {
       }
   
       const permisoActual = permisosObjeto[Cod_Permiso];
-      
-      // Preparar objeto de actualizaciones
       const actualizaciones = {};
   
-      // Si estamos cambiando el Permiso_Modulo
       if (Cod_Permiso === 'Permiso_Modulo') {
-        // Si estamos desactivando el módulo, todos los permisos se ponen en 0
+        // Si estamos desactivando el módulo
         if (permisoActual) {
           actualizaciones.Permiso_Modulo = "0";
           actualizaciones.Permiso_Consultar = "0";
           actualizaciones.Permiso_Insercion = "0";
           actualizaciones.Permiso_Actualizacion = "0";
           actualizaciones.Permiso_Eliminacion = "0";
-          actualizaciones.Permiso_Nav = "0";
+          // NO desactivamos Permiso_Nav aquí
         } else {
-          // Si estamos activando el módulo, solo activamos el módulo
           actualizaciones.Permiso_Modulo = "1";
         }
+      } else if (Cod_Permiso === 'Permiso_Nav') {
+        // Permiso_Nav puede cambiarse independientemente del estado del módulo
+        actualizaciones.Permiso_Nav = !permisoActual ? "1" : "0";
       } else {
-        // Si el módulo está desactivado, no permitimos cambiar otros permisos
-        if (!permisosObjeto.Permiso_Modulo && Cod_Permiso !== 'Permiso_Nav') {
+        // Para otros permisos, mantener la validación del módulo
+        if (!permisosObjeto.Permiso_Modulo) {
           MySwal.fire({
             icon: 'warning',
             title: 'Advertencia',
@@ -212,17 +218,16 @@ const GestorDePermisos = ({ pathName }) => {
           });
           return;
         }
-        // Mantener los permisos actuales y solo cambiar el específico
+        // Mantener los permisos actuales
         actualizaciones.Permiso_Modulo = permisosObjeto.Permiso_Modulo ? "1" : "0";
         actualizaciones.Permiso_Consultar = permisosObjeto.Permiso_Consultar ? "1" : "0";
         actualizaciones.Permiso_Insercion = permisosObjeto.Permiso_Insercion ? "1" : "0";
         actualizaciones.Permiso_Actualizacion = permisosObjeto.Permiso_Actualizacion ? "1" : "0";
         actualizaciones.Permiso_Eliminacion = permisosObjeto.Permiso_Eliminacion ? "1" : "0";
-        actualizaciones.Permiso_Nav = permisosObjeto.Permiso_Nav ? "1" : "0";
+        actualizaciones.Permiso_Nav = permisosObjeto.Permiso_Nav ? "1" : "0"; // Mantener el estado actual
         actualizaciones[Cod_Permiso] = !permisoActual ? "1" : "0";
       }
   
-      // Crear el objeto de datos para enviar al backend
       const datosActualizacion = {
         Cod_Objeto: parseInt(Cod_Objeto),
         Cod_Rol: Cod_usuario,
@@ -246,7 +251,6 @@ const GestorDePermisos = ({ pathName }) => {
   
       const data = await response.json();
   
-      // Actualizar el estado local
       setUsuarios(usuarios.map(usuario => {
         if (usuario.id === Cod_usuario) {
           return {
@@ -280,7 +284,7 @@ const GestorDePermisos = ({ pathName }) => {
       });
     }
   };
-  
+
   const guardarCambios = async () => {
     try {
       const result = await MySwal.fire({
@@ -320,7 +324,7 @@ const GestorDePermisos = ({ pathName }) => {
     usuario.rol.toLowerCase().includes(busquedaRol.toLowerCase())
   );
 
-  const paginasActuales = vistaActual === 'general' ? paginasGenerales : paginasMantenimiento;
+  const paginasActuales = getPaginasActuales();
 
   if (cargando) {
     return (
@@ -330,10 +334,10 @@ const GestorDePermisos = ({ pathName }) => {
     );
   }
 
-  // Verificar permisos
   if (!canSelect) {
     return <AccessDenied />;
   }
+
   return (
     <div className="permisos-container">
       <style>
@@ -387,6 +391,7 @@ const GestorDePermisos = ({ pathName }) => {
             display: flex;
             gap: 1rem;
             align-items: center;
+            flex-wrap: wrap;
           }
 
           .search-container {
@@ -412,15 +417,18 @@ const GestorDePermisos = ({ pathName }) => {
           .view-toggle {
             display: flex;
             gap: 0.5rem;
+            flex-wrap: wrap;
           }
 
           .view-button {
-            padding: 0.5rem 1rem;
+            padding: 0.75rem 1.5rem;
             border: 1px solid #e2e8f0;
             border-radius: 0.375rem;
             background-color: white;
             cursor: pointer;
             transition: all 0.2s;
+            white-space: nowrap;
+            font-weight: 500;
           }
 
           .view-button.active {
@@ -553,25 +561,22 @@ const GestorDePermisos = ({ pathName }) => {
             transform: translateX(20px);
           }
 
-          .loader-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-          }
+          @media (max-width: 768px) {
+            .control-section {
+              flex-direction: column;
+            }
+            
+            .search-container {
+              width: 100%;
+            }
 
-          .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-          }
+            .view-toggle {
+              width: 100%;
+            }
 
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            .view-button {
+              flex: 1;
+            }
           }
         `}
       </style>
@@ -618,6 +623,24 @@ const GestorDePermisos = ({ pathName }) => {
             >
               Mantenimiento
             </button>
+            <button
+              className={`view-button ${vistaActual === 'pagos' ? 'active' : ''}`}
+              onClick={() => setVistaActual('pagos')}
+            >
+              Pagos y Finanzas
+            </button>
+            <button
+              className={`view-button ${vistaActual === 'personas' ? 'active' : ''}`}
+              onClick={() => setVistaActual('personas')}
+            >
+              Personas
+            </button>
+            <button
+              className={`view-button ${vistaActual === 'usuarios' ? 'active' : ''}`}
+              onClick={() => setVistaActual('usuarios')}
+            >
+              Usuarios
+            </button>
           </div>
 
           <button className="save-button" onClick={guardarCambios}>
@@ -641,10 +664,26 @@ const GestorDePermisos = ({ pathName }) => {
           <tbody>
             {usuariosFiltrados.map(usuario => (
               <tr key={usuario.id}>
-                <td className="user-cell">
-                  <p className="user-name">{usuario.nombre}</p>
-                  <p className="user-role">{usuario.rol}</p>
-                </td>
+   <td className="user-cell">
+  <div className="user-info-container">
+    <div className="user-info-header">
+      <p className="user-name">{usuario.nombre}</p>
+      <p className="user-role">{usuario.rol}</p>
+    </div>
+    <div className="sidebar-permission">
+      <span className="permission-label">Mostrar en el Nav</span>
+      <label className="switch">
+        <input
+          type="checkbox"
+          checked={usuario.permisos['global']?.Permiso_Nav || false}
+          onChange={() => cambiarPermiso(usuario.id, 'global', 'Permiso_Nav')}
+        />
+        <span className="slider"></span>
+      </label>
+    </div>
+  </div>
+</td>
+
                 {paginasActuales.map(pagina => (
                   <td key={pagina.id} className="permission-cell">
                     <div className="permission-group">

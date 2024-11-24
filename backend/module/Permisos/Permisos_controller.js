@@ -36,16 +36,18 @@ export const crearPermiso = async (req, res) => {
     Permiso_Insercion,
     Permiso_Eliminacion,
     Permiso_Actualizacion,
-    Permiso_Consultar
+    Permiso_Consultar,
+    Permiso_Nav,
+    Permiso_Ver
   } = req.body;
 
   try {
     const pool = await conectarDB();
     const [result] = await pool.query(
       `INSERT INTO tbl_permisos 
-      (Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar]
+      (Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar, Permiso_Nav, Permiso_Ver)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar, Permiso_Nav, Permiso_Ver]
     );
     res.status(201).json({ message: 'Permiso creado', Cod_Permiso: result.insertId });
   } catch (error) {
@@ -56,8 +58,6 @@ export const crearPermiso = async (req, res) => {
 // Actualizar un permiso
 export const actualizarPermiso = async (req, res) => {
   const { id } = req.params;
-  console.log('ID recibido:', id); // Agrega esto para verificar el ID recibido
-
   const {
     Cod_Objeto,
     Cod_Rol,
@@ -65,18 +65,19 @@ export const actualizarPermiso = async (req, res) => {
     Permiso_Insercion,
     Permiso_Eliminacion,
     Permiso_Actualizacion,
-    Permiso_Consultar
+    Permiso_Consultar,
+    Permiso_Nav,
+    Permiso_Ver
   } = req.body;
 
   try {
     const pool = await conectarDB();
     const [result] = await pool.query(
-        `UPDATE tbl_permisos 
-         SET Cod_Objeto = ?, Cod_Rol = ?, Permiso_Modulo = ?, Permiso_Insercion = ?, Permiso_Eliminacion = ?, Permiso_Actualizacion = ?, Permiso_Consultar = ?
-         WHERE Cod_Permiso = ?`,
-        [Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar, id]
+      `UPDATE tbl_permisos 
+       SET Cod_Objeto = ?, Cod_Rol = ?, Permiso_Modulo = ?, Permiso_Insercion = ?, Permiso_Eliminacion = ?, Permiso_Actualizacion = ?, Permiso_Consultar = ?, Permiso_Nav = ?, Permiso_Ver = ?
+       WHERE Cod_Permiso = ?`,
+      [Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar, Permiso_Nav, Permiso_Ver, id]
     );
-    
 
     if (result.affectedRows > 0) {
       res.json({ message: 'Permiso actualizado' });
@@ -94,7 +95,7 @@ export const eliminarPermiso = async (req, res) => {
   try {
     const pool = await conectarDB();
     const [result] = await pool.query('DELETE FROM tbl_permisos WHERE Cod_Permiso = ?', [id]);
-    
+
     if (result.affectedRows > 0) {
       res.json({ message: 'Permiso eliminado' });
     } else {
@@ -105,89 +106,70 @@ export const eliminarPermiso = async (req, res) => {
   }
 };
 
-// Permisos_controller.js
-
-// Nueva función para cambiar el estado de los permisos
+// Cambiar estado de un permiso
 export const cambiarEstadoPermiso = async (req, res) => {
-    const { id } = req.params;
-    const {
-      Cod_Objeto,
-      Cod_Rol,
-      Permiso_Modulo,
-      Permiso_Insercion,
-      Permiso_Eliminacion,
-      Permiso_Actualizacion,
-      Permiso_Consultar
-    } = req.body;
-  
-    try {
-      const pool = await conectarDB();
-  
-      // Validar parámetros requeridos
-      if (!Cod_Objeto || !Cod_Rol) {
-        return res.status(400).json({ message: 'Faltan parámetros requeridos.' });
-      }
-  
-      // Primero verificamos si existe el permiso
-      const [existingPermission] = await pool.query(
+  const { id } = req.params;
+  const {
+    Cod_Objeto,
+    Cod_Rol,
+    Permiso_Modulo,
+    Permiso_Insercion,
+    Permiso_Eliminacion,
+    Permiso_Actualizacion,
+    Permiso_Consultar,
+    Permiso_Nav,
+    Permiso_Ver
+  } = req.body;
+
+  try {
+    const pool = await conectarDB();
+
+    // Validar parámetros requeridos
+    if (!Cod_Objeto || !Cod_Rol) {
+      return res.status(400).json({ message: 'Faltan parámetros requeridos.' });
+    }
+
+    // Verificar si el permiso ya existe
+    const [existingPermission] = await pool.query(
+      'SELECT * FROM tbl_permisos WHERE Cod_Rol = ? AND Cod_Objeto = ?',
+      [Cod_Rol, Cod_Objeto]
+    );
+
+    let queryResult;
+
+    if (existingPermission.length === 0) {
+      // Crear un nuevo permiso
+      [queryResult] = await pool.query(
+        `INSERT INTO tbl_permisos 
+        (Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar, Permiso_Nav, Permiso_Ver)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar, Permiso_Nav, Permiso_Ver]
+      );
+    } else {
+      // Actualizar el permiso existente
+      [queryResult] = await pool.query(
+        `UPDATE tbl_permisos 
+         SET Permiso_Modulo = ?, Permiso_Insercion = ?, Permiso_Eliminacion = ?, Permiso_Actualizacion = ?, Permiso_Consultar = ?, Permiso_Nav = ?, Permiso_Ver = ?
+         WHERE Cod_Rol = ? AND Cod_Objeto = ?`,
+        [Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar, Permiso_Nav, Permiso_Ver, Cod_Rol, Cod_Objeto]
+      );
+    }
+
+    if (queryResult.affectedRows > 0) {
+      // Obtener el permiso actualizado o creado
+      const [updatedPermission] = await pool.query(
         'SELECT * FROM tbl_permisos WHERE Cod_Rol = ? AND Cod_Objeto = ?',
         [Cod_Rol, Cod_Objeto]
       );
-  
-      let queryResult;
-  
-      if (existingPermission.length === 0) {
-        // Si no existe, creamos un nuevo registro
-        [queryResult] = await pool.query(
-          `INSERT INTO tbl_permisos 
-          (Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [Cod_Objeto, Cod_Rol, Permiso_Modulo, Permiso_Insercion, Permiso_Eliminacion, Permiso_Actualizacion, Permiso_Consultar]
-        );
-      } else {
-        // Si existe, actualizamos el registro
-        [queryResult] = await pool.query(
-          `UPDATE tbl_permisos 
-          SET Permiso_Modulo = ?,
-              Permiso_Insercion = ?,
-              Permiso_Eliminacion = ?,
-              Permiso_Actualizacion = ?,
-              Permiso_Consultar = ?
-          WHERE Cod_Rol = ? AND Cod_Objeto = ?`,
-          [
-            Permiso_Modulo,
-            Permiso_Insercion,
-            Permiso_Eliminacion,
-            Permiso_Actualizacion,
-            Permiso_Consultar,
-            Cod_Rol,
-            Cod_Objeto
-          ]
-        );
-      }
-  
-      // Verificar si se realizó la operación correctamente
-      if (queryResult.affectedRows > 0) {
-        // Obtener los permisos actualizados
-        const [updatedPermissions] = await pool.query(
-          'SELECT * FROM tbl_permisos WHERE Cod_Rol = ? AND Cod_Objeto = ?',
-          [Cod_Rol, Cod_Objeto]
-        );
-  
-        res.json({
-          message: existingPermission.length === 0 ? 'Permiso creado' : 'Permiso actualizado',
-          permisos: updatedPermissions[0]
-        });
-      } else {
-        res.status(404).json({ message: 'No se pudo actualizar el permiso' });
-      }
-    } catch (error) {
-      console.error('Error en cambiarEstadoPermiso:', error);
-      res.status(500).json({
-        message: 'Error al modificar el permiso',
-        error: error.message
-      });
-    }
-};
 
-// Asegúrate de exportar esta función para que esté disponible en otros módulos
+      res.json({
+        message: existingPermission.length === 0 ? 'Permiso creado' : 'Permiso actualizado',
+        permiso: updatedPermission[0]
+      });
+    } else {
+      res.status(404).json({ message: 'No se pudo modificar el permiso' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: 'Error al modificar el permiso', error });
+  }
+};

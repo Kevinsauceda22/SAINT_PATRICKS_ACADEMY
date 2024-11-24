@@ -17,7 +17,7 @@ const conectarDB = async () => {
                 database: process.env.DB_NAME,
                 port: process.env.DB_PORT || 3306, // Puerto de conexión
                 waitForConnections: true,
-                connectionLimit: 10,
+                connectionLimit: 20,
                 queueLimit: 0,
                 connectTimeout: 10000000 // Tiempo de espera en milisegundos
             });

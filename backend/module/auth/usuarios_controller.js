@@ -1034,48 +1034,67 @@ export const mostrarRolYCorreo = async (req, res) => {
 };
 
 // OBTENER TODOS LOS PERMISOS DE UN ROL
+// OBTENER TODOS LOS PERMISOS DE UN ROL
+// OBTENER TODOS LOS PERMISOS DE UN ROL
 export const getPermisos = async (req, res) => {
     const { Cod_rol, Nom_objeto } = req.query;
-
-    // Validación de parámetros
-    if (!Cod_rol || !Nom_objeto) {
-        return res.status(400).json({
-            success: false,
-            message: "Cod_rol y Nom_objeto son parámetros requeridos",
-        });
-    }
-
+    
     try {
-        // Consulta para obtener los permisos directamenteeeeeeeeeeeeee
+        // Validación de parámetros
+        if (!Cod_rol || !Nom_objeto) {
+            return res.status(400).json({
+                success: false,
+                message: "Cod_rol y Nom_objeto son parámetros requeridos",
+            });
+        }
+    
         const [rows] = await pool.query(
-            `SELECT
+            `SELECT 
                 sa.Permiso_Modulo,
                 sa.Permiso_Consultar,
                 sa.Permiso_Insercion,
                 sa.Permiso_Actualizacion,
-                sa.Permiso_Eliminacion
-            FROM
+                sa.Permiso_Eliminacion,
+                COALESCE(so.Ind_objeto, '0') as Permiso_Nav,
+                so.Cod_Objeto,
+                so.Nom_objeto,
+                so.Tipo_Objeto
+            FROM 
                 tbl_permisos sa
-            JOIN tbl_objetos so ON
+            LEFT JOIN tbl_objetos so ON
                 sa.Cod_Objeto = so.Cod_Objeto
-            WHERE
+            WHERE 
                 sa.Cod_Rol = ? AND so.Nom_objeto = ?`,
             [Cod_rol, Nom_objeto]
         );
-
-        // Verificar si hay resultados
-        if (rows.length === 0) {
+        
+        // Si no hay resultados, devolver array vacío
+        if (!rows || rows.length === 0) {
             return res.status(200).json({
                 success: true,
                 permissions: []
             });
         }
+        
+        // Mapear los resultados con valores por defecto
+        const permissions = rows.map(row => ({
+            Permiso_Modulo: row.Permiso_Modulo ?? '0',
+            Permiso_Consultar: row.Permiso_Consultar ?? '0',
+            Permiso_Insercion: row.Permiso_Insercion ?? '0',
+            Permiso_Actualizacion: row.Permiso_Actualizacion ?? '0',
+            Permiso_Eliminacion: row.Permiso_Eliminacion ?? '0',
+            Permiso_Nav: row.Permiso_Nav ?? '0',
+            Cod_Objeto: row.Cod_Objeto,
+            Nom_objeto: row.Nom_objeto,
+            Tipo_Objeto: row.Tipo_Objeto
+        }));
 
-        // Devolver los permisos encontrados
-        res.status(200).json({
+        // Enviar una única respuesta
+        return res.status(200).json({
             success: true,
-            permissions: rows // Devuelve el array completo de permisoszssssssss
+            permissions
         });
+        
     } catch (error) {
         console.error('Error en el controlador:', error);
         return res.status(500).json({
@@ -1085,7 +1104,6 @@ export const getPermisos = async (req, res) => {
         });
     }
 };
-
 // Controlador para obtener datos pre-registrados
 export const obtenerDatosPreRegistro = async (req, res) => {
     const { cod_usuario } = req.params;

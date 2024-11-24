@@ -22,7 +22,7 @@ import historialAcademicoRoutes from './module/calificaciones/Routes/historialAc
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
-import secciones from './module/calificaciones/Routes/seccionesRoutes.js'
+
 //-------------------------------------------------------------------------------------------------------
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
 import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
@@ -132,8 +132,7 @@ app.use('/api/seccionalumno',seccionalumnoRoutes)
 app.use('/api/ponderacionCiclo',Ponderaciones_CiclosRoutes);
 //Rutas para asignar un codigo a actividades
 app.use('/api/actividadesAcademicas', actividadesRoutes);
-//Ruta para secciones
-app.use('/api/secciones', secciones);
+
 
 
 // Matrícula
@@ -179,6 +178,7 @@ app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 app.use('/api/municipio', municipioRoutes);
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
+
 
 
 //contabilidad

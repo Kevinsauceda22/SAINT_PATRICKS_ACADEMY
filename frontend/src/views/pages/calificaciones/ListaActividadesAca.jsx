@@ -33,6 +33,18 @@ import {
   CCol,
 } from '@coreui/react';
 import Swal from 'sweetalert2';
+import { cilSearch,cilInfo, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
+import CIcon from '@coreui/icons-react';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable'; // Importa la extensión para tablas
+import * as XLSX from 'xlsx';
+
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
+
+const ListaActividadesAca = () => {
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaActividadesAca');
 
 const VistaActividadesAcademicasAdmin = () => {
   const [profesores, setProfesores] = useState([]);
