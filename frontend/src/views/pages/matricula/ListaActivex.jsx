@@ -316,17 +316,18 @@ const generatePDF = () => {
       'Fecha',
       'Estado',
     ];
+
     const tableRows = currentRecords.map((actividad, index) => {
       const seccion = secciones.find((s) => s.Nombre_seccion === actividad.Nombre_seccion); // Buscar sección
       return [
-        (index + 1 + (currentPage - 1) * recordsPerPage).toString(), // Índice
-        (actividad.Nombre_actividad || 'Sin nombre').toUpperCase(),
-        (actividad.Descripcion || 'Sin descripción').toUpperCase(),
-        actividad.Hora_inicio.toUpperCase(),
-        actividad.Hora_final.toUpperCase(),
-        (seccion ? seccion.SeccionGrado : 'Sin sección').toUpperCase(),
-        new Date(actividad.Fecha).toLocaleDateString('es-ES').toUpperCase(),
-        (actividad.Estado || 'Desconocido').toUpperCase(),
+        { content: (index + 1 + (currentPage - 1) * recordsPerPage).toString(), styles: { halign: 'center' } }, // Centrado
+        { content: (actividad.Nombre_actividad || 'Sin nombre').toUpperCase(), styles: { halign: 'left' } }, // Izquierda
+        { content: (actividad.Descripcion || 'Sin descripción').toUpperCase(), styles: { halign: 'left' } }, // Izquierda
+        { content: actividad.Hora_inicio.toUpperCase(), styles: { halign: 'center' } }, // Centrado
+        { content: actividad.Hora_final.toUpperCase(), styles: { halign: 'center' } }, // Centrado
+        { content: (seccion ? seccion.SeccionGrado : 'Sin sección').toUpperCase(), styles: { halign: 'left' } }, // Centrado
+        { content: new Date(actividad.Fecha).toLocaleDateString('es-ES').toUpperCase(), styles: { halign: 'center' } }, // Centrado
+        { content: (actividad.Estado || 'Desconocido').toUpperCase(), styles: { halign: 'center' } }, // Centrado
       ];
     });
 
@@ -338,6 +339,7 @@ const generatePDF = () => {
         fillColor: [0, 102, 51], // Verde
         textColor: [255, 255, 255], // Blanco
         fontSize: 10,
+        halign: 'center', // Centrado por defecto
       },
       styles: {
         fontSize: 10,
@@ -347,14 +349,9 @@ const generatePDF = () => {
         fillColor: [240, 248, 255], // Azul claro
       },
       columnStyles: {
-        0: { halign: 'center', cellWidth: 15 }, // #
-        1: { halign: 'left', cellWidth: 30 }, // Actividad
-        2: { halign: 'left', cellWidth: 50 }, // Descripción
-        3: { halign: 'center', cellWidth: 30 }, // Inicio
-        4: { halign: 'center', cellWidth: 30 }, // Finalización
-        5: { halign: 'center', cellWidth: 50 }, // Sección y Grado
-        6: { halign: 'center', cellWidth: 30 }, // Fecha
-        7: { halign: 'center', cellWidth: 30 }, // Estado
+        1: { halign: 'left' }, // Nombre alineado a la izquierda
+        2: { halign: 'left' }, // Descripción alineada a la izquierda
+        3: { halign: 'left' }, // Seccion y grado alineada a la izquierda
       },
       margin: { top: 10, bottom: 30 },
       didDrawPage: function (data) {
@@ -411,8 +408,6 @@ const generatePDF = () => {
     swal.fire('Error', 'No se pudo cargar el logo.', 'error');
   };
 };
-
-
 
   // FUNCIONES CRUD //
 
@@ -1135,3 +1130,6 @@ const generatePDF = () => {
   );
 };
 export default ListaActividades;
+
+
+  
