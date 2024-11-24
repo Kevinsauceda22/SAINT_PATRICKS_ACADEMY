@@ -70,15 +70,15 @@ export const obtenerTipoPersona = async (req, res) => {
 
 export const obtenerGeneros= async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL P_Get_Genero_Persona()');
+        const [rows] = await pool.query('CALL 	Seleccionar_Generos()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
         } else {
-            res.status(404).json({ message: 'No se encontraron departamentos' });
+            res.status(404).json({ message: 'No se encontraron generos' });
         }
     } catch (error) {
-        console.error('Error al obtener las departamentos:', error);
+        console.error('Error al obtener las generos:', error);
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
 };
