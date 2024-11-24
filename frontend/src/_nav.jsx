@@ -40,6 +40,13 @@ const _nav = [
 
     icon: cilSchool,
   },
+   {
+    component: CNavItem,
+    name: 'Grados Asignaturas',
+    to: '/ListaGradosAsignaturas',
+    icon: cilClipboard,
+    nameobject: 'navGradosAsignaturas',
+  },
   {
     component: CNavItem,
     name: 'Asistencias',
