@@ -179,7 +179,7 @@ app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 app.use('/api/municipio', municipioRoutes);
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 
-app.use('/api/secciones', secciones);
+
 
 //contabilidad
 app.use('/api/catalogoCuentas', catalogoCuentasRoutes);
