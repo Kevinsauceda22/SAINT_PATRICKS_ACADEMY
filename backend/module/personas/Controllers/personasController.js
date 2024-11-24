@@ -55,7 +55,7 @@ export const obtenerDepartamentos = async (req, res) => {
 
 export const obtenerTipoPersona = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL 	Seleccionar_Tipo_Persona()');
+        const [rows] = await pool.query('CALL Seleccionar_Tipo_Persona()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
@@ -70,7 +70,7 @@ export const obtenerTipoPersona = async (req, res) => {
 
 export const obtenerGeneros= async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL 	Seleccionar_Generos()');
+        const [rows] = await pool.query('CALL P_Get_Genero_Persona()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);

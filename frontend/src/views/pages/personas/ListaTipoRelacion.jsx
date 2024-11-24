@@ -426,29 +426,86 @@ const handleChange = (event) => {
   };
   
 
-const exportToPDF = () => {
-  const doc = new jsPDF(); // Crea un nuevo documento PDF
-
-  // Añade un título al documento PDF
-  doc.text('Reporte de Tipo Relaciones', 20, 10);
-
-  // Genera la tabla en el PDF con los datos de los edificios
-  doc.autoTable({
-    head: [['#', 'Tipo Relacion']], // Cabecera de la tabla
-    body: tipoRelacion.map((tipoRelacion, index) => [
-      index + 1,
-      tipoRelacion.tipo_relacion.toUpperCase(),
-
-    ]), // Datos que se mostrarán en la tabla
-  });
-
-  // Descarga el archivo PDF
-  doc.save('reporte_tipo_relación.pdf');
-};
- // Verificar permisos
- if (!canSelect) {
-  return <AccessDenied />;
-}
+  const ReportePersonas = () => {
+    const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+  
+    const img = new Image();
+    img.src = logo;
+  
+    img.onload = () => {
+        // Insertar el logo
+        doc.addImage(img, 'PNG', 10, 10, 20, 20); // Reducir el logo y ajustarlo al espacio
+  
+        // Cabecera del reporte
+        doc.setTextColor(22, 160, 133);
+        doc.setFontSize(14); // Tamaño de fuente reducido
+        doc.text("SAINT PATRICK'S ACADEMY", 35, 15, { align: 'left' });
+        doc.setFontSize(10);
+        doc.text('Reporte de Personas', 35, 22, { align: 'left' });
+  
+        // Detalles de la institución
+        doc.setFontSize(8);
+        doc.setTextColor(68, 68, 68);
+        doc.text('Casa Club del periodista, Colonia del Periodista', 35, 30, { align: 'left' });
+        doc.text('Teléfono: (504) 2234-8871', 35, 35, { align: 'left' });
+        doc.text('Correo: info@saintpatrickacademy.edu', 35, 40, { align: 'left' });
+  
+        // Tabla principal
+        doc.autoTable({
+          head: [['#', 'Tipo Relacion']], // Cabecera de la tabla
+          body: tipoRelacion.map((tipoRelacion, index) => [
+            index + 1,
+            tipoRelacion.tipo_relacion.toUpperCase(),
+          ]), // Datos que se mostrarán en la tabla
+            styles: {
+                fontSize: 6, // Reducir tamaño de fuente
+                textColor: [68, 68, 68],
+                cellPadding: 2, // Espaciado compacto
+            },
+            headStyles: {
+                fillColor: [22, 160, 133],
+                textColor: [255, 255, 255],
+                fontSize: 7,
+                fontStyle: 'bold',
+                halign: 'center', // Centrar el texto
+            },
+            alternateRowStyles: {
+                fillColor: [240, 248, 255], // Colores alternados para filas
+            },
+            columnStyles: {
+                0: { cellWidth: 15 }, // Ajustar ancho de columna #
+                1: { cellWidth: 20 }, // DNI
+            },
+            margin: { top: 10, right: 10, bottom: 10, left: 5 }, // Pegado a la izquierda
+            didDrawPage: function (data) {
+                // Pie de página
+                doc.setFontSize(7);
+                doc.setTextColor(100);
+  
+                // Agregar fecha y hora
+                const now = new Date();
+                const date = now.toLocaleDateString('es-HN', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                });
+                const time = now.toLocaleTimeString('es-HN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                });
+  
+                doc.text(`Fecha y hora de generación: ${date}, ${time}`, 10, pageHeight - 10);
+                doc.text(`Página ${data.pageNumber}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
+            },
+        });
+  
+        // Guardar el PDF
+        doc.save('Reporte_personas.pdf');
+    };
+  };
 
   return (
     <CContainer>

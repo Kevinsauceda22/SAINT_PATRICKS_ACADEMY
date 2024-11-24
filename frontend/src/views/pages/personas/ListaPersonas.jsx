@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
 import { cilXCircle, cilCheckCircle } from '@coreui/icons';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import {
   cilSearch,
   cilBrushAlt,
@@ -15,7 +17,6 @@ import {
 import { useNavigate } from 'react-router-dom'
 import swal from 'sweetalert2' // Importar SweetAlert
 import axios from 'axios'
-import { jsPDF } from 'jspdf' // Para generar archivos PDF
 import 'jspdf-autotable' // Para crear tablas en los archivos PDF
 import * as XLSX from 'xlsx' // Para generar archivos Excel
 import { saveAs } from 'file-saver' // Para descargar archivos en el navegador
@@ -49,6 +50,8 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react'
+import logo from 'src/assets/brand/logo_saint_patrick.png';
+
 
 const ListaPersonas = () => {
   const [personas, setPersonas] = useState([])
@@ -741,7 +744,124 @@ const ListaPersonas = () => {
       setCurrentPage(pageNumber)
     }
   }
+{/* ****************************************************************************************************************************************** */}
+const ReportePersonas = () => {
+  const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+      // Insertar el logo
+      doc.addImage(img, 'PNG', 10, 10, 20, 20); // Reducir el logo y ajustarlo al espacio
+
+      // Cabecera del reporte
+      doc.setTextColor(22, 160, 133);
+      doc.setFontSize(14); // Tamaño de fuente reducido
+      doc.text("SAINT PATRICK'S ACADEMY", 35, 15, { align: 'left' });
+      doc.setFontSize(10);
+      doc.text('Reporte de Personas', 35, 22, { align: 'left' });
+
+      // Detalles de la institución
+      doc.setFontSize(8);
+      doc.setTextColor(68, 68, 68);
+      doc.text('Casa Club del periodista, Colonia del Periodista', 35, 30, { align: 'left' });
+      doc.text('Teléfono: (504) 2234-8871', 35, 35, { align: 'left' });
+      doc.text('Correo: info@saintpatrickacademy.edu', 35, 40, { align: 'left' });
+
+      // Tabla principal
+      doc.autoTable({
+          startY: 50,
+          head: [[
+              '#', 
+              'DNI', 
+              'Nombre', 
+              'Segundo Nombre', 
+              'Primer Apellido', 
+              'Segundo Apellido', 
+              'Dirección', 
+              'Fecha Nacimiento', 
+              'Estado', 
+              'Tipo\nPersona', 
+              'Género', 
+              'Principal'
+          ]],
+          body: personas.map((persona, index) => [
+              index + 1,
+              persona.dni_persona ? persona.dni_persona.toUpperCase() : 'N/D',
+              persona.Nombre ? persona.Nombre.toUpperCase() : 'N/D',
+              persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/D',
+              persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/D',
+              persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/D',
+              persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/D',
+              persona.fecha_nacimiento ? new Date(persona.fecha_nacimiento).toLocaleDateString('es-ES') : 'N/D',
+              persona.Estado_Persona ? persona.Estado_Persona.toUpperCase() : 'N/D',
+              tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D',
+              generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D',
+              persona.principal ? 'SÍ' : 'NO',
+          ]),
+          styles: {
+              fontSize: 6, // Reducir tamaño de fuente
+              textColor: [68, 68, 68],
+              cellPadding: 2, // Espaciado compacto
+          },
+          headStyles: {
+              fillColor: [22, 160, 133],
+              textColor: [255, 255, 255],
+              fontSize: 7,
+              fontStyle: 'bold',
+              halign: 'center', // Centrar el texto
+          },
+          alternateRowStyles: {
+              fillColor: [240, 248, 255], // Colores alternados para filas
+          },
+          columnStyles: {
+              0: { cellWidth: 15 }, // Ajustar ancho de columna #
+              1: { cellWidth: 20 }, // DNI
+              2: { cellWidth: 25}, // Nombre
+              3: { cellWidth: 25 }, // Segundo Nombre
+              4: { cellWidth: 25 }, // Primer Apellido
+              5: { cellWidth: 25 }, // Segundo Apellido
+              6: { cellWidth: 40 }, // Dirección
+              7: { cellWidth: 18 }, // Fecha de Nacimiento
+              8: { cellWidth: 15 }, // Estado
+              9: { cellWidth: 20 }, // Tipo de Persona
+              10: { cellWidth: 20 }, // Género
+              11: { cellWidth: 20 }, // Principal
+          },
+          margin: { top: 10, right: 10, bottom: 10, left: 5 }, // Pegado a la izquierda
+          didDrawPage: function (data) {
+              // Pie de página
+              doc.setFontSize(7);
+              doc.setTextColor(100);
+
+              // Agregar fecha y hora
+              const now = new Date();
+              const date = now.toLocaleDateString('es-HN', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+              });
+              const time = now.toLocaleTimeString('es-HN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+              });
+
+              doc.text(`Fecha y hora de generación: ${date}, ${time}`, 10, pageHeight - 10);
+              doc.text(`Página ${data.pageNumber}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
+          },
+      });
+
+      // Guardar el PDF
+      doc.save('Reporte_personas.pdf');
+  };
+};
+
+
+{/* ************************************************************************************************************************************* */}
   return (
     <CContainer>
       <h1>Personas</h1>
@@ -761,7 +881,7 @@ const ListaPersonas = () => {
           </CDropdownToggle>
           <CDropdownMenu>
             <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
+            <CDropdownItem onClick={ReportePersonas}>Descargar en PDF</CDropdownItem>
           </CDropdownMenu>
         </CDropdown>
       </div>
@@ -1568,7 +1688,7 @@ const ListaPersonas = () => {
                     }
                     required
                   >
-                    <option value="">Seleccione un departamento</option>
+                    <option value="">Seleccione un municipio</option>
                     {municipio &&
                       municipio.map((municipio) => (
                         <option key={municipio.cod_municipio} value={municipio.cod_municipio}>
