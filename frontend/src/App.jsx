@@ -78,7 +78,7 @@ const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos'))
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
 const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhijo')) 
 const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
-const Procedencia = React.lazy(() => import('./views/pages/matricula/ListaHistoricoProc')) 
+const ListaHistoricoProc = React.lazy(() => import('./views/pages/personas/ListaHistoricoProc')); 
 const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
 const Solicitud= React.lazy(() => import('./views/pages/Solicitudes/Solicitud'))
 const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solicitud_admin'))
@@ -156,7 +156,7 @@ const App = () => {
                 <Route path="/ListaAsistenciaProfesor" element={<ListaAsistenciaProfesor />} />
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
-                <Route path="/ListaHistoricoProc" element={<Procedencia />} />
+                <Route path="/historico" element={<ListaHistoricoProc />} />
                 <Route path="/ListaHistoriales" element={<ListaHistoriales />} />
 
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
@@ -185,7 +185,7 @@ const App = () => {
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/ListaSecciones_Asignatura"  element={<ListaSecciones_Asignatura />} />
                 <Route path="/actividades" element={<ListaActivex />} />
-                <Route path="/historico" element={<ListaDias />} />
+                 <Route path="/dias"  element={<ListaDias />} />
                 
                 <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
                  <Route path="/tipopersona" element={<tipopersona />} />
