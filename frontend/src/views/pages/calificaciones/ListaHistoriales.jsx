@@ -325,9 +325,9 @@ const handleCancelModal = () => {
     return anios;
   };
 
-  const downloadPDF = () => {
+ const downloadPDF = () => {
     const doc = new jsPDF();
-    
+  
     // Cambia el color del texto a verde para el título
     doc.setTextColor(0, 128, 0); // Verde (RGB: 0, 128, 0)
     
@@ -337,16 +337,17 @@ const handleCancelModal = () => {
     // Obtiene la altura del título
     const titleHeight = 10; // altura aproximada del título
     
-    // Restablece el color de texto a negro para el resto del documento, si es necesario
+    // Restablece el color de texto a negro para el resto del documento
     doc.setTextColor(0, 0, 0);
     
     // Dibuja la tabla en una posición más baja para evitar la superposición
     autoTable(doc, {
       startY: 20 + titleHeight, // Esto coloca la tabla justo debajo del título
-      head: [['Código de Historial', 'Código de Estado', 'Estudiante' , 'Grado', 'Año Académico', 'Promedio Anual', 'Fecha Registro', 'Instituto']],
+      head: [['Código de Historial', 'Estado', 'Estudiante', 'Grado', 'Año Académico', 'Promedio Anual', 'Fecha Registro', 'Instituto']],
       body: filteredHistoriales.map(historial => [
         historial.Cod_historial_academico,
-        historial.Cod_estado,
+        historial.Cod_estado === 1 ? "APROBADO" : 
+        historial.Cod_estado === 2 ? "REPROBADO" : "OTRO ESTADO",
         historial.Estudiante,
         historial.Grado,
         historial.Año_Academico,
@@ -360,7 +361,7 @@ const handleCancelModal = () => {
         fontStyle: 'bold' // Negrita para el encabezado
       }
     });
-    
+  
     doc.save('historiales.pdf');
   };  
 
@@ -369,10 +370,11 @@ const handleCancelModal = () => {
       alert('No hay datos para descargar');
       return;
     }
-
+  
     const worksheet = XLSX.utils.json_to_sheet(filteredHistoriales.map(historial => ({
       'Código de Historial': historial.Cod_historial_academico,
-      'Código de Estado': historial.Cod_estado,
+      'Estado': historial.Cod_estado === 1 ? "APROBADO" : 
+                 historial.Cod_estado === 2 ? "REPROBADO" : "OTRO ESTADO",
       'Estudiante': historial.Estudiante,
       'Grado': historial.Grado,
       'Año Académico': historial.Año_Academico,
@@ -380,15 +382,14 @@ const handleCancelModal = () => {
       'Fecha Registro': new Date(historial.Fecha_Registro).toLocaleDateString('es-ES'),
       'Instituto': historial.Instituto
     })));
-
+  
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Historiales');
-
+  
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'historiales.xlsx');
   };
-
 
   return (
     <CContainer>
