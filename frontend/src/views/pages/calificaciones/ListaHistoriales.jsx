@@ -577,7 +577,7 @@ const handleCancelModal = () => {
           >
             <option>Seleccione un estudiante</option>
             {Persona.map((persona) => (
-              <option key={persona.cod_persona} value={`${persona.Primer_nombre} ${persona.Segundo_nombre || ''} ${persona.Primer_apellido} ${persona.Segundo_Apellido || ''}`.trim()}>
+              <option key={persona.cod_persona} value={`${persona.Nombre} ${persona.Segundo_nombre || ''} ${persona.Primer_apellido} ${persona.Segundo_Apellido || ''}`.trim()}>
                 {`${persona.Primer_nombre} ${persona.Segundo_nombre || ''} ${persona.Primer_apellido} ${persona.Segundo_Apellido || ''}`.trim()}
               </option>
             ))}
