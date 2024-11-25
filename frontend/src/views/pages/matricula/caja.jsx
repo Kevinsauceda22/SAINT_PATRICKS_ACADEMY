@@ -715,7 +715,7 @@ const preventCopyPaste = (e) => {
       onClick={() => setModalNuevaCajaVisible(true)}
       style={{
         backgroundColor: '#4B6251', // Verde oscuro
-        color: 'black',
+        color: 'white',
         border: 'none',
         borderRadius: '5px',
         padding: '0.5rem 1rem',
@@ -741,7 +741,7 @@ const preventCopyPaste = (e) => {
     }}
     style={{
       backgroundColor: '#6C8E58', // Verde oscuro
-      color: 'black', // Texto en blanco
+      color: 'white', // Texto en blanco
       border: 'none',
       borderRadius: '5px',
       padding: '0.5rem 1rem',
