@@ -610,121 +610,166 @@ const exportToExcel = () => {
   const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
   
   
-  const handleViewPDF = (matricula, opciones = {}) => {
-    const doc = new jsPDF();
+  const handleViewPDF = async (matricula, opciones = {}) => {
+    try {
+        // Obtener los datos del horario
+        let horarios = []; // Horarios predeterminados vacíos
 
-    // Logo predeterminado
-    const img = new Image();
-    const defaultLogo = './src/assets/brand/logo_saint_patrick.png';
-    img.src = matricula.logo || defaultLogo;
+        if (matricula.Cod_seccion) {
+            try {
+                const response = await fetch(`http://localhost:4000/api/matricula/horario/${matricula.Cod_seccion}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    horarios = result.data || []; // Asigna los datos de la API si están disponibles
+                }
+            } catch (apiError) {
+                console.warn('Error al obtener los datos del horario:', apiError.message);
+            }
+        }
 
-    img.onload = () => {
-        // Agregar el logo
-        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+        const doc = new jsPDF();
 
-        // Encabezado de la institución
-        doc.setFontSize(18);
-        doc.setTextColor(0, 102, 51); // Verde institucional
-        doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
+        // Logo predeterminado
+        const img = new Image();
+        const defaultLogo = './src/assets/brand/logo_saint_patrick.png';
+        img.src = matricula.logo || defaultLogo;
 
-        // Título del documento
-        doc.setFontSize(14);
-        doc.text('Detalle de Matrícula', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+        img.onload = () => {
+            // Agregar el logo
+            doc.addImage(img, 'PNG', 10, 10, 30, 30);
 
-        // Detalles de la institución
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-        doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-        doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+            // Encabezado de la institución
+            doc.setFontSize(18);
+            doc.setTextColor(0, 102, 51);
+            doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
 
-        // Línea divisoria
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(0, 102, 51);
-        doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+            // Título del documento
+            doc.setFontSize(14);
+            doc.text('Detalle de Matrícula y Horarios', doc.internal.pageSize.width / 2, 30, { align: 'center' });
 
-        // Información del estudiante
-        doc.setFontSize(12);
-        doc.setTextColor(0);
-        doc.text('Información del Estudiante:', 10, 65);
+            // Detalles de la institución
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+            doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+            doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
 
-        // Asignar valores predeterminados en caso de datos faltantes
-        const nombreCompleto = [
-            matricula.Nombre_Hijo || 'Nombre',
-            matricula.Segundo_nombre_Hijo || '',
-            matricula.Apellido_Hijo || 'Apellido',
-            matricula.Segundo_apellido_Hijo || ''
-        ].filter(Boolean).join(' ');
+            // Línea divisoria
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(0, 102, 51);
+            doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
 
-        const fechaMatricula = matricula.fecha_matricula?.split('T')[0] || '2024-01-01';
-        const fechaNacimiento = matricula.fecha_nacimiento_hijo || '2005-05-15';
-        const nombrePadre = `${matricula.Nombre_Padre || 'Andrea'} ${matricula.Apellido_Padre || 'Morales'}`;
-        const codificacionMatricula = matricula.codificacion_matricula || 'SPA-2024-0001';
+            // Información del estudiante
+            doc.setFontSize(12);
+            doc.setTextColor(0);
+            doc.text('Información del Estudiante:', 10, 65);
 
-        doc.setFontSize(10);
-        doc.text(`Código de Matrícula: ${codificacionMatricula}`, 10, 75);
-        doc.text(`Fecha de Matrícula: ${fechaMatricula}`, 10, 80);
-        doc.text(`Nombre Completo: ${nombreCompleto}`, 10, 85);
-        doc.text(`Fecha de Nacimiento: ${fechaNacimiento}`, 10, 90);
-        doc.text(`Padre/Madre/Tutor: ${nombrePadre}`, 10, 95);
+            const nombreCompleto = [
+                matricula.Nombre_Hijo || 'Nombre',
+                matricula.Segundo_nombre_Hijo || '',
+                matricula.Apellido_Hijo || 'Apellido',
+                matricula.Segundo_apellido_Hijo || ''
+            ].filter(Boolean).join(' ');
 
-        // Detalles de la matrícula
-        doc.setFontSize(12);
-        doc.text('Detalles de Matrícula:', 10, 105);
+            const fechaMatricula = matricula.fecha_matricula?.split('T')[0] || '2024-01-01';
+            const fechaNacimiento = matricula.fecha_nacimiento_hijo || '2005-05-15';
+            const nombrePadre = `${matricula.Nombre_Padre || 'Andrea'} ${matricula.Apellido_Padre || 'Morales'}`;
+            const codificacionMatricula = matricula.codificacion_matricula || 'SPA-2024-0001';
 
-        // Tabla con detalles de la matrícula
-        const estado = opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'Activo';
-        const periodo = opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || '2024';
-        const tipoMatricula = opciones.tipos_matricula?.find(t => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula)?.Tipo || 'Regular';
-        const grado = matricula.Nombre_grado || 'Primer Grado';
-        const seccion = matricula.Nombre_seccion || 'A';
+            doc.setFontSize(10);
+            doc.text(`Código de Matrícula: ${codificacionMatricula}`, 10, 75);
+            doc.text(`Fecha de Matrícula: ${fechaMatricula}`, 10, 80);
+            doc.text(`Nombre Completo: ${nombreCompleto}`, 10, 85);
+            doc.text(`Fecha de Nacimiento: ${fechaNacimiento}`, 10, 90);
+            doc.text(`Padre/Madre/Tutor: ${nombrePadre}`, 10, 95);
 
-        doc.autoTable({
-            startY: 110,
-            head: [['Campo', 'Valor']],
-            body: [
-                ['Estado', estado],
-                ['Período', periodo],
-                ['Tipo de Matrícula', tipoMatricula],
-                ['Grado', grado],
-                ['Sección', seccion],
-            ],
-            styles: {
-                fontSize: 10,
-                textColor: [40, 40, 40],
-                cellPadding: 2,
-            },
-            headStyles: {
-                fillColor: [0, 102, 51], // Verde oscuro
-                textColor: [255, 255, 255],
-                fontSize: 10,
-            },
-            alternateRowStyles: { fillColor: [240, 248, 255] }, // Fondo para filas alternas
-        });
+            // Detalles de la matrícula
+            doc.setFontSize(12);
+            doc.text('Detalles de Matrícula:', 10, 105);
 
-        // Pie de página
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(
-            'Este documento es solo para fines informativos. Contacte a la administración para más detalles.',
-            10,
-            doc.internal.pageSize.height - 20
-        );
+            const estado = opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'Activo';
+            const periodo = opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || '2024';
+            const tipoMatricula = opciones.tipos_matricula?.find(t => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula)?.Tipo || 'Regular';
+            const grado = matricula.Nombre_grado || 'Primer Grado';
+            const seccion = matricula.Nombre_seccion || 'A';
 
-        // Crear el PDF y abrirlo en el navegador
-        const pdfBlob = doc.output('blob');
-        const pdfURL = URL.createObjectURL(pdfBlob);
+            doc.autoTable({
+                startY: 110,
+                head: [['Campo', 'Valor']],
+                body: [
+                    ['Estado', estado],
+                    ['Período', periodo],
+                    ['Tipo de Matrícula', tipoMatricula],
+                    ['Grado', grado],
+                    ['Sección', seccion],
+                ],
+                styles: {
+                    fontSize: 10,
+                    textColor: [40, 40, 40],
+                    cellPadding: 2,
+                },
+                headStyles: {
+                    fillColor: [0, 102, 51],
+                    textColor: [255, 255, 255],
+                    fontSize: 10,
+                },
+                alternateRowStyles: { fillColor: [240, 248, 255] },
+            });
 
-        // Abrir en una nueva pestaña
-        window.open(pdfURL, '_blank');
-    };
+            // Tabla con horarios estilizada
+            doc.setFontSize(12);
+            doc.text('Horario de Clases', 10, doc.lastAutoTable.finalY + 15);
 
-    img.onerror = () => {
-        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-    };
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 20,
+                head: [['Asignatura', 'Día', 'Hora Inicio', 'Hora Fin']],
+                body: horarios.length > 0
+                    ? horarios.map(h => [
+                          { content: h.Nombre_asignatura, styles: { halign: 'left' } },
+                          { content: h.Nombre_dia, styles: { halign: 'center' } },
+                          { content: h.Hora_inicio, styles: { halign: 'center' } },
+                          { content: h.Hora_fin, styles: { halign: 'center' } },
+                      ])
+                    : [['No hay horarios disponibles', '', '', '']],
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 4,
+                    overflow: 'linebreak',
+                },
+                headStyles: {
+                    fillColor: [0, 102, 51],
+                    textColor: [255, 255, 255],
+                    fontSize: 11,
+                },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                columnStyles: {
+                    0: { cellWidth: 'auto' },
+                    1: { cellWidth: 50 },
+                    2: { cellWidth: 40 },
+                    3: { cellWidth: 40 },
+                },
+            });
 
+            // Pie de página con fecha de creación
+            const pageHeight = doc.internal.pageSize.height;
+            const creationDate = new Date().toLocaleDateString();
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Fecha de Creación: ${creationDate}`, 10, pageHeight - 10);
 
+            // Crear el PDF y abrirlo en el navegador
+            const pdfBlob = doc.output('blob');
+            const pdfURL = URL.createObjectURL(pdfBlob);
+            window.open(pdfURL, '_blank');
+        };
 
+        img.onerror = () => {
+            Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+        };
+    } catch (error) {
+        console.error('Error al generar el PDF:', error);
+        Swal.fire('Error', error.message, 'error');
+    }
 
     const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
