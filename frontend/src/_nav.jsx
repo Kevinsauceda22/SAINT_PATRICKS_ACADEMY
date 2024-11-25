@@ -54,12 +54,14 @@ const _nav = [
     icon: cilClipboard,
     nameobject: 'ListaAsistencia',
   },
+
+
   {
     component: CNavItem,
     name: 'Mis Asistencias',
     to: '/ListaAsistenciaProfesor',
     icon: cilClipboard,
-    nameobject: 'navAsistenciaProfesor',
+    nameobject: 'ListaAsistenciaProfesor',
   },
   {
     component: CNavItem,
@@ -73,7 +75,7 @@ const _nav = [
     name: 'Actividades académicas',
     to: '/ListaActividadesAca',
     icon: cilTask,
-    nameobject: 'navActividadesAcademicas',
+    nameobject: 'ListaActividadesAca',
   },
   
   {
@@ -104,7 +106,7 @@ const _nav = [
      name: 'Secciones asignaturas',
      to: '/ListaSecciones_Asignatura',
      icon: cilFile,
-    nameobject: 'navListaSecciones_Asignaturas',
+    nameobject: 'ListaSecciones_Asignatura',
     },
 
 
@@ -122,9 +124,9 @@ const _nav = [
       to: '/Solicitud_admin',
       icon: cilCalendar, 
       nameobject: 'Solicitud_admin',
-
-      
     },
+
+   
   {
     component: CNavGroup,
     name: 'Mantenimientos',
@@ -154,6 +156,8 @@ const _nav = [
         to: '/ListaEstadoasistencia',
         nameobject: 'ListaEstadoasistencia',
       },
+
+      
       {
         component: CNavItem,
         name: 'Estado nota',
@@ -244,6 +248,8 @@ const _nav = [
         to: '/Contabilidad',
         nameobject: 'Contabilidad',
       },
+
+      
     ],
   },
   {
@@ -276,6 +282,7 @@ const _nav = [
     component: CNavGroup,
     name: 'Personas',
     icon: cilUser,
+    nameobject: 'ListaPersonas',
     items: [
       {
         component: CNavItem,
@@ -299,7 +306,7 @@ const _nav = [
         component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
-        nameobject: 'Lista Relacion',
+        nameobject: 'ListaRelacion',
       },
       {
         component: CNavItem,

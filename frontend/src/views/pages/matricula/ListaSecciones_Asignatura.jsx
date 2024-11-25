@@ -33,8 +33,14 @@ import {
   CCol,
   CFormCheck,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const ListaSecciones_Asignaturas= () =>{
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaSecciones_Asignatura');
+
+  
     const [secciones_asignaturas, setSecciones_Asignaturas] = useState([]);
     const [secciones, setSecciones] = useState([]);
     const [dias, setDias] = useState([]);
@@ -323,6 +329,11 @@ const getNombreGrado = (cod_grado) => {
       const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
       const currentRecords = filteredSeccionesAsignaturas.slice(indexOfFirstRecord, indexOfLastRecord);
       
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+
 
       return(
          <CContainer>
@@ -458,9 +469,14 @@ const getNombreGrado = (cod_grado) => {
                 <CTableDataCell>{secc_asig.Hora_fin}</CTableDataCell>
                 <CTableDataCell>
                 <div className="d-flex justify-content-center">
+
+                  {canUpdate &&  (
                     <CButton color="warning" onClick={() => openUpdateModal(secc_asig)} className="me-2">
                       <CIcon icon={cilPen} />
                     </CButton>
+
+                  )}
+
                   </div>
                 </CTableDataCell>
                 </CTableRow>

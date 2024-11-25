@@ -34,7 +34,9 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '77', name: 'Matricula', description: 'Matricula' },
     { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' },
     { id: '90', name: 'Solicitudes Administrador', description: 'Solicitud_admin' },
-    { id: '91', name: 'Solicitudes Padre', description: 'Solicitudes_Padre' }
+    { id: '91', name: 'Solicitudes Padre', description: 'Solicitudes_Padre' },
+    { id: '93', name: 'ListaSecciones Asignatura', description: 'ListaSecciones' }
+
   ];
 
   const paginasPagos = [
