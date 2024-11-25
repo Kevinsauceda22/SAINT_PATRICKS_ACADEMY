@@ -91,7 +91,9 @@ const MatriculasPorGrado = React.lazy(() => import('./views/pages/matricula/vits
 const MatriculasPorPeriodo = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorPeriodo'));
 const MatriculasAnioAnterior = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasAnioAnterior'));
 const Caja = React.lazy(() => import('./views/pages/matricula/caja'));
-
+const ListaContacto = React.lazy(() => import('./views/pages/personas/ListaContacto'))
+const ListaTipoContacto = React.lazy(() => import('./views/pages/personas/ListaTipoContacto'))
+const ListaGeneroPersona = React.lazy(() => import('./views/pages/personas/ListaGeneroPersona'))
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
 
@@ -212,6 +214,10 @@ const App = () => {
           <Route path="/matriculasPorGrado" element={<MatriculasPorGrado />} />
           <Route path="/matriculasPorPeriodo" element={<MatriculasPorPeriodo />} />
           <Route path="/matriculasAnioAnterior" element={<MatriculasAnioAnterior />} />
+          <Route exact path="/contacto" name="Lista Contacto" element={<ListaContacto />} />
+          <Route exact path="/tipoContacto" name="Lista Tipo Contacto" element={<ListaTipoContacto />} />
+          <Route exact path="/generoPersona" name="Lista Genero Persona" element={<ListaGeneroPersona />} />
+
               </Route>
             </Route>
 

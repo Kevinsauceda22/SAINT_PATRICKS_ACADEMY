@@ -57,6 +57,9 @@ import cuentasRouter from './module/auth/creacioncuentas_Routes.js';
 import municipioRoutes from './module/personas/Routes/municipiosRoutes.js';
 import Solicitud_adminRoutes from './module/matricula/Routes/Solicitud_adminRoutes.js';
 import cajaRoutes from './module/matricula/Routes/cajaRoutes.js'; 
+import generoPersonaRoutes from './module/personas/Routes/generoPersonaRoutes.js';
+import contactoRoutes from './module/personas/Routes/contactoRoutes.js';
+import tipoContactoRoutes from './module/personas/Routes/tipoContactoRoutes.js';
 
 
 
@@ -187,7 +190,9 @@ app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 app.use('/api/municipio', municipioRoutes);
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
-
+app.use('/api/generoPersona', generoPersonaRoutes);
+app.use('/api/contacto', contactoRoutes);
+app.use('/api/tipoContacto', tipoContactoRoutes);
 
 
 //contabilidad
