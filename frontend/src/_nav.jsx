@@ -116,19 +116,19 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Gestión Académica',
-        to: '/ListaGestion_Academica',
+        to: '/gestion_academica',
         nameobject: 'Solicitud_admin',
       },
       {
         component: CNavItem,
-        name: 'Lista de Secciones', 
-        to: '/ListaSecciones',
+        name: 'Listado de Secciones', 
+        to: '/lista-secciones',
         nameobject: 'Solicitud_admin',
       },
       {
        component: CNavItem,
        name: 'Secciones asignaturas',
-       to: '/ListaSecciones_Asignatura',
+       to: '/lista-secciones_asignatura',
        icon: cilFile,
       nameobject: 'ListaSecciones_Asignatura',
       },  
