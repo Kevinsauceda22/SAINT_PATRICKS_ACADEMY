@@ -471,70 +471,71 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!areFieldsValid()) return;
-  
+
     const [horaInicio, minutoInicio] = formValues.horaInicio.split(':').map(Number);
     const [horaFin, minutoFin] = formValues.horaFin.split(':').map(Number);
     if (horaFin < horaInicio || (horaFin === horaInicio && minutoFin <= minutoInicio)) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Advertencia',
-        text: 'La hora de fin debe ser mayor que la hora de inicio.',
-        confirmButtonColor: '#6C8E58',
-      });
-      return;
+        Swal.fire({
+            icon: 'warning',
+            title: 'Advertencia',
+            text: 'La hora de fin debe ser mayor que la hora de inicio.',
+            confirmButtonColor: '#6C8E58',
+        });
+        return;
     }
-  
+
     setIsSubmitting(true);
     try {
-      const requestData = {
-        Cod_persona: selectedCita ? selectedCita.Cod_persona : formValues.Cod_persona || '1',
-        Nombre_solicitud: formValues.title || 'SIN TÍTULO',
-        Fecha_solicitud: formValues.fecha || '1899-11-30',
-        Hora_Inicio: formValues.horaInicio,
-        Hora_Fin: formValues.horaFin,
-        Asunto: formValues.description || 'SIN ASUNTO',
-        Persona_requerida: formValues.personaRequerida || 'DESCONOCIDO',
-        Estado: selectedCita ? selectedCita.estado : 'Pendiente', // Solo relevante para actualización
-      };
-  
-      const response = await fetch(
-        selectedCita
-          ? `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
-          : 'http://localhost:4000/api/Solicitud_admin/solicitudes',
-        {
-          method: selectedCita ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData),
+        const requestData = {
+            Cod_persona: selectedCita ? selectedCita.Cod_persona : formValues.Cod_persona || '1',
+            Nombre_solicitud: formValues.title || 'SIN TÍTULO',
+            Fecha_solicitud: formValues.fecha || '1899-11-30',
+            Hora_Inicio: formValues.horaInicio,
+            Hora_Fin: formValues.horaFin,
+            Asunto: formValues.description || 'SIN ASUNTO',
+            Persona_requerida: formValues.personaRequerida || 'DESCONOCIDO',
+            estado: formValues.estado || 'Pendiente', // Pass the updated state
+        };
+
+        const response = await fetch(
+            selectedCita
+                ? `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
+                : 'http://localhost:4000/api/Solicitud_admin/solicitudes',
+            {
+                method: selectedCita ? 'PUT' : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(requestData),
+            }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al procesar la solicitud.');
         }
-      );
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Error al procesar la solicitud.');
-      }
-  
-      Swal.fire({
-        icon: 'success',
-        title: selectedCita ? 'Actualizado' : 'Creado',
-        text: selectedCita
-          ? 'La cita fue actualizada correctamente.'
-          : 'La cita fue creada correctamente.',
-        confirmButtonColor: '#4B6251',
-      });
-  
-      setFormModalVisible(false);
-      await fetchSolicitudes();
+
+        Swal.fire({
+            icon: 'success',
+            title: selectedCita ? 'Actualizado' : 'Creado',
+            text: selectedCita
+                ? 'La cita fue actualizada correctamente.'
+                : 'La cita fue creada correctamente.',
+            confirmButtonColor: '#4B6251',
+        });
+
+        setFormModalVisible(false);
+        await fetchSolicitudes();
     } catch (error) {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message,
-        confirmButtonColor: '#6C8E58',
-      });
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message,
+            confirmButtonColor: '#6C8E58',
+        });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+};
+
 
   const handleVerTodasCitas = () => {
     setAllCitasModalVisible(true);
@@ -939,82 +940,42 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
 
         {selectedCita && (
   <CRow className="mb-3">
-    <CCol md={12}>
+  <CCol md={12}>
       <CFormLabel>Estado</CFormLabel>
       <div className="form-check form-switch">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          id="estadoSwitch"
-          checked={formValues.estado === "Cancelada"}
-          onChange={async () => {
-            const newState = formValues.estado === "Cancelada" ? "Pendiente" : "Cancelada";
-
-            // Update state locally
-            setFormValues((prevValues) => ({
-              ...prevValues,
-              estado: newState,
-            }));
-
-            try {
-              // Call the backend to update the state
-              const response = await fetch(
-                `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`,
-                {
-                  method: "PUT",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    ...selectedCita,
-                    estado: newState, // Pass the new state to the backend
-                  }),
-                }
-              );
-
-              if (response.ok) {
-                Swal.fire({
-                  icon: "success",
-                  title: "Estado Actualizado",
-                  text: `El estado fue cambiado a "${newState}".`,
-                  confirmButtonColor: "#4B6251",
-                });
-
-                // Refresh the event list to reflect changes in the calendar
-                await fetchSolicitudes();
-              } else {
-                throw new Error("Error al actualizar el estado.");
+          <input
+              className="form-check-input"
+              type="checkbox"
+              id="estadoSwitch"
+              checked={formValues.estado === "Cancelada"}
+              onChange={() =>
+                  setFormValues((prevValues) => ({
+                      ...prevValues,
+                      estado: prevValues.estado === "Cancelada" ? "Pendiente" : "Cancelada",
+                  }))
               }
-            } catch (error) {
-              Swal.fire({
-                icon: "error",
-                title: "Error",
-                text: error.message,
-                confirmButtonColor: "#6C8E58",
-              });
-            }
-          }}
-          style={{
-            width: "3rem",
-            height: "1.5rem",
-            backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
-            border: formValues.estado === "Cancelada" ? "1px solid red" : "",
-          }}
-        />
-        <label
-          className="form-check-label"
-          htmlFor="estadoSwitch"
-          style={{
-            fontSize: "1.25rem",
-            color: formValues.estado === "Cancelada" ? "red" : "green",
-            fontWeight: "bold",
-          }}
-        >
-          {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
-        </label>
+              style={{
+                  width: "3rem",
+                  height: "1.5rem",
+                  backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
+                  border: formValues.estado === "Cancelada" ? "1px solid red" : "",
+              }}
+          />
+          <label
+              className="form-check-label"
+              htmlFor="estadoSwitch"
+              style={{
+                  fontSize: "1.25rem",
+                  color: formValues.estado === "Cancelada" ? "red" : "green",
+                  fontWeight: "bold",
+              }}
+          >
+              {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
+          </label>
       </div>
-    </CCol>
-  </CRow>
+  </CCol>
+</CRow>
+
 )}
         <CModalFooter>
           <CButton
