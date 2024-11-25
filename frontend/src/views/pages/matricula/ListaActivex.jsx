@@ -72,39 +72,40 @@ const ListaActividades = () => {
     }
   };
 
-  const fetchSecciones = async (Cod_secciones) => {
+  const fetchSecciones = async (Cod_secciones = 0) => { // Valor predeterminado: 0
     try {
-      //console.log(`Fetching: http://localhost:4000/api/secciones/obtener_seccion/${Cod_secciones}`);
-      const response = await fetch(`http://localhost:4000/api/obtener_secciones/${Cod_secciones}`);
-      
-      if (!response.ok) {
-        console.error(`HTTP Error: ${response.status}`);
-        throw new Error('Error al obtener las secciones');
-      }
-      
-      const data = await response.json();
-      console.log('Datos obtenidos del servidor:', data); // Depuración
-      
-      if (!Array.isArray(data)) {
-        throw new Error('La respuesta del servidor no es un array');
-      }
-      
-      const seccionesConGrado = data.map((seccion) => ({
-        ...seccion,
-        SeccionGrado: `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`, // Concatenar sección y grado
-      }));
-      
-      console.log('Secciones procesadas:', seccionesConGrado);
-      setSecciones(seccionesConGrado);
+        const url = `http://localhost:4000/api/obtener_secciones/${Cod_secciones}`;
+        console.log(`Fetching: ${url}`); // Log para depuración
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            console.error(`HTTP Error: ${response.status}`);
+            throw new Error('Error al obtener las secciones');
+        }
+
+        const data = await response.json();
+        console.log('Datos obtenidos del servidor:', data);
+
+        if (!Array.isArray(data)) {
+            throw new Error('La respuesta del servidor no es un array');
+        }
+
+        const seccionesConGrado = data.map((seccion) => ({
+            ...seccion,
+            SeccionGrado: `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`, // Concatenar sección y grado
+        }));
+
+        console.log('Secciones procesadas:', seccionesConGrado);
+        setSecciones(seccionesConGrado);
     } catch (error) {
-      console.error('Error en fetchSecciones:', error.message);
+        console.error('Error en fetchSecciones:', error.message);
     }
-  };
+};
   
 
   // Cargar secciones al inicio
   useEffect(() => {
-    fetchSecciones(); // Cargar secciones al inicio
+    fetchSecciones(0); // Pasa 0 para obtener todas las secciones
   }, []);
 
   // Validar si hay letras consecutivas repetidas dos veces
