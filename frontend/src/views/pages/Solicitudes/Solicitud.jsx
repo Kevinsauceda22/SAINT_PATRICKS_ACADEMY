@@ -46,6 +46,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 // Función para decodificar JWT
@@ -67,6 +69,7 @@ const decodeJWT = (token) => {
 };
 
 const Solicitud = () => {
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('Solicitudes_Padre');
   const { auth } = useContext(AuthContext); // Obtener el usuario autenticado desde AuthContext
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -601,6 +604,16 @@ const Solicitud = () => {
     XLSX.writeFile(libro, 'Reporte_Citas.xlsx');
   };
 
+
+
+  //AQUI VA LA LOGICA PARA QUE SALGA LA PANTALLA DE ACCESO DENEGADO
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
+  
+
+
   return (
     <CContainer fluid style={{ backgroundColor: '#F8F9FA', padding: '20px' }}>
       <CRow className="mb-4">
@@ -634,6 +647,8 @@ const Solicitud = () => {
           <span style={{ color: '#6C757D' }}>{`Citas encontradas: ${filteredCitas.length}`}</span>
         </CCol>
         <CCol md={3} className="text-end">
+
+        {canInsert &&  (
           <CButton
             color="success"
             onClick={handleNuevaCita}
@@ -641,6 +656,9 @@ const Solicitud = () => {
           >
             <CIcon icon={cilPlus} /> Nueva Cita
           </CButton>
+        )}
+
+
           <CDropdown className="d-inline ms-2">
             <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
               <CIcon icon={cilFile} /> Reporte

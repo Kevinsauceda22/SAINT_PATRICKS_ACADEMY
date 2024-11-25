@@ -45,8 +45,13 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 
 const Solicitud = () => {
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('Solicitud_admin');
+
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -632,6 +637,12 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
   };
   
 
+     // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
+
+
   return (
     <CContainer fluid style={{ backgroundColor: '#F8F9FA', padding: '20px' }}>
       <CRow className="mb-4">
@@ -665,6 +676,8 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
           <span style={{ color: '#6C757D' }}>{`Citas encontradas: ${filteredCitas.length}`}</span>
         </CCol>
         <CCol md={3} className="text-end">
+
+        {canInsert &&  (
           <CButton
             color="success"
             onClick={handleNuevaCita}
@@ -672,6 +685,8 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
           >
             <CIcon icon={cilPlus} /> Nueva Cita
           </CButton>
+        )}
+
           <CDropdown className="d-inline ms-2">
             <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
               <CIcon icon={cilFile} /> Reporte
@@ -773,6 +788,9 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
                 <p><strong>Hora de Inicio:</strong> {selectedCita.horaInicio}</p>
                 <p><strong>Hora de Fin:</strong> {selectedCita.horaFin}</p>
                 <p><strong>Estado:</strong> {selectedCita.estado}</p>
+
+
+                {canUpdate &&  (
                 <CButton
                   color="warning"
                   onClick={handleEditarCita}
@@ -780,6 +798,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
                 >
                   <CIcon icon={cilPen} /> Editar
                 </CButton>
+                )}
                 <CButton
                   color="secondary"
                   className="ms-2"

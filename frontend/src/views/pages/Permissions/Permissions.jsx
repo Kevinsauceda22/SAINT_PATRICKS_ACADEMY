@@ -27,17 +27,14 @@ const GestorDePermisos = ({ pathName }) => {
   const paginasGenerales = [
     { id: '12', name: 'Dashboard', description: 'Página del tablero de control' },
     { id: '46', name: 'Dashboard Padres', description: 'Dashboard para padres' },
-    { id: '47', name: 'Asistencia', description: 'Asistencia' },
-    { id: '84', name: 'Asistencia Profesor', description: 'Asistencia Profesor' },
-    { id: '85', name: 'Notas Profesor', description: 'Notas Profesor' },
-    { id: '87', name: 'Nota', description: 'Nota' },
-    { id: '88', name: 'Grados-Asignaturas', description: 'Grados-Asignaturas' },
+    { id: '47', name: 'Lista Asistencia', description: 'Lista Asistencia' },
     { id: '48', name: 'Lista Profesores', description: 'Lista Profesores' },
     { id: '73', name: 'Lista Historial', description: 'Lista Historial' },
     { id: '74', name: 'Actividades', description: 'actividades' },
     { id: '77', name: 'Matricula', description: 'Matricula' },
-    { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' }
-
+    { id: '79', name: 'Actividades Academicas Vista Admin', description: 'ListaActividadesAca' },
+    { id: '90', name: 'Solicitudes Administrador', description: 'Solicitud_admin' },
+    { id: '91', name: 'Solicitudes Padre', description: 'Solicitudes_Padre' }
   ];
 
   const paginasPagos = [
