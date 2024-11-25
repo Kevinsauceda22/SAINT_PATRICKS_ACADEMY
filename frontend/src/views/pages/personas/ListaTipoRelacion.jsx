@@ -507,6 +507,14 @@ const handleChange = (event) => {
     };
   };
 
+  
+    
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+    
+
   return (
     <CContainer>
          {/* Contenedor del h1 y botón "Nuevo" */}

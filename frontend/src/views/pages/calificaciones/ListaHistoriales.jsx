@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { CSidebarNav } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription } from '@coreui/icons';
+import Swal from 'sweetalert2'; // Importa SweetAlert2
 import {
   CButton,
   CContainer,
@@ -26,274 +27,307 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
-
 
 const ListaHistoriales = () => {
-  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('ListaHistorial');
-
   const [historiales, setHistoriales] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [nuevoHistorial, setNuevoHistorial] = useState({ Promedio_Anual: 0 });
+  const [modalReportVisible, setModalReportVisible] = useState(false); // Modal de Reporte
   const [error, setError] = useState('');
   const [historialAEditar, setHistorialAEditar] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
   const [itemsPerPage, setItemsPerPage] = useState(5); // Estado para los elementos por página
-
+  const [Grados, setGrados] = useState([]);
+  const [Instituto, setInstituto] = useState([]);
+  const [Persona, setPersona] = useState([]);
+  const [nuevoHistorial, setNuevoHistorial] = useState({
+    Estudiante: 'Seleccione una opción',
+    Grado: 'Seleccione una opción',
+    Año_Academico: 'Seleccione una opción',
+    Promedio_Anual: 0,
+    Instituto: ''
+  });
+  
   useEffect(() => {
     fetchHistorial();
+    fetchGrados();
+    fetchInstituto();
+    fetchPersonas();
   }, []);
+
+  const fetchPersonas = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/persona/verPersonas');
+      const data = await response.json();
+      console.log(data);
+      setPersona(data);
+    } catch (error) {
+      console.error('Error al obtener los estudiantes: ', error);
+    }
+  };
+
+  const fetchGrados = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/grados/vergrados');
+      const data = await response.json();
+      console.log(data); // Verifica la respuesta en la consola
+      setGrados(data); 
+    } catch (error) {
+      console.error('Error al obtener los grados:', error);
+    }
+  };
+
+const fetchInstituto = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/instituto/instituto');
+    const data = await response.json();
+    console.log(data); //verifica las respuestas en la consola
+    setInstituto(data);
+  } catch (error) {
+    console.error('Error al obtener los institutos: ', error);
+  }
+};
 
   const fetchHistorial = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/historialAcademico/historiales');
       const data = await response.json();
-      setHistoriales(data);
+  
+      // Renumera los historiales secuencialmente
+      const historialesNumerados = data.map((historial, index) => ({
+        ...historial,
+      }));
+  
+      setHistoriales(historialesNumerados);
     } catch (error) {
       console.error('Error al obtener los historiales:', error);
     }
   };
 
-  const filteredHistoriales = historiales.filter(historial =>
-    historial.Cod_historial_academico.toString().includes(searchTerm) ||
-    historial.Cod_estado.toString().includes(searchTerm) ||
-    historial.Grado.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    historial.Año_Academico.toString().includes(searchTerm) ||
-    historial.Promedio_Anual.toString().includes(searchTerm) ||
-    historial.Instituto.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredHistoriales = historiales.filter(historial => {
+    // Convertir Cod_estado a texto
+    const estadoTexto = 
+      historial.Cod_estado === 1 ? "aprobado" :
+      historial.Cod_estado === 2 ? "reprobado" : "otro estado";
+  
+    // Asegurarse de que `searchTerm` y `estadoTexto` están en minúsculas
+    return (
+      historial.Cod_historial_academico.toString().includes(searchTerm) ||
+      historial.Cod_estado.toString().includes(searchTerm) ||
+      historial.Estudiante.toLowerCase().trim().includes(searchTerm.toLowerCase().trim()) ||
+      historial.Grado.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      historial.Año_Academico.toString().includes(searchTerm) ||
+      historial.Promedio_Anual.toString().includes(searchTerm) ||
+      historial.Instituto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      estadoTexto.includes(searchTerm.toLowerCase())
+    );
+  });  
+  
+// Paginación: calcular los índices de los elementos que se van a mostrar
+const indexOfLastItem = currentPage * itemsPerPage;
+const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+const currentHistoriales = filteredHistoriales.slice(indexOfFirstItem, indexOfLastItem);
 
-  // Paginación: calcular los índices de los elementos que se van a mostrar
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentHistoriales = filteredHistoriales.slice(indexOfFirstItem, indexOfLastItem);
+const totalPages = Math.ceil(filteredHistoriales.length / itemsPerPage);
 
-  const totalPages = Math.ceil(filteredHistoriales.length / itemsPerPage);
+const handleInputChange = (e, field) => {
+  let value = e.target.value;
 
-  const handleInputChange = (e, field) => {
-    let value = e.target.value;
+  // Validación para el campo Promedio_Anual
+  if (field === 'Promedio_Anual') {
+      const validNumber = /^\d*\.?\d*$/; // Solo permite números y un punto decimal
+      if (value && !validNumber.test(value)) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Formato inválido',
+            text: 'Por favor ingrese un valor numérico válido, incluyendo un punto decimal.',
+            confirmButtonColor: '#6f8173', // Color del botón
+          });
+          return;
+      }
 
-    // Define el límite de caracteres para cada campo (excluyendo 'Instituto')
-    const characterLimits = {
-        Cod_historial_academico: 10, // Ejemplo límite
-        Cod_estado: 10, // Ejemplo límite
-        Instituto: 30
-    };
-
-    // Validación de longitud de caracteres
-    if (characterLimits[field]) {
-        if (value.length > characterLimits[field]) {
-            setError(`El campo ${field} no puede tener más de ${characterLimits[field]} caracteres.`);
-            return;
-        }
+    // Validar que el valor esté entre 0 y 100
+    if (value !== '' && (parseFloat(value) < 0 || parseFloat(value) > 100)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Rango inválido',
+        text: 'El Promedio Anual debe estar entre 0 y 100.',
+        confirmButtonColor: '#6f8173',
+      });
+      return;
     }
-
-    // Validación para el campo Promedio_Anual
-    if (field === 'Promedio_Anual') {
-        const validNumber = /^\d*\.?\d*$/; // Solo permite números y un punto decimal
-        if (value && !validNumber.test(value)) {
-            setError('Por favor ingrese un valor numérico válido, incluyendo un punto decimal.');
-            return;
-        }
-        // Validar que el valor esté entre 0 y 100
-        if (value !== '' && (parseFloat(value) < 0 || parseFloat(value) > 100)) {
-            setError('El Promedio Anual debe estar entre 0 y 100.');
-            return;
-        }
-    }
-
-    if ((field === 'Cod_historial_academico' || field === 'Cod_estado') && value) {
-        const isNumeric = /^\d*$/.test(value);
-        if (!isNumeric) {
-            setError('Solo se permiten números en este campo.');
-            return;
-        }
-    }
-
-    // Convierte a mayúsculas si es un campo de texto como 'Grado' o 'Instituto'
-    if (field === 'Grado' || field === 'Instituto') {
-        value = value.toUpperCase();
-    }
-
-    setError('');
-    setNuevoHistorial({ ...nuevoHistorial, [field]: value });
+  }
+  setError('');
+  setNuevoHistorial({ ...nuevoHistorial, [field]: value });
 };
-  
 
-  const HistorialesSearch = () => {
-  const [searchTerm, setSearchTerm] = useState(''); // Definimos el estado para el término de búsqueda
-  };
+const HistorialesSearch = () => {
+const [searchTerm, setSearchTerm] = useState(''); // Definimos el estado para el término de búsqueda
+};
 
-  const handleClearSearch = () => {
-    setSearchTerm(''); // Limpiar el término de búsqueda
-  };
+const handleClearSearch = () => {
+  setSearchTerm(''); // Limpiar el término de búsqueda
+};
 
-  const validateFields = () => {
-    const { Cod_historial_academico, Cod_estado, Grado, Año_Academico, Promedio_Anual, Instituto } = nuevoHistorial;
-    if (!Cod_historial_academico || !Cod_estado || !Grado || !Año_Academico || !Promedio_Anual || !Instituto) {
-      setError('Por favor, complete todos los campos.');
-      return false;
+const validateFields = () => {
+  const { Estudiante, Grado, Año_Academico, Promedio_Anual, Instituto } = nuevoHistorial;
+  if (!Estudiante ||!Grado || !Año_Academico || !Promedio_Anual || !Instituto) {
+    setError('Por favor, complete todos los campos.');
+    return false;
+  }
+  setError('');
+  return true;
+};  
+
+const handleCreateHistorial = async () => {
+  if (!validateFields()) return;
+
+  const promedio = parseFloat(nuevoHistorial.Promedio_Anual);
+  const codEstado = promedio > 69.99 ? 1 : 2;
+
+  const historialConEstado = { ...nuevoHistorial, Cod_estado: codEstado };
+
+  try {
+    const response = await fetch('http://localhost:4000/api/historialAcademico/crearhistorial', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(historialConEstado),
+    });
+
+    if (response.ok) {
+      await fetchHistorial(); // Recarga los historiales
+      setCurrentPage(1); // Restablece la página actual a la primera
+      resetForm();
+      setModalVisible(false);
+    } else {
+      const errorData = await response.json();
+      setError('Error al crear el historial: ' + errorData.message);
     }
-    setError('');
-    return true;
-  };  
+  } catch (error) {
+    setError('Error al crear el historial: ' + error.message);
+  }
+};
 
-  const handleCreateHistorial = async () => {
-    if (!validateFields()) return;
-  
-    try {
-      const response = await fetch('http://localhost:4000/api/historialAcademico/crearhistorial', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(nuevoHistorial),
-      });
-  
-      if (response.ok) {
-        fetchHistorial();
-        setModalVisible(false);
-        setNuevoHistorial({ Promedio_Anual: 0 });
-      } else {
-        const errorData = await response.json();
-        setError('Error en la creación: El Código de Historial o Código de Estado ya fue registrado');
-      }
-    } catch (error) {
-      setError('Error al crear el historial: ' + error.message);
+const getEstadoTexto = (cod_estado) => {
+  switch (cod_estado) {
+    case 1:
+      return 'APROBADO';
+    case 2:
+      return 'REPROBADO';
+  }
+};
+
+const handleEditHistorial = (historial) => {
+  setHistorialAEditar(historial);
+  setNuevoHistorial({ ...historial }); // Copia el historial a nuevoHistorial
+  setModalVisible(true);
+};
+
+const handleUpdateHistorial = async () => {
+  if (error || !validateFields()) return;
+
+  // Lógica para determinar el Cod_estado basado en el Promedio_Anual
+  const promedio = parseFloat(nuevoHistorial.Promedio_Anual);
+  const codEstado = promedio >= 70.00 ? 1 : 2; // O el valor que corresponda
+
+  // Actualiza el Cod_estado en nuevoHistorial
+  const historialActualizado = { ...nuevoHistorial, Cod_estado: codEstado };
+
+  try {
+    const response = await fetch('http://localhost:4000/api/historialAcademico/actualizarhistorial', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(historialActualizado),
+    });
+
+    if (response.ok) {
+      fetchHistorial();
+      setModalVisible(false);
+      setHistorialAEditar(null);
+      resetForm(); // Llamar a la función para reiniciar el formulario
+    } else {
+      const errorData = await response.json();
+      console.error('Error al actualizar el historial:', errorData);
     }
-  };
-  
+  } catch (error) {
+    console.error('Error al actualizar el historial:', error);
+  }
+};
 
-  const handleEditHistorial = (historial) => {
-    setHistorialAEditar(historial);
-    setNuevoHistorial({ ...historial }); // Copia el historial a nuevoHistorial
-    setModalVisible(true);
-  };
+const resetForm = () => {
+  setNuevoHistorial({ 
+      Estudiante: 'Seleccione una opción',
+      Grado: 'Seleccione una opción', // Asigna un valor predeterminado si aplica
+      Año_Academico: 'Seleccione una opción',
+      Promedio_Anual: 0,
+      Instituto: ''
+  }); 
+  setError('');
+  setHistorialAEditar(null);
+};
 
-  const handleUpdateHistorial = async () => {
-    if (error || !validateFields()) return;
-
-    try {
-      const response = await fetch('http://localhost:4000/api/historialAcademico/actualizarhistorial', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(nuevoHistorial),
-      });
-
-      if (response.ok) {
-        fetchHistorial();
-        setModalVisible(false);
-        setHistorialAEditar(null);
-        resetForm();// Llamar a la función para reiniciar el formulario
-      } else {
-        const errorData = await response.json();
-        console.error('Error al actualizar el historial:', errorData);
-      }
-    } catch (error) {
-      console.error('Error al actualizar el historial:', error);
-    }
-  };
-
-  const resetForm = () => {
-    setNuevoHistorial({ 
-        Cod_historial_academico: '', // Asegúrate de que este campo esté vacío al resetear
-        Cod_estado: '', 
-        Grado: 'Seleccione una opción', // Asigna un valor predeterminado si aplica
-        Año_Academico: 'Seleccione una opción',
-        Promedio_Anual: 0,
-        Instituto: ''
-    }); 
-    setError('');
-    setHistorialAEditar(null);
-  };
-
-  const handleCancelModal = () => {
-    resetForm(); // Reiniciar el formulario al cerrar el modal
-    setModalVisible(false);
-  };
+const handleCancelModal = () => {
+  resetForm(); // Reiniciar el formulario al cerrar el modal
+  setModalVisible(false);
+};
 
   const handleDeleteHistorial = async (id) => {
-    const confirmDelete = window.confirm('¿Estás seguro de que deseas eliminar este historial?');
-    if (!confirmDelete) return;
+    // Mostrar el aviso de confirmación con SweetAlert
+    const result = await Swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Este historial se eliminará permanentemente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'No, cancelar',
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      allowOutsideClick: false, // Evita que el modal se cierre al hacer clic fuera
+    });
 
-    try {
-      const response = await fetch(`http://localhost:4000/api/historialAcademico/eliminarhistorial`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ Cod_historial_academico: id }),
-      });
+    // Si el usuario confirma, proceder con la eliminación
+    if (result.isConfirmed) {
+      try {
+        const response = await fetch(`http://localhost:4000/api/historialAcademico/eliminarhistorial`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ Cod_historial_academico: id }),
+        });
 
-      if (response.ok) {
-        fetchHistorial();
-      } else {
-        const errorData = await response.json();
-        console.error('Error al eliminar el historial:', errorData);
+        if (response.ok) {
+          Swal.fire('Eliminado', 'El historial ha sido eliminado correctamente.', 'success');
+          fetchHistorial(); // Llamar a la función para actualizar los datos
+        } else {
+          const errorData = await response.json();
+          console.error('Error al eliminar el historial:', errorData);
+          Swal.fire('Error', 'Hubo un error al eliminar el historial.', 'error');
+        }
+      } catch (error) {
+        console.error('Error al eliminar el historial:', error);
+        Swal.fire('Error', 'Hubo un error al eliminar el historial.', 'error');
       }
-    } catch (error) {
-      console.error('Error al eliminar el historial:', error);
     }
   };
 
-  const generarAnios = () => {
-    const anios = [
-      'Seleccione una opción',
-      '2024',
-      '2023',
-      '2022',
-      '2021',
-      '2020',
-      '2019',
-      '2018',
-      '2017',
-      '2016',
-      '2015',
-      '2014',
-      '2013',
-      '2012',
-      '2011',
-      '2010',
-      '2009',
-      '2008',
-      '2007',
-      '2006',
-      '2005',
-      '2004',
-      '2003',
-      '2002',
-      '2001',
-      '2000'
-    ];
+  const generarAnios = (anioInicio = 1901) => {
+    const anios = ['Seleccione una opción'];
+    const anioActual = new Date().getFullYear();
+    
+    for (let i = anioActual; i >= anioInicio; i--) {
+      anios.push(i.toString());
+    }
     return anios;
   };
-  
-  const generarGrados = () => {
-    const grados = [
-      'Seleccione una opción',
-      'PRIMER GRADO',
-      'SEGUNDO GRADO',
-      'TERCER GRADO',
-      'CUARTO GRADO',
-      'QUINTO GRADO',
-      'SEXTO GRADO',
-      'SÉPTIMO GRADO',
-      'OCTAVO GRADO',
-      'NOVENO GRADO',
-      'DÉCIMO GRADO',
-      'UNDÉCIMO GRADO',
-      'DUODÉCIMO GRADO'
-    ];
-    return grados;
-  };  
 
-  const downloadPDF = () => {
+ const downloadPDF = () => {
     const doc = new jsPDF();
-    
+  
     // Cambia el color del texto a verde para el título
     doc.setTextColor(0, 128, 0); // Verde (RGB: 0, 128, 0)
     
@@ -303,16 +337,18 @@ const ListaHistoriales = () => {
     // Obtiene la altura del título
     const titleHeight = 10; // altura aproximada del título
     
-    // Restablece el color de texto a negro para el resto del documento, si es necesario
+    // Restablece el color de texto a negro para el resto del documento
     doc.setTextColor(0, 0, 0);
     
     // Dibuja la tabla en una posición más baja para evitar la superposición
     autoTable(doc, {
       startY: 20 + titleHeight, // Esto coloca la tabla justo debajo del título
-      head: [['Código de Historial', 'Código de Estado', 'Grado', 'Año Académico', 'Promedio Anual', 'Fecha Registro', 'Instituto']],
+      head: [['Código de Historial', 'Estado', 'Estudiante', 'Grado', 'Año Académico', 'Promedio Anual', 'Fecha Registro', 'Instituto']],
       body: filteredHistoriales.map(historial => [
         historial.Cod_historial_academico,
-        historial.Cod_estado,
+        historial.Cod_estado === 1 ? "APROBADO" : 
+        historial.Cod_estado === 2 ? "REPROBADO" : "OTRO ESTADO",
+        historial.Estudiante,
         historial.Grado,
         historial.Año_Academico,
         historial.Promedio_Anual,
@@ -325,7 +361,7 @@ const ListaHistoriales = () => {
         fontStyle: 'bold' // Negrita para el encabezado
       }
     });
-    
+  
     doc.save('historiales.pdf');
   };  
 
@@ -334,44 +370,32 @@ const ListaHistoriales = () => {
       alert('No hay datos para descargar');
       return;
     }
-
+  
     const worksheet = XLSX.utils.json_to_sheet(filteredHistoriales.map(historial => ({
       'Código de Historial': historial.Cod_historial_academico,
-      'Código de Estado': historial.Cod_estado,
+      'Estado': historial.Cod_estado === 1 ? "APROBADO" : 
+                 historial.Cod_estado === 2 ? "REPROBADO" : "OTRO ESTADO",
+      'Estudiante': historial.Estudiante,
       'Grado': historial.Grado,
       'Año Académico': historial.Año_Academico,
       'Promedio Anual': historial.Promedio_Anual,
       'Fecha Registro': new Date(historial.Fecha_Registro).toLocaleDateString('es-ES'),
       'Instituto': historial.Instituto
     })));
-
+  
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Historiales');
-
+  
     const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'historiales.xlsx');
   };
-
-
-  const handleGenerarReporte = () => {
-    // Aquí puedes definir la lógica para generar el reporte que desees
-    // Puede ser una descarga o visualización de un nuevo componente/modal, por ejemplo:
-    console.log('Generando reporte...');
-  };
-
-   // Verificar permisos
-   if (!canSelect) {
-    return <AccessDenied />;
-  }
 
   return (
     <CContainer>
             <h1>Mantenimiento Historiales</h1>
       {/* Botón de Agregar Historial arriba de la barra de búsqueda */}
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-
-        {canInsert && (
         <CButton 
           style={{ backgroundColor: '#4B6251', color: 'white' }} 
           className="mb-3 mb-md-0 me-md-3"
@@ -382,40 +406,60 @@ const ListaHistoriales = () => {
           >
           <CIcon icon={cilPlus} /> Nuevo
         </CButton>
-        )}
         <CButton
-          style={{ backgroundColor: '#6C8E58', color: 'white' }}
-        >
-          <CIcon icon={cilDescription} /> Reporte
-        </CButton>
-      </div>
-
-      {/* Botones de descarga separados */}
-      <div className="mb-3">
-        <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={downloadPDF} className="me-2">PDF</CButton>
-        <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={downloadExcel}>Excel</CButton>
+        style={{ backgroundColor: '#6C8E58', color: 'white' }}
+        onClick={() => setModalReportVisible(true)} // Abre modal de reporte
+      >
+        <CIcon icon={cilDescription} /> Reporte
+      </CButton>
       </div>
 
       <div className="d-flex mb-3">
-              <CInputGroupText>
-              <CIcon icon={cilSearch} /> {/* Icono de lupa */}
-              </CInputGroupText>
-              <CFormInput
-                placeholder="Buscar Historiales..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value.toUpperCase())} // Convierte a mayúsculas
-                style={{ width: '200px' }} // Ajusta el ancho aquí
-              />
-              <CButton 
-                onClick={handleClearSearch} // Función para limpiar el término de búsqueda
-                style={{
-                  border: '1px solid #ccc',
-                  transition: 'all 0.1s ease-in-out', // Duración de la transición
-                  backgroundColor: '#F3F4F7', // Color por defecto
-                  color: '#343a40' // Color de texto por defecto
-                }}>
-                <CIcon icon={cilBrushAlt} /> Limpiar{/* Icono de escoba */}
-              </CButton> {/* Botón para limpiar la búsqueda */}
+        <CInputGroupText>
+          <CIcon icon={cilSearch} /> {/* Icono de lupa */}
+        </CInputGroupText>
+        <CFormInput
+          placeholder="Buscar Historiales..."
+          value={searchTerm}
+          onChange={(e) => {
+            const inputValue = e.target.value.toUpperCase(); // Convertir a mayúsculas
+
+            // Verificar que solo se ingresen letras (A-Z), números, tildes y espacios
+            if (/[^A-ZÁÉÍÓÚ´Ñ0-9\s]/g.test(inputValue)) {
+              Swal.fire({
+                icon: "error",
+                title: "Carácter no permitido",
+                text: "Solo se permiten letras, tildes, números y espacios.",
+              });
+              return; // Evitar actualización del estado
+            }
+
+            // Verificar más de tres repeticiones consecutivas
+            if (/(.)\1{3,}/g.test(inputValue)) {
+              Swal.fire({
+                icon: "error",
+                title: "Demasiadas repeticiones",
+                text: "No puedes ingresar más de tres veces la misma letra consecutiva.",
+              });
+              return; // Evitar actualización del estado
+            }
+
+            setSearchTerm(inputValue); // Actualizar el estado con el valor validado
+          }}
+          style={{ width: "200px" }} // Ajusta el ancho aquí
+        />
+        <CButton
+          onClick={handleClearSearch} // Función para limpiar el término de búsqueda
+          style={{
+            border: "1px solid #ccc",
+            transition: "all 0.1s ease-in-out", // Duración de la transición
+            backgroundColor: "#F3F4F7", // Color por defecto
+            color: "#343a40", // Color de texto por defecto
+          }}
+        >
+          <CIcon icon={cilBrushAlt} /> Limpiar{/* Icono de escoba */}
+        </CButton>{" "}
+        {/* Botón para limpiar la búsqueda */}
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', fontSize: 'small', marginBottom: '10px' }}>
@@ -436,47 +480,47 @@ const ListaHistoriales = () => {
         <span>historiales</span>
       </div>
 
-      <CTable striped bordered hover>
-        <CTableHead>
-          <CTableRow>
-            <CTableHeaderCell>Código de Historial</CTableHeaderCell>
-            <CTableHeaderCell>Código de Estado</CTableHeaderCell>
-            <CTableHeaderCell>Grado</CTableHeaderCell>
-            <CTableHeaderCell>Año Académico</CTableHeaderCell>
-            <CTableHeaderCell>Promedio Anual</CTableHeaderCell>
-            <CTableHeaderCell>Fecha Registro</CTableHeaderCell>
-            <CTableHeaderCell>Instituto</CTableHeaderCell>
-            <CTableHeaderCell>Acciones</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-        <CTableBody>
-          {currentHistoriales.map(historial => (
-            <CTableRow key={historial.Cod_historial_academico}>
-              <CTableDataCell>{historial.Cod_historial_academico}</CTableDataCell>
-              <CTableDataCell>{historial.Cod_estado}</CTableDataCell>
-              <CTableDataCell>{historial.Grado}</CTableDataCell>
-              <CTableDataCell>{historial.Año_Academico}</CTableDataCell>
-              <CTableDataCell>{historial.Promedio_Anual}</CTableDataCell>
-              <CTableDataCell>{new Date(historial.Fecha_Registro).toLocaleDateString('es-ES')}</CTableDataCell>
-              <CTableDataCell>{historial.Instituto}</CTableDataCell>
-              <CTableDataCell>
-
-                {canUpdate && (
-                <CButton color="warning" onClick={() => handleEditHistorial(historial)} className="me-2">
-                  <CIcon icon={cilPen} />
-                </CButton>
-                )}
-
-{canDelete && (
-                <CButton color="danger" onClick={() => handleDeleteHistorial(historial.Cod_historial_academico)}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
-                             )}
-              </CTableDataCell>
+      <div className="table-container" style={{ overflowY: 'auto', marginBottom: '20px' }}>
+        <CTable striped bordered hover responsive style={{ minWidth: '700px', fontSize: '16px' }}>
+          <CTableHead>
+            <CTableRow>
+              <CTableHeaderCell>#</CTableHeaderCell>
+              <CTableHeaderCell>Código de Historial</CTableHeaderCell>
+              <CTableHeaderCell>Estado</CTableHeaderCell>
+              <CTableHeaderCell>Estudiante</CTableHeaderCell>
+              <CTableHeaderCell>Grado</CTableHeaderCell>
+              <CTableHeaderCell>Año Académico</CTableHeaderCell>
+              <CTableHeaderCell>Promedio Anual</CTableHeaderCell>
+              <CTableHeaderCell>Fecha Registro</CTableHeaderCell>
+              <CTableHeaderCell>Instituto</CTableHeaderCell>
+              <CTableHeaderCell>Acciones</CTableHeaderCell>
             </CTableRow>
-          ))}
-        </CTableBody>
-      </CTable>
+          </CTableHead>
+          <CTableBody>
+            {currentHistoriales.map((historial, index) => (
+              <CTableRow key={index}>
+                <CTableDataCell>{indexOfFirstItem + index + 1}</CTableDataCell>
+                <CTableDataCell>{historial.Cod_historial_academico}</CTableDataCell>
+                <CTableDataCell>{getEstadoTexto(historial.Cod_estado)}</CTableDataCell>
+                <CTableDataCell>{historial.Estudiante}</CTableDataCell>
+                <CTableDataCell>{historial.Grado}</CTableDataCell>
+                <CTableDataCell>{historial.Año_Academico}</CTableDataCell>
+                <CTableDataCell>{historial.Promedio_Anual}</CTableDataCell>
+                <CTableDataCell>{new Date(historial.Fecha_Registro).toLocaleDateString('es-ES')}</CTableDataCell>
+                <CTableDataCell>{historial.Instituto}</CTableDataCell>
+                <CTableDataCell>
+                  <CButton color="info" onClick={() => handleEditHistorial(historial)}>
+                    <CIcon icon={cilPen} />
+                  </CButton>
+                  <CButton color="danger" onClick={() => handleDeleteHistorial(historial.Cod_historial_academico)}>
+                    <CIcon icon={cilTrash} />
+                  </CButton>
+                </CTableDataCell>
+              </CTableRow>
+            ))}
+          </CTableBody>
+        </CTable>
+      </div>
 
       {/* Paginación debajo de la tabla */}
       <nav>
@@ -521,53 +565,93 @@ const ListaHistoriales = () => {
         </ul>
       </nav>
 
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static" keyboard={false}>
+      <CModal visible={modalVisible} onClose={handleCancelModal} backdrop="static" keyboard={false}>
         <CModalHeader>
           <CModalTitle>{historialAEditar ? 'Editar Historial' : 'Agregar Historial'}</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CForm>
-            <CFormInput
-              label="Código de Historial"
-              value={nuevoHistorial.Cod_historial_academico}
-              onChange={(e) => handleInputChange(e, 'Cod_historial_academico')}
-              disabled={!!historialAEditar}
-            />
-            <CFormInput
-              label="Código de Estado"
-              value={nuevoHistorial.Cod_estado}
-              onChange={(e) => handleInputChange(e, 'Cod_estado')}
-            />
+          {/*Campo para seleccionar el estudiante*/}
+          <CFormSelect
+          label="Estudiante"
+            value={nuevoHistorial.Estudiante}
+            onChange={(e) => setNuevoHistorial({ ...nuevoHistorial, Estudiante: e.target.value })}
+          >
+            <option>Seleccione un estudiante</option>
+            {Persona.map((persona) => (
+              <option key={persona.cod_persona} value={`${persona.Nombre} ${persona.Segundo_nombre || ''} ${persona.Primer_apellido} ${persona.Segundo_Apellido || ''}`.trim()}>
+                {`${persona.Primer_nombre} ${persona.Segundo_nombre || ''} ${persona.Primer_apellido} ${persona.Segundo_Apellido || ''}`.trim()}
+              </option>
+            ))}
+          </CFormSelect>
+            {/* Campo para seleccionar el Grado */}
             <CFormSelect
-              label="Grado"
-              value={nuevoHistorial.Grado}
+            label="Grado"
+              value={nuevoHistorial.Grados}
               onChange={(e) => handleInputChange(e, 'Grado')}
-              options={generarGrados().map(grado => ({ label: grado, value: grado }))}
-            />
+            >
+              <option value="">Seleccione una opción</option>
+              {Grados.length > 0 ? (
+                Grados.map((grado, index) => (
+                  <option key={index} value={grado.Nombre_grado}>
+                    {grado.Nombre_grado}
+                  </option>
+                ))
+              ) : (
+                <option>Cargando grados...</option>
+              )}
+            </CFormSelect>
             <CFormSelect
               label="Año Académico"
               value={nuevoHistorial.Año_Academico}
               onChange={(e) => handleInputChange(e, 'Año_Academico')}
-              options={generarAnios().map(año => ({ label: año, value: año }))}
+              options={generarAnios().map(anio => ({ label: anio, value: anio }))}
             />
             <CFormInput
               label="Promedio Anual"
+              type="number"
               value={nuevoHistorial.Promedio_Anual}
               onChange={(e) => handleInputChange(e, 'Promedio_Anual')}
             />
-            <CFormInput
-              label="Instituto"
-              value={nuevoHistorial.Instituto}
-              onChange={(e) => handleInputChange(e, 'Instituto')}
-            />
-            {error && <div className="text-danger">{error}</div>}
+            {/*Campo para seleccioanr los institutos*/}
+            <CFormSelect
+            label="Instituto"
+            value={nuevoHistorial.Instituto}
+            onChange={(e) => handleInputChange(e, 'Instituto')}
+            >
+              <option value="">Seleccione una opción</option>
+              {Instituto.length > 0 ? (
+                Instituto.map((instituto, index) => (
+                  <option key={index} value={instituto.Nom_Instituto}>
+                    {instituto.Nom_Instituto}
+                  </option>
+                ))
+              ) : (
+                <option>Cargando institutos...</option>
+              )}
+            </CFormSelect>
           </CForm>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>Cerrar</CButton>
+          <CButton color="secondary" onClick={handleCancelModal}>Cancelar</CButton>
           <CButton color="primary" onClick={historialAEditar ? handleUpdateHistorial : handleCreateHistorial}>
-          <CIcon icon={cilSave} /> {historialAEditar ? 'Actualizar' : 'Guardar'}
+            {historialAEditar ? 'Actualizar' : 'Crear'}
           </CButton>
+        </CModalFooter>
+      </CModal>
+
+             {/* Modal para Reporte */}
+             <CModal visible={modalReportVisible} onClose={() => setModalReportVisible(false)} backdrop="static" keyboard={false}>
+        <CModalHeader>
+          <CModalTitle>Generar Reporte</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <p>Seleccione el formato para descargar el reporte:</p>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="primary" onClick={downloadPDF}>PDF</CButton>
+          <CButton color="primary" onClick={downloadExcel}>Excel</CButton>
+          <CButton color="secondary" onClick={() => setModalReportVisible(false)}>Cerrar</CButton>
         </CModalFooter>
       </CModal>
     </CContainer>

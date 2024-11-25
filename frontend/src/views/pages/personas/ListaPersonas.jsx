@@ -51,9 +51,11 @@ import {
   CDropdownItem,
 } from '@coreui/react'
 import logo from 'src/assets/brand/logo_saint_patrick.png';
-
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaPersonas = () => {
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaPersonas');
   const [personas, setPersonas] = useState([])
   const [modalVisible, setModalVisible] = useState(false)
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false)
@@ -862,7 +864,14 @@ const ReportePersonas = () => {
 
 
 {/* ************************************************************************************************************************************* */}
-  return (
+   // Verificar permisos
+   if (!canSelect) {
+    return <AccessDenied />;
+  }
+  
+
+
+return (
     <CContainer>
       <h1>Personas</h1>
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}

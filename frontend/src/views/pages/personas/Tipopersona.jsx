@@ -34,7 +34,12 @@ import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png'; // Ruta del logo
 
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
 const TipoPersona = () => {
+  const {canSelect, canUpdate, canDelete, canInsert } = usePermission('tipopersona');
+
   const [tiposPersona, setTiposPersona] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

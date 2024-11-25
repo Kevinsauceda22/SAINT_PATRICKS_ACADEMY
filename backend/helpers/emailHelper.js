@@ -427,5 +427,5 @@ export {
     enviarCorreoRecuperacion, 
     enviarCorreoCredencialesTemporales,
     enviarNotificacionNuevaActividad,
-    enviarNotificacionCancelacionActividad 
+    enviarNotificacionCancelacionActividad
 };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Importa useNavigate de react-router-dom
 import Swal from 'sweetalert2';
 import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilBrushAlt, cilFile, cilInfo } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
@@ -34,21 +35,15 @@ import {
   CCardTitle,
   CCardText,
 } from '@coreui/react';
-import { cilUser, cilCalendar, cilCheckCircle, cilUserFemale, cilEducation } from '@coreui/icons';
+import { cilUser, cilCalendar, cilCheckCircle, cilUserFemale, cilEducation, cilSchool } from '@coreui/icons';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
-import AccessDenied from "../AccessDenied/AccessDenied"
-import usePermission from '../../../../context/usePermission';
-
-
 
 const MatriculaForm = () => {
-  const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('Matricula');
-
-  const [loadingg, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [opciones, setOpciones] = useState({});
   const [hijos, setHijos] = useState([]);
   const [dniPadre, setDniPadre] = useState('');
@@ -59,6 +54,7 @@ const MatriculaForm = () => {
   const [secciones, setSecciones] = useState([]); // Estado para almacenar las secciones disponibles
   const [selectedGrado, setSelectedGrado] = useState(''); // Define el estado para el grado seleccionado
   const [periodoActivo, setPeriodoActivo] = useState(null); // Nuevo estado para el período activo
+  const navigate = useNavigate(); // Hook para la navegación
   const [matriculaData, setMatriculaData] = useState({
     fecha_matricula: '',
     cod_grado: '',
@@ -72,6 +68,8 @@ const MatriculaForm = () => {
     primer_apellido_hijo: '',    // Nuevo campo
     segundo_apellido_hijo: '',   // Nuevo campo
     fecha_nacimiento_hijo: '',   // Nuevo campo
+    nombre_completo_hijo: '', // Nuevo campo consolidado
+
   });
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -82,47 +80,72 @@ const MatriculaForm = () => {
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
 
-  const obtenerOpciones = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
-      const opcionesData = response.data;
-      
-      // Verificar los datos completos recibidos desde el servidor
-      console.log("Opciones de matrícula recibidas:", opcionesData);
-  
-      // Verificar específicamente los datos de periodos_matricula
-      if (opcionesData.periodos_matricula && opcionesData.periodos_matricula.length > 0) {
-        console.log("Periodos de matrícula activos:", opcionesData.periodos_matricula);
-      } else {
-        console.log("No se encontraron períodos de matrícula activos");
-      }
-  
-      // Detectar el primer período activo disponible
-      const periodoActivoEncontrado = opcionesData.periodos_matricula?.[0];
-      if (periodoActivoEncontrado) {
-        console.log("Período activo encontrado:", periodoActivoEncontrado);
-  
-        // Guardar el período activo en el estado
-        setPeriodoActivo(periodoActivoEncontrado);
-        setMatriculaData((prev) => ({
-          ...prev,
-          cod_periodo_matricula: periodoActivoEncontrado.Cod_periodo_matricula, // Asigna el período activo
-        }));
-      } else {
-        setPeriodoActivo(null); // No hay período activo encontrado
-      }
-  
-      setOpciones(opcionesData); // Guarda todas las opciones en el estado
-      
-    } catch (error) {
-      console.error('Error al cargar las opciones de matrícula:', error);
-      Swal.fire('Error', 'Error al cargar las opciones de matrícula.', 'error');
-    } finally {
-      setLoading(false);
+
+  // Función para manejar el cambio en el ComboBox
+  const handleComboBoxChange = (e) => {
+    const selectedValue = e.target.value;
+    
+    if (selectedValue === 'porGrado') {
+      navigate('/matriculasPorGrado');
+    } else if (selectedValue === 'porPeriodo') {
+      navigate('/matriculasPorPeriodo');
+    } else if (selectedValue === 'porAnioAnterior') {
+      navigate('/matriculasAnioAnterior');
     }
   };
+  const handlePaste = (e) => {
+    e.preventDefault();
+    Swal.fire('Advertencia', 'No se permite copiar y pegar en este campo.', 'warning');
+  };
   
+  const handleCopy = (e) => {
+    e.preventDefault();
+    Swal.fire('Advertencia', 'No se permite copiar y pegar en este campo.', 'warning');
+  };
+  
+const obtenerOpciones = async () => {
+  try {
+    setLoading(true);
+    const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+    const opcionesData = response.data;
+
+    // Verificar los datos completos recibidos desde el servidor
+    console.log("Opciones de matrícula recibidas:", opcionesData);
+
+    // Verificar específicamente los datos de periodos_matricula
+    if (opcionesData.periodos_matricula && opcionesData.periodos_matricula.length > 0) {
+      console.log("Periodos de matrícula activos:", opcionesData.periodos_matricula);
+    } else {
+      console.log("No se encontraron períodos de matrícula activos");
+    }
+
+    // Detectar el primer período activo disponible
+    const periodoActivoEncontrado = opcionesData.periodos_matricula?.find(p => p.estado === 'activo');
+    if (periodoActivoEncontrado) {
+      console.log("Período activo encontrado:", periodoActivoEncontrado);
+
+      // Guardar el período activo en el estado
+      setPeriodoActivo(periodoActivoEncontrado);
+      setMatriculaData((prev) => ({
+        ...prev,
+        cod_periodo_matricula: periodoActivoEncontrado.Cod_periodo_matricula, // Asigna el período activo
+      }));
+    } else {
+      console.log("No hay períodos activos disponibles.");
+      setPeriodoActivo(null); // No hay período activo encontrado
+    }
+
+    // Asignar todas las opciones recibidas al estado
+    setOpciones(opcionesData);
+
+  } catch (error) {
+    console.error('Error al cargar las opciones de matrícula:', error);
+    Swal.fire('Error', 'Error al cargar las opciones de matrícula.', 'error');
+  } finally {
+    setLoading(false);
+  }
+};
+
   
   
   useEffect(() => {
@@ -159,30 +182,54 @@ const MatriculaForm = () => {
   
 
   const obtenerHijos = async () => {
-    if (!dniPadre) return;
+    if (!dniPadre) {
+      Swal.fire('Advertencia', 'Por favor, ingrese un DNI válido para el padre.', 'warning');
+      return;
+    }
+  
     try {
       const response = await axios.get(`http://localhost:4000/api/matricula/hijos/${dniPadre}`);
       const { padre, hijos } = response.data;
   
-      // Asignar valores para el nombre y apellido del padre
-      setHijos(hijos.map(hijo => ({
-        ...hijo,
-        NombreCompleto: `${hijo.Primer_nombre} ${hijo.Segundo_nombre || ''} ${hijo.Primer_apellido} ${hijo.Segundo_apellido || ''}`.trim(),
-        FechaNacimiento: hijo.fecha_nacimiento_hijo 
-          ? new Date(hijo.fecha_nacimiento_hijo).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
-          : 'N/A'
-      })));
+      if (!padre || !padre.Nombre_Padre) {
+        Swal.fire('Error', 'No se encontraron datos del padre.', 'error');
+        return;
+      }
+  
+      if (!Array.isArray(hijos) || hijos.length === 0) {
+        Swal.fire('Advertencia', 'No se encontraron hijos asociados.', 'warning');
+        setNombrePadre(padre.Nombre_Padre || '');
+        setApellidoPadre(padre.Apellido_Padre || '');
+        setHijos([]);
+        return;
+      }
+  
+      setHijos(
+        hijos.map((hijo) => ({
+          ...hijo,
+          NombreCompleto: `${hijo.Primer_nombre} ${hijo.Segundo_nombre || ''} ${hijo.Primer_apellido} ${hijo.Segundo_apellido || ''}`.trim(),
+          FechaNacimiento: hijo.fecha_nacimiento
+            ? new Date(hijo.fecha_nacimiento).toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+              })
+            : 'N/A',
+        }))
+      );
   
       setNombrePadre(padre.Nombre_Padre || '');
       setApellidoPadre(padre.Apellido_Padre || '');
-  
-      if (hijos.length === 0) {
-        Swal.fire('Advertencia', 'No se encontraron hijos asociados.', 'warning');
-      }
     } catch (error) {
-      Swal.fire('Error', 'Error al obtener los hijos asociados.', 'error');
+      console.error('Error al obtener los hijos asociados:', error);
+      Swal.fire(
+        'Error',
+        error.response?.data?.message || 'Hubo un problema al obtener los hijos asociados.',
+        'error'
+      );
     }
   };
+  
   
   
  // Función para obtener las secciones por grado seleccionado
@@ -211,7 +258,7 @@ const handleGradoChange = (e) => {
 const handleSubmit = async (e) => {
   e.preventDefault();
 
-  // Crear el objeto con solo los datos necesarios para el backend
+  // Crear el objeto con los datos necesarios para el backend
   const dataToSend = {
     dni_padre: dniPadre,
     fecha_matricula: matriculaData.fecha_matricula,
@@ -220,32 +267,131 @@ const handleSubmit = async (e) => {
     cod_estado_matricula: matriculaData.cod_estado_matricula,
     cod_periodo_matricula: matriculaData.cod_periodo_matricula,
     cod_tipo_matricula: matriculaData.cod_tipo_matricula,
-    cod_hijo: matriculaData.cod_hijo, // Asegúrate de enviar el `cod_hijo`
+    cod_hijo: matriculaData.cod_hijo,
   };
 
-  // Verificar que todos los campos requeridos estén llenos, excepto los asignados automáticamente
-  const requiredFields = ['dni_padre', 'cod_grado', 'cod_seccion', 'cod_estado_matricula', 'cod_tipo_matricula', 'cod_hijo'];
-  const missingFields = requiredFields.filter((field) => !dataToSend[field]);
+  // Lista de campos requeridos
+  const requiredFields = [
+    'dni_padre',
+    'cod_grado',
+    'cod_seccion',
+    'cod_estado_matricula',
+    'cod_tipo_matricula',
+    'cod_hijo',
+  ];
 
+  // Verificar campos requeridos
+  const missingFields = requiredFields.filter((field) => !dataToSend[field]);
+  if (missingFields.length > 0) {
+    Swal.fire(
+      'Error',
+      `Los siguientes campos son requeridos: ${missingFields.join(', ')}.`,
+      'error'
+    );
+    return;
+  }
+
+  // Validar que la fecha de matrícula esté asignada automáticamente
   if (!dataToSend.fecha_matricula) {
     Swal.fire('Error', 'La fecha de matrícula no está asignada automáticamente.', 'error');
     return;
   }
 
-  if (missingFields.length > 0) {
-    Swal.fire('Error', 'Todos los campos son requeridos.', 'error');
+  // Obtener el año académico del período actual
+  const periodoActual = opciones.periodos_matricula?.find(
+    (p) => p.Cod_periodo_matricula === dataToSend.cod_periodo_matricula
+  );
+  const anioAcademicoActual = periodoActual?.Anio_academico;
+
+  // Validar localmente si ya existe una matrícula en este año para este alumno
+  const existeMatriculaEnAnio = matriculas.some(
+    (matricula) =>
+      matricula.cod_hijo === dataToSend.cod_hijo &&
+      matricula.anio_academico === anioAcademicoActual
+  );
+
+  if (existeMatriculaEnAnio) {
+    Swal.fire({
+      title: 'Advertencia',
+      text: `El alumno ya está matriculado en el período académico ${anioAcademicoActual}. No se puede registrar más de una vez en el mismo período.`,
+      icon: 'warning',
+    });
     return;
   }
 
   try {
+    // Realizar la solicitud al backend
     const response = await axios.post('http://localhost:4000/api/matricula/crearmatricula', dataToSend);
-    Swal.fire('Éxito', response.data.message, 'success');
-    setModalVisible(false);
-    setStep(1); // Reinicia el paso al cerrar el modal
-    obtenerMatriculas();
+
+    // Validar si el backend devuelve éxito
+    if (response.status === 201) {
+      const message = response.data.message;
+
+      // Datos adicionales para el PDF
+      const matriculaDataForPDF = {
+        codificacion_matricula: response.data.codificacion_matricula || 'N/A',
+        Nombre_Hijo: matriculaData.primer_nombre_hijo,
+        Segundo_nombre_Hijo: matriculaData.segundo_nombre_hijo,
+        Apellido_Hijo: matriculaData.primer_apellido_hijo,
+        Segundo_apellido_Hijo: matriculaData.segundo_apellido_hijo,
+        fecha_nacimiento_hijo: matriculaData.fecha_nacimiento_hijo || 'N/A',
+        Nombre_Padre: nombrePadre || 'N/A',
+        Apellido_Padre: apellidoPadre || 'N/A',
+        Nombre_grado: opciones.grados.find((g) => g.Cod_grado === selectedGrado)?.Nombre_grado || 'N/A',
+        Nombre_seccion: secciones.find((s) => s.Cod_secciones === selectedSeccion)?.Nombre_seccion || 'N/A',
+      };
+
+      // Mostrar alerta con opción de generar el PDF
+      Swal.fire({
+        title: 'Éxito',
+        text: `${message}. ¿Deseas imprimir la ficha técnica del estudiante?`,
+        icon: 'success',
+        showCancelButton: true,
+        confirmButtonText: 'Imprimir',
+        cancelButtonText: 'Cancelar',
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Generar el PDF
+          console.log('Datos enviados al PDF:', matriculaDataForPDF);
+          handleViewPDF(matriculaDataForPDF);
+        }
+      });
+
+      // Reiniciar el modal y los estados del formulario
+      setModalVisible(false);
+      setStep(1); // Reinicia al primer paso
+      setMatriculaData({
+        fecha_matricula: '',
+        cod_grado: '',
+        cod_seccion: '',
+        cod_estado_matricula: '',
+        cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
+        cod_tipo_matricula: '',
+        cod_hijo: '',
+        primer_nombre_hijo: '',
+        segundo_nombre_hijo: '',
+        primer_apellido_hijo: '',
+        segundo_apellido_hijo: '',
+        fecha_nacimiento_hijo: '',
+      });
+      obtenerMatriculas(); // Actualizar la lista de matrículas
+    }
   } catch (error) {
-    console.error('Error al crear la matrícula:', error.response?.data);
-    Swal.fire('Error', error.response?.data?.message || 'Error al crear la matrícula.', 'error');
+    // Manejo de errores del backend
+    const errorMessage = error.response?.data?.message || 'Error al crear la matrícula.';
+    console.error('Error al crear la matrícula:', errorMessage);
+
+    // Detectar si es un error lógico del backend
+    if (error.response?.status === 409) { // 409 Conflict para errores lógicos
+      Swal.fire({
+        title: 'Advertencia',
+        text: errorMessage,
+        icon: 'warning',
+      });
+    } else {
+      // Otros errores del servidor
+      Swal.fire('Error', errorMessage, 'error');
+    }
   }
 };
 
@@ -257,9 +403,6 @@ const getCurrentDate = () => {
   return `${year}-${month}-${day}`;
 };
 
-
-
-
   const handleSearch = (e) => {
     setSearchTerm(e.target.value.toLowerCase());
     setCurrentPage(0);
@@ -269,20 +412,16 @@ const getCurrentDate = () => {
     setMatriculaData((prevData) => ({ ...prevData, cod_hijo: codHijo }));
   
     // Buscar los datos del hijo seleccionado
-    const hijoSeleccionado = hijos.find(hijo => hijo.Cod_persona === parseInt(codHijo));
+    const hijoSeleccionado = hijos.find((hijo) => hijo.Cod_persona === parseInt(codHijo, 10));
     if (hijoSeleccionado) {
-      setMatriculaData(prevData => ({
+      setMatriculaData((prevData) => ({
         ...prevData,
-        primer_nombre_hijo: hijoSeleccionado.Primer_nombre || '', // Manejar null con cadena vacía
-        segundo_nombre_hijo: hijoSeleccionado.Segundo_nombre || '', // Manejar null con cadena vacía
-        primer_apellido_hijo: hijoSeleccionado.Primer_apellido || '', // Manejar null con cadena vacía
-        segundo_apellido_hijo: hijoSeleccionado.Segundo_apellido || '', // Manejar null con cadena vacía
-        fecha_nacimiento_hijo: hijoSeleccionado.fecha_nacimiento
-          ? hijoSeleccionado.fecha_nacimiento.split('T')[0] // Formatear la fecha si no es null
-          : '', // Si la fecha es null, usar cadena vacía
+        nombre_completo_hijo: `${hijoSeleccionado.Primer_nombre} ${hijoSeleccionado.Segundo_nombre || ''} ${hijoSeleccionado.Primer_apellido} ${hijoSeleccionado.Segundo_apellido || ''}`.trim(),
+        fecha_nacimiento_hijo: hijoSeleccionado.fecha_nacimiento?.split('T')[0] || 'N/A',
       }));
     }
   };
+  
   
 
   const filteredMatriculas = matriculas.filter((matricula) =>
@@ -301,82 +440,118 @@ const getCurrentDate = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-
-    // Insertar el logo
+  
+    // Configurar la imagen del logo
     const img = new Image();
-    img.src = logo;  // Usar el logo importado desde el directorio
+    img.src = logo; // Usar el logo importado desde el directorio
+  
     img.onload = () => {
-        doc.addImage(img, 'PNG', 10, 10, 30, 30); // Colocar el logo en la esquina superior izquierda
-
-        // Encabezado del reporte
-        doc.setFontSize(18);
-        doc.text('Reporte General de Matrículas', doc.internal.pageSize.width / 2, 20, { align: 'center' });
-        
-        // Línea divisoria
-        doc.setLineWidth(0.5);
-        doc.line(10, 35, doc.internal.pageSize.width - 10, 35);
-
-        // Detalles de la institución
-        doc.setFontSize(12);
-        doc.setTextColor(100);
-        doc.text('Saint Patrick Academy', 50, 45);
-        doc.text('Dirección: 123 Calle Principal, Ciudad', 50, 50);
-        doc.text('Teléfono: (555) 123-4567', 50, 55);
-        doc.text('Correo: info@saintpatrickacademy.edu', 50, 60);
-
-        // Línea divisoria después del encabezado
-        doc.setLineWidth(0.2);
-        doc.line(10, 65, doc.internal.pageSize.width - 10, 65);
-
-        // Título de la tabla
-        doc.setFontSize(14);
-        doc.setTextColor(0, 51, 102);  // Color azul oscuro
-        doc.text('Detalles de Matrículas', doc.internal.pageSize.width / 2, 75, { align: 'center' });
-
-        // Tabla de detalles de matrícula con diseño mejorado
-        doc.autoTable({
-            startY: 80,
-            head: [['#', 'Cod Matrícula', 'Fecha Matrícula', 'Estado', 'Período', 'Grado', 'Sección']],
-            body: matriculas.map((matricula, index) => [
-                index + 1,
-                matricula.codificacion_matricula,
-                matricula.fecha_matricula.split('T')[0],
-                opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A',
-                opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A',
-                matricula.Nombre_grado || 'N/A',
-                matricula.Nombre_seccion || 'N/A',
-            ]),
-            styles: {
-                fontSize: 10,
-                textColor: [34, 34, 34],
-                cellPadding: 4,
-                valign: 'middle',
-                overflow: 'linebreak',
-            },
-            headStyles: {
-                fillColor: [22, 160, 133],  // Verde azulado para los encabezados
-                textColor: [255, 255, 255],
-                fontSize: 12,
-            },
-            alternateRowStyles: { fillColor: [240, 248, 255] }, // Color azul claro alternado para las filas
-            margin: { left: 10, right: 10 },
-        });
-
-        // Pie de página con fecha de generación
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const date = new Date().toLocaleDateString();
-        doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-
-        // Guardar el PDF con un nombre específico
-        doc.save('Reporte_General_Matriculas.pdf');
+      // Añadir el logo en la esquina superior izquierda
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+  
+      // Encabezado del documento
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51); // Verde oscuro
+      doc.text(
+        "SAINT PATRICK'S ACADEMY",
+        doc.internal.pageSize.width / 2,
+        20,
+        { align: 'center' }
+      );
+  
+      // Título del reporte
+      doc.setFontSize(14);
+      doc.text(
+        'Reporte General de Matrículas',
+        doc.internal.pageSize.width / 2,
+        30,
+        { align: 'center' }
+      );
+  
+      // Detalles de la institución
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text(
+        'Casa Club del periodista, Colonia del Periodista',
+        doc.internal.pageSize.width / 2,
+        40,
+        { align: 'center' }
+      );
+      doc.text(
+        'Teléfono: (504) 2234-8871',
+        doc.internal.pageSize.width / 2,
+        45,
+        { align: 'center' }
+      );
+      doc.text(
+        'Correo: info@saintpatrickacademy.edu',
+        doc.internal.pageSize.width / 2,
+        50,
+        { align: 'center' }
+      );
+  
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51); // Verde oscuro
+      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+  
+      // Título de la tabla
+      doc.setFontSize(12);
+      doc.setTextColor(0, 51, 102); // Azul oscuro
+      doc.text(
+        'Detalles de Matrículas',
+        doc.internal.pageSize.width / 2,
+        65,
+        { align: 'center' }
+      );
+  
+      // Configurar la tabla de detalles de matrícula con diseño mejorado
+      doc.autoTable({
+        startY: 75,
+        head: [['#', 'Cod Matrícula', 'Fecha Matrícula', 'Estado', 'Período', 'Grado', 'Sección']],
+        body: matriculas.map((matricula, index) => [
+          index + 1,
+          matricula.codificacion_matricula,
+          matricula.fecha_matricula.split('T')[0],
+          opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A',
+          opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A',
+          matricula.Nombre_grado || 'N/A',
+          matricula.Nombre_seccion || 'N/A',
+        ]),
+        styles: {
+          fontSize: 10,
+          textColor: [34, 34, 34], // Gris oscuro para texto
+          cellPadding: 4,
+          valign: 'middle',
+          overflow: 'linebreak',
+        },
+        headStyles: {
+          fillColor: [0, 102, 51], // Verde oscuro para encabezados
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
+        margin: { left: 10, right: 10 },
+      });
+  
+      // Pie de página con fecha de generación
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      const date = new Date().toLocaleDateString();
+      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+  
+      // Generar el blob y abrir en una nueva pestaña
+      const pdfBlob = doc.output('blob');
+      const pdfURL = URL.createObjectURL(pdfBlob);
+      window.open(pdfURL); // Abre el archivo en una nueva pestaña
     };
-
+  
     img.onerror = () => {
-        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
     };
-};
-
+  };
+  
+  
 
 const exportToExcel = () => {
   const workbook = XLSX.utils.book_new();
@@ -434,73 +609,167 @@ const exportToExcel = () => {
 
   const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
   
-  const handleViewPDF = (matricula) => {
-    const doc = new jsPDF();
- 
-    // Convertimos la imagen importada en base64 y la añadimos al PDF
-    const img = new Image();
-    img.src = logo;  // Usamos la imagen importada
- 
-    img.onload = () => {
-       doc.addImage(img, 'PNG', 10, 10, 30, 30); // Insertar el logo
- 
-       // Encabezado con título de la institución
-       doc.setFontSize(18);
-       doc.text('Saint Patrick Academy', 50, 20);
- 
-       // Título del documento
-       doc.setFontSize(14);
-       doc.text(`Detalle de Matrícula`, doc.internal.pageSize.width / 2, 50, { align: 'center' });
- 
-       // Línea divisoria
-       doc.setLineWidth(0.5);
-       doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
- 
-       // Información general del estudiante
-       doc.setFontSize(12);
-       doc.text('Información del Estudiante:', 10, 65);
-       doc.setFontSize(10);
-       doc.text(`Código de Matrícula: ${matricula.codificacion_matricula}`, 10, 75);
-       doc.text(`Fecha de Matrícula: ${matricula.fecha_matricula.split('T')[0]}`, 10, 80);
-       
-       // Información adicional del estudiante
-       doc.text(`Nombre Completo: ${matricula.Nombre_Hijo} ${matricula.Segundo_nombre_Hijo || ''} ${matricula.Apellido_Hijo} ${matricula.Segundo_apellido_Hijo || ''}`, 10, 85);
-       doc.text(`Fecha de Nacimiento: ${matriculaData.fecha_nacimiento_hijo || ''}`, 10, 90);
+  
+  const handleViewPDF = async (matricula, opciones = {}) => {
+    try {
+        // Obtener los datos del horario
+        let horarios = []; // Horarios predeterminados vacíos
 
-       // Información del alumno y tutor
-       doc.text(`Padre/Madre/Tutor: ${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`, 10, 95);
- 
-       // Sección de Detalles de Matrícula
-       doc.setFontSize(12);
-       doc.text('Detalles de Matrícula:', 10, 105);
- 
-       // Tabla con detalles específicos usando autoTable
-       doc.autoTable({
-          startY: 110,
-          head: [['Campo', 'Valor']],
-          body: [
-             ['Estado', opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A'],
-             ['Período', opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A'],
-             ['Tipo de Matrícula', opciones.tipos_matricula?.find(t => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula)?.Tipo || 'N/A'],
-             ['Grado', matricula.Nombre_grado || 'N/A'],
-             ['Sección', matricula.Nombre_seccion || 'N/A'],
-          ],
-          styles: { fontSize: 10, textColor: [40, 40, 40] },
-          headStyles: { fillColor: [22, 160, 133] },
-          alternateRowStyles: { fillColor: [240, 240, 240] },
-       });
- 
-       // Pie de página con nota
-       doc.setFontSize(10);
-       doc.text('Este documento es solo para fines informativos. Contacte a la administración para más detalles.', 10, doc.internal.pageSize.height - 20);
- 
-       // Guardar el PDF con el nombre específico de la matrícula
-       doc.save(`Detalle_Matricula_${matricula.codificacion_matricula}.pdf`);
-    };
- 
-    img.onerror = () => {
-       Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-    };
+        if (matricula.Cod_seccion) {
+            try {
+                const response = await fetch(`http://localhost:4000/api/matricula/horario/${matricula.Cod_seccion}`);
+                if (response.ok) {
+                    const result = await response.json();
+                    horarios = result.data || []; // Asigna los datos de la API si están disponibles
+                }
+            } catch (apiError) {
+                console.warn('Error al obtener los datos del horario:', apiError.message);
+            }
+        }
+
+        const doc = new jsPDF();
+
+        // Logo predeterminado
+        const img = new Image();
+        const defaultLogo = './src/assets/brand/logo_saint_patrick.png';
+        img.src = matricula.logo || defaultLogo;
+
+        img.onload = () => {
+            // Agregar el logo
+            doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+            // Encabezado de la institución
+            doc.setFontSize(18);
+            doc.setTextColor(0, 102, 51);
+            doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
+
+            // Título del documento
+            doc.setFontSize(14);
+            doc.text('Detalle de Matrícula y Horarios', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+
+            // Detalles de la institución
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+            doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+            doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+
+            // Línea divisoria
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(0, 102, 51);
+            doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+
+            // Información del estudiante
+            doc.setFontSize(12);
+            doc.setTextColor(0);
+            doc.text('Información del Estudiante:', 10, 65);
+
+            const nombreCompleto = [
+                matricula.Nombre_Hijo || 'Nombre',
+                matricula.Segundo_nombre_Hijo || '',
+                matricula.Apellido_Hijo || 'Apellido',
+                matricula.Segundo_apellido_Hijo || ''
+            ].filter(Boolean).join(' ');
+
+            const fechaMatricula = matricula.fecha_matricula?.split('T')[0] || '2024-01-01';
+            const fechaNacimiento = matricula.fecha_nacimiento_hijo || '2005-05-15';
+            const nombrePadre = `${matricula.Nombre_Padre || 'Andrea'} ${matricula.Apellido_Padre || 'Morales'}`;
+            const codificacionMatricula = matricula.codificacion_matricula || 'SPA-2024-0001';
+
+            doc.setFontSize(10);
+            doc.text(`Código de Matrícula: ${codificacionMatricula}`, 10, 75);
+            doc.text(`Fecha de Matrícula: ${fechaMatricula}`, 10, 80);
+            doc.text(`Nombre Completo: ${nombreCompleto}`, 10, 85);
+            doc.text(`Fecha de Nacimiento: ${fechaNacimiento}`, 10, 90);
+            doc.text(`Padre/Madre/Tutor: ${nombrePadre}`, 10, 95);
+
+            // Detalles de la matrícula
+            doc.setFontSize(12);
+            doc.text('Detalles de Matrícula:', 10, 105);
+
+            const estado = opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'Activo';
+            const periodo = opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || '2024';
+            const tipoMatricula = opciones.tipos_matricula?.find(t => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula)?.Tipo || 'Regular';
+            const grado = matricula.Nombre_grado || 'Primer Grado';
+            const seccion = matricula.Nombre_seccion || 'A';
+
+            doc.autoTable({
+                startY: 110,
+                head: [['Campo', 'Valor']],
+                body: [
+                    ['Estado', estado],
+                    ['Período', periodo],
+                    ['Tipo de Matrícula', tipoMatricula],
+                    ['Grado', grado],
+                    ['Sección', seccion],
+                ],
+                styles: {
+                    fontSize: 10,
+                    textColor: [40, 40, 40],
+                    cellPadding: 2,
+                },
+                headStyles: {
+                    fillColor: [0, 102, 51],
+                    textColor: [255, 255, 255],
+                    fontSize: 10,
+                },
+                alternateRowStyles: { fillColor: [240, 248, 255] },
+            });
+
+            // Tabla con horarios estilizada
+            doc.setFontSize(12);
+            doc.text('Horario de Clases', 10, doc.lastAutoTable.finalY + 15);
+
+            doc.autoTable({
+                startY: doc.lastAutoTable.finalY + 20,
+                head: [['Asignatura', 'Día', 'Hora Inicio', 'Hora Fin']],
+                body: horarios.length > 0
+                    ? horarios.map(h => [
+                          { content: h.Nombre_asignatura, styles: { halign: 'left' } },
+                          { content: h.Nombre_dia, styles: { halign: 'center' } },
+                          { content: h.Hora_inicio, styles: { halign: 'center' } },
+                          { content: h.Hora_fin, styles: { halign: 'center' } },
+                      ])
+                    : [['No hay horarios disponibles', '', '', '']],
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 4,
+                    overflow: 'linebreak',
+                },
+                headStyles: {
+                    fillColor: [0, 102, 51],
+                    textColor: [255, 255, 255],
+                    fontSize: 11,
+                },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                columnStyles: {
+                    0: { cellWidth: 'auto' },
+                    1: { cellWidth: 50 },
+                    2: { cellWidth: 40 },
+                    3: { cellWidth: 40 },
+                },
+            });
+
+            // Pie de página con fecha de creación
+            const pageHeight = doc.internal.pageSize.height;
+            const creationDate = new Date().toLocaleDateString();
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Fecha de Creación: ${creationDate}`, 10, pageHeight - 10);
+
+            // Crear el PDF y abrirlo en el navegador
+            const pdfBlob = doc.output('blob');
+            const pdfURL = URL.createObjectURL(pdfBlob);
+            window.open(pdfURL, '_blank');
+        };
+
+        img.onerror = () => {
+            Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+        };
+    } catch (error) {
+        console.error('Error al generar el PDF:', error);
+        Swal.fire('Error', error.message, 'error');
+    }
 
     const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
@@ -515,98 +784,154 @@ useEffect(() => {
     setPeriodoActivo(opciones.periodos_activos[0]);
   }
 }, [opciones.periodos_activos]);
+const calculateAge = (birthDate) => {
+  if (!birthDate) return 'N/A';
+  const today = new Date();
+  const birth = new Date(birthDate);
+  let age = today.getFullYear() - birth.getFullYear();
+  const monthDiff = today.getMonth() - birth.getMonth();
 
-    // Verificar permisos
-    if (!canSelect) {
-      return <AccessDenied />;
-    }
-
+  // Restar un año si el cumpleaños aún no ha ocurrido este año
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return `${age} años`;
+};
 
   return (
     <CContainer>
- <CRow className="justify-content-between align-items-center mb-2">
-  <CCol xs={12} md={6}>
-    <h3>Matrículas</h3>
-  </CCol>
-  <CCol xs={12} md={6} className="d-flex justify-content-end align-items-center">
+  {/* Encabezado Mejorado y Centrado */}
+  <CRow className="justify-content-center mb-2">
+    <CCol xs="auto">
+      <h3 style={{ margin: 0, fontWeight: 'bold', color: '#4B6251', textAlign: 'center' }}>
+        <CIcon icon={cilSchool} size="lg" style={{ color: '#4B6251', marginRight: '0.5rem' }} />
+        Matrículas
+      </h3>
+    </CCol>
+  </CRow>
 
-    {canInsert && (
-  <CButton 
-  color="dark" 
-  onClick={() => {
-    // Verificar si hay un período activo
-    const hayPeriodoActivo = opciones.periodos_matricula?.some(
-      (p) => p.estado === 'activo'
-    );
+  {/* Línea decorativa debajo del encabezado */}
+  <div
+    style={{
+      width: '100%',
+      height: '2px',
+      backgroundColor: '#4B6251',
+      marginBottom: '1rem',
+    }}
+  ></div>
 
-    if (hayPeriodoActivo) {
-      // Si hay un período activo, abrir el modal
-      setModalVisible(true);
-    } else {
-      // Si no hay un período activo, mostrar un mensaje de advertencia
-      Swal.fire('Advertencia', 'No hay un período de matrícula activo.', 'warning');
-    }
-  }} 
-  className="me-2" 
-  style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}
->
-  <CIcon icon={cilPlus} /> Matrícula
-</CButton>
-    )}
+  {/* ComboBox y Botones en la misma fila */}
+  <CRow className="justify-content-between align-items-center mb-4">
+    <CCol xs={12} md={6} className="d-flex align-items-center">
+      <CFormSelect
+        onChange={handleComboBoxChange}
+        defaultValue=""
+        style={{
+          width: '250px',
+          borderRadius: '10px',
+          backgroundColor: '#f5f5f5',
+          color: '#333',
+          border: '1px solid #ccc',
+          padding: '0.5rem',
+          transition: 'all 0.3s',
+        }}
+        className="custom-select"
+        onMouseEnter={(e) => e.target.style.backgroundColor = '#e0e0e0'}
+        onMouseLeave={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+      >
+        <option value="" disabled>
+          Seleccione una opción
+        </option>
+        <option value="porGrado">Matrículas por Grado</option>
+        <option value="porPeriodo">Matrículas por Secciones</option>
+        <option value="porAnioAnterior">Matrículas de Años Anteriores</option>
+      </CFormSelect>
+    </CCol>
+    <CCol xs={12} md={6} className="d-flex justify-content-end align-items-center">
+      <CButton
+        color="dark"
+        onClick={() => {
+          const hayPeriodoActivo = opciones.periodos_matricula?.some((p) => p.estado === 'activo');
+          if (hayPeriodoActivo) {
+            setModalVisible(true);
+          } else {
+            Swal.fire('Advertencia', 'No hay un período de matrícula activo.', 'warning');
+          }
+        }}
+        className="me-2"
+        style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}
+      >
+        <CIcon icon={cilPlus} /> Nueva
+      </CButton>
 
-
-<CDropdown>
-  <CDropdownToggle 
-    color="success" 
-    style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}
-  >
+      <CDropdown>
+  <CDropdownToggle color="success" style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
     <CIcon icon={cilFile} /> Reporte
   </CDropdownToggle>
   <CDropdownMenu>
-    <CDropdownItem onClick={exportToPDF}>Exportar a PDF</CDropdownItem>
-    <CDropdownItem onClick={exportToExcel}>Exportar a Excel</CDropdownItem>
+    <CDropdownItem
+      onClick={() => {
+        // Filtrar matrículas según el término de búsqueda
+        const filteredData = matriculas.filter((matricula) =>
+          `${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) // Filtra según el término en el buscador
+        );
+        exportToPDF(filteredData); // Llama a exportToPDF con los datos filtrados
+      }}
+    >
+      Exportar a PDF
+    </CDropdownItem>
+    <CDropdownItem
+      onClick={() => {
+        // Filtrar matrículas según el término de búsqueda
+        const filteredData = matriculas.filter((matricula) =>
+          `${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) // Filtra según el término en el buscador
+        );
+        exportToExcel(filteredData); // Llama a exportToExcel con los datos filtrados
+      }}
+    >
+      Exportar a Excel
+    </CDropdownItem>
   </CDropdownMenu>
 </CDropdown>
 
+    </CCol>
+  </CRow>
 
-  </CCol>
-</CRow>
-{/* Barra de búsqueda alineada con la parte superior de la tabla */}
-<CRow className="align-items-center">
-  <CCol md={5}>
-    <CInputGroup>
-      <CInputGroupText>
-        <CIcon icon={cilSearch} />
-      </CInputGroupText>
-      <CFormInput placeholder="Buscar matrícula" value={searchTerm} onChange={handleSearch} />
-      <CButton color="secondary" onClick={() => setSearchTerm('')}>
-        <CIcon icon={cilBrushAlt} /> Limpiar
-      </CButton>
-    </CInputGroup>
-  </CCol>
-</CRow>
-{/* Nueva fila para el selector de cantidad de registros, debajo de los botones */}
-<CRow className="justify-content-end mb-4">
-  <CCol xs="auto" className="d-flex align-items-center">
-    <span className="me-1">Mostrar</span>
-    <CFormSelect
-      value={itemsPerPage}
-      onChange={(e) => {
-        setItemsPerPage(Number(e.target.value));
-        setCurrentPage(0);
-      }}
-      style={{ width: '100px' }}
-    >
-      <option value="5">5</option>
-      <option value="10">10</option>
-      <option value="20">20</option>
-    </CFormSelect>
-    <span className="ms-1">registros</span>
-  </CCol>
-</CRow>
-
-
-      {loadingg ? (
+  {/* Barra de búsqueda y selector de registros en una sola fila */}
+  <CRow className="align-items-center mb-4">
+    <CCol md={6} className="d-flex align-items-center">
+      <CInputGroup>
+        <CInputGroupText>
+          <CIcon icon={cilSearch} />
+        </CInputGroupText>
+        <CFormInput placeholder="Buscar matrícula" value={searchTerm} onChange={handleSearch} />
+        <CButton color="secondary" onClick={() => setSearchTerm('')}>
+          <CIcon icon={cilBrushAlt} /> Limpiar
+        </CButton>
+      </CInputGroup>
+    </CCol>
+    <CCol md={6} className="d-flex justify-content-end align-items-center">
+      <span className="me-1">Mostrar</span>
+      <CFormSelect
+        value={itemsPerPage}
+        onChange={(e) => {
+          setItemsPerPage(Number(e.target.value));
+          setCurrentPage(0);
+        }}
+        style={{ width: '100px' }}
+      >
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+      </CFormSelect>
+      <span className="ms-1">registros</span>
+    </CCol>
+  </CRow>
+      {loading ? (
         <CSpinner color="primary" />
       ) : (
         <div className="table-container">
@@ -649,42 +974,7 @@ useEffect(() => {
           {/* Mostrar el año académico siempre, incluso si el período está inactivo */}
           <CTableDataCell>{anioAcademico}</CTableDataCell>
           <CTableDataCell>
-            {/* Botón para abrir el modal */}
-
-
-{canUpdate && (
-            <CButton
-              color="warning"
-              className="me-1"
-              onClick={() => {
-                // Verificar si hay algún período activo
-                const hayPeriodoActivo = opciones.periodos_matricula?.some(
-                  (p) => p.estado === 'activo'
-                );
-
-                if (hayPeriodoActivo) {
-                  // Solo abre el modal si hay un período activo
-                  abrirModal(); // Reemplaza esto con tu función para abrir el modal
-                } else {
-                  // Muestra una advertencia si no hay período activo
-                  Swal.fire('Advertencia', 'No hay un período activo disponible.', 'warning');
-                }
-              }}
-            >
-              <CIcon icon={cilPen} />
-            </CButton>
-
-)}
-
-
-
-
-            {canDelete && (
-            <CButton color="danger" className="me-1" onClick={() => {/* Lógica para eliminar */}}>
-              <CIcon icon={cilTrash} />
-            </CButton>
-            )}
-
+            {/* Botón solo para ver el PDF */}
             <CButton color="info" onClick={() => handleViewPDF(matricula)}>
               <CIcon icon={cilInfo} />
             </CButton>
@@ -694,7 +984,6 @@ useEffect(() => {
     })}
   </CTableBody>
 </CTable>
-
         </div>
       )}
 {/* Sección de paginación */}
@@ -725,11 +1014,11 @@ useEffect(() => {
     setModalVisible(false);
     setStep(1); // Reinicia al primer paso
     setMatriculaData({
-      fecha_matricula: getCurrentDate(), // Establece la fecha actual automáticamente
+      fecha_matricula: getCurrentDate(),
       cod_grado: '',
       cod_seccion: '',
       cod_estado_matricula: '',
-      cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '', // Asigna el período activo automáticamente si existe
+      cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
       cod_tipo_matricula: '',
       cod_hijo: '',
       primer_nombre_hijo: '',     
@@ -738,14 +1027,14 @@ useEffect(() => {
       segundo_apellido_hijo: '',  
       fecha_nacimiento_hijo: '',  
     });
-    setDniPadre('');  // Reinicia el DNI del padre
-    setNombrePadre(''); // Reinicia el nombre del padre
-    setApellidoPadre(''); // Reinicia el apellido del padre
-    setSelectedGrado(''); // Reinicia el grado seleccionado
-    setSelectedSeccion(''); // Reinicia la sección seleccionada
+    setDniPadre('');
+    setNombrePadre('');
+    setApellidoPadre('');
+    setSelectedGrado('');
+    setSelectedSeccion('');
   }} 
   backdrop="static" 
-  size="md" 
+  size="md"
 >
   <CModalHeader closeButton>
     <CModalTitle>Registrar Nueva Matrícula - Paso {step}</CModalTitle>
@@ -756,66 +1045,116 @@ useEffect(() => {
         {/* Paso 1: Información del Padre e Hijo */}
         {step === 1 && (
           <div>
-            <h5>Información del Padre</h5>
-            <hr />
-            <CInputGroup className="mb-3">
-              <CInputGroupText><CIcon icon={cilUser} /></CInputGroupText>
-              <CFormInput
-                type="text"
-                placeholder="DNI del Padre"
-                value={dniPadre}
-                onChange={(e) => setDniPadre(e.target.value)}
-                onBlur={obtenerHijos}
-                required
-              />
-            </CInputGroup>
-            <CRow className="mb-3">
-              <CCol>
-                <label>Nombre del Padre</label>
-                <CFormInput type="text" value={nombrePadre} readOnly />
-              </CCol>
-              <CCol>
-                <label>Apellido del Padre</label>
-                <CFormInput type="text" value={apellidoPadre} readOnly />
-              </CCol>
-            </CRow>
+            {/* Card para la Información del Padre */}
+            <CCard className="mb-4">
+              <CCardBody>
+                <h5>Información del Padre</h5>
+                <hr />
+                <CInputGroup className="mb-3">
+  <CInputGroupText><CIcon icon={cilUser} /></CInputGroupText>
+  <CFormInput
+    type="text"
+    placeholder="DNI"
+    value={dniPadre}
+    onChange={(e) => {
+      const inputValue = e.target.value;
+      // Aceptar solo números y limitar a 13 dígitos
+      if (/^\d*$/.test(inputValue) && inputValue.length <= 13) {
+        setDniPadre(inputValue);
+      } else if (inputValue.length > 13) {
+        Swal.fire('Advertencia', 'El DNI no puede tener más de 13 dígitos.', 'warning');
+      } else {
+        Swal.fire('Advertencia', 'Solo se permiten números en este campo.', 'warning');
+      }
+    }}
+    onBlur={() => {
+      // Validar longitud exacta del DNI al perder el foco
+      if (dniPadre.length !== 13) {
+        Swal.fire('Error', 'El DNI debe tener exactamente 13 dígitos.', 'error');
+      } else {
+        obtenerHijos(); // Llamar a obtenerHijos si la longitud es válida
+      }
+    }}
+    onKeyPress={(e) => {
+      const charCode = e.which || e.keyCode;
+      if (charCode < 48 || charCode > 57) { // Solo números
+        e.preventDefault();
+      }
+    }}
+    onPaste={(e) => {
+      e.preventDefault();
+      Swal.fire('Advertencia', 'No se permite pegar en este campo.', 'warning');
+    }}
+    onCopy={(e) => {
+      e.preventDefault();
+      Swal.fire('Advertencia', 'No se permite copiar en este campo.', 'warning');
+    }}
+    required
+  />
+</CInputGroup>
 
-            <h5>Información de la Hijo</h5>
-            <hr />
-            <CInputGroup className="mb-3">
-              <CInputGroupText><CIcon icon={cilUserFemale} /></CInputGroupText>
-              <CFormSelect name="cod_hijo" onChange={handleHijoChange} value={matriculaData.cod_hijo} required>
-                <option value="">Selecciona del hijo</option>
-                {hijos.map((hijo) => (
-                  <option key={hijo.Cod_persona} value={hijo.Cod_persona}>{hijo.NombreCompleto}</option>
-                ))}
-              </CFormSelect>
-            </CInputGroup>
-            <CRow className="mb-3">
-              <CCol>
-                <label>Primer Nombre</label>
-                <CFormInput type="text" value={matriculaData.primer_nombre_hijo} readOnly />
-              </CCol>
-              <CCol>
-                <label>Segundo Nombre</label>
-                <CFormInput type="text" value={matriculaData.segundo_nombre_hijo} readOnly />
-              </CCol>
-            </CRow>
-            <CRow className="mb-3">
-              <CCol>
-                <label>Primer Apellido</label>
-                <CFormInput type="text" value={matriculaData.primer_apellido_hijo} readOnly />
-              </CCol>
-              <CCol>
-                <label>Segundo Apellido</label>
-                <CFormInput type="text" value={matriculaData.segundo_apellido_hijo} readOnly />
-              </CCol>
-            </CRow>
-            <label>Fecha de Nacimiento</label>
-            <CInputGroup className="mb-3">
-              <CInputGroupText><CIcon icon={cilCalendar} /></CInputGroupText>
-              <CFormInput type="date" value={matriculaData.fecha_nacimiento_hijo} readOnly />
-            </CInputGroup>
+                <CRow className="mb-3">
+                  <CCol>
+                    <label>Nombre del Padre</label>
+                    <CFormInput type="text" value={nombrePadre} readOnly />
+                  </CCol>
+                  <CCol>
+                    <label>Apellido del Padre</label>
+                    <CFormInput type="text" value={apellidoPadre} readOnly />
+                  </CCol>
+                </CRow>
+              </CCardBody>
+            </CCard>
+
+            {/* Información consolidada del Hijo */}
+<CCard className="mb-4">
+  <CCardBody>
+    <h5>Información del Hijo</h5>
+    <hr />
+    <CInputGroup className="mb-3">
+      <CInputGroupText>
+        <CIcon icon={cilUserFemale} />
+      </CInputGroupText>
+      <CFormSelect
+        name="cod_hijo"
+        onChange={handleHijoChange}
+        value={matriculaData.cod_hijo}
+        required
+      >
+        <option value="">Selecciona el hijo</option>
+        {hijos.map((hijo) => (
+          <option key={hijo.Cod_persona} value={hijo.Cod_persona}>
+            {`${hijo.Primer_nombre} ${hijo.Segundo_nombre || ''} ${hijo.Primer_apellido} ${hijo.Segundo_apellido || ''} - DNI: ${hijo.dni_persona}`}
+          </option>
+        ))}
+      </CFormSelect>
+    </CInputGroup>
+    <CRow className="mb-3">
+      <CCol>
+        <label>Nombre Completo</label>
+        <CFormInput type="text" value={matriculaData.nombre_completo_hijo} readOnly />
+      </CCol>
+    </CRow>
+    <CRow className="mb-3">
+      <CCol>
+        <label>Fecha de Nacimiento</label>
+        <CInputGroup className="mb-3">
+          <CInputGroupText><CIcon icon={cilCalendar} /></CInputGroupText>
+          <CFormInput type="date" value={matriculaData.fecha_nacimiento_hijo} readOnly />
+        </CInputGroup>
+      </CCol>
+      <CCol>
+        <label>Edad</label>
+        <CFormInput 
+          type="text" 
+          value={calculateAge(matriculaData.fecha_nacimiento_hijo)} 
+          readOnly 
+        />
+      </CCol>
+    </CRow>
+  </CCardBody>
+</CCard>
+
           </div>
         )}
 
@@ -825,78 +1164,81 @@ useEffect(() => {
             <h5>Información Académica</h5>
             <hr />
             <CRow className="mb-3">
-  <CCol>
-    <label>Fecha de Matrícula</label>
-    <CFormInput
-      type="date"
-      name="fecha_matricula"
-      value={matriculaData.fecha_matricula} // Se debe asignar automáticamente
-      readOnly
-      required
-    />
-  </CCol>
-</CRow>
+              <CCol>
+                <label>Fecha de Matrícula</label>
+                <CFormInput
+                  type="date"
+                  name="fecha_matricula"
+                  value={matriculaData.fecha_matricula}
+                  readOnly
+                  required
+                />
+              </CCol>
+            </CRow>
 
- {/* selelctor de gra */}
-<div className="mb-3">
-  {opciones.grados.map((grado) => (
-    <CButton
-      color={selectedGrado === grado.Cod_grado ? 'dark' : 'secondary'}
-      key={grado.Cod_grado}
-      onClick={() => {
-        setSelectedGrado(grado.Cod_grado);
-        obtenerSeccionesPorGrado(grado.Cod_grado);
-      }}
-      className="m-1"
-      style={{
-        backgroundColor: selectedGrado === grado.Cod_grado ? '#4B6251' : '#6C757D', // Color de fondo
-        borderColor: selectedGrado === grado.Cod_grado ? '#0F463A' : '#495057',    // Color de borde
-        color: '#FFF', // Color del texto en blanco
-      }}
-    >
-      {grado.Nombre_grado}
-    </CButton>
-  ))}
-</div>
- {/* selector de seccion */}
-<CRow className="mt-3">
-  {secciones.length > 0 ? (
-    secciones.map((seccion) => (
-      <CCol md={6} lg={4} className="mb-3" key={seccion.Cod_secciones}>
-        <CCard
-          className={selectedSeccion === seccion.Cod_secciones ? 'border-primary' : ''}
-          style={{
-            borderColor: selectedSeccion === seccion.Cod_secciones ? '#0F463A' : '#CED4DA',
-            backgroundColor: selectedSeccion === seccion.Cod_secciones ? '#4B6251' : '#FFF', // Color de fondo
-          }}
-        >
-          <CCardBody>
-            <CCardTitle style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
-              {seccion.Nombre_seccion}
-            </CCardTitle>
-            <CCardText style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
-              <strong>Aula:</strong> {seccion.Numero_aula || "No disponible"} <br />
-              <strong>Edificio:</strong> {seccion.Nombre_edificios || "No disponible"} <br />
-              <strong>Profesor:</strong> {seccion.Nombre_profesor ? `${seccion.Nombre_profesor} ${seccion.Apellido_profesor}` : "No disponible"} <br />
-            </CCardText>
-            <CButton
-              color="primary"
-              onClick={() => setSelectedSeccion(seccion.Cod_secciones)}
-              style={{
-                backgroundColor: '#4B6251', // Color de fondo
-                borderColor: '#0F463A',     // Color de borde
-                color: '#FFF',              // Color del texto en blanco
-              }}
-            >
-              Seleccionar
-            </CButton>
-          </CCardBody>
-        </CCard>
-      </CCol>
-    ))
-  ) : (
-    <p>No hay secciones disponibles para el grado seleccionado.</p>
-  )}
+            {/* Selector de Grado */}
+            <div className="mb-3">
+              <h6>Elije Grado</h6>
+              {opciones.grados.map((grado) => (
+                <CButton
+                  color={selectedGrado === grado.Cod_grado ? 'dark' : 'secondary'}
+                  key={grado.Cod_grado}
+                  onClick={() => {
+                    setSelectedGrado(grado.Cod_grado);
+                    obtenerSeccionesPorGrado(grado.Cod_grado);
+                  }}
+                  className="m-1"
+                  style={{
+                    backgroundColor: selectedGrado === grado.Cod_grado ? '#4B6251' : '#6C757D',
+                    borderColor: selectedGrado === grado.Cod_grado ? '#0F463A' : '#495057',
+                    color: '#FFF',
+                  }}
+                >
+                  {grado.Nombre_grado}
+                </CButton>
+              ))}
+            </div>
+
+            {/* Selector de Sección */}
+            <CRow className="mt-3">
+              <h6>Elije Sección</h6>
+              {secciones.length > 0 ? (
+                secciones.map((seccion) => (
+                  <CCol md={6} lg={4} className="mb-3" key={seccion.Cod_secciones}>
+                    <CCard
+                      className={selectedSeccion === seccion.Cod_secciones ? 'border-primary' : ''}
+                      style={{
+                        borderColor: selectedSeccion === seccion.Cod_secciones ? '#0F463A' : '#CED4DA',
+                        backgroundColor: selectedSeccion === seccion.Cod_secciones ? '#4B6251' : '#FFF',
+                      }}
+                    >
+                      <CCardBody>
+                        <CCardTitle style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
+                          {seccion.Nombre_seccion}
+                        </CCardTitle>
+                        <CCardText style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
+                          <strong>Aula:</strong> {seccion.Numero_aula || "No disponible"} <br />
+                          <strong>Edificio:</strong> {seccion.Nombre_edificios || "No disponible"} <br />
+                          <strong>Profesor:</strong> {seccion.Nombre_profesor ? `${seccion.Nombre_profesor} ${seccion.Apellido_profesor}` : "No disponible"} <br />
+                        </CCardText>
+                        <CButton
+                          color="primary"
+                          onClick={() => setSelectedSeccion(seccion.Cod_secciones)}
+                          style={{
+                            backgroundColor: '#4B6251',
+                            borderColor: '#0F463A',
+                            color: '#FFF',
+                          }}
+                        >
+                          Elije Sección
+                        </CButton>
+                      </CCardBody>
+                    </CCard>
+                  </CCol>
+                ))
+              ) : (
+                <p>No hay secciones disponibles para el grado seleccionado.</p>
+              )}
             </CRow>
           </div>
         )}
@@ -922,14 +1264,13 @@ useEffect(() => {
                 </CFormSelect>
               </CCol>
               <CCol>
-  <label>Período Académico</label>
-  <CFormInput
-    type="text"
-    value={periodoActivo ? periodoActivo.Anio_academico : 'No disponible'}
-    readOnly
-  />
-</CCol>
-
+                <label>Período Académico</label>
+                <CFormInput
+                  type="text"
+                  value={periodoActivo ? periodoActivo.Anio_academico : 'No disponible'}
+                  readOnly
+                />
+              </CCol>
             </CRow>
             <CInputGroup className="mb-3">
               <CInputGroupText>Tipo Matrícula</CInputGroupText>
@@ -959,17 +1300,28 @@ useEffect(() => {
   {/* Footer de navegación */}
   <CModalFooter>
     {step > 1 && (
-      <CButton color="secondary" onClick={prevStep}>Atrás</CButton>
+      <CButton color="secondary" onClick={prevStep}>
+        Atrás
+      </CButton>
     )}
     {step < 3 ? (
-      <CButton color="primary" onClick={nextStep}>Siguiente</CButton>
+      <CButton
+        style={{ backgroundColor: '#4B6251', borderColor: '#4B6251', color: '#ffffff' }}
+        onClick={nextStep}
+      >
+        Siguiente
+      </CButton>
     ) : (
-      <CButton color="success" onClick={handleSubmit} disabled={!periodoActivo}>Finalizar y Guardar</CButton>
+      <CButton
+        style={{ backgroundColor: '#4B6251', borderColor: '#4B6251', color: '#ffffff' }}
+        onClick={handleSubmit}
+        disabled={!periodoActivo}
+      >
+        Guardar
+      </CButton>
     )}
   </CModalFooter>
 </CModal>
-
-
       <style jsx>{`
         .table-container {
           max-height: 400px;
