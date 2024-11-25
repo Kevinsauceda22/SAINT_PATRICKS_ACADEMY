@@ -585,35 +585,24 @@ const preventCopyPaste = (e) => {
   const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
     const doc = new jsPDF();
   
+    // Configuración del logo
     const img = new Image();
-    const defaultLogo = './src/assets/brand/logo_saint_patrick.png'; // Ruta predeterminada para el logo
-    img.src = logo || defaultLogo; // Usa el logo proporcionado o uno predeterminado
+    const defaultLogo = './src/assets/brand/logo_saint_patrick.png';
+    img.src = logo || defaultLogo;
   
     img.onload = () => {
       try {
-        // Añadir el logo en la esquina superior izquierda
+        // Encabezado
         doc.addImage(img, 'PNG', 10, 10, 30, 30);
-  
-        // Encabezado de la institución
         doc.setFontSize(18);
-        doc.setTextColor(0, 102, 51); // Verde oscuro
-        doc.text(
-          "SAINT PATRICK'S ACADEMY",
-          doc.internal.pageSize.width / 2,
-          20,
-          { align: 'center' }
-        );
-  
-        // Título del documento
+        doc.setTextColor(0, 102, 51);
+        doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, {
+          align: 'center',
+        });
         doc.setFontSize(14);
-        doc.text(
-          'Detalle de Caja',
-          doc.internal.pageSize.width / 2,
-          30,
-          { align: 'center' }
-        );
-  
-        // Detalles de la institución
+        doc.text('Reporte Individual de Caja', doc.internal.pageSize.width / 2, 30, {
+          align: 'center',
+        });
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.text(
@@ -634,45 +623,61 @@ const preventCopyPaste = (e) => {
           50,
           { align: 'center' }
         );
-  
-        // Línea divisoria
         doc.setLineWidth(0.5);
-        doc.setDrawColor(0, 102, 51); // Verde oscuro
+        doc.setDrawColor(0, 102, 51);
         doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
   
-        // Información general de la caja
+        // Detalles individuales en tabla
         doc.setFontSize(12);
-        doc.setTextColor(0);
-        doc.text('Información de la Caja:', 10, 65);
-  
-        const detalles = [
-          { label: 'Código de Caja:', value: caja.Cod_caja || 'N/A' },
-          { label: 'Nombre del Padre:', value: `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}` },
-          { label: 'Descripción:', value: caja.Descripcion || 'N/A' },
-          { label: 'Monto:', value: `L ${parseFloat(caja.Monto || 0).toFixed(2)}` },
-          { label: 'Estado de Pago:', value: caja.Estado_pago || 'Pendiente' },
-          { label: 'Fecha de Registro:', value: caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A' },
-          { label: 'Hora de Registro:', value: caja.Hora_registro ? new Date(caja.Hora_registro).toLocaleTimeString() : 'N/A' },
-          { label: 'Dinero Recibido:', value: `L ${parseFloat(dineroRecibido || 0).toFixed(2)}` },
-          { label: 'Vuelto:', value: `L ${parseFloat(vuelto || 0).toFixed(2)}` },
-        ];
-  
-        doc.setFontSize(10);
-        detalles.forEach((detalle, index) => {
-          doc.text(`${detalle.label} ${detalle.value}`, 10, 75 + index * 8);
+        doc.setTextColor(0, 51, 102);
+        doc.text('Detalles de la Caja', doc.internal.pageSize.width / 2, 65, {
+          align: 'center',
         });
   
-        // Pie de página con nota
+        doc.autoTable({
+          startY: 75,
+          head: [['Campo', 'Valor']],
+          body: [
+            ['Nombre del Padre', `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}`],
+            ['Descripción', caja.Descripcion || 'N/A'],
+            ['Monto', `L ${parseFloat(caja.Monto || 0).toFixed(2)}`],
+            ['Estado de Pago', caja.Estado_pago || 'Pendiente'],
+            [
+              'Fecha de Registro',
+              caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A',
+            ],
+            [
+              'Hora de Registro',
+              caja.Hora_registro ? new Date(caja.Hora_registro).toLocaleTimeString() : 'N/A',
+            ],
+            
+          ],
+          styles: {
+            fontSize: 10,
+            textColor: [34, 34, 34],
+            cellPadding: 4,
+            valign: 'middle',
+            overflow: 'linebreak',
+          },
+          headStyles: {
+            fillColor: [0, 102, 51], // Verde oscuro para encabezados
+            textColor: [255, 255, 255],
+            fontSize: 10,
+          },
+          alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
+          margin: { left: 10, right: 10 },
+        });
+  
+        // Pie de página
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text(
-          'Este documento es solo para fines informativos. Contacte a la administración para más detalles.',
-          10,
-          doc.internal.pageSize.height - 20
-        );
+        const date = new Date().toLocaleDateString();
+        doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
   
-        // Guardar el PDF con el nombre específico
-        doc.save(`Detalle_Caja_${caja.Cod_caja || 'sin_codigo'}.pdf`);
+        // Generar y abrir PDF
+        const pdfBlob = doc.output('blob');
+        const pdfURL = URL.createObjectURL(pdfBlob);
+        window.open(pdfURL);
       } catch (error) {
         console.error('Error al generar el PDF:', error);
         Swal.fire('Error', 'Hubo un problema al generar el PDF.', 'error');
@@ -680,7 +685,6 @@ const preventCopyPaste = (e) => {
     };
   
     img.onerror = () => {
-      console.error('Error al cargar la imagen:', img.src);
       Swal.fire(
         'Error',
         'No se pudo cargar el logo. Verifique la ruta o formato.',
@@ -688,6 +692,7 @@ const preventCopyPaste = (e) => {
       );
     };
   };
+  
   
   
   const calcularVuelto = (monto, descuento, recibido) => {
