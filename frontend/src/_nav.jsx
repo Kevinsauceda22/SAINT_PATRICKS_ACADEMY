@@ -136,6 +136,7 @@ const _nav = [
   {
     component: CNavGroup,
     name: 'Mantenimientos',
+    nameobject: 'ListaAsignaturas',
     icon: cilListRich,
     items: [
       {
