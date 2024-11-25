@@ -193,7 +193,6 @@ const App = () => {
                 <Route path="/edificios" element={<ListaEdificios />} />
                 <Route path="/aulas" element={<ListaAulas />} />
                 <Route path="/dias" element={<ListaDias />} />
-                <Route path="/ListaSecciones_Asignatura"  element={<ListaSecciones_Asignatura />} />
                 <Route path="/lista-secciones-asignatura" element={<ListaSecciones_Asignatura />} />
                 <Route path="/gestion_academica"  element={<ListaGestion_Academica />} />
                 <Route exact path="/lista-secciones" element={<ListaSecciones />} /> 
