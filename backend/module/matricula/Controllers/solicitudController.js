@@ -1,5 +1,6 @@
 // CONTROLLER
 import conectarDB from '../../../config/db.js';
+
 const pool = await conectarDB();
 export const obtenerSolicitudes = async (req, res) => {
     try {
@@ -125,92 +126,49 @@ export const insertarSolicitud = async (req, res) => {
 
 
 export const actualizarSolicitud = async (req, res) => {
-    const { Cod_solicitud } = req.params; // Get the request parameter
+    const { Cod_solicitud } = req.params; // Extraer Cod_solicitud desde los parámetros de la ruta
     const {
+      Cod_persona,
+      Nombre_solicitud,
+      Fecha_solicitud,
+      Hora_Inicio,
+      Hora_Fin,
+      Asunto,
+      Persona_requerida,
+      estado, // Incluir estado del frontend
+    } = req.body;
+  
+    try {
+      // Llamar al procedimiento almacenado con los 9 parámetros
+      const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      const params = [
+        Cod_solicitud, // Identificador de la solicitud a actualizar
         Cod_persona,
         Nombre_solicitud,
         Fecha_solicitud,
         Hora_Inicio,
-        Hora_Fin,
+        Hora_Fin || null, // Permitir valores nulos para Hora_Fin
         Asunto,
         Persona_requerida,
-    } = req.body;
-
-    // Validate the Cod_solicitud parameter
-    if (isNaN(Cod_solicitud)) {
-        return res.status(400).json({ message: 'Cod_solicitud debe ser un número válido.' });
-    }
-
-    // Validate all required fields
-    if (!Cod_persona || !Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Asunto || !Persona_requerida) {
-        return res.status(400).json({
-            message: 'Todos los campos son obligatorios, excepto Hora_Fin.',
-        });
-    }
-
-    // Ensure Hora_Fin has a default value if not provided
-    const finalHoraFin = Hora_Fin || Hora_Inicio; // Use Hora_Inicio as fallback if Hora_Fin is not provided
-
-    // Validate that Hora_Fin is greater than Hora_Inicio
-    const [horaInicioHoras, horaInicioMinutos] = Hora_Inicio.split(':').map(Number);
-    const [horaFinHoras, horaFinMinutos] = finalHoraFin.split(':').map(Number);
-
-    if (
-        horaFinHoras < horaInicioHoras ||
-        (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)
-    ) {
-        return res.status(400).json({
-            message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
-        });
-    }
-
-    try {
-        // Determine the status based on the date and time
-        const currentDateTime = new Date();
-        const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${finalHoraFin}`);
-
-        let estado = 'Pendiente';
-        if (citaDateTimeEnd <= currentDateTime) {
-            estado = 'Finalizada';
-        }
-
-        // Prepare the SQL query and parameters for the stored procedure
-        const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [
-            parseInt(Cod_solicitud, 10),
-            Cod_persona,
-            Nombre_solicitud,
-            Fecha_solicitud,
-            Hora_Inicio,
-            finalHoraFin,
-            Asunto,
-            Persona_requerida,
-        ];
-
-        // Execute the query
-        const [results] = await pool.query(query, params);
-
-        const affectedRows = results[0]?.[0]?.affectedRows;
-
-        if (!affectedRows) {
-            return res.status(404).json({
-                message: 'Solicitud no encontrada o sin cambios.',
-            });
-        }
-
-        // Return a success response
-        res.status(200).json({
-            message: 'Solicitud actualizada correctamente.',
-            estado,
-        });
+        estado || 'Pendiente', // Usar "Pendiente" si el estado no se proporciona
+      ];
+  
+      // Ejecutar la consulta
+      const [results] = await pool.query(query, params);
+  
+      // Verificar si se afectó alguna fila
+      if (results.affectedRows === 0) {
+        return res.status(404).json({ message: 'Solicitud no encontrada o no se realizaron cambios.' });
+      }
+  
+      // Respuesta exitosa
+      return res.status(200).json({ message: 'Solicitud actualizada correctamente.' });
     } catch (error) {
-        console.error('Error al actualizar la solicitud:', error);
-        res.status(500).json({
-            message: 'Error al actualizar la solicitud.',
-            error: error.message,
-        });
+      console.error('Error al actualizar la solicitud:', error.message);
+      res.status(500).json({ message: 'Error al actualizar la solicitud.', error: error.message });
     }
-};
+  };
+  
 
 
 export const actualizarEstadoCitas = async (req, res) => {
