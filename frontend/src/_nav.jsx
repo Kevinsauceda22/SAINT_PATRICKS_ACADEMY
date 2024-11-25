@@ -15,6 +15,7 @@ import {
   cilDollar,
   cilGraph,
   cilUser,
+  cilFolderOpen,
 } from '@coreui/icons';
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react';
 
@@ -40,6 +41,32 @@ const _nav = [
     nameobject: 'Matricula',
 
     icon: cilSchool,
+  },
+  {
+    component: CNavGroup,
+    name: 'Gestion Academica',
+    icon: cilFolderOpen,
+    nameobject: 'ListaAsignaturas',
+    items: [
+      {
+        component: CNavItem,
+        name: 'Gestión Académica',
+        to: '/gestion_academica',
+        nameobject: 'Solicitud_admin',
+      },
+      {
+        component: CNavItem,
+        name: 'Listado de Secciones', 
+        to: '/lista-secciones',
+        nameobject: 'Solicitud_admin',
+      },
+      {
+        component: CNavItem,
+        name: 'Secciones asignaturas',
+        to: '/lista-secciones_asignatura',
+        nameobject: 'ListaSecciones_Asignatura',
+      }, 
+    ],
   },
    {
     component: CNavItem,
@@ -86,31 +113,11 @@ const _nav = [
   
   {
     component: CNavItem,
-    name: 'Actividades extracurriculares',
+    name: 'Extracurriculares',
     to: '/actividades',
     icon: cilSchool,
     nameobject: 'actividades',
-  },
-  {
-    component: CNavItem,
-    name: 'Gestión Académica',
-    to: '/gestion_academica',
-    nameobject: 'Solicitud_admin',
-  },
-  {
-    component: CNavItem,
-    name: 'Listado de Secciones', 
-    to: '/lista-secciones',
-    nameobject: 'Solicitud_admin',
-  },
-  {
-    component: CNavItem,
-    name: 'Secciones asignaturas',
-    to: '/lista-secciones_asignatura',
-    icon: cilFile,
-    nameobject: 'ListaSecciones_Asignatura',
-  }, 
-  
+  },  
   {
     component: CNavItem,
     name: 'Mis Notas',
@@ -141,7 +148,6 @@ const _nav = [
       icon: cilCalendar, 
       nameobject: 'Solicitud_admin',
     },
-
    
   {
     component: CNavGroup,
@@ -424,5 +430,7 @@ const _nav = [
     ],
   },
 ];
+
+
 
 export default _nav;
