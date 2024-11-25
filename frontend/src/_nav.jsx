@@ -357,6 +357,21 @@ const _nav = [
         to: '/municipios',
         nameobject: 'Municipios',
       },
+      {
+        component: CNavItem,
+        name: 'Contacto',
+        to: '/contacto',
+      },
+      {
+        component: CNavItem,
+        name: 'Tipo Contacto',
+        to: '/tipoContacto',
+      },
+      {
+        component: CNavItem,
+        name: 'Genero Persona',
+        to: '/generoPersona',
+      },
     ],
   },
 
