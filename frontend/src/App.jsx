@@ -51,6 +51,7 @@ const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGr
 const ListaGradosAsignaturas = React.lazy(() => import('./views/pages/calificaciones/ListaGradosAsignaturas'))
 const ListaParciales = React.lazy(() => import('./views/pages/calificaciones/ListaParciales'));
 const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones/ListaPonderaciones'));
+const ListaPonderacionesCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaPonderacionesCiclos'));
 const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabilidad'));
 const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDiario'));
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
@@ -87,6 +88,7 @@ const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solic
 const MatriculasPorGrado = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorGrado'));
 const MatriculasPorPeriodo = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorPeriodo'));
 const MatriculasAnioAnterior = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasAnioAnterior'));
+const Caja = React.lazy(() => import('./views/pages/matricula/caja'));
 
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
@@ -173,6 +175,7 @@ const App = () => {
                 <Route path="/ListaGradosAsignaturas" element={<ListaGradosAsignaturas />} />
                 <Route path="/ListaParciales" element={<ListaParciales />} />
                 <Route path="/ListaPonderaciones" element={<ListaPonderaciones />} />
+                <Route path="/ListaPonderacionesCiclos" element={<ListaPonderacionesCiclos />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
                 <Route path="/VistaListaProfesor" element={<VistaListaProfesor />} />
 
@@ -186,7 +189,7 @@ const App = () => {
                 <Route path="/estadomatricula" element={<Estadomatricula />} />
                 <Route path="/conceptopago" element={<Conceptopago />} />
                 <Route path="/edificios" element={<ListaEdificios />} />
-                <Route exact path="/aulas" element={<ListaAulas />} />
+                <Route path="/aulas" element={<ListaAulas />} />
                 <Route path="/dias" element={<ListaDias />} />
                 <Route path="/ListaSecciones_Asignatura"  element={<ListaSecciones_Asignatura />} />
                 <Route path="/actividades" element={<ListaActivex />} />
@@ -198,6 +201,7 @@ const App = () => {
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
+                <Route path="/caja" element={<Caja />} />
                 <Route path="/Solicitud" element={<Solicitud/>} />
                 {/* New Routes for Matriculas */}
           <Route path="/matriculasPorGrado" element={<MatriculasPorGrado />} />

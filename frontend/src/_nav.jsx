@@ -8,6 +8,7 @@ import {
   cilBook,
   cilCalendar,
   cilPencil,
+  cilCalculator,
   cilChartLine,
   cilFile,
   cilBookmark,
@@ -45,7 +46,14 @@ const _nav = [
     name: 'Grados Asignaturas',
     to: '/ListaGradosAsignaturas',
     icon: cilClipboard,
-    nameobject: 'navGradosAsignaturas',
+    nameobject: 'ListaGradosAsignaturas',
+  },
+   {
+    component: CNavItem,
+    name: 'Ponderaciones Ciclos',
+    to: '/ListaPonderacionesCiclos',
+    icon: cilCalculator,
+    nameobject: 'ListaPonderacionesCiclos',
   },
   {
     component: CNavItem,
@@ -59,7 +67,7 @@ const _nav = [
     name: 'Mis Asistencias',
     to: '/ListaAsistenciaProfesor',
     icon: cilClipboard,
-    nameobject: 'navAsistenciaProfesor',
+    nameobject: 'ListaAsistenciaProfesor',
   },
   {
     component: CNavItem,
@@ -73,7 +81,7 @@ const _nav = [
     name: 'Actividades académicas',
     to: '/ListaActividadesAca',
     icon: cilTask,
-    nameobject: 'navActividadesAcademicas',
+    nameobject: 'ListaActividadesAca',
   },
   
   {
@@ -88,14 +96,14 @@ const _nav = [
     name: 'Mis Notas',
     to: '/ListaNotasProfesor',
     icon: cilFile,
-    nameobject: 'navNotasProfesor',
+    nameobject: 'ListaNotasProfesor',
   },
   {
     component: CNavItem,
     name: 'Notas',
     to: '/ListaNotas',
     icon: cilFile,
-    nameobject: 'ListaEstadonota',
+    nameobject: 'ListaNotas',
   },
 
 
@@ -104,7 +112,7 @@ const _nav = [
      name: 'Secciones asignaturas',
      to: '/ListaSecciones_Asignatura',
      icon: cilFile,
-    nameobject: 'navListaSecciones_Asignaturas',
+    nameobject: 'ListaSecciones_Asignatura',
     },
 
 
@@ -122,12 +130,13 @@ const _nav = [
       to: '/Solicitud_admin',
       icon: cilCalendar, 
       nameobject: 'Solicitud_admin',
-
-      
     },
+
+   
   {
     component: CNavGroup,
     name: 'Mantenimientos',
+    nameobject: 'ListaAsignaturas',
     icon: cilListRich,
     items: [
       {
@@ -154,6 +163,8 @@ const _nav = [
         to: '/ListaEstadoasistencia',
         nameobject: 'ListaEstadoasistencia',
       },
+
+      
       {
         component: CNavItem,
         name: 'Estado nota',
@@ -244,8 +255,17 @@ const _nav = [
         to: '/Contabilidad',
         nameobject: 'Contabilidad',
       },
+
+      
     ],
   },
+  {
+    component: CNavItem,
+    name: 'Caja',
+    to: '/caja', 
+    nameobject: 'Solicitud_admin',
+  },
+
   {
     component: CNavGroup,
     name: 'Contabilidad y Pagos',
@@ -258,6 +278,7 @@ const _nav = [
         to: '/ListaPagosMatricula',
         nameobject: 'navPagosMatricula',
       },
+    
       {
         component: CNavItem,
         name: 'Historial de Pagos Mensuales',
@@ -276,6 +297,7 @@ const _nav = [
     component: CNavGroup,
     name: 'Personas',
     icon: cilUser,
+    nameobject: 'ListaPersonas',
     items: [
       {
         component: CNavItem,
@@ -299,7 +321,7 @@ const _nav = [
         component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
-        nameobject: 'Lista Relacion',
+        nameobject: 'ListaRelacion',
       },
       {
         component: CNavItem,
@@ -327,6 +349,7 @@ const _nav = [
       },
     ],
   },
+  
   {
     component: CNavGroup,
     name: 'Reportes de Bitácora',

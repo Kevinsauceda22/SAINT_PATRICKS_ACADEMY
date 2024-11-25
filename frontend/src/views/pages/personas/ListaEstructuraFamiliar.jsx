@@ -39,7 +39,14 @@ import {
   CDropdownItem,
 } from '@coreui/react'
 
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+
+
 const ListaEstructura = () => {
+
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaEstructura');
+
   // Estados principales
   const [estructuraFamiliar, setEstructuraFamiliar] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -556,6 +563,12 @@ const disableCopyPaste = (e) => {
 
 {/* -------------------------------------------------------------------------------------------------------------------------------- */}
   
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+    
+
 
 return (
     <CContainer>
@@ -703,6 +716,9 @@ return (
             </CTableDataCell>
             <CTableDataCell className="text-center">
               <div className="d-flex justify-content-center">
+
+
+              {canUpdate && (
                 <CButton
                   color="warning"
                   onClick={() => openUpdateModal(estructura)}
@@ -710,9 +726,14 @@ return (
                 >
                   <CIcon icon={cilPen} />
                 </CButton>
+
+              )}
+
+{canDelete && (
                 <CButton color="danger" onClick={() => openDeleteModal(estructura)}>
                   <CIcon icon={cilTrash} />
                 </CButton>
+)}
               </div>
             </CTableDataCell>
           </CTableRow>

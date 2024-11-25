@@ -55,6 +55,7 @@ import cuentasRouter from './module/auth/creacioncuentas_Routes.js';
 
 import municipioRoutes from './module/personas/Routes/municipiosRoutes.js';
 import Solicitud_adminRoutes from './module/matricula/Routes/Solicitud_adminRoutes.js';
+import cajaRoutes from './module/matricula/Routes/cajaRoutes.js'; 
 
 
 
@@ -189,6 +190,8 @@ app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 //contabilidad
 app.use('/api/catalogoCuentas', catalogoCuentasRoutes);
 app.use('/api/Librodiario',libroDiarioRoutes);
+// Usar las rutas de caja
+app.use('/api/caja', cajaRoutes);
 
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;

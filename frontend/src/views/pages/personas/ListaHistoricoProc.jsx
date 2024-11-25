@@ -34,10 +34,15 @@ import {
   CTableBody,
   CTableDataCell,
 } from '@coreui/react';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 
 const ListaHistoricoProc = () => {
+
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaHistoricoProc');
+
    // Estados de la aplicación
   const [historicoProcedencia, setHistoricoProcedencia] = useState([]); // Estado que almacena la lista de histórico de procedencia
   const [errors, setErrors] = useState({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' }); // Estado para gestionar los errores de validación
@@ -380,6 +385,14 @@ const handleCreateHistorico = async () => {
       setCurrentPage(pageNumber);
     }
   };
+
+
+    
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+    
 
     return(
         <CContainer>
