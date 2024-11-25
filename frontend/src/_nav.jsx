@@ -107,13 +107,34 @@ const _nav = [
   },
 
 
-    {
-     component: CNavItem,
-     name: 'Secciones asignaturas',
-     to: '/ListaSecciones_Asignatura',
-     icon: cilFile,
-    nameobject: 'ListaSecciones_Asignatura',
-    },
+  {
+    component: CNavGroup,
+    name: 'Secciones',
+    icon: cilFile,
+    nameobject: 'navGestionAcademica',
+    items: [
+      {
+        component: CNavItem,
+        name: 'Gestión Académica',
+        to: '/ListaGestion_Academica',
+        nameobject: 'Solicitud_admin',
+      },
+      {
+        component: CNavItem,
+        name: 'Lista de Secciones', 
+        to: '/ListaSecciones',
+        nameobject: 'Solicitud_admin',
+      },
+      {
+       component: CNavItem,
+       name: 'Secciones asignaturas',
+       to: '/ListaSecciones_Asignatura',
+       icon: cilFile,
+      nameobject: 'ListaSecciones_Asignatura',
+      },  
+    ],
+  },
+  
 
 
     {
