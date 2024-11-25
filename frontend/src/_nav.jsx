@@ -105,38 +105,7 @@ const _nav = [
     icon: cilFile,
     nameobject: 'ListaNotas',
   },
-
-
-  {
-    component: CNavGroup,
-    name: 'Secciones',
-    icon: cilFile,
-    nameobject: 'navGestionAcademica',
-    items: [
-      {
-        component: CNavItem,
-        name: 'Gestión Académica',
-        to: '/gestion_academica',
-        nameobject: 'Solicitud_admin',
-      },
-      {
-        component: CNavItem,
-        name: 'Listado de Secciones', 
-        to: '/lista-secciones',
-        nameobject: 'Solicitud_admin',
-      },
-      {
-       component: CNavItem,
-       name: 'Secciones asignaturas',
-       to: '/lista-secciones_asignatura',
-       icon: cilFile,
-      nameobject: 'ListaSecciones_Asignatura',
-      },  
-    ],
-  },
   
-
-
     {
       component: CNavItem,
       name: 'Solicitudes Padres',
@@ -368,6 +337,34 @@ const _nav = [
         to: '/municipios',
         nameobject: 'Municipios',
       },
+    ],
+  },
+
+  {
+    component: CNavGroup,
+    name: 'Secciones',
+    icon: cilFile,
+    nameobject: 'navGestionAcademica',
+    items: [
+      {
+        component: CNavItem,
+        name: 'Gestión Académica',
+        to: '/gestion_academica',
+        nameobject: 'Solicitud_admin',
+      },
+      {
+        component: CNavItem,
+        name: 'Listado de Secciones', 
+        to: '/lista-secciones',
+        nameobject: 'Solicitud_admin',
+      },
+      {
+       component: CNavItem,
+       name: 'Secciones asignaturas',
+       to: '/lista-secciones_asignatura',
+       icon: cilFile,
+      nameobject: 'ListaSecciones_Asignatura',
+      },  
     ],
   },
   
