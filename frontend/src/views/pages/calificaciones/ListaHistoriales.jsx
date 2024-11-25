@@ -107,11 +107,13 @@ const fetchInstituto = async () => {
   const filteredHistoriales = historiales.filter(historial => {
     // Convertir Cod_estado a texto
     const estadoTexto = 
-      historial.Cod_estado === 1 ? "APROBADO" :
-      historial.Cod_estado === 2 ? "REPROBADO" : "otro estado";
+      historial.Cod_estado === 1 ? "aprobado" :
+      historial.Cod_estado === 2 ? "reprobado" : "otro estado";
   
+    // Asegurarse de que `searchTerm` y `estadoTexto` están en minúsculas
     return (
       historial.Cod_historial_academico.toString().includes(searchTerm) ||
+      historial.Cod_estado.toString().includes(searchTerm) ||
       historial.Estudiante.toLowerCase().trim().includes(searchTerm.toLowerCase().trim()) ||
       historial.Grado.toLowerCase().includes(searchTerm.toLowerCase()) ||
       historial.Año_Academico.toString().includes(searchTerm) ||
@@ -119,9 +121,8 @@ const fetchInstituto = async () => {
       historial.Instituto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       estadoTexto.includes(searchTerm.toLowerCase())
     );
-  });
+  });  
   
-
 // Paginación: calcular los índices de los elementos que se van a mostrar
 const indexOfLastItem = currentPage * itemsPerPage;
 const indexOfFirstItem = indexOfLastItem - itemsPerPage;
