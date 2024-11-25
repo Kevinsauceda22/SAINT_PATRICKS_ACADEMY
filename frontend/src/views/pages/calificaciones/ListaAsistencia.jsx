@@ -1045,7 +1045,7 @@ const handleObservacionChangeActualizar = (index, value) => {
                 <CIcon icon={cilArrowLeft} /> Volver a Secciones
               </CButton>
               <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h3 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",}}> Asistencias de Sección: {nombreSeccionSeleccionada || "Selecciona una sección"}</h3>
+                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",}}> Asistencias de Sección: {nombreSeccionSeleccionada || "Selecciona una sección"}</h4>
               </div>
               {/* Botón "Nuevo" a la derecha */}
               {canInsert && (
