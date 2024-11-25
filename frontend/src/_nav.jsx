@@ -260,6 +260,13 @@ const _nav = [
     ],
   },
   {
+    component: CNavItem,
+    name: 'Caja',
+    to: '/caja', 
+    nameobject: 'Solicitud_admin',
+  },
+
+  {
     component: CNavGroup,
     name: 'Contabilidad y Pagos',
     icon: cilDollar,
@@ -271,6 +278,7 @@ const _nav = [
         to: '/ListaPagosMatricula',
         nameobject: 'navPagosMatricula',
       },
+    
       {
         component: CNavItem,
         name: 'Historial de Pagos Mensuales',
@@ -341,6 +349,7 @@ const _nav = [
       },
     ],
   },
+  
   {
     component: CNavGroup,
     name: 'Reportes de Bitácora',

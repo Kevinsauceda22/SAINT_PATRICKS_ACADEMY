@@ -88,6 +88,7 @@ const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solic
 const MatriculasPorGrado = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorGrado'));
 const MatriculasPorPeriodo = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasPorPeriodo'));
 const MatriculasAnioAnterior = React.lazy(() => import('./views/pages/matricula/vitsasmatricula/matriculasAnioAnterior'));
+const Caja = React.lazy(() => import('./views/pages/matricula/caja'));
 
 
 const AccesoDenegado = React.lazy(() => import('./views/pages/AccessDenied/AccessDenied')) 
@@ -200,6 +201,7 @@ const App = () => {
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
+                <Route path="/caja" element={<Caja />} />
                 <Route path="/Solicitud" element={<Solicitud/>} />
                 {/* New Routes for Matriculas */}
           <Route path="/matriculasPorGrado" element={<MatriculasPorGrado />} />
