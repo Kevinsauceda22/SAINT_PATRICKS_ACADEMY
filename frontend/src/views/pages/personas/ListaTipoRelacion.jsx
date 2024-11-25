@@ -426,7 +426,7 @@ const handleChange = (event) => {
   };
   
 
-  const ReportePersonas = () => {
+  const ReporteTipoRelaciones = () => {
     const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();

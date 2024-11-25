@@ -386,6 +386,8 @@ const Solicitud = () => {
 
   const areFieldsValid = () => {
     const { title, description, personaRequerida, fecha, horaInicio, horaFin } = formValues;
+  
+    // Validar campos vacíos
     if (!title || !description || !personaRequerida || !fecha || !horaInicio || !horaFin) {
       Swal.fire({
         icon: 'warning',
@@ -395,8 +397,47 @@ const Solicitud = () => {
       });
       return false;
     }
-    return true;
+  
+    // Validar longitud de caracteres
+    const maxLengths = {
+      title: 50,
+      description: 200,
+      personaRequerida: 100,
+    };
+  
+    if (title.length > maxLengths.title) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: `El título no puede exceder ${maxLengths.title} caracteres.`,
+        confirmButtonColor: '#6C8E58',
+      });
+      return false;
+    }
+  
+    if (description.length > maxLengths.description) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: `El asunto no puede exceder ${maxLengths.description} caracteres.`,
+        confirmButtonColor: '#6C8E58',
+      });
+      return false;
+    }
+  
+    if (personaRequerida.length > maxLengths.personaRequerida) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: `El nombre de la persona requerida no puede exceder ${maxLengths.personaRequerida} caracteres.`,
+        confirmButtonColor: '#6C8E58',
+      });
+      return false;
+    }
+  
+    return true; // Todos los campos son válidos
   };
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -603,8 +644,41 @@ const Solicitud = () => {
     XLSX.utils.book_append_sheet(libro, hoja, 'Reporte de Citas');
     XLSX.writeFile(libro, 'Reporte_Citas.xlsx');
   };
-
-
+  const handleValidatedInputChange = (e) => {
+    const { name, value } = e.target;
+  
+    // Configuración de límites por campo
+    const maxLengths = {
+      title: 50, // Máximo de 50 caracteres para el título
+      description: 200, // Máximo de 200 caracteres para la descripción
+      personaRequerida: 100, // Máximo de 100 caracteres para la persona requerida
+    };
+  
+    // Sanitizar el valor: eliminar números, caracteres especiales y limitar a dos letras consecutivas iguales
+    const sanitizedValue = value
+      .replace(/[0-9]/g, '') // Elimina números
+      .replace(/[^A-Z\s]/gi, '') // Elimina caracteres especiales, excepto letras y espacios
+      .toUpperCase() // Convierte todo a mayúsculas
+      .replace(/([A-Z])\1{2,}/g, '$1$1'); // Limita a dos letras consecutivas iguales
+  
+    // Verificar si se excede la longitud máxima permitida
+    if (sanitizedValue.length > maxLengths[name]) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: `El campo ${name} no puede exceder los ${maxLengths[name]} caracteres.`,
+        confirmButtonColor: '#6C8E58',
+      });
+      return;
+    }
+  
+    // Actualizar los valores del formulario con el valor validado
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      [name]: sanitizedValue,
+    }));
+  };
+  
 
   //AQUI VA LA LOGICA PARA QUE SALGA LA PANTALLA DE ACCESO DENEGADO
   // Verificar permisos
@@ -618,7 +692,7 @@ const Solicitud = () => {
     <CContainer fluid style={{ backgroundColor: '#F8F9FA', padding: '20px' }}>
       <CRow className="mb-4">
         <CCol className="text-center">
-          <h1 style={{ color: '#6C757D', fontWeight: 'bold', fontSize: '2.5rem' }}>Gestión de Citas</h1>
+          <h1 style={{ color: '#6C757D', fontWeight: 'bold', fontSize: '2.5rem' }}>Gestión de Citas para Padres</h1>
         </CCol>
       </CRow>
 
@@ -796,8 +870,8 @@ const Solicitud = () => {
               type="text"
               name="title"
               value={formValues.title}
-              onChange={handleInputChange}
-              placeholder="Ejemplo: Reunión de Proyecto"
+              onChange={handleValidatedInputChange} // Validación incluida
+              placeholder="Ejemplo: REUNIÓN DE PROYECTO"
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -810,8 +884,8 @@ const Solicitud = () => {
               type="text"
               name="description"
               value={formValues.description}
-              onChange={handleInputChange}
-              placeholder="Ejemplo: Discutir avances del proyecto"
+              onChange={handleValidatedInputChange} // Validación incluida
+              placeholder="Ejemplo: DISCUTIR AVANCES DEL PROYECTO"
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -824,8 +898,8 @@ const Solicitud = () => {
               type="text"
               name="personaRequerida"
               value={formValues.personaRequerida}
-              onChange={handleInputChange}
-              placeholder="Ejemplo: Juan Pérez"
+              onChange={handleValidatedInputChange} // Validación incluida
+              placeholder="Ejemplo: JUAN PÉREZ"
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -838,7 +912,7 @@ const Solicitud = () => {
               type="date"
               name="fecha"
               value={formValues.fecha}
-              onChange={handleInputChange}
+              onChange={handleInputChange} // Sin validación especial
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -849,7 +923,7 @@ const Solicitud = () => {
               type="time"
               name="horaInicio"
               value={formValues.horaInicio}
-              onChange={handleInputChange}
+              onChange={handleInputChange} // Sin validación especial
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -860,29 +934,14 @@ const Solicitud = () => {
               type="time"
               name="horaFin"
               value={formValues.horaFin}
-              onChange={handleInputChange}
+              onChange={handleInputChange} // Sin validación especial
               required
               style={{ borderColor: '#6C8E58' }}
             />
           </CCol>
         </CRow>
-        {selectedCita && (
-          <CRow className="mb-3">
-            <CCol md={12}>
-              <CFormLabel>Estado</CFormLabel>
-              <select
-                name="estado"
-                value={formValues.estado}
-                onChange={handleInputChange}
-                style={{ width: '100%', padding: '10px', borderColor: '#6C8E58' }}
-              >
-                <option value="Pendiente">Pendiente</option>
-                <option value="Cancelada">Cancelada</option>
-              </select>
-            </CCol>
-          </CRow>
-        )}
-        <CModalFooter>
+        
+       <CModalFooter>
           <CButton
             type="submit"
             color="success"

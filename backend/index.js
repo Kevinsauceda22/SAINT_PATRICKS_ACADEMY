@@ -32,11 +32,12 @@ import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
 import historicoprocRoutes from './module/personas/Routes/historicoprocRoutes.js';
-import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personaRoutes from "./module/personas/Routes/personasRoutes.js";
-import seccionesRoutes from "./module/matricula/Routes/seccionesRoutes.js";
+import seccionesRoutes from './module/matricula/Routes/seccionesRoutes.js';
+import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
+import gestion_academicaRoutes from './module/matricula/Routes/gestion_academicaRoutes.js';
 
 import personasRoutes from "./module/personas/personaRoutes.js";
 import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
@@ -147,8 +148,6 @@ app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
 app.use('/api/edificio', edificiosRoutes);
 // Rutas para las aulas
 app.use('/api/aula', aulasRoutes);
-// Rutas para secciones y asignaturas
-app.use('/api/secciones_asignaturas', secc_asigRoutes);
 // Rutas para las actividades extracurriculares
 app.use('/api', actividadesextraRoutes);
 // Rutas para el día
@@ -176,6 +175,10 @@ app.use('/api/Solicitud_admin', Solicitud_adminRoutes);
 app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 // Rutas para secciones
 app.use('/api/secciones', seccionesRoutes);
+// Rutas para secciones y asignaturas
+app.use('/api/secciones_asignaturas', secc_asigRoutes);
+// Rutas para Gestion academica
+app.use('/api/gestion_academica', gestion_academicaRoutes);
 
 // Rutas para manejar personas
 app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2

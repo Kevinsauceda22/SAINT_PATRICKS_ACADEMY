@@ -22,6 +22,7 @@ export const obtenerSecciones = async (req, res) => {
     }
 };
 
+
 // NUEVO Controlador para obtener el período académico activo
 export const obtenerPeriodoActivo = async (req, res) => {
     try {
@@ -93,8 +94,6 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
 };
 
 
-
-
 // Controlador para obtener todos los edificios
 export const obtenerEdificios = async (req, res) => {
     try {
@@ -123,6 +122,7 @@ export const obtenerAulasPorEdificio = async (req, res) => {
     }
 };
 
+
 // Controlador para obtener un edificio específico por Cod_edificio
 export const obtenerEdificioPorId = async (req, res) => {
     const { Cod_edificio } = req.params;
@@ -145,7 +145,6 @@ export const obtenerEdificioPorId = async (req, res) => {
 };
 
 
-
 // Controlador para obtener todas las aulas
 export const obtenerAulas = async (req, res) => {
     try {
@@ -157,6 +156,7 @@ export const obtenerAulas = async (req, res) => {
     }
 };
 
+
 // Controlador para obtener todos los grados
 export const obtenerGrados = async (req, res) => {
     try {
@@ -167,6 +167,8 @@ export const obtenerGrados = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener grados' });
     }
 };
+
+
 // Controlador para obtener todos los profesores
 export const obtenerProfesores = async (req, res) => {
     try {
@@ -181,6 +183,8 @@ export const obtenerProfesores = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener profesores' });
     }
 };
+
+
 // Controlador para obtener todos los periodos de matrícula
 export const obtenerPeriodos = async (req, res) => {
     try {
@@ -201,6 +205,7 @@ export const obtenerPeriodos = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener los períodos de matrícula' });
     }
 };
+
 
 // Controlador para crear una nueva sección
 export const crearSeccion = async (req, res) => {

@@ -1,9 +1,5 @@
 import conectarDB from '../../../config/db.js';
-import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
-
-
-
 
 // Controlador para obtener detalles de una sección de asignatura específica o todas las secciones
 export const obtenerDetalleSeccionAsignatura = async (req, res) => {
@@ -32,27 +28,51 @@ export const obtenerDetalleSeccionAsignatura = async (req, res) => {
     }
 };
 
-// Controlador para obtener todas las secciones
+// Controlador para obtener las secciones filtradas por Cod_grado y Cod_periodo_matricula
 export const obtenerSecciones = async (req, res) => {
+    const { Cod_grado, Cod_periodo_matricula } = req.params; // Cambiado a req.params
+
     try {
-        const [rows] = await pool.query('SELECT Cod_secciones, Nombre_seccion FROM tbl_secciones');
+        // Validar que los parámetros requeridos estén presentes
+        if (!Cod_grado || !Cod_periodo_matricula) {
+            return res.status(400).json({ 
+                mensaje: "Los parámetros 'Cod_grado' y 'Cod_periodo_matricula' son requeridos." 
+            });
+        }
+
+        // Consulta SQL
+        const query = `
+            SELECT 
+                Cod_secciones, 
+                Nombre_seccion
+            FROM 
+                tbl_secciones
+            WHERE 
+                Cod_grado = ? 
+                AND Cod_periodo_matricula = ?;
+        `;
+
+        // Ejecutar la consulta con los parámetros proporcionados
+        const [rows] = await pool.query(query, [Cod_grado, Cod_periodo_matricula]);
+
+        // Responder con los resultados
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener secciones:', error);
         res.status(500).json({ mensaje: 'Error al obtener secciones' });
     }
 };
+
 // Controlador para obtener todos los días
 export const obtenerDias = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT Cod_dias, dias FROM tbl_dias');
+        const [rows] = await pool.query('SELECT Cod_dias, dias, prefijo_dia FROM tbl_dias');
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener dias:', error);
         res.status(500).json({ mensaje: 'Error al obtener dias' });
     }
 };
-
 // Controlador para obtener todos los grados y asignaturas
 export const obtenerGradosAsignaturas = async (req, res) => {
     try {
@@ -91,7 +111,7 @@ export const crearHorarioSeccionAsignatura = async (req, res) => {
 
         // Llamada al procedimiento almacenado para insertar el horario
         const [result] = await pool.query(
-            'CALL sp_insertar_horario_seccion_asignatura(?, ?, ?, ?, ?)',
+            'CALL sp_insertar_seccion_asignatura(?, ?, ?, ?, ?)',
             [p_Cod_grados_asignaturas, p_Cod_secciones, p_Cod_dias, p_Hora_inicio, p_Hora_fin]
         );
 
@@ -159,12 +179,200 @@ export const actualizarSeccionAsignatura = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+export const obtenerAsignaturasyHorarios = async (req, res) => {
+    const { cod_seccion } = req.params; // Obtener el parámetro cod_seccion desde la URL
 
+    console.log("cod_seccion recibido:", cod_seccion);
 
+    // Validar que el parámetro esté presente
+    if (!cod_seccion) {
+        return res.status(400).json({ mensaje: "El código de la sección es requerido." });
+    }
 
+    try {
+        // Consulta SQL para obtener asignaturas, horarios y datos de la sección
+        const query = `
+            SELECT 
+                sa.Cod_seccion_asignatura, -- Incluimos el Cod_seccion_asignatura
+                s.Cod_secciones,           -- Incluimos el Cod_secciones
+                a.Cod_asignatura,
+                a.Nombre_asignatura,
+                g.Nombre_grado,
+                s.Nombre_seccion,
+                sa.Hora_inicio,
+                sa.Hora_fin,
+                GROUP_CONCAT(DISTINCT d.prefijo_dia ORDER BY d.Cod_dias SEPARATOR ', ') AS dias
+            FROM 
+                tbl_secciones s
+            JOIN 
+                tbl_secciones_asignaturas sa ON sa.Cod_secciones = s.Cod_secciones
+            JOIN 
+                tbl_grados_asignaturas ga ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
+            JOIN 
+                tbl_asignaturas a ON ga.Cod_asignatura = a.Cod_asignatura
+            JOIN 
+                tbl_grados g ON ga.Cod_grado = g.Cod_grado
+            LEFT JOIN 
+                tbl_secciones_asignaturas_dias sad ON sa.Cod_seccion_asignatura = sad.Cod_seccion_asignatura
+            LEFT JOIN 
+                tbl_dias d ON sad.Cod_dias = d.Cod_dias
+            WHERE 
+                s.Cod_secciones = ? -- Filtrar por el código de la sección indicado
+                AND ga.Cod_grado = s.Cod_grado -- Validar que el grado coincida
+            GROUP BY 
+                sa.Cod_seccion_asignatura, -- Agregar al GROUP BY para evitar errores de agrupación
+                s.Cod_secciones,           -- Agregar al GROUP BY
+                a.Cod_asignatura, 
+                a.Nombre_asignatura, 
+                g.Nombre_grado, 
+                s.Nombre_seccion, 
+                sa.Hora_inicio, 
+                sa.Hora_fin;
+        `;
 
+        // Ejecutar la consulta
+        const [rows] = await pool.query(query, [cod_seccion]);
 
+        console.log("Resultado de la consulta:", rows);
 
+        // Si no se encuentran resultados, devolver un mensaje informativo
+        if (rows.length === 0) {
+            return res.status(404).json({ mensaje: "No se encontraron asignaturas para la sección proporcionada." });
+        }
+
+        // Responder con los datos obtenidos
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("Error en la consulta:", error);
+        res.status(500).json({ mensaje: "Error al obtener las asignaturas.", error });
+    }
+};
+
+// Controlador para obtener asignaturas específicas de una sección y grado
+export const obtenerAsignaturasPorSeccionYGrado = async (req, res) => {
+    try {
+        const { Cod_secciones } = req.params; // Obtener el parámetro Cod_secciones
+
+        // Verificar que el parámetro exista
+        if (!Cod_secciones) {
+            return res.status(400).json({ mensaje: 'El parámetro Cod_secciones es obligatorio' });
+        }
+
+        // Consulta SQL para obtener las asignaturas relacionadas con la sección y su grado
+        const [rows] = await pool.query(`
+            SELECT 
+                ga.Cod_grados_asignaturas,
+                a.Cod_asignatura,
+                a.Nombre_asignatura,
+                g.Cod_grado,           -- Incluimos el código del grado
+                g.Nombre_grado,        -- Incluimos el nombre del grado
+                s.Cod_secciones,       -- Incluimos el código de la sección
+                s.Nombre_seccion       -- Incluimos el nombre de la sección
+            FROM 
+                tbl_grados_asignaturas ga
+            INNER JOIN 
+                tbl_asignaturas a ON ga.Cod_asignatura = a.Cod_asignatura
+            INNER JOIN 
+                tbl_grados g ON ga.Cod_grado = g.Cod_grado
+            INNER JOIN 
+                tbl_secciones s ON g.Cod_grado = s.Cod_grado
+            WHERE 
+                s.Cod_secciones = ?;
+        `, [Cod_secciones]);
+
+        // Si no se encuentran resultados, responder con un mensaje
+        if (rows.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección' });
+        }
+
+        // Responder con los datos obtenidos
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener asignaturas por sección y grado:', error);
+        res.status(500).json({ mensaje: 'Error al obtener asignaturas por sección y grado' });
+    }
+};
+
+// Controlador para obtener secciones de un grado específico
+export const obtenerSeccionesPorGrado = async (req, res) => {
+    const { Cod_grado } = req.params; // Obtener el parámetro Cod_grado de la URL
+
+    console.log("Cod_grado recibido:", Cod_grado);
+
+    // Verificar que el parámetro esté presente
+    if (!Cod_grado) {
+        return res.status(400).json({ mensaje: "El código del grado es requerido." });
+    }
+
+    try {
+        // Consulta SQL para obtener las secciones asociadas al grado
+        const query = `
+            SELECT 
+                s.Cod_secciones,
+                s.Nombre_seccion,
+                g.Cod_grado,
+                g.Nombre_grado
+            FROM 
+                tbl_secciones s
+            JOIN 
+                tbl_grados g ON s.Cod_grado = g.Cod_grado
+            WHERE 
+                g.Cod_grado = ?; -- Filtrar por el código del grado
+        `;
+
+        // Ejecutar la consulta
+        const [rows] = await pool.query(query, [Cod_grado]);
+
+        console.log("Resultado de la consulta:", rows);
+
+        // Si no se encuentran resultados, devolver un mensaje informativo
+        if (rows.length === 0) {
+            return res.status(404).json({ mensaje: "No se encontraron secciones para el grado proporcionado." });
+        }
+
+        // Responder con los datos obtenidos
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("Error en la consulta:", error);
+        res.status(500).json({ mensaje: "Error al obtener las secciones.", error });
+    }
+};
+export const getDetalleSeccionAsignatura = async (req, res) => {
+    const { Cod_seccion_asignatura } = req.params;
+    console.log('Parámetro recibido:', Cod_seccion_asignatura); // Log para verificar el parámetro
+
+    try {
+        // Consulta que incluye los nombres relacionados
+        const query = `
+            SELECT 
+                sa.Cod_seccion_asignatura,
+                s.Nombre_seccion AS Nombre_seccion,
+                sa.Hora_inicio,
+                sa.Hora_fin,
+                g.Nombre_grado AS Nombre_grado,
+                a.Nombre_asignatura AS Nombre_asignatura,
+                sa.Dias_nombres
+            FROM tbl_secciones_asignaturas sa
+            INNER JOIN tbl_secciones s ON sa.Cod_secciones = s.Cod_secciones
+            INNER JOIN tbl_grados_asignaturas ga ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
+            INNER JOIN tbl_grados g ON ga.Cod_grado = g.Cod_grado
+            INNER JOIN tbl_asignaturas a ON ga.Cod_asignatura = a.Cod_asignatura
+            WHERE sa.Cod_seccion_asignatura = ?`;
+
+        const [resultado] = await pool.query(query, [Cod_seccion_asignatura]);
+
+        console.log('Resultado de la consulta:', resultado); // Log para depurar el resultado de la consulta
+
+        if (resultado.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos para la sección asignatura proporcionada' });
+        }
+
+        res.json(resultado[0]); // Devuelve los datos de la sección asignatura encontrada
+    } catch (error) {
+        console.error('Error al obtener datos de la sección asignatura:', error.message); // Log detallado del error
+        res.status(500).json({ mensaje: 'Error al obtener los datos de la sección asignatura' });
+    }
+};
 
 export const obtenerAsignaturasPorProfesor = async (req, res) => {
     try {
@@ -210,26 +418,26 @@ export const obtenerAsignaturasPorProfesor = async (req, res) => {
 
 export const obtenerAsignaturasPorSeccion = async (req, res) => {
     try {
-      const { codSeccion } = req.params;
-  
-      if (!codSeccion) {
-        return res.status(400).json({ mensaje: 'Cod_seccion es requerido' });
-      }
-  
-      // Llama al procedimiento almacenado
-      const [asignaturas] = await pool.query('CALL getAsignaturasPorSeccion(?)', [codSeccion]);
-  
-      if (!asignaturas[0] || asignaturas[0].length === 0) {
-        return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección' });
-      }
-  
-      res.status(200).json(asignaturas[0]);
+        const { codSeccion } = req.params;
+
+        if (!codSeccion) {
+            return res.status(400).json({ mensaje: 'Cod_seccion es requerido' });
+        }
+
+        // Llama al procedimiento almacenado con el parámetro adecuado
+        const [asignaturas] = await pool.query('CALL getAsignaturasPorSeccion(?)', [codSeccion]);
+
+        if (!asignaturas[0] || asignaturas[0].length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección' });
+        }
+
+        res.status(200).json(asignaturas[0]); // Devuelve los resultados
     } catch (error) {
-      console.error('Error al obtener las asignaturas de la sección:', error);
-      res.status(500).json({ mensaje: 'Error al obtener las asignaturas de la sección' });
+        console.error('Error al obtener las asignaturas de la sección:', error);
+        res.status(500).json({ mensaje: 'Error al obtener las asignaturas de la sección' });
     }
-  };
-  ;
+};
+
 
 
 
