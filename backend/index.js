@@ -23,6 +23,7 @@ import historialAcademicoRoutes from './module/calificaciones/Routes/historialAc
 import InstitutosRoutes from './module/calificaciones/Routes/InstitutosRoutes.js';
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 import bitacoraRoutes from './module/auth/bitacora_routes.js';
+import dashboard from './module/dashboard/dashboardRoutes.js';
 
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
@@ -108,6 +109,9 @@ app.use('/api/auth/', usuariosRoutes);
 
 //Rutas para el registro de bitacora
 app.use('/api/bitacora', bitacoraRoutes);
+
+app.use('/api/dashboard', dashboard);
+
 
 // Rutas para los profesores para poder agregar, modificar, eliminar y obtener profesores
 app.use('/api/profesores', profesoresRoutes); 
