@@ -191,18 +191,25 @@ const Solicitud = () => {
     }
   };
 
-  const exportarCitaAPDF = (cita) => {
-    const doc = new jsPDF();
+
+  const exportarCitaAPDF = async () => {
+    const doc = new jsPDF('landscape'); // Orientación landscape
     const img = new Image();
     img.src = logo;
-
+  
+    if (solicitudes.length === 0) {
+      console.warn('No hay datos de citas para exportar.');
+      return;
+    }
+  
     img.onload = () => {
+      // Cabecera con logo y detalles de institución
       doc.addImage(img, 'PNG', 10, 10, 30, 30);
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
       doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
       doc.setFontSize(14);
-      doc.text('Detalles de la Cita', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+      doc.text('Reporte Detallado de Citas', doc.internal.pageSize.width / 2, 30, { align: 'center' });
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
@@ -211,28 +218,51 @@ const Solicitud = () => {
       doc.setLineWidth(0.5);
       doc.setDrawColor(0, 102, 51);
       doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text(`Título: ${cita.title}`, 20, 70);
-      doc.text(`Asunto: ${cita.description}`, 20, 80);
-      doc.text(`Persona Requerida: ${cita.personaRequerida}`, 20, 90);
-      doc.text(`Fecha: ${cita.start}`, 20, 100);
-      doc.text(`Hora de Inicio: ${cita.horaInicio}`, 20, 110);
-      doc.text(`Hora de Fin: ${cita.horaFin}`, 20, 120);
-      doc.text(`Estado: ${cita.estado}`, 20, 130);
-
+  
+      // Generar la tabla con los datos relevantes (sin campos de correo y persona requerida)
+      doc.autoTable({
+        startY: 60,
+        head: [
+          ['Título', 'Asunto', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Estado'],
+        ],
+        body: solicitudes.map((cita) => [
+          cita.title || 'Título no disponible',
+          cita.description || 'Sin descripción',
+          cita.start || 'Fecha no disponible',
+          cita.horaInicio || 'Hora no disponible',
+          cita.horaFin || 'Hora no disponible',
+          cita.estado || 'Estado no disponible',
+        ]),
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+      });
+  
+      // Pie de página con fecha de generación
       const date = new Date().toLocaleDateString();
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-      doc.save(`Detalles_Cita_${cita.title}.pdf`);
+  
+      // Abrir el PDF en una nueva pestaña
+      const pdfBlob = doc.output('blob');
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      window.open(pdfUrl, '_blank');
     };
-
+  
     img.onerror = () => {
       console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
     };
   };
+  
+  
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -444,6 +474,7 @@ const Solicitud = () => {
   
     // Validar los campos obligatorios
     const { title, description, personaRequerida, fecha, horaInicio, horaFin } = formValues;
+  
     if (!title || !description || !personaRequerida || !fecha || !horaInicio) {
       Swal.fire({
         icon: 'warning',
@@ -455,13 +486,10 @@ const Solicitud = () => {
     }
   
     // Validar coherencia de horas
-    const [horaInicioHoras, horaInicioMinutos] = horaInicio.split(':').map(Number);
     if (horaFin) {
+      const [horaInicioHoras, horaInicioMinutos] = horaInicio.split(':').map(Number);
       const [horaFinHoras, horaFinMinutos] = horaFin.split(':').map(Number);
-      if (
-        horaFinHoras < horaInicioHoras ||
-        (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)
-      ) {
+      if (horaFinHoras < horaInicioHoras || (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)) {
         Swal.fire({
           icon: 'warning',
           title: 'Advertencia',
@@ -485,10 +513,11 @@ const Solicitud = () => {
         Nombre_solicitud: title || 'SIN TÍTULO',
         Fecha_solicitud: fecha,
         Hora_Inicio: horaInicio,
-        Hora_Fin: horaFin ,
+        Hora_Fin: horaFin || null, // Permitir valores nulos para Hora_Fin
         Asunto: description || 'SIN ASUNTO',
         Persona_requerida: personaRequerida || 'DESCONOCIDO',
         Cod_persona: auth.cod_persona,
+        estado: selectedCita ? selectedCita.estado : 'Pendiente', // Agregar estado
       };
   
       const response = await fetch(
@@ -532,6 +561,7 @@ const Solicitud = () => {
       setIsSubmitting(false);
     }
   };
+  
   
 
 
