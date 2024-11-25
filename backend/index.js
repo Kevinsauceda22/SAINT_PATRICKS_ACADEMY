@@ -22,6 +22,8 @@ import notaRoutes from './module/calificaciones/Routes/notaRoutes.js';
 import historialAcademicoRoutes from './module/calificaciones/Routes/historialAcademico.js';
 import InstitutosRoutes from './module/calificaciones/Routes/InstitutosRoutes.js';
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
+import bitacoraRoutes from './module/auth/bitacora_routes.js';
+
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
 
@@ -103,6 +105,10 @@ app.use('/api/usuarios', cuentasRouter);
 // Calificaciones
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/auth/', usuariosRoutes); 
+
+//Rutas para el registro de bitacora
+app.use('/api/bitacora', bitacoraRoutes);
+
 // Rutas para los profesores para poder agregar, modificar, eliminar y obtener profesores
 app.use('/api/profesores', profesoresRoutes); 
 // Rutas para tipos de contrato de los profesores 

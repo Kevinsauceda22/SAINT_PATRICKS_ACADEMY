@@ -16,13 +16,13 @@ import { jwtDecode } from 'jwt-decode';
 import avatar8 from './../../assets/images/avatars/user.svg';
 
 const AppHeaderDropdown = () => {
-  const isDarkMode = document.body.classList.contains('dark-mode'); // Reemplaza si tienes un contexto de tema global
+  const isDarkMode = document.body.classList.contains('dark-mode');
 
   const actualizarOtp = async () => {
     const token = localStorage.getItem('token');
 
     if (!token) {
-      return; // Si no hay token, no se hace nada
+      return;
     }
 
     const decodedToken = jwtDecode(token);
@@ -38,7 +38,7 @@ const AppHeaderDropdown = () => {
     try {
       await axios.put(
         `http://localhost:4000/api/usuarios/actualizarOtp/${cod_usuario}`,
-        { otp_verified: 0 }, // Establece otp_verified a 0
+        { otp_verified: 0 },
         config
       );
     } catch (error) {
@@ -46,10 +46,43 @@ const AppHeaderDropdown = () => {
     }
   };
 
+  const registrarLogoutBitacora = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const decodedToken = jwtDecode(token);
+      
+      await axios.post(
+        'http://localhost:4000/api/bitacora/registro',
+        {
+          cod_usuario: decodedToken.cod_usuario,
+          cod_objeto: 76, // Mismo código de objeto que el login
+          accion: 'LOGOUT',
+          descripcion: `Cierre de sesión del usuario`
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+    } catch (error) {
+      console.error('Error al registrar logout en bitácora:', error);
+    }
+  };
+
   const handleLogout = async () => {
-    await actualizarOtp(); // Espera a que se actualice otp_verified
-    localStorage.removeItem('token'); // Elimina el token del localStorage
-    window.location.href = '/login'; // Redirige al login
+    try {
+      await registrarLogoutBitacora(); // Primero registramos en bitácora
+      await actualizarOtp(); // Luego actualizamos otp
+    } catch (error) {
+      console.error('Error durante el proceso de logout:', error);
+    } finally {
+      localStorage.removeItem('token'); // Finalmente eliminamos el token
+      window.location.href = '/login'; // Y redirigimos
+    }
   };
 
   return (
@@ -59,7 +92,10 @@ const AppHeaderDropdown = () => {
       </CDropdownToggle>
       <CDropdownMenu className="pt-0" placement="bottom-end">
         {/* Sección Cuenta */}
-        <CDropdownHeader className={`fw-semibold mb-2 ${isDarkMode ? 'text-black' : 'text-white'}`} style={{ backgroundColor: '#198754' }}>
+        <CDropdownHeader 
+          className={`fw-semibold mb-2 ${isDarkMode ? 'text-black' : 'text-white'}`} 
+          style={{ backgroundColor: '#198754' }}
+        >
           Cuenta
         </CDropdownHeader>
 
@@ -76,7 +112,10 @@ const AppHeaderDropdown = () => {
         <CDropdownDivider />
 
         {/* Botón Cerrar Sesión */}
-        <CDropdownItem onClick={handleLogout} className={isDarkMode ? 'text-white' : 'text-success'}>
+        <CDropdownItem 
+          onClick={handleLogout} 
+          className={isDarkMode ? 'text-white' : 'text-success'}
+        >
           <CIcon icon={cilLockLocked} className="me-2" />
           Cerrar Sesión
         </CDropdownItem>

@@ -5,12 +5,15 @@ import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import logo from 'src/assets/brand/logo_saint_patrick.png'
+import * as jwt_decode from 'jwt-decode'; // Corregida la importación
+
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isFading, setIsFading] = useState(false);
   const [formData, setFormData] = useState({
+    
     identificador: '',
     contraseña_usuario: ''
   });
@@ -37,7 +40,6 @@ const Login = () => {
       [name]: value
     }));
   };
-
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     const newErrors = {};
@@ -57,48 +59,72 @@ const Login = () => {
         const response = await axios.post('http://localhost:4000/api/usuarios/login', {
           identificador: formData.identificador,
           contraseña_usuario: formData.contraseña_usuario,
-          twoFactorCode: formData.twoFactorCode // Solo si se requiere 2FA
-
-
+          twoFactorCode: formData.twoFactorCode
         });
 
+        console.log('Respuesta completa del login:', response.data);
+
         if (response.data.token) {
-          
+          // Guardar token y datos del usuario
           localStorage.setItem('token', response.data.token);
-          localStorage.setItem('user', JSON.stringify(response.data.user));
+          
+          // Decodificar el token para obtener el cod_usuario
+          const decodedToken = jwt_decode.jwtDecode(response.data.token);
+          console.log('Token decodificado:', decodedToken);
+
+          // Registrar en bitácora
+          try {
+            // Asumiendo que el cod_usuario está en el token
+            if (!decodedToken.cod_usuario) {
+              console.error('Token decodificado:', decodedToken);
+              throw new Error('No se pudo obtener el código de usuario del token');
+            }
+
+            // Intentar registro en bitácora
+            await axios.post('http://localhost:4000/api/bitacora/registro', {
+              cod_usuario: decodedToken.cod_usuario,
+              cod_objeto: 76,
+              accion: 'LOGIN',
+              descripcion: `Inicio de sesión exitoso del usuario: ${formData.identificador}`
+            }, {
+              headers: {
+                'Authorization': `Bearer ${response.data.token}`
+              }
+            });
+
+            console.log('Registro en bitácora exitoso');
+          } catch (bitacoraError) {
+            console.error('Error al registrar en bitácora:', bitacoraError);
+            console.error('Token decodificado:', decodedToken);
+          }
 
           const isTwoFactorEnabled = response.data.is_two_factor_enabled === 1;
-        console.log('Estado 2FA:', isTwoFactorEnabled); // Verificar el estado de 2FA
-    
-        // Check if 2FA is enabled for the user
-        if (response.data.is_two_factor_enabled === 1) {
-          // Store identificador temporarily for 2FA verification
-          localStorage.setItem('temp_identificador', formData.identificador);
-          // Redirect to 2FA page
-          await handleTransition('/2fa');
-        } else {
-          // If 2FA is not enabled, redirect directly to dashboard
-          await handleTransition('/dashboard');
-           // Si tiene 2FA activado, mostrar notificación
-        if (response.data.is_two_factor_enabled === 1) {
-          toast.info('Tu cuenta tiene autenticación de dos factores activada. Puedes configurarla en tu perfil.', {
-            position: 'top-right',
-            autoClose: 5000,
-          });
-        }
-        }
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.mensaje || 'Error en el inicio de sesión', {
-        position: 'top-center',
-        autoClose: 5000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-};
+          console.log('Estado 2FA:', isTwoFactorEnabled);
 
+          if (isTwoFactorEnabled) {
+            localStorage.setItem('temp_identificador', formData.identificador);
+            await handleTransition('/2fa');
+          } else {
+            await handleTransition('/dashboard');
+            if (response.data.is_two_factor_enabled === 1) {
+              toast.info('Tu cuenta tiene autenticación de dos factores activada. Puedes configurarla en tu perfil.', {
+                position: 'top-right',
+                autoClose: 5000,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error en el login:', error);
+        toast.error(error.response?.data?.mensaje || 'Error en el inicio de sesión', {
+          position: 'top-center',
+          autoClose: 5000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+};
   const styles = {
     container: {
       display: 'flex',

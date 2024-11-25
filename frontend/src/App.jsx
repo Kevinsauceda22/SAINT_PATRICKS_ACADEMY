@@ -56,6 +56,7 @@ const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabi
 const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDiario'));
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
 const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
+const Auditoria = React.lazy(() => import('./views/pages/Auditoria/Auditoria'));
 
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
 
@@ -211,6 +212,7 @@ const App = () => {
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
                 <Route path="/caja" element={<Caja />} />
+                <Route path="/Auditoria" element={<Auditoria />} />
                 <Route path="/Solicitud" element={<Solicitud/>} />
                 {/* New Routes for Matriculas */}
           <Route path="/matriculasPorGrado" element={<MatriculasPorGrado />} />

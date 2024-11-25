@@ -392,26 +392,15 @@ const _nav = [
     component: CNavGroup,
     name: 'Reportes de Bitácora',
     icon: cilGraph,
-    nameobject: 'navReportesBitacora',
+    nameobject: 'Auditoria',
     items: [
       {
         component: CNavItem,
         name: 'Actividades del Sistema',
-        to: '/ReporteActividades',
-        nameobject: 'navActividadesSistema',
+        to: '/Auditoria',
+        nameobject: 'Auditoria',
       },
-      {
-        component: CNavItem,
-        name: 'Historial de Inicios de Sesión',
-        to: '/ReporteIniciosSesion',
-        nameobject: 'navIniciosSesion',
-      },
-      {
-        component: CNavItem,
-        name: 'Cambios en Datos',
-        to: '/ReporteCambiosDatos',
-        nameobject: 'navCambiosDatos',
-      },
+     
     ],
   },
   {

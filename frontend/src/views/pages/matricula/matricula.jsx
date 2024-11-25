@@ -255,6 +255,29 @@ const handleGradoChange = (e) => {
   obtenerSeccionesPorGrado(codGrado);
 };
 
+const registrarEnBitacora = async (accion, descripcion) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const decodedToken = jwtDecode(token);
+    const cod_usuario = decodedToken.cod_usuario;
+
+    await axios.post('http://localhost:4000/api/bitacora/registro', {
+      cod_usuario: cod_usuario,
+      cod_objeto: 77, // Objeto Matrícula
+      accion: accion,
+      descripcion: descripcion
+    }, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+  } catch (error) {
+    console.error('Error al registrar en bitácora:', error);
+  }
+};
+
 const handleSubmit = async (e) => {
   e.preventDefault();
 
@@ -326,6 +349,11 @@ const handleSubmit = async (e) => {
     // Validar si el backend devuelve éxito
     if (response.status === 201) {
       const message = response.data.message;
+
+      await registrarEnBitacora(
+        'INSERT', 
+        `Creación de matrícula: ${response.data.codificacion_matricula} - Estudiante: ${matriculaData.nombre_completo_hijo}`
+      );
 
       // Datos adicionales para el PDF
       const matriculaDataForPDF = {
