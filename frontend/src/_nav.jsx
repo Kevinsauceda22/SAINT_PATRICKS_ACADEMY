@@ -93,6 +93,26 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Gestión Académica',
+    to: '/gestion_academica',
+    nameobject: 'Solicitud_admin',
+  },
+  {
+    component: CNavItem,
+    name: 'Listado de Secciones', 
+    to: '/lista-secciones',
+    nameobject: 'Solicitud_admin',
+  },
+  {
+    component: CNavItem,
+    name: 'Secciones asignaturas',
+    to: '/lista-secciones_asignatura',
+    icon: cilFile,
+    nameobject: 'ListaSecciones_Asignatura',
+  }, 
+  
+  {
+    component: CNavItem,
     name: 'Mis Notas',
     to: '/ListaNotasProfesor',
     icon: cilFile,
@@ -105,38 +125,7 @@ const _nav = [
     icon: cilFile,
     nameobject: 'ListaNotas',
   },
-
-
-  {
-    component: CNavGroup,
-    name: 'Secciones',
-    icon: cilFile,
-    nameobject: 'navGestionAcademica',
-    items: [
-      {
-        component: CNavItem,
-        name: 'Gestión Académica',
-        to: '/ListaGestion_Academica',
-        nameobject: 'Solicitud_admin',
-      },
-      {
-        component: CNavItem,
-        name: 'Lista de Secciones', 
-        to: '/ListaSecciones',
-        nameobject: 'Solicitud_admin',
-      },
-      {
-       component: CNavItem,
-       name: 'Secciones asignaturas',
-       to: '/ListaSecciones_Asignatura',
-       icon: cilFile,
-      nameobject: 'ListaSecciones_Asignatura',
-      },  
-    ],
-  },
   
-
-
     {
       component: CNavItem,
       name: 'Solicitudes Padres',
@@ -370,6 +359,8 @@ const _nav = [
       },
     ],
   },
+
+ 
   
   {
     component: CNavGroup,
