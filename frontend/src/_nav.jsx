@@ -8,6 +8,7 @@ import {
   cilBook,
   cilCalendar,
   cilPencil,
+  cilCalculator,
   cilChartLine,
   cilFile,
   cilBookmark,
@@ -45,7 +46,14 @@ const _nav = [
     name: 'Grados Asignaturas',
     to: '/ListaGradosAsignaturas',
     icon: cilClipboard,
-    nameobject: 'navGradosAsignaturas',
+    nameobject: 'ListaGradosAsignaturas',
+  },
+   {
+    component: CNavItem,
+    name: 'Ponderaciones Ciclos',
+    to: '/ListaPonderacionesCiclos',
+    icon: cilCalculator,
+    nameobject: 'ListaPonderacionesCiclos',
   },
   {
     component: CNavItem,
@@ -54,8 +62,6 @@ const _nav = [
     icon: cilClipboard,
     nameobject: 'ListaAsistencia',
   },
-
-
   {
     component: CNavItem,
     name: 'Mis Asistencias',
@@ -90,14 +96,14 @@ const _nav = [
     name: 'Mis Notas',
     to: '/ListaNotasProfesor',
     icon: cilFile,
-    nameobject: 'navNotasProfesor',
+    nameobject: 'ListaNotasProfesor',
   },
   {
     component: CNavItem,
     name: 'Notas',
     to: '/ListaNotas',
     icon: cilFile,
-    nameobject: 'ListaEstadonota',
+    nameobject: 'ListaNotas',
   },
 
 
