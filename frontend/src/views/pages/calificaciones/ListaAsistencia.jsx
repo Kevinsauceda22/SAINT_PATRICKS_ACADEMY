@@ -584,7 +584,7 @@ const handleObservacionChangeActualizar = (index, value) => {
     setMostrarModalNuevo(false);
   };
 
-  const generarReporteExcel = () => {
+ const generarReporteExcel = () => {
     const encabezados = [
       ["Saint Patrick Academy"],
       ["Reporte de Asistencia"],
@@ -673,18 +673,37 @@ const handleObservacionChangeActualizar = (index, value) => {
   
       yPosition += 10; // Espaciado entre subtítulo y detalles
   
-      // Detalles de la sección
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-      doc.text(`Sección: ${nomenclaturaSeleccionada}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
-      yPosition += 8; // Espaciado entre líneas de detalle
-  
-      // Fecha del registro (si está disponible)
-      if (fechaRegistro !== 'sin_fecha') {
-        doc.text(`Fecha del registro: ${fechaRegistro.split(' ')[0]}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-        yPosition += 8; // Espaciado solo si la fecha está presente
-      }
+       // Detalles de la sección y fecha en una sola fila
+       doc.setFontSize(12);
+       doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+ 
+       if (nomenclaturaSeleccionada && fechaRegistro && fechaRegistro !== 'sin_fecha') {
+         const fechaLimpia = fechaRegistro.split(' ')[0].replace(/[^0-9/-]/g, ''); // Limpia la fecha
+         doc.text(
+           `Sección: ${nomenclaturaSeleccionada} | Fecha del registro: ${fechaLimpia}`,
+           doc.internal.pageSize.width / 2,
+           yPosition,
+           { align: 'center' }
+         );
+       } else if (nomenclaturaSeleccionada) {
+         doc.text(
+           `Sección: ${nomenclaturaSeleccionada}`,
+           doc.internal.pageSize.width / 2,
+           yPosition,
+           { align: 'center' }
+         );
+       } else if (fechaRegistro && fechaRegistro !== 'sin_fecha') {
+         const fechaLimpia = fechaRegistro.split(' ')[0].replace(/[^0-9/-]/g, ''); // Limpia la fecha
+         doc.text(
+           `Fecha de registro: ${fechaLimpia}`,
+           doc.internal.pageSize.width / 2,
+           yPosition,
+           { align: 'center' }
+         );
+       }
+       
+ 
+       yPosition += 8; // Espaciado entre líneas de detalle
   
       // Información adicional
       doc.setFontSize(10);
@@ -753,7 +772,156 @@ const handleObservacionChangeActualizar = (index, value) => {
     };
   };
   
+  const generarReporteseccionesExcel = () => {
+    const encabezados = [
+      ["Saint Patrick Academy"],
+      ["Reporte de Secciones"],
+      [], // Espacio en blanco
+      ["#","Sección", "Grado", "Año Académico", "Profesor"]
+    ];
   
+    // Crear filas con asistencias filtradas
+    const filas = secciones.map((seccion, index) => [
+      index + 1,
+      seccion.Seccion,
+      seccion.Grado,
+      seccion.Anio_Academico,
+      seccion.Nombre_Profesor
+    ]);
+  
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+  
+    // Crear una hoja de trabajo
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+  
+    // Estilos personalizados para encabezados
+    const rangoEncabezado = XLSX.utils.decode_range(hojaDeTrabajo['!ref']);
+    for (let row = 0; row <= 3; row++) {
+      for (let col = rangoEncabezado.s.c; col <= rangoEncabezado.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        if (hojaDeTrabajo[cellAddress]) {
+          hojaDeTrabajo[cellAddress].s = {
+            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "15401D" } },
+            alignment: { horizontal: "center" }
+          };
+        }
+      }
+    }
+  
+    // Ajustar el ancho de columnas automáticamente
+    const ajusteColumnas = [
+      { wpx: 100 }, 
+      { wpx: 100 }, 
+      { wpx: 100 }, 
+      { wpx: 100 } ,
+      { wpx: 100 }  
+    ];
+  
+    hojaDeTrabajo['!cols'] = ajusteColumnas;
+  
+    // Crear el libro de trabajo
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Secciones");
+    // Guardar el archivo Excel con un nombre fijo
+    const nombreArchivo = `Reporte_Secciones.xlsx`;
+
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  };
+  
+  const generarReporteseccionesPDF = () => {
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = logo;
+  
+    img.onload = () => {
+      // Agregar logo
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+  
+      let yPosition = 20; // Posición inicial en el eje Y
+  
+      // Título principal
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51); // Verde
+      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 12; // Espaciado más amplio para resaltar el título
+  
+      // Subtítulo
+      doc.setFontSize(16);
+      doc.text('Reporte de Secciones', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 10; // Espaciado entre subtítulo y detalles
+
+      // Información adicional
+      doc.setFontSize(10);
+      doc.setTextColor(100); // Gris para texto secundario
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 6; // Espaciado antes de la línea divisoria
+  
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51); // Verde
+      doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+  
+      // Configuración para la tabla
+      const pageHeight = doc.internal.pageSize.height; // Altura de la página
+      let pageNumber = 1; // Página inicial
+  
+      // Agregar tabla con auto-paginación
+      doc.autoTable({
+        startY: yPosition + 4,
+        head: [['#', 'Sección', 'Grado', 'Año Académico','Profesor']],
+        body: secciones.map((seccion, index) => [
+          index + 1,
+          `${seccion.Seccion || ''}`.trim(),
+          seccion.Grado,
+          seccion.Anio_Academico,
+          seccion.Nombre_Profesor,
+        ]),
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+        didDrawPage: (data) => {
+          // Pie de página
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+          doc.text(`Página ${pageNumber}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          pageNumber += 1; // Incrementar el número de página
+        },
+      });
+  
+      // Abrir el PDF en lugar de descargarlo automáticamente
+      window.open(doc.output('bloburl'), '_blank');
+    };
+  
+    img.onerror = () => {
+      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+      // Abrir el PDF sin el logo
+      window.open(doc.output('bloburl'), '_blank');
+    };
+  };
+    
     
 
     const handleViewAsistencia = async (Cod_secciones, nombreSeccion) => {
@@ -803,7 +971,7 @@ const handleObservacionChangeActualizar = (index, value) => {
           <CRow className="align-items-center mb-5">
             <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
               <div className="flex-grow-1 text-center">
-                <h3 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50" }}> Lista de Secciones</h3>
+                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50" }}> Lista de Secciones</h4>
               </div>
               <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
                 <CDropdownToggle
@@ -814,13 +982,13 @@ const handleObservacionChangeActualizar = (index, value) => {
                 </CDropdownToggle>
                 <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
                   <CDropdownItem
-                    // onClick={generarReportePDF}
+                    onClick={generarReporteseccionesPDF}
                     style={{cursor: "pointer",outline: "none",backgroundColor: "transparent",padding: "0.5rem 1rem",fontSize: "0.85rem",color: "#333",borderBottom: "1px solid #eaeaea",transition: "background-color 0.3s",}}
                     onMouseOver={(e) =>(e.target.style.backgroundColor = "#f5f5f5")} onMouseOut={(e) =>(e.target.style.backgroundColor = "transparent")}>
                     <CIcon icon={cilFile} size="sm" /> Abrir en PDF
                   </CDropdownItem>
                   <CDropdownItem
-                    // onClick={generarReporteExcel}
+                    onClick={generarReporteseccionesExcel}
                     style={{cursor: "pointer",outline: "none",backgroundColor: "transparent",padding: "0.5rem 1rem",fontSize: "0.85rem",color: "#333",transition: "background-color 0.3s",}}
                     onMouseOver={(e) =>(e.target.style.backgroundColor = "#f5f5f5")}
                     onMouseOut={(e) =>(e.target.style.backgroundColor = "transparent")}>
