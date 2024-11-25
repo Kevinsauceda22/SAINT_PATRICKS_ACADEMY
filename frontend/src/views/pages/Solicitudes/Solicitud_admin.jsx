@@ -80,51 +80,53 @@ const Solicitud = () => {
   const fetchSolicitudes = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:4000/api/Solicitud_admin/solicitudess');
-      if (!response.ok) throw new Error('Error al obtener las solicitudes');
-      const data = await response.json();
-      const solicitudesData = (Array.isArray(data) ? data : []).map((solicitud) => ({
-        id: solicitud.Cod_solicitud || '',
-        title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
-        start: solicitud.Fecha_solicitud || '',
-        end: solicitud.Fecha_solicitud || '',
-        description: solicitud.Asunto || 'SIN ASUNTO',
-        personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
-        horaInicio: solicitud.Hora_Inicio ? solicitud.Hora_Inicio.slice(0, 5) : '00:00',
-        horaFin: solicitud.Hora_Fin ? solicitud.Hora_Fin.slice(0, 5) : '00:00',
-        estado: solicitud.Estado || 'Pendiente',
-        important: solicitud.Importante === 1,
-        Cod_persona: solicitud.Cod_persona || '',
+        const response = await fetch('http://localhost:4000/api/Solicitud_admin/solicitudess');
+        if (!response.ok) throw new Error('Error al obtener las solicitudes');
+        const data = await response.json();
 
-      }));
-      setSolicitudes(solicitudesData);
-      setFilteredCitas(solicitudesData);
+        const solicitudesData = (Array.isArray(data) ? data : []).map((solicitud) => ({
+            id: solicitud.Cod_solicitud || '',
+            title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
+            start: solicitud.Fecha_solicitud || '',
+            end: solicitud.Fecha_solicitud || '',
+            description: solicitud.Asunto || 'SIN ASUNTO',
+            personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
+            horaInicio: solicitud.Hora_Inicio ? solicitud.Hora_Inicio.slice(0, 5) : '00:00',
+            horaFin: solicitud.Hora_Fin ? solicitud.Hora_Fin.slice(0, 5) : '00:00',
+            estado: solicitud.Estado || 'Pendiente', // Map Estado here
+            important: solicitud.Importante === 1,
+            Cod_persona: solicitud.Cod_persona || '',
+        }));
+        setSolicitudes(solicitudesData);
+        setFilteredCitas(solicitudesData);
     } catch (error) {
-      setError(error.message);
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: `No se pudieron cargar las solicitudes. ${error.message}`,
-        confirmButtonColor: '#6C8E58',
-      });
+        setError(error.message);
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: `No se pudieron cargar las solicitudes. ${error.message}`,
+            confirmButtonColor: '#6C8E58',
+        });
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
  
 
-  const getColorByEstado = (estado) => {
-    switch (estado) {
+const getColorByEstado = (estado) => {
+  switch (estado) {
       case 'Pendiente':
-        return 'rgba(255, 215, 0, 0.7)';
+          return 'rgba(255, 215, 0, 0.7)'; // Yellow
       case 'Finalizada':
-        return 'rgba(0, 128, 0, 0.7)';
+          return 'rgba(0, 128, 0, 0.7)'; // Green
       case 'Cancelada':
-        return 'rgba(255, 0, 0, 0.7)';
+          return 'rgba(255, 0, 0, 0.7)'; // Red
       default:
-        return 'rgba(75, 98, 81, 0.7)';
-    }
-  };
+          return 'rgba(75, 98, 81, 0.7)'; // Default color
+  }
+};
+
 
   const getIconByEstado = (estado) => {
     switch (estado) {
@@ -139,6 +141,42 @@ const Solicitud = () => {
     }
   };
 
+
+  
+  const handleValidatedInputChange = (e) => {
+    const { name, value } = e.target;
+  
+    // Configuración de límites por campo
+    const maxLengths = {
+      title: 50, // Máximo de 50 caracteres para el título
+      description: 200, // Máximo de 200 caracteres para la descripción
+      personaRequerida: 100, // Máximo de 100 caracteres para la persona requerida
+    };
+  
+    // Sanitizar el valor: eliminar números, caracteres especiales y limitar a dos letras consecutivas iguales
+    const sanitizedValue = value
+      .replace(/[0-9]/g, '') // Elimina números
+      .replace(/[^A-Z\s]/gi, '') // Elimina caracteres especiales, excepto letras y espacios
+      .toUpperCase() // Convierte todo a mayúsculas
+      .replace(/([A-Z])\1{2,}/g, '$1$1'); // Limita a dos letras consecutivas iguales
+  
+    // Verificar si se excede la longitud máxima permitida
+    if (sanitizedValue.length > maxLengths[name]) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: `El campo ${name} no puede exceder los ${maxLengths[name]} caracteres.`,
+        confirmButtonColor: '#6C8E58',
+      });
+      return;
+    }
+  
+    // Actualizar los valores del formulario con el valor validado
+    setFormValues((prevValues) => ({
+      ...prevValues,
+      [name]: sanitizedValue,
+    }));
+  };
   const exportarCitaAPDF = async (selectedCita) => {
     if (!selectedCita) {
       console.warn('No hay cita seleccionada para exportar.');
@@ -827,8 +865,8 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
               type="text"
               name="title"
               value={formValues.title}
-              onChange={handleInputChange}
-              placeholder="Ejemplo: Reunión de Proyecto"
+              onChange={handleValidatedInputChange} // Validación incluida
+              placeholder="Ejemplo: REUNIÓN DE PROYECTO"
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -841,8 +879,8 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
               type="text"
               name="description"
               value={formValues.description}
-              onChange={handleInputChange}
-              placeholder="Ejemplo: Discutir avances del proyecto"
+              onChange={handleValidatedInputChange} // Validación incluida
+              placeholder="Ejemplo: DISCUTIR AVANCES DEL PROYECTO"
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -855,8 +893,8 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
               type="text"
               name="personaRequerida"
               value={formValues.personaRequerida}
-              onChange={handleInputChange}
-              placeholder="Ejemplo: Juan Pérez"
+              onChange={handleValidatedInputChange} // Validación incluida
+              placeholder="Ejemplo: JUAN PÉREZ"
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -869,7 +907,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
               type="date"
               name="fecha"
               value={formValues.fecha}
-              onChange={handleInputChange}
+              onChange={handleInputChange} // Sin validación especial
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -880,7 +918,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
               type="time"
               name="horaInicio"
               value={formValues.horaInicio}
-              onChange={handleInputChange}
+              onChange={handleInputChange} // Sin validación especial
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -891,7 +929,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
               type="time"
               name="horaFin"
               value={formValues.horaFin}
-              onChange={handleInputChange}
+              onChange={handleInputChange} // Sin validación especial
               required
               style={{ borderColor: '#6C8E58' }}
             />
@@ -900,44 +938,84 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         
 
         {selectedCita && (
-         <CRow className="mb-3">
-         <CCol md={12}>
-           <CFormLabel>Estado</CFormLabel>
-           <div className="form-check form-switch">
-             <input
-               className="form-check-input"
-               type="checkbox"
-               id="estadoSwitch"
-               checked={formValues.estado === "Cancelada"}
-               onChange={() =>
-                 setFormValues((prevValues) => ({
-                   ...prevValues,
-                   estado: prevValues.estado === "Cancelada" ? "Activo" : "Cancelada",
-                 }))
-               }
-               style={{
-                 width: "3rem",
-                 height: "1.5rem",
-                 backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
-                 border: formValues.estado === "Cancelada" ? "1px solid red" : "",
-               }}
-             />
-             <label
-               className="form-check-label"
-               htmlFor="estadoSwitch"
-               style={{
-                 fontSize: "1.25rem",
-                 color: formValues.estado === "Cancelada" ? "red" : "green",
-                 fontWeight: "bold",
-               }}
-             >
-               {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
-             </label>
-           </div>
-         </CCol>
-       </CRow>
-           
-        )}
+  <CRow className="mb-3">
+    <CCol md={12}>
+      <CFormLabel>Estado</CFormLabel>
+      <div className="form-check form-switch">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id="estadoSwitch"
+          checked={formValues.estado === "Cancelada"}
+          onChange={async () => {
+            const newState = formValues.estado === "Cancelada" ? "Pendiente" : "Cancelada";
+
+            // Update state locally
+            setFormValues((prevValues) => ({
+              ...prevValues,
+              estado: newState,
+            }));
+
+            try {
+              // Call the backend to update the state
+              const response = await fetch(
+                `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`,
+                {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    ...selectedCita,
+                    estado: newState, // Pass the new state to the backend
+                  }),
+                }
+              );
+
+              if (response.ok) {
+                Swal.fire({
+                  icon: "success",
+                  title: "Estado Actualizado",
+                  text: `El estado fue cambiado a "${newState}".`,
+                  confirmButtonColor: "#4B6251",
+                });
+
+                // Refresh the event list to reflect changes in the calendar
+                await fetchSolicitudes();
+              } else {
+                throw new Error("Error al actualizar el estado.");
+              }
+            } catch (error) {
+              Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: error.message,
+                confirmButtonColor: "#6C8E58",
+              });
+            }
+          }}
+          style={{
+            width: "3rem",
+            height: "1.5rem",
+            backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
+            border: formValues.estado === "Cancelada" ? "1px solid red" : "",
+          }}
+        />
+        <label
+          className="form-check-label"
+          htmlFor="estadoSwitch"
+          style={{
+            fontSize: "1.25rem",
+            color: formValues.estado === "Cancelada" ? "red" : "green",
+            fontWeight: "bold",
+          }}
+        >
+          {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
+        </label>
+      </div>
+    </CCol>
+  </CRow>
+)}
         <CModalFooter>
           <CButton
             type="submit"

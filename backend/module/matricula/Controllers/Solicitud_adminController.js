@@ -100,6 +100,7 @@ export const actualizarSolicitud = async (req, res) => {
         Hora_Fin,
         Asunto,
         Persona_requerida,
+        estado, // Nuevo parámetro para el estado
     } = req.body;
 
     if (isNaN(Cod_solicitud)) {
@@ -128,25 +129,33 @@ export const actualizarSolicitud = async (req, res) => {
     }
 
     try {
-        // Determinar el estado automáticamente
-        const currentDateTime = new Date();
-        const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${Hora_Fin || Hora_Inicio}`);
+        // Determinar estado actualizado basado en el parámetro proporcionado o calcularlo automáticamente
+        let estadoActualizado = estado;
 
-        let estado = 'Pendiente';
-        if (citaDateTimeEnd <= currentDateTime) {
-            estado = 'Finalizada';
+        // Si el estado proporcionado no es "Cancelada", determinar el estado automáticamente
+        if (estado !== 'Cancelada') {
+            const currentDateTime = new Date();
+            const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${Hora_Fin || Hora_Inicio}`);
+
+            if (citaDateTimeEnd <= currentDateTime) {
+                estadoActualizado = 'Finalizada';
+            } else {
+                estadoActualizado = 'Pendiente';
+            }
         }
 
-        const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?)';
+        // Llamar al procedimiento almacenado
+        const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const params = [
             parseInt(Cod_solicitud, 10),
             Cod_persona,
             Nombre_solicitud,
             Fecha_solicitud,
             Hora_Inicio,
-            Hora_Fin || null,
+            Hora_Fin || null, // Permitir que Hora_Fin sea null
             Asunto,
             Persona_requerida,
+            estadoActualizado, // Pasar el estado actualizado
         ];
 
         const [results] = await pool.query(query, params);
@@ -162,7 +171,7 @@ export const actualizarSolicitud = async (req, res) => {
         // Respuesta exitosa con el nuevo estado
         res.status(200).json({
             message: 'Solicitud actualizada correctamente.',
-            estado,
+            estado: estadoActualizado, // Confirmar el nuevo estado en la respuesta
         });
     } catch (error) {
         console.error('Error al actualizar la solicitud:', error);
@@ -172,6 +181,7 @@ export const actualizarSolicitud = async (req, res) => {
         });
     }
 };
+
 
 export const actualizarEstadoCitas = async (req, res) => {
     try {
