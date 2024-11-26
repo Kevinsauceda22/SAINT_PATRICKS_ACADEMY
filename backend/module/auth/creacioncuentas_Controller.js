@@ -15,13 +15,55 @@ const getRoleName = (roleId) => {
     return roles[roleId] || 'Usuario';
 };
 
+// Función para validar datos del profesor
+const validarDatosProfesor = (profesorData) => {
+    const camposRequeridos = [
+        'Cod_grado_academico',
+        'Cod_tipo_contrato',
+        'Hora_entrada',
+        'Hora_salida',
+        'Fecha_ingreso',
+        'Años_experiencia'
+    ];
+
+    for (const campo of camposRequeridos) {
+        if (!profesorData[campo]) {
+            throw new Error(`El campo ${campo} es requerido para el registro del profesor`);
+        }
+    }
+
+    // Validar formato de hora
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
+    if (!timeRegex.test(profesorData.Hora_entrada) || !timeRegex.test(profesorData.Hora_salida)) {
+        throw new Error('Formato de hora inválido');
+    }
+
+    // Validar fecha de ingreso
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(profesorData.Fecha_ingreso)) {
+        throw new Error('Formato de fecha de ingreso inválido');
+    }
+
+    // Validar fecha fin contrato si existe
+    if (profesorData.Fecha_fin_contrato && !dateRegex.test(profesorData.Fecha_fin_contrato)) {
+        throw new Error('Formato de fecha fin de contrato inválido');
+    }
+
+    // Validar años de experiencia
+    if (typeof profesorData.Años_experiencia !== 'number' || 
+        profesorData.Años_experiencia < 0 || 
+        profesorData.Años_experiencia > 99) {
+        throw new Error('Años de experiencia debe ser un número entre 0 y 99');
+    }
+};
+
 export const crearPersonaYUsuario = async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
         await connection.beginTransaction();
 
-        const { personData, userData } = req.body;
+        const { personData, userData, profesorData } = req.body;
         const rolId = parseInt(userData.Cod_rol);
 
         // Validar rol
@@ -30,6 +72,60 @@ export const crearPersonaYUsuario = async (req, res) => {
                 status: false,
                 mensaje: 'Rol no válido'
             });
+        }
+
+        // Validar datos específicos de profesor si el rol es docente
+        if (rolId === 3) {
+            try {
+                validarDatosProfesor(profesorData);
+            } catch (error) {
+                await connection.rollback();
+                return res.status(400).json({
+                    status: false,
+                    mensaje: error.message
+                });
+            }
+
+            // Validar existencia de grado académico
+            const [gradoExiste] = await connection.query(
+                'SELECT Cod_grado_academico FROM tbl_grado_academico WHERE Cod_grado_academico = ?',
+                [profesorData.Cod_grado_academico]
+            );
+
+            if (gradoExiste.length === 0) {
+                await connection.rollback();
+                return res.status(400).json({
+                    status: false,
+                    mensaje: 'El grado académico especificado no existe'
+                });
+            }
+
+            // Validar existencia de tipo de contrato
+            const [contratoExiste] = await connection.query(
+                'SELECT Cod_tipo_contrato FROM tbl_tipo_contrato WHERE Cod_tipo_contrato = ?',
+                [profesorData.Cod_tipo_contrato]
+            );
+
+            if (contratoExiste.length === 0) {
+                await connection.rollback();
+                return res.status(400).json({
+                    status: false,
+                    mensaje: 'El tipo de contrato especificado no existe'
+                });
+            }
+
+            // Validar que la fecha fin de contrato sea posterior a la fecha de ingreso
+            if (profesorData.Fecha_fin_contrato) {
+                const fechaIngreso = new Date(profesorData.Fecha_ingreso);
+                const fechaFin = new Date(profesorData.Fecha_fin_contrato);
+                if (fechaFin <= fechaIngreso) {
+                    await connection.rollback();
+                    return res.status(400).json({
+                        status: false,
+                        mensaje: 'La fecha de fin de contrato debe ser posterior a la fecha de ingreso'
+                    });
+                }
+            }
         }
 
         // 1. Verificar existencia previa
@@ -65,11 +161,11 @@ export const crearPersonaYUsuario = async (req, res) => {
         
         // Generar nombre de usuario del correo electrónico
         const nombre_usuario = userData.correo_usuario
-            .split('@')[0]              // Tomar la parte antes del @
-            .toLowerCase()              // Convertir a minúsculas
-            .normalize('NFD')           // Normalizar caracteres especiales
-            .replace(/[\u0300-\u036f]/g, '')  // Eliminar acentos
-            .replace(/[^a-z0-9._]/g, '');     // Solo permitir letras, números, puntos y guiones bajos
+            .split('@')[0]
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9._]/g, '');
 
         // Verificar si el nombre de usuario ya existe
         const [existingUsername] = await connection.query(
@@ -110,7 +206,7 @@ export const crearPersonaYUsuario = async (req, res) => {
                 personData.Nacionalidad || null,
                 personData.direccion_persona || null,
                 personData.fecha_nacimiento || null,
-                'A', // Estado activo por defecto
+                'A',
                 personData.cod_tipo_persona,
                 personData.cod_departamento,
                 personData.cod_municipio,
@@ -147,6 +243,32 @@ export const crearPersonaYUsuario = async (req, res) => {
             ]
         );
 
+        // 4. Si es profesor, insertar en tabla de profesores
+        if (rolId === 3) {
+            await connection.query(
+                `INSERT INTO tbl_profesores (
+                    cod_persona,
+                    Cod_grado_academico,
+                    Cod_tipo_contrato,
+                    Hora_entrada,
+                    Hora_salida,
+                    Fecha_ingreso,
+                    Fecha_fin_contrato,
+                    Años_experiencia
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    cod_persona,
+                    profesorData.Cod_grado_academico,
+                    profesorData.Cod_tipo_contrato,
+                    profesorData.Hora_entrada,
+                    profesorData.Hora_salida,
+                    profesorData.Fecha_ingreso,
+                    profesorData.Fecha_fin_contrato || null,
+                    profesorData.Años_experiencia
+                ]
+            );
+        }
+
         // Insertar historia de contraseña
         await connection.query(
             `INSERT INTO tbl_hist_contraseña (
@@ -156,7 +278,7 @@ export const crearPersonaYUsuario = async (req, res) => {
             [resultUsuario.insertId, hashedPassword]
         );
 
-        // 4. Enviar correo con credenciales
+        // 5. Enviar correo con credenciales
         await enviarCorreoCredencialesTemporales(
             userData.correo_usuario,
             finalUsername,
@@ -191,6 +313,86 @@ export const crearPersonaYUsuario = async (req, res) => {
     }
 };
 
+export const getGradosAcademicos = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const [grados] = await connection.query('SELECT * FROM tbl_grado_academico ORDER BY Descripcion');
+        res.json({
+            status: true,
+            data: grados
+        });
+    } catch (error) {
+        console.error('Error al obtener grados académicos:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener grados académicos',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+};
+
+export const getTiposContrato = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const [tipos] = await connection.query('SELECT * FROM tbl_tipo_contrato ORDER BY Descripcion');
+        res.json({
+            status: true,
+            data: tipos
+        });
+    } catch (error) {
+        console.error('Error al obtener tipos de contrato:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener tipos de contrato',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+};
+
+export const getProfesorByPersonaId = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        const { cod_persona } = req.params;
+        
+        const [profesor] = await connection.query(
+            `SELECT 
+                p.*,
+                ga.Descripcion as grado_academico_descripcion,
+                tc.Descripcion as tipo_contrato_descripcion
+             FROM tbl_profesores p
+             JOIN tbl_grado_academico ga ON p.Cod_grado_academico = ga.Cod_grado_academico
+             JOIN tbl_tipo_contrato tc ON p.Cod_tipo_contrato = tc.Cod_tipo_contrato
+             WHERE p.cod_persona = ?`,
+            [cod_persona]
+        );
+
+        if (profesor.length === 0) {
+            return res.status(404).json({
+                status: false,
+                mensaje: 'Profesor no encontrado'
+            });
+        }
+
+        res.json({
+            status: true,
+            data: profesor[0]
+        });
+    } catch (error) {
+        console.error('Error al obtener datos del profesor:', error);
+        res.status(500).json({
+            status: false,
+            mensaje: 'Error al obtener datos del profesor',
+            error: error.message
+        });
+    } finally {
+        connection.release();
+    }
+};
+
 export const actualizarPasswordPrimerIngreso = async (req, res) => {
     const connection = await pool.getConnection();
     
@@ -211,7 +413,7 @@ export const actualizarPasswordPrimerIngreso = async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(nueva_contraseña, 10);
 
-        const [result] = await connection.query(
+        await connection.query(
             `UPDATE tbl_usuarios 
             SET contraseña_usuario = ?,
                 password_temporal = 0,
@@ -230,19 +432,205 @@ export const actualizarPasswordPrimerIngreso = async (req, res) => {
             [cod_usuario, hashedPassword]
         );
 
-        res.json({
-            status: true,
-            mensaje: 'Contraseña actualizada correctamente'
-        });
-
-    } catch (error) {
-        console.error('Error al actualizar la contraseña:', error);
-        res.status(500).json({
-            status: false,
-            mensaje: 'Error al actualizar la contraseña',
-            error: error.message
-        });
-    } finally {
-        connection.release();
-    }
-};
+            res.json({
+                status: true,
+                mensaje: 'Contraseña actualizada correctamente'
+            });
+    
+        } catch (error) {
+            console.error('Error al actualizar la contraseña:', error);
+            res.status(500).json({
+                status: false,
+                mensaje: 'Error al actualizar la contraseña',
+                error: error.message
+            });
+        } finally {
+            connection.release();
+        }
+    };
+    
+    // Obtener todos los profesores
+    export const getAllProfesores = async (req, res) => {
+        const connection = await pool.getConnection();
+        try {
+            const [profesores] = await connection.query(
+                `SELECT 
+                    p.*,
+                    per.Nombre,
+                    per.Primer_apellido,
+                    per.Segundo_apellido,
+                    per.dni_persona,
+                    ga.Descripcion as grado_academico,
+                    tc.Descripcion as tipo_contrato,
+                    u.correo_usuario,
+                    u.Cod_estado_usuario
+                 FROM tbl_profesores p
+                 INNER JOIN tbl_personas per ON p.cod_persona = per.cod_persona
+                 INNER JOIN tbl_grados_academicos ga ON p.Cod_grado_academico = ga.Cod_grado_academico
+                 INNER JOIN tbl_tipo_contrato tc ON p.Cod_tipo_contrato = tc.Cod_tipo_contrato
+                 INNER JOIN tbl_usuarios u ON per.cod_persona = u.cod_persona
+                 ORDER BY per.Primer_apellido, per.Nombre`
+            );
+    
+            res.json({
+                status: true,
+                data: profesores
+            });
+        } catch (error) {
+            console.error('Error al obtener lista de profesores:', error);
+            res.status(500).json({
+                status: false,
+                mensaje: 'Error al obtener lista de profesores',
+                error: error.message
+            });
+        } finally {
+            connection.release();
+        }
+    };
+    
+    // Actualizar datos del profesor
+    export const actualizarProfesor = async (req, res) => {
+        const connection = await pool.getConnection();
+        try {
+            const { cod_persona } = req.params;
+            const profesorData = req.body;
+    
+            // Validar datos del profesor
+            try {
+                validarDatosProfesor(profesorData);
+            } catch (error) {
+                return res.status(400).json({
+                    status: false,
+                    mensaje: error.message
+                });
+            }
+    
+            // Validar existencia del profesor
+            const [existeProfesor] = await connection.query(
+                'SELECT cod_profesor FROM tbl_profesores WHERE cod_persona = ?',
+                [cod_persona]
+            );
+    
+            if (existeProfesor.length === 0) {
+                return res.status(404).json({
+                    status: false,
+                    mensaje: 'Profesor no encontrado'
+                });
+            }
+    
+            // Validar existencia de grado académico y tipo de contrato
+            const [gradoExiste] = await connection.query(
+                'SELECT Cod_grado_academico FROM tbl_grados_academicos WHERE Cod_grado_academico = ?',
+                [profesorData.Cod_grado_academico]
+            );
+    
+            const [contratoExiste] = await connection.query(
+                'SELECT Cod_tipo_contrato FROM tbl_tipo_contratos WHERE Cod_tipo_contrato = ?',
+                [profesorData.Cod_tipo_contrato]
+            );
+    
+            if (gradoExiste.length === 0 || contratoExiste.length === 0) {
+                return res.status(400).json({
+                    status: false,
+                    mensaje: 'Grado académico o tipo de contrato no válido'
+                });
+            }
+    
+            // Actualizar datos del profesor
+            await connection.query(
+                `UPDATE tbl_profesores SET
+                    Cod_grado_academico = ?,
+                    Cod_tipo_contrato = ?,
+                    Hora_entrada = ?,
+                    Hora_salida = ?,
+                    Fecha_ingreso = ?,
+                    Fecha_fin_contrato = ?,
+                    Años_experiencia = ?
+                WHERE cod_persona = ?`,
+                [
+                    profesorData.Cod_grado_academico,
+                    profesorData.Cod_tipo_contrato,
+                    profesorData.Hora_entrada,
+                    profesorData.Hora_salida,
+                    profesorData.Fecha_ingreso,
+                    profesorData.Fecha_fin_contrato || null,
+                    profesorData.Años_experiencia,
+                    cod_persona
+                ]
+            );
+    
+            res.json({
+                status: true,
+                mensaje: 'Datos del profesor actualizados correctamente'
+            });
+    
+        } catch (error) {
+            console.error('Error al actualizar datos del profesor:', error);
+            res.status(500).json({
+                status: false,
+                mensaje: 'Error al actualizar datos del profesor',
+                error: error.message
+            });
+        } finally {
+            connection.release();
+        }
+    };
+    
+    // Eliminar profesor (desactivación lógica)
+    export const eliminarProfesor = async (req, res) => {
+        const connection = await pool.getConnection();
+        try {
+            const { cod_persona } = req.params;
+    
+            await connection.beginTransaction();
+    
+            // Verificar si existe el profesor
+            const [profesor] = await connection.query(
+                'SELECT cod_profesor FROM tbl_profesores WHERE cod_persona = ?',
+                [cod_persona]
+            );
+    
+            if (profesor.length === 0) {
+                await connection.rollback();
+                return res.status(404).json({
+                    status: false,
+                    mensaje: 'Profesor no encontrado'
+                });
+            }
+    
+            // Actualizar estado del usuario asociado
+            await connection.query(
+                `UPDATE tbl_usuarios 
+                 SET Cod_estado_usuario = 2
+                 WHERE cod_persona = ?`,
+                [cod_persona]
+            );
+    
+            // Actualizar estado de la persona
+            await connection.query(
+                `UPDATE tbl_personas 
+                 SET Estado_Persona = 'I'
+                 WHERE cod_persona = ?`,
+                [cod_persona]
+            );
+    
+            await connection.commit();
+    
+            res.json({
+                status: true,
+                mensaje: 'Profesor eliminado correctamente'
+            });
+    
+        } catch (error) {
+            await connection.rollback();
+            console.error('Error al eliminar profesor:', error);
+            res.status(500).json({
+                status: false,
+                mensaje: 'Error al eliminar profesor',
+                error: error.message
+            });
+        } finally {
+            connection.release();
+        }
+    };
+    
