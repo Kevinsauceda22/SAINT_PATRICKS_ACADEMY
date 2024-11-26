@@ -92,15 +92,15 @@ export const crearPersona = async (req, res) => {
         Segundo_nombre,
         Primer_apellido,
         Segundo_apellido,
-        Nacionalidad,
         direccion_persona,
         fecha_nacimiento,
         Estado_Persona,
+        principal,
         cod_tipo_persona,
+        cod_nacionalidad,
         cod_departamento,
         cod_municipio,
         cod_genero,
-        principal,
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -123,14 +123,14 @@ export const crearPersona = async (req, res) => {
 
         // Validación de los primeros cuatro dígitos del DNI
         const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
-        if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
-            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.' });
+        if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
+            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.' });
         }
 
         // Validación del año de nacimiento en el DNI
         const añoNacimientoDNI = parseInt(dni_persona.substring(4, 8));
-        if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
-            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.' });
+        if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
+            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. El año debe estar entre 1930 y 2020.' });
         }
 
         // Función para validar un campo de texto
@@ -146,17 +146,16 @@ export const crearPersona = async (req, res) => {
         // Validación de la fecha de nacimiento
         const fechaNacimiento = new Date(fecha_nacimiento);
         const añoNacimiento = fechaNacimiento.getFullYear();
-        if (añoNacimiento < 1920 || añoNacimiento > 2020) {
-            return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1920 y 2020.' });
+        if (añoNacimiento < 1930 || añoNacimiento > 2020) {
+            return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1930 y 2020.' });
         }
 
         // Validaciones
         const validaciones = [
-            { campo: Nombre, nombreCampo: 'El nombre' },
+            { campo: Nombre, nombreCampo: 'El primer nombre' },
             { campo: Segundo_nombre, nombreCampo: 'El segundo nombre', optional: true },
             { campo: Primer_apellido, nombreCampo: 'El primer apellido' },
             { campo: Segundo_apellido, nombreCampo: 'El segundo apellido', optional: true },
-            { campo: Nacionalidad, nombreCampo: 'La nacionalidad' },
             { campo: direccion_persona, nombreCampo: 'La dirección' } // Validación para dirección
         ];
 
@@ -176,15 +175,16 @@ export const crearPersona = async (req, res) => {
                 Segundo_nombre,
                 Primer_apellido,
                 Segundo_apellido,
-                Nacionalidad,
                 direccion_persona,
                 fecha_nacimiento,
                 Estado_Persona,
+                principal,
                 cod_tipo_persona,
-                cod_departamento,
-                cod_municipio,
                 cod_genero,
-                principal 
+                cod_nacionalidad,
+                cod_departamento,
+                cod_municipio
+                
             ]
         );
 
@@ -212,15 +212,15 @@ export const actualizarPersona = async (req, res) => {
         Segundo_nombre,
         Primer_apellido,
         Segundo_apellido,
-        Nacionalidad,
         direccion_persona,
         fecha_nacimiento,
         Estado_Persona,
+        principal,
         cod_tipo_persona,
-        cod_departamento,
-        cod_municipio,
         cod_genero,
-        principal
+        cod_nacionalidad,
+        cod_departamento,
+        cod_municipio
     } = req.body;
 
     // Regex para solo letras, acentos y espacios
@@ -240,12 +240,12 @@ export const actualizarPersona = async (req, res) => {
         }
 
         const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
-        if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
-            return res.status(400).json({ mensaje: 'El DNI no es válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.' });
+        if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
+            return res.status(400).json({ mensaje: 'El DNI no es válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.' });
         }
 
         const añoNacimientoDNI = parseInt(dni_persona.substring(4, 8));
-        if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
+        if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
             return res.status(400).json({ mensaje: 'El DNI no es válido. El año debe estar entre 1920 y 2020.' });
         }
 
@@ -255,7 +255,6 @@ export const actualizarPersona = async (req, res) => {
             { campo: Segundo_nombre, nombreCampo: 'El segundo nombre', optional: true },
             { campo: Primer_apellido, nombreCampo: 'El primer apellido' },
             { campo: Segundo_apellido, nombreCampo: 'El segundo apellido', optional: true },
-            { campo: Nacionalidad, nombreCampo: 'La nacionalidad', optional: true },
             { campo: direccion_persona, nombreCampo: 'La dirección' }
         ];
 
@@ -271,19 +270,10 @@ export const actualizarPersona = async (req, res) => {
         // Validación de fecha de nacimiento
         const fechaNacimiento = new Date(fecha_nacimiento);
         const añoNacimiento = fechaNacimiento.getFullYear();
-        if (añoNacimiento < 1920 || añoNacimiento > 2020) {
-            return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1920 y 2020.' });
+        if (añoNacimiento < 1930 || añoNacimiento > 2020) {
+            return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1930 y 2020.' });
         }
 
-        // Validar Estado_Persona (debe ser 'A' o 'S')
-        if (!['A', 'S'].includes(Estado_Persona)) {
-            return res.status(400).json({ mensaje: 'El estado de la persona debe ser "A" (Activo) o "S" (Suspendido).' });
-        }
-
-        // Validar códigos relacionados (departamento, municipio, etc.)
-        if ([cod_tipo_persona, cod_departamento, cod_municipio, cod_genero].some(codigo => isNaN(codigo))) {
-            return res.status(400).json({ mensaje: 'Los códigos proporcionados deben ser números válidos.' });
-        }
 
         // Llamada al procedimiento almacenado para actualizar
         await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
@@ -293,15 +283,15 @@ export const actualizarPersona = async (req, res) => {
             Segundo_nombre,
             Primer_apellido,
             Segundo_apellido,
-            Nacionalidad,
             direccion_persona,
             fecha_nacimiento,
             Estado_Persona,
+            principal,
             cod_tipo_persona,
-            cod_departamento,
-            cod_municipio,
             cod_genero,
-            principal
+            cod_nacionalidad,
+            cod_departamento,
+            cod_municipio
         ]);
 
         res.status(200).json({ mensaje: 'Persona actualizada exitosamente' });

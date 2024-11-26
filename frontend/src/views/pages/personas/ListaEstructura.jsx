@@ -1084,7 +1084,6 @@ return (
 {/* Fin del modal de agregar estructura familiar */}
 
 
-{/* Modal para actualizar estrucutra familiar */}
 {/* Modal para actualizar estructura familiar */}
 <CModal visible={modalVisibleActualizar} onClose={() => setModalVisibleActualizar(false)} backdrop="static">
   <CModalHeader closeButton>
