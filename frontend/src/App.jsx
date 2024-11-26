@@ -77,8 +77,9 @@ const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
+const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
 const ListaProcedenciaPersona = React.lazy(() => import('./views/pages/personas/ListaProcedenciaPersona')); 
-const tipopersona = React.lazy(() => import('./views/pages/personas/tipopersona'));
+const Tipopersona = React.lazy(() => import('./views/pages/personas/tipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
@@ -205,7 +206,8 @@ const App = () => {
                  <Route path="/dias"  element={<ListaDias />} />
                 
                 <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
-                 <Route path="/tipopersona" element={<tipopersona />} />
+                 <Route path="/tipopersona" element={<Tipopersona />} />
+                 <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                  <Route path="/ListaProcedenciaPersona" element={<ListaPersonas />} />

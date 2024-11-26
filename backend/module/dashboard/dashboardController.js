@@ -7,12 +7,9 @@ const obtenerEstadisticas = async (req, res) => {
 
     // Obtener total de estudiantes matriculados activos
     const [totalEstudiantes] = await pool.query(`
-      SELECT COUNT(DISTINCT m.cod_persona) as total 
-      FROM tbl_matricula m 
-      JOIN tbl_estado_matricula em ON m.Cod_estado_matricula = em.Cod_estado_matricula 
-      JOIN tbl_personas p ON m.cod_persona = p.cod_persona
-      WHERE em.Tipo = 'Activo'
-      AND p.Estado_Persona = 'A'
+      SELECT COUNT(*) as total 
+      FROM tbl_usuarios 
+      WHERE Cod_rol = 1 AND Cod_estado_usuario = 1
     `);
 
     // Obtener nuevas matrículas (último mes)
@@ -27,10 +24,8 @@ const obtenerEstadisticas = async (req, res) => {
     // Obtener total de profesores activos
     const [totalProfesores] = await pool.query(`
       SELECT COUNT(*) as total 
-      FROM tbl_personas p
-      JOIN tbl_profesores prof ON p.cod_persona = prof.Cod_persona
-      WHERE p.Estado_Persona = 'A'
-      AND p.cod_tipo_persona = (SELECT cod_tipo_persona FROM tbl_tipo_persona WHERE tipo = 'Profesor')
+      FROM tbl_usuarios 
+      WHERE Cod_rol = 3 AND Cod_estado_usuario = 1
     `);
 
     // Obtener porcentajes de matrículas activas y pendientes

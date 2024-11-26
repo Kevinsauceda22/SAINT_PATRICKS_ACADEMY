@@ -78,27 +78,16 @@ const Dashboard = () => {
         await registrarEnBitacora('SELECT', 'Acceso al Dashboard');
 
         // Peticiones en paralelo para mejor rendimiento
-        const [statsResponse, matriculasGradoResponse, ultimasMatriculasResponse] = await Promise.all([
-          axios.get('http://localhost:4000/api/dashboard/stats', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:4000/api/dashboard/matriculas-por-grado', {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get('http://localhost:4000/api/dashboard/ultimas-matriculas', {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        ]);
-
-        setStats(statsResponse.data);
-        setMatriculasPorGrado(matriculasGradoResponse.data);
-        setUltimasMatriculas(ultimasMatriculasResponse.data);
+        const response = await axios.get('http://localhost:4000/api/dashboard/stats', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setStats(response.data);
       } catch (error) {
-        console.error('Error al cargar datos del dashboard:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+          console.error('Error al cargar datos del dashboard:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
 
     cargarDatos();
   }, []);
@@ -122,6 +111,13 @@ const Dashboard = () => {
   if (!canSelect) {
     return <AccessDenied />;
   }
+
+  const data = [
+    { name: 'Total Estudiantes', value: stats.totalEstudiantes },
+    { name: 'Nuevas Matrículas', value: stats.nuevasMatriculas },
+    { name: 'Total Profesores', value: stats.totalProfesores },
+    { name: 'Ingresos Mensuales', value: stats.ingresosMensuales },
+  ];
 
   return (
     <>
@@ -165,6 +161,29 @@ const Dashboard = () => {
         </CCol>
       </CRow>
 
+      {/* Gráfico de Métricas */}
+      <CRow>
+        <CCol xs={12}>
+          <CCard className="mb-4">
+            <CCardHeader>Métricas Clave</CCardHeader>
+            <CCardBody>
+              <div style={{ width: '100%', height: '300px' }}>
+                <ResponsiveContainer>
+                  <LineChart data={data}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="value" stroke="#8884d8" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CCardBody>
+          </CCard>
+        </CCol>
+      </CRow>
+    
       {/* Gráfico de Matrículas por Grado */}
       <CRow>
         <CCol xs={12} lg={8}>
