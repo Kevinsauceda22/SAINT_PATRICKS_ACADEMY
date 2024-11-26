@@ -43,6 +43,7 @@ import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import gestion_academicaRoutes from './module/matricula/Routes/gestion_academicaRoutes.js';
 
 import personasRoutes from "./module/personas/personaRoutes.js";
+import nacionalidadRoutes from "./module/personas/Routes/nacionalidadRoutes.js";
 import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
 import tipomatriculaRoutes from './module/matricula/Routes/tipomatriculaRoutes.js';
 import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRoutes.js';
@@ -198,6 +199,7 @@ app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
 
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
+app.use('/api/nacionalidad', nacionalidadRoutes);
 app.use('/api/municipio', municipioRoutes);
 app.use('/api/personas', personasRoutes); // Añadir ruta para personas
 app.use('/api/generoPersona', generoPersonaRoutes);
