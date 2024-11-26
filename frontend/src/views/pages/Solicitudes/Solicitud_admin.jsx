@@ -59,6 +59,7 @@ const Solicitud = () => {
   const [selectedCita, setSelectedCita] = useState(null);
   const [formModalVisible, setFormModalVisible] = useState(false);
   const [allCitasModalVisible, setAllCitasModalVisible] = useState(false);
+  const [acceptModalVisible, setAcceptModalVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredCitas, setFilteredCitas] = useState([]);
   const [formValues, setFormValues] = useState({
@@ -116,30 +117,34 @@ const Solicitud = () => {
 
 const getColorByEstado = (estado) => {
   switch (estado) {
-      case 'Pendiente':
-          return 'rgba(255, 215, 0, 0.7)'; // Yellow
-      case 'Finalizada':
-          return 'rgba(0, 128, 0, 0.7)'; // Green
-      case 'Cancelada':
-          return 'rgba(255, 0, 0, 0.7)'; // Red
-      default:
-          return 'rgba(75, 98, 81, 0.7)'; // Default color
+    case 'Pendiente':
+      return 'rgba(255, 204, 102, 0.8)'; // Soft amber
+    case 'Finalizada':
+      return 'rgba(102, 187, 106, 0.8)'; // Calm green
+    case 'Cancelada':
+      return 'rgba(239, 83, 80, 0.8)'; // Soft coral red
+    case 'Activo':
+      return 'rgba(41, 121, 255, 0.9)'; // Highlighted blue for active
+    default:
+      return 'rgba(158, 158, 158, 0.8)'; // Neutral gray
   }
 };
 
+const getIconByEstado = (estado) => {
+  switch (estado) {
+    case 'Pendiente':
+      return cilWarning; // Warning icon for pending
+    case 'Finalizada':
+      return cilCheckCircle; // Check circle for finalized
+    case 'Cancelada':
+      return cilXCircle; // X circle for canceled
+    case 'Activo':
+      return cilCheckCircle; // Check circle for active
+    default:
+      return cilWarning; // Default icon for unknown states
+  }
+};
 
-  const getIconByEstado = (estado) => {
-    switch (estado) {
-      case 'Pendiente':
-        return cilWarning;
-      case 'Finalizada':
-        return cilCheckCircle;
-      case 'Cancelada':
-        return cilXCircle;
-      default:
-        return cilWarning;
-    }
-  };
 
 
   
@@ -298,92 +303,141 @@ const getColorByEstado = (estado) => {
     const citaId = parseInt(info.event.id, 10); // ID del evento
     const citaSeleccionada = solicitudes.find((cita) => cita.id === citaId);
   
-    try {
-      const citaData = await fetchSolicitudConPersona(citaId);
-      // Combinar datos existentes con los nuevos obtenidos del backend
-      setSelectedCita({
-        ...citaSeleccionada, // Mantener los datos locales existentes
-        ...citaData,         // Sobrescribir con datos del backend
-      });
-      setModalVisible(true); // Abre el modal de detalles
-    } catch (error) {
-      console.error('Error al cargar los detalles de la cita:', error.message);
+    if (citaSeleccionada.estado === 'Pendiente') {
+      try {
+        const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${citaId}`);
+        if (!response.ok) throw new Error('Error al obtener detalles de la solicitud.');
+  
+        const detailedData = await response.json();
+        setSelectedCita({
+          ...citaSeleccionada, // Información básica de la cita
+          ...detailedData, // Información detallada del creador
+        });
+  
+        setAcceptModalVisible(true); // Mostrar modal de aceptar cita
+      } catch (error) {
+        console.error('Error al cargar los detalles de la cita:', error.message);
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: `No se pudieron cargar los detalles de la cita. ${error.message}`,
+          confirmButtonColor: '#6C8E58',
+        });
+      }
+    } else {
+      try {
+        const citaData = await fetchSolicitudConPersona(citaId);
+        setSelectedCita({
+          ...citaSeleccionada,
+          ...citaData,
+        });
+        setModalVisible(true);
+      } catch (error) {
+        console.error('Error al cargar los detalles de la cita:', error.message);
+      }
     }
   };
   
+  
   const handleEventDrop = async (info) => {
     const citaId = parseInt(info.event.id, 10); // ID del evento
-    const newDate = new Date(info.event.startStr).toISOString().split('T')[0]; // Formatear la nueva fecha (YYYY-MM-DD)
     const cita = solicitudes.find((c) => c.id === citaId); // Buscar la cita en el estado
-
+  
     if (!cita) {
-        Swal.fire({
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se encontró la cita para actualizar.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return info.revert(); // Revertir si no encuentra la cita
+    }
+  
+    // Prevenir cambio de fecha para citas finalizadas
+    if (cita.estado === 'Finalizada') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'No puedes cambiar la fecha de una cita que ya está finalizada.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return info.revert(); // Revertir el movimiento
+    }
+  
+    const newDate = new Date(info.event.startStr); // Nueva fecha seleccionada
+    const today = new Date(); // Fecha actual sin horas, minutos y segundos
+    today.setHours(0, 0, 0, 0);
+  
+    // Validar que la nueva fecha no sea en el pasado
+    if (newDate < today) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'No puedes mover una cita a una fecha pasada.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return info.revert(); // Revertir el movimiento
+    }
+  
+    // Si pasa las validaciones, proceder a actualizar la cita
+    Swal.fire({
+      title: 'Confirmación',
+      text: '¿Deseas cambiar la fecha de esta cita?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cambiar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#4B6251',
+      cancelButtonColor: '#6C8E58',
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const requestData = {
+            Cod_persona: cita.Cod_persona,
+            Nombre_solicitud: cita.title || 'SIN TÍTULO',
+            Fecha_solicitud: newDate.toISOString().split('T')[0], // Formatear nueva fecha
+            Hora_Inicio: cita.horaInicio,
+            Hora_Fin: cita.horaFin,
+            Asunto: cita.description || 'SIN ASUNTO',
+            Persona_requerida: cita.personaRequerida || 'DESCONOCIDO',
+            Estado: cita.estado, // Mantener el estado actual
+          };
+  
+          const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData),
+          });
+  
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Error al actualizar la fecha de la cita.');
+          }
+  
+          Swal.fire({
+            icon: 'success',
+            title: 'Actualizado',
+            text: 'La fecha de la cita se actualizó con éxito.',
+            confirmButtonColor: '#4B6251',
+          });
+  
+          await fetchSolicitudes(); // Recargar las citas después de actualizar
+        } catch (error) {
+          Swal.fire({
             icon: 'error',
             title: 'Error',
-            text: 'No se encontró la cita para actualizar.',
+            text: `No se pudo actualizar la fecha. ${error.message}`,
             confirmButtonColor: '#6C8E58',
-        });
-        return info.revert(); // Revertir si no encuentra la cita
-    }
-
-    Swal.fire({
-        title: 'Confirmación',
-        text: '¿Deseas cambiar la fecha de esta cita?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, cambiar',
-        cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#4B6251',
-        cancelButtonColor: '#6C8E58',
-    }).then(async (result) => {
-        if (result.isConfirmed) {
-            try {
-                // Crear el cuerpo de la solicitud
-                const requestData = {
-                    Cod_persona: cita.Cod_persona,
-                    Nombre_solicitud: cita.title || 'SIN TÍTULO',
-                    Fecha_solicitud: newDate, // Fecha actualizada
-                    Hora_Inicio: cita.horaInicio,
-                    Hora_Fin: cita.horaFin,
-                    Asunto: cita.description || 'SIN ASUNTO',
-                    Persona_requerida: cita.personaRequerida || 'DESCONOCIDO',
-                    Estado: cita.estado, // Mantener el estado actual
-                };
-
-                // Enviar solicitud PUT al backend
-                const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestData),
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'Error al actualizar la fecha de la cita.');
-                }
-
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Actualizado',
-                    text: 'La fecha de la cita se actualizó con éxito.',
-                    confirmButtonColor: '#4B6251',
-                });
-
-                await fetchSolicitudes(); // Recargar las citas después de actualizar
-            } catch (error) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: `No se pudo actualizar la fecha. ${error.message}`,
-                    confirmButtonColor: '#6C8E58',
-                });
-                info.revert(); // Revertir si hay error
-            }
-        } else {
-            info.revert(); // Revertir si el usuario cancela
+          });
+          info.revert(); // Revertir si hay error
         }
+      } else {
+        info.revert(); // Revertir si el usuario cancela
+      }
     });
-};
+  };
+  
+  
 // Nuevo fetch para obtener la cita con la persona creadora
 const fetchSolicitudConPersona = async (Cod_solicitud) => {
   try {
@@ -437,25 +491,90 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
     setSelectedCita(null);
     setFormModalVisible(true);
   };
-
-  const handleEditarCita = () => {
-    if (selectedCita) {
-      setFormValues({
-        title: selectedCita.title,
-        description: selectedCita.description,
-        personaRequerida: selectedCita.personaRequerida,
-        fecha: selectedCita.start,
-        horaInicio: selectedCita.horaInicio,
-        horaFin: selectedCita.horaFin,
-        estado: selectedCita.estado,
+  const handleOpenAcceptModal = (cita) => {
+    setSelectedCita(cita); // Selecciona la cita que se quiere aceptar
+    setAcceptModalVisible(true); // Muestra el modal
+  };
+  
+  const handleAcceptCita = async () => {
+    try {
+      const requestData = {
+        Cod_persona: selectedCita.Cod_persona,
+        Nombre_solicitud: selectedCita.title,
+        Fecha_solicitud: selectedCita.start,
+        Hora_Inicio: selectedCita.horaInicio,
+        Hora_Fin: selectedCita.horaFin,
+        Asunto: selectedCita.description,
+        Persona_requerida: selectedCita.personaRequerida,
+        estado: 'Activo', // Cambiar el estado a 'Activo'
+      };
+  
+      const response = await fetch(
+        `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        }
+      );
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al aceptar la cita.');
+      }
+  
+      Swal.fire({
+        icon: 'success',
+        title: 'Aceptada',
+        text: 'La cita ha sido aceptada y está ahora activa.',
+        confirmButtonColor: '#4B6251',
       });
-      setModalVisible(false);
-      setFormModalVisible(true);
+  
+      await fetchSolicitudes(); // Recargar solicitudes
+      setAcceptModalVisible(false); // Cerrar modal
+    } catch (error) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `No se pudo aceptar la cita. ${error.message}`,
+        confirmButtonColor: '#6C8E58',
+      });
     }
   };
+  
 
-  const areFieldsValid = () => {
+  const handleEditarCita = () => {
+    if (selectedCita.estado === 'Finalizada') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'No puedes editar esta cita si ya está finalizada.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return;
+    }
+  
+    setFormValues({
+      title: selectedCita.title,
+      description: selectedCita.description,
+      personaRequerida: selectedCita.personaRequerida,
+      fecha: selectedCita.start,
+      horaInicio: selectedCita.horaInicio,
+      horaFin: selectedCita.horaFin,
+      estado: selectedCita.estado,
+    });
+    setModalVisible(false);
+    setFormModalVisible(true);
+  };
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+  
     const { title, description, personaRequerida, fecha, horaInicio, horaFin } = formValues;
+  
+    // Validación de campos obligatorios
     if (!title || !description || !personaRequerida || !fecha || !horaInicio || !horaFin) {
       Swal.fire({
         icon: 'warning',
@@ -463,79 +582,105 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         text: 'Todos los campos son obligatorios.',
         confirmButtonColor: '#6C8E58',
       });
-      return false;
+      return;
     }
-    return true;
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!areFieldsValid()) return;
-
-    const [horaInicio, minutoInicio] = formValues.horaInicio.split(':').map(Number);
-    const [horaFin, minutoFin] = formValues.horaFin.split(':').map(Number);
-    if (horaFin < horaInicio || (horaFin === horaInicio && minutoFin <= minutoInicio)) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Advertencia',
-            text: 'La hora de fin debe ser mayor que la hora de inicio.',
-            confirmButtonColor: '#6C8E58',
-        });
-        return;
+  
+    const now = new Date();
+    const selectedDate = new Date(fecha);
+  
+    // Validar que la fecha seleccionada no sea anterior a la actual
+    if (selectedDate < now.setHours(0, 0, 0, 0)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'No puedes editar citas para fechas pasadas.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return;
     }
-
+  
+    // Validar que la hora de inicio y fin no sean en el pasado si la fecha es hoy
+    const [horaInicioHoras, minutoInicio] = horaInicio.split(':').map(Number);
+    const [horaFinHoras, minutoFin] = horaFin.split(':').map(Number);
+  
+    if (
+      selectedDate.toDateString() === new Date().toDateString() &&
+      (horaInicio <= now.toTimeString().slice(0, 5) || horaFin <= now.toTimeString().slice(0, 5))
+    ) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'No puedes programar citas en horas pasadas para hoy.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return;
+    }
+  
+    // Validar que la hora de fin sea mayor que la hora de inicio
+    if (horaFinHoras < horaInicioHoras || (horaFinHoras === horaInicioHoras && minutoFin <= minutoInicio)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'La hora de fin debe ser mayor que la hora de inicio.',
+        confirmButtonColor: '#6C8E58',
+      });
+      return;
+    }
+  
     setIsSubmitting(true);
+  
     try {
-        const requestData = {
-            Cod_persona: selectedCita ? selectedCita.Cod_persona : formValues.Cod_persona || '1',
-            Nombre_solicitud: formValues.title || 'SIN TÍTULO',
-            Fecha_solicitud: formValues.fecha || '1899-11-30',
-            Hora_Inicio: formValues.horaInicio,
-            Hora_Fin: formValues.horaFin,
-            Asunto: formValues.description || 'SIN ASUNTO',
-            Persona_requerida: formValues.personaRequerida || 'DESCONOCIDO',
-            estado: formValues.estado || 'Pendiente', // Pass the updated state
-        };
-
-        const response = await fetch(
-            selectedCita
-                ? `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
-                : 'http://localhost:4000/api/Solicitud_admin/solicitudes',
-            {
-                method: selectedCita ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestData),
-            }
-        );
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al procesar la solicitud.');
+      const requestData = {
+        Cod_persona: selectedCita ? selectedCita.Cod_persona : formValues.Cod_persona || '1',
+        Nombre_solicitud: formValues.title || 'SIN TÍTULO',
+        Fecha_solicitud: formValues.fecha || '1899-11-30',
+        Hora_Inicio: formValues.horaInicio,
+        Hora_Fin: formValues.horaFin,
+        Asunto: formValues.description || 'SIN ASUNTO',
+        Persona_requerida: formValues.personaRequerida || 'DESCONOCIDO',
+        estado: formValues.estado || 'Pendiente', // Mantener el estado actual
+      };
+  
+      const response = await fetch(
+        selectedCita
+          ? `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
+          : 'http://localhost:4000/api/Solicitud_admin/solicitudes',
+        {
+          method: selectedCita ? 'PUT' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestData),
         }
-
-        Swal.fire({
-            icon: 'success',
-            title: selectedCita ? 'Actualizado' : 'Creado',
-            text: selectedCita
-                ? 'La cita fue actualizada correctamente.'
-                : 'La cita fue creada correctamente.',
-            confirmButtonColor: '#4B6251',
-        });
-
-        setFormModalVisible(false);
-        await fetchSolicitudes();
+      );
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al procesar la solicitud.');
+      }
+  
+      Swal.fire({
+        icon: 'success',
+        title: selectedCita ? 'Actualizado' : 'Creado',
+        text: selectedCita
+          ? 'La cita fue actualizada correctamente.'
+          : 'La cita fue creada correctamente.',
+        confirmButtonColor: '#4B6251',
+      });
+  
+      setFormModalVisible(false);
+      await fetchSolicitudes(); // Recargar las solicitudes después de guardar
     } catch (error) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message,
-            confirmButtonColor: '#6C8E58',
-        });
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message,
+        confirmButtonColor: '#6C8E58',
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
-};
-
+  };
+  
+  
 
   const handleVerTodasCitas = () => {
     setAllCitasModalVisible(true);
@@ -680,6 +825,9 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
  if (!canSelect) {
   return <AccessDenied />;
 }
+
+
+
 
 
   return (
@@ -851,6 +999,51 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
           )}
         </CModalBody>
       </CModal>
+      <CModal
+
+  visible={acceptModalVisible}
+  onClose={() => setAcceptModalVisible(false)}
+  backdrop="static"
+>
+  <CModalHeader closeButton style={{ backgroundColor: '#4B6251', color: 'white' }}>
+    <CModalTitle>Aceptar Cita</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    {selectedCita ? (
+      <div>
+        <p><strong>¿Estás seguro de que deseas aceptar la cita?</strong></p>
+        <ul>
+          <li><strong>Nombre de la cita:</strong> {selectedCita.title || 'No disponible'}</li>
+          <li><strong>Persona que la creó:</strong> {`${selectedCita.Persona_Nombre || 'No disponible'} ${selectedCita.Persona_Apellido || ''}`}</li>
+          <li><strong>Correo electrónico:</strong> {selectedCita.Persona_Correo || 'No disponible'}</li>
+          <li><strong>Fecha:</strong> {selectedCita.start || 'No disponible'}</li>
+          <li><strong>Hora de inicio:</strong> {selectedCita.horaInicio || 'No disponible'}</li>
+          <li><strong>Hora de fin:</strong> {selectedCita.horaFin || 'No disponible'}</li>
+          <li><strong>Asunto:</strong> {selectedCita.description || 'No disponible'}</li>
+        </ul>
+      </div>
+    ) : (
+      <p>No se encontraron detalles para esta cita.</p>
+    )}
+  </CModalBody>
+  <CModalFooter>
+    <CButton
+      color="success"
+      onClick={handleAcceptCita}
+      style={{ backgroundColor: '#4B6251', color: 'white' }}
+    >
+      Aceptar
+    </CButton>
+    <CButton
+      color="secondary"
+      onClick={() => setAcceptModalVisible(false)}
+    >
+      Cancelar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+      
 
       <CModal visible={formModalVisible} onClose={handleModalClose} backdrop="static">
   <CModalHeader closeButton style={{ backgroundColor: '#4B6251', color: 'white' }}>

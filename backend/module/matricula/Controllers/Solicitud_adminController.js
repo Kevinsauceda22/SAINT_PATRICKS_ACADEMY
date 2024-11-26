@@ -63,34 +63,56 @@ export const obtenerSolicitudesx = async (req, res) => {
 
 export const insertarSolicitud = async (req, res) => {
     const { Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto, Persona_requerida } = req.body;
-
+  
     try {
-        const query = 'CALL insertar_solicitud(?, ?, ?, ?, ?, ?, ?)';
-        const params = [
-            Cod_persona,
-            Nombre_solicitud,
-            Fecha_solicitud,
-            Hora_Inicio,
-            Hora_Fin,
-            Asunto,
-            Persona_requerida,
-        ];
-
-        const [results] = await pool.query(query, params);
-
-        return res.status(201).json({ message: 'Solicitud insertada exitosamente' });
-    } catch (error) {
-        console.error('Error al insertar la solicitud:', error);
-
-        return res.status(500).json({
-            message: 'Error al insertar la solicitud.',
-            error: error.message,
+      const now = new Date();
+      const citaDate = new Date(`${Fecha_solicitud}T${Hora_Inicio}`);
+      const horaInicioVal = parseInt(Hora_Inicio.split(':')[0], 10);
+      const horaFinVal = Hora_Fin ? parseInt(Hora_Fin.split(':')[0], 10) : null;
+  
+      // Validar que la fecha/hora no sean pasadas
+      if (citaDate < now) {
+        return res.status(400).json({
+          message: 'No se puede crear una cita en una fecha u hora pasada.',
         });
+      }
+  
+      // Validar que las horas estén dentro del rango permitido (8:00 a.m. - 4:00 p.m.)
+      if (
+        horaInicioVal < 8 ||
+        horaInicioVal >= 16 ||
+        (horaFinVal !== null && (horaFinVal < 8 || horaFinVal > 16))
+      ) {
+        return res.status(400).json({
+          message: 'Las citas solo se pueden programar entre las 8:00 a.m. y las 4:00 p.m.',
+        });
+      }
+  
+      const query = 'CALL insertar_solicitud(?, ?, ?, ?, ?, ?, ?)';
+      const params = [
+        Cod_persona,
+        Nombre_solicitud,
+        Fecha_solicitud,
+        Hora_Inicio,
+        Hora_Fin,
+        Asunto,
+        Persona_requerida,
+      ];
+  
+      await pool.query(query, params);
+      return res.status(201).json({ message: 'Solicitud insertada exitosamente' });
+    } catch (error) {
+      console.error('Error al insertar la solicitud:', error);
+      return res.status(500).json({
+        message: 'Error al insertar la solicitud.',
+        error: error.message,
+      });
     }
-};
-
-
-export const actualizarSolicitud = async (req, res) => {
+  };
+  
+  
+  
+  export const actualizarSolicitud = async (req, res) => {
     const { Cod_solicitud } = req.params;
     const {
         Cod_persona,
@@ -113,14 +135,37 @@ export const actualizarSolicitud = async (req, res) => {
         });
     }
 
+    const now = new Date();
+    const citaDate = new Date(`${Fecha_solicitud}T${Hora_Inicio}`);
+    const horaInicioVal = parseInt(Hora_Inicio.split(':')[0], 10);
+    const horaFinVal = Hora_Fin ? parseInt(Hora_Fin.split(':')[0], 10) : null;
+
+    // Validar que la fecha/hora no sean pasadas
+    if (citaDate < now) {
+        return res.status(400).json({
+            message: 'No se puede actualizar una cita en una fecha u hora pasada.',
+        });
+    }
+
+    // Validar que las horas estén dentro del rango permitido (8:00 a.m. - 4:00 p.m.)
+    if (
+        horaInicioVal < 8 ||
+        horaInicioVal >= 16 ||
+        (horaFinVal !== null && (horaFinVal < 8 || horaFinVal > 16))
+    ) {
+        return res.status(400).json({
+            message: 'Las citas solo se pueden programar entre las 8:00 a.m. y las 4:00 p.m.',
+        });
+    }
+
     // Validar coherencia de horas
     if (Hora_Fin) {
-        const [horaInicioHoras, horaInicioMinutos] = Hora_Inicio.split(':').map(Number);
-        const [horaFinHoras, horaFinMinutos] = Hora_Fin.split(':').map(Number);
+        const [horaInicioHoras, minutoInicio] = Hora_Inicio.split(':').map(Number);
+        const [horaFinHoras, minutoFin] = Hora_Fin.split(':').map(Number);
 
         if (
             horaFinHoras < horaInicioHoras ||
-            (horaFinHoras === horaInicioHoras && horaFinMinutos <= horaInicioMinutos)
+            (horaFinHoras === horaInicioHoras && minutoFin <= minutoInicio)
         ) {
             return res.status(400).json({
                 message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
@@ -129,18 +174,18 @@ export const actualizarSolicitud = async (req, res) => {
     }
 
     try {
-        // Determinar estado actualizado basado en el parámetro proporcionado o calcularlo automáticamente
-        let estadoActualizado = estado;
+        // Determinar estado actualizado
+        let estadoActualizado = estado || 'Pendiente'; // Estado predeterminado: Pendiente
 
-        // Si el estado proporcionado no es "Cancelada", determinar el estado automáticamente
-        if (estado !== 'Cancelada') {
+        // Cambiar el estado solo si se indica "Activo" manualmente
+        if (estado === 'Activo') {
+            estadoActualizado = 'Activo';
+        } else if (estado !== 'Cancelada') {
             const currentDateTime = new Date();
             const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${Hora_Fin || Hora_Inicio}`);
 
             if (citaDateTimeEnd <= currentDateTime) {
-                estadoActualizado = 'Finalizada';
-            } else {
-                estadoActualizado = 'Pendiente';
+                estadoActualizado = 'Finalizada'; // Finalizar automáticamente si el tiempo ya pasó
             }
         }
 
@@ -182,6 +227,8 @@ export const actualizarSolicitud = async (req, res) => {
     }
 };
 
+
+  
 
 export const actualizarEstadoCitas = async (req, res) => {
     try {
