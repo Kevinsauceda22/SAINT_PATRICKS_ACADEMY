@@ -70,140 +70,46 @@ const UserManagement = () => {
     }
   ];
 
-  // Definir las opciones directamente en el componente
-// Definir las funciones de validación y formateo al inicio del componente
-const formatHora = (hora) => {
-  if (!hora) return null;
-  return `${hora}:00`; // Añadir los segundos
-};
-
-const isValidTimeFormat = (time) => {
-  if (!time) return false;
-  const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
-  return timeRegex.test(time);
-};
-
-
   const handleAddUser = async (roleType) => {
     const roleMap = {
-        1: 'Padre',
-        2: 'Administrador',
-        3: 'Docente',
-        4: 'Manager'
+      1: 'Padre',
+      2: 'Administrador',
+      3: 'Docente',
+      4: 'Manager'
     };
     let roleText = roleMap[roleType] || '';
     
-    // Definir los datos como constantes
-    const gradosAcademicos = [
-        { Cod_grado_academico: 1, Descripcion: 'LICENCIATURA' },
-        { Cod_grado_academico: 2, Descripcion: 'MAESTRÍA' },
-        { Cod_grado_academico: 3, Descripcion: 'DOCTORADO' },
-        { Cod_grado_academico: 4, Descripcion: 'POST-DOCTORADO' }
-    ];
-
-    const tiposContrato = [
-        { Cod_tipo_contrato: 1, Descripcion: 'TIEMPO COMPLETO' },
-        { Cod_tipo_contrato: 2, Descripcion: 'MEDIO TIEMPO' },
-        { Cod_tipo_contrato: 3, Descripcion: 'POR HORA' }
-    ];
-    
-    // Cargar solo departamentos
+    // Cargar departamentos...
     let departamentos = [];
     try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get(
-            'http://localhost:4000/api/departamento/departamentos',
-            {
-                headers: { Authorization: `Bearer ${token}` }
-            }
-        );
-        
-        if (response.data) {
-            departamentos = response.data
-                .reduce((acc, current) => {
-                    const x = acc.find(item => item.cod_departamento === current.cod_departamento);
-                    if (!x) return acc.concat([current]);
-                    return acc;
-                }, [])
-                .sort((a, b) => a.nombre_departamento.localeCompare(b.nombre_departamento));
+      const token = localStorage.getItem('token');
+      const response = await axios.get(
+        'http://localhost:4000/api/departamento/departamentos',
+        {
+          headers: { Authorization: `Bearer ${token}` }
         }
+      );
+      
+      if (response.data) {
+        departamentos = response.data
+          .reduce((acc, current) => {
+            const x = acc.find(item => item.cod_departamento === current.cod_departamento);
+            if (!x) return acc.concat([current]);
+            return acc;
+          }, [])
+          .sort((a, b) => a.nombre_departamento.localeCompare(b.nombre_departamento));
+      }
     } catch (error) {
-        console.error('Error al cargar departamentos:', error);
-        Swal.fire({
-            title: 'Error',
-            text: 'Error al cargar los departamentos',
-            icon: 'error',
-            confirmButtonText: 'Aceptar'
-        });
-        return;
+      console.error('Error al cargar departamentos:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'Error al cargar los departamentos',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
+      return;
     }
-
-    // Preparar campos adicionales para docentes
-    const camposDocente = roleType === 3 ? `
-      <div class="modal-section">
-        <div class="section-title">Información Académica</div>
-        <div class="form-grid">
-          <div class="form-group">
-            <select id="Cod_grado_academico" class="swal2-select" required>
-              <option value="">Grado Académico *</option>
-              ${gradosAcademicos.map(grado => `
-                <option value="${grado.Cod_grado_academico}">
-                  ${grado.Descripcion}
-                </option>
-              `).join('')}
-            </select>
-          </div>
-          <div class="form-group">
-            <select id="Cod_tipo_contrato" class="swal2-select" required>
-              <option value="">Tipo de Contrato *</option>
-              ${tiposContrato.map(tipo => `
-                <option value="${tipo.Cod_tipo_contrato}">
-                  ${tipo.Descripcion}
-                </option>
-              `).join('')}
-            </select>
-          </div>
-        </div>
-      </div>
-      <div class="modal-section">
-        <div class="section-title">Horario y Experiencia</div>
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Hora de Entrada *</label>
-            <input type="time" id="Hora_entrada" class="swal2-input" required>
-          </div>
-          <div class="form-group">
-            <label>Hora de Salida *</label>
-            <input type="time" id="Hora_salida" class="swal2-input" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Fecha de Ingreso *</label>
-          <input type="date" id="Fecha_ingreso" class="swal2-input" required value="${new Date().toISOString().split('T')[0]}">
-        </div>
-        <div class="form-group">
-          <label>Fecha Fin de Contrato</label>
-          <input type="date" id="Fecha_fin_contrato" class="swal2-input">
-        </div>
-        <div class="form-group">
-          <label>Años de Experiencia *</label>
-    <input 
-      type="number" 
-      id="Años_experiencia" 
-      class="swal2-input"
-      placeholder="Ingrese los años de experiencia" 
-      required 
-      min="0" 
-      max="99" 
-      value="0"
-      step="1"
-      onchange="this.value = Math.round(this.value)"
-      oninput="this.value = this.value.replace(/[^0-9]/g, '')"
-    >
-    <small class="helper-text">Ingrese los años de experiencia laboral (número entero entre 0 y 99)</small>
-        </div>
-      </div>
-    ` : '';
+  
     Swal.fire({
       title: `Agregar ${roleText}`,
       html: `
@@ -310,8 +216,6 @@ const isValidTimeFormat = (time) => {
               </div>
             </div>
           </div>
-
-          ${camposDocente}
   
           <div class="modal-section">
             <div class="section-title">Información de Cuenta</div>
@@ -394,7 +298,7 @@ const isValidTimeFormat = (time) => {
           direccion_persona: document.getElementById('direccion_persona').value,
           fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
           Estado_Persona: 'A',
-          cod_tipo_persona: "1",
+          cod_tipo_persona: "1", // Valor fijo ya que solo manejamos DNI
           cod_departamento: document.getElementById('cod_departamento').value,
           cod_municipio: document.getElementById('cod_municipio').value,
           cod_genero: document.getElementById('cod_genero').value
@@ -408,69 +312,12 @@ const isValidTimeFormat = (time) => {
           datos_completados: 0,
           Primer_ingreso: null
         };
-
-        // Si es docente, recolectar datos adicionales
-        let profesorData = null;
-        if (roleType === 3) {
-          // Formatear las horas para incluir los segundos (HH:mm:ss)
-          const formatHora = (hora) => {
-              if (!hora) return null;
-              return `${hora}:00`; // Añadir los segundos
-          };
-      
-          profesorData = {
-              Cod_grado_academico: parseInt(document.getElementById('Cod_grado_academico').value),
-              Cod_tipo_contrato: parseInt(document.getElementById('Cod_tipo_contrato').value),
-              Hora_entrada: formatHora(document.getElementById('Hora_entrada').value),
-              Hora_salida: formatHora(document.getElementById('Hora_salida').value),
-              Fecha_ingreso: document.getElementById('Fecha_ingreso').value,
-              Fecha_fin_contrato: document.getElementById('Fecha_fin_contrato').value || null,
-              Años_experiencia: parseInt(document.getElementById('Años_experiencia').value)
-          };
-      
-          // Validar que la hora de salida sea posterior a la hora de entrada
-          const entrada = new Date(`2000-01-01T${profesorData.Hora_entrada}`);
-          const salida = new Date(`2000-01-01T${profesorData.Hora_salida}`);
-          
-          if (salida <= entrada) {
-              Swal.showValidationMessage('La hora de salida debe ser posterior a la hora de entrada');
-              return false;
-          }
-      
-          // Validar que la fecha de fin de contrato sea posterior a la fecha de ingreso si existe
-          if (profesorData.Fecha_fin_contrato) {
-              const fechaIngreso = new Date(profesorData.Fecha_ingreso);
-              const fechaFin = new Date(profesorData.Fecha_fin_contrato);
-              if (fechaFin <= fechaIngreso) {
-                  Swal.showValidationMessage('La fecha de fin de contrato debe ser posterior a la fecha de ingreso');
-                  return false;
-              }
-          }
-      
-          // Validar años de experiencia
-          if (profesorData.Años_experiencia < 0 || profesorData.Años_experiencia > 99) {
-              Swal.showValidationMessage('Los años de experiencia deben estar entre 0 y 99');
-              return false;
-          }
-      }
     
-        // Validar campos requeridos básicos
+        // Validar campos requeridos
         const requiredFields = [
           'dni_persona', 'Nombre', 'Primer_apellido', 'correo_usuario',
           'cod_genero', 'cod_departamento', 'cod_municipio'
         ];
-    
-        // Agregar campos requeridos de profesor si aplica
-        if (roleType === 3) {
-          requiredFields.push(
-            'Cod_grado_academico',
-            'Cod_tipo_contrato',
-            'Hora_entrada',
-            'Hora_salida',
-            'Fecha_ingreso',
-            'Años_experiencia'
-          );
-        }
     
         const emptyFields = requiredFields.filter(field => !document.getElementById(field).value);
     
@@ -480,70 +327,15 @@ const isValidTimeFormat = (time) => {
         }
     
         // Validar formato de correo
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;  // Esta es la correcta
         if (!emailRegex.test(userData.correo_usuario)) {
           Swal.showValidationMessage('Por favor ingrese un correo electrónico válido');
           return false;
         }
-
-        // Validaciones específicas para profesor
-        if (roleType === 3) {
-          const horaEntrada = formatHora(document.getElementById('Hora_entrada').value);
-          const horaSalida = formatHora(document.getElementById('Hora_salida').value);
-          const añosExperiencia = document.getElementById('Años_experiencia').value;
-      
-          // Validar el campo de años de experiencia
-          if (añosExperiencia === '' || añosExperiencia === null || isNaN(añosExperiencia)) {
-              Swal.showValidationMessage('Los años de experiencia son requeridos');
-              return false;
-          }
-      
-          // Validar el rango de años de experiencia
-          const añosExperienciaNum = parseInt(añosExperiencia);
-          if (añosExperienciaNum < 0 || añosExperienciaNum > 99) {
-              Swal.showValidationMessage('Los años de experiencia deben estar entre 0 y 99');
-              return false;
-          }
-      
-          profesorData = {
-              Cod_grado_academico: parseInt(document.getElementById('Cod_grado_academico').value),
-              Cod_tipo_contrato: parseInt(document.getElementById('Cod_tipo_contrato').value),
-              Hora_entrada: horaEntrada,
-              Hora_salida: horaSalida,
-              Fecha_ingreso: document.getElementById('Fecha_ingreso').value,
-              Fecha_fin_contrato: document.getElementById('Fecha_fin_contrato').value || null,
-              Años_experiencia: añosExperienciaNum // Usar el número ya validado
-          };
-      
-          if (!isValidTimeFormat(horaEntrada) || !isValidTimeFormat(horaSalida)) {
-              Swal.showValidationMessage('El formato de hora no es válido');
-              return false;
-          }
-      
-          // Validar que la hora de salida sea posterior a la hora de entrada
-          const entrada = new Date(`2000-01-01T${horaEntrada}`);
-          const salida = new Date(`2000-01-01T${horaSalida}`);
-          
-          if (salida <= entrada) {
-              Swal.showValidationMessage('La hora de salida debe ser posterior a la hora de entrada');
-              return false;
-          }
-      
-          // Validar que la fecha de fin de contrato sea posterior a la fecha de ingreso si existe
-          if (profesorData.Fecha_fin_contrato) {
-              const fechaIngreso = new Date(profesorData.Fecha_ingreso);
-              const fechaFin = new Date(profesorData.Fecha_fin_contrato);
-              if (fechaFin <= fechaIngreso) {
-                  Swal.showValidationMessage('La fecha de fin de contrato debe ser posterior a la fecha de ingreso');
-                  return false;
-              }
-          }
-      }
-
+    
         return {
           personData,
-          userData,
-          profesorData
+          userData
         };
       }
     }).then((result) => {
@@ -579,7 +371,6 @@ const isValidTimeFormat = (time) => {
           setShowUserMenu(false);
         })
         .catch(error => {
-          console.error('Error detallado:', error.response?.data);
           Swal.fire({
             title: 'Error',
             text: error.response?.data?.mensaje || 'Error al crear el usuario',
@@ -589,16 +380,7 @@ const isValidTimeFormat = (time) => {
         });
       }
     });
-};
-
-
-
-
-
-
-
-
-
+  };
 
   const fetchUsers = async () => {
     setLoadingg(true);

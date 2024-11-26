@@ -289,45 +289,7 @@ const PeriodosMatricula = () => {
 
     doc.save('Reporte_Periodos_Matricula.pdf');
   };
-  const toggleEstado = async (periodo) => {
-    try {
-      const nuevoEstado = periodo.estado === 'activo' ? 'inactivo' : 'activo';
-  
-      // Realizar la solicitud al backend para actualizar el estado
-      const response = await fetch('http://localhost:4000/api/periodomatricula/estado', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          p_cod_periodo_matricula: periodo.Cod_periodo_matricula,
-          p_estado: nuevoEstado,
-        }),
-      });
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.Mensaje || 'Error al cambiar el estado del periodo');
-      }
-  
-      const result = await response.json();
-      Swal.fire('Éxito', result.Mensaje, 'success');
-  
-      // Actualizar el estado local del periodo
-      const updatedPeriodos = periodos.map((p) =>
-        p.Cod_periodo_matricula === periodo.Cod_periodo_matricula ? { ...p, estado: nuevoEstado } : p
-      );
-  
-      setPeriodos(updatedPeriodos);
-      setFilteredPeriodos(updatedPeriodos); // Actualizar la tabla visible
-    } catch (err) {
-      console.error('Error al cambiar el estado del periodo:', err);
-      Swal.fire('Error', err.message, 'error');
-    }
-  };
-  
-    
-  
+
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
       periodos.map((periodo, index) => ({
@@ -427,66 +389,65 @@ const PeriodosMatricula = () => {
       {/* Tabla con scroll, con cabecera fija y botones fijos */}
       <div style={{ maxHeight: '400px', overflowY: 'auto', overflowX: 'hidden' }}>
         <CTable striped bordered hover responsive>
-        <CTableHead>
-  <CTableRow>
-    <CTableHeaderCell>#</CTableHeaderCell>
-    <CTableHeaderCell>Fecha Inicio</CTableHeaderCell>
-    <CTableHeaderCell>Fecha Fin</CTableHeaderCell>
-    <CTableHeaderCell>Año Académico</CTableHeaderCell>
-    <CTableHeaderCell>Estado</CTableHeaderCell>
-    <CTableHeaderCell>Acciones</CTableHeaderCell>
-  </CTableRow>
-</CTableHead>
-<CTableBody>
-  {currentPeriodos.length > 0 ? (
-    currentPeriodos.map((periodo, index) => (
-      <CTableRow key={periodo.Cod_periodo_matricula}>
-        <CTableDataCell>{index + 1}</CTableDataCell>
-        <CTableDataCell>{periodo.Fecha_inicio}</CTableDataCell>
-        <CTableDataCell>{periodo.Fecha_fin}</CTableDataCell>
-        <CTableDataCell>{periodo.Anio_academico}</CTableDataCell>
-        <CTableDataCell>
-          <CButton
-            color={periodo.estado === 'activo' ? 'danger' : 'success'}
-            onClick={() => toggleEstado(periodo)} // Llamada a la función toggleEstado
-            style={{ opacity: 0.9 }}
-          >
-            {periodo.estado === 'activo' ? 'Desactivar' : 'Activar'}
-          </CButton>
-        </CTableDataCell>
-        <CTableDataCell className="text-end">
-          {canUpdate && (
-            <CButton
-              color="warning"
-              className="me-2"
-              style={{ opacity: 0.8 }}
-              onClick={() => handleEditClick(periodo)}
-            >
-              <CIcon icon={cilPen} />
-            </CButton>
-          )}
-          {canDelete && (
-            <CButton
-              color="danger"
-              style={{ opacity: 0.8 }}
-              onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}
-            >
-              <CIcon icon={cilTrash} />
-            </CButton>
-          )}
-        </CTableDataCell>
-      </CTableRow>
-    ))
-  ) : (
-    <CTableRow>
-      <CTableDataCell colSpan="6" className="text-center">
-        No hay periodos disponibles
-      </CTableDataCell>
-    </CTableRow>
+          <CTableHead style={{ position: 'sticky', top: '0', backgroundColor: 'white', zIndex: '1' }}>
+            <CTableRow>
+              <CTableHeaderCell>#</CTableHeaderCell>
+              <CTableHeaderCell>Fecha Inicio</CTableHeaderCell>
+              <CTableHeaderCell>Fecha Fin</CTableHeaderCell>
+              <CTableHeaderCell>Año Académico</CTableHeaderCell>
+              <CTableHeaderCell>Estado</CTableHeaderCell>
+              <CTableHeaderCell>Acciones</CTableHeaderCell>
+            </CTableRow>
+          </CTableHead>
+          <CTableBody>
+            {currentPeriodos.length > 0 ? (
+              currentPeriodos.map((periodo, index) => (
+                <CTableRow key={periodo.Cod_periodo_matricula}>
+                  <CTableDataCell>{index + 1}</CTableDataCell>
+                  <CTableDataCell>{periodo.Fecha_inicio}</CTableDataCell>
+                  <CTableDataCell>{periodo.Fecha_fin}</CTableDataCell>
+                  <CTableDataCell>{periodo.Anio_academico}</CTableDataCell>
+                  <CTableDataCell>
+                    {periodo.estado === 'activo' ? (
+                      <CIcon icon={cilCheckCircle} className="text-success" />
+                    ) : (
+                      <CIcon icon={cilXCircle} className="text-danger" />
+                    )}
+                  </CTableDataCell>
+                  <CTableDataCell className="text-end">
+
+                    {canUpdate && (
+  <CButton
+    color="warning"
+    className="me-2"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => handleEditClick(periodo)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>
   )}
-</CTableBody>
 
+  {canDelete && (
+  <CButton
+    color="danger"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+  )}
+</CTableDataCell>
 
+                </CTableRow>
+              ))
+            ) : (
+              <CTableRow>
+                <CTableDataCell colSpan="6" className="text-center">
+                  No hay periodos disponibles
+                </CTableDataCell>
+              </CTableRow>
+            )}
+          </CTableBody>
         </CTable>
       </div>
 
