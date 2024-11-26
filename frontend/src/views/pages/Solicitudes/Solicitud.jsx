@@ -118,16 +118,16 @@ const Solicitud = () => {
         const data = await response.json();
 
         const solicitudesData = data.map((solicitud) => ({
-            id: solicitud.Cod_solicitud || '',
-            title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
-            start: solicitud.Fecha_solicitud || '',
-            description: solicitud.Asunto || 'SIN ASUNTO',
-            personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
-            horaInicio: solicitud.Hora_Inicio || '00:00', // Siempre en formato HH:mm
-            horaFin: solicitud.Hora_Fin || '00:00', // Siempre en formato HH:mm
-            estado: solicitud.Estado || 'Pendiente',
-        }));
-
+          id: solicitud.Cod_solicitud || '',
+          title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
+          start: solicitud.Fecha_solicitud || '',
+          description: solicitud.Asunto || 'SIN ASUNTO',
+          personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
+          horaInicio: solicitud.Hora_Inicio || '00:00', // Siempre en formato HH:mm
+          horaFin: solicitud.Hora_Fin || null, // Permitir null si no está presente
+          estado: solicitud.Estado || 'Pendiente',
+          Cod_persona: solicitud.Cod_persona || '', // Agregar este campo
+      }));
         setSolicitudes(solicitudesData);
         setFilteredCitas(solicitudesData);
     } catch (error) {
@@ -168,28 +168,33 @@ const Solicitud = () => {
   const getColorByEstado = (estado) => {
     switch (estado) {
       case 'Pendiente':
-        return 'rgba(255, 215, 0, 0.7)';
+        return 'rgba(255, 204, 102, 0.8)'; // Soft amber
       case 'Finalizada':
-        return 'rgba(0, 128, 0, 0.7)';
+        return 'rgba(102, 187, 106, 0.8)'; // Calm green
       case 'Cancelada':
-        return 'rgba(255, 0, 0, 0.7)';
+        return 'rgba(239, 83, 80, 0.8)'; // Soft coral red
+      case 'Activo':
+        return 'rgba(41, 121, 255, 0.9)'; // Highlighted blue for active
       default:
-        return 'rgba(75, 98, 81, 0.7)';
+        return 'rgba(158, 158, 158, 0.8)'; // Neutral gray
     }
   };
-
+  
   const getIconByEstado = (estado) => {
     switch (estado) {
       case 'Pendiente':
-        return cilWarning;
+        return cilWarning; // Warning icon for pending
       case 'Finalizada':
-        return cilCheckCircle;
+        return cilCheckCircle; // Check circle for finalized
       case 'Cancelada':
-        return cilXCircle;
+        return cilXCircle; // X circle for canceled
+      case 'Activo':
+        return cilCheckCircle; // Check circle for active
       default:
-        return cilWarning;
+        return cilWarning; // Default icon for unknown states
     }
   };
+  
 
 
   const exportarCitaAPDF = async () => {
@@ -295,9 +300,9 @@ const Solicitud = () => {
   };
 
   const handleEventDrop = async (info) => {
-    const citaId = parseInt(info.event.id, 10); // Event ID from FullCalendar
-    const newDate = new Date(info.event.startStr).toISOString().split('T')[0]; // Format new date as YYYY-MM-DD
-    const cita = solicitudes.find((c) => c.id === citaId); // Find the corresponding event in state
+    const citaId = parseInt(info.event.id, 10); // ID del evento
+    const newDate = new Date(info.event.startStr).toISOString().split('T')[0]; // Nueva fecha formateada como YYYY-MM-DD
+    const cita = solicitudes.find((c) => c.id === citaId); // Buscar la cita en el estado
 
     if (!cita) {
         Swal.fire({
@@ -306,9 +311,34 @@ const Solicitud = () => {
             text: 'No se encontró la cita para actualizar.',
             confirmButtonColor: '#6C8E58',
         });
-        return info.revert(); // Revert the event if no match is found
+        return info.revert(); // Revertir el movimiento si no encuentra la cita
     }
 
+    // Prevenir cambio de fecha para citas finalizadas
+    if (cita.estado === 'Finalizada') {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Advertencia',
+            text: 'No puedes cambiar la fecha de una cita que ya está finalizada.',
+            confirmButtonColor: '#6C8E58',
+        });
+        return info.revert(); // Revertir el movimiento
+    }
+
+    // Validar que la nueva fecha no sea en el pasado
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Eliminar horas, minutos y segundos
+    if (newDate < today.toISOString().split('T')[0]) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Advertencia',
+            text: 'No puedes mover una cita a una fecha pasada.',
+            confirmButtonColor: '#6C8E58',
+        });
+        return info.revert(); // Revertir el movimiento
+    }
+
+    // Si pasa las validaciones, proceder a actualizar la cita
     Swal.fire({
         title: 'Confirmación',
         text: `¿Deseas cambiar la fecha de esta cita a ${newDate}?`,
@@ -320,37 +350,32 @@ const Solicitud = () => {
         cancelButtonColor: '#6C8E58',
     }).then(async (result) => {
         if (!result.isConfirmed) {
-            info.revert(); // Revert the drag action if the user cancels
-            return;
+            return info.revert(); // Revertir si el usuario cancela
         }
 
         try {
-            // Prepare the payload for the PUT request
+            // Preparar el payload para la solicitud
             const requestData = {
-                Cod_persona: cita.cod_persona, // Ensure Cod_persona is included
-                Nombre_solicitud: cita.title || 'SIN TÍTULO', // Use default title if missing
-                Fecha_solicitud: newDate, // Update with the new date
-                Hora_Inicio: cita.horaInicio || '00:00', // Ensure Hora_Inicio is sent
-                Hora_Fin: cita.horaFin || null, // Optional Hora_Fin, send null if not present
-                Asunto: cita.description || 'SIN ASUNTO', // Default if Asunto is missing
-                Persona_requerida: cita.personaRequerida || 'DESCONOCIDO', // Default if missing
+                Cod_persona: cita.Cod_persona, // Código de persona asociado
+                Nombre_solicitud: cita.title || 'SIN TÍTULO', // Usar título por defecto si falta
+                Fecha_solicitud: newDate, // Fecha actualizada
+                Hora_Inicio: cita.horaInicio, // Enviar Hora_Inicio asegurada
+                Hora_Fin: cita.horaFin , // Permitir que Hora_Fin sea null
+                Asunto: cita.description || 'SIN ASUNTO', // Usar asunto por defecto
+                Estado: cita.estado, // Mantener el estado actual
             };
-
-            console.log('Sending PUT request with data:', requestData);
 
             const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(requestData), // Send the request payload
+                body: JSON.stringify(requestData), // Enviar el payload
             });
 
-            const responseData = await response.json();
-            console.log('Response from server:', responseData);
-
             if (!response.ok) {
-                throw new Error(responseData.message || 'Error al actualizar la cita.');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Error al actualizar la fecha de la cita.');
             }
 
             Swal.fire({
@@ -360,16 +385,15 @@ const Solicitud = () => {
                 confirmButtonColor: '#4B6251',
             });
 
-            await fetchSolicitudes(); // Refresh the list of events after successful update
+            await fetchSolicitudes(); // Refrescar las citas después de actualizar
         } catch (error) {
-            console.error('Error during update:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
                 text: `No se pudo actualizar la fecha. ${error.message}`,
                 confirmButtonColor: '#6C8E58',
             });
-            info.revert(); // Revert the event position if the update fails
+            info.revert(); // Revertir si ocurre un error
         }
     });
 };
@@ -399,19 +423,27 @@ const Solicitud = () => {
   };
 
   const handleEditarCita = () => {
-    if (selectedCita) {
-      setFormValues({
-        title: selectedCita.title,
-        description: selectedCita.description,
-        personaRequerida: selectedCita.personaRequerida,
-        fecha: selectedCita.start,
-        horaInicio: selectedCita.horaInicio,
-        horaFin: selectedCita.horaFin,
-        estado: selectedCita.estado,
+    if (selectedCita.estado === 'Finalizada') {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Advertencia',
+        text: 'No puedes editar esta cita si ya está finalizada.',
+        confirmButtonColor: '#6C8E58',
       });
-      setModalVisible(false);
-      setFormModalVisible(true);
+      return;
     }
+  
+    setFormValues({
+      title: selectedCita.title,
+      description: selectedCita.description,
+      personaRequerida: selectedCita.personaRequerida,
+      fecha: selectedCita.start,
+      horaInicio: selectedCita.horaInicio,
+      horaFin: selectedCita.horaFin,
+      estado: selectedCita.estado,
+    });
+    setModalVisible(false);
+    setFormModalVisible(true);
   };
 
   const areFieldsValid = () => {
@@ -467,6 +499,7 @@ const Solicitud = () => {
   
     return true; // Todos los campos son válidos
   };
+  
   
 
   const handleSubmit = async (e) => {
@@ -716,7 +749,8 @@ const Solicitud = () => {
     return <AccessDenied />;
   }
   
-
+  
+  
 
   return (
     <CContainer fluid style={{ backgroundColor: '#F8F9FA', padding: '20px' }}>
@@ -970,6 +1004,45 @@ const Solicitud = () => {
             />
           </CCol>
         </CRow>
+        {selectedCita && (
+  <CRow className="mb-3">
+  <CCol md={12}>
+      <CFormLabel>Estado</CFormLabel>
+      <div className="form-check form-switch">
+          <input
+              className="form-check-input"
+              type="checkbox"
+              id="estadoSwitch"
+              checked={formValues.estado === "Cancelada"}
+              onChange={() =>
+                  setFormValues((prevValues) => ({
+                      ...prevValues,
+                      estado: prevValues.estado === "Cancelada" ? "Pendiente" : "Cancelada",
+                  }))
+              }
+              style={{
+                  width: "3rem",
+                  height: "1.5rem",
+                  backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
+                  border: formValues.estado === "Cancelada" ? "1px solid red" : "",
+              }}
+          />
+          <label
+              className="form-check-label"
+              htmlFor="estadoSwitch"
+              style={{
+                  fontSize: "1.25rem",
+                  color: formValues.estado === "Cancelada" ? "red" : "green",
+                  fontWeight: "bold",
+              }}
+          >
+              {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
+          </label>
+      </div>
+  </CCol>
+</CRow>
+
+)}
         
        <CModalFooter>
           <CButton
