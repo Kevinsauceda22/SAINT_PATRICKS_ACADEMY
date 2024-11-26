@@ -44,7 +44,11 @@ import logo from 'src/assets/brand/logo_saint_patrick.png';
 
 const MatriculaForm = () => {
   const [loading, setLoading] = useState(true);
-  const [opciones, setOpciones] = useState({});
+  const [opciones, setOpciones] = useState({
+    estados_matricula: [],
+    tipos_matricula: [],
+  });
+  
   const [hijos, setHijos] = useState([]);
   const [dniPadre, setDniPadre] = useState('');
   const [nombrePadre, setNombrePadre] = useState('');
@@ -79,8 +83,48 @@ const MatriculaForm = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
-
-
+  
+  const cargarOpcionesConPredeterminados = async () => {
+    try {
+      // Llamada a la API para obtener opciones
+      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+      const { estados_matricula, tipos_matricula } = response.data;
+  
+      // Asignar opciones al estado
+      setOpciones({ estados_matricula, tipos_matricula });
+  
+      // Buscar valores predeterminados
+      const estadoPorDefecto = estados_matricula.find((estado) => estado.Tipo === 'Falta de Pago');
+      const tipoPorDefecto = tipos_matricula.find((tipo) => tipo.Tipo === 'Estandar');
+  
+      console.log("Estado predeterminado encontrado:", estadoPorDefecto);
+      console.log("Tipo de matrícula predeterminado encontrado:", tipoPorDefecto);
+  
+      // Actualizar el estado del formulario con los valores predeterminados
+      setMatriculaData((prevData) => ({
+        ...prevData,
+        cod_estado_matricula: estadoPorDefecto?.Cod_estado_matricula || '',
+        cod_tipo_matricula: tipoPorDefecto?.Cod_tipo_matricula || '',
+      }));
+  
+      // Validar que los valores predeterminados existan
+      if (!estadoPorDefecto || !tipoPorDefecto) {
+        Swal.fire(
+          'Advertencia',
+          'No se encontraron valores predeterminados. Verifique la configuración.',
+          'warning'
+        );
+      }
+    } catch (error) {
+      console.error('Error al cargar las opciones:', error);
+      Swal.fire('Error', 'Hubo un problema al cargar las opciones de matrícula.', 'error');
+    }
+  };
+  
+// useEffect para cargar las opciones cuando se monta el componente
+useEffect(() => {
+  cargarOpcionesConPredeterminados();
+}, []);
   // Función para manejar el cambio en el ComboBox
   const handleComboBoxChange = (e) => {
     const selectedValue = e.target.value;
@@ -229,30 +273,49 @@ const obtenerOpciones = async () => {
       );
     }
   };
-  
-  
-  
+
+// Ejemplo de cómo establecer el período activo
+useEffect(() => {
+  const cargarPeriodoActivo = async () => {
+    try {
+      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+      const periodoEncontrado = response.data.periodos_matricula.find(p => p.estado === 'activo');
+      setPeriodoActivo(periodoEncontrado); // Guarda el período activo
+    } catch (error) {
+      console.error('Error al cargar el período activo:', error);
+    }
+  };
+
+  cargarPeriodoActivo();
+}, []);
+
  // Función para obtener las secciones por grado seleccionado
 const obtenerSeccionesPorGrado = async (codGrado) => {
-  if (!codGrado) {
-    setSecciones([]); // Limpiar las secciones si no se selecciona un grado
+  if (!codGrado || !periodoActivo) { // Verifica que haya un grado y un período activo
+    setSecciones([]); // Limpiar las secciones si no se selecciona un grado o no hay período activo
     return;
   }
 
   try {
-    const response = await axios.get(`http://localhost:4000/api/matricula/secciones/${codGrado}`);
-    console.log('Secciones obtenidas:', response.data.data); // Verificar la respuesta de secciones
-    setSecciones(response.data.data || []);
+    // Enviar la solicitud al backend con los parámetros necesarios
+    const response = await axios.get(
+      `http://localhost:4000/api/matricula/secciones/${codGrado}`, 
+      { params: { cod_periodo_matricula: periodoActivo.Cod_periodo_matricula } } // Enviar el período activo como parámetro
+    );
+
+    console.log('Secciones obtenidas:', response.data.data); // Verificar la respuesta de secciones en la consola
+    setSecciones(response.data.data || []); // Actualizar el estado con las secciones obtenidas
   } catch (error) {
     console.error('Error al obtener las secciones del grado seleccionado:', error);
     alert('Error al obtener las secciones del grado seleccionado');
   }
 };
 
+// Manejar el cambio de grado seleccionado
 const handleGradoChange = (e) => {
-  const codGrado = e.target.value;
-  setSelectedGrado(codGrado);
-  obtenerSeccionesPorGrado(codGrado);
+  const codGrado = e.target.value; // Captura el valor del grado seleccionado
+  setSelectedGrado(codGrado); // Actualiza el grado seleccionado
+  obtenerSeccionesPorGrado(codGrado); // Llama a la función para obtener las secciones filtradas
 };
 
 const registrarEnBitacora = async (accion, descripcion) => {
@@ -699,10 +762,10 @@ const exportToExcel = () => {
                 matricula.Segundo_apellido_Hijo || ''
             ].filter(Boolean).join(' ');
 
-            const fechaMatricula = matricula.fecha_matricula?.split('T')[0] || '2024-01-01';
-            const fechaNacimiento = matricula.fecha_nacimiento_hijo || '2005-05-15';
-            const nombrePadre = `${matricula.Nombre_Padre || 'Andrea'} ${matricula.Apellido_Padre || 'Morales'}`;
-            const codificacionMatricula = matricula.codificacion_matricula || 'SPA-2024-0001';
+            const fechaMatricula = matricula.fecha_matricula?.split('T')[0] || '';
+            const fechaNacimiento = matricula.fecha_nacimiento_hijo || 'N/A';
+            const nombrePadre = `${matricula.Nombre_Padre || ''} ${matricula.Apellido_Padre || ''}`;
+            const codificacionMatricula = matricula.codificacion_matricula || '';
 
             doc.setFontSize(10);
             doc.text(`Código de Matrícula: ${codificacionMatricula}`, 10, 75);
@@ -1036,31 +1099,33 @@ const calculateAge = (birthDate) => {
       </nav>      
      
  {/* Modal con el flujo en pasos */}
-<CModal 
+ <CModal 
   visible={modalVisible} 
   onClose={() => {
     setModalVisible(false);
     setStep(1); // Reinicia al primer paso
-    setMatriculaData({
+
+    // Reinicia solo los campos necesarios y preserva cod_estado_matricula y cod_tipo_matricula
+    setMatriculaData((prevData) => ({
+      ...prevData, // Conserva los valores actuales
       fecha_matricula: getCurrentDate(),
       cod_grado: '',
       cod_seccion: '',
-      cod_estado_matricula: '',
-      cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
-      cod_tipo_matricula: '',
       cod_hijo: '',
       primer_nombre_hijo: '',     
       segundo_nombre_hijo: '',    
       primer_apellido_hijo: '',   
       segundo_apellido_hijo: '',  
       fecha_nacimiento_hijo: '',  
-    });
+    }));
+
+    // Reinicia solo los datos del padre y selección
     setDniPadre('');
     setNombrePadre('');
     setApellidoPadre('');
     setSelectedGrado('');
     setSelectedSeccion('');
-  }} 
+  }}
   backdrop="static" 
   size="md"
 >
@@ -1205,69 +1270,73 @@ const calculateAge = (birthDate) => {
             </CRow>
 
             {/* Selector de Grado */}
-            <div className="mb-3">
-              <h6>Elije Grado</h6>
-              {opciones.grados.map((grado) => (
-                <CButton
-                  color={selectedGrado === grado.Cod_grado ? 'dark' : 'secondary'}
-                  key={grado.Cod_grado}
-                  onClick={() => {
-                    setSelectedGrado(grado.Cod_grado);
-                    obtenerSeccionesPorGrado(grado.Cod_grado);
-                  }}
-                  className="m-1"
-                  style={{
-                    backgroundColor: selectedGrado === grado.Cod_grado ? '#4B6251' : '#6C757D',
-                    borderColor: selectedGrado === grado.Cod_grado ? '#0F463A' : '#495057',
-                    color: '#FFF',
-                  }}
-                >
-                  {grado.Nombre_grado}
-                </CButton>
-              ))}
-            </div>
+<div className="mb-3">
+  <h6>Elije Grado</h6>
+  {opciones.grados.map((grado) => (
+    <CButton
+      color={selectedGrado === grado.Cod_grado ? 'dark' : 'secondary'}
+      key={grado.Cod_grado}
+      onClick={() => {
+        setSelectedGrado(grado.Cod_grado); // Actualiza el grado seleccionado
+        obtenerSeccionesPorGrado(grado.Cod_grado); // Llama a la función para obtener secciones
+      }}
+      className="m-1"
+      style={{
+        backgroundColor: selectedGrado === grado.Cod_grado ? '#4B6251' : '#6C757D',
+        borderColor: selectedGrado === grado.Cod_grado ? '#0F463A' : '#495057',
+        color: '#FFF',
+      }}
+    >
+      {grado.Nombre_grado}
+    </CButton>
+  ))}
+</div>
 
             {/* Selector de Sección */}
-            <CRow className="mt-3">
-              <h6>Elije Sección</h6>
-              {secciones.length > 0 ? (
-                secciones.map((seccion) => (
-                  <CCol md={6} lg={4} className="mb-3" key={seccion.Cod_secciones}>
-                    <CCard
-                      className={selectedSeccion === seccion.Cod_secciones ? 'border-primary' : ''}
-                      style={{
-                        borderColor: selectedSeccion === seccion.Cod_secciones ? '#0F463A' : '#CED4DA',
-                        backgroundColor: selectedSeccion === seccion.Cod_secciones ? '#4B6251' : '#FFF',
-                      }}
-                    >
-                      <CCardBody>
-                        <CCardTitle style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
-                          {seccion.Nombre_seccion}
-                        </CCardTitle>
-                        <CCardText style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
-                          <strong>Aula:</strong> {seccion.Numero_aula || "No disponible"} <br />
-                          <strong>Edificio:</strong> {seccion.Nombre_edificios || "No disponible"} <br />
-                          <strong>Profesor:</strong> {seccion.Nombre_profesor ? `${seccion.Nombre_profesor} ${seccion.Apellido_profesor}` : "No disponible"} <br />
-                        </CCardText>
-                        <CButton
-                          color="primary"
-                          onClick={() => setSelectedSeccion(seccion.Cod_secciones)}
-                          style={{
-                            backgroundColor: '#4B6251',
-                            borderColor: '#0F463A',
-                            color: '#FFF',
-                          }}
-                        >
-                          Elije Sección
-                        </CButton>
-                      </CCardBody>
-                    </CCard>
-                  </CCol>
-                ))
-              ) : (
-                <p>No hay secciones disponibles para el grado seleccionado.</p>
-              )}
-            </CRow>
+<CRow className="mt-3">
+  <h6>Elije Sección</h6>
+  {loading ? ( // Si las secciones están cargando
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px' }}>
+      <CSpinner color="primary" /> {/* Spinner mientras se cargan las secciones */}
+    </div>
+  ) : secciones.length > 0 ? ( // Si hay secciones disponibles
+    secciones.map((seccion) => (
+      <CCol md={6} lg={4} className="mb-3" key={seccion.Cod_secciones}>
+        <CCard
+          className={selectedSeccion === seccion.Cod_secciones ? 'border-primary' : ''}
+          style={{
+            borderColor: selectedSeccion === seccion.Cod_secciones ? '#0F463A' : '#CED4DA',
+            backgroundColor: selectedSeccion === seccion.Cod_secciones ? '#4B6251' : '#FFF',
+          }}
+        >
+          <CCardBody>
+            <CCardTitle style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
+              {seccion.Nombre_seccion}
+            </CCardTitle>
+            <CCardText style={{ color: selectedSeccion === seccion.Cod_secciones ? '#FFF' : '#000' }}>
+              <strong>Aula:</strong> {seccion.Numero_aula || "No disponible"} <br />
+              <strong>Edificio:</strong> {seccion.Nombre_edificios || "No disponible"} <br />
+              <strong>Profesor:</strong> {seccion.Nombre_profesor ? `${seccion.Nombre_profesor} ${seccion.Apellido_profesor}` : "No disponible"} <br />
+            </CCardText>
+            <CButton
+              color="primary"
+              onClick={() => setSelectedSeccion(seccion.Cod_secciones)} // Actualiza la sección seleccionada
+              style={{
+                backgroundColor: '#4B6251',
+                borderColor: '#0F463A',
+                color: '#FFF',
+              }}
+            >
+              Elije Sección
+            </CButton>
+          </CCardBody>
+        </CCard>
+      </CCol>
+    ))
+  ) : (
+    <p>No hay secciones disponibles para el grado seleccionado.</p> // Si no hay secciones
+  )}
+</CRow>
           </div>
         )}
 
@@ -1280,16 +1349,22 @@ const calculateAge = (birthDate) => {
               <CCol>
                 <label>Estado de Matrícula</label>
                 <CFormSelect
-                  name="cod_estado_matricula"
-                  onChange={(e) => setMatriculaData({ ...matriculaData, cod_estado_matricula: e.target.value })}
-                  value={matriculaData.cod_estado_matricula}
-                  required
-                >
-                  <option value="">Selecciona el Estado</option>
-                  {opciones.estados_matricula?.map((estado) => (
-                    <option key={estado.Cod_estado_matricula} value={estado.Cod_estado_matricula}>{estado.Tipo}</option>
-                  ))}
-                </CFormSelect>
+      name="cod_estado_matricula"
+      value={matriculaData.cod_estado_matricula}
+      onChange={(e) =>
+        setMatriculaData({ ...matriculaData, cod_estado_matricula: e.target.value })
+      }
+      required
+    >
+      <option value="" disabled>
+        Selecciona el Estado
+      </option>
+      {opciones.estados_matricula.map((estado) => (
+        <option key={estado.Cod_estado_matricula} value={estado.Cod_estado_matricula}>
+          {estado.Tipo}
+        </option>
+      ))}
+    </CFormSelect>
               </CCol>
               <CCol>
                 <label>Período Académico</label>
@@ -1303,16 +1378,22 @@ const calculateAge = (birthDate) => {
             <CInputGroup className="mb-3">
               <CInputGroupText>Tipo Matrícula</CInputGroupText>
               <CFormSelect
-                name="cod_tipo_matricula"
-                onChange={(e) => setMatriculaData({ ...matriculaData, cod_tipo_matricula: e.target.value })}
-                value={matriculaData.cod_tipo_matricula}
-                required
-              >
-                <option value="">Selecciona el Tipo</option>
-                {opciones.tipos_matricula?.map((tipo) => (
-                  <option key={tipo.Cod_tipo_matricula} value={tipo.Cod_tipo_matricula}>{tipo.Tipo}</option>
-                ))}
-              </CFormSelect>
+      name="cod_tipo_matricula"
+      value={matriculaData.cod_tipo_matricula}
+      onChange={(e) =>
+        setMatriculaData({ ...matriculaData, cod_tipo_matricula: e.target.value })
+      }
+      required
+    >
+      <option value="" disabled>
+        Selecciona el Tipo de Matrícula
+      </option>
+      {opciones.tipos_matricula.map((tipo) => (
+        <option key={tipo.Cod_tipo_matricula} value={tipo.Cod_tipo_matricula}>
+          {tipo.Tipo}
+        </option>
+      ))}
+    </CFormSelect>
             </CInputGroup>
           </div>
         )}

@@ -3,7 +3,8 @@ import {
     crearPeriodoMatricula,
     obtenerPeriodoMatricula,
     actualizarPeriodoMatricula,
-    eliminarPeriodoMatricula
+    eliminarPeriodoMatricula,
+    actualizarEstadoPeriodo
 } from '../Controllers/periodomatriculaController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
@@ -22,5 +23,8 @@ router.put('/periodos/:Cod_periodo_matricula', actualizarPeriodoMatricula); // E
 
 // Ruta para eliminar un periodo de matrícula por Cod_periodo_matricula
 router.delete('/periodos/:Cod_periodo_matricula', eliminarPeriodoMatricula); // Nueva ruta para eliminar periodo
+
+// **Nueva Ruta** para actualizar el estado de un periodo de matrícula
+router.put('/estado', actualizarEstadoPeriodo); // Correctamente registrada en el router
 
 export default router;
