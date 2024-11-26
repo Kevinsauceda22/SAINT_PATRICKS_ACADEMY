@@ -97,10 +97,10 @@ export const crearPersona = async (req, res) => {
         Estado_Persona,
         principal,
         cod_tipo_persona,
-        cod_genero,
         cod_nacionalidad,
         cod_departamento,
-        cod_municipio
+        cod_municipio,
+        cod_genero,
     } = req.body;
 
     const connection = await pool.getConnection();
