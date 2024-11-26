@@ -12,6 +12,7 @@ import {
   cilSave,
   cilDescription,
   cilInfo,
+  cilContact,
   cilPeople,
 } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
@@ -56,6 +57,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaPersonas = () => {
   const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaPersonas');
+  
   const [personas, setPersonas] = useState([])
   const [modalVisible, setModalVisible] = useState(false)
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false)
@@ -66,17 +68,21 @@ const ListaPersonas = () => {
     Segundo_nombre: '',
     Primer_apellido: '',
     Segundo_apellido: '',
-    Nacionalidad: '',
     direccion_persona: '',
     fecha_nacimiento: '',
     Estado_Persona: '',
+    principal: '',
     cod_tipo_persona: '',
+    cod_nacionalidad: '',
     cod_departamento: '',
     cod_municipio: '',
     cod_genero: '',
-    principal: '',
+
   })
   const [personaToUpdate, setPersonaToUpdate] = useState({})
+  const [formData, setFormData] = useState({ dni_persona: '',    Nombre: '',Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '',
+     direccion_persona: '', fecha_nacimiento: '', Estado_Persona: '', cod_tipo_persona: '', cod_departamento: '',
+    cod_municipio: '', cod_genero: '', principal: '',})
   const [personaToDelete, setPersonaToDelete] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
@@ -86,6 +92,11 @@ const ListaPersonas = () => {
   const [municipio, setMunicipio] = useState([])
   const [tipoPersona, setTipoPersona] = useState([])
   const [generos, setGeneros] = useState([])
+  const [nacionalidad, setNacionalidad] = useState([]); // Estado para todas las nacionalidades
+  const [buscadorNacionalidad, setBuscadorNacionalidad] = useState(''); // Valor del input de búsqueda
+  const [nacionalidadesFiltradas, setNacionalidadesFiltradas] = useState([]); // Resultados filtrados
+  const [isDropdownOpenNacionalidad, setIsDropdownOpenNacionalidad] = useState(false); // Control del dropdown
+  const [selectedNacionalidad, setSelectedNacionalidad] = useState(null); // Guardar la nacionalidad seleccionada
   const [fechaNacimiento, setFechaNacimiento] = useState('') // Estado para la fecha de nacimiento
   const [errorMessages, setErrorMessages] = useState({
     dni_persona: '',
@@ -93,15 +104,16 @@ const ListaPersonas = () => {
     Segundo_nombre: '',
     Primer_apellido: '',
     Segundo_apellido: '',
-    Nacionalidad: '',
     direccion_persona: '',
     fecha_nacimiento: '',
     Estado_Persona: '',
+    principal: '',
     cod_tipo_persona: '',
+    cod_nacionalidad: '',
     cod_departamento: '',
     cod_municipio: '',
-    cod_genero: '',
-    principal: ''
+    cod_genero: ''
+
   })
 
   const [showDetailModal, setShowDetailModal] = useState(false) // Estado para abrir/cerrar el modal
@@ -114,180 +126,283 @@ const ListaPersonas = () => {
     navigate('/ListaEstructura', { state: { personaSeleccionada: personas } });
   };
   
+  const abrirContactoModal = (contacto) => {
+    console.log('Persona seleccionada en el componente origen:', contacto); // Verifica que los datos estén presentes
+    navigate('/contacto', { state: { personaSeleccionada: personas } });
+  };
 
-  // Función para abrir el modal y almacenar la persona seleccionada
-  const openDetailModal = (persona) => {
-    setSelectedPersona(persona)
-    setShowDetailModal(true)
-  }
 
-  // Función para cerrar el modal
-  const closeDetailModal = () => {
-    setShowDetailModal(false)
-    setSelectedPersona(null)
-  }
+  {/* ***********************************************************FUNCIONES DE VALIDACION********************************************* */}
+  
+// Validación de campos con temporización de mensajes
+const validarCampo = (nombreCampo, valorCampo) => {
+  let errorMessage = '';
 
-  useEffect(() => {
-    fetchPersonas()
-    fetchDepartamentos()
-    fetchMunicipio()
-    fetchTipoPersona()
-    fetchGeneros()
-  }, [])
+  // Expresión regular para validar solo letras y espacios
+  const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
 
-  // Función para formatear la fecha (fecha_nacimiento)
-  const formatearFecha = (fecha_nacimiento) => {
-    const fechaObj = new Date(fecha_nacimiento) // Crear objeto Date
-    return fechaObj.toISOString().split('T')[0] // Formatear como yyyy-mm-dd
-  }
+  // Expresión regular para validar caracteres permitidos en dirección (letras, números, espacios, ., #, -)
+  const soloLetrasYNumerosDireccionRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d10-9\s.,#\-\/]+$/;
 
-  // Asignar la fecha formateada solo si 'personaToUpdate.fecha_nacimiento' existe
-  const fechaFormateada = personaToUpdate.fecha_nacimiento
-    ? personaToUpdate.fecha_nacimiento.slice(0, 10) // Obtener solo la fecha (sin hora)
-    : '' // Si no existe, asignar un valor vacío
+  // Función para verificar si hay más de dos espacios consecutivos
+  const tieneEspaciosMultiples = (texto) => /\s{2,}/.test(texto);
 
-  // useEffect para actualizar personaToUpdate cuando personas cambian
-  useEffect(() => {
-    if (personas.length > 0) {
-      console.log('Fecha recibida:', personas[0]?.fecha_nacimiento) // Comprobar si la fecha existe
+  // Función para verificar si hay letras repetidas más de dos veces consecutivas
+  const tieneLetrasRepetidas = (texto) => /(.)\1{2,}/.test(texto);
 
-      // Asignar la fecha formateada a personaToUpdate
-      setPersonaToUpdate({
-        ...personaToUpdate,
-        fecha_nacimiento: formatearFecha(personas[0]?.fecha_nacimiento),
-      })
-
-      // Actualizar el estado de la fecha de nacimiento para el formulario
-      setFechaNacimiento(formatearFecha(personas[0]?.fecha_nacimiento))
+  // Validación de DNI: Debe tener exactamente 13 dígitos y cumplir con ciertas condiciones
+  const validarDNI = (dni) => {
+    if (!/^\d{13}$/.test(dni)) {
+      return 'El DNI debe tener exactamente 13 dígitos.';
     }
-  }, [personas]) // Ejecutar cuando 'personas' cambia
+    const primerCuatroDNI = parseInt(dni.substring(0, 4));
+    if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
+      return 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
+    }
+    const añoNacimientoDNI = parseInt(dni.substring(4, 8));
+    if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
+      return 'El año en el DNI debe estar entre 1920 y 2020.';
+    }
+    return ''; // Si no hay errores, retornamos un string vacío.
+  };
 
-  {
-    /* ------------------------------------------------------------------------------------------------------------------------- */
+  switch (nombreCampo) {
+    case 'Nombre':
+    case 'Segundo_nombre':
+    case 'Primer_apellido':
+    case 'Segundo_apellido':
+      if (valorCampo && !soloLetrasRegex.test(valorCampo)) {
+        errorMessage = `${nombreCampo} solo puede contener letras y espacios.`;
+      } else if (valorCampo && tieneLetrasRepetidas(valorCampo)) {
+        errorMessage = `${nombreCampo} no puede contener la misma letra más de 3 veces consecutivas.`;
+      } else if (valorCampo && tieneEspaciosMultiples(valorCampo)) {
+        errorMessage = `${nombreCampo} no puede tener más de un espacio consecutivo.`;
+      }
+      break;
+
+    case 'direccion_persona':
+      if (valorCampo && !soloLetrasYNumerosDireccionRegex.test(valorCampo)) {
+        errorMessage =
+          'La dirección solo puede contener letras, números, espacios, puntos, comas, guiones y el símbolo #.';
+      } else if (valorCampo && tieneEspaciosMultiples(valorCampo)) {
+        errorMessage = 'La dirección no puede tener más de un espacio consecutivo.';
+      }
+      break;
+
+    case 'dni_persona':
+      if (valorCampo) {
+        errorMessage = validarDNI(valorCampo);
+      }
+      break;
+
+    case 'fecha_nacimiento':
+      if (valorCampo) {
+        const añoNacimientoFecha = new Date(valorCampo).getFullYear();
+        if (añoNacimientoFecha < 1930 || añoNacimientoFecha > 2020) {
+          errorMessage = 'La fecha de nacimiento debe estar entre 1930 y 2020.';
+        }
+      }
+      break;
+
+    default:
+      break;
   }
-  // Fetch personas from API
-  const fetchPersonas = async () => {
+
+  // Actualizamos el estado de los errores con el mensaje correspondiente
+  setErrorMessages((prevErrors) => ({
+    ...prevErrors,
+    [nombreCampo]: errorMessage,
+  }));
+
+  // Limpiar el mensaje de error después de un tiempo (3 segundos)
+  if (errorMessage) {
+    setTimeout(() => {
+      setErrorMessages((prevErrors) => {
+        const newErrors = { ...prevErrors };
+        delete newErrors[nombreCampo]; // Elimina el error después del tiempo
+        return newErrors;
+      });
+    }, 3000); // Tiempo en milisegundos (3 segundos)
+  }
+};
+
+// Manejo de cambios en el formulario
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  setNuevaPersona((prevState) => ({
+    ...prevState,
+    [name]: value,
+  }));
+  validarCampo(name, value);
+};
+
+// Restante del código sigue igual...
+
+// Formateo de fechas
+const formatearFecha = (fecha_nacimiento) => {
+  const fechaObj = new Date(fecha_nacimiento);
+  return fechaObj.toISOString().split('T')[0];
+};
+
+// Reset de formularios
+const resetNuevaPersona = () => {
+  setNuevaPersona({
+    dni_persona: '', Nombre: '', Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '', direccion_persona: '', fecha_nacimiento: '',
+    Estado_Persona: '', cod_tipo_persona: '', principal: '', cod_nacionalidad: '', cod_departamento: '', cod_municipio: '', cod_genero: '', 
+  });
+};
+
+const resetPersonaToUpdate = () => {
+  setPersonaToUpdate({ cod_persona: '', dni_persona: '', Nombre: '', Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '', cod_nacionalidad: '',
+    direccion_persona: '', fecha_nacimiento: '', Estado_Persona: '', cod_tipo_persona: '', cod_departamento: '', cod_municipio: '', cod_genero: '', principal: '',
+  });
+};
+
+// Manejo del modal
+const handleCloseModal = (setModalVisibility, resetData, formData) => {
+  const { dni_persona, Nombre, Segundo_nombre, Primer_apellido, Segundo_apellido, cod_nacionalidad, direccion_persona, fecha_nacimiento, Estado_Persona, cod_genero,
+    cod_tipo_persona, cod_departamento, cod_municipio, principal,
+  } = formData;
+
+  if ( dni_persona || Nombre || Segundo_nombre || Primer_apellido || Segundo_apellido ||  direccion_persona || fecha_nacimiento ||
+    Estado_Persona || principal || cod_tipo_persona || cod_genero || cod_nacionalidad || cod_departamento || cod_municipio 
+  ) {
+    swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cerrar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setModalVisibility(false);
+        resetData();
+      }
+    });
+  } else {
+    setModalVisibility(false);
+  }
+};
+
+// Manejo de modales de detalle
+const openDetailModal = (persona) => {
+  setSelectedPersona(persona);
+  setShowDetailModal(true);
+};
+
+const closeDetailModal = () => {
+  setShowDetailModal(false);
+  setSelectedPersona(null);
+};
+
+// Formateo y manejo de DNI
+const formatDNI = (value) => {
+  value = value.replace(/\D/g, '');
+  if (value.length <= 4) {
+    return value;
+  } else if (value.length <= 8) {
+    return `${value.slice(0, 4)}-${value.slice(4)}`;
+  } else {
+    return `${value.slice(0, 4)}-${value.slice(4, 8)}-${value.slice(8, 13)}`;
+  }
+};
+
+// Deshabilitar copiar y pegar
+const disableCopyPaste = (e) => {
+  e.preventDefault();
+  swal.fire({
+    icon: 'warning',
+    title: 'Acción bloqueada',
+    text: 'Copiar y pegar no está permitido.',
+  });
+};
+
+// useEffect para actualizar personaToUpdate
+useEffect(() => {
+  if (personas.length > 0) {
+    console.log('Fecha recibida:', personas[0]?.fecha_nacimiento);
+    setPersonaToUpdate({
+      ...personaToUpdate,
+      fecha_nacimiento: formatearFecha(personas[0]?.fecha_nacimiento),
+    });
+    setFechaNacimiento(formatearFecha(personas[0]?.fecha_nacimiento));
+  }
+}, [personas]);
+
+
+{/* --------------------------------------------------------------------------------------------------------------------------------------------------------- */}
+
+
+
+const handleBuscarNacionalidad = (e) => {
+  const filtro = e.target.value.toLowerCase(); // Convertir el texto a minúsculas para búsqueda insensible a mayúsculas
+  setBuscadorNacionalidad(filtro); // Actualizar el valor del input
+
+  if (filtro.trim() === '') {
+    setNacionalidadesFiltradas([]); // Limpiar resultados si el filtro está vacío
+    setIsDropdownOpenNacionalidad(false); // Cerrar el dropdown
+    return;
+  }
+
+  // Filtrar las nacionalidades que coincidan con el texto en cualquier parte del id o país
+  const filtradas = nacionalidad.filter((nacionalidad) =>
+    (nacionalidad.pais_nacionalidad && nacionalidad.pais_nacionalidad.toLowerCase().includes(filtro)) ||
+    (nacionalidad.Id_nacionalidad && nacionalidad.Id_nacionalidad.toLowerCase().includes(filtro))
+  );
+
+  setNacionalidadesFiltradas(filtradas); // Actualizar el estado con los resultados filtrados
+  setIsDropdownOpenNacionalidad(filtradas.length > 0); // Mostrar el dropdown solo si hay resultados
+};
+
+// Función para manejar la selección de una nacionalidad
+const handleSeleccionarNacionalidad = (nacionalidad) => {
+  setBuscadorNacionalidad(`${nacionalidad.Id_nacionalidad} - ${nacionalidad.pais_nacionalidad}`); // Mostrar en el input
+  setSelectedNacionalidad(nacionalidad.Cod_nacionalidad); // Guardar el código para la inserción
+  setIsDropdownOpenNacionalidad(false); // Cerrar el dropdown
+
+  // Aquí puedes agregar lógica adicional para almacenar la nacionalidad seleccionada
+  console.log('Nacionalidad seleccionada:', nacionalidadSeleccionada); // Esto es solo para ver qué se seleccionó
+
+};
+
+
+{/*********************************TABLAS RELACIONADAS***********************************************************************************/}
+
+    // Fetch personas from API
+    const fetchPersonas = async () => {
+      try {
+        const response = await fetch('http://localhost:4000/api/persona/verPersonas')
+        const data = await response.json()
+  
+        // Agrega un console.log aquí para ver los datos originales
+        console.log('Datos recibidos del servidor:', data)
+  
+        const dataWithIndex = data.map((persona, index) => ({
+          ...persona,
+          originalIndex: index + 1,
+        }))
+  
+        // Agrega otro console.log aquí para ver los datos con el índice adicional
+        console.log('Datos con índice añadido:', dataWithIndex)
+  
+        setPersonas(dataWithIndex)
+      } catch (error) {
+        console.error('Error al obtener las personas:', error)
+      }
+    }
+
+
+  const fetchNacionalidad = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verPersonas')
+      const response = await fetch('http://localhost:4000/api/nacionalidad/verNacionalidades')
       const data = await response.json()
-
-      // Agrega un console.log aquí para ver los datos originales
-      console.log('Datos recibidos del servidor:', data)
-
-      const dataWithIndex = data.map((persona, index) => ({
-        ...persona,
-        originalIndex: index + 1,
-      }))
-
-      // Agrega otro console.log aquí para ver los datos con el índice adicional
-      console.log('Datos con índice añadido:', dataWithIndex)
-
-      setPersonas(dataWithIndex)
+      console.log('Datos recibidos de nacionalidad:', data)
+      setNacionalidad(data)
     } catch (error) {
-      console.error('Error al obtener las personas:', error)
+      console.error('Error al obtener los nacionalidad:', error)
     }
   }
-
-  {
-    /*------------------------------------------------------------------------------------------------------------------------------- */
-  }
-  // Función de validación
-  const validarCampo = (nombreCampo, valorCampo) => {
-    let errorMessage = ''
-
-    const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d10-9\s.,#-]+$/
-
-    switch (nombreCampo) {
-      case 'dni_persona':
-        if (valorCampo && !/^\d{13}$/.test(valorCampo)) {
-          errorMessage = 'El DNI debe tener exactamente 13 dígitos.'
-        } else if (valorCampo) {
-          const primerCuatroDNI = parseInt(valorCampo.substring(0, 4))
-          if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
-            errorMessage =
-              'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.'
-          }
-          const añoNacimientoDNI = parseInt(valorCampo.substring(4, 8))
-          if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
-            errorMessage = 'El año en el DNI debe estar entre 1920 y 2020.'
-          }
-        }
-        break
-
-      case 'Nombre':
-      case 'Segundo_nombre':
-      case 'Primer_apellido':
-      case 'Segundo_apellido':
-      case 'Nacionalidad':
-        if (valorCampo && !soloLetrasRegex.test(valorCampo)) {
-          errorMessage = `${nombreCampo} solo puede contener letras y espacios.`
-        } else if (valorCampo && tieneLetrasRepetidas(valorCampo)) {
-          errorMessage = `${nombreCampo} no puede contener la misma letra más de 3 veces consecutivas.`
-        }
-        break
-
-      case 'direccion_persona':
-        if (valorCampo && !soloLetrasYNumerosDireccionRegex.test(valorCampo)) {
-          errorMessage =
-            'La dirección solo puede contener letras, números, espacios, puntos, comas, guiones y el símbolo #.'
-        } else if (valorCampo && tieneEspaciosMultiples(valorCampo)) {
-          errorMessage = 'La dirección no puede tener más de un espacio consecutivo.'
-        }
-        break
-
-      case 'fecha_nacimiento':
-        if (valorCampo) {
-          const añoNacimientoFecha = new Date(valorCampo).getFullYear()
-          if (añoNacimientoFecha < 1920 || añoNacimientoFecha > 2020) {
-            errorMessage = 'La fecha de nacimiento debe estar entre 1920 y 2020.'
-          }
-          if (nuevaPersona.dni_persona && nuevaPersona.dni_persona.length === 13) {
-            const añoDni = parseInt(nuevaPersona.dni_persona.substring(4, 8))
-            if (añoNacimientoFecha !== añoDni) {
-              errorMessage =
-                'El año de la fecha de nacimiento debe coincidir con el año de nacimiento en el DNI.'
-            }
-          }
-        }
-        break
-
-      case 'Estado_Persona':
-      case 'cod_tipo_persona':
-      case 'cod_departamento':
-      case 'cod_genero':
-        if (!valorCampo) {
-          errorMessage = `${nombreCampo} es un campo obligatorio.`
-        }
-        break
-
-      default:
-        break
-    }
-
-    // Si no hay error, limpiar el mensaje de error
-    if (!errorMessage) {
-      errorMessage = '' // Limpiar el error si no hay ningún mensaje
-    }
-
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      [nombreCampo]: errorMessage,
-    }))
-  }
-
-  const handleChange = (e) => {
-    const { name, value } = e.target
-    setNuevaPersona((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }))
-    validarCampo(name, value) // Esto manejará la validación y limpieza de errores
-  }
-
-  {
-    /*--------------------------------------------------------------------------------------------------------------------------------------------- */
-  }
-
 
   const fetchMunicipio = async () => {
     try {
@@ -334,55 +449,16 @@ const ListaPersonas = () => {
     }
   }
 
-  // Función para formatear el DNI con guiones automáticamente
-  const formatDNI = (value) => {
-    // Elimina cualquier carácter que no sea un número
-    value = value.replace(/\D/g, '')
+  useEffect(() => {
+    fetchPersonas()
+    fetchDepartamentos()
+    fetchNacionalidad()
+    fetchMunicipio()
+    fetchTipoPersona()
+    fetchGeneros()
+  }, [])
 
-    // Agrega guiones después de cada cuatro dígitos
-    if (value.length <= 4) {
-      return value
-    } else if (value.length <= 8) {
-      return `${value.slice(0, 4)}-${value.slice(4)}`
-    } else {
-      return `${value.slice(0, 4)}-${value.slice(4, 8)}-${value.slice(8, 13)}`
-    }
-  }
-
-  // Deshabilitar copiar y pegar
-  const disableCopyPaste = (e) => {
-    e.preventDefault()
-    swal.fire({
-      icon: 'warning',
-      title: 'Acción bloqueada',
-      text: 'Copiar y pegar no está permitido.',
-    })
-  }
-
-  // Manejar el cierre del modal
-  const handleCloseModal = (closeFunction, resetFields) => {
-    if (hasUnsavedChanges) {
-      swal
-        .fire({
-          title: '¿Estás seguro?',
-          text: 'Si cierras este formulario, perderás todos los datos ingresados.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, cerrar',
-          cancelButtonText: 'Cancelar',
-        })
-        .then((result) => {
-          if (result.isConfirmed) {
-            closeFunction(false)
-            resetFields() // Limpiar los campos al cerrar
-            setHasUnsavedChanges(false) // Resetear cambios no guardados
-          }
-        })
-    } else {
-      closeFunction(false)
-      resetFields()
-    }
-  }
+{/********************************************FUNCION PARA CREAR UNA PERSONA*****************************************************/}
 
   const handleCreatePersona = async () => {
     const dniSinGuiones = nuevaPersona.dni_persona.replace(/-/g, '');
@@ -396,12 +472,12 @@ const ListaPersonas = () => {
     }
   
     const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
-    if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
-      errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.';
+    if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
+      errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
     }
   
     const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
-    if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
+    if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
       errores.dni_persona = 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.';
     }
   
@@ -440,7 +516,7 @@ const ListaPersonas = () => {
           Segundo_nombre: nuevaPersona.Segundo_nombre,
           Primer_apellido: nuevaPersona.Primer_apellido,
           Segundo_apellido: nuevaPersona.Segundo_apellido,
-          Nacionalidad: nuevaPersona.Nacionalidad,
+          cod_nacionalidad: nuevaPersona.cod_nacionalidad,
           direccion_persona: nuevaPersona.direccion_persona,
           fecha_nacimiento: nuevaPersona.fecha_nacimiento,
           Estado_Persona: nuevaPersona.Estado_Persona,
@@ -483,6 +559,9 @@ const ListaPersonas = () => {
       });
     }
   };
+
+
+  {/***************************************************FUNCION PARA ACTUALIZAR**************************************************************/}
   
   const handleUpdatePersona = async () => {
     const dniSinGuiones = personaToUpdate.dni_persona.replace(/-/g, '');
@@ -496,12 +575,12 @@ const ListaPersonas = () => {
     }
   
     const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
-    if (primerCuatroDNI < 101 || primerCuatroDNI > 909) {
-      errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 0909.';
+    if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
+      errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
     }
   
     const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
-    if (añoNacimientoDNI < 1920 || añoNacimientoDNI > 2020) {
+    if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
       errores.dni_persona = 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.';
     }
   
@@ -537,7 +616,7 @@ const ListaPersonas = () => {
             Segundo_nombre: personaToUpdate.Segundo_nombre,
             Primer_apellido: personaToUpdate.Primer_apellido,
             Segundo_apellido: personaToUpdate.Segundo_apellido,
-            Nacionalidad: personaToUpdate.Nacionalidad,
+            cod_nacionalidad: personaToUpdate.cod_nacionalidad,
             direccion_persona: personaToUpdate.direccion_persona,
             fecha_nacimiento: personaToUpdate.fecha_nacimiento,
             Estado_Persona: personaToUpdate.Estado_Persona,
@@ -576,7 +655,7 @@ const ListaPersonas = () => {
     }
   };
   
-
+{/****************************************FUNCION PARA ELIMINAR ***************************************************************/}
   const handleDeletePersona = async () => {
     try {
       const response = await fetch(
@@ -603,44 +682,7 @@ const ListaPersonas = () => {
     }
   }
 
-  const resetNuevaPersona = () => {
-    setNuevaPersona({
-      dni_persona: '',
-      Nombre: '',
-      Segundo_nombre: '',
-      Primer_apellido: '',
-      Segundo_apellido: '',
-      Nacionalidad: '',
-      direccion_persona: '',
-      fecha_nacimiento: '',
-      Estado_Persona: '',
-      cod_tipo_persona: '',
-      cod_departamento: '',
-      cod_municipio: '',
-      cod_genero: '',
-      principal: '',
-    })
-  }
-
-  const resetPersonaToUpdate = () => {
-    setPersonaToUpdate({
-      cod_persona: '',
-      dni_persona: '',
-      Nombre: '',
-      Segundo_nombre: '',
-      Primer_apellido: '',
-      Segundo_apellido: '',
-      Nacionalidad: '',
-      direccion_persona: '',
-      fecha_nacimiento: '',
-      Estado_Persona: '',
-      cod_tipo_persona: '',
-      cod_departamento: '',
-      cod_municipio: '',
-      cod_genero: '',
-      principal: '',
-    })
-  }
+  {/********************************FUNCIONES DE REPORTERIA Y BÚSQUEDA****************************************/}
 
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(personas)
@@ -679,15 +721,16 @@ const ListaPersonas = () => {
         persona.dni_persona,
         persona.Nombre,
         persona.Primer_apellido,
-        persona.Nacionalidad,
         persona.direccion_persona,
         persona.fecha_nacimiento,
         persona.Estado_Persona,
+        persona.principal,
         persona.cod_tipo_persona,
+        persona.cod_nacionalidad,
         persona.cod_departamento,
         persona.cod_municipio,
         persona.cod_genero,
-        persona.principal,
+
       ]),
     })
     doc.save('reporte_personas.pdf')
@@ -701,7 +744,7 @@ const ListaPersonas = () => {
       Segundo_nombre: persona.Segundo_nombre,
       Primer_apellido: persona.Primer_apellido,
       Segundo_apellido: persona.Segundo_apellido,
-      Nacionalidad: persona.Nacionalidad,
+      cod_nacionalidad: persona.cod_nacionalidad,
       direccion_persona: persona.direccion_persona,
       fecha_nacimiento: persona.fecha_nacimiento,
       Estado_Persona: persona.Estado_Persona,
@@ -869,7 +912,7 @@ const ReportePersonas = () => {
     return <AccessDenied />;
   }
   
-
+{/***********************************************VISTAS Y MODALES*************************************************************/}
 
 return (
     <CContainer>
@@ -942,18 +985,18 @@ return (
       <CTableRow>
         <CTableHeaderCell>#</CTableHeaderCell>
         <CTableHeaderCell>DNI</CTableHeaderCell>
-        <CTableHeaderCell>Nombre</CTableHeaderCell>
+        <CTableHeaderCell>Primer Nombre</CTableHeaderCell>
         <CTableHeaderCell>Segundo Nombre</CTableHeaderCell>
         <CTableHeaderCell>Primer Apellido</CTableHeaderCell>
         <CTableHeaderCell>Segundo Apellido</CTableHeaderCell>
-        <CTableHeaderCell>Nacionalidad</CTableHeaderCell>
         <CTableHeaderCell>Dirección</CTableHeaderCell>
         <CTableHeaderCell>Fecha de Nacimiento</CTableHeaderCell>
         <CTableHeaderCell>Principal</CTableHeaderCell>
         <CTableHeaderCell>Estado</CTableHeaderCell>
-        <CTableHeaderCell>Tipo de Persona</CTableHeaderCell>
+        <CTableHeaderCell>Nacionalidad</CTableHeaderCell>
         <CTableHeaderCell>Departamento</CTableHeaderCell>
         <CTableHeaderCell>Municipio</CTableHeaderCell>
+        <CTableHeaderCell>Tipo de Persona</CTableHeaderCell>
         <CTableHeaderCell>Género</CTableHeaderCell>
         <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
       </CTableRow>
@@ -972,37 +1015,21 @@ return (
               <CTableDataCell>{persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/D'}</CTableDataCell>
               <CTableDataCell>{persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/D'}</CTableDataCell>
               <CTableDataCell>{persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/D'}</CTableDataCell>
-              <CTableDataCell>{persona.Nacionalidad ? persona.Nacionalidad.toUpperCase() : 'N/D'}</CTableDataCell>
               <CTableDataCell>{persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/D'}</CTableDataCell>
               <CTableDataCell>{' '}{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}</CTableDataCell>
-
-          {/* Columna Principal */}
-
-          <CTableDataCell className="text-center">
-  {persona.principal ? (
-    <CIcon
-      icon={cilCheckCircle} // Ícono de check-circle para principal
-      style={{ fontSize: '2em', color: '#28a745' }} // Hacemos el ícono más grande y verde
-    />
-  ) : (
-    <CIcon
-      icon={cilXCircle} // Ícono de X-circle para no principal
-      style={{ fontSize: '2em', color: '#dc3545' }} // Hacemos el ícono más grande y rojo
-    />
-  )}
-</CTableDataCell>
-
-          {/* Columna Estado */}
-          <CTableDataCell className="text-center">
+              <CTableDataCell className="text-center">{persona.principal ? (<CIcon icon={cilCheckCircle} style={{ fontSize: '2em', color: '#28a745' }}/>) : ( 
+              <CIcon icon={cilXCircle} style={{ fontSize: '2em', color: '#dc3545' }}/> )} </CTableDataCell>
+              <CTableDataCell className="text-center">
             {persona.Estado_Persona === 'A' ? (
               <span className="badge bg-success">Activo</span>
             ) : (
               <span className="badge bg-warning text-dark">Suspendido</span>
             )}
           </CTableDataCell>
-              <CTableDataCell>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell>{nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{municipio.find((municipio) => municipio.cod_municipio === persona.cod_municipio)?.nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell className="text-center">
                 <div className="d-flex justify-content-center">
@@ -1030,6 +1057,13 @@ return (
                   >
                     <CIcon icon={cilPeople} />{' '}
                   </CButton>
+                  <CButton
+                  color="primary"
+                  onClick={() => abrirContactoModal(persona)}
+                  style={{ marginLeft: '10px' }}
+                >
+                  <CIcon icon={cilContact} /> {/* Cambia esto por el ícono adecuado */}
+                </CButton>
                 </div>
               </CTableDataCell>
             </CTableRow>
@@ -1046,7 +1080,7 @@ return (
 
 
 
-        {/* --- INICIO DEL MODAL DE DETALLE DE LA PERSONA --- */}
+{/**************************INICIO DEL MODAL DE DETALLE DE LA PERSONA******************************************************/}
         <CModal
           visible={showDetailModal}
           onClose={closeDetailModal}
@@ -1084,8 +1118,8 @@ return (
                     <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold', }}> {selectedPersona.Segundo_apellido?.toUpperCase() || 'N/D'}</td>
                   </tr>
                   <tr> 
-                    <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057',}} >Nacionalidad:</td>
-                    <td style={{ padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}> {selectedPersona.Nacionalidad?.toUpperCase() || 'N/D'}</td> 
+                  <td style={{backgroundColor: '#e9ecef',  fontWeight: 'bold', padding: '10px',  border: '1px solid #dee2e6',  color: '#495057',  }}>Nacionalidad:</td>
+                  <td style={{padding: '10px', border: '1px solid #dee2e6', color: '#495057', fontWeight: 'bold',}}>{selectedPersona.Nacionalidad ? `${selectedPersona.Nacionalidad.id_nacionalidad || 'Sin ID'} - ${selectedPersona.Nacionalidad.pais_nacionalidad?.toUpperCase() || 'Sin País'}` : 'N/D'}</td> 
                   </tr>
                   <tr>
                     <td style={{ backgroundColor: '#e9ecef', fontWeight: 'bold', padding: '10px', border: '1px solid #dee2e6', color: '#495057', }}> Dirección:</td>
@@ -1131,9 +1165,10 @@ return (
             </CButton>
           </CModalFooter>
         </CModal>
-        {/* --- FIN DEL MODAL DE DETALLE DE LA PERSONA --- */}
-      </div>
 
+{/*****************************************FIN DEL MODAL DE DETALLE DE LA PERSONA************************************************/}
+      </div>
+{/****************************************************PAGINACION*****************************************************************/}
       <div
         className="pagination-container"
         style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
@@ -1158,326 +1193,244 @@ return (
           Página {currentPage} de {Math.ceil(personas.length / recordsPerPage)}
         </span>
       </div>
+{/*********************************************************************************************************************************/}
 
-      {/* Modal para agregar persona */}
-      <CModal
-        visible={modalVisible}
-        onClose={() => handleCloseModal(setModalVisible, resetNuevaPersona)}
-        backdrop="static"
-        size="xl" // Aumentamos el tamaño del modal para hacerlo más amplio
-      >
-        <CModalHeader closeButton>
-          <CModalTitle>Agregar Persona</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <CForm>
-            <div className="row">
-              {/* Columna 1 */}
-              <div className="col-md-6">
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>DNI</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="DNI de la persona"
-                    value={nuevaPersona.dni_persona} // Sigue usando el valor con guiones
-                    onChange={(e) => {
-                      handleChange(e)
-                      const formattedDNI = formatDNI(e.target.value)
-                      setNuevaPersona({ ...nuevaPersona, dni_persona: formattedDNI })
+{/*********************************************MODAL PARA AGREGAR UNA PERSONA****************************************************/}
+<CModal
+  visible={modalVisible}
+  onClose={() => handleCloseModal(setModalVisible, resetNuevaPersona)}
+  backdrop="static"
+  size="xl" // Aumentamos el tamaño del modal para hacerlo más amplio
+>
+  <CModalHeader closeButton>
+    <CModalTitle>Agregar Persona</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <div className="row">
+        {/* Columna 1 - Mi izquierda */}
+        <div className="col-md-6">
+          <CInputGroup className="mb-3">
+            <CInputGroupText>DNI</CInputGroupText>
+            <CFormInput
+              type="text"
+              placeholder="DNI de la persona"
+              value={nuevaPersona.dni_persona}
+              onChange={(e) => {
+                handleChange(e);
+                const formattedDNI = formatDNI(e.target.value);
+                setNuevaPersona({ ...nuevaPersona, dni_persona: formattedDNI });
 
-                      const dniSinGuiones = removeDniHyphens(formattedDNI)
-                      const errores = validarCampo('dni_persona', dniSinGuiones)
+                const dniSinGuiones = removeDniHyphens(formattedDNI);
+                const errores = validarCampo('dni_persona', dniSinGuiones);
+                setErrorMessages((prevErrors) => ({
+                  ...prevErrors,
+                  dni_persona: errores.dni_persona || '',
+                }));
+              }}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+              required
+            />
+          </CInputGroup>
+          {errorMessages.dni_persona && (
+            <div style={{ color: 'red', fontSize: '0.85em' }}>{errorMessages.dni_persona}</div>
+          )}
 
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        dni_persona: errores.dni_persona || '',
-                      }))
-                    }}
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                {errorMessages.dni_persona && (
-                  <div style={{ color: 'red', fontSize: '0.85em' }}>
-                    {errorMessages.dni_persona}
-                  </div>
-                )}
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Primer Nombre</CInputGroupText>
+            <CFormInput
+              type="text"
+              placeholder="Nombre"
+              value={nuevaPersona.Nombre}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, Nombre: e.target.value })}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+              required
+            />
+          </CInputGroup>
+          {errorMessages.Nombre && <div style={{ color: 'red' }}>{errorMessages.Nombre}</div>}
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Nombre</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Nombre"
-                    value={nuevaPersona.Nombre}
-                    onChange={(e) => setNuevaPersona({ ...nuevaPersona, Nombre: e.target.value })}
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                {errorMessages.Nombre && <div style={{ color: 'red' }}>{errorMessages.Nombre}</div>}
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Segundo Nombre</CInputGroupText>
+            <CFormInput
+              type="text"
+              placeholder="Segundo Nombre"
+              value={nuevaPersona.Segundo_nombre}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, Segundo_nombre: e.target.value })}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+            />
+            {errorMessages.Segundo_nombre && <div style={{ color: 'red' }}>{errorMessages.Segundo_nombre}</div>}
+          </CInputGroup>
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Segundo Nombre</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Segundo Nombre"
-                    value={nuevaPersona.Segundo_nombre}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, Segundo_nombre: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                  {errorMessages.Segundo_nombre && (
-                    <div style={{ color: 'red' }}>{errorMessages.Segundo_nombre}</div>
-                  )}
-                </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Primer Apellido</CInputGroupText>
+            <CFormInput
+              type="text"
+              placeholder="Primer Apellido"
+              value={nuevaPersona.Primer_apellido}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, Primer_apellido: e.target.value })}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+              required
+            />
+          </CInputGroup>
+          {errorMessages.Primer_apellido && (
+            <div style={{ color: 'red' }}>{errorMessages.Primer_apellido}</div>
+          )}
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Primer Apellido</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Primer Apellido"
-                    value={nuevaPersona.Primer_apellido}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, Primer_apellido: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                {errorMessages.Primer_apellido && (
-                  <div style={{ color: 'red' }}>{errorMessages.Primer_apellido}</div>
-                )}
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Segundo Apellido</CInputGroupText>
+            <CFormInput
+              type="text"
+              placeholder="Segundo Apellido"
+              value={nuevaPersona.Segundo_apellido}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, Segundo_apellido: e.target.value })}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+            />
+          </CInputGroup>
+          {errorMessages.Segundo_apellido && (
+            <div style={{ color: 'red' }}>{errorMessages.Segundo_apellido}</div>
+          )}
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Segundo Apellido</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Segundo Apellido"
-                    value={nuevaPersona.Segundo_apellido}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, Segundo_apellido: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                </CInputGroup>
-                {errorMessages.Segundo_apellido && (
-                  <div style={{ color: 'red' }}>{errorMessages.Segundo_apellido}</div>
-                )}
-
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Nacionalidad</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Nacionalidad"
-                    value={nuevaPersona.Nacionalidad}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, Nacionalidad: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                {errorMessages.Nacionalidad && (
-                  <div style={{ color: 'red' }}>{errorMessages.Nacionalidad}</div>
-                )}
-
-                  <div className="col-md-6">
-                    <CInputGroup className="mb-3 align-items-center">
-                      <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span>Principal</span>
-                        <CFormCheck
-                          type="checkbox"
-                          label=""
-                          checked={nuevaPersona.principal}
-                          onChange={(e) =>
-                            setNuevaPersona({ ...nuevaPersona, principal: e.target.checked })
-                          }
-                          style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
-                        />
-                      </CInputGroupText>
-                    </CInputGroup>
-                    {errorMessages.principal && (
-                      <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
-                    )}
-                  </div>
-
-              </div>
-
-              {/* Columna 2 */}
-              <div className="col-md-6">
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Dirección</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Dirección"
-                    value={nuevaPersona.direccion_persona}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, direccion_persona: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                </CInputGroup>
-                {errorMessages.direccion_persona && (
-                  <div style={{ color: 'red' }}>{errorMessages.direccion_persona}</div>
-                )}
-
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
-                  <CFormInput
-                    type="date"
-                    value={nuevaPersona.fecha_nacimiento}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, fecha_nacimiento: e.target.value })
-                    }
-                    required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
-                  />
-                </CInputGroup>
-                {errorMessages.fecha_nacimiento && (
-                  <div style={{ color: 'red' }}>{errorMessages.fecha_nacimiento}</div>
-                )}
-
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Estado</CInputGroupText>
-                  <CFormSelect
-                    value={nuevaPersona.Estado_Persona || ''}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, Estado_Persona: e.target.value })
-                    }
-                    required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
-                  >
-                    <option value="">Seleccione un estado</option>
-                    <option value="A">ACTIVO</option>
-                    <option value="S">SUSPENDIDO</option>
-                  </CFormSelect>
-                </CInputGroup>
-                {errorMessages.Estado_Persona && (
-                  <div style={{ color: 'red' }}>{errorMessages.Estado_Persona}</div>
-                )}
-
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Rol</CInputGroupText>
-                  <CFormSelect
-                    value={nuevaPersona.cod_tipo_persona || ''}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: e.target.value })
-                    }
-                    required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
-                  >
-                    <option value="">Seleccione un rol</option>
-                    {tipoPersona &&
-                      tipoPersona.map((tipo) => (
-                        <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                          {tipo.Tipo.toUpperCase()}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
-                {errorMessages.cod_tipo_persona && (
-                  <div style={{ color: 'red' }}>{errorMessages.cod_tipo_persona}</div>
-                )}
-
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Departamento</CInputGroupText>
-                  <CFormSelect
-                    value={nuevaPersona.cod_departamento || ''}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, cod_departamento: e.target.value })
-                    }
-                    required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
-                  >
-                    <option value="">Seleccione un departamento</option>
-                    {departamentos &&
-                      departamentos.map((depto) => (
-                        <option key={depto.Cod_departamento} value={depto.Cod_departamento}>
-                          {depto.Nombre_departamento.toUpperCase()}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
-                {errorMessages.cod_departamento && (
-                  <div style={{ color: 'red' }}>{errorMessages.cod_departamento}</div>
-                )}
-
-                  <CInputGroup className="mb-3">
-                  <CInputGroupText>Municipio</CInputGroupText>
-                  <CFormSelect
-                    value={nuevaPersona.cod_municipio || ''}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, cod_municipio: e.target.value })
-                    }
-                    required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
-                  >
-                    <option value="">Seleccione un municipio</option>
-                    {municipio &&
-                      municipio.map((municipio) => (
-                        <option key={municipio.cod_municipio} value={municipio.cod_municipio}>
-                          {municipio.nombre_municipio.toUpperCase()}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
-                {errorMessages.cod_municipio && (
-                  <div style={{ color: 'red' }}>{errorMessages.cod_municipio}</div>
-                )}
-
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Género</CInputGroupText>
-                  <CFormSelect
-                    value={nuevaPersona.cod_genero || ''}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, cod_genero: e.target.value })
-                    }
-                    required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
-                  >
-                    <option value="">Seleccione un género</option>
-                    {generos &&
-                      generos.map((genero) => (
-                        <option key={genero.Cod_genero} value={genero.Cod_genero}>
-                          {genero.Tipo_genero.toUpperCase()}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
-                {errorMessages.cod_genero && (
-                  <div style={{ color: 'red' }}>{errorMessages.cod_genero}</div>
-                )}
-              </div>
+          <div className="mb-3">
+            <div className="input-group mb-3">
+              <span className="input-group-text">Nacionalidad</span>
+              <input
+                type="text"
+                className="form-control"
+                value={buscadorNacionalidad} // Valor del input
+                onChange={handleBuscarNacionalidad} // Llamar a la función de filtrado al cambiar el valor
+                placeholder="Buscar por código o país"
+              />
+              <button type="button" className="btn btn-outline-secondary">
+                <i className="cilSearch" />
+              </button>
             </div>
-          </CForm>
-        </CModalBody>
-        <CModalFooter>
-          <CButton
-            color="secondary"
-            onClick={() => handleCloseModal(setModalVisible, resetNuevaPersona)}
-          >
-            Cerrar
-          </CButton>
 
-          <CButton
-            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
-            onClick={handleCreatePersona} // Llamar a la función para actualizar los datos
-          >
-            <CIcon icon={cilSave} /> Guardar
-          </CButton>
-        </CModalFooter>
-      </CModal>
-      {/* Modal para Agregar Persona */}
+            {/* Dropdown de resultados filtrados */}
+            {isDropdownOpenNacionalidad && nacionalidadesFiltradas.length > 0 && (
+              <div
+                className="dropdown-menu show"
+                style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}
+              >
+                {nacionalidadesFiltradas.map((nacionalidad) => (
+                  <div
+                    key={nacionalidad.Cod_nacionalidad}
+                    className="dropdown-item"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleSeleccionarNacionalidad(nacionalidad)} // Seleccionar nacionalidad
+                  >
+                    {nacionalidad.Id_nacionalidad} - {nacionalidad.pais_nacionalidad}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-      {/* Modal para Actualizar Persona */}
+        {/* Columna 2 - Mi derecha */}
+        <div className="col-md-6">
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Dirección</CInputGroupText>
+            <CFormInput
+              type="text"
+              placeholder="Dirección"
+              value={nuevaPersona.direccion_persona}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, direccion_persona: e.target.value })}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+            />
+          </CInputGroup>
+          {errorMessages.direccion_persona && <div style={{ color: 'red' }}>{errorMessages.direccion_persona}</div>}
+
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
+            <CFormInput
+              type="date"
+              value={nuevaPersona.fecha_nacimiento}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, fecha_nacimiento: e.target.value })}
+              required
+              style={{ color: '#6c757d' }} // Cambié el color a gris claro
+            />
+          </CInputGroup>
+          {errorMessages.fecha_nacimiento && <div style={{ color: 'red' }}>{errorMessages.fecha_nacimiento}</div>}
+
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Estado</CInputGroupText>
+            <CFormSelect
+              value={nuevaPersona.Estado_Persona || ''}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, Estado_Persona: e.target.value })}
+              required
+              style={{ color: '#6c757d' }} // Cambié el color a gris claro
+            >
+              <option value="">Seleccione un estado</option>
+              <option value="A">ACTIVO</option>
+              <option value="S">SUSPENDIDO</option>
+            </CFormSelect>
+          </CInputGroup>
+          {errorMessages.Estado_Persona && <div style={{ color: 'red' }}>{errorMessages.Estado_Persona}</div>}
+
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Tipo Persona</CInputGroupText>
+            <CFormSelect
+              value={nuevaPersona.cod_tipo_persona || ''}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: e.target.value })}
+              required
+              style={{ color: '#6c757d' }} // Cambié el color a gris claro
+            >
+              <option value="">Seleccione un rol</option>
+              {tipoPersona &&
+                tipoPersona.map((tipo) => (
+                  <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
+                    {tipo.Tipo.toUpperCase()}
+                  </option>
+                ))}
+            </CFormSelect>
+          </CInputGroup>
+          {errorMessages.cod_tipo_persona && (
+            <div style={{ color: 'red' }}>{errorMessages.cod_tipo_persona}</div>
+          )}
+
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Departamento</CInputGroupText>
+            <CFormSelect
+              value={nuevaPersona.cod_departamento || ''}
+              onChange={(e) => setNuevaPersona({ ...nuevaPersona, cod_departamento: e.target.value })}
+              required
+              style={{ color: '#6c757d' }} // Cambié el color a gris claro
+            >
+              <option value="">Seleccione un departamento</option>
+              {departamentos &&
+                departamentos.map((departamento) => (
+                  <option key={departamento.Cod_departamento} value={departamento.Cod_departamento}>
+                    {departamento.Nombre_departamento}
+                  </option>
+                ))}
+            </CFormSelect>
+          </CInputGroup>
+        </div>
+      </div>
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevaPersona)}>
+      Cancelar
+    </CButton>
+    <CButton
+      color="primary"
+      onClick={() => handleCrearPersona(nuevaPersona, resetNuevaPersona)}
+    >
+      Guardar Persona
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+{/*********************************************FIN MODAL PARA AGREGAR UNA PERSONA****************************************************/}
+
+{/*********************************************MODAL PARA ACTUALIZAR UNA PERSONA****************************************************/}
       <CModal
         visible={modalUpdateVisible}
         onClose={() => {
@@ -1591,24 +1544,9 @@ return (
 
               </CCol>
 
-
-
               {/* Columna Derecha */}
               <CCol md={6}>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Nacionalidad</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Nacionalidad"
-                    value={personaToUpdate.Nacionalidad}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, Nacionalidad: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
+                
                 <CInputGroup className="mb-3">
                   <CInputGroupText>Dirección</CInputGroupText>
                   <CFormInput
@@ -1651,24 +1589,26 @@ return (
                     <option value="S">SUSPENDIDO</option>
                   </CFormSelect>
                 </CInputGroup>
+
                 <CInputGroup className="mb-3">
-                  <CInputGroupText>Rol</CInputGroupText>
-                  <CFormSelect
-                    value={personaToUpdate.cod_tipo_persona || ''}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, cod_tipo_persona: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="">Seleccione un rol</option>
-                    {tipoPersona &&
-                      tipoPersona.map((tipo) => (
-                        <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                          {tipo.Tipo.toUpperCase()}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
+                <CInputGroupText>Nacionalidad</CInputGroupText>
+                <CFormSelect
+                  value={nuevaPersona.cod_nacionalidad || ''} // Valor seleccionado
+                  onChange={(e) =>
+                    setNuevaPersona({ ...nuevaPersona, cod_nacionalidad: e.target.value }) // Actualiza el estado con la nacionalidad seleccionada
+                  }
+                  required
+                >
+                  <option value="">Seleccione una nacionalidad</option>
+                  {nacionalidad && nacionalidad.map((nacionalidad) => (
+                    <option key={nacionalidad.Id_nacionalidad} value={nacionalidad.Id_nacionalidad}>
+                      {nacionalidad.pais_nacionalidad.toUpperCase()} {/* Muestra el nombre del país */}
+                    </option>
+                  ))}
+                </CFormSelect>
+              </CInputGroup>
+
+
                 <CInputGroup className="mb-3">
                   <CInputGroupText>Departamento</CInputGroupText>
                   <CFormSelect
@@ -1701,7 +1641,7 @@ return (
                     {municipio &&
                       municipio.map((municipio) => (
                         <option key={municipio.cod_municipio} value={municipio.cod_municipio}>
-                          {municipio.nombre_municipio.toUpperCase()}
+                          {municipio.nombre_municipio}
                         </option>
                       ))}
                   </CFormSelect>
@@ -1747,9 +1687,9 @@ return (
           </CButton>
         </CModalFooter>
       </CModal>
-      {/* Fin del Modal para Actualizar Persona */}
+{/*********************************************MODAL PARA ACTUALIZAR UNA PERSONA****************************************************/}
 
-      {/* Modal para Borrar Persona */}
+{/*********************************************MODAL PARA ELIMINAR UNA PERSONA****************************************************/}
       <CModal
         visible={modalDeleteVisible}
         onClose={() => setModalDeleteVisible(false)}
@@ -1776,7 +1716,7 @@ return (
           </CButton>
         </CModalFooter>
       </CModal>
-      {/* Fin del Modal para Borrar Persona */}
+{/*********************************************FIN MODAL PARA ELIMINAR UNA PERSONA****************************************************/}
     </CContainer>
   )
 }
