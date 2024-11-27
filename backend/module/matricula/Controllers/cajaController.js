@@ -426,3 +426,44 @@ export const obtenerTodasLasCajasPendientes = async (req, res) => {
     });
   }
 };
+// Controlador para obtener el valor del parámetro "Matricula"
+export const obtenerValorMatricula = async (req, res) => {
+  try {
+    // Consulta para obtener el valor del parámetro "Matricula"
+    const [rows] = await pool.query('SELECT Valor FROM bl_parametros WHERE Parametro = ?', ['Matricula']);
+
+    if (rows.length === 0) {
+      // Si no se encuentra el parámetro
+      return res.status(404).json({ message: 'El valor del parámetro "Matricula" no se encontró.' });
+    }
+
+    // Devolver solo el valor del parámetro
+    res.status(200).json({ valor: rows[0].Valor });
+  } catch (error) {
+    console.error('Error al obtener el valor del parámetro "Matricula":', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+// Controlador para obtener el código del concepto "Matricula"
+export const obtenerConceptoMatricula = async (req, res) => {
+  try {
+    // Consulta para obtener el código del concepto "Matricula"
+    const [rows] = await pool.query(
+      'SELECT Cod_concepto FROM tbl_concepto_pago WHERE Concepto = ?',
+      ['matricula']
+    );
+
+    if (rows.length === 0) {
+      // Si no se encuentra el concepto
+      return res
+        .status(404)
+        .json({ message: 'El concepto "Matricula" no se encontró.' });
+    }
+
+    // Devolver solo el código del concepto
+    res.status(200).json({ cod_concepto: rows[0].Cod_concepto });
+  } catch (error) {
+    console.error('Error al obtener el concepto "Matricula":', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};

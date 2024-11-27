@@ -38,6 +38,7 @@ const CajasMatriculas = () => {
   const [pagosPendientes, setPagosPendientes] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalNuevaCajaVisible, setModalNuevaCajaVisible] = useState(false);
+  const [valorMatricula, setValorMatricula] = useState(null); // Estado para almacenar el valor
   const [pagoActual, setPagoActual] = useState({
     cod_caja: '',
     monto: '',
@@ -156,7 +157,7 @@ const preventCopyPaste = (e) => {
       });
     }
   };
-
+  
   const cargarConceptos = async () => {
     try {
       const response = await axios.get('http://localhost:4000/api/caja/conceptos');
@@ -171,62 +172,92 @@ const preventCopyPaste = (e) => {
   
     try {
       // Validar campos obligatorios
-      if (!pagoActual.descripcion || !pagoActual.monto || !pagoActual.cod_concepto) {
+      if (!pagoActual.descripcion || !pagoActual.descripcion.trim()) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Campos incompletos',
-          text: 'Por favor, completa todos los campos obligatorios: Descripción, Monto y Concepto.',
+          title: 'Campo obligatorio',
+          text: 'La descripción no puede estar vacía.',
           confirmButtonText: 'Entendido',
         });
         return;
+      }
+  
+      const monto = parseFloat(pagoActual.monto || valorMatricula || 0);
+  
+      if (!monto || isNaN(monto) || monto <= 0) {
+        MySwal.fire({
+          icon: 'warning',
+          title: 'Monto inválido',
+          text: 'El monto debe ser un número mayor a 0.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+  
+      // Asegurar que el concepto "Matricula" esté cargado antes de continuar
+      if (!pagoActual.cod_concepto) {
+        try {
+          const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
+          if (response.status === 200 && response.data.cod_concepto) {
+            // Establecer el concepto "Matricula" en el estado
+            pagoActual.cod_concepto = response.data.cod_concepto;
+          } else {
+            MySwal.fire({
+              icon: 'error',
+              title: 'Error al obtener concepto',
+              text: 'No se pudo obtener el código del concepto "Matricula".',
+              confirmButtonText: 'Revisar',
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Error al obtener el concepto "Matricula":', error);
+          MySwal.fire({
+            icon: 'error',
+            title: 'Error inesperado',
+            text: 'Hubo un problema al obtener el código del concepto.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
       }
   
       // Validaciones adicionales
-      if (/[^A-Z0-9 ]/.test(pagoActual.descripcion)) {
-        MySwal.fire({
-          icon: 'warning',
-          title: 'Error en la descripción',
-          text: 'La descripción no puede contener símbolos.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
-  
       if (pagoActual.descripcion.length > 25) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Error en la descripción',
+          title: 'Descripción inválida',
           text: 'La descripción no puede exceder los 25 caracteres.',
           confirmButtonText: 'Entendido',
         });
         return;
       }
   
-      if (/([A-Z])\1\1/.test(pagoActual.descripcion)) {
+      if (/[^A-Z0-9 ]/.test(pagoActual.descripcion)) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Error en la descripción',
-          text: 'La descripción no puede contener tres letras iguales consecutivas.',
+          title: 'Descripción inválida',
+          text: 'La descripción solo puede contener letras, números y espacios.',
           confirmButtonText: 'Entendido',
         });
         return;
       }
   
-      if (pagoActual.aplicar_descuento && pagoActual.valor_descuento > pagoActual.monto) {
+      if (pagoActual.aplicar_descuento && (isNaN(pagoActual.valor_descuento) || parseFloat(pagoActual.valor_descuento) <= 0)) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Error en el descuento',
-          text: 'El valor del descuento no puede ser mayor al monto total.',
+          title: 'Descuento inválido',
+          text: 'El valor del descuento debe ser un número válido mayor a 0.',
           confirmButtonText: 'Entendido',
         });
         return;
       }
   
-      if (pagoActual.descripcion_descuento && /[^A-Z0-9 ]/.test(pagoActual.descripcion_descuento)) {
+      if (pagoActual.aplicar_descuento && parseFloat(pagoActual.valor_descuento) > monto) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Error en la descripción del descuento',
-          text: 'La descripción del descuento no puede contener símbolos.',
+          title: 'Descuento inválido',
+          text: 'El valor del descuento no puede ser mayor al monto.',
           confirmButtonText: 'Entendido',
         });
         return;
@@ -235,21 +266,18 @@ const preventCopyPaste = (e) => {
       if (pagoActual.descripcion_descuento && pagoActual.descripcion_descuento.length > 25) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Error en la descripción del descuento',
+          title: 'Descripción de descuento inválida',
           text: 'La descripción del descuento no puede exceder los 25 caracteres.',
           confirmButtonText: 'Entendido',
         });
         return;
       }
   
-      if (
-        pagoActual.descripcion_descuento &&
-        /([A-Z])\1\1/.test(pagoActual.descripcion_descuento)
-      ) {
+      if (pagoActual.descripcion_descuento && /[^A-Z0-9 ]/.test(pagoActual.descripcion_descuento)) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Error en la descripción del descuento',
-          text: 'La descripción del descuento no puede contener tres letras iguales consecutivas.',
+          title: 'Descripción de descuento inválida',
+          text: 'La descripción del descuento solo puede contener letras, números y espacios.',
           confirmButtonText: 'Entendido',
         });
         return;
@@ -258,6 +286,7 @@ const preventCopyPaste = (e) => {
       // Preparar los datos para el envío
       const datosPago = {
         ...pagoActual,
+        monto, // Asegura que el monto siempre tenga el valor correcto
         aplicar_descuento: pagoActual.aplicar_descuento || false,
         valor_descuento: pagoActual.aplicar_descuento
           ? parseFloat(pagoActual.valor_descuento)
@@ -267,10 +296,11 @@ const preventCopyPaste = (e) => {
           : null,
       };
   
+      console.log('Datos enviados al servidor:', datosPago); // Depuración
+  
       // Enviar los datos al servidor
       const response = await axios.post('http://localhost:4000/api/caja/pago', datosPago);
   
-      // Comprobar la respuesta del servidor
       if (response.status === 201 || response.status === 200) {
         MySwal.fire({
           icon: 'success',
@@ -282,7 +312,7 @@ const preventCopyPaste = (e) => {
         obtenerCajasPendientes(); // Actualizar la lista de cajas
       }
     } catch (error) {
-      console.error('Error al registrar pago:', error);
+      console.error('Error al registrar el pago:', error);
   
       // Mostrar error específico si existe en la respuesta del servidor
       if (error.response && error.response.data && error.response.data.message) {
@@ -293,7 +323,6 @@ const preventCopyPaste = (e) => {
           confirmButtonText: 'Revisar',
         });
       } else {
-        // Mensaje genérico en caso de error inesperado
         MySwal.fire({
           icon: 'error',
           title: 'Error inesperado',
@@ -304,7 +333,28 @@ const preventCopyPaste = (e) => {
     }
   };
   
-
+  useEffect(() => {
+    const fetchConceptoMatricula = async () => {
+      try {
+        const response = await axios.get(
+          'http://localhost:4000/api/caja/concepto/matricula'
+        );
+        if (response.status === 200) {
+          setPagoActual((prevState) => ({
+            ...prevState,
+            cod_concepto: response.data.cod_concepto,
+          }));
+        }
+      } catch (error) {
+        console.error('Error al obtener el concepto "Matricula":', error);
+      }
+    };
+  
+    fetchConceptoMatricula();
+  }, []);
+    
+  
+  
   const crearNuevaCaja = async () => {
     console.log("Datos de la nueva caja:", nuevaCaja);
   
@@ -693,7 +743,30 @@ const preventCopyPaste = (e) => {
     };
   };
   
-  
+   // Cargar valor de "Matricula"
+   useEffect(() => {
+    const cargarValorMatricula = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/caja/parametro/Matricula');
+        if (response.status === 200) {
+          setValorMatricula(response.data.valor);
+        }
+      } catch (error) {
+        console.error('Error al obtener el valor de Matricula:', error);
+      }
+    };
+    cargarValorMatricula();
+  }, []);
+
+  // Actualizar el monto con el valor de "Matricula"
+  useEffect(() => {
+    if (valorMatricula) {
+      setPagoActual((prev) => ({
+        ...prev,
+        monto: valorMatricula, // Asigna el valor de Matricula al monto
+      }));
+    }
+  }, [valorMatricula]);
   
   const calcularVuelto = (monto, descuento, recibido) => {
     const montoConDescuento = monto - descuento;
@@ -980,59 +1053,73 @@ const preventCopyPaste = (e) => {
       </CInputGroup>
       {errors.descripcion && <small className="text-danger">{errors.descripcion}</small>}
 
-      {/* Campo de monto */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilDollar} className="text-muted" />
-        </CInputGroupText>
-        <CFormInput
-          type="number"
-          name="monto"
-          placeholder="Monto (Lempiras)"
-          value={pagoActual.monto}
-          onChange={(e) => {
-            const value = e.target.value;
-            if (/[^0-9.]/.test(value)) {
-              setErrors({ monto: 'El monto solo puede contener números y puntos.' });
-            } else if (value.length > 25) {
-              setErrors({ monto: 'El monto no puede exceder los 25 caracteres.' });
-            } else {
-              setErrors({ monto: '' });
-            }
-            setPagoActual({ ...pagoActual, monto: value });
-          }}
-          onPaste={(e) => e.preventDefault()} // Bloquea pegar
-          onCopy={(e) => e.preventDefault()} // Bloquea copiar
-          className={`form-control border-0 shadow-sm ${errors.monto ? 'is-invalid' : ''}`}
-          required
-        />
-      </CInputGroup>
-      {errors.monto && <small className="text-danger">{errors.monto}</small>}
+{/* Campo de monto */}
+<CInputGroup className="mb-3">
+  <CInputGroupText className="bg-white border-0">
+    <CIcon icon={cilDollar} className="text-muted" />
+  </CInputGroupText>
+  <CFormInput
+  type="number"
+  name="monto"
+  placeholder="Monto (Lempiras)"
+  value={pagoActual.monto || valorMatricula || ''} // Toma el valor de Matricula como predeterminado
+  onChange={(e) => {
+    const value = e.target.value;
+
+    // Validaciones
+    if (/[^0-9.]/.test(value)) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto solo puede contener números y puntos.',
+      }));
+    } else if (parseFloat(value) <= 0 || isNaN(parseFloat(value))) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto debe ser mayor a 0.',
+      }));
+    } else if (value.length > 25) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto no puede exceder los 25 caracteres.',
+      }));
+    } else {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: '', // Limpia los errores
+      }));
+    }
+
+    // Actualiza el estado con el valor ingresado
+    setPagoActual((prevState) => ({
+      ...prevState,
+      monto: value, // Actualiza monto manualmente
+    }));
+  }}
+  onPaste={(e) => e.preventDefault()} // Bloquea pegar
+  onCopy={(e) => e.preventDefault()} // Bloquea copiar
+  className={`form-control border-0 shadow-sm ${errors.monto ? 'is-invalid' : ''}`} // Resalta inválido si hay errores
+  required
+/>
+{errors.monto && <small className="text-danger">{errors.monto}</small>} {/* Muestra error debajo */}
+
+</CInputGroup>
 
       {/* Selección de concepto */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilTags} className="text-muted" />
-        </CInputGroupText>
-        <CFormSelect
-          name="cod_concepto"
-          value={pagoActual.cod_concepto}
-          onChange={(e) => setPagoActual({ ...pagoActual, cod_concepto: e.target.value })}
-          className="form-select border-0 shadow-sm"
-          required
-        >
-          <option value="">CONCEPTO</option>
-          {conceptos.length > 0 ? (
-            conceptos.map((concepto) => (
-              <option key={concepto.Cod_concepto} value={concepto.Cod_concepto}>
-                {concepto.Concepto.toUpperCase()}
-              </option>
-            ))
-          ) : (
-            <option value="">SIN CONCEPTOS</option>
-          )}
-        </CFormSelect>
-      </CInputGroup>
+<CInputGroup className="mb-3">
+  <CInputGroupText className="bg-white border-0">
+    <CIcon icon={cilTags} className="text-muted" />
+  </CInputGroupText>
+  <CFormSelect
+    name="cod_concepto"
+    value={pagoActual.cod_concepto || ''} // Siempre toma el valor de "Matricula"
+    disabled // Hace el campo de solo lectura
+    className="form-select border-0 shadow-sm"
+    required
+  >
+    {/* Muestra "Matricula" como única opción */}
+    <option value={pagoActual.cod_concepto}>Matricula</option>
+  </CFormSelect>
+</CInputGroup>
 
       {/* Checkbox para aplicar descuento */}
       <div className="form-check mb-4">
