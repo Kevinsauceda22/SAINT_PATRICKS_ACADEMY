@@ -26,12 +26,9 @@ import {
   CDropdownItem,
   CButton,
 } from '@coreui/react';
-import usePermission from '../../../../../context/usePermission';
-import AccessDenied from "../../AccessDenied/AccessDenied"
 
 
 const MatriculaForm = () => {
-  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('Solicitudes_Padre');
 
   const [aniosAcademicos, setAniosAcademicos] = useState([]);
   const [matriculas, setMatriculas] = useState([]);
