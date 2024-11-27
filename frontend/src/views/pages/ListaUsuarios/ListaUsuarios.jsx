@@ -79,19 +79,21 @@ const UserManagement = () => {
     };
     let roleText = roleMap[roleType] || '';
     
-    // Cargar departamentos...
+    // Cargar departamentos y nacionalidades
     let departamentos = [];
+    let nacionalidades = [];
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(
+      // Cargar departamentos
+      const deptoResponse = await axios.get(
         'http://localhost:4000/api/departamento/departamentos',
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       );
       
-      if (response.data) {
-        departamentos = response.data
+      if (deptoResponse.data) {
+        departamentos = deptoResponse.data
           .reduce((acc, current) => {
             const x = acc.find(item => item.cod_departamento === current.cod_departamento);
             if (!x) return acc.concat([current]);
@@ -99,11 +101,26 @@ const UserManagement = () => {
           }, [])
           .sort((a, b) => a.nombre_departamento.localeCompare(b.nombre_departamento));
       }
+
+      // Cargar nacionalidades
+      const nacResponse = await axios.get(
+        'http://localhost:4000/api/nacionalidad/vernacionalidades',
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      if (nacResponse.data) {
+        nacionalidades = nacResponse.data.sort((a, b) => 
+          a.pais_nacionalidad.localeCompare(b.pais_nacionalidad)
+        );
+      }
+
     } catch (error) {
-      console.error('Error al cargar departamentos:', error);
+      console.error('Error al cargar datos:', error);
       Swal.fire({
         title: 'Error',
-        text: 'Error al cargar los departamentos',
+        text: 'Error al cargar los datos necesarios',
         icon: 'error',
         confirmButtonText: 'Aceptar'
       });
@@ -168,11 +185,14 @@ const UserManagement = () => {
             <div class="section-title">Información Adicional</div>
             <div class="form-grid">
               <div class="form-group">
-                <input 
-                  id="Nacionalidad" 
-                  class="swal2-input" 
-                  placeholder="Nacionalidad"
-                  oninput="this.value = this.value.toUpperCase()">
+                <select id="Cod_nacionalidad" class="swal2-select" required onchange="handleNacionalidadChange(this.value)">
+                  <option value="">Nacionalidad *</option>
+                  ${nacionalidades.map(nac => `
+                    <option value="${nac.Cod_nacionalidad}">
+                      ${nac.pais_nacionalidad.toUpperCase()}
+                    </option>
+                  `).join('')}
+                </select>
               </div>
               <div class="form-group">
                 <select id="cod_genero" class="swal2-select" required>
@@ -200,7 +220,7 @@ const UserManagement = () => {
             <div class="section-title">Ubicación</div>
             <div class="form-grid">
               <div class="form-group">
-                <select id="cod_departamento" class="swal2-select" required onchange="handleDepartamentoChange(this.value)">
+                <select id="cod_departamento" class="swal2-select" required onchange="handleDepartamentoChange(this.value)" disabled>
                   <option value="">Departamento *</option>
                   ${departamentos.map(depto => `
                     <option value="${depto.cod_departamento}">
@@ -239,6 +259,35 @@ const UserManagement = () => {
         cancelButton: 'swal2-cancel'
       },
       didOpen: () => {
+        // Función para manejar cambio de nacionalidad
+        window.handleNacionalidadChange = (nacionalidadId) => {
+          const deptoSelect = document.getElementById('cod_departamento');
+          const municipioSelect = document.getElementById('cod_municipio');
+          
+          // Verificar si es hondureño (ID 69)
+          const esHondureno = nacionalidadId === '69';
+          
+          if (esHondureno) {
+            deptoSelect.disabled = false;
+            // Restaurar opciones de departamentos
+            deptoSelect.innerHTML = `
+              <option value="">Departamento *</option>
+              ${departamentos.map(depto => `
+                <option value="${depto.cod_departamento}">
+                  ${depto.nombre_departamento.toUpperCase()}
+                </option>
+              `).join('')}
+            `;
+          } else {
+            // Si no es hondureño, deshabilitar y limpiar departamentos y municipios
+            deptoSelect.disabled = true;
+            deptoSelect.value = '';
+            municipioSelect.disabled = true;
+            municipioSelect.innerHTML = '<option value="">Municipio *</option>';
+            municipioSelect.value = '';
+          }
+        };
+
         // Función para manejar cambio de departamento
         window.handleDepartamentoChange = async (departamentoId) => {
           const municipioSelect = document.getElementById('cod_municipio');
@@ -277,6 +326,7 @@ const UserManagement = () => {
         };
       },
       willClose: () => {
+        delete window.handleNacionalidadChange;
         delete window.handleDepartamentoChange;
       },
       preConfirm: () => {
@@ -286,7 +336,10 @@ const UserManagement = () => {
           Swal.showValidationMessage('El DNI debe tener exactamente 13 dígitos');
           return false;
         }
-  
+
+        const nacionalidadId = document.getElementById('Cod_nacionalidad').value;
+        const esHondureno = nacionalidadId === '69';
+
         // Recolectar datos de persona
         const personData = {
           dni_persona: dni,
@@ -294,13 +347,13 @@ const UserManagement = () => {
           Segundo_nombre: document.getElementById('Segundo_nombre').value,
           Primer_apellido: document.getElementById('Primer_apellido').value,
           Segundo_apellido: document.getElementById('Segundo_apellido').value,
-          Nacionalidad: document.getElementById('Nacionalidad').value,
+          Cod_nacionalidad: nacionalidadId,
           direccion_persona: document.getElementById('direccion_persona').value,
           fecha_nacimiento: document.getElementById('fecha_nacimiento').value,
           Estado_Persona: 'A',
-          cod_tipo_persona: "1", // Valor fijo ya que solo manejamos DNI
-          cod_departamento: document.getElementById('cod_departamento').value,
-          cod_municipio: document.getElementById('cod_municipio').value,
+          cod_tipo_persona: "1",
+          cod_departamento: esHondureno ? document.getElementById('cod_departamento').value : null,
+          cod_municipio: esHondureno ? document.getElementById('cod_municipio').value : null,
           cod_genero: document.getElementById('cod_genero').value
         };
     
@@ -313,11 +366,16 @@ const UserManagement = () => {
           Primer_ingreso: null
         };
     
-        // Validar campos requeridos
-        const requiredFields = [
+        // Validar campos requeridos básicos
+        let requiredFields = [
           'dni_persona', 'Nombre', 'Primer_apellido', 'correo_usuario',
-          'cod_genero', 'cod_departamento', 'cod_municipio'
+          'cod_genero', 'Cod_nacionalidad'
         ];
+
+        // Si es hondureño, agregar validación de departamento y municipio
+        if (esHondureno) {
+          requiredFields = [...requiredFields, 'cod_departamento', 'cod_municipio'];
+        }
     
         const emptyFields = requiredFields.filter(field => !document.getElementById(field).value);
     
@@ -327,7 +385,7 @@ const UserManagement = () => {
         }
     
         // Validar formato de correo
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;  // Esta es la correcta
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(userData.correo_usuario)) {
           Swal.showValidationMessage('Por favor ingrese un correo electrónico válido');
           return false;
@@ -380,7 +438,7 @@ const UserManagement = () => {
         });
       }
     });
-  };
+};
 
   const fetchUsers = async () => {
     setLoadingg(true);
