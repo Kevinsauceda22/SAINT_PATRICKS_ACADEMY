@@ -53,6 +53,7 @@ const ListaSecciones_Asignaturas= () =>{
     const [modalVisible, setModalVisible] = useState(false);
     const [errors, setErrors] = useState({ p_Cod_grados_asignaturas: '', p_Cod_secciones: '', p_Cod_dias: '', p_Hora_inicio: '', p_Hora_fin: '',});
     const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
+    const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
     const [seccionAsignaturaToUpdate, setSeccionesAsignaturasToUpdate] = useState({})
     const [mensajeError, setMensajeError] = useState(''); // Estado para el mensaje de error
     const [searchTerm, setSearchTerm] = useState('');
@@ -64,24 +65,25 @@ const ListaSecciones_Asignaturas= () =>{
     const [selectedGrado, setSelectedGrado] = useState(""); // Grado seleccionado
     const navigate = useNavigate();
     const location = useLocation();
-    const {seccionSeleccionada, periodoSeleccionado} = location.state || {}; // Seccion seleccionada desde la vista anterior
+    const {seccionSeleccionada, periodoSeleccionado, gradoSeleccionado} = location.state || {}; // Seccion seleccionada desde la vista anterior
 
-
-    if (!seccionSeleccionada) {
-      console.error('No se recibió una sección seleccionada. Redirigiendo al usuario.');
-      console.log('Datos de seccion', seccionSeleccionada);
-      swal.fire('Error', 'No se recibió una sección seleccionada.', 'error');
-      navigate('/lista-secciones'); // Redirigir si no se recibe la sección seleccionada
-      return;
-    }
-    console.log('Sección seleccionada:', seccionSeleccionada);
     useEffect(() => {
-      fetchSeccionesAsigyHora();
-    }, [seccionSeleccionada]);
+      if (!seccionSeleccionada || !periodoSeleccionado) {
+        swal.fire('Error', 'Faltan datos para gestionar las asignaturas.', 'error');
+        navigate('/lista-secciones');
+      } 
+    }, [seccionSeleccionada, periodoSeleccionado]);
+  useEffect(() => {
     
-  
+    if (grados_asignaturas.length > 0 && gradoSeleccionado && seccionSeleccionada) {
+        fetchSeccionesAsigyHora();
+    }
+}, [grados_asignaturas, gradoSeleccionado, seccionSeleccionada]);
+
+
+
     useEffect(() => {
-      fetchSeccionesAsigyHora();
+     
       fetchSecciones();
       fetchDias();
       fetchGradosAsignaturas();
@@ -94,30 +96,33 @@ const ListaSecciones_Asignaturas= () =>{
     }
   }, [selectedGrado]);
  
- const fetchSeccionesAsigyHora = async () => {
-        try {
-          const response = await fetch(
-            `http://localhost:4000/api/secciones_asignaturas/asignaturashorarios/${seccionSeleccionada}`
-          );
-          const data = await response.json();
-          if (response.ok) {
-            setSecciones_Asignaturas(
-              data.map((secciones_asignaturas, index) => ({ ...secciones_asignaturas, originalIndex: index + 1 }))
-            );
-          } else {
+  const fetchSeccionesAsigyHora = async () => {
+    try {
+        const response = await fetch(`http://localhost:4000/api/secciones_asignaturas/asignaturas/${seccionSeleccionada}`);
+        const data = await response.json();
+
+        console.log("Datos crudos recibidos de la API:", data);
+
+        if (response.ok) {
+          setSecciones_Asignaturas(data.map((item) => ({
+            ...item,
+            Nombre_profesor: item.Nombre_completo || 'Sin profesor asignado',
+        })));
+        console.log("Datos recibidos de la API:", data);
+
+        } else {
             setSecciones_Asignaturas([]);
-            swal.fire(
-              'Atención',
-              `No se encontraron asignaturas para la sección ${seccionSeleccionada}.`,
-              'info'
-            );
-          }
-        } catch (error) {
-          console.error('Error al cargar las asignaturas:', error);
-          swal.fire('Error', 'Hubo un problema al cargar las asignaturas.', 'error');
+            swal.fire('Atención', 'No se encontraron asignaturas para esta sección.', 'info');
         }
-      };
-    
+    } catch (error) {
+        console.error('Error al cargar las asignaturas:', error);
+        swal.fire('Error', 'Hubo un problema al cargar las asignaturas.', 'error');
+    }
+};
+
+
+
+
       const fetchSecciones = async (Cod_grado, Cod_periodo_matricula) => { 
         try {
           const response = await fetch(
@@ -189,54 +194,7 @@ const ListaSecciones_Asignaturas= () =>{
       });
     };
     
-    const handleGestionarClick = (Cod_secciones) => {
-      console.log('Navegando a lista-secciones-asignatura con:', { seccionSeleccionada: Cod_secciones, periodoSeleccionado });
-      navigate(`/lista-secciones-asignatura/`, {
-        state: { seccionSeleccionada: Cod_secciones, periodoSeleccionado },
-      });
-    };
     
-    const handleGradoAsignaturaChange = (e) => {
-      const selectedGradoAsignatura = e.target.value;
-    
-      console.log("Grado-Asignatura seleccionado:", selectedGradoAsignatura);
-      console.log("Estado actual de grados_asignaturas:", grados_asignaturas); // Debugging
-    
-      // Actualiza el estado para reflejar la asignatura seleccionada y reinicia las secciones
-      setNuevaSeccionAsignatura((prev) => ({
-        ...prev,
-        p_Cod_grados_asignaturas: selectedGradoAsignatura,
-        p_Cod_secciones: "", // Resetea la selección de secciones
-      }));
-    
-      // Encuentra el grado asociado al grado-asignatura seleccionado
-      const gradoSeleccionado = grados_asignaturas.find(
-        (grado_asig) => String(grado_asig.Cod_grados_asignaturas) === String(selectedGradoAsignatura)
-      );
-    
-      if (gradoSeleccionado) {
-        console.log("Cod_grado encontrado:", gradoSeleccionado.Cod_grado); // Confirma que el Cod_grado fue encontrado
-    
-        // Actualiza el estado `selectedGrado` con el grado encontrado
-        setSelectedGrado(gradoSeleccionado.Cod_grado);
-    
-        // Filtra las secciones basadas en el Cod_grado
-        const seccionesFiltradas = secciones.filter(
-          (seccion) => String(seccion.Cod_grado) === String(gradoSeleccionado.Cod_grado)
-        );
-    
-        if (seccionesFiltradas.length > 0) {
-          setSecciones(seccionesFiltradas); // Actualiza las secciones disponibles
-        } else {
-          console.warn("No se encontraron secciones asociadas al grado seleccionado."); // Debugging
-          setSecciones([]); // Limpia las secciones si no hay coincidencias
-        }
-      } else {
-        console.warn("No se encontró un Cod_grado para el Grado-Asignatura seleccionado."); // Debugging
-        setSelectedGrado(""); // Limpia el estado de `selectedGrado`
-        setSecciones([]); // Limpia las secciones disponibles
-      }
-    };
     
     const handleGradoChange = (selectedCodGrado) => {
       // Encuentra el grado por Cod_grado
@@ -429,44 +387,23 @@ const ListaSecciones_Asignaturas= () =>{
       });
     };
 
-    const handleCloseModal = (modalType) => {
-      swal.fire({
-        title: '¿Estás seguro?',
-        text: 'Tienes cambios sin guardar. ¿Deseas cerrar el modal?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Cerrar',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          console.log(`Cerrando el modal: ${modalType}`);
-          if (modalType === 'crear') {
-            // Cierra el modal de creación y restablece su estado
-            setModalVisible(false);
-            setNuevaSeccionAsignatura({
-              p_Cod_grados_asignaturas: '',
-              p_Cod_secciones: '',
-              p_Cod_dias: [],
-              p_Hora_inicio: '',
-              p_Hora_fin: '',
-            });
-          } else if (modalType === 'actualizar') {
-            // Cierra el modal de actualización y restablece su estado
-            setModalUpdateVisible(false);
-            setSeccionesAsignaturasToUpdate({
-              p_Cod_seccion_asignatura: '',
-              p_Cod_grados_asignaturas: '',
-              p_Cod_secciones: '',
-              p_Cod_dias: [],
-              p_Hora_inicio: '',
-              p_Hora_fin: '',
-            });
-          }
-        } else {
-          console.log('El usuario decidió no cerrar el modal.');
-        }
-      });
-    };
+    // Función para manejar el cierre del modal y restablecer los estados
+  const handleCloseModal = () => {
+    swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Tienes cambios sin guardar. ¿Deseas cerrar el modal?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Cerrar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setModalVisible(false);
+        setModalUpdateVisible(false);
+        setModalDeleteVisible(false);
+      }
+    });
+  };
  
 
   // Función para obtener el nombre de la asignatura a partir de su código
@@ -496,6 +433,132 @@ const getNombreGrado = (cod_grado) => {
   );
   return grado ? grado.Nombre_grado : 'Grado no encontrado';
 };
+
+
+const generateSeccionesAsignaturasPDF = () => {
+  const doc = new jsPDF();
+
+  if (!filteredSeccionesAsignaturas || filteredSeccionesAsignaturas.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const img = new Image();
+  img.src = logo;
+
+  // Información del encabezado
+  const profesorNombreCompleto = secciones_asignaturas[0]?.Nombre_profesor || 'Profesor no disponible';
+  const grado = secciones_asignaturas[0]?.Nombre_grado || 'Grado no disponible';
+  const seccion = secciones_asignaturas[0]?.Nombre_seccion || 'Sección no disponible';
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo con grado, sección y profesor
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Listado de Asignaturas y Horarios', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.text(`Grado: ${grado}`, pageWidth / 2, 58, { align: 'center' });
+    doc.text(`Sección: ${seccion}`, pageWidth / 2, 64, { align: 'center' });
+    doc.text(`Profesor: ${profesorNombreCompleto}`, pageWidth / 2, 70, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 75, pageWidth - 10, 75);
+
+    // Tabla de datos
+    const tableColumn = ['#', 'Asignatura', 'Días', 'Hora Inicio', 'Hora Fin'];
+    const tableRows = filteredSeccionesAsignaturas.map((item, index) => [
+      { content: (index + 1).toString(), styles: { halign: 'center' } },
+      item.Nombre_asignatura?.toUpperCase() || 'SIN ASIGNATURA',
+      item.Dias_nombres || 'SIN DÍAS',
+      { content: item.Hora_inicio || '00:00', styles: { halign: 'center' } },
+      { content: item.Hora_fin || '00:00', styles: { halign: 'center' } },
+    ]);
+
+    doc.autoTable({
+      startY: 80,
+      head: [tableColumn],
+      body: tableRows,
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 10,
+        halign: 'center',
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+      },
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        // Pie de página
+        const footerY = doc.internal.pageSize.height - 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      },
+    });
+
+    // Convertir PDF en Blob
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    // Crear ventana con visor
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Asignaturas y Horarios</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:200px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Secciones_Asignaturas.pdf'; a.click();">
+              Descargar PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
+  };
+
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
+};
+
 
 // Función para descargar el PDF con los detalles de una sección asignatura
 const handleDescargarPDFSeccionesAsignaturas = async (Cod_seccion_asignatura) => {
@@ -645,11 +708,11 @@ const handleDescargarPDFSeccionesAsignaturas = async (Cod_seccion_asignatura) =>
       };
 
       img.onerror = () => {
-          Swal.fire("Error", "No se pudo cargar el logo.", "error");
+          swal.fire("Error", "No se pudo cargar el logo.", "error");
       };
   } catch (error) {
       console.error("Error al generar el PDF:", error);
-      Swal.fire("Error", "No se pudo generar el PDF.", "error");
+      swal.fire("Error", "No se pudo generar el PDF.", "error");
   }
 };
 
@@ -698,113 +761,109 @@ const handleDescargarPDFSeccionesAsignaturas = async (Cod_seccion_asignatura) =>
 
       return(
          <CContainer>
-        <CRow className="align-items-center mb-5">
-          <CCol xs="8" md="9">
-            {/* Título de la página */}
-            <h1 className="mb-0">Asignaturas y Horarios</h1>
-          </CCol>
-          <CCol
-            xs="4"
-            md="3"
-            className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center"
+          <div className="container mt-5"> {/* Contenedor general con margen superior */}
+  {/* Título, botón y dropdown */}
+  <CRow className="align-items-center mb-4">
+    {/* Botón "Gestión Académica" alineado a la izquierda */}
+    <CCol xs="4" md="3" className="text-start">
+      <CButton
+        className="d-flex align-items-center gap-1 rounded shadow"
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
+        style={{
+          backgroundColor: "#656565",
+          color: "#FFFFFF",
+          padding: "10px 16px",
+          fontSize: "0.9rem",
+          transition: "background-color 0.2s ease, box-shadow 0.3s ease",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+          whiteSpace: "nowrap",
+        }}
+        onClick={volverAListaSecciones}
+      >
+        <CIcon icon={cilArrowLeft} /> Volver a Secciones
+      </CButton>
+    </CCol>
+
+    {/* Título centrado */}
+    <CCol xs="4" md="6" className="text-center">
+      <h1 className="mb-4 fw-bold">Gestión de Asignaturas y Horarios</h1>
+    </CCol>
+
+    {/* Botón "Nuevo" y dropdown "Reporte" alineados a la derecha */}
+    <CCol
+      xs="4"
+      md="3"
+      className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2"
+    >
+     {/* Botón de Reporte */}
+     <CDropdown>
+        <CDropdownToggle
+          style={{
+            backgroundColor: "#6C8E58",
+            color: "white",
+            padding: "10px 16px",
+            fontSize: "0.9rem",
+          }}
+          className="d-flex align-items-center rounded shadow"
+        >
+          <CIcon icon={cilDescription} /> Reporte
+        </CDropdownToggle>
+        <CDropdownMenu>
+          <CDropdownItem
+            onClick={() => generateSeccionesAsignaturasPDF(filteredSeccionesAsignaturas)}
+            style={{
+              color: "#6C8E58",
+              fontWeight: "bold",
+            }}
           >
-            <CButton className="btn btn-sm mt-3 mt-md-0 d-flex align-items-center gap-1 rounded shadow"
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
-                style={{backgroundColor: "#656565",color: "#FFFFFF",padding: "6px 12px",fontSize: "0.9rem",transition: "background-color 0.2s ease, box-shadow 0.3s ease",boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",}}
-                onClick={volverAListaSecciones}>
-                <CIcon icon={cilArrowLeft} /> Volver a Secciones
-              </CButton>
-            {/* Botón Nuevo para abrir el modal */}
-            <CButton
-              style={{ backgroundColor: '#4B6251', color: 'white' }}
-              className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
-              onClick={() => {
-                setModalVisible(true);}}>
-              <CIcon icon={cilPlus}/> Nuevo
-            </CButton>
+            Ver Reporte en PDF
+          </CDropdownItem>
+        </CDropdownMenu>
+      </CDropdown>
+    </CCol>
+  </CRow>
 
-            {/* Botón de Reporte */}
-            <CDropdown>
-              <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-                Reportes
-              </CDropdownToggle>
-             
-            </CDropdown>
-          </CCol>
-        </CRow>
-        {/* Contenedor de la barra de búsqueda y el selector dinámico */}
-        <CRow className="align-items-center mt-4 mb-2">
-        {/* Barra de búsqueda  */}
-        <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
-          <CInputGroup className="me-3" style={{ width: '400px' }}>
-            <CInputGroupText>
-              <CIcon icon={cilSearch} />
-            </CInputGroupText>
-            <CFormInput
-              placeholder="Buscar ..."
-              onChange={(e) => setSearchTerm(e.target.value)}
-              value={searchTerm}
-            />
-            <CButton
-              style={{
-                border: '1px solid #ccc',
-                transition: 'all 0.1s ease-in-out', // Duración de la transición
-                backgroundColor: '#F3F4F7', // Color por defecto
-                color: '#343a40', // Color de texto por defecto
-              }}
-              onClick={() => {
-                setSearchTerm('')
-                setCurrentPage(1)
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#E0E0E0' // Color cuando el mouse sobre el boton "limpiar"
-                e.currentTarget.style.color = 'black' // Color del texto cuando el mouse sobre el boton "limpiar"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#F3F4F7' // Color cuando el mouse no está sobre el boton "limpiar"
-                e.currentTarget.style.color = '#343a40' // Color de texto cuando el mouse no está sobre el boton "limpiar"
-              }}
-            >
-              <CIcon icon={cilBrushAlt} /> Limpiar
-            </CButton>
-            <CFormSelect
-              aria-label="Buscar por"
-              onChange={(e) => {
-                console.log("Selected field:", e.target.value);
-                setSearchField(e.target.value);
-              }}
-              style={{ marginLeft: '10px' }}
-            >
-              <option value="Nombre_seccion">Nombre Sección</option>
-              <option value="Nombre_grado">Grado</option>
-              <option value="Nombre_asignatura">Asignatura</option>
-            </CFormSelect>
-          </CInputGroup>
-        </CCol>
+  {/* Contenedor de la barra de búsqueda y el selector de registros */}
+  <div className="container mt-5"> {/* Contenedor general con margen superior */}
+  {/* Título, botón y dropdown */}
+  <CRow className="align-items-center mb-4">
+    <CCol xs="12" md="8">
+      <CInputGroup>
+        <CInputGroupText>
+          <CIcon icon={cilSearch} />
+        </CInputGroupText>
+        <CFormInput
+          placeholder="Buscar Asignatura o Sección..."
+          style={{ borderRadius: "0 5px 5px 0" }}
+        />
+        <CFormSelect
+          aria-label="Buscar por"
+          style={{ marginLeft: "10px" }}
+        >
+          <option value="Nombre_seccion">Nombre Sección</option>
+          <option value="Nombre_grado">Grado</option>
+          <option value="Nombre_asignatura">Asignatura</option>
+        </CFormSelect>
+      </CInputGroup>
+    </CCol>
 
-        {/* Selector dinámico a la par de la barra de búsqueda */}
-        <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
-          <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
-            <div className="d-inline-flex align-items-center">
-              <span>Mostrar&nbsp;</span>
-              <CFormSelect
-                style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
-                onChange={(e) => {
-                  const value = Number(e.target.value)
-                  setRecordsPerPage(value)
-                  setCurrentPage(1) // Reiniciar a la primera página cuando se cambia el número de registros
-                }}
-                value={recordsPerPage}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-              </CFormSelect>
-              <span>&nbsp;registros</span>
-            </div>
-          </CInputGroup>
-        </CCol>
-      </CRow>
+    <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
+      <CInputGroup style={{ width: "auto", display: "inline-block" }}>
+        <div className="d-inline-flex align-items-center">
+          <span>Mostrar&nbsp;</span>
+          <CFormSelect
+            style={{ width: "80px", display: "inline-block", textAlign: "center" }}
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </CFormSelect>
+          <span>&nbsp;registros</span>
+        </div>
+      </CInputGroup>
+    </CCol>
+  </CRow>
 
 {/* Tabla para mostrar las secciones_asignaturas */}
 <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
@@ -821,44 +880,51 @@ const handleDescargarPDFSeccionesAsignaturas = async (Cod_seccion_asignatura) =>
             <CTableHeaderCell>Acciones</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
-        <CTableBody >
-        {currentRecords
-            .map((secc_asig, index) => (
-                <CTableRow key={secc_asig.Cod_seccion_asignatura}>
-                <CTableDataCell>{indexOfFirstRecord+ index + 1}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{secc_asig.Nombre_grado}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{secc_asig.Nombre_seccion || 'No especificada'}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{secc_asig.Nombre_asignatura}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>
-                  {/* Si es un arreglo, lo unimos con comas */}
-                  {Array.isArray(secc_asig.dias)
-                    ? secc_asig.dias.join(', ')  // Une los días con comas
-                    : secc_asig.dias}  {/* Si no es arreglo, solo lo muestra como está */}
-                </CTableDataCell>
-                <CTableDataCell>{secc_asig.Hora_inicio}</CTableDataCell>
-                <CTableDataCell>{secc_asig.Hora_fin}</CTableDataCell>
-                <CTableDataCell> 
+        <CTableBody>
+    {currentRecords.map((secc_asig, index) => (
+        <CTableRow key={secc_asig.Cod_seccion_asignatura}>
+            <CTableDataCell>{indexOfFirstRecord + index + 1}</CTableDataCell>
+            <CTableDataCell>{gradoSeleccionado || 'Grado no disponible'}</CTableDataCell>
+            <CTableDataCell>{secc_asig.Nombre_seccion || 'Sección no disponible'}</CTableDataCell>
+            <CTableDataCell>{secc_asig.Nombre_asignatura || 'Asignatura no disponible'}</CTableDataCell>
+            <CTableDataCell>
+                {Array.isArray(secc_asig.Dias_nombres)
+                    ? secc_asig.Dias_nombres.join(', ')
+                    : secc_asig.Dias_nombres || 'No especificados'}
+            </CTableDataCell>
+            <CTableDataCell>{secc_asig.Hora_inicio || 'No especificada'}</CTableDataCell>
+            <CTableDataCell>{secc_asig.Hora_fin || 'No especificada'}</CTableDataCell>
+            <CTableDataCell>
                 <div className="d-flex justify-content-center">
                     <CButton color="warning" onClick={() => openUpdateModal(secc_asig)} className="me-2">
-                      <CIcon icon={cilPen} />
+                        <CIcon icon={cilPen} />
                     </CButton>
-                     {/* Botón "PDF" */}
-                     <CButton
-                        color="warning"                                   
+                    <CButton
+                        color="warning"
                         onClick={() => handleDescargarPDFSeccionesAsignaturas(secc_asig.Cod_seccion_asignatura)}
                         className="d-flex align-items-center"
-                      >
+                    >
                         <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
-                      </CButton>
-                  </div>
-                </CTableDataCell>
-                </CTableRow>
-            ))}
+                    </CButton>
+                </div>
+            </CTableDataCell>
+        </CTableRow>
+        
+    ))}
+    {currentRecords.length === 0 && (
+    <CTableRow>
+        <CTableDataCell colSpan="8" className="text-center">
+            No hay asignaturas ni horarios asociados a esta sección.
+        </CTableDataCell>
+    </CTableRow>
+)}
+</CTableBody>
 
-        </CTableBody>
       </CTable>
+      
       </div>
-
+      </div>
+      </div>
         {/* Paginación Fija */}
         <div
         className="pagination-container"
@@ -1032,7 +1098,9 @@ const handleDescargarPDFSeccionesAsignaturas = async (Cod_seccion_asignatura) =>
               <CModal visible={modalUpdateVisible} backdrop="static" >
         <CModalHeader closeButton={false}>
           <CModalTitle>Actualizar Sección Asignatura</CModalTitle>
-          <CButton className="btn-close" aria-label="Close" onClick={handleCloseModal} />
+          <CButton className="btn-close" aria-label="Close" onClick={() => {
+        handleCloseModal();
+      }} />
         </CModalHeader>
         <CModalBody>
           {/* Código de la sección asignatura */}
@@ -1077,29 +1145,48 @@ const handleDescargarPDFSeccionesAsignaturas = async (Cod_seccion_asignatura) =>
                     </CFormSelect>
                   </CInputGroup>
           {/* Código de los días */}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Días</CInputGroupText>
-          <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'space-between', marginLeft: '35px'  }}>
-            {dias.map((dia) => (
-              <CFormCheck
-                key={dia.Cod_dias}
-                label={dia.dias.toUpperCase()}
-                value={dia.Cod_dias}
-                checked={(seccionAsignaturaToUpdate.p_Cod_dias || []).includes(dia.Cod_dias)}
-                onChange={(e) => {
-                  const selectedDias = seccionAsignaturaToUpdate.p_Cod_dias || [];
-                  const newDias = e.target.checked
-                    ? [...selectedDias, dia.Cod_dias] // Agrega el día seleccionado
-                    : selectedDias.filter((codDia) => codDia !== dia.Cod_dias); // Elimina el día deseleccionado
-                  setSeccionesAsignaturasToUpdate({
-                    ...seccionAsignaturaToUpdate,
-                    p_Cod_dias: newDias,
-                  });
-                }}
-              />
-            ))}
-          </div>
-        </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Días</CInputGroupText>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                marginLeft: "35px",
+              }}
+            >
+              {dias.map((dia) => (
+                <CFormCheck
+                  key={dia.Cod_dias}
+                  label={dia.dias.toUpperCase()} // Muestra el nombre del día en mayúsculas
+                  value={dia.Cod_dias}
+                  checked={
+                    Array.isArray(seccionAsignaturaToUpdate.p_Cod_dias)
+                      ? seccionAsignaturaToUpdate.p_Cod_dias.includes(dia.Cod_dias)
+                      : seccionAsignaturaToUpdate.p_Cod_dias
+                        ?.split(",") // Si p_Cod_dias es un string, lo convierte en un array
+                        .includes(dia.Cod_dias)
+                  }
+                  onChange={(e) => {
+                    const selectedDias = Array.isArray(seccionAsignaturaToUpdate.p_Cod_dias)
+                      ? [...seccionAsignaturaToUpdate.p_Cod_dias]
+                      : seccionAsignaturaToUpdate.p_Cod_dias
+                        ? seccionAsignaturaToUpdate.p_Cod_dias.split(",")
+                        : [];
+
+                    const newDias = e.target.checked
+                      ? [...selectedDias, dia.Cod_dias] // Agrega el día seleccionado
+                      : selectedDias.filter((codDia) => codDia !== dia.Cod_dias); // Elimina el día deseleccionado
+
+                    setSeccionesAsignaturasToUpdate({
+                      ...seccionAsignaturaToUpdate,
+                      p_Cod_dias: newDias,
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          </CInputGroup>
 
 
           {/* Hora de inicio */}
