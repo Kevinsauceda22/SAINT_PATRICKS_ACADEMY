@@ -3,7 +3,11 @@ import { obtenerSecciones,obtenerActividadesExtra,
          crearActividadesExtra,
          actualizarActividadesExtra,
          cambiarEstadoActividad,
-         eliminarActividadExtracurricular } from '../Controllers/actividades_extracurricularesController.js'; // Asegúrate de que esta ruta sea correcta
+         eliminarActividadExtracurricular,
+         obtenerPadresYGradosSecciones,
+         notificarNuevaActividad,
+         notificarCancelacionActividad,
+         notificarCambioActividad} from '../Controllers/actividades_extracurricularesController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
 // Ruta para obtener todas las secciones 
