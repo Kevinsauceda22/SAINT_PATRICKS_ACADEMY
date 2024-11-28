@@ -93,59 +93,63 @@ const Solicitud = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSolicitudes();
+    fetchSolicitudes(); // Inicial fetch
+    const intervalId = setInterval(fetchSolicitudes, 15000); // Actualización automática cada 15 segundos
+    return () => clearInterval(intervalId); // Limpieza del intervalo al desmontar el componente
   }, []);
+
   const fetchSolicitudes = async () => {
     setLoading(true);
     setError('');
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
-        }
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
+      }
 
-        const response = await fetch('http://localhost:4000/api/solicitud/solicitudes', {
-            method: 'GET',
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
+      const response = await fetch('http://localhost:4000/api/solicitud/solicitudes', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-        if (!response.ok) {
-            throw new Error('Error al obtener las solicitudes.');
-        }
+      if (!response.ok) {
+        throw new Error('Error al obtener las solicitudes.');
+      }
 
-        const data = await response.json();
+      const data = await response.json();
 
-        const solicitudesData = data.map((solicitud) => ({
-          id: solicitud.Cod_solicitud || '',
-          title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
-          start: solicitud.Fecha_solicitud || '',
-          description: solicitud.Asunto || 'SIN ASUNTO',
-          personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
-          horaInicio: solicitud.Hora_Inicio || '00:00', // Siempre en formato HH:mm
-          horaFin: solicitud.Hora_Fin || null, // Permitir null si no está presente
-          estado: solicitud.Estado || 'Pendiente',
-          Cod_persona: solicitud.Cod_persona || '', // Agregar este campo
+      const solicitudesData = data.map((solicitud) => ({
+        id: solicitud.Cod_solicitud || '',
+        title: solicitud.Nombre_solicitud || 'SIN TÍTULO',
+        start: solicitud.Fecha_solicitud || '',
+        description: solicitud.Asunto || 'SIN ASUNTO',
+        personaRequerida: solicitud.Persona_requerida || 'DESCONOCIDO',
+        horaInicio: solicitud.Hora_Inicio || '00:00', // Siempre en formato HH:mm
+        horaFin: solicitud.Hora_Fin || null, // Permitir null si no está presente
+        estado: solicitud.Estado || 'Pendiente',
+        Cod_persona: solicitud.Cod_persona || '', // Agregar este campo
       }));
-        setSolicitudes(solicitudesData);
-        setFilteredCitas(solicitudesData);
+      setSolicitudes(solicitudesData);
+      setFilteredCitas(solicitudesData);
     } catch (error) {
-        console.error('Error al obtener las solicitudes:', error.message);
-        setError(error.message);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message,
-            confirmButtonColor: '#6C8E58',
-        });
+      console.error('Error al obtener las solicitudes:', error.message);
+      setError(error.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message,
+        confirmButtonColor: '#6C8E58',
+      });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
   
-  
+
+
   
   const decodeJWT = (token) => {
     try {
@@ -163,7 +167,7 @@ const Solicitud = () => {
       return null;
     }
   };
-    
+
 
   const getColorByEstado = (estado) => {
     switch (estado) {
@@ -197,24 +201,24 @@ const Solicitud = () => {
   
 
 
-  const exportarCitaAPDF = async () => {
-    const doc = new jsPDF('landscape'); // Orientación landscape
-    const img = new Image();
-    img.src = logo;
-  
-    if (solicitudes.length === 0) {
-      console.warn('No hay datos de citas para exportar.');
+  const exportarCitaAPDF = async (selectedCita) => {
+    if (!selectedCita) {
+      console.warn('No hay cita seleccionada para exportar.');
       return;
     }
   
+    const doc = new jsPDF('landscape'); // Orientación horizontal
+    const img = new Image();
+    img.src = logo;
+  
     img.onload = () => {
-      // Cabecera con logo y detalles de institución
+      // Cabecera con logo e información institucional
       doc.addImage(img, 'PNG', 10, 10, 30, 30);
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
       doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
       doc.setFontSize(14);
-      doc.text('Reporte Detallado de Citas', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+      doc.text('Detalles de la Cita', doc.internal.pageSize.width / 2, 30, { align: 'center' });
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
@@ -224,20 +228,21 @@ const Solicitud = () => {
       doc.setDrawColor(0, 102, 51);
       doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
   
-      // Generar la tabla con los datos relevantes (sin campos de correo y persona requerida)
+      // Generar la tabla con los datos de la cita seleccionada
       doc.autoTable({
         startY: 60,
         head: [
-          ['Título', 'Asunto', 'Fecha', 'Hora Inicio', 'Hora Fin', 'Estado'],
+          ['Campo', 'Valor'],
         ],
-        body: solicitudes.map((cita) => [
-          cita.title || 'Título no disponible',
-          cita.description || 'Sin descripción',
-          cita.start || 'Fecha no disponible',
-          cita.horaInicio || 'Hora no disponible',
-          cita.horaFin || 'Hora no disponible',
-          cita.estado || 'Estado no disponible',
-        ]),
+        body: [
+          ['Título', selectedCita.title || 'Título no disponible'],
+          ['Asunto', selectedCita.description || 'Sin descripción'],
+          ['Persona Requerida', selectedCita.personaRequerida || 'No especificada'],
+          ['Fecha', selectedCita.start || 'Fecha no disponible'],
+          ['Hora Inicio', selectedCita.horaInicio || 'Hora no disponible'],
+          ['Hora Fin', selectedCita.horaFin || 'Hora no disponible'],
+          ['Estado', selectedCita.estado || 'Estado no disponible'],
+        ],
         headStyles: {
           fillColor: [0, 102, 51],
           textColor: [255, 255, 255],
@@ -266,6 +271,7 @@ const Solicitud = () => {
       console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
     };
   };
+  
   
   
 
@@ -840,16 +846,10 @@ const Solicitud = () => {
     backgroundColor: getColorByEstado(cita.estado),
     borderColor: '#4B6251',
     textColor: '#000000',
-    extendedProps: { 
-      horaInicio: cita.horaInicio, 
-      horaFin: cita.horaFin,
-      icon: getIconByEstado(cita.estado)
-    },
   }))}
+
   eventContent={(eventInfo) => {
-    // Evaluar la vista activa
     if (eventInfo.view.type === 'timeGridDay') {
-      // Mostrar título con hora de inicio y fin en la vista diaria
       return (
         <span>
           <strong>{eventInfo.event.title}</strong>
@@ -858,12 +858,10 @@ const Solicitud = () => {
         </span>
       );
     }
-    // Mostrar solo el título en otras vistas
     return <span>{eventInfo.event.title}</span>;
   }}
+
   eventClick={handleEventClick}
-  dateClick={handleDateSelect}
-  eventDrop={handleEventDrop}
   editable={true}
   height="auto"
   contentHeight="auto"
@@ -873,6 +871,7 @@ const Solicitud = () => {
     <span style={{ color: '#4B6251', fontWeight: 'bold' }}>{args.text}</span>
   )}
 />
+
         </div>
       )}
 

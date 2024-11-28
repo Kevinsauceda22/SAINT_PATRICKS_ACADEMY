@@ -64,6 +64,41 @@ export const obtenerSolicitudes = async (req, res) => {
     }
 };
 
+// Obtener usuarios con rol de administrador
+export const obtenerUsuariosPorRolAdmin = async (req, res) => {
+  try {
+      // Llamar al procedimiento almacenado
+      const [results] = await pool.query('CALL obtener_usuarios_por_rol_admin()');
+
+      // Verificar si hay resultados
+      if (!results || results[0].length === 0) {
+          return res.status(404).json({
+              success: false,
+              message: 'No se encontraron usuarios con rol de administrador.',
+          });
+      }
+
+      // Formatear la respuesta
+      const usuarios = results[0].map(user => ({
+          Cod_rol: user.Cod_rol,
+          cod_persona: user.cod_persona,
+          correo_usuario: user.correo_usuario,
+      }));
+
+      return res.status(200).json({
+          success: true,
+          data: usuarios,
+      });
+  } catch (error) {
+      console.error('Error al obtener usuarios con rol de administrador:', error);
+      return res.status(500).json({
+          success: false,
+          message: 'Error al obtener usuarios con rol de administrador.',
+          error: error.message,
+      });
+  }
+};
+
 
 export const insertarSolicitud = async (req, res) => {
     const { Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto, Persona_requerida } = req.body;

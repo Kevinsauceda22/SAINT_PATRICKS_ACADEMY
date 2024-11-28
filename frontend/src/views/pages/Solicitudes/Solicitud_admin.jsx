@@ -75,8 +75,11 @@ const Solicitud = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchSolicitudes();
+    fetchSolicitudes(); // Inicial fetch
+    const intervalId = setInterval(fetchSolicitudes, 15000); // Actualización automática cada 15 segundos
+    return () => clearInterval(intervalId); // Limpieza del intervalo al desmontar el componente
   }, []);
+
 
   const fetchSolicitudes = async () => {
     setLoading(true);
@@ -917,16 +920,10 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
     backgroundColor: getColorByEstado(cita.estado),
     borderColor: '#4B6251',
     textColor: '#000000',
-    extendedProps: { 
-      horaInicio: cita.horaInicio, 
-      horaFin: cita.horaFin,
-      icon: getIconByEstado(cita.estado)
-    },
   }))}
+
   eventContent={(eventInfo) => {
-    // Evaluar la vista activa
     if (eventInfo.view.type === 'timeGridDay') {
-      // Mostrar título con hora de inicio y fin en la vista diaria
       return (
         <span>
           <strong>{eventInfo.event.title}</strong>
@@ -935,12 +932,10 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         </span>
       );
     }
-    // Mostrar solo el título en otras vistas
     return <span>{eventInfo.event.title}</span>;
   }}
+
   eventClick={handleEventClick}
-  dateClick={handleDateSelect}
-  eventDrop={handleEventDrop}
   editable={true}
   height="auto"
   contentHeight="auto"
@@ -950,6 +945,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
     <span style={{ color: '#4B6251', fontWeight: 'bold' }}>{args.text}</span>
   )}
 />
+
         </div>
       )}
 
