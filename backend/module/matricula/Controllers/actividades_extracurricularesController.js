@@ -1,8 +1,9 @@
+
+import conectarDB from '../../../config/db.js';
 import { enviarNotificacionNuevaActividad,
          enviarNotificacionCancelacionActividad,
          enviarNotificacionCambioActividad} from '../../../helpers/emailHelper.js';
 
-import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
 // Controlador para obtener actividades extracurriculares
