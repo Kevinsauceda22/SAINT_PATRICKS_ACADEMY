@@ -140,8 +140,12 @@ const Solicitud = () => {
         icon: 'error',
         title: 'Error',
         text: error.message,
-        confirmButtonColor: '#6C8E58',
+        timer: 2000, // Duración de 2 segundos
+        timerProgressBar: true,
+        showConfirmButton: false, // Eliminar botón OK
+        allowOutsideClick: false, // No permitir interacción fuera de la alerta
       });
+      
     } finally {
       setLoading(false);
     }
@@ -255,11 +259,13 @@ const Solicitud = () => {
         alternateRowStyles: { fillColor: [240, 248, 255] },
       });
   
-      // Pie de página con fecha de generación
-      const date = new Date().toLocaleDateString();
+      // Pie de página con fecha y hora de generación
+      const now = new Date();
+      const date = now.toLocaleDateString();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Formato HH:mm
       doc.setFontSize(10);
       doc.setTextColor(100);
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+      doc.text(`Fecha y hora de generación: ${date} ${time}`, 10, doc.internal.pageSize.height - 10);
   
       // Abrir el PDF en una nueva pestaña
       const pdfBlob = doc.output('blob');
@@ -271,7 +277,6 @@ const Solicitud = () => {
       console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
     };
   };
-  
   
   
 
@@ -327,6 +332,11 @@ const Solicitud = () => {
             title: 'Advertencia',
             text: 'No puedes cambiar la fecha de una cita que ya está finalizada.',
             confirmButtonColor: '#6C8E58',
+            timer: 2000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
         });
         return info.revert(); // Revertir el movimiento
     }
@@ -340,6 +350,10 @@ const Solicitud = () => {
             title: 'Advertencia',
             text: 'No puedes mover una cita a una fecha pasada.',
             confirmButtonColor: '#6C8E58',
+            timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
         });
         return info.revert(); // Revertir el movimiento
     }
@@ -389,6 +403,10 @@ const Solicitud = () => {
                 title: 'Actualizado',
                 text: 'La fecha de la cita se actualizó con éxito.',
                 confirmButtonColor: '#4B6251',
+                timer: 2000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
             });
 
             await fetchSolicitudes(); // Refrescar las citas después de actualizar
@@ -435,6 +453,10 @@ const Solicitud = () => {
         title: 'Advertencia',
         text: 'No puedes editar esta cita si ya está finalizada.',
         confirmButtonColor: '#6C8E58',
+        timer: 2000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
       });
       return;
     }
@@ -511,9 +533,9 @@ const Solicitud = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
   
-    // Validar los campos obligatorios
-    const { title, description, personaRequerida, fecha, horaInicio, horaFin } = formValues;
+    const { title, description, personaRequerida, fecha, horaInicio, horaFin, estado } = formValues;
   
+    // Validar los campos obligatorios
     if (!title || !description || !personaRequerida || !fecha || !horaInicio) {
       Swal.fire({
         icon: 'warning',
@@ -534,6 +556,11 @@ const Solicitud = () => {
           title: 'Advertencia',
           text: 'La hora de fin debe ser mayor que la hora de inicio.',
           confirmButtonColor: '#6C8E58',
+          timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
         });
         return;
       }
@@ -547,16 +574,16 @@ const Solicitud = () => {
         throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
       }
   
-      // Construir datos de solicitud
+      // Construir datos de solicitud para el envío
       const requestData = {
+        Cod_persona: auth.cod_persona, // Persona asociada a la cita
         Nombre_solicitud: title || 'SIN TÍTULO',
         Fecha_solicitud: fecha,
         Hora_Inicio: horaInicio,
-        Hora_Fin: horaFin || null, // Permitir valores nulos para Hora_Fin
+        Hora_Fin: horaFin || null,
         Asunto: description || 'SIN ASUNTO',
         Persona_requerida: personaRequerida || 'DESCONOCIDO',
-        Cod_persona: auth.cod_persona,
-        estado: selectedCita ? selectedCita.estado : 'Pendiente', // Agregar estado
+        estado: estado, // Enviar el estado actualizado
       };
   
       const response = await fetch(
@@ -585,10 +612,15 @@ const Solicitud = () => {
           ? 'La cita fue actualizada correctamente.'
           : 'La cita fue creada correctamente.',
         confirmButtonColor: '#4B6251',
+        timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
   
       setFormModalVisible(false);
-      await fetchSolicitudes();
+      await fetchSolicitudes(); // Recargar las citas después de guardar
     } catch (error) {
       Swal.fire({
         icon: 'error',
@@ -600,7 +632,6 @@ const Solicitud = () => {
       setIsSubmitting(false);
     }
   };
-  
   
 
 
@@ -678,11 +709,13 @@ const Solicitud = () => {
             alternateRowStyles: { fillColor: [240, 248, 255] },
         });
   
-        // Footer with generation date
-        const date = new Date().toLocaleDateString();
+        // Footer with generation date and time
+        const now = new Date();
+        const date = now.toLocaleDateString();
+        const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Formato HH:mm
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+        doc.text(`Fecha y hora de generación: ${date} ${time}`, 10, doc.internal.pageSize.height - 10);
   
         // Open the PDF in a new tab
         const pdfBlob = doc.output('blob');

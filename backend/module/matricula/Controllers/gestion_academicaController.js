@@ -69,6 +69,7 @@ export const insertarAgrupador = async (req, res) => {
     }
 };
 
+// Controlador para obtener el detalle del periodo de matricula
 export const getDetallePorPeriodo = async (req, res) => {
     const { Cod_periodo_matricula } = req.params;
     console.log('Parámetro recibido:', Cod_periodo_matricula); // Log para verificar el parámetro

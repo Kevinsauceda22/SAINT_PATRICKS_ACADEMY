@@ -65,22 +65,29 @@ const GradosYSecciones = () => {
     }
   };
 
-  const obtenerAlumnosMatriculadosPorSeccionYAno = async (cod_seccion, anio) => {
-    if (!cod_seccion || !anio) return;
-    setLoading(true);
-    setAlumnos([]);
+  const obtenerAlumnosMatriculadosPorSeccionYAno = async (cod_seccion, anio_academico) => {
+    if (!cod_seccion || !anio_academico) {
+      console.warn('Parámetros faltantes: cod_seccion o anio_academico');
+      return;
+    }
+  
     try {
-      const response = await axios.get(`http://localhost:4000/api/matricula/alumnos/seccion/${cod_seccion}`, {
-        params: { anio_academico: anio },
-      });
-      setAlumnos(response.data.data || []);
+      console.log(`Fetching alumnos for sección: ${cod_seccion}, año académico: ${anio_academico}`);
+      const response = await axios.get(
+        `http://localhost:4000/api/matricula/alumnos/seccion/${cod_seccion}`,
+        {
+          params: { anio_academico }, // Pasar el año académico como query param
+        }
+      );
+  
+      console.log('Respuesta de la API:', response.data);
+      setAlumnos(response.data.data || []); // Actualizar el estado con los alumnos obtenidos
     } catch (error) {
-      console.error('Error al obtener los alumnos matriculados por sección y año académico:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error al obtener alumnos matriculados:', error);
+      setAlumnos([]); // En caso de error, resetear la lista de alumnos
     }
   };
-
+  
   const exportToPDF = () => {
     const doc = new jsPDF();
     if (!Array.isArray(alumnos) || alumnos.length === 0) {

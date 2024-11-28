@@ -85,7 +85,7 @@ const ListaGestion_Academica = () => {
     navigate(`/lista-secciones/`, { state: { periodoSeleccionado: Cod_periodo_matricula } });
   };
 
-  // Función para descargar el PDF con los detalles del periodo
+  // Función para descargar el PDF individual
   const handleDescargarPDF = async (Cod_periodo_matricula) => {
     try {
       // Llamada a la API para obtener el año académico
@@ -243,6 +243,121 @@ const ListaGestion_Academica = () => {
     }
   };
 
+  // Función para descargar el PDF de la vista agrupadora
+  const handleGenerarPDFVista = () => {
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = logo; // Ruta al logo que estás utilizando
+    img.onload = () => {
+      const pageWidth = doc.internal.pageSize.width;
+  
+      // Encabezado del PDF
+      doc.addImage(img, 'PNG', 10, 10, 45, 45);
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51);
+      doc.text('SAINT PATRICK\'S ACADEMY', pageWidth / 2, 24, { align: 'center' });
+  
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+  
+      doc.setFontSize(14);
+      doc.setTextColor(0, 102, 51);
+      doc.text('Reporte de Gestión Académica', pageWidth / 2, 50, { align: 'center' });
+  
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51);
+      doc.line(10, 55, pageWidth - 10, 55);
+  
+      // Cuerpo del PDF (tabla de datos)
+      const tableColumn = ['#', 'Total Secciones', 'Año Académico', 'Fecha de Creación', 'Estado'];
+      const tableRows = currentRecords.map((agrupador, index) => [
+        { content: index + 1, styles: { halign: 'center' } },
+        { content: agrupador.Total_secciones.toString(), styles: { halign: 'center' } },
+        { content: agrupador.Anio_academico.toString(), styles: { halign: 'center' } },
+        { content: new Date(agrupador.Fecha_agrupacion).toLocaleDateString(), styles: { halign: 'center' } },
+        {
+          content: agrupador.Estado,
+          styles: {
+            halign: 'center',
+            textColor: agrupador.Estado === 'Activo' ? [0, 128, 0] : [255, 0, 0],
+            fontStyle: agrupador.Estado === 'Activo' ? 'bold' : 'normal',
+          },
+        },
+      ]);
+  
+      doc.autoTable({
+        startY: 70,
+        head: [tableColumn],
+        body: tableRows,
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+          halign: 'center',
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        alternateRowStyles: {
+          fillColor: [240, 248, 255],
+        },
+        didDrawPage: (data) => {
+          const pageCount = doc.internal.getNumberOfPages();
+          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+  
+          // Pie de página
+          const footerY = doc.internal.pageSize.height - 10;
+          doc.setFontSize(10);
+          doc.setTextColor(0, 102, 51);
+          doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+  
+          const now = new Date();
+          const dateString = now.toLocaleDateString('es-HN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+          const timeString = now.toLocaleTimeString('es-HN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+        },
+      });
+  
+      // Mostrar el PDF en una nueva ventana
+      const pdfBlob = doc.output('blob');
+      const pdfURL = URL.createObjectURL(pdfBlob);
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(`
+        <html>
+          <head>
+            <title>Reporte de Gestión Académica</title>
+          </head>
+          <body style="margin:0;">
+            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+            <div style="position:fixed;top:10px;right:200px;">
+              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Gestion_Academica.pdf'; a.click();">
+                Descargar PDF
+              </button>
+            </div>
+          </body>
+        </html>
+      `);
+    };
+  
+    img.onerror = () => {
+      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    };
+  };
+  
+
   // Función para alternar la visibilidad del modal
   const toggleModal = () => setShowModal(!showModal);
 
@@ -280,27 +395,19 @@ const ListaGestion_Academica = () => {
       setCurrentPage(pageNumber);
     }
   };
-
+  
   const normalizeString = (str) =>
     str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
+  
   const filteredAgrupadores = agrupadores.filter((agrupador) => {
     const normalizedSearchTerm = normalizeString(searchTerm);
-  
-    if (searchField === 'Nombre_seccion') {
-      return normalizeString(agrupador.Nombre_seccion || '').includes(normalizedSearchTerm);
-    } else if (searchField === 'Total_secciones') {
-      return normalizeString(agrupador.Total_secciones.toString()).includes(normalizedSearchTerm);
-    } else if (searchField === 'Anio_academico') {
-      return normalizeString(agrupador.Anio_academico.toString()).includes(normalizedSearchTerm);
-    }
-    return false;
+    return normalizeString(agrupador.Anio_academico.toString()).includes(normalizedSearchTerm);
   });
-
+  
   const indexOfLastRecord = currentPage * recordsPerPage; // Último índice de registro
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage; // Primer índice de registro
   const currentRecords = filteredAgrupadores.slice(indexOfFirstRecord, indexOfLastRecord); // Registros actuales
-
+  
 
   // Función para guardar un nuevo agrupador
   const handleGuardarAgrupador = async () => {
@@ -349,15 +456,6 @@ const ListaGestion_Academica = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           value={searchTerm}
         />
-        <CFormSelect
-          aria-label="Buscar por"
-          onChange={(e) => setSearchField(e.target.value)}
-          style={{ marginLeft: '10px' }}
-        >
-          <option value="Nombre_seccion">Nombre Sección</option>
-          <option value="Total_secciones">Total Secciones</option>
-          <option value="Anio_academico">Año Académico</option>
-        </CFormSelect>
       </CInputGroup>
     </CCol>
 
@@ -386,21 +484,37 @@ const ListaGestion_Academica = () => {
 
   {/* Botón "Nuevo" alineado a la derecha */}
   <CRow className="align-items-center mb-4">
-    <CCol xs="12" className="text-end">
-      <CButton
-        className="d-flex align-items-center gap-1 rounded shadow"
-        style={{
-          backgroundColor: '#4B6251',
-          color: 'white',
-          padding: '10px 16px',
-          fontSize: '0.9rem',
-        }}
-        onClick={() => setShowModal(true)}
-      >
-        <CIcon icon={cilPlus} /> Nuevo
-      </CButton>
-    </CCol>
-  </CRow>
+  <CCol xs="12" className="d-flex justify-content-between">
+    {/* Botón "Nuevo" */}
+    <CButton
+      className="d-flex align-items-center gap-1 rounded shadow"
+      style={{
+        backgroundColor: '#4B6251',
+        color: 'white',
+        padding: '10px 16px',
+        fontSize: '0.9rem',
+      }}
+      onClick={() => setShowModal(true)}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
+
+    {/* Botón "Generar PDF" */}
+    <CButton
+      className="d-flex align-items-center gap-1 rounded shadow"
+      style={{
+        backgroundColor: '#4B6251',
+        color: 'white',
+        padding: '10px 16px',
+        fontSize: '0.9rem',
+      }}
+      onClick={handleGenerarPDFVista}
+    >
+      <CIcon icon={cilArrowCircleBottom} className="me-1" /> Generar PDF
+    </CButton>
+  </CCol>
+</CRow>
+
 
   {/* Tabla de agrupadores */}
   <CCard>
@@ -419,7 +533,7 @@ const ListaGestion_Academica = () => {
     </CTableHead>
     <CTableBody>
       {agrupadores.length > 0 ? (
-        agrupadores.map((agrupador, index) => (
+        currentRecords.map((agrupador, index) => (
           <CTableRow
             key={agrupador.Cod_agrupadora}
             style={{

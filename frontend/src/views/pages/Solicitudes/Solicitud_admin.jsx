@@ -235,14 +235,17 @@ const getIconByEstado = (estado) => {
       // Generar la tabla con los datos de la cita seleccionada
       doc.autoTable({
         startY: 60,
-        head: [
-          ['Campo', 'Valor'],
-        ],
+        head: [['Campo', 'Valor']],
         body: [
           ['Título', citaDetails.title || 'Título no disponible'],
           ['Asunto', citaDetails.description || 'Sin descripción'],
           ['Persona Requerida', citaDetails.personaRequerida || 'No especificada'],
-          ['Creador de la Cita', `${citaDetails.Persona_Nombre || 'Nombre no disponible'} ${citaDetails.Persona_Apellido || ''}`.trim()],
+          [
+            'Creador de la Cita',
+            `${citaDetails.Persona_Nombre || 'Nombre no disponible'} ${
+              citaDetails.Persona_Apellido || ''
+            }`.trim(),
+          ],
           ['Correo Electrónico', citaDetails.Persona_Correo || 'Correo no disponible'],
           ['Fecha', citaDetails.start || 'Fecha no disponible'],
           ['Hora Inicio', citaDetails.horaInicio || 'Hora no disponible'],
@@ -261,11 +264,13 @@ const getIconByEstado = (estado) => {
         alternateRowStyles: { fillColor: [240, 248, 255] },
       });
   
-      // Pie de página con fecha de generación
-      const date = new Date().toLocaleDateString();
+      // Pie de página con fecha y hora de generación
+      const now = new Date();
+      const date = now.toLocaleDateString();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Formato HH:mm
       doc.setFontSize(10);
       doc.setTextColor(100);
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+      doc.text(`Fecha y hora de generación: ${date} ${time}`, 10, doc.internal.pageSize.height - 10);
   
       // Abrir el PDF en una nueva pestaña
       const pdfBlob = doc.output('blob');
@@ -363,6 +368,11 @@ const getIconByEstado = (estado) => {
         title: 'Advertencia',
         text: 'No puedes cambiar la fecha de una cita que ya está finalizada.',
         confirmButtonColor: '#6C8E58',
+        timer: 2000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
       return info.revert(); // Revertir el movimiento
     }
@@ -378,6 +388,11 @@ const getIconByEstado = (estado) => {
         title: 'Advertencia',
         text: 'No puedes mover una cita a una fecha pasada.',
         confirmButtonColor: '#6C8E58',
+        timer: 2000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
       return info.revert(); // Revertir el movimiento
     }
@@ -533,6 +548,11 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         title: 'Aceptada',
         text: 'La cita ha sido aceptada y está ahora activa.',
         confirmButtonColor: '#4B6251',
+        timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
   
       await fetchSolicitudes(); // Recargar solicitudes
@@ -543,6 +563,11 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         title: 'Error',
         text: `No se pudo aceptar la cita. ${error.message}`,
         confirmButtonColor: '#6C8E58',
+        timer: 2000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
     }
   };
@@ -555,6 +580,11 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         title: 'Advertencia',
         text: 'No puedes editar esta cita si ya está finalizada.',
         confirmButtonColor: '#6C8E58',
+        timer: 2000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
       return;
     }
@@ -598,6 +628,11 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         title: 'Advertencia',
         text: 'No puedes editar citas para fechas pasadas.',
         confirmButtonColor: '#6C8E58',
+        timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
       return;
     }
@@ -615,6 +650,11 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         title: 'Advertencia',
         text: 'No puedes programar citas en horas pasadas para hoy.',
         confirmButtonColor: '#6C8E58',
+        timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
       return;
     }
@@ -626,6 +666,11 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         title: 'Advertencia',
         text: 'La hora de fin debe ser mayor que la hora de inicio.',
         confirmButtonColor: '#6C8E58',
+        timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
       return;
     }
@@ -667,6 +712,11 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
           ? 'La cita fue actualizada correctamente.'
           : 'La cita fue creada correctamente.',
         confirmButtonColor: '#4B6251',
+        timer: 3000,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
   
       setFormModalVisible(false);
@@ -683,8 +733,6 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
     }
   };
   
-  
-
   const handleVerTodasCitas = () => {
     setAllCitasModalVisible(true);
   };
@@ -784,11 +832,13 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
         alternateRowStyles: { fillColor: [240, 248, 255] },
       });
   
-      // Pie de página con fecha de generación
-      const date = new Date().toLocaleDateString();
+      // Pie de página con fecha y hora de generación
+      const now = new Date();
+      const date = now.toLocaleDateString();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); // Formato HH:mm
       doc.setFontSize(10);
       doc.setTextColor(100);
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+      doc.text(`Fecha y hora de generación: ${date} ${time}`, 10, doc.internal.pageSize.height - 10);
   
       // Abrir el PDF en una nueva pestaña
       const pdfBlob = doc.output('blob');
@@ -800,6 +850,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
       console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
     };
   };
+  
   
   
   

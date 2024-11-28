@@ -29,19 +29,11 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react';
-import { BsCheckCircle, BsExclamationCircle, BsDashCircle } from 'react-icons/bs';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
-import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
-
-
 const TipoMatricula = () => {
-  
-  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('tipomatricula');
-
   const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,9 +43,11 @@ const TipoMatricula = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [modalVisible, setModalVisible] = useState(false);
   const [editar, setEditar] = useState(false);
-  const [estadoActual, setEstadoActual] = useState({});
+  const [estadoActual, setEstadoActual] = useState({ Tipo: '' });
 
-  const tiposValidos = ['Estandar', 'Extraordinaria', 'Beca', 'Otras'];
+  useEffect(() => {
+    obtenerTipos();
+  }, []);
 
   const obtenerTipos = async () => {
     try {
@@ -62,23 +56,39 @@ const TipoMatricula = () => {
       if (response.ok) {
         setTipos(data);
         setFilteredTipos(data);
-        setLoading(false);
       } else {
         throw new Error(data.message || 'Error al obtener los tipos de matrícula');
       }
     } catch (error) {
       setError(error.message);
+      swal.fire({
+        title: 'Error',
+        text: error.message,
+        icon: 'error',
+        confirmButtonColor: '#4B6251',
+      });
+    } finally {
       setLoading(false);
-      swal.fire('Error', error.message, 'error');
     }
   };
 
-  const crearTipo = async (tipo) => {
-    if (!tiposValidos.includes(tipo)) {
-      swal.fire('Error', `Tipo inválido. Los tipos permitidos son: ${tiposValidos.join(', ')}`, 'error');
-      return;
-    }
+  const validarTipoEnTiempoReal = (texto) => {
+    const textoSinNumerosYEspeciales = texto.replace(/[^A-Za-z\s]/g, ''); // Solo letras y espacios
+    const textoValidado = textoSinNumerosYEspeciales.toUpperCase().slice(0, 30); // Limitar a 30 caracteres
+    const tresLetrasSeguidas = /(.)\1{2,}/; // Tres letras iguales seguidas
 
+    if (tresLetrasSeguidas.test(textoValidado)) {
+      return estadoActual.Tipo; // Mantener el estado anterior si hay caracteres inválidos
+    }
+    return textoValidado;
+  };
+
+  const handleTipoChange = (e) => {
+    const textoValido = validarTipoEnTiempoReal(e.target.value);
+    setEstadoActual({ ...estadoActual, Tipo: textoValido });
+  };
+
+  const crearTipo = async (tipo) => {
     try {
       const response = await fetch('http://localhost:4000/api/tipomatricula/tipo-matricula', {
         method: 'POST',
@@ -89,23 +99,28 @@ const TipoMatricula = () => {
       });
 
       if (response.ok) {
-        swal.fire('Éxito', 'Tipo de matrícula creado correctamente.', 'success');
+        swal.fire({
+          title: 'Éxito',
+          text: 'Tipo de matrícula creado correctamente.',
+          icon: 'success',
+          confirmButtonColor: '#4B6251',
+        });
         obtenerTipos();
       } else {
         const result = await response.json();
         throw new Error(result.Mensaje || 'Error al crear el tipo de matrícula');
       }
     } catch (error) {
-      swal.fire('Error', error.message, 'error');
+      swal.fire({
+        title: 'Error',
+        text: error.message,
+        icon: 'error',
+        confirmButtonColor: '#4B6251',
+      });
     }
   };
 
   const actualizarTipo = async (codTipo, nuevoTipo) => {
-    if (!tiposValidos.includes(nuevoTipo)) {
-      swal.fire('Error', `Tipo inválido. Los tipos permitidos son: ${tiposValidos.join(', ')}`, 'error');
-      return;
-    }
-
     try {
       const response = await fetch(`http://localhost:4000/api/tipomatricula/tipo-matricula/${codTipo}`, {
         method: 'PUT',
@@ -116,14 +131,24 @@ const TipoMatricula = () => {
       });
 
       if (response.ok) {
-        swal.fire('Éxito', 'Tipo de matrícula actualizado correctamente.', 'success');
+        swal.fire({
+          title: 'Éxito',
+          text: 'Tipo de matrícula actualizado correctamente.',
+          icon: 'success',
+          confirmButtonColor: '#4B6251',
+        });
         obtenerTipos();
       } else {
         const result = await response.json();
         throw new Error(result.Mensaje || 'Error al actualizar el tipo de matrícula');
       }
     } catch (error) {
-      swal.fire('Error', error.message, 'error');
+      swal.fire({
+        title: 'Error',
+        text: error.message,
+        icon: 'error',
+        confirmButtonColor: '#4B6251',
+      });
     }
   };
 
@@ -134,14 +159,24 @@ const TipoMatricula = () => {
       });
 
       if (response.ok) {
-        swal.fire('Éxito', 'Tipo de matrícula eliminado correctamente.', 'success');
+        swal.fire({
+          title: 'Éxito',
+          text: 'Tipo de matrícula eliminado correctamente.',
+          icon: 'success',
+          confirmButtonColor: '#4B6251',
+        });
         obtenerTipos();
       } else {
         const result = await response.json();
         throw new Error(result.Mensaje || 'Error al eliminar el tipo de matrícula');
       }
     } catch (error) {
-      swal.fire('Error', error.message, 'error');
+      swal.fire({
+        title: 'Error',
+        text: error.message,
+        icon: 'error',
+        confirmButtonColor: '#4B6251',
+      });
     }
   };
 
@@ -159,8 +194,13 @@ const TipoMatricula = () => {
 
   const handleModalSubmit = async (e) => {
     e.preventDefault();
-    if (!estadoActual.Tipo.trim() || !tiposValidos.includes(estadoActual.Tipo)) {
-      swal.fire('Error', `Tipo inválido. Los tipos permitidos son: ${tiposValidos.join(', ')}`, 'error');
+    if (!estadoActual.Tipo) {
+      swal.fire({
+        title: 'Error',
+        text: 'El nombre del tipo no puede estar vacío ni contener caracteres especiales o tres letras iguales seguidas.',
+        icon: 'error',
+        confirmButtonColor: '#4B6251',
+      });
       return;
     }
 
@@ -178,6 +218,8 @@ const TipoMatricula = () => {
       text: 'No podrás revertir esta acción',
       icon: 'warning',
       showCancelButton: true,
+      confirmButtonColor: '#4B6251',
+      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Eliminar',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
@@ -197,14 +239,6 @@ const TipoMatricula = () => {
     setFilteredTipos(filtered);
     setCurrentPage(0);
   };
-
-  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredTipos.slice(indexOfFirstItem, indexOfLastItem);
-
-  useEffect(() => {
-    obtenerTipos();
-  }, []);
 
   const exportToPDF = () => {
     const doc = new jsPDF();
@@ -233,12 +267,11 @@ const TipoMatricula = () => {
     XLSX.writeFile(workbook, 'Reporte_Tipos_Matricula.xlsx');
   };
 
-  const pageCount = Math.ceil(filteredTipos.length / itemsPerPage);
+  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredTipos.slice(indexOfFirstItem, indexOfLastItem);
 
- // Verificar permisos
- if (!canSelect) {
-  return <AccessDenied />;
-}
+  const pageCount = Math.ceil(filteredTipos.length / itemsPerPage);
 
   return (
     <CContainer>
@@ -247,11 +280,9 @@ const TipoMatricula = () => {
           <h3>Mantenimientos Tipos de Matrícula</h3>
         </CCol>
         <CCol xs={12} md={4} className="text-end">
-
-          {canInsert && (
           <CButton style={{ backgroundColor: '#4B6251', color: 'white', width: 'auto', height: '38px' }} onClick={openAddModal}>
             <CIcon icon={cilPlus} /> Nuevo
-          </CButton>)}
+          </CButton>
           <CDropdown className="d-inline ms-2">
             <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', width: 'auto', height: '38px' }}>
               <CIcon icon={cilFile} /> Reporte
@@ -323,39 +354,15 @@ const TipoMatricula = () => {
           {currentItems.map((tipo, index) => (
             <CTableRow key={tipo.Cod_tipo_matricula}>
               <CTableDataCell>{indexOfFirstItem + index + 1}</CTableDataCell>
+              <CTableDataCell>{tipo.Tipo.toUpperCase()}</CTableDataCell>
               <CTableDataCell>
-                {tipo.Tipo === 'Estandar' && <BsCheckCircle className="text-success me-2" />}
-                {tipo.Tipo === 'Extraordinaria' && <BsExclamationCircle className="text-warning me-2" />}
-                {tipo.Tipo === 'Beca' && <BsCheckCircle className="text-primary me-2" />}
-                {tipo.Tipo === 'Otras' && <BsDashCircle className="text-secondary me-2" />}
-                {tipo.Tipo.toUpperCase()}
+                <CButton color="warning" size="sm" onClick={() => openEditModal(tipo)}>
+                  <CIcon icon={cilPen} />
+                </CButton>{' '}
+                <CButton color="danger" size="sm" onClick={() => confirmDelete(tipo.Cod_tipo_matricula)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
               </CTableDataCell>
-              <CTableDataCell className="text-end">
-
-          {canUpdate && (
-  <CButton
-    color="warning"
-    size="sm"
-    style={{ opacity: 0.8 }}  // Opacidad ajustada
-    onClick={() => openEditModal(tipo)}
-  >
-    <CIcon icon={cilPen} />
-  </CButton>
-          )}
-  {' '}
-
-  {canDelete && (
-  <CButton
-    color="danger"
-    size="sm"
-    style={{ opacity: 0.8 }}  // Opacidad ajustada
-    onClick={() => confirmDelete(tipo.Cod_tipo_matricula)}
-  >
-    <CIcon icon={cilTrash} />
-  </CButton>
-  )}
-</CTableDataCell>
-
             </CTableRow>
           ))}
         </CTableBody>
@@ -387,21 +394,27 @@ const TipoMatricula = () => {
         </CModalHeader>
         <CModalBody>
           <CForm onSubmit={handleModalSubmit}>
-            <CFormSelect
-              value={estadoActual.Tipo}
-              onChange={(e) => setEstadoActual({ ...estadoActual, Tipo: e.target.value })}
-              required
-            >
-              <option value="" disabled>Selecciona un tipo</option>
-              {tiposValidos.map((tipoValido) => (
-                <option key={tipoValido} value={tipoValido}>{tipoValido.toUpperCase()}</option>
-              ))}
-            </CFormSelect>
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Nombre del Tipo</CInputGroupText>
+              <CFormInput
+                type="text"
+                placeholder="Nombre del tipo"
+                value={estadoActual.Tipo || ''}
+                onChange={handleTipoChange}
+                required
+              />
+            </CInputGroup>
             <CModalFooter>
-              <CButton color="secondary" size="sm" onClick={() => setModalVisible(false)}>
+              <CButton 
+                style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} 
+                onClick={() => setModalVisible(false)}
+              >
                 Cancelar
               </CButton>
-              <CButton color="dark" size="sm" type="submit" style={{ backgroundColor: '#617341', borderColor: '#617341' }}>
+              <CButton 
+                style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
+                type="submit"
+              >
                 <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
               </CButton>
             </CModalFooter>
