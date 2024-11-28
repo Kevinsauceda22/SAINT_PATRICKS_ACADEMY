@@ -1,551 +1,354 @@
-// Importaciones de librerías y componentes necesarios
-import React, { useEffect, useState } from 'react';
-import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CContainer,
-  CModal,
-  CModalBody,
-  CModalFooter,
-  CModalHeader,
-  CModalTitle,
-  CRow,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-  CInputGroup,
-  CInputGroupText,
-  CFormInput,
-  CFormSelect,
-} from '@coreui/react';
-import { CIcon } from '@coreui/icons-react';
-import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch } from '@coreui/icons';
-import Swal from 'sweetalert2';
-import jsPDF from 'jspdf';
-import "jspdf-autotable";
-import { useNavigate } from 'react-router-dom';
-import logo from 'src/assets/brand/logo_saint_patrick.png';
+import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
 
-const ListaGestion_Academica = () => {
-  // Definición de estados
-  const [agrupadores, setAgrupadores] = useState([]);
-  const [periodos, setPeriodos] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [nuevoAgrupador, setNuevoAgrupador] = useState({ totalSecciones: '', periodo: '' });
-  const navigate = useNavigate();
-  const [currentPage, setCurrentPage] = useState(1); // Página actual
-  const [recordsPerPage, setRecordsPerPage] = useState(5); // Registros por página
-  const [searchTerm, setSearchTerm] = useState(''); // Término de búsqueda
-  const [searchField, setSearchField] = useState('Nombre_seccion'); // Campo por el que se busca
 
-  // Hook para cargar datos al montar el componente
-  useEffect(() => {
-    fetchAgrupadores();
-    fetchPeriodos();
-  }, []);
-
-  // Función para obtener agrupadores desde la API
-  const fetchAgrupadores = async () => {
+// Controlador para obtener todos los agrupadores
+export const obtenerAgrupadores = async (req, res) => {
     try {
-      const response = await fetch('http://localhost:4000/api/gestion_academica/obtenerTodasAgrupaciones');
-      if (!response.ok) throw new Error('Error en la respuesta del servidor');
-      const data = await response.json();
-      setAgrupadores(data); // Guardar los datos en el estado
-    } catch (error) {
-      Swal.fire('Error', 'No se pudieron obtener los agrupadores.', 'error');
-    }
-  };
-  
-  // Función para obtener periodos desde la API
-  const fetchPeriodos = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/gestion_academica/obtener_periodo');
-      if (!response.ok) throw new Error('Error en la respuesta del servidor');
-      const data = await response.json();
-      setPeriodos(data);
-    } catch (error) {
-      Swal.fire('Error', 'No se pudieron obtener los periodos.', 'error');
-    }
-  };
+        // Ejecutar el procedimiento almacenado
+        const [rows] = await pool.query('CALL sp_obtener_TotalSeccionesAgrupadores()');
 
-  // Función para obtener el año académico a partir del código de periodo de matrícula
-  const getAnioAcademico = (Cod_periodo_matricula) => {
-    if (periodos.length === 0) return 'Desconocido';
-    const periodo = periodos.find((p) => p.Cod_periodo_matricula === Cod_periodo_matricula);
-    return periodo ? periodo.Anio_academico : 'Desconocido';
-  };
-
-  // Función para navegar a la lista de secciones para gestionar
-  const handleGestionarClick = (Cod_periodo_matricula) => {
-    navigate(`/lista-secciones/`, { state: { periodoSeleccionado: Cod_periodo_matricula } });
-  };
-
-  // Función para descargar el PDF con los detalles del periodo
-  const handleDescargarPDF = async (Cod_periodo_matricula) => {
-    try {
-      // Llamada a la API para obtener el año académico
-      const responsePeriodo = await fetch(`http://localhost:4000/api/gestion_academica/detalle/${Cod_periodo_matricula}`);
-      if (!responsePeriodo.ok) {
-        throw new Error(`Error al obtener datos del período: ${responsePeriodo.status}`);
-      }
-      const periodoData = await responsePeriodo.json();
-      const AnioAcademico = periodoData.Anio_academico || "Sin Año Académico";
-
-      // Llamada a la API para obtener las secciones
-      const responseSecciones = await fetch(`http://localhost:4000/api/gestion_academica/secciones_por_periodo/${Cod_periodo_matricula}`);
-      if (!responseSecciones.ok) {
-        throw new Error(`Error al obtener datos del servidor: ${responseSecciones.status}`);
-      }
-      const data = await responseSecciones.json();
-
-      // Crear el documento PDF
-      const doc = new jsPDF();
-      const img = new Image();
-      img.src = logo; // Asegúrate de tener el logo disponible y en la misma ruta
-
-      img.onload = () => {
-        const pageWidth = doc.internal.pageSize.width;
-
-        // Encabezado del PDF
-        doc.addImage(img, "PNG", 10, 10, 45, 45);
-        doc.setFontSize(18);
-        doc.setTextColor(0, 102, 51);
-        doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: "center" });
-
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text("Casa Club del periodista, Colonia del Periodista", pageWidth / 2, 32, { align: "center" });
-        doc.text("Teléfono: (504) 2234-8871", pageWidth / 2, 37, { align: "center" });
-        doc.text("Correo: info@saintpatrickacademy.edu", pageWidth / 2, 42, { align: "center" });
-
-        doc.setFontSize(14);
-        doc.setTextColor(0, 102, 51);
-        doc.text(`Listado de Secciones - Año Académico ${AnioAcademico}`, pageWidth / 2, 50, { align: "center" });
-
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(0, 102, 51);
-        doc.line(10, 55, pageWidth - 10, 55);
-
-        // Tabla de datos
-        const tableColumn = ["#", "Sección", "Aula", "Grado", "Profesor"];
-        const tableRows = data.map((seccion, index) => [
-          { content: (index + 1).toString(), styles: { halign: "center" } },
-          { content: seccion.Nombre_seccion?.toUpperCase() || "SIN NOMBRE", styles: { halign: "center" } },
-          { content: seccion.Aula?.toString() || "SIN AULA", styles: { halign: "center" } },
-          seccion.Grado?.toUpperCase() || "SIN GRADO",
-          { content: seccion.Profesor?.toUpperCase() || "SIN PROFESOR", styles: { halign: "left" } },
-        ]);
-
-        doc.autoTable({
-          startY: 70,
-          head: [tableColumn],
-          body: tableRows,
-          headStyles: {
-            fillColor: [0, 102, 51],
-            textColor: [255, 255, 255],
-            fontSize: 10,
-            halign: "center",
-          },
-          styles: {
-            fontSize: 10,
-            cellPadding: 3,
-          },
-          alternateRowStyles: {
-            fillColor: [240, 248, 255],
-          },
-          didDrawPage: (data) => {
-            const pageCount = doc.internal.getNumberOfPages();
-            const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-            // Pie de página
-            const footerY = doc.internal.pageSize.height - 10;
-            doc.setFontSize(10);
-            doc.setTextColor(0, 102, 51);
-            doc.text(
-              `Página ${pageCurrent} de ${pageCount}`,
-              pageWidth - 10,
-              footerY,
-              { align: "right" }
-            );
-
-            const now = new Date();
-            const dateString = now.toLocaleDateString("es-HN", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            });
-            const timeString = now.toLocaleTimeString("es-HN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            });
-            doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-          },
-        });
-
-        // Convertir PDF en Blob y mostrarlo en una nueva ventana
-        const pdfBlob = doc.output("blob");
-        const pdfURL = URL.createObjectURL(pdfBlob);
-
-        // Crear ventana con visor de PDF
-        const newWindow = window.open("", "_blank");
-        newWindow.document.title = `Reporte de Secciones - Año ${AnioAcademico}`;
-        newWindow.document.write(`
-          <html>
-            <head>
-              <title>Reporte de Secciones - Año ${AnioAcademico}</title>
-              <style>
-                body {
-                  margin: 0;
-                  padding: 0;
-                  overflow: hidden;
-                }
-                iframe {
-                  width: 100%;
-                  height: 100%;
-                  border: none;
-                }
-                .download-button {
-                  position: fixed;
-                  top: 10px;
-                  right: 10px;
-                  background-color: #6c757d;
-                  color: white;
-                  border: none;
-                  padding: 10px 15px;
-                  border-radius: 5px;
-                  cursor: pointer;
-                }
-              </style>
-            </head>
-            <body>
-              <iframe src="${pdfURL}"></iframe>
-              <button class="download-button" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Secciones_${AnioAcademico}.pdf'; a.click();">
-                Descargar PDF
-              </button>
-            </body>
-          </html>
-        `);
-      };
-
-      img.onerror = () => {
-        Swal.fire("Error", "No se pudo cargar el logo.", "error");
-      };
-    } catch (error) {
-      console.error("Error al generar el PDF:", error);
-      Swal.fire("Error", "No se pudo generar el PDF.", "error");
-    }
-  };
-
-  // Función para alternar la visibilidad del modal
-  const toggleModal = () => setShowModal(!showModal);
-
-  // Función para limpiar el formulario
-  const limpiarFormulario = () => {
-    setNuevoAgrupador({ totalSecciones: '', periodo: '' });
-  };
-
-  // Función para cerrar el modal
-  const handleCloseModal = () => {
-    // Verificar si hay datos ingresados en el formulario
-    if (nuevoAgrupador.totalSecciones || nuevoAgrupador.periodo) {
-      // Mostrar alerta de confirmación
-      Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'Perderás todos los datos ingresados si cierras el modal.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, cerrar',
-        cancelButtonText: 'No, continuar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          limpiarFormulario(); // Limpiar los datos del formulario
-          setShowModal(false); // Cerrar el modal
+        // Verificar si hay resultados
+        if (!rows || rows[0].length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron agrupadores.' });
         }
-      });
-    } else {
-      // Cerrar el modal directamente si no hay datos ingresados
-      setShowModal(false);
-    }
-  };
 
-  const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredAgrupadores.length / recordsPerPage)) {
-      setCurrentPage(pageNumber);
-    }
-  };
-
-  const normalizeString = (str) =>
-    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-
-  const filteredAgrupadores = agrupadores.filter((agrupador) => {
-    const normalizedSearchTerm = normalizeString(searchTerm);
-  
-    if (searchField === 'Nombre_seccion') {
-      return normalizeString(agrupador.Nombre_seccion || '').includes(normalizedSearchTerm);
-    } else if (searchField === 'Total_secciones') {
-      return normalizeString(agrupador.Total_secciones.toString()).includes(normalizedSearchTerm);
-    } else if (searchField === 'Anio_academico') {
-      return normalizeString(agrupador.Anio_academico.toString()).includes(normalizedSearchTerm);
-    }
-    return false;
-  });
-
-  const indexOfLastRecord = currentPage * recordsPerPage; // Último índice de registro
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage; // Primer índice de registro
-  const currentRecords = filteredAgrupadores.slice(indexOfFirstRecord, indexOfLastRecord); // Registros actuales
-
-
-  // Función para guardar un nuevo agrupador
-  const handleGuardarAgrupador = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/gestion_academica/crear_agrupador', {
-        method: 'POST',
-      });
-  
-      const data = await response.json();
-  
-      if (!response.ok) {
-        Swal.fire('Advertencia', data.mensaje || 'No se pudo crear el agrupador.', 'warning');
-        return;
-      }
-  
-      Swal.fire('Éxito', 'Agrupador creado exitosamente.', 'success');
-      fetchAgrupadores(); // Recargar los datos
-      toggleModal(); // Cerrar el modal
+        // Devolver los resultados
+        res.status(200).json(rows[0]);
     } catch (error) {
-      console.error('Error al crear agrupador:', error);
-      Swal.fire('Error', 'Ocurrió un error al intentar crear el agrupador.', 'error');
+        // Manejar errores
+        console.error('Error al obtener los agrupadores:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
-  };
-  
-  return (
-    <CContainer style={{ marginTop: '40px', maxWidth: '900px' }}>
-  {/* Título centrado en negritas */}
-  <CRow className="align-items-center justify-content-center mb-5">
-    <CCol xs="12" className="text-center">
-      <h1 className="fw-bold" style={{ color: '#333' }}>
-        <CIcon icon={cilBook} className="me-2" />
-        Gestión Académica
-      </h1>
-    </CCol>
-  </CRow>
-
-  {/* Barra de búsqueda y selector de registros */}
-  <CRow className="align-items-center mb-4">
-    <CCol xs="12" md="8">
-      <CInputGroup>
-        <CInputGroupText>
-          <CIcon icon={cilSearch} />
-        </CInputGroupText>
-        <CFormInput
-          placeholder="Buscar Agrupador..."
-          onChange={(e) => setSearchTerm(e.target.value)}
-          value={searchTerm}
-        />
-        <CFormSelect
-          aria-label="Buscar por"
-          onChange={(e) => setSearchField(e.target.value)}
-          style={{ marginLeft: '10px' }}
-        >
-          <option value="Nombre_seccion">Nombre Sección</option>
-          <option value="Total_secciones">Total Secciones</option>
-          <option value="Anio_academico">Año Académico</option>
-        </CFormSelect>
-      </CInputGroup>
-    </CCol>
-
-    <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
-      <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
-        <div className="d-inline-flex align-items-center">
-          <span>Mostrar&nbsp;</span>
-          <CFormSelect
-            style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
-            onChange={(e) => {
-              const value = Number(e.target.value);
-              setRecordsPerPage(value);
-              setCurrentPage(1);
-            }}
-            value={recordsPerPage}
-          >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-          </CFormSelect>
-          <span>&nbsp;registros</span>
-        </div>
-      </CInputGroup>
-    </CCol>
-  </CRow>
-
-  {/* Botón "Nuevo" alineado a la derecha */}
-  <CRow className="align-items-center mb-4">
-    <CCol xs="12" className="text-end">
-      <CButton
-        className="d-flex align-items-center gap-1 rounded shadow"
-        style={{
-          backgroundColor: '#4B6251',
-          color: 'white',
-          padding: '10px 16px',
-          fontSize: '0.9rem',
-        }}
-        onClick={() => setShowModal(true)}
-      >
-        <CIcon icon={cilPlus} /> Nuevo
-      </CButton>
-    </CCol>
-  </CRow>
-
-  {/* Tabla de agrupadores */}
-  <CCard>
-    <CCardBody>
-      <div className="table-container mt-4" style={{ overflowX: 'auto', marginBottom: '20px' }}>
-        <CTable striped bordered hover>
-    <CTableHead>
-      <CTableRow>
-        <CTableHeaderCell className="text-center">#</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Total Secciones</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Año Académico</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Fecha de Creación</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Estado</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-    <CTableBody>
-      {agrupadores.length > 0 ? (
-        agrupadores.map((agrupador, index) => (
-          <CTableRow
-            key={agrupador.Cod_agrupadora}
-            style={{
-              backgroundColor: agrupador.Estado === 'Activo' ? '#eaffea' : 'inherit', // Fondo verde si está activo
-              fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal', // Negritas si está activo
-            }}
-          >
-            <CTableDataCell className="text-center">{index + 1}</CTableDataCell>
-            <CTableDataCell className="text-center">{agrupador.Total_secciones}</CTableDataCell>
-            <CTableDataCell className="text-center">{agrupador.Anio_academico}</CTableDataCell>
-            <CTableDataCell className="text-center">
-              {new Date(agrupador.Fecha_agrupacion).toLocaleDateString()}
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              <span
-                style={{
-                  color: agrupador.Estado === 'Activo' ? 'green' : 'red',
-                  fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal',
-                }}
-              >
-                {agrupador.Estado}
-              </span>
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              <div className="d-flex justify-content-center gap-2">
-                <CButton
-                  color="info"
-                  onClick={() => handleGestionarClick(agrupador.Cod_periodo_matricula)}
-                  className="d-flex align-items-center"
-                >
-                  <CIcon icon={cilSettings} />
-                </CButton>
-                <CButton
-                  color="warning"
-                  onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
-                  className="d-flex align-items-center"
-                >
-                  <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
-                </CButton>
-              </div>
-            </CTableDataCell>
-          </CTableRow>
-        ))
-      ) : (
-        <CTableRow>
-          <CTableDataCell colSpan="6" className="text-center">
-            No hay agrupadores disponibles.
-          </CTableDataCell>
-        </CTableRow>
-      )}
-    </CTableBody>
-  </CTable>
-      </div>
-    </CCardBody>
-  </CCard>
-
-  {/* Paginación */}
-  <div
-    className="pagination-container"
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: '20px',
-    }}
-  >
-    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-      <CButton
-        style={{
-          backgroundColor: '#6f8173',
-          color: '#D9EAD3',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-        }}
-        disabled={currentPage === 1}
-        onClick={() => paginate(currentPage - 1)}
-      >
-        Anterior
-      </CButton>
-
-      <CButton
-        style={{
-          backgroundColor: '#6f8173',
-          color: '#D9EAD3',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-        }}
-        disabled={currentPage === Math.ceil(filteredAgrupadores.length / recordsPerPage)}
-        onClick={() => paginate(currentPage + 1)}
-      >
-        Siguiente
-      </CButton>
-    </div>
-    <span style={{ fontSize: '0.9rem', color: '#6f8173' }}>
-      Página {currentPage} de {Math.ceil(filteredAgrupadores.length / recordsPerPage)}
-    </span>
-  </div>
-
-  {/* Modal para crear un nuevo agrupador */}
-  <CModal visible={showModal} onClose={handleCloseModal}>
-    <CModalHeader onClose={handleCloseModal}>
-      <CModalTitle>Crear Nuevo Agrupador</CModalTitle>
-    </CModalHeader>
-    <CModalBody>
-      <p>
-        Este proceso agrupará automáticamente las secciones del periodo académico activo.
-        ¿Deseas continuar?
-      </p>
-    </CModalBody>
-    <CModalFooter>
-      <CButton color="secondary" onClick={handleCloseModal}>
-        Cancelar
-      </CButton>
-      <CButton color="primary" onClick={handleGuardarAgrupador}>
-        Confirmar
-      </CButton>
-    </CModalFooter>
-  </CModal>
-</CContainer>
-
-  );
 };
 
-export default ListaGestion_Academica;
+// Controlador para obtener todos los periodos de matrícula
+export const obtenerPeriodos = async (req, res) => {
+    try {
+        // Consulta para obtener todos los períodos de matrícula
+        const [rows] = await pool.query(`
+            SELECT Cod_periodo_matricula, Anio_academico, Estado
+            FROM tbl_periodo_matricula
+        `);
+
+        // Verificar si hay resultados
+        if (rows.length > 0) {
+            res.status(200).json(rows); // Devuelve todos los períodos encontrados
+        } else {
+            res.status(404).json({ mensaje: 'No se encontraron períodos de matrícula' });
+        }
+    } catch (error) {
+        console.error('Error al obtener los períodos de matrícula:', error);
+        res.status(500).json({ mensaje: 'Error al obtener los períodos de matrícula' });
+    }
+};
+
+// Controlador para insertar agrupadores en tbl_historial_secciones
+export const insertarAgrupador = async (req, res) => {
+    try {
+        // Llamada al procedimiento almacenado
+        const [result] = await pool.query('CALL sp_insertar_agrupacion_secciones()');
+
+        // Verificar si se insertó correctamente
+        if (result.affectedRows === 0) {
+            return res.status(400).json({ mensaje: "No se pudo insertar el agrupador. Ya existe una agrupación para el período activo." });
+        }
+
+        // Respuesta exitosa
+        return res.status(201).json({ mensaje: "Agrupador insertado con éxito", data: result });
+    } catch (error) {
+        console.error('Error al insertar el agrupador:', error);
+
+        // Manejo del error específico con SIGNAL
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ mensaje: error.message });
+        }
+
+        // Error genérico del servidor
+        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+// Controlador para obtener el detalle del periodo de matricula
+export const getDetallePorPeriodo = async (req, res) => {
+    const { Cod_periodo_matricula } = req.params;
+    console.log('Parámetro recibido:', Cod_periodo_matricula); // Log para verificar el parámetro
+    try {
+        // Ejecución de la consulta utilizando la tabla `tbl_periodo_matricula`
+        const [resultado] = await pool.query(
+            'SELECT Cod_periodo_matricula, Fecha_inicio, Fecha_fin, Anio_academico, estado FROM tbl_periodo_matricula WHERE Cod_periodo_matricula = ?',
+            [Cod_periodo_matricula]
+        );
+
+        console.log('Resultado de la consulta:', resultado); // Log para depurar el resultado de la consulta
+
+        if (resultado.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos para el periodo proporcionado' });
+        }
+
+        res.json(resultado[0]); // Devuelve los datos del periodo encontrado
+    } catch (error) {
+        console.error('Error al obtener datos del periodo:', error.message); // Log detallado del error
+        res.status(500).json({ mensaje: 'Error al obtener los datos del periodo' });
+    }
+};
+
+// Obtener todas las agrupaciones con su estado
+export const getTodasAgrupaciones = async (req, res) => {
+    try {
+        // Llamada al procedimiento almacenado
+        const [resultado] = await pool.query('CALL sp_obtener_TodasAgrupacionesConEstado()');
+
+        // Verificar si hay resultados
+        if (resultado.length === 0 || resultado[0].length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron agrupaciones' });
+        }
+
+        console.log('Resultado de la consulta:', resultado[0]); // Log para verificar los datos obtenidos
+
+        // Respuesta con las agrupaciones obtenidas
+        res.json(resultado[0]);
+    } catch (error) {
+        console.error('Error al obtener agrupaciones:', error.message); // Log detallado del error
+        res.status(500).json({ mensaje: 'Error al obtener las agrupaciones' });
+    }
+};
+
+
+// Controlador para obtener secciones por periodo de matrícula
+export const obtenerSeccionesPorPeriodo = async (req, res) => {
+    const { Cod_periodo_matricula } = req.params; // Extraemos el parámetro de la URL
+    console.log('Parámetro recibido:', Cod_periodo_matricula); // Log para depuración
+
+    try {
+        // Validar el parámetro
+        if (!Cod_periodo_matricula || isNaN(Cod_periodo_matricula)) {
+            return res.status(400).json({
+                mensaje: 'El parámetro "Cod_periodo_matricula" es obligatorio y debe ser un número válido.',
+            });
+        }
+
+        // Llamada al procedimiento almacenado
+        const [rows] = await pool.query('CALL sp_obtener_secciones_por_periodo(?)', [Cod_periodo_matricula]);
+
+        // Verificar si hay resultados
+        if (!rows || rows[0].length === 0) {
+            return res.status(404).json({ mensaje: `No se encontraron secciones para el periodo ${Cod_periodo_matricula}.` });
+        }
+
+        // Devolver los resultados en formato JSON
+        res.status(200).json(rows[0]);
+    } catch (error) {
+        console.error('Error al obtener las secciones:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+
+//CONTROLADORES DE SECCIONES:
+// Controlador para obtener secciones
+export const obtenerSecciones = async (req, res) => {
+    const { Cod_secciones } = req.params; // Extraemos el parámetro de la URL
+
+    try {
+        let query = 'CALL sp_obtener_secciones(?)';
+        let params = [Cod_secciones ? Cod_secciones : 0]; // Si no se especifica, pasa 0 para obtener todas las secciones
+
+        const [rows] = await pool.query(query, params);
+
+        if (!rows || rows[0].length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron secciones.' });
+        }
+
+        res.status(200).json(rows[0]); // Devolver todas las columnas, incluyendo Cod_Profesor y Cod_periodo_matricula
+    } catch (error) {
+        console.error('Error al obtener las secciones:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+
+// Controlador para obtener todos los edificios
+export const obtenerEdificios = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT Cod_edificio, Nombre_edificios FROM tbl_edificio'); // Cambia aquí la consulta
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener edificios:', error);
+        res.status(500).json({ mensaje: 'Error al obtener edificios', error: error.message });
+    }
+};
+
+
+// Controlador para obtener aulas por edificio
+export const obtenerAulasPorEdificio = async (req, res) => {
+    const { Cod_edificio } = req.params;
+
+    try {
+        const [rows] = await pool.query(
+            'SELECT Cod_aula, Numero_aula FROM tbl_aula WHERE Cod_edificio = ?', 
+            [Cod_edificio]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener aulas por edificio:', error);
+        res.status(500).json({ mensaje: 'Error al obtener aulas por edificio', error: error.message });
+    }
+};
+
+// Controlador para obtener un edificio específico por Cod_edificio
+export const obtenerEdificioPorId = async (req, res) => {
+    const { Cod_edificio } = req.params;
+
+    try {
+        const [rows] = await pool.query(
+            'SELECT Cod_edificio, Nombre_edificios, Numero_pisos, Aulas_disponibles FROM tbl_edificio WHERE Cod_edificio = ?', 
+            [Cod_edificio]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontró el edificio especificado' });
+        }
+        
+        res.json(rows[0]); // Devolver el primer (y único) resultado
+    } catch (error) {
+        console.error('Error al obtener el edificio por ID:', error);
+        res.status(500).json({ mensaje: 'Error al obtener el edificio', error: error.message });
+    }
+};
+
+
+
+// Controlador para obtener todas las aulas
+export const obtenerAulas = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT Cod_aula, Numero_aula FROM tbl_aula');
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener aulas:', error);
+        res.status(500).json({ mensaje: 'Error al obtener aulas' });
+    }
+};
+
+// Controlador para obtener todos los grados
+export const obtenerGrados = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT Cod_grado, Nombre_grado FROM tbl_grados');
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener grados:', error);
+        res.status(500).json({ mensaje: 'Error al obtener grados' });
+    }
+};
+// Controlador para obtener todos los profesores
+export const obtenerProfesores = async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT p.Cod_profesor, per.Nombre AS Nombre_profesor
+            FROM tbl_profesores p
+            JOIN tbl_personas per ON p.Cod_persona = per.Cod_persona
+        `);
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener profesores:', error);
+        res.status(500).json({ mensaje: 'Error al obtener profesores' });
+    }
+};
+// Controlador para obtener el periodo de matrícula activo
+export const obtenerPeriodoMatriculaActivo = async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT Cod_periodo_matricula, Anio_academico 
+            FROM tbl_periodo_matricula
+        `);
+        
+        if (rows.length > 0) {
+            res.json(rows[0]);
+        } else {
+            res.status(404).json({ mensaje: 'No se encontró un periodo de matrícula activo' });
+        }
+    } catch (error) {
+        console.error('Error al obtener el periodo de matrícula activo:', error);
+        res.status(500).json({ mensaje: 'Error al obtener el periodo de matrícula activo' });
+    }
+};
+
+// Controlador para crear una nueva sección
+export const crearSeccion = async (req, res) => {
+    const { p_Nombre_seccion, p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
+
+    try {
+        // Validación de campos requeridos
+        if (!p_Nombre_seccion || !p_Cod_aula || !p_Cod_grado || !p_Cod_Profesor || !p_Cod_periodo_matricula) {
+            return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
+        }
+
+        // Llamada al procedimiento almacenado
+        const [result] = await pool.query(
+            'CALL sp_insertar_secciones(?, ?, ?, ?, ?)',
+            [p_Nombre_seccion, p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula]
+        );
+
+        return res.status(201).json({ mensaje: "Sección insertada con éxito", data: result });
+    } catch (error) {
+        console.error('Error al insertar la sección:', error);
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ mensaje: error.message });
+        }
+        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+// Controlador para actualizar una sección
+export const actualizarSeccion = async (req, res) => {
+    const { p_Cod_secciones, p_Nombre_seccion, p_Numero_aula, p_Nombre_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
+
+    try {
+        // Validación de campos requeridos
+        if (!p_Cod_secciones || !p_Nombre_seccion || !p_Numero_aula || !p_Nombre_grado || !p_Cod_Profesor || !p_Cod_periodo_matricula) {
+            return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
+        }
+
+        // Validación para verificar si el número de aula existe en la base de datos
+        const [aulaResult] = await pool.query('SELECT Cod_aula FROM tbl_aula WHERE Numero_aula = ?', [p_Numero_aula]);
+        if (aulaResult.length === 0) {
+            return res.status(400).json({ mensaje: "El aula especificada no existe." });
+        }
+
+        // Llamar al procedimiento almacenado para actualizar la sección
+        const [result] = await pool.query(
+            'CALL sp_actualizar_secciones(?, ?, ?, ?, ?, ?)',
+            [p_Cod_secciones, p_Nombre_seccion, p_Numero_aula, p_Nombre_grado, p_Cod_Profesor, p_Cod_periodo_matricula]
+        );
+
+        return res.status(200).json({ mensaje: 'Sección actualizada correctamente.', data: result });
+    } catch (error) {
+        console.error('Error al actualizar la sección:', error);
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ mensaje: error.message });
+        }
+        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+
+// Controlador para eliminar una sección
+export const eliminarSeccion = async (req, res) => {
+    const { Cod_seccion } = req.params;
+
+    try {
+        const [result] = await pool.query('CALL sp_eliminar_secciones(?)', [Cod_seccion]);
+
+        if (result.affectedRows > 0) {
+            return res.status(200).json({ mensaje: 'Sección eliminada correctamente.' });
+        } else {
+            return res.status(404).json({ mensaje: 'No se encontró la sección especificada.' });
+        }
+    } catch (error) {
+        console.error('Error al eliminar la sección:', error);
+        if (error.sqlState === '45000') {
+            return res.status(400).json({ mensaje: error.message });
+        }
+        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
