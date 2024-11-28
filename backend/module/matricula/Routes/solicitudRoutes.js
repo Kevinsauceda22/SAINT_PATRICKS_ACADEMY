@@ -6,7 +6,7 @@ import {
     actualizarSolicitud,
     obtenerSolicitudPorCod,
     eliminarSolicitud,
-    obtenerUsuariosPorRolAdmin, // Importa el nuevo controlador
+    obtenerUsuariosPorRolAdmin,
 } from '../Controllers/solicitudController.js';
 
 const router = express.Router();
@@ -18,7 +18,7 @@ router.post('/solicitudes', checkAuth, insertarSolicitud); // Insertar una nueva
 router.put('/solicitudes/:Cod_solicitud', checkAuth, actualizarSolicitud); // Actualizar una solicitud
 router.delete('/solicitudes/:Cod_solicitud', checkAuth, eliminarSolicitud); // Eliminar una solicitud
 
-// Nueva ruta para obtener usuarios con rol de administrador
-router.get('/usuarios/rol-admin', checkAuth, obtenerUsuariosPorRolAdmin);
+// Nueva ruta protegida para obtener usuarios con rol de administrador
+router.get('/usuarios/rol-admin',checkAuth, obtenerUsuariosPorRolAdmin); // Obtener usuarios con rol de administrador
 
 export default router;
