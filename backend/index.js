@@ -3,7 +3,12 @@ import dotenv from 'dotenv';
 import cors from 'cors'; // Importar cors
 import conectarDB from './config/db.js'; 
 import usuariosRoutes from './module/auth/usuario_routes.js'; 
+<<<<<<< Updated upstream
 //----------------------------------------CALIFICACIONES RUTAS-----------------------------------------------------------
+=======
+import tipoRelacionRoutes from './module/Personas/Routes/tipoRelacionRoutes.js';
+import estructuraFamiliarRoutes from './module/Personas/Routes/estructuraFamiliarRoutes.js';
+>>>>>>> Stashed changes
 import profesoresRoutes from './module/calificaciones/Routes/profesoresRoutes.js';
 import tiposContratoRoutes from './module/calificaciones/Routes/tiposContratosRoutes.js';
 import actividadesRoutes from './module/calificaciones/Routes/ActividadAcademica_Routes.js';
@@ -103,6 +108,11 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/roles', PermisosRoutes); 
 // Registrar las rutas
 app.use('/api/usuarios', cuentasRouter);
+
+
+//Personas
+app.use('/api/tipoRelacion', tipoRelacionRoutes);
+app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 
 // Calificaciones
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
