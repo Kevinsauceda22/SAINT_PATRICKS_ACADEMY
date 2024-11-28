@@ -137,8 +137,6 @@ const handleSeleccionarCodPersona = (persona) => {
       setContacto(data);
       console.log('Estado de contacto después de setContacto:', contacto); // Verifica el estado
     } catch (error) {
-      console.error('Error fetching contactos:', error);
-      swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la lista de contactos.' });
     }
   };
 

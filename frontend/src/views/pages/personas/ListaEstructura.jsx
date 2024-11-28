@@ -79,88 +79,8 @@ const ListaEstructura = () => {
   const [isDropdownOpenPadre, setIsDropdownOpenPadre] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [estructurasFamiliares, setEstructurasFamiliares] = useState([]);
+  const [isUpdating, setIsUpdating] = useState(false); // Cambia según el flujo
 
-
-  {/* Estados para el modal de actualizar  */}
-
-  const [nuevaEstructuraActualizar, setNuevaEstructuraActualizar] = useState(false);
-  const [modalVisibleActualizar, setModalVisibleActualizar] = useState(false);
-  const [buscadorRelacionEstudianteActualizar, setBuscadorRelacionEstudianteActualizar] = useState('');
-  const [buscadorRelacionPadreActualizar, setBuscadorRelacionPadreActualizar] = useState('');
-  const [personasFiltradasEstudianteActualizar, setPersonasFiltradasEstudianteActualizar] = useState([]);
-  const [personasFiltradasPadreActualizar, setPersonasFiltradasPadreActualizar] = useState([]);
-  const [isDropdownOpenEstudianteActualizar, setIsDropdownOpenEstudianteActualizar] = useState(false);
-  const [isDropdownOpenPadreActualizar, setIsDropdownOpenPadreActualizar] = useState(false);
-  
-  const handleBuscarRelacionEstudianteActualizar = (e) => {
-    const filtro = e.target.value.toLowerCase();
-    setBuscadorRelacionEstudianteActualizar(filtro);
-  
-    if (filtro.trim() === '') {
-      setPersonasFiltradasEstudianteActualizar([]);
-      setIsDropdownOpenEstudianteActualizar(false);
-      return;
-    }
-  
-    const filtradas = personas.filter(persona =>
-      (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
-      (persona.dni_persona && persona.dni_persona.includes(filtro))
-    );
-  
-    setPersonasFiltradasEstudianteActualizar(filtradas);
-    setIsDropdownOpenEstudianteActualizar(filtradas.length > 0);
-  };
-  
-  const handleSeleccionarPersonaEstudianteActualizar = (persona) => {
-    setCodPersonaEstudianteActualizar(persona.cod_persona);
-    setNuevaEstructuraActualizar(prev => ({
-      ...prev,
-      cod_persona_estudiante: persona.cod_persona,
-    }));
-    setEstructuraToUpdate(prev => ({
-      ...prev,
-      nombreEstudiante: persona.fullName,
-    }));
-    setBuscadorRelacionEstudianteActualizar(persona.fullName); // Mostramos el nombre seleccionado
-    setIsDropdownOpenEstudianteActualizar(false);
-  };
-
-
-  
-  
-  const handleBuscarRelacionPadreActualizar = (e) => {
-    const filtro = e.target.value.toLowerCase();
-    setBuscadorRelacionPadreActualizar(filtro);
-  
-    if (filtro.trim() === '') {
-      setPersonasFiltradasPadreActualizar([]);
-      setIsDropdownOpenPadreActualizar(false);
-      return;
-    }
-  
-    const filtradas = personas.filter(persona =>
-      (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
-      (persona.dni_persona && persona.dni_persona.includes(filtro))
-    );
-  
-    setPersonasFiltradasPadreActualizar(filtradas);
-    setIsDropdownOpenPadreActualizar(filtradas.length > 0);
-  };
-  
-  const handleSeleccionarPersonaPadreActualizar = (persona) => {
-    setCodPersonaPadreActualizar(persona.cod_persona);
-    setNuevaEstructuraActualizar(prev => ({
-      ...prev,
-      cod_persona_padre: persona.cod_persona,
-    }));
-    setEstructuraToUpdate(prev => ({
-      ...prev,
-      nombrePadre: persona.fullName,
-    }));
-    setBuscadorRelacionPadreActualizar(persona.fullName); // Mostramos el nombre seleccionado
-    setIsDropdownOpenPadreActualizar(false);
-  };
-  
 
   
   // Navegación y ubicación
@@ -253,12 +173,21 @@ const handleBuscarRelacionEstudiante = (e) => {
 };
 
 const handleSeleccionarPersonaEstudiante = (persona) => {
+  if (isUpdating) {
+    // Modo actualización
+    setEstructuraToUpdate(prev => ({
+      ...prev,
+      cod_persona_estudiante: persona.cod_persona,
+    }));
+  } else {
+    // Modo creación
+    setNuevaEstructuraFamiliar(prev => ({
+      ...prev,
+      cod_persona_estudiante: persona.cod_persona,
+    }));
+  }
+
   setCodPersonaEstudiante(persona.cod_persona);
-  setNuevaEstructuraFamiliar(prev => ({
-    ...prev,
-    cod_persona_estudiante: persona.cod_persona,
-    
-  }));
   setIsDropdownOpenEstudiante(false);
   setBuscadorRelacionEstudiante(`${persona.dni_persona} - ${persona.fullName}`);
 };
@@ -283,14 +212,25 @@ const handleBuscarRelacionPadre = (e) => {
 };
 
 const handleSeleccionarPersonaPadre = (persona) => {
+  if (isUpdating) {
+    // Modo actualización
+    setEstructuraToUpdate(prev => ({
+      ...prev,
+      cod_persona_padre: persona.cod_persona,
+    }));
+  } else {
+    // Modo creación
+    setNuevaEstructuraFamiliar(prev => ({
+      ...prev,
+      cod_persona_padre: persona.cod_persona,
+    }));
+  }
+
   setCodPersonaPadre(persona.cod_persona);
-  setNuevaEstructuraFamiliar(prev => ({
-    ...prev,
-    cod_persona_padre: persona.cod_persona,
-  }));
   setIsDropdownOpenPadre(false);
   setBuscadorRelacionPadre(`${persona.dni_persona} - ${persona.fullName}`);
 };
+
 
 
 {/* ----------------------------------------------------------------------------------------------------------------------------------------*/}
@@ -703,34 +643,33 @@ const handleCloseModal = (closeFunction, resetFields) => {
 };
 
 
+
+
 const handleOpenUpdateModal = (estructura) => {
+  // Configurar la estructura a actualizar
   setEstructuraToUpdate({
+    ...estructura,
     descripcion: estructura.descripcion || '',
     cod_persona_padre: estructura.cod_persona_padre || '',
     cod_persona_estudiante: estructura.cod_persona_estudiante || '',
     cod_tipo_relacion: estructura.cod_tipo_relacion || '',
     Cod_genealogia: estructura.Cod_genealogia || '',
-  });
-  setModalUpdateVisible(true);
-};
-
-
-const openUpdateModal = (estructura) => {
-  setEstructuraToUpdate({
-    ...estructura,
     nombreEstudiante: personas.find(persona => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName || '',
     nombrePadre: personas.find(persona => persona.cod_persona === estructura.cod_persona_padre)?.fullName || '',
   });
-  setNuevaEstructuraActualizar({
-    cod_persona_padre: estructura.cod_persona_padre,
-    cod_persona_estudiante: estructura.cod_persona_estudiante,
-    cod_tipo_relacion: estructura.cod_tipo_relacion,
-    descripcion: estructura.descripcion,
-  });
-  setBuscadorRelacionEstudianteActualizar(estructura.nombreEstudiante || '');
-  setBuscadorRelacionPadreActualizar(estructura.nombrePadre || '');
-  setModalVisibleActualizar(true);
+
+  // Configurar los valores iniciales de los buscadores
+  setBuscadorRelacionEstudiante(
+    personas.find(persona => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName || ''
+  );
+  setBuscadorRelacionPadre(
+    personas.find(persona => persona.cod_persona === estructura.cod_persona_padre)?.fullName || ''
+  );
+
+  // Mostrar el modal de actualización
+  setModalUpdateVisible(true);
 };
+
 
 
 const openDeleteModal = (estructura) => {
@@ -936,7 +875,7 @@ return (
               {canUpdate && (
                 <CButton
                   color="warning"
-                  onClick={() => openUpdateModal(estructura)}
+                  onClick={() => handleOpenUpdateModal(estructura)}
                   style={{ marginRight: '10px' }}
                 >
                   <CIcon icon={cilPen} />
@@ -1087,86 +1026,88 @@ return (
 {/* Fin del modal de agregar estructura familiar */}
 
 
-{/* Modal para actualizar estructura familiar */}
-<CModal visible={modalVisibleActualizar} onClose={() => setModalVisibleActualizar(false)} backdrop="static">
+
+
+{/********************************* Modal para actualizar estructura familiar***************************************************/}
+<CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
   </CModalHeader>
   <CModalBody>
     <CForm>
-{/* Campo de búsqueda para Estudiante */}
-<div className="mb-3">
-  <CInputGroup className="mb-3">
-    <CInputGroupText>Estudiante</CInputGroupText>
-    <CFormInput
-      type="text"
-      value={buscadorRelacionEstudianteActualizar}
-      onChange={handleBuscarRelacionEstudianteActualizar}
-      placeholder={estructuraToUpdate?.nombreEstudiante || 'Buscar por DNI o nombre'}
-    />
-    <CInputGroupText>
-      <CIcon icon={cilSearch} />
-    </CInputGroupText>
-  </CInputGroup>
+      {/* Campo de búsqueda para Estudiante */}
+      <div className="mb-3">
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Estudiante</CInputGroupText>
+          <CFormInput
+            type="text"
+            value={buscadorRelacionEstudiante}
+            onChange={handleBuscarRelacionEstudiante}
+            placeholder={estructuraToUpdate?.nombreEstudiante || 'Buscar por DNI o nombre'}
+          />
+          <CInputGroupText>
+            <CIcon icon={cilSearch} />
+          </CInputGroupText>
+        </CInputGroup>
 
-  {isDropdownOpenEstudianteActualizar && personasFiltradasEstudianteActualizar.length > 0 && (
-    <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
-      {personasFiltradasEstudianteActualizar.map(persona => (
-        <div
-          key={persona.cod_persona}
-          className="dropdown-item"
-          style={{ cursor: 'pointer' }}
-          onClick={() => handleSeleccionarPersonaEstudianteActualizar(persona)}
-        >
-          {persona.dni_persona} - {persona.fullName}
-        </div>
-      ))}
-    </div>
-  )}
-</div>
+        {isDropdownOpenEstudiante && personasFiltradasEstudiante.length > 0 && (
+          <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+            {personasFiltradasEstudiante.map(persona => (
+              <div
+                key={persona.cod_persona}
+                className="dropdown-item"
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleSeleccionarPersonaEstudiante(persona)}
+              >
+                {persona.dni_persona} - {persona.fullName}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-{/* Campo de búsqueda para Padre/Tutor */}
-<div className="mb-3">
-  <CInputGroup className="mb-3">
-  <CInputGroupText>Padre/Tutor</CInputGroupText>
-    <CFormInput
-      type="text"
-      value={buscadorRelacionPadreActualizar}
-      onChange={handleBuscarRelacionPadreActualizar}
-      placeholder={estructuraToUpdate?.nombrePadre || 'Buscar por DNI o nombre'}
-    />
-    <CInputGroupText>
-      <CIcon icon={cilSearch} />
-    </CInputGroupText>
-  </CInputGroup>
+      {/* Campo de búsqueda para Padre/Tutor */}
+      <div className="mb-3">
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Padre/Tutor</CInputGroupText>
+          <CFormInput
+            type="text"
+            value={buscadorRelacionPadre}
+            onChange={handleBuscarRelacionPadre}
+            placeholder={estructuraToUpdate?.nombrePadre || 'Buscar por DNI o nombre'}
+          />
+          <CInputGroupText>
+            <CIcon icon={cilSearch} />
+          </CInputGroupText>
+        </CInputGroup>
 
-  {isDropdownOpenPadreActualizar && personasFiltradasPadreActualizar.length > 0 && (
-    <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
-      {personasFiltradasPadreActualizar.map(persona => (
-        <div
-          key={persona.cod_persona}
-          className="dropdown-item"
-          style={{ cursor: 'pointer' }}
-          onClick={() => handleSeleccionarPersonaPadreActualizar(persona)}
-        >
-          {persona.dni_persona} - {persona.fullName}
-        </div>
-      ))}
-    </div>
-  )}
-</div>
-
-
+        {isDropdownOpenPadre && personasFiltradasPadre.length > 0 && (
+          <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+            {personasFiltradasPadre.map(persona => (
+              <div
+                key={persona.cod_persona}
+                className="dropdown-item"
+                style={{ cursor: 'pointer' }}
+                onClick={() => handleSeleccionarPersonaPadre(persona)}
+              >
+                {persona.dni_persona} - {persona.fullName}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Otros campos */}
       <CInputGroup className="mt-3">
         <CInputGroupText>Tipo Relación</CInputGroupText>
         <CFormSelect
-          value={nuevaEstructuraActualizar.cod_tipo_relacion}
-          onChange={e => setNuevaEstructuraActualizar(prev => ({
-            ...prev,
-            cod_tipo_relacion: e.target.value,
-          }))}
+          value={estructuraToUpdate.cod_tipo_relacion}
+          onChange={e =>
+            setEstructuraToUpdate(prev => ({
+              ...prev,
+              cod_tipo_relacion: e.target.value,
+            }))
+          }
         >
           <option value="">Tipo de Relación</option>
           {tipoRelacion.map(tipo => (
@@ -1181,19 +1122,25 @@ return (
         <CInputGroupText>Descripción</CInputGroupText>
         <CFormInput
           type="text"
-          value={nuevaEstructuraActualizar.descripcion}
-          onChange={e => setNuevaEstructuraActualizar(prev => ({
-            ...prev,
-            descripcion: e.target.value,
-          }))}
+          value={estructuraToUpdate.descripcion}
+          onChange={e =>
+            setEstructuraToUpdate(prev => ({
+              ...prev,
+              descripcion: e.target.value,
+            }))
+          }
           placeholder="Descripción de la relación"
         />
       </CInputGroup>
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalVisibleActualizar(false)}>Cerrar</CButton>
-    <CButton color="primary" onClick={handleUpdateEstructura}>Guardar</CButton>
+    <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>
+      Cerrar
+    </CButton>
+    <CButton color="primary" onClick={handleUpdateEstructura}>
+      Guardar
+    </CButton>
   </CModalFooter>
 </CModal>
 
