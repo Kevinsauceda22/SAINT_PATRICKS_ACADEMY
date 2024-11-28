@@ -1114,7 +1114,6 @@ useEffect(() => {
   </CModalFooter>
 </CModal>
 
-
      {/* Modal Actualizar Sección */}
      <CModal visible={modalUpdateVisible} backdrop="static" size="lg">
      <CModalHeader closeButton={false}>
@@ -1245,3 +1244,4 @@ useEffect(() => {
 };
 
 export default ListaSecciones;
+
