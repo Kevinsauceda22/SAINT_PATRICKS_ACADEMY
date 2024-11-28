@@ -2,7 +2,7 @@ import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
 
-//Mostrar Personas
+//CONTROLADOR PARA OBTENER LAS PERSONAS
 export const obtenerPersonas = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL P_Get_Personas()');
@@ -18,9 +18,7 @@ export const obtenerPersonas = async (req, res) => {
     }
 };
 
-
-
-// Mostrar detalle de una persona
+//CONTROLADOR PARA OBTENER DETALLE PERSONA
 export const obtenerDetallePersona = async (req, res) => {
     const { cod_persona } = req.params; // Obtiene el código de la persona desde la URL
 
@@ -38,6 +36,7 @@ export const obtenerDetallePersona = async (req, res) => {
     }
 };
 
+//CONTROLADOR PARA OBTENER DEPARTAMENTOS
 export const obtenerDepartamentos = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL P_Get_Departamento()');
@@ -53,6 +52,7 @@ export const obtenerDepartamentos = async (req, res) => {
     }
 };
 
+//CONTROLADOR PARA OBTENER TIPO DE PERSONA
 export const obtenerTipoPersona = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL P_Get_Tipo_Persona()');
@@ -68,6 +68,7 @@ export const obtenerTipoPersona = async (req, res) => {
     }
 };
 
+//CONTROLADOR PARA OBTENER GENEROS
 export const obtenerGeneros= async (req, res) => {
     try {
         const [rows] = await pool.query('CALL P_Get_Genero_Persona()');
@@ -83,8 +84,7 @@ export const obtenerGeneros= async (req, res) => {
     }
 };
 
-
-//API para crear persona
+//CONTROLADOR PARA CREAR UNA PERSONA
 export const crearPersona = async (req, res) => {
     const { 
         dni_persona,
@@ -104,68 +104,8 @@ export const crearPersona = async (req, res) => {
     } = req.body;
 
     const connection = await pool.getConnection();
-    const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
-
-    const tieneLetrasRepetidas = (texto) => {
-        const regex = /(.)\1{3,}/; 
-        return regex.test(texto.replace(/\s/g, '')); 
-    };
-
-    const tieneEspaciosMultiples = (texto) => {
-        return /\s{2,}/.test(texto); 
-    };
 
     try {
-        // Validación de DNI
-        if (!/^\d{13}$/.test(dni_persona)) {
-            return res.status(400).json({ mensaje: 'El DNI debe tener exactamente 13 dígitos.' });
-        }
-
-        // Validación de los primeros cuatro dígitos del DNI
-        const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
-        if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
-            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.' });
-        }
-
-        // Validación del año de nacimiento en el DNI
-        const añoNacimientoDNI = parseInt(dni_persona.substring(4, 8));
-        if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
-            return res.status(400).json({ mensaje: 'Ingrese un DNI válido. El año debe estar entre 1930 y 2020.' });
-        }
-
-        // Función para validar un campo de texto
-        const validarCampo = (campo, nombreCampo) => {
-            if (tieneLetrasRepetidas(campo)) {
-                return res.status(400).json({ mensaje: `${nombreCampo} no puede contener la misma letra más de 3 veces consecutivas.` });
-            }
-            if (tieneEspaciosMultiples(campo)) {
-                return res.status(400).json({ mensaje: `${nombreCampo} no puede tener más de un espacio consecutivo.` });
-            }
-        };
-
-        // Validación de la fecha de nacimiento
-        const fechaNacimiento = new Date(fecha_nacimiento);
-        const añoNacimiento = fechaNacimiento.getFullYear();
-        if (añoNacimiento < 1930 || añoNacimiento > 2020) {
-            return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1930 y 2020.' });
-        }
-
-        // Validaciones
-        const validaciones = [
-            { campo: Nombre, nombreCampo: 'El primer nombre' },
-            { campo: Segundo_nombre, nombreCampo: 'El segundo nombre', optional: true },
-            { campo: Primer_apellido, nombreCampo: 'El primer apellido' },
-            { campo: Segundo_apellido, nombreCampo: 'El segundo apellido', optional: true },
-            { campo: direccion_persona, nombreCampo: 'La dirección' } // Validación para dirección
-        ];
-
-        for (const { campo, nombreCampo, optional } of validaciones) {
-            if (campo || optional) { // Solo validar si el campo es obligatorio o está presente
-                const error = validarCampo(campo, nombreCampo);
-                if (error) return error; // Si hay un error, retorna la respuesta y evita continuar
-            }
-        }
-
         // Crear la nueva persona con el procedimiento almacenado
         await connection.query(
             "CALL P_Post_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
@@ -184,7 +124,6 @@ export const crearPersona = async (req, res) => {
                 cod_nacionalidad,
                 cod_departamento,
                 cod_municipio
-                
             ]
         );
 
@@ -199,10 +138,7 @@ export const crearPersona = async (req, res) => {
     }
 };
 
-
-
-
-//API para actualizar personas 
+//CONTROLADOR PARA ACTUALIZAR UNA PERSONA
 export const actualizarPersona = async (req, res) => {
     const { cod_persona } = req.params; // Código de persona desde la URL
 
@@ -223,58 +159,7 @@ export const actualizarPersona = async (req, res) => {
         cod_municipio
     } = req.body;
 
-    // Regex para solo letras, acentos y espacios
-    const soloLetrasRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
-
     try {
-        // Validaciones específicas
-
-        // Validar que cod_persona sea un número válido
-        if (!cod_persona || isNaN(cod_persona)) {
-            return res.status(400).json({ mensaje: 'El código de persona es inválido o no fue proporcionado.' });
-        }
-
-        // Validación de DNI
-        if (!/^\d{13}$/.test(dni_persona)) {
-            return res.status(400).json({ mensaje: 'El DNI debe tener exactamente 13 dígitos.' });
-        }
-
-        const primerCuatroDNI = parseInt(dni_persona.substring(0, 4));
-        if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
-            return res.status(400).json({ mensaje: 'El DNI no es válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.' });
-        }
-
-        const añoNacimientoDNI = parseInt(dni_persona.substring(4, 8));
-        if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
-            return res.status(400).json({ mensaje: 'El DNI no es válido. El año debe estar entre 1920 y 2020.' });
-        }
-
-        // Validaciones de campos de texto
-        const validaciones = [
-            { campo: Nombre, nombreCampo: 'El nombre' },
-            { campo: Segundo_nombre, nombreCampo: 'El segundo nombre', optional: true },
-            { campo: Primer_apellido, nombreCampo: 'El primer apellido' },
-            { campo: Segundo_apellido, nombreCampo: 'El segundo apellido', optional: true },
-            { campo: direccion_persona, nombreCampo: 'La dirección' }
-        ];
-
-        for (const { campo, nombreCampo, optional } of validaciones) {
-            if (!campo && !optional) {
-                return res.status(400).json({ mensaje: `${nombreCampo} es obligatorio.` });
-            }
-            if (campo && (campo.length < 2 || campo.length > 50 || !soloLetrasRegex.test(campo))) {
-                return res.status(400).json({ mensaje: `${nombreCampo} debe tener entre 2 y 50 caracteres y solo puede contener letras y acentos.` });
-            }
-        }
-
-        // Validación de fecha de nacimiento
-        const fechaNacimiento = new Date(fecha_nacimiento);
-        const añoNacimiento = fechaNacimiento.getFullYear();
-        if (añoNacimiento < 1930 || añoNacimiento > 2020) {
-            return res.status(400).json({ mensaje: 'La fecha de nacimiento debe estar entre 1930 y 2020.' });
-        }
-
-
         // Llamada al procedimiento almacenado para actualizar
         await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             cod_persona,
@@ -301,6 +186,7 @@ export const actualizarPersona = async (req, res) => {
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
 
 
 

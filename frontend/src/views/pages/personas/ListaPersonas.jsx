@@ -58,6 +58,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 const ListaPersonas = () => {
   const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaPersonas');
   
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [personas, setPersonas] = useState([])
   const [modalVisible, setModalVisible] = useState(false)
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false)
@@ -92,6 +93,9 @@ const ListaPersonas = () => {
   const [tipoPersona, setTipoPersona] = useState([])
   const [generos, setGeneros] = useState([])
   const [departamentos, setDepartamentos] = useState([])
+  const [fechaNacimiento, setFechaNacimiento] = useState('');
+  
+
 
   
   const [municipio, setMunicipio] = useState([])
@@ -109,7 +113,33 @@ const ListaPersonas = () => {
   const [isDropdownOpenNacionalidad, setIsDropdownOpenNacionalidad] = useState(false); // Control del dropdown
   const [selectedNacionalidad, setSelectedNacionalidad] = useState(null); // Guardar la nacionalidad seleccionada
 
-  const [fechaNacimiento, setFechaNacimiento] = useState('') // Estado para la fecha de nacimiento
+  
+  const currentYear = new Date().getFullYear();
+  const minYear = currentYear - 90;
+  const maxYear = currentYear - 4;
+
+  const handleFechaNacimientoChange = (e) => {
+    const value = e.target.value;
+    setNuevaPersona((prevState) => ({ ...prevState, fecha_nacimiento: value }));
+    setFechaNacimiento(value); // Actualizamos el estado de fechaNacimiento
+
+    // Validación de la fecha de nacimiento
+    let erroresTemp = { ...errorMessages };
+    if (!value || value === '') {
+      erroresTemp.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+    } else {
+      const fechaNacimiento = new Date(value);
+      const añoNacimiento = fechaNacimiento.getFullYear();
+      
+      if (añoNacimiento < minYear || añoNacimiento > maxYear) {
+        erroresTemp.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
+      } else {
+        erroresTemp.fecha_nacimiento = '';
+      }
+    }
+    setErrorMessages(erroresTemp);
+  };
+
   const [errorMessages, setErrorMessages] = useState({
     dni_persona: '',
     Nombre: '',
@@ -515,6 +545,10 @@ const handleSeleccionarMunicipio = (municipio) => {
 {/********************************************FUNCION PARA CREAR UNA PERSONA*****************************************************/}
 
 const handleCreatePersona = async () => {
+
+  if (isSubmitting) return; 
+  setIsSubmitting(true);
+  
   const dniSinGuiones = nuevaPersona.dni_persona.replace(/-/g, '');
 
   const errores = {};
@@ -533,6 +567,8 @@ const handleCreatePersona = async () => {
     errores.dni_persona = 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.';
   }
 
+
+
   const campos = [
     { campo: nuevaPersona.Nombre, nombreCampo: 'Nombre' },
     { campo: nuevaPersona.Primer_apellido, nombreCampo: 'Primer apellido' },
@@ -544,6 +580,7 @@ const handleCreatePersona = async () => {
     }
   });
 
+
   if (!nuevaPersona.cod_genero || nuevaPersona.cod_genero === '') {
     setErrorMessages((prevErrors) => ({
       ...prevErrors,
@@ -551,6 +588,46 @@ const handleCreatePersona = async () => {
     }));
     return;
   }
+  
+  if (!nuevaPersona.cod_tipo_persona || nuevaPersona.cod_tipo_persona === '') {
+    setErrorMessages((prevErrors) => ({
+      ...prevErrors,
+      cod_tipo_persona: 'Debe seleccionar un tipo de persona.',
+    }));
+    return;
+  }
+  
+  if (!nuevaPersona.cod_nacionalidad || nuevaPersona.cod_nacionalidad === '') {
+    setErrorMessages((prevErrors) => ({
+      ...prevErrors,
+      cod_nacionalidad: 'Debe seleccionar una nacionalidad.',
+    }));
+    return;
+  }
+  
+  if (!nuevaPersona.cod_departamento || nuevaPersona.cod_departamento === '') {
+    setErrorMessages((prevErrors) => ({
+      ...prevErrors,
+      cod_departamento: 'Debe seleccionar un departamento.',
+    }));
+    return;
+  }
+  
+  if (!nuevaPersona.cod_municipio || nuevaPersona.cod_municipio === '') {
+    setErrorMessages((prevErrors) => ({
+      ...prevErrors,
+      cod_municipio: 'Debe seleccionar un municipio.',
+    }));
+    return;
+  }
+  
+  if (!nuevaPersona.fecha_nacimiento || nuevaPersona.fecha_nacimiento === '') {
+    setErrorMessages((prevErrors) => ({
+      ...prevErrors,
+      fecha_nacimiento: 'Debe ingresar una fecha de nacimiento válida.',
+    }));
+    return;
+  }  
 
   if (Object.keys(errores).length > 0) {
     setErrorMessages(errores);
@@ -635,6 +712,9 @@ const handleCreatePersona = async () => {
   {/***************************************************FUNCION PARA ACTUALIZAR**************************************************************/}
   
   const handleUpdatePersona = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+  
     const dniSinGuiones = personaToUpdate.dni_persona.replace(/-/g, '');
   
     // Realizar las validaciones antes de enviar los datos
@@ -651,14 +731,19 @@ const handleCreatePersona = async () => {
     }
   
     const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
-    if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
-      errores.dni_persona = 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.';
+    const currentYear = new Date().getFullYear();
+    const minYear = currentYear - 90;
+    const maxYear = currentYear - 4;
+  
+    if (añoNacimientoDNI < minYear || añoNacimientoDNI > maxYear) {
+      errores.dni_persona = `Ingrese un DNI válido. El año debe estar entre ${minYear} y ${maxYear}.`;
     }
   
     // Validaciones de campos de texto
     const campos = [
       { campo: personaToUpdate.Nombre, nombreCampo: 'Nombre' },
       { campo: personaToUpdate.Primer_apellido, nombreCampo: 'Primer apellido' },
+      // Añadir más campos si es necesario
     ];
   
     campos.forEach(({ campo, nombreCampo }) => {
@@ -667,38 +752,79 @@ const handleCreatePersona = async () => {
       }
     });
   
-    if (Object.keys(errores).length > 0) {
-      setErrorMessages(errores);  // Actualizar el estado de errores
-      return;  // Si hay errores, no continuar con la solicitud
-    
+    if (!personaToUpdate.fecha_nacimiento || personaToUpdate.fecha_nacimiento === '') {
+      errores.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+    } else {
+      const fechaNacimiento = new Date(personaToUpdate.fecha_nacimiento);
+      const añoNacimiento = fechaNacimiento.getFullYear();
+  
+      if (añoNacimiento < minYear || añoNacimiento > maxYear) {
+        errores.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
+      }
     }
   
-    
+    // Validaciones para campos de selección
+    const selectFields = [
+      { field: personaToUpdate.cod_genero, fieldName: 'cod_genero', errorMessage: 'Debe seleccionar un género.' },
+      { field: personaToUpdate.cod_tipo_persona, fieldName: 'cod_tipo_persona', errorMessage: 'Debe seleccionar un tipo de persona.' },
+      { field: personaToUpdate.cod_nacionalidad, fieldName: 'cod_nacionalidad', errorMessage: 'Debe seleccionar una nacionalidad.' },
+      { field: personaToUpdate.cod_departamento, fieldName: 'cod_departamento', errorMessage: 'Debe seleccionar un departamento.' },
+      { field: personaToUpdate.cod_municipio, fieldName: 'cod_municipio', errorMessage: 'Debe seleccionar un municipio.' },
+    ];
+  
+    selectFields.forEach(({ field, fieldName, errorMessage }) => {
+      if (!field || field === '') {
+        errores[fieldName] = errorMessage;
+      }
+    });
+  
+    if (Object.keys(errores).length > 0) {
+      setErrorMessages(errores);  // Actualizar el estado de errores
+      setIsSubmitting(false);
+      return;  // Si hay errores, no continuar con la solicitud
+    }
+  
+    // Log para verificar los datos antes de enviar
+    console.log('Datos a enviar:', {
+      cod_persona: personaToUpdate.cod_persona,
+      dni_persona: dniSinGuiones,
+      Nombre: personaToUpdate.Nombre,
+      Segundo_nombre: personaToUpdate.Segundo_nombre,
+      Primer_apellido: personaToUpdate.Primer_apellido,
+      Segundo_apellido: personaToUpdate.Segundo_apellido,
+      direccion_persona: personaToUpdate.direccion_persona,
+      fecha_nacimiento: personaToUpdate.fecha_nacimiento,
+      Estado_Persona: personaToUpdate.Estado_Persona,
+      cod_tipo_persona: personaToUpdate.cod_tipo_persona,
+      cod_nacionalidad: personaToUpdate.cod_nacionalidad,
+      cod_departamento: personaToUpdate.cod_departamento,
+      cod_municipio: personaToUpdate.cod_municipio,
+      cod_genero: personaToUpdate.cod_genero,
+      principal: personaToUpdate.principal,
+    });
+  
     try {
-      const response = await fetch(
-        `http://localhost:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            cod_persona: personaToUpdate.cod_persona,
-            dni_persona: dniSinGuiones,
-            Nombre: personaToUpdate.Nombre,
-            Segundo_nombre: personaToUpdate.Segundo_nombre,
-            Primer_apellido: personaToUpdate.Primer_apellido,
-            Segundo_apellido: personaToUpdate.Segundo_apellido,
-            cod_nacionalidad: personaToUpdate.cod_nacionalidad,
-            direccion_persona: personaToUpdate.direccion_persona,
-            fecha_nacimiento: personaToUpdate.fecha_nacimiento,
-            Estado_Persona: personaToUpdate.Estado_Persona,
-            cod_tipo_persona: personaToUpdate.cod_tipo_persona,
-            cod_departamento: personaToUpdate.cod_departamento,
-            cod_municipio: personaToUpdate.cod_municipio,
-            cod_genero: personaToUpdate.cod_genero,
-            principal: personaToUpdate.principal,
-          }),
-        }
-      );
+      const response = await fetch(`http://localhost:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cod_persona: personaToUpdate.cod_persona,
+          dni_persona: dniSinGuiones,
+          Nombre: personaToUpdate.Nombre,
+          Segundo_nombre: personaToUpdate.Segundo_nombre,
+          Primer_apellido: personaToUpdate.Primer_apellido,
+          Segundo_apellido: personaToUpdate.Segundo_apellido,
+          direccion_persona: personaToUpdate.direccion_persona,
+          fecha_nacimiento: personaToUpdate.fecha_nacimiento,
+          Estado_Persona: personaToUpdate.Estado_Persona,
+          cod_tipo_persona: personaToUpdate.cod_tipo_persona,
+          cod_nacionalidad: personaToUpdate.cod_nacionalidad,
+          cod_departamento: personaToUpdate.cod_departamento,
+          cod_municipio: personaToUpdate.cod_municipio,
+          cod_genero: personaToUpdate.cod_genero,
+          principal: personaToUpdate.principal,
+        }),
+      });
   
       if (response.ok) {
         swal.fire({
@@ -709,12 +835,18 @@ const handleCreatePersona = async () => {
         setModalUpdateVisible(false);
         resetPersonaToUpdate();
         await fetchPersonas(); // Recargar las personas
+        setErrorMessages({});
       } else {
-        swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'No se pudo actualizar la persona.',
-        });
+        const errorData = await response.json();
+        if (errorData.errores) {
+          setErrorMessages(errorData.errores);
+        } else {
+          swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: `No se pudo actualizar la persona. Detalle: ${errorData.mensaje}`,
+          });
+        }
       }
     } catch (error) {
       console.error('Error al actualizar la persona:', error);
@@ -723,8 +855,11 @@ const handleCreatePersona = async () => {
         title: 'Error',
         text: 'Ocurrió un error al intentar actualizar la persona.',
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
+  
   
 {/****************************************FUNCION PARA ELIMINAR ***************************************************************/}
   const handleDeletePersona = async () => {
@@ -1281,131 +1416,480 @@ return (
             <div className="row">
               {/* Columna 1 */}
               <div className="col-md-6">
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>DNI</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="DNI de la persona"
-                    value={nuevaPersona.dni_persona} // Sigue usando el valor con guiones
-                    onChange={(e) => {
-                      handleChange(e)
-                      const formattedDNI = formatDNI(e.target.value)
-                      setNuevaPersona({ ...nuevaPersona, dni_persona: formattedDNI })
 
-                      const dniSinGuiones = removeDniHyphens(formattedDNI)
-                      const errores = validarCampo('dni_persona', dniSinGuiones)
+                      {/* Estilos dentro del componente */}
+      <style jsx>{`
+        .error-message {
+          color: red;
+          font-size: 12px;  /* Tamaño de texto más pequeño */
+          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+          margin-bottom: 0;
+          margin-left: 12px;  /* Para alinearlo con el texto del input */
+        }
+      `}</style>
 
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        dni_persona: errores.dni_persona || '',
-                      }))
-                    }}
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                {errorMessages.dni_persona && (
-                  <div style={{ color: 'red', fontSize: '0.85em' }}>
-                    {errorMessages.dni_persona}
-                  </div>
-                )}
+<div className="col-md-12">
+  {errorMessages.dni_persona && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.dni_persona}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>DNI</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="DNI de la persona"
+      value={nuevaPersona.dni_persona}
+      onChange={(e) => {
+        const formattedDNI = formatDNI(e.target.value);
+        setNuevaPersona({ ...nuevaPersona, dni_persona: formattedDNI });
 
-                    <CInputGroup className="mb-3">
-                      <CInputGroupText>Primer Nombre</CInputGroupText>
-                      <CFormInput
-                        type="text"
-                        placeholder="Nombre"
-                        value={nuevaPersona.Nombre}
-                        onChange={(e) => setNuevaPersona({ ...nuevaPersona, Nombre: e.target.value })}
-                        onCopy={disableCopyPaste}
-                        onPaste={disableCopyPaste}
-                        required
-                      />
-                    </CInputGroup>
-                    {errorMessages.Nombre && <div style={{ color: 'red' }}>{errorMessages.Nombre}</div>}
+        // Validaciones específicas para el DNI
+        const erroresTemp = {};
+        const dniSinGuiones = formattedDNI.replace(/-/g, '');
 
-                    <CInputGroup className="mb-3">
-                      <CInputGroupText>Segundo Nombre</CInputGroupText>
-                      <CFormInput
-                        type="text"
-                        placeholder="Segundo Nombre"
-                        value={nuevaPersona.Segundo_nombre}
-                        onChange={(e) => setNuevaPersona({ ...nuevaPersona, Segundo_nombre: e.target.value })}
-                        onCopy={disableCopyPaste}
-                        onPaste={disableCopyPaste}
-                      />
-                      {errorMessages.Segundo_nombre && <div style={{ color: 'red' }}>{errorMessages.Segundo_nombre}</div>}
-                    </CInputGroup>
+        if (!/^\d{13}$/.test(dniSinGuiones)) {
+          erroresTemp.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
+        } else {
+          const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
+          if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
+            erroresTemp.dni_persona = 'Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
+          }
+
+          const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
+          const yearNow = new Date().getFullYear();
+          if (añoNacimientoDNI < yearNow - 90 || añoNacimientoDNI > yearNow - 4) {
+            erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 90} y ${yearNow - 4}.`;
+          }
+        }
+        setErrorMessages((prevErrors) => ({
+          ...prevErrors,
+          dni_persona: erroresTemp.dni_persona || '',
+        }));
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+</div>
 
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Primer Apellido</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Primer Apellido"
-                    value={nuevaPersona.Primer_apellido}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, Primer_apellido: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                {errorMessages.Primer_apellido && (
-                  <div style={{ color: 'red' }}>{errorMessages.Primer_apellido}</div>
-                )}
+<div className="col-md-12">
+  {errorMessages.Nombre && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Nombre}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Primer Nombre</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Nombre"
+      value={nuevaPersona.Nombre}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Segundo Apellido</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Segundo Apellido"
-                    value={nuevaPersona.Segundo_apellido}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, Segundo_apellido: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                </CInputGroup>
-                {errorMessages.Segundo_apellido && (
-                  <div style={{ color: 'red' }}>{errorMessages.Segundo_apellido}</div>
-                )}
+        // Bloquear secuencias de más de tres letras repetidas
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Nombre: 'El nombre no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
-                  <CFormInput
-                    type="date"
-                    value={nuevaPersona.fecha_nacimiento}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, fecha_nacimiento: e.target.value })
-                    }
-                    required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
-                  />
-                </CInputGroup>
-                {errorMessages.fecha_nacimiento && (
-                  <div style={{ color: 'red' }}>{errorMessages.fecha_nacimiento}</div>
-                )}    
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Dirección</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Dirección"
-                    value={nuevaPersona.direccion_persona}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, direccion_persona: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                </CInputGroup>
-                {errorMessages.direccion_persona && (
-                  <div style={{ color: 'red' }}>{errorMessages.direccion_persona}</div>
-                )}
-              </div>
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Nombre: 'El nombre solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Nombre: 'El nombre no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Nombre = 'El primer nombre no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Nombre = 'El primer nombre debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Nombre = '';
+        }
+
+        setNuevaPersona({ ...nuevaPersona, Nombre: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+
+<div className="col-md-12">
+  {errorMessages.Segundo_nombre && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Segundo_nombre}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Segundo Nombre</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Segundo Nombre"
+      value={nuevaPersona.Segundo_nombre}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_nombre: 'El segundo nombre no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_nombre: 'El segundo nombre solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_nombre: 'El segundo nombre no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Segundo_nombre = 'El segundo nombre no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Segundo_nombre = 'El segundo nombre debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Segundo_nombre = '';
+        }
+
+        setNuevaPersona({ ...nuevaPersona, Segundo_nombre: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+<div className="col-md-12">
+  {errorMessages.Primer_apellido && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Primer_apellido}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Primer Apellido</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Primer Apellido"
+      value={nuevaPersona.Primer_apellido}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas en toda la cadena
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Primer_apellido: 'El primer apellido no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Primer_apellido: 'El primer apellido solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Primer_apellido: 'El primer apellido no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Primer_apellido = 'El primer apellido no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Primer_apellido = 'El primer apellido debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Primer_apellido = '';
+        }
+
+        setNuevaPersona({ ...nuevaPersona, Primer_apellido: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+<div className="col-md-12">
+  {errorMessages.Segundo_apellido && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Segundo_apellido}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Segundo Apellido</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Segundo Apellido"
+      value={nuevaPersona.Segundo_apellido}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas en toda la cadena
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_apellido: 'El segundo apellido no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_apellido: 'El segundo apellido solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_apellido: 'El segundo apellido no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Segundo_apellido = 'El segundo apellido no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Segundo_apellido = 'El segundo apellido debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Segundo_apellido = '';
+        }
+
+        setNuevaPersona({ ...nuevaPersona, Segundo_apellido: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+<div className="col-md-12">
+  {errorMessages.fecha_nacimiento && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.fecha_nacimiento}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
+    <CFormInput
+      type="date"
+      value={nuevaPersona.fecha_nacimiento}
+      onChange={(e) => {
+        const value = e.target.value;
+        setNuevaPersona((prevState) => ({ ...prevState, fecha_nacimiento: value }));
+
+        // Validación de la fecha de nacimiento en tiempo real
+        let erroresTemp = { ...errorMessages };
+        if (!value || value === '') {
+          erroresTemp.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+        } else {
+          const currentYear = new Date().getFullYear();
+          const minYear = currentYear - 90;
+          const maxYear = currentYear - 4;
+          const fechaNacimiento = new Date(value);
+          const añoNacimiento = fechaNacimiento.getFullYear();
+          
+          if (añoNacimiento < minYear || añoNacimiento > maxYear) {
+            erroresTemp.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
+          } else {
+            erroresTemp.fecha_nacimiento = '';
+          }
+        }
+        setErrorMessages(erroresTemp);
+      }}
+      required
+      style={{ color: '#6c757d' }} // Cambié el color a gris claro
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+
+<div className="col-md-12">
+  {errorMessages.direccion_persona && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.direccion_persona}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Dirección</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Dirección"
+      value={nuevaPersona.direccion_persona}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas en toda la cadena
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            direccion_persona: 'La dirección no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Permitir solo caracteres necesarios para direcciones (letras, números, guiones, espacios, puntos, comas)
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-#.,]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            direccion_persona: 'La dirección solo puede contener letras, números, acentos, espacios y caracteres como guiones, puntos y comas.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            direccion_persona: 'La dirección no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.direccion_persona = 'La dirección no puede estar vacía.';
+        } else {
+          erroresTemp.direccion_persona = '';
+        }
+
+        setNuevaPersona({ ...nuevaPersona, direccion_persona: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+</div>
 
               {/* Columna 2 */}
               <div className="col-md-6">
@@ -1469,7 +1953,27 @@ return (
                 {errorMessages.cod_tipo_persona && (
                   <div style={{ color: 'red' }}>{errorMessages.cod_tipo_persona}</div>
                 )}
-
+                  <CInputGroup className="mb-3">
+                  <CInputGroupText>Género</CInputGroupText>
+                  <CFormSelect
+                    value={nuevaPersona.cod_genero || ''}
+                    onChange={(e) =>
+                      setNuevaPersona({ ...nuevaPersona, cod_genero: e.target.value })
+                    }
+                    required
+                  >
+                    <option value="">Seleccione un género</option>
+                    {generos &&
+                      generos.map((genero) => (
+                        <option key={genero.Cod_genero} value={genero.Cod_genero}>
+                          {genero.Tipo_genero.toUpperCase()}
+                        </option>
+                      ))}
+                  </CFormSelect>
+                </CInputGroup>
+                {errorMessages.cod_genero && (
+                  <div style={{ color: 'red' }}>{errorMessages.cod_genero}</div>
+                )}
                   <div className="mb-3">
                     <CInputGroup className="mb-3">
                       <CInputGroupText>
@@ -1521,8 +2025,6 @@ return (
                 {errorMessages.cod_departamento && (
                   <div style={{ color: 'red' }}>{errorMessages.cod_departamento}</div>
                 )}
-                
-
                   <div className="mb-3">
                   <CInputGroup className="mb-3">
                     <CInputGroupText>
@@ -1538,7 +2040,6 @@ return (
                       <CIcon icon={cilSearch} />
                     </CButton>
                   </CInputGroup>
-
                   {isDropdownOpenMunicipio && municipiosFiltrados.length > 0 && (
                     <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
                       {municipiosFiltrados.map((municipio) => (
@@ -1550,31 +2051,11 @@ return (
                         >
                           {municipio.nombre_municipio.toUpperCase()} - {municipio.nombre_departamento.toUpperCase()}
                         </div>
+                        
                       ))}
                     </div>
                   )}
                 </div>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Género</CInputGroupText>
-                  <CFormSelect
-                    value={nuevaPersona.cod_genero || ''}
-                    onChange={(e) =>
-                      setNuevaPersona({ ...nuevaPersona, cod_genero: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="">Seleccione un género</option>
-                    {generos &&
-                      generos.map((genero) => (
-                        <option key={genero.Cod_genero} value={genero.Cod_genero}>
-                          {genero.Tipo_genero.toUpperCase()}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
-                {errorMessages.cod_genero && (
-                  <div style={{ color: 'red' }}>{errorMessages.cod_genero}</div>
-                )}
               </div>
             </div>
           </CForm>
@@ -1615,81 +2096,493 @@ return (
             <CRow>
               {/* Columna Izquierda */}
               <CCol md={6}>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Identificador</CInputGroupText>
-                  <CFormInput value={personaToUpdate.cod_persona} readOnly />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>DNI</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="DNI de la persona"
-                    value={personaToUpdate.dni_persona}
-                    onChange={(e) => {
-                      const formattedDNI = formatDNI(e.target.value)
-                      setPersonaToUpdate({ ...personaToUpdate, dni_persona: formattedDNI })
-                    }}
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Nombre</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Nombre"
-                    value={personaToUpdate.Nombre}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, Nombre: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Segundo Nombre</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Segundo Nombre"
-                    value={personaToUpdate.Segundo_nombre}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, Segundo_nombre: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Primer Apellido</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Primer Apellido"
-                    value={personaToUpdate.Primer_apellido}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, Primer_apellido: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                    required
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Segundo Apellido</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Segundo Apellido"
-                    value={personaToUpdate.Segundo_apellido}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, Segundo_apellido: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                </CInputGroup>
+              <div className="col-md-12">
+  {/* Identificador */}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Identificador</CInputGroupText>
+    <CFormInput value={personaToUpdate.cod_persona} readOnly />
+  </CInputGroup>
 
-                <div className="col-md-6">
+  {/* DNI */}
+  {errorMessages.dni_persona && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.dni_persona}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>DNI</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="DNI de la persona"
+      value={personaToUpdate.dni_persona}
+      onChange={(e) => {
+        const formattedDNI = formatDNI(e.target.value);
+        setPersonaToUpdate({ ...personaToUpdate, dni_persona: formattedDNI });
+
+        // Validaciones específicas para el DNI
+        const erroresTemp = {};
+        const dniSinGuiones = formattedDNI.replace(/-/g, '');
+
+        if (!/^\d{13}$/.test(dniSinGuiones)) {
+          erroresTemp.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
+        } else {
+          const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
+          if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
+            erroresTemp.dni_persona = 'Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
+          }
+
+          const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
+          const yearNow = new Date().getFullYear();
+          if (añoNacimientoDNI < yearNow - 90 || añoNacimientoDNI > yearNow - 4) {
+            erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 90} y ${yearNow - 4}.`;
+          }
+        }
+
+        setErrorMessages((prevErrors) => ({
+          ...prevErrors,
+          dni_persona: erroresTemp.dni_persona || '',
+        }));
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+
+<div className="col-md-12">
+  {errorMessages.Nombre && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Nombre}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Nombre</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Nombre"
+      value={personaToUpdate.Nombre}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Nombre: 'El nombre no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Nombre: 'El nombre solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Nombre: 'El nombre no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Nombre = 'El nombre no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Nombre = 'El nombre debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Nombre = '';
+        }
+
+        setPersonaToUpdate({ ...personaToUpdate, Nombre: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+
+
+<div className="col-md-12">
+  {errorMessages.Segundo_nombre && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Segundo_nombre}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Segundo Nombre</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Segundo Nombre"
+      value={personaToUpdate.Segundo_nombre}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_nombre: 'El segundo nombre no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_nombre: 'El segundo nombre solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_nombre: 'El segundo nombre no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Segundo_nombre = 'El segundo nombre no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Segundo_nombre = 'El segundo nombre debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Segundo_nombre = '';
+        }
+
+        setPersonaToUpdate({ ...personaToUpdate, Segundo_nombre: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+<div className="col-md-12">
+  {errorMessages.Primer_apellido && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Primer_apellido}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Primer Apellido</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Primer Apellido"
+      value={personaToUpdate.Primer_apellido}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Primer_apellido: 'El primer apellido no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Primer_apellido: 'El primer apellido solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Primer_apellido: 'El primer apellido no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Primer_apellido = 'El primer apellido no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Primer_apellido = 'El primer apellido debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Primer_apellido = '';
+        }
+
+        setPersonaToUpdate({ ...personaToUpdate, Primer_apellido: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+<div className="col-md-12">
+  {errorMessages.Segundo_apellido && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Segundo_apellido}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Segundo Apellido</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Segundo Apellido"
+      value={personaToUpdate.Segundo_apellido}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_apellido: 'El segundo apellido no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_apellido: 'El segundo apellido solo puede contener letras, acentos y espacios.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            Segundo_apellido: 'El segundo apellido no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.Segundo_apellido = 'El segundo apellido no puede estar vacío.';
+        } else if (value.length < 2) {
+          erroresTemp.Segundo_apellido = 'El segundo apellido debe tener al menos 2 caracteres.';
+        } else {
+          erroresTemp.Segundo_apellido = '';
+        }
+
+        setPersonaToUpdate({ ...personaToUpdate, Segundo_apellido: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+<div className="col-md-12">
+  {errorMessages.fecha_nacimiento && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.fecha_nacimiento}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
+    <CFormInput
+      type="date"
+      value={fechaNacimiento} // Usar el estado 'fechaNacimiento'
+      onChange={(e) => {
+        const value = e.target.value;
+        setFechaNacimiento(value); // Actualizar el estado de fecha de nacimiento
+        setPersonaToUpdate((prevState) => ({
+          ...prevState,
+          fecha_nacimiento: value, // Actualizar la persona a actualizar con la nueva fecha
+        }));
+
+        // Validación de la fecha de nacimiento en tiempo real
+        let erroresTemp = { ...errorMessages };
+        if (!value || value === '') {
+          erroresTemp.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+        } else {
+          const currentYear = new Date().getFullYear();
+          const minYear = currentYear - 90;
+          const maxYear = currentYear - 4;
+          const fechaNacimiento = new Date(value);
+          const añoNacimiento = fechaNacimiento.getFullYear();
+          
+          if (añoNacimiento < minYear || añoNacimiento > maxYear) {
+            erroresTemp.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
+          } else {
+            erroresTemp.fecha_nacimiento = '';
+          }
+        }
+        setErrorMessages(erroresTemp);
+      }}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+              </CCol>
+              {/* Columna Derecha */}
+              <CCol md={6}>
+              <div className="col-md-12">
+  {errorMessages.direccion_persona && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.direccion_persona}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Dirección</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Dirección"
+      value={personaToUpdate.direccion_persona}
+      onChange={(e) => {
+        const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+
+        // Bloquear secuencias de más de tres letras repetidas en toda la cadena
+        if (/(.)\1{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            direccion_persona: 'La dirección no puede contener más de tres letras repetidas consecutivas.'
+          }));
+          return;
+        }
+
+        // Permitir solo caracteres necesarios para direcciones (letras, números, guiones, espacios, puntos, comas)
+        if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-#.,]/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            direccion_persona: 'La dirección solo puede contener letras, números, acentos, espacios y caracteres como guiones, puntos y comas.'
+          }));
+          return;
+        }
+
+        // Bloquear más de un espacio consecutivo
+        if (/\s{2,}/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            direccion_persona: 'La dirección no puede contener más de un espacio consecutivo.'
+          }));
+          return;
+        }
+
+        // Verifica si el campo está vacío
+        const erroresTemp = { ...errorMessages };
+        if (!value.trim()) {
+          erroresTemp.direccion_persona = 'La dirección no puede estar vacía.';
+        } else {
+          erroresTemp.direccion_persona = '';
+        }
+
+        setPersonaToUpdate({ ...personaToUpdate, direccion_persona: value });
+        setErrorMessages(erroresTemp);
+      }}
+      onCopy={disableCopyPaste}
+      onPaste={disableCopyPaste}
+      required
+    />
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+                
+              <div className="col-md-6">
                   <CInputGroup className="mb-3 align-items-center">
                     <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <span>Principal</span>
@@ -1708,39 +2601,6 @@ return (
                     <div style={{ color: 'red', marginTop: '5px' }}>{errorMessages.principal}</div>
                   )}
                 </div>
-
-              </CCol>
-              {/* Columna Derecha */}
-              <CCol md={6}>
-                
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Dirección</CInputGroupText>
-                  <CFormInput
-                    type="text"
-                    placeholder="Dirección"
-                    value={personaToUpdate.direccion_persona}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, direccion_persona: e.target.value })
-                    }
-                    onCopy={disableCopyPaste}
-                    onPaste={disableCopyPaste}
-                  />
-                </CInputGroup>
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Fecha de nacimiento</CInputGroupText>
-                  <CFormInput
-                    type="date"
-                    value={fechaNacimiento} // Usar el estado 'fechaNacimiento'
-                    onChange={(e) => {
-                      setFechaNacimiento(e.target.value) // Actualizar el estado de fecha de nacimiento
-                      setPersonaToUpdate({
-                        ...personaToUpdate,
-                        fecha_nacimiento: e.target.value, // Actualizar la persona a actualizar con la nueva fecha
-                      })
-                    }}
-                    required
-                  />
-                </CInputGroup>
                 <CInputGroup className="mb-3">
                   <CInputGroupText>Estado</CInputGroupText>
                   <CFormSelect
@@ -1756,24 +2616,125 @@ return (
                   </CFormSelect>
                 </CInputGroup>
 
-                <CInputGroup className="mb-3">
-                <CInputGroupText>Nacionalidad</CInputGroupText>
-                <CFormSelect
-                  value={nuevaPersona.cod_nacionalidad || ''} // Valor seleccionado
-                  onChange={(e) =>
-                    setNuevaPersona({ ...nuevaPersona, cod_nacionalidad: e.target.value }) // Actualiza el estado con la nacionalidad seleccionada
-                  }
-                  required
-                >
-                  <option value="">Seleccione una nacionalidad</option>
-                  {nacionalidad && nacionalidad.map((nacionalidad) => (
-                    <option key={nacionalidad.Id_nacionalidad} value={nacionalidad.Id_nacionalidad}>
-                      {nacionalidad.pais_nacionalidad.toUpperCase()} {/* Muestra el nombre del país */}
-                    </option>
-                  ))}
-                </CFormSelect>
-              </CInputGroup>
+                <div className="col-md-12">
+  {errorMessages.cod_tipo_persona && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.cod_tipo_persona}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Tipo Persona</CInputGroupText>
+    <CFormSelect
+      value={personaToUpdate.cod_tipo_persona || ''}
+      onChange={(e) => {
+        const value = e.target.value;
+        setPersonaToUpdate((prevState) => ({ ...prevState, cod_tipo_persona: value }));
 
+        // Validación para no aceptar vacío
+        let erroresTemp = { ...errorMessages };
+        if (!value) {
+          erroresTemp.cod_tipo_persona = 'Debe seleccionar un tipo de persona.';
+        } else {
+          erroresTemp.cod_tipo_persona = '';
+        }
+        setErrorMessages(erroresTemp);
+      }}
+      required
+    >
+      <option value="">Seleccione un tipo persona</option>
+      {tipoPersona &&
+        tipoPersona.map((tipo) => (
+          <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
+            {tipo.Tipo.toUpperCase()}
+          </option>
+        ))}
+    </CFormSelect>
+  </CInputGroup>
+
+  {/* Estilos dentro del componente */}
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 12px;  /* Tamaño de texto más pequeño */
+      margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+      margin-bottom: 0;
+      margin-left: 12px;  /* Para alinearlo con el texto del input */
+    }
+  `}</style>
+</div>
+
+<CInputGroup className="mb-3">
+                  <CInputGroupText>Género</CInputGroupText>
+                  <CFormSelect
+                    value={personaToUpdate.cod_genero || ''}
+                    onChange={(e) =>
+                    setPersonaToUpdate({ ...personaToUpdate, cod_genero: parseInt(e.target.value, 10) })
+                    }
+                    required
+                  >
+                    <option value="">Seleccione un género</option>
+                    {generos &&
+                      generos.map((genero) => (
+                        <option key={genero.Cod_genero} value={genero.Cod_genero}>
+                          {genero.Tipo_genero.toUpperCase()}
+                        </option>
+                      ))}
+                  </CFormSelect>
+                </CInputGroup>
+
+                <div className="col-md-12">
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Nacionalidad</CInputGroupText>
+    <CFormInput
+      type="text"
+      value={buscadorNacionalidad}
+      onChange={handleBuscarNacionalidad}
+      placeholder="Buscar por sigla de país o letra"
+    />
+    <CButton type="button">
+      <CIcon icon={cilSearch} />
+    </CButton>
+  </CInputGroup>
+
+  {isDropdownOpenNacionalidad && nacionalidadesFiltradas.length > 0 && (
+    <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+      {nacionalidadesFiltradas.map((nacionalidad) => (
+        <div
+          key={nacionalidad.Cod_nacionalidad}
+          className="dropdown-item"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            handleSeleccionarNacionalidad(nacionalidad);
+            setPersonaToUpdate({
+              ...personaToUpdate,
+              Cod_nacionalidad: nacionalidad.Cod_nacionalidad,
+              Id_nacionalidad: nacionalidad.Id_nacionalidad,
+            });
+          }}
+        >
+          {nacionalidad.Id_nacionalidad} - {nacionalidad.pais_nacionalidad}
+        </div>
+      ))}
+    </div>
+  )}
+
+  {errorMessages.Cod_nacionalidad && (
+    <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '0.850rem' }}>
+      {errorMessages.Cod_nacionalidad}
+    </div>
+  )}
+</div>
+
+                {/* Estilos dentro del componente */}
+                <style jsx>{`
+                  .error-message {
+                    color: red;
+                    font-size: 12px;  /* Tamaño de texto más pequeño */
+                    margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+                    margin-bottom: 0;
+                    margin-left: 12px;  /* Para alinearlo con el texto del input */
+                  }
+                `}</style>
 
                 <CInputGroup className="mb-3">
                   <CInputGroupText>Departamento</CInputGroupText>
@@ -1794,43 +2755,60 @@ return (
                   </CFormSelect>
                 </CInputGroup>
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Municipio</CInputGroupText>
-                  <CFormSelect
-                    value={personaToUpdate.cod_municipio || ''}
-                    onChange={(e) =>
-                      setPersonaToUpdate({ ...personaToUpdate, cod_municipio: e.target.value })
-                    }
-                    required
-                  >
-                    <option value="">Seleccione un municipio</option>
-                    {municipio &&
-                      municipio.map((municipio) => (
-                        <option key={municipio.cod_municipio} value={municipio.cod_municipio}>
-                          {municipio.nombre_municipio}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
+                <div className="col-md-12">
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Municipio</CInputGroupText>
+    <CFormInput
+      type="text"
+      value={buscadorMunicipio}
+      onChange={handleBuscarMunicipio}
+      placeholder="Buscar por nombre del municipio"
+    />
+    <CButton type="button">
+      <CIcon icon={cilSearch} />
+    </CButton>
+  </CInputGroup>
 
-                <CInputGroup className="mb-3">
-                  <CInputGroupText>Género</CInputGroupText>
-                  <CFormSelect
-                    value={personaToUpdate.cod_genero || ''}
-                    onChange={(e) =>
-                    setPersonaToUpdate({ ...personaToUpdate, cod_genero: parseInt(e.target.value, 10) })
-                    }
-                    required
-                  >
-                    <option value="">Seleccione un género</option>
-                    {generos &&
-                      generos.map((genero) => (
-                        <option key={genero.Cod_genero} value={genero.Cod_genero}>
-                          {genero.Tipo_genero.toUpperCase()}
-                        </option>
-                      ))}
-                  </CFormSelect>
-                </CInputGroup>
+  {isDropdownOpenMunicipio && municipiosFiltrados.length > 0 && (
+    <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+      {municipiosFiltrados.map((municipio) => (
+        <div
+          key={municipio.cod_municipio}
+          className="dropdown-item"
+          style={{ cursor: 'pointer' }}
+          onClick={() => {
+            handleSeleccionarMunicipio(municipio);
+            setPersonaToUpdate({
+              ...personaToUpdate,
+              cod_municipio: municipio.cod_municipio,
+              nombre_municipio: municipio.nombre_municipio,
+            });
+          }}
+        >
+          {municipio.nombre_municipio.toUpperCase()} - {municipio.nombre_departamento.toUpperCase()}
+        </div>
+      ))}
+    </div>
+  )}
+
+  {errorMessages.cod_municipio && (
+    <div className="error-message" style={{ color: 'red', marginBottom: '10px', fontSize: '0.850rem' }}>
+      {errorMessages.cod_municipio}
+    </div>
+  )}
+</div>
+
+{/* Estilos dentro del componente */}
+<style jsx>{`
+  .error-message {
+    color: red;
+    font-size: 12px;  /* Tamaño de texto más pequeño */
+    margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+    margin-bottom: 0;
+    margin-left: 12px;  /* Para alinearlo con el texto del input */
+  }
+`}</style>
+
               </CCol>
             </CRow>
           </CForm>

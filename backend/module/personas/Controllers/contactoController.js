@@ -57,7 +57,7 @@ export const actualizarContacto = async (req, res) => {
 
     try {
         // Proceder con la actualización si el contacto existe
-        await pool.query('CALL P_Update_Contacto(?, ?, ?, ?)', [
+        await pool.query('CALL P_Put_Contacto(?, ?, ?, ?)', [
             cod_contacto,
             cod_persona,
             cod_tipo_contacto,

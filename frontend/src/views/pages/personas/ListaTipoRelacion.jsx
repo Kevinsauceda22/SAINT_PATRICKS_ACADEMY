@@ -238,7 +238,6 @@ const handleChange = (event) => {
       }
     };
 
-
     const resetNuevaRelacion = () => {
       setNuevaRelacion({ tipo_relacion: ''});
     };
@@ -247,7 +246,7 @@ const handleChange = (event) => {
       setTipoRelacionToUpdate({ tipo_relacion: ''});
     };
 
-
+{/********************************************FUNCION PARA CREAR RELACION**************************************************************/}
     const handleCreateRelacion= async () => {
 
       if (isDuplicateRelacion()) {
@@ -299,6 +298,7 @@ const handleChange = (event) => {
       }
     };
 
+  {/*******************************************FUNCION PARA ACTUALIZAR*********************************************************/}
     const handleUpdateRelacion = async () => {
       const relacionCapitalizado = capitalizeWords(tipoRelacionToUpdate.tipo_relacion.trim().replace(/\s+/g, ' '));
   
