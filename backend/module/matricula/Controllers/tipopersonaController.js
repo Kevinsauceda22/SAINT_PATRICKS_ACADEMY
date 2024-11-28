@@ -10,12 +10,6 @@ export const crearTipoPersona = async (req, res) => {
         return res.status(400).json({ Mensaje: 'El tipo de persona no puede ser NULL' });
     }
 
-    // Validar que el tipo sea uno de los valores permitidos
-    const tiposValidos = ['P', 'D', 'A', 'E'];
-    if (!tiposValidos.includes(Tipo)) {
-        return res.status(400).json({ Mensaje: 'Tipo inválido. Los tipos permitidos son: ' + tiposValidos.join(', ') });
-    }
-
     try {
         // Verificar si el tipo ya existe
         const [existeTipo] = await pool.query('SELECT * FROM tbl_tipo_persona WHERE Tipo = ?', [Tipo]);
