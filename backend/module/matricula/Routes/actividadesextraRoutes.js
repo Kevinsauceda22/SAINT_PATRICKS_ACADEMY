@@ -22,4 +22,15 @@ router.put('/actividades/cambiar_estado', cambiarEstadoActividad);
 // Ruta para eliminar una actividad extracurricular
 router.delete('/actividades/extracurriculares/:Cod_actividad', eliminarActividadExtracurricular);
 
+router.get('/padres-y-grados', obtenerPadresYGradosSecciones);
+
+// Ruta para enviar notificaciones a los padres de una sección
+router.post('/notificar-actividad/:cod_seccion', notificarNuevaActividad);
+
+// Ruta para enviar notificaciones de cancelación a los padres de una sección
+router.post('/cancelar-actividad/:cod_seccion', notificarCancelacionActividad);
+
+// Ruta para notificar cambios en actividades a los padres de una sección
+router.post('/actualizar-actividad/:cod_seccion', notificarCambioActividad);
+
 export default router;
