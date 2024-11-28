@@ -160,3 +160,44 @@ export const eliminarPeriodoMatricula = async (req, res) => {
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+// Controlador para actualizar el estado de un periodo de matrícula
+export const actualizarEstadoPeriodo = async (req, res) => {
+    const { p_cod_periodo_matricula, p_estado } = req.body;
+
+    // Validar que el ID del periodo no sea NULL
+    if (!p_cod_periodo_matricula) {
+        return res.status(400).json({ Mensaje: 'El código del periodo de matrícula es obligatorio.' });
+    }
+
+    // Validar que el estado sea válido
+    const estadosValidos = ['activo', 'inactivo'];
+    if (!estadosValidos.includes(p_estado)) {
+        return res.status(400).json({ Mensaje: 'Estado inválido. Los estados permitidos son: activo, inactivo.' });
+    }
+
+    try {
+        // Validar si ya existe un periodo activo en el mismo año académico
+        if (p_estado === 'activo') {
+            const [result] = await pool.query(
+                'SELECT * FROM tbl_periodo_matricula WHERE estado = "activo" AND cod_periodo_matricula != ?',
+                [p_cod_periodo_matricula]
+            );
+            if (result.length > 0) {
+                return res.status(400).json({
+                    Mensaje: 'No se puede activar el periodo. Ya existe un periodo activo.',
+                });
+            }
+        }
+
+        // Actualizar el estado del periodo
+        await pool.query(
+            'UPDATE tbl_periodo_matricula SET estado = ? WHERE cod_periodo_matricula = ?',
+            [p_estado, p_cod_periodo_matricula]
+        );
+
+        res.status(200).json({ Mensaje: 'Estado del periodo actualizado correctamente.' });
+    } catch (error) {
+        console.error('Error al actualizar el estado del periodo:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor.', error: error.message });
+    }
+};

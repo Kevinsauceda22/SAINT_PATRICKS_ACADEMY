@@ -211,19 +211,28 @@ export const obtenerHijosPorDniPadre = async (req, res) => {
   }
 };
 
-// Controlador para obtener secciones por grado con información adicional, incluyendo el nombre del edificio y número del aula
 export const obtenerSeccionesPorGrado = async (req, res) => {
-  const { cod_grado } = req.params;
+  const { cod_grado } = req.params; // Captura el grado desde la ruta
+  const { cod_periodo_matricula } = req.query; // Captura el período activo desde la query
+
+  // Validación inicial
+  if (!cod_grado || !cod_periodo_matricula) {
+    return res.status(400).json({
+      message: 'El código del grado y el período de matrícula son requeridos.',
+    });
+  }
 
   try {
-    const [secciones] = await pool.query(`
+    // Ejecuta la consulta SQL con los parámetros cod_grado y cod_periodo_matricula
+    const [secciones] = await pool.query(
+      `
       SELECT 
         s.Cod_secciones, 
         s.Nombre_seccion, 
-        a.Numero_aula,                  -- Número del aula de TBL_AULA
-        e.Nombre_edificios,             -- Nombre del edificio de TBL_EDIFICIOS
-        p.Nombre AS Nombre_profesor,    -- Nombre del profesor de TBL_PERSONAS
-        p.Primer_apellido AS Apellido_profesor -- Apellido del profesor de TBL_PERSONAS
+        a.Numero_aula, 
+        e.Nombre_edificios, 
+        p.Nombre AS Nombre_profesor, 
+        p.Primer_apellido AS Apellido_profesor 
       FROM 
         tbl_secciones AS s
       LEFT JOIN 
@@ -236,19 +245,27 @@ export const obtenerSeccionesPorGrado = async (req, res) => {
         tbl_personas AS p ON pr.Cod_persona = p.Cod_persona
       WHERE 
         s.Cod_grado = ?
-    `, [cod_grado]);
+        AND s.Cod_periodo_matricula = ?
+      `,
+      [cod_grado, cod_periodo_matricula] // Parámetros para la consulta
+    );
 
+    // Verifica si se encontraron datos
     if (secciones.length === 0) {
-      return res.status(200).json({ data: [] }); // Devolver array vacío si no hay secciones
+      return res.status(200).json({ data: [] }); // Retorna un arreglo vacío si no hay resultados
     }
 
-    // Devolver las secciones con la información adicional
+    // Retorna las secciones encontradas
     res.status(200).json({ data: secciones });
   } catch (error) {
-    console.error('Error al obtener secciones por grado:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    console.error('Error al obtener secciones por grado y período:', error);
+    res.status(500).json({
+      message: 'Error en el servidor al obtener las secciones.',
+      error: error.message,
+    });
   }
 };
+
 // Controlador para obtener alumnos matriculados por grado y año académico
 export const obtenerAlumnosMatriculadosPorGradoYAno = async (req, res) => {
   const { cod_grado } = req.params;

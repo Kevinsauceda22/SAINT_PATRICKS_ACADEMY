@@ -1,5 +1,5 @@
 import express from 'express';
-import { obtenerRegistrosCaja, obtenerRegistroCajaPorCod, registrarPago,obtenerMatriculasPendientesPorDniPadre, obtenerMatriculasPagadas, obtenerConceptos,obtenerTodasLasMatriculasPendientes, obtenerDetallesRecibo, insertarCajaOficialConDescuento, obtenerTodasLasCajasPendientes  } from '../Controllers/cajaController.js';
+import { obtenerRegistrosCaja, obtenerRegistroCajaPorCod, registrarPago,obtenerMatriculasPendientesPorDniPadre, obtenerMatriculasPagadas, obtenerConceptos,obtenerTodasLasMatriculasPendientes, obtenerDetallesRecibo, insertarCajaOficialConDescuento, obtenerTodasLasCajasPendientes, obtenerValorMatricula, obtenerConceptoMatricula  } from '../Controllers/cajaController.js';
 
 const router = express.Router();
 
@@ -27,6 +27,9 @@ router.post('/oficial', insertarCajaOficialConDescuento);
 // Ruta para obtener todas las cajas pendientes con el nombre del padre
 router.get('/todas-pendientes', obtenerTodasLasCajasPendientes);
 
+router.get('/parametro/Matricula', obtenerValorMatricula);
+
+router.get('/concepto/matricula', obtenerConceptoMatricula);
 
 
 export default router;

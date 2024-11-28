@@ -59,17 +59,33 @@ export const crearPersonaYUsuario = async (req, res) => {
             });
         }
 
+        // Validar nacionalidad
+        if (personData.Id_nacionalidad) {
+            const [existingNationality] = await connection.query(
+                'SELECT Cod_nacionalidad FROM tbl_nacionalidad WHERE Cod_nacionalidad = ?',
+                [personData.Id_nacionalidad]
+            );
+
+            if (existingNationality.length === 0) {
+                await connection.rollback();
+                return res.status(400).json({
+                    status: false,
+                    mensaje: 'La nacionalidad seleccionada no es válida'
+                });
+            }
+        }
+
         // Generar credenciales
         const temporaryPassword = generateTemporaryPassword();
         const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
         
         // Generar nombre de usuario del correo electrónico
         const nombre_usuario = userData.correo_usuario
-            .split('@')[0]              // Tomar la parte antes del @
-            .toLowerCase()              // Convertir a minúsculas
-            .normalize('NFD')           // Normalizar caracteres especiales
-            .replace(/[\u0300-\u036f]/g, '')  // Eliminar acentos
-            .replace(/[^a-z0-9._]/g, '');     // Solo permitir letras, números, puntos y guiones bajos
+            .split('@')[0]              
+            .toLowerCase()              
+            .normalize('NFD')           
+            .replace(/[\u0300-\u036f]/g, '')  
+            .replace(/[^a-z0-9._]/g, '');     
 
         // Verificar si el nombre de usuario ya existe
         const [existingUsername] = await connection.query(
@@ -77,7 +93,6 @@ export const crearPersonaYUsuario = async (req, res) => {
             [nombre_usuario]
         );
 
-        // Si existe, añadir un número aleatorio al final
         let finalUsername = nombre_usuario;
         if (existingUsername.length > 0) {
             const randomNum = Math.floor(Math.random() * 1000);
@@ -92,7 +107,7 @@ export const crearPersonaYUsuario = async (req, res) => {
                 Segundo_nombre,
                 Primer_apellido,
                 Segundo_apellido,
-                Nacionalidad,
+                Cod_nacionalidad,
                 direccion_persona,
                 fecha_nacimiento,
                 Estado_Persona,
@@ -107,10 +122,10 @@ export const crearPersonaYUsuario = async (req, res) => {
                 personData.Segundo_nombre || null,
                 personData.Primer_apellido,
                 personData.Segundo_apellido || null,
-                personData.Nacionalidad || null,
+                personData.Cod_nacionalidad || null,
                 personData.direccion_persona || null,
                 personData.fecha_nacimiento || null,
-                'A', // Estado activo por defecto
+                'A',
                 personData.cod_tipo_persona,
                 personData.cod_departamento,
                 personData.cod_municipio,
