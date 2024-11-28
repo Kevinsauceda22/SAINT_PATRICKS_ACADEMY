@@ -43,13 +43,11 @@ export const obtenerRegistroCajaPorCod = async (req, res) => {
 
 export const registrarPago = async (req, res) => {
   const {
-    cod_caja,
-    monto,
+    cod_caja, // Código de la caja
+    monto, // Monto inicial
     descripcion, // Descripción de la caja
-    cod_concepto,
-    aplicar_descuento, // Indica si hay descuento
-    valor_descuento, // Porcentaje o valor fijo del descuento
-    descripcion_descuento // Descripción del descuento
+    cod_concepto, // Código del concepto
+    cod_descuento = null, // Código del descuento (puede ser NULL si no se aplica descuento)
   } = req.body;
 
   // Validación de campos requeridos
@@ -58,32 +56,60 @@ export const registrarPago = async (req, res) => {
   }
 
   try {
-    // Preparar el mensaje de salida
-    let mensaje = '';
+    // Llamada al procedimiento almacenado `RegistrarPagoCaja`
+    const [result] = await pool.query(
+      'CALL RegistrarPagoCaja(?, ?, ?, ?, ?)',
+      [cod_caja, monto, descripcion, cod_concepto, cod_descuento]
+    );
 
-    // Llamada al procedimiento almacenado para registrar el pago
-    const [results] = await pool.query('CALL RegistrarPagoCaja(?, ?, ?, ?, ?, ?, ?)', [
-      cod_caja,
-      monto,
-      descripcion, // Descripción de la caja
-      cod_concepto,
-      aplicar_descuento, // Booleano
-      valor_descuento, // Valor del descuento
-      descripcion_descuento // Descripción del descuento
-    ]);
+    // Validación de resultados
+    if (result.affectedRows === 0) {
+      return res.status(400).json({ message: 'No se pudo registrar el pago. Verifique los datos ingresados.' });
+    }
 
-    // Obtener el mensaje de confirmación de la base de datos
-    const [[{ mensaje: mensajeDB }]] = await pool.query('SELECT @mensaje AS mensaje');
-    mensaje = mensajeDB || 'Pago registrado exitosamente.';
-
-    // Verificar si la respuesta fue exitosa
-    res.status(201).json({ message: mensaje });
+    // Respuesta exitosa
+    return res.status(201).json({
+      message: 'Pago registrado exitosamente.',
+      data: {
+        cod_caja,
+        monto: monto - (result[0]?.descuento_aplicado || 0), // Monto final con descuento aplicado
+        cod_descuento,
+      },
+    });
   } catch (error) {
     console.error('Error al registrar el pago:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    return res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
 
+// Controlador para obtener todos los descuentos
+export const obtenerDescuentos = async (req, res) => {
+  try {
+    // Consulta para obtener todos los descuentos activos
+    const [descuentos] = await pool.query(`
+      SELECT 
+        Cod_descuento, 
+        Nombre_descuento, 
+        Valor, 
+        Fecha_inicio, 
+        Fecha_fin, 
+        Descripcion
+      FROM tbl_descuentos
+      WHERE CURDATE() BETWEEN Fecha_inicio AND Fecha_fin
+    `);
+
+    // Validar si se encontraron descuentos
+    if (descuentos.length === 0) {
+      return res.status(404).json({ message: 'No se encontraron descuentos disponibles.' });
+    }
+
+    // Devolver la lista de descuentos
+    res.status(200).json({ data: descuentos });
+  } catch (error) {
+    console.error('Error al obtener los descuentos:', error);
+    res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
+  }
+};
 
 // Controlador para obtener las matrículas de los hijos con pagos pendientes usando el DNI del padre
 export const obtenerMatriculasPendientesPorDniPadre = async (req, res) => {
@@ -465,5 +491,45 @@ export const obtenerConceptoMatricula = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener el concepto "Matricula":', error);
     res.status(500).json({ message: 'Error interno del servidor.' });
+  }
+};
+
+// Controlador para buscar cajas por DNI
+export const buscarCajasPorDni = async (req, res) => {
+  const { dni = '' } = req.query; // Obtener el parámetro `dni` desde la consulta (query)
+
+  try {
+    const [results] = await pool.query(
+      `SELECT 
+        c.Cod_caja,
+        c.Monto,
+        c.Descripcion,
+        c.Hora_registro,
+        c.Fecha AS Fecha_pago,
+        c.Estado_pago,
+        p.Nombre AS Nombre_Padre,
+        p.Primer_apellido AS Apellido_Padre,
+        p.dni_persona AS DNI_Padre
+      FROM 
+        tbl_caja AS c
+      LEFT JOIN 
+        tbl_personas AS p ON c.Cod_persona = p.Cod_persona
+      WHERE 
+        c.Estado_pago = 'Pendiente'
+        AND (p.dni_persona LIKE CONCAT('%', ?, '%') OR ? = '')
+      ORDER BY 
+        c.Fecha DESC, 
+        c.Hora_registro DESC`,
+      [dni, dni]
+    );
+
+    if (!results.length) {
+      return res.status(404).json({ message: 'No se encontraron registros para el DNI proporcionado.' });
+    }
+
+    res.status(200).json({ data: results });
+  } catch (error) {
+    console.error('Error al buscar cajas por DNI:', error);
+    res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
   }
 };

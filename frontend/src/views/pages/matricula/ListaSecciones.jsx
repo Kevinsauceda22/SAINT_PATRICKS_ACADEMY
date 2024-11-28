@@ -36,7 +36,9 @@ const ListaSecciones = () => {
   const location = useLocation();
   const { periodoSeleccionado} = location.state || {}; // Período seleccionado desde la vista anterior
   const [esPeriodoActivo, setEsPeriodoActivo] = useState(true); // Por defecto, asumimos que es activo
-
+  const [searchProfesor, setSearchProfesor] = useState(''); // Término de búsqueda
+  const [filteredProfesores, setFilteredProfesores] = useState(profesores); // Profesores filtrados
+  const [showDropdown, setShowDropdown] = useState(false); // Controlar la visibilidad del dropdown
 
 
 // Función para obtener el período académico activo
@@ -59,18 +61,16 @@ const fetchPeriodoAcademico = async () => {
 // Función para obtener las secciones del período seleccionado
 const fetchSeccionesPeriodo = async (periodo) => {
   try {
-    const response = await fetch(`http://localhost:4000/api/secciones/obtener_seccperiodo/${periodo}`);
+    const response = await fetch(
+      `http://localhost:4000/api/secciones/obtener_seccperiodo/${periodo}`
+    );
     const data = await response.json();
 
     if (response.ok) {
       setSecciones(data.map((seccion, index) => ({ ...seccion, originalIndex: index + 1 })));
     } else {
       setSecciones([]);
-      swal.fire(
-        'Atención',
-        `No se encontraron secciones para el año académico ${periodo}`,
-        'info'
-      );
+      swal.fire('Atención', `No se encontraron secciones para el período ${periodo}`, 'info');
     }
   } catch (error) {
     console.error('Error al cargar secciones:', error);
@@ -80,22 +80,14 @@ const fetchSeccionesPeriodo = async (periodo) => {
 
 // Efecto para cargar el período activo al montar el componente
 useEffect(() => {
-  if (!periodoSeleccionado) {
-    fetchPeriodoAcademico(); // Obtener el período activo solo si no hay un período seleccionado
+  if (periodoSeleccionado) {
+    console.log('Cargando secciones para el período seleccionado:', periodoSeleccionado);
+    fetchSeccionesPeriodo(periodoSeleccionado);
   } else {
-    console.log('Periodo seleccionado:', periodoSeleccionado);
-    fetchSeccionesPeriodo(periodoSeleccionado); // Obtener las secciones del período seleccionado
+    console.warn('No se encontró un período seleccionado.');
+    fetchPeriodoAcademico();
   }
 }, [periodoSeleccionado]);
-/*
-useEffect(() => {
-  if (periodoSeleccionado) {
-    fetchSeccionesPeriodo(periodoSeleccionado); // Carga solo las secciones del periodo seleccionado
-  } else {
-    console.warn("No se ha seleccionado un período. No se pueden cargar las secciones.");
-  }
-}, [periodoSeleccionado]);*/
-
 
 // Efecto para recargar las secciones cuando se cierra el modal
 useEffect(() => {
@@ -129,6 +121,7 @@ useEffect(() => {
     }
   }, [edificioSeleccionado]);
 
+
   // Validación de entradas de texto
   const validateInput = (value) => {
     // Convertir a mayúsculas
@@ -145,24 +138,28 @@ useEffect(() => {
       swal.fire('Error', 'No se permiten tres caracteres iguales consecutivos.', 'error');
       return '';
     }
-
     return value;
   };
 
-  const handleGestionarClick = (Cod_secciones) => {
-    console.log('Navegando a lista-secciones-asignatura con:', { seccionSeleccionada: Cod_secciones, 
-      periodoSeleccionado  });
-    navigate(`/lista-secciones-asignatura/`, { state: { seccionSeleccionada: Cod_secciones, 
-      periodoSeleccionado  } });
-  };
-  // Función para manejar el cambio de entrada de texto y aplicar validaciones
-  const handleInputChange = (e, setFunction, field) => {
-    const validatedValue = validateInput(e.target.value);
-    setFunction((prev) => ({ ...prev, [field]: validatedValue }));
-  };
+  
+  const handleGestionarClick = (seccion) => {
+    const { Cod_secciones, Nombre_grado } = seccion;
 
- 
-  //////////////////////
+    console.log('Navegando a lista-secciones-asignatura con:', { 
+        seccionSeleccionada: Cod_secciones, 
+        periodoSeleccionado, 
+        gradoSeleccionado: Nombre_grado 
+    });
+
+    navigate(`/lista-secciones-asignatura/`, { 
+        state: { 
+            seccionSeleccionada: Cod_secciones, 
+            periodoSeleccionado, 
+            gradoSeleccionado: Nombre_grado 
+        } 
+    });
+};
+  
   useEffect(() => {
     if (periodoSeleccionado) {
       console.log('Cargando estado del período seleccionado:', periodoSeleccionado);
@@ -195,16 +192,6 @@ useEffect(() => {
       setEsPeriodoActivo(false); // Asume inactivo en caso de error
     }
   };
-
-  const handleEditAttempt = (seccion) => {
-    if (!esPeriodoActivo) {
-      swal.fire('Acción no permitida', 'No se pueden editar secciones en un período inactivo.', 'warning');
-      return;
-    }
-    openUpdateModal(seccion); // Abre el modal solo si el período está activo
-  };
-
- /////////////////////////////////////
   
   // Función para obtener las secciones
   const fetchSecciones = async (Cod_secciones) => {
@@ -292,22 +279,28 @@ useEffect(() => {
     }
   };
   
-
   // Función para obtener el nombre del profesor a partir de su código
-  const getProfesorName = (codProfesor) => {
-    console.log('Cod_profesor:', codProfesor); // Verifica el valor de codProfesor
-    console.log('Profesores:', profesores); // Verifica el listado completo de profesores
-    if (!profesores.length) return 'Profesores no disponibles';
+  const getProfesorFullName = (codProfesor) => {
     const profesor = profesores.find((p) => p.Cod_profesor === codProfesor);
-    return profesor ? profesor.Nombre_profesor : 'Profesor no encontrado';
+    return profesor ? profesor.Nombre_completo.toUpperCase() : 'Profesor no encontrado';
   };
+
+  // Función para filtrar los profesores
+  useEffect(() => {
+    const normalizedSearch = searchProfesor.toLowerCase();
+    const filtered = profesores.filter((profesor) =>
+        profesor.Numero_identidad.toLowerCase().includes(normalizedSearch) ||
+        profesor.Nombre_completo.toLowerCase().includes(normalizedSearch)
+    );
+    setFilteredProfesores(filtered);
+  }, [searchProfesor, profesores]);
 
   // Función para obtener el periodo académico
   const getPeriodoAcademico = (codPeriodo) => {
     const periodo = periodoAcademico.find(p => p.Cod_periodo_matricula === codPeriodo);
     return periodo ? periodo.Anio_academico : 'Año académico no disponible';
   };
-
+  
   const volverAListaGestion_Academica = () => {
     navigate('/gestion_academica');
   };
@@ -347,25 +340,18 @@ useEffect(() => {
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRecord);
 
+  
   // Validaciones
 
-
-
- // Validar campos obligatorios 
+  // Validar campos obligatorios 
   const validateStep = () => {
-    if (step === 1) {
-      if (!nuevaSeccion.Nombre_seccion.trim()) {
-        swal.fire('Error', 'El nombre de la sección es obligatorio.', 'error');
-        return false;
-      }
-    }
-    if (step === 2) {
+    if (step === 1) { // Anteriormente paso 2
       if (!edificioSeleccionado || !nuevaSeccion.Cod_aula || !nuevaSeccion.Cod_grado) {
         swal.fire('Error', 'Debe seleccionar un edificio, aula y grado.', 'error');
         return false;
       }
     }
-    if (step === 3) {
+    if (step === 2) { // Anteriormente paso 3
       if (!nuevaSeccion.Cod_profesor) {
         swal.fire('Error', 'Debe seleccionar un profesor.', 'error');
         return false;
@@ -373,6 +359,7 @@ useEffect(() => {
     }
     return true;
   };
+
   const nextStep = () => {
     if (validateStep()) {
       setStep(step + 1); // Avanza al siguiente paso si pasa la validación
@@ -382,60 +369,54 @@ useEffect(() => {
   // Exportar datos a PDF
   const generateSeccionesPDF = () => {
     const doc = new jsPDF();
-
+  
     if (!filteredSecciones || filteredSecciones.length === 0) {
       alert('No hay datos para exportar.');
       return;
     }
-
+  
     const img = new Image();
     img.src = logo;
-
+  
     img.onload = () => {
       const pageWidth = doc.internal.pageSize.width;
-
+  
       // Encabezado
       doc.addImage(img, 'PNG', 10, 10, 45, 45);
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
       doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
+  
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
       doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
       doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
+  
+      // Subtítulo con el periodo académico
+      const periodoAcademico = getPeriodoAcademico(filteredSecciones[0].Cod_periodo_matricula) || 'SIN PERIODO';
       doc.setFontSize(14);
       doc.setTextColor(0, 102, 51);
-      doc.text('Reporte General de Secciones', pageWidth / 2, 50, { align: 'center' });
-
+      doc.text(`Listado de Secciones - Año Académico ${periodoAcademico}`, pageWidth / 2, 50, { align: 'center' });
+  
       doc.setLineWidth(0.5);
       doc.setDrawColor(0, 102, 51);
       doc.line(10, 55, pageWidth - 10, 55);
-
+  
       doc.setFontSize(12);
       doc.setTextColor(0);
       doc.text('Listado Detallado de Secciones', pageWidth / 2, 65, { align: 'center' });
-
-      // Tabla de datos
-      const tableColumn = [
-        '#',
-        'Sección',
-        'Aula',
-        'Grado',
-        'Profesor',
-        'Periodo Académico',
-      ];
+  
+      // Tabla de datos sin el periodo académico
+      const tableColumn = ['#', 'Sección', 'Aula', 'Grado', 'Profesor'];
       const tableRows = filteredSecciones.map((seccion, index) => [
         { content: (index + 1).toString(), styles: { halign: 'center' } },
         { content: seccion.Nombre_seccion?.toUpperCase() || 'SIN NOMBRE', styles: { halign: 'center' } },
         seccion.Numero_aula?.toString() || 'SIN AULA',
         seccion.Nombre_grado?.toUpperCase() || 'SIN GRADO',
-        { content: (getProfesorName(seccion.Cod_Profesor)?.toUpperCase()) || 'SIN PROFESOR', styles: { halign: 'center' } },
-        { content: getPeriodoAcademico(seccion.Cod_periodo_matricula) || 'SIN PERIODO', styles: { halign: 'center' } },
-      ]);
-
+        { content: getProfesorFullName(seccion.Cod_Profesor) || 'SIN PROFESOR', styles: { halign: 'center' } },
+        ]);
+  
       doc.autoTable({
         startY: 70,
         head: [tableColumn],
@@ -456,18 +437,13 @@ useEffect(() => {
         didDrawPage: (data) => {
           const pageCount = doc.internal.getNumberOfPages();
           const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
+  
           // Pie de página
           const footerY = doc.internal.pageSize.height - 10;
           doc.setFontSize(10);
           doc.setTextColor(0, 102, 51);
-          doc.text(
-            `Página ${pageCurrent} de ${pageCount}`,
-            pageWidth - 10,
-            footerY,
-            { align: 'right' }
-          );
-
+          doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+  
           const now = new Date();
           const dateString = now.toLocaleDateString('es-HN', {
             year: 'numeric',
@@ -482,11 +458,11 @@ useEffect(() => {
           doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
         },
       });
-
+  
       // Convertir PDF en Blob
       const pdfBlob = doc.output('blob');
       const pdfURL = URL.createObjectURL(pdfBlob);
-
+  
       // Crear ventana con visor
       const newWindow = window.open('', '_blank');
       newWindow.document.write(`
@@ -503,7 +479,7 @@ useEffect(() => {
           </body>
         </html>`);
     };
-
+  
     img.onerror = () => {
       alert('No se pudo cargar el logo.');
     };
@@ -528,84 +504,125 @@ useEffect(() => {
       Cod_aula: '',
       Cod_grado: '',
       Cod_profesor: '',
-      Cod_periodo_matricula: anioAcademicoActivo || '' // Usa el año académico activo o vacío si no está disponible
+      Cod_periodo_matricula: periodoAcademico[0]?.Cod_periodo_matricula || '', // Usa el período activo si existe
     });
     setEdificioSeleccionado(''); // Resetea el edificio seleccionado
     setAulasFiltradas([]); // Limpia las aulas filtradas
+    setSearchProfesor(''); // Limpia el término de búsqueda del profesor
   };
-
-  // Función para crear una nueva sección
-  const handleCreateSeccion = async () => {
-    if (!nuevaSeccion.Nombre_seccion || !nuevaSeccion.Cod_aula || !nuevaSeccion.Cod_grado || !nuevaSeccion.Cod_profesor) {
-      swal.fire('Error', 'Todos los campos son requeridos.', 'error');
-      return;
-    }
   
+  useEffect(() => {
+    console.log('Nombre de la sección actualizado:', nuevaSeccion.Nombre_seccion);
+  }, [nuevaSeccion.Nombre_seccion]);
+
+
+  const [loadingNombre, setLoadingNombre] = useState(false);
+  const handleGenerateSectionName = async (codGrado) => {
     try {
-      const response = await fetch('http://localhost:4000/api/secciones/crear_seccion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p_Nombre_seccion: nuevaSeccion.Nombre_seccion,
-          p_Cod_aula: nuevaSeccion.Cod_aula,
-          p_Cod_grado: nuevaSeccion.Cod_grado,
-          p_Cod_Profesor: nuevaSeccion.Cod_profesor,
-          p_Anio_academico: anioAcademicoActivo, // Enviar el año académico activo
-        }),
-      });
+      setLoadingNombre(true); // Activar mensaje de carga
+      const response = await fetch(
+        `http://localhost:4000/api/secciones/generar_nombre_seccion/${codGrado}/${anioAcademicoActivo}`
+      );
+      const data = await response.json();
   
       if (response.ok) {
-        swal.fire('Creación exitosa', 'La sección ha sido creada correctamente.', 'success');
-        fetchSecciones();
-        setModalVisible(false);
-        resetNuevaSeccion();
+        setNuevaSeccion((prev) => ({
+          ...prev,
+          Nombre_seccion: data.Nombre_seccion,
+        }));
       } else {
-        const errorData = await response.json();
-        console.error('Error en la creación:', errorData);
-        swal.fire('Error', errorData.mensaje || 'No se pudo crear la sección.', 'error');
+        console.error('Error en la API:', data.mensaje);
       }
     } catch (error) {
-      console.error('Error al crear la sección:', error);
-      swal.fire('Error', 'Error de conexión o en el servidor.', 'error');
+      console.error('Error al generar el nombre:', error);
+    } finally {
+      setLoadingNombre(false); // Desactivar mensaje de carga
     }
   };
   
-  const openUpdateModal = (seccion) => {
-    console.log('Datos de la sección seleccionada:', seccion);
-  
-    setSeccionToUpdate({
-      p_Cod_secciones: seccion.Cod_secciones || '', // Código de la sección
-      p_Nombre_seccion: seccion.Nombre_seccion || '', // Nombre de la sección
-      Cod_edificio: seccion.Cod_edificio || '', // Código del edificio
-      p_Numero_aula: seccion.Numero_aula || '', // Número del aula
-      p_Nombre_grado: seccion.Nombre_grado || '', // Grado
-      p_Cod_Profesor: seccion.Cod_profesor || '', // Código del profesor
-      p_Cod_periodo_matricula: seccion.Cod_periodo_matricula || '', // Período académico
+  // Función para crear una nueva sección
+  const handleCreateSeccion = async () => {
+  if (!nuevaSeccion.Cod_aula || !nuevaSeccion.Cod_grado || !nuevaSeccion.Cod_profesor) {
+    swal.fire('Error', 'Todos los campos son requeridos.', 'error');
+    return;
+  }
+
+  try {
+    const response = await fetch('http://localhost:4000/api/secciones/crear_seccion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_Cod_aula: nuevaSeccion.Cod_aula,
+        p_Cod_grado: nuevaSeccion.Cod_grado,
+        p_Cod_Profesor: nuevaSeccion.Cod_profesor,
+        p_Cod_periodo_matricula: nuevaSeccion.Cod_periodo_matricula || periodoAcademico[0]?.Cod_periodo_matricula, // Enviar el código del periodo
+      }),
     });
-  
-    if (seccion.Cod_edificio) {
-      fetchAulasPorEdificio(seccion.Cod_edificio); // Cargar las aulas asociadas al edificio
+
+    const data = await response.json();
+
+    if (response.ok) {
+      swal.fire('Creación exitosa', 'La sección ha sido creada correctamente.', 'success');
+      fetchSecciones(); // Actualizar la lista de secciones
+      setModalVisible(false); // Cerrar el modal
+      resetNuevaSeccion(); // Limpiar los datos del formulario
+    } else {
+      swal.fire('Error', data.mensaje || 'No se pudo crear la sección.', 'error');
     }
-  
-    setModalUpdateVisible(true); // Mostrar el modal
+  } catch (error) {
+    console.error('Error al crear la sección:', error);
+    swal.fire('Error', 'Error de conexión o en el servidor.', 'error');
+  }
   };
+
   
+  const openUpdateModal = async (Cod_secciones) => {
+    try {
+        const response = await fetch(`http://localhost:4000/api/secciones/obtener_seccion/${Cod_secciones}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            setSeccionToUpdate({
+                p_Cod_secciones: data.Cod_secciones,
+                p_Nombre_seccion: data.Nombre_seccion,
+                Cod_edificio: data.Cod_edificio,
+                p_Numero_aula: data.Numero_aula,
+                p_Nombre_grado: data.Nombre_grado,
+                p_Cod_Profesor: data.Cod_profesor,
+                p_Cod_periodo_matricula: data.Cod_periodo_matricula,
+            });
+
+            // Cargar aulas asociadas al edificio seleccionado
+            if (data.Cod_edificio) {
+                await fetchAulasPorEdificio(data.Cod_edificio);
+            }
+
+            setModalUpdateVisible(true);
+        } else {
+            swal.fire('Error', data.mensaje || 'No se pudo obtener la sección.', 'error');
+        }
+    } catch (error) {
+        console.error('Error al obtener los datos de la sección:', error);
+        swal.fire('Error', 'Hubo un problema al cargar los datos de la sección.', 'error');
+    }
+};
+
+
   // Función para manejar la actualización de una sección
   const handleUpdateSeccion = async () => {
     console.log('Datos enviados al API:', seccionToUpdate);
   
-    const updatedFields = { ...seccionToUpdate };
     try {
       const response = await fetch('http://localhost:4000/api/secciones/actualizar_seccion', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedFields),
+        body: JSON.stringify(seccionToUpdate),
       });
   
       if (response.ok) {
         swal.fire('Éxito', 'Sección actualizada correctamente.', 'success');
         setModalUpdateVisible(false);
-        fetchSecciones();
+        fetchSeccionesPeriodo(periodoSeleccionado); // Esto asegura que solo se recarguen las secciones del período actual
       } else {
         const errorData = await response.json();
         swal.fire('Error', errorData.mensaje || 'No se pudo actualizar la sección.', 'error');
@@ -614,10 +631,20 @@ useEffect(() => {
       console.error('Error al actualizar la sección:', error);
       swal.fire('Error', 'Hubo un problema al actualizar la sección.', 'error');
     }
-  };  
+  };
   
+
   const resetSeccionToUpdate = () => {
-    setSeccionToUpdate({ Nombre_seccion: '', Numero_aula: '', Nombre_grado: '', Cod_profesor: '', Cod_periodo_matricula: '', Cod_edificio: ''});
+    // Limpia los datos del estado `seccionToUpdate`
+    setSeccionToUpdate({
+      p_Cod_secciones: '',
+      p_Nombre_seccion: '',
+      Cod_edificio: '',
+      p_Numero_aula: '',
+      p_Nombre_grado: '',
+      p_Cod_Profesor: '',
+      p_Cod_periodo_matricula: '',
+    });
   };
 
   // Función para abrir el modal de eliminación de una sección
@@ -629,22 +656,28 @@ useEffect(() => {
   // Función para manejar la eliminación de una sección
   const handleDeleteSeccion = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`, {
-        method: 'DELETE',
-      });
-
+      const response = await fetch(
+        `http://localhost:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`,
+        { method: 'DELETE' }
+      );
+  
       if (response.ok) {
         swal.fire('Eliminación exitosa', 'La sección ha sido eliminada correctamente.', 'success');
         setModalDeleteVisible(false);
-        fetchSecciones();
+  
+        // Recarga solo las secciones del período actual
+        if (periodoSeleccionado) {
+          fetchSeccionesPeriodo(periodoSeleccionado);
+        }
       } else {
         swal.fire('Error', 'No se pudo eliminar la sección.', 'error');
       }
     } catch (error) {
       console.error('Error al eliminar la sección:', error);
+      swal.fire('Error', 'Hubo un problema al eliminar la sección.', 'error');
     }
   };
-
+  
   // Función para manejar el cierre del modal y restablecer los estados
   const handleCloseModal = () => {
     swal.fire({
@@ -834,18 +867,18 @@ useEffect(() => {
               {seccion.Numero_aula}
             </CTableDataCell>
             <CTableDataCell>{seccion.Nombre_grado.toUpperCase()}</CTableDataCell>
-            <CTableDataCell>{getProfesorName(seccion.Cod_Profesor).toUpperCase()}</CTableDataCell>
+            <CTableDataCell>{getProfesorFullName(seccion.Cod_Profesor)}</CTableDataCell>
             <CTableDataCell>{getPeriodoAcademico(seccion.Cod_periodo_matricula)}</CTableDataCell>
             <CTableDataCell className="text-center">
               <div className="d-flex justify-content-center">
                 <CButton
                   color="warning"
-                  onClick={() => openUpdateModal(seccion)}
+                  onClick={() => openUpdateModal(seccion.Cod_secciones)}
                   className="me-2"
-                  disabled={!esPeriodoActivo}
+                  disabled={!esPeriodoActivo} // Deshabilita si el período está inactivo
                 >
                   <CIcon icon={cilPen} />
-                </CButton>
+              </CButton>
 
                 <CButton
                   color="danger"
@@ -858,7 +891,7 @@ useEffect(() => {
 
                 <CButton
                   color="info"
-                  onClick={() => handleGestionarClick(seccion.Cod_secciones)}
+                  onClick={() => handleGestionarClick(seccion)}
                 >
                   <CIcon icon={cilSettings} />
                 </CButton>
@@ -869,9 +902,9 @@ useEffect(() => {
       </CTableBody>
     </CTable>
   </div>
-</div>
+  </div>
 
-      {/* Paginación Fija */}
+  {/* Paginación Fija */}
       <div
         className="pagination-container"
         style={{
@@ -926,197 +959,228 @@ useEffect(() => {
   </div>
 
       {/* Modal Crear Sección */}
-      <CModal
-    visible={modalVisible}
-    onClose={() => {
-    setModalVisible(false);
-    setStep(1); // Reinicia al primer paso
-    resetNuevaSeccion(); // Limpia los datos
-  }}
-  backdrop="static"
-  size="md"
->
-  <CModalHeader closeButton={false}>
-    <CModalTitle>Crear Nueva Sección - Paso {step}</CModalTitle>
-    <CButton className="btn-close" aria-label="Close" onClick={handleCloseModal} />
-  </CModalHeader>
-  <CModalBody>
-    {/* Paso 1: Información de la Sección */}
-    {step === 1 && (
-      <div>
-        <h5>Información de la Sección</h5>
-        <hr />
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Nombre de la Sección</CInputGroupText>
-          <CFormInput
-            value={nuevaSeccion.Nombre_seccion}
-            onChange={(e) => handleInputChange(e, setNuevaSeccion, 'Nombre_seccion')}
-          />
-        </CInputGroup>
-      </div>
-    )}
+     <CModal
+        visible={modalVisible}
+        onClose={() => {
+          setModalVisible(false);
+          setStep(1); // Reinicia al primer paso
+          resetNuevaSeccion(); // Limpia los datos
+        }}
+        backdrop="static"
+        size="md"
+      >
+      <CModalHeader closeButton={false}>
+        <CModalTitle>Crear Nueva Sección - Paso {step}</CModalTitle>
+        <CButton className="btn-close" aria-label="Close" onClick={handleCloseModal} />
+      </CModalHeader>
+      <CModalBody>
 
-    {/* Paso 2: Selección de Aula y Grado */}
-    {step === 2 && (
-      <div>
-        <h5>Selecciona el Edificio, Aula y Grado</h5>
-        <hr />
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Edificio</CInputGroupText>
-          <CFormSelect
-            value={edificioSeleccionado}
+        {/* Paso 1: Selección de Aula y Grado */}
+        {step === 1 && ( // Anteriormente paso 2
+        <div>
+          <h5>Selecciona el Edificio, Aula y Grado</h5>
+          <hr />
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Edificio</CInputGroupText>
+            <CFormSelect
+              value={edificioSeleccionado}
+              onChange={(e) => {
+                setEdificioSeleccionado(e.target.value);
+                setNuevaSeccion({ ...nuevaSeccion, Cod_aula: '' });
+              }}
+            >
+              <option value="">Seleccione un Edificio</option>
+              {edificios.map((edificio) => (
+                <option key={edificio.Cod_edificio} value={edificio.Cod_edificio}>
+                  {edificio.Nombre_edificios.toUpperCase()}
+                </option>
+              ))}
+            </CFormSelect>
+          </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Aula</CInputGroupText>
+            <CFormSelect
+              value={nuevaSeccion.Cod_aula}
+              onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, Cod_aula: e.target.value })}
+              disabled={!edificioSeleccionado}
+            >
+              <option value="">Seleccione un Aula</option>
+              {aulasFiltradas.map((aula) => (
+                <option key={aula.Cod_aula} value={aula.Cod_aula}>
+                  {aula.Numero_aula}
+                </option>
+              ))}
+            </CFormSelect>
+          </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Grado</CInputGroupText>
+            <CFormSelect
+          value={nuevaSeccion.Cod_grado}
+          onChange={(e) => {
+          const selectedGrado = e.target.value;
+          setNuevaSeccion((prev) => ({ ...prev, Cod_grado: selectedGrado }));
+          handleGenerateSectionName(selectedGrado); // Llamada a la API para generar el nombre
+        }}
+      >
+        <option value="">Seleccione un Grado</option>
+        {grados.map((grado) => (
+          <option key={grado.Cod_grado} value={grado.Cod_grado}>
+            {grado.Nombre_grado}
+          </option>
+        ))}
+        </CFormSelect>
+
+        </CInputGroup>
+        </div>
+      )}
+
+  {step === 2 && (
+        <div>
+          <h5>Profesor y Período de Matrícula</h5>
+          <hr />
+          
+          <div>
+   {/* Nombre de la Sección */}
+   <CInputGroup className="mb-3">
+       <CInputGroupText>Nombre de la Sección</CInputGroupText>
+       <CFormInput value={nuevaSeccion.Nombre_seccion || 'Aún no generado'}
+          readOnly
+        />
+      </CInputGroup>
+
+    {/* Período Académico */}
+    <CInputGroup className="mb-3">
+        <CInputGroupText>Período Matrícula</CInputGroupText>
+        <CFormInput value={anioAcademicoActivo || 'Cargando...'} readOnly />
+    </CInputGroup>
+
+    {/* Barra de Búsqueda */}
+    <CInputGroup className="mb-3">
+        <CInputGroupText>Buscar Profesor</CInputGroupText>
+        <CFormInput
+            placeholder="Buscar por identidad, nombre o apellido..."
+            value={searchProfesor}
             onChange={(e) => {
-              setEdificioSeleccionado(e.target.value);
-              setNuevaSeccion({ ...nuevaSeccion, Cod_aula: '' });
-            }}
-          >
-            <option value="">Seleccione un Edificio</option>
-            {edificios.map((edificio) => (
-              <option key={edificio.Cod_edificio} value={edificio.Cod_edificio}>
-                {edificio.Nombre_edificios.toUpperCase()}
-              </option>
-            ))}
-          </CFormSelect>
-        </CInputGroup>
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Número Aula</CInputGroupText>
-          <CFormSelect
-            value={nuevaSeccion.Cod_aula}
-            onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, Cod_aula: e.target.value })}
-            disabled={!edificioSeleccionado}
-          >
-            <option value="">Seleccione un Aula</option>
-            {aulasFiltradas.map((aula) => (
-              <option key={aula.Cod_aula} value={aula.Cod_aula}>
-                {aula.Numero_aula}
-              </option>
-            ))}
-          </CFormSelect>
-        </CInputGroup>
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Grado</CInputGroupText>
-          <CFormSelect
-            value={nuevaSeccion.Cod_grado}
-            onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, Cod_grado: e.target.value })}
-          >
-            <option value="">Seleccione un Grado</option>
-            {grados.map((grado) => (
-              <option key={grado.Cod_grado} value={grado.Cod_grado}>
-                {grado.Nombre_grado.toUpperCase()}
-              </option>
-            ))}
-          </CFormSelect>
-        </CInputGroup>
-      </div>
-    )}
+                let value = e.target.value
+                    .replace(/[^a-zA-Z0-9 ]/g, '') // Elimina caracteres especiales
+                    .replace(/\s+/g, ' ') // Reemplaza múltiples espacios por uno
+                    .toUpperCase(); // Convierte a mayúsculas
 
-    {/* Paso 3: Selección de Profesor y Periodo de Matrícula */}
-    {step === 3 && (
-      <div>
-        <h5>Profesor y Período de Matrícula</h5>
-        <hr />
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Profesor</CInputGroupText>
-          <CFormSelect
-            value={nuevaSeccion.Cod_profesor}
-            onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, Cod_profesor: e.target.value })}
-          >
-            <option value="">Seleccione un Profesor</option>
-            {profesores.map((profesor) => (
-              <option key={profesor.Cod_profesor} value={profesor.Cod_profesor}>
-                {profesor.Nombre_profesor.toUpperCase()}
-              </option>
-            ))}
-          </CFormSelect>
-        </CInputGroup>
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Periodo Matrícula</CInputGroupText>
-          <CFormInput value={anioAcademicoActivo || 'Cargando...'} disabled />
-        </CInputGroup>
-      </div>
-    )}
+                // Bloquear más de 2 repeticiones consecutivas de la misma letra
+                const regexRepeticiones = /(.)\1{2,}/;
+                if (regexRepeticiones.test(value)) {
+                    value = value.slice(0, -1); // Remueve la última letra repetida
+                }
+
+                setSearchProfesor(value);
+            }}
+            onPaste={(e) => e.preventDefault()} // Bloquea copiar y pegar
+        />
+    </CInputGroup>
+
+    {/* Lista Desplegable Siempre Visible */}
+    <div style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '10px', background: 'white' }}>
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, maxHeight: '150px', overflowY: 'scroll' }}>
+            {filteredProfesores.map((profesor) => (
+                <li
+                    key={profesor.Cod_profesor}
+                    style={{
+                        padding: '8px',
+                        cursor: 'pointer',
+                        borderBottom: '1px solid #ddd',
+                    }}
+                    onClick={() => {
+                        setNuevaSeccion({ ...nuevaSeccion, Cod_profesor: profesor.Cod_profesor });
+                        setSearchProfesor(`ID: ${profesor.Numero_identidad} - ${profesor.Nombre_completo}`);
+                    }}
+                >
+                    {`ID: ${profesor.Numero_identidad} - ${profesor.Nombre_completo}`}
+                </li>
+             ))}
+         </ul>
+     </div>
+ </div>
+</div>
+)}
   </CModalBody>
 
   <CModalFooter>
-  {step > 1 && (
-    <CButton color="secondary" onClick={prevStep}>Atrás</CButton>
-  )}
-  {step < 3 ? (
-    <CButton color="primary" onClick={nextStep}>Siguiente</CButton>
-  ) : (
-    <CButton color="success" onClick={handleCreateSeccion}>Finalizar y Guardar</CButton>
-  )}
-</CModalFooter>
+    {step > 1 && <CButton color="secondary" onClick={prevStep}>Atrás</CButton>}
+    {step < 2 ? (
+      <CButton color="primary" onClick={nextStep}>Siguiente</CButton>
+    ) : (
+      <CButton color="success" onClick={handleCreateSeccion}>Finalizar y Guardar</CButton>
+    )}
+  </CModalFooter>
 </CModal>
 
+
      {/* Modal Actualizar Sección */}
-<CModal visible={modalUpdateVisible} backdrop="static">
-  <CModalHeader closeButton={false}>
+     <CModal visible={modalUpdateVisible} backdrop="static" size="lg">
+     <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Sección</CModalTitle>
     <CButton
       className="btn-close"
       aria-label="Close"
       onClick={() => {
-        swal.fire({
-          title: '¿Estás seguro?',
-          text: 'Si sales ahora, perderás todos los cambios realizados.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Salir',
-          cancelButtonText: 'Cancelar',
-        }).then((result) => {
-          if (result.isConfirmed) {
-            setModalUpdateVisible(false);
-            resetSeccionToUpdate(); // Restablece los valores del formulario
-          }
-        });
+        handleCloseModal();
+        resetSeccionToUpdate(); // Limpia los datos del estado
       }}
     />
   </CModalHeader>
   <CModalBody>
     <CForm>
-      {/* Campos para actualizar sección */}
+      {/* Código de Sección */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Código de Sección</CInputGroupText>
-        <CFormInput
-          value={seccionToUpdate.p_Cod_secciones || ''}
-          readOnly
-        />
+        <CFormInput value={seccionToUpdate.p_Cod_secciones || ''} readOnly />
       </CInputGroup>
 
+      {/* Grado */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Grado</CInputGroupText>
+        <CFormInput value={seccionToUpdate.p_Nombre_grado || ''} readOnly />
+      </CInputGroup>
+
+      {/* Nombre de la Sección */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Nombre de la Sección</CInputGroupText>
-        <CFormInput
-          value={seccionToUpdate.p_Nombre_seccion || ''}
-          onChange={(e) => setSeccionToUpdate({ ...seccionToUpdate, p_Nombre_seccion: e.target.value })}
-        />
+        <CFormInput value={seccionToUpdate.p_Nombre_seccion || ''} readOnly />
       </CInputGroup>
 
+      {/* Selección de Edificio */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Edificio</CInputGroupText>
         <CFormSelect
           value={seccionToUpdate.Cod_edificio || ''}
-          onChange={(e) => {
+          onChange={async (e) => {
             const newEdificio = e.target.value;
-            setSeccionToUpdate({ ...seccionToUpdate, Cod_edificio: newEdificio, p_Numero_aula: '' });
-            fetchAulasPorEdificio(newEdificio); // Actualiza las aulas según el edificio seleccionado
+            setSeccionToUpdate({
+              ...seccionToUpdate,
+              Cod_edificio: newEdificio,
+              p_Numero_aula: '', // Reiniciar el aula al cambiar el edificio
+            });
+            await fetchAulasPorEdificio(newEdificio); // Cargar aulas del edificio seleccionado
           }}
         >
           <option value="">Seleccione un Edificio</option>
           {edificios.map((edificio) => (
             <option key={edificio.Cod_edificio} value={edificio.Cod_edificio}>
-              {edificio.Nombre_edificios}
+              {edificio.Nombre_edificios.toUpperCase()}
             </option>
           ))}
         </CFormSelect>
       </CInputGroup>
 
+      {/* Selección de Aula */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Aula</CInputGroupText>
         <CFormSelect
           value={seccionToUpdate.p_Numero_aula || ''}
-          onChange={(e) => setSeccionToUpdate({ ...seccionToUpdate, p_Numero_aula: e.target.value })}
-          disabled={!seccionToUpdate.Cod_edificio}
+          onChange={(e) =>
+            setSeccionToUpdate({ ...seccionToUpdate, p_Numero_aula: e.target.value })
+          }
+          disabled={!seccionToUpdate.Cod_edificio} // Deshabilitar si no hay edificio seleccionado
         >
           <option value="">Seleccione un Aula</option>
           {aulasFiltradas.map((aula) => (
@@ -1127,31 +1191,19 @@ useEffect(() => {
         </CFormSelect>
       </CInputGroup>
 
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Grado</CInputGroupText>
-        <CFormSelect
-          value={seccionToUpdate.p_Nombre_grado || ''}
-          onChange={(e) => setSeccionToUpdate({ ...seccionToUpdate, p_Nombre_grado: e.target.value })}
-        >
-          <option value="">Seleccione un Grado</option>
-          {grados.map((grado) => (
-            <option key={grado.Cod_grado} value={grado.Nombre_grado}>
-              {grado.Nombre_grado}
-            </option>
-          ))}
-        </CFormSelect>
-      </CInputGroup>
-
+      {/* Profesor */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Profesor</CInputGroupText>
         <CFormSelect
           value={seccionToUpdate.p_Cod_Profesor || ''}
-          onChange={(e) => setSeccionToUpdate({ ...seccionToUpdate, p_Cod_Profesor: e.target.value })}
+          onChange={(e) =>
+            setSeccionToUpdate({ ...seccionToUpdate, p_Cod_Profesor: e.target.value })
+          }
         >
           <option value="">Seleccione un Profesor</option>
           {profesores.map((profesor) => (
             <option key={profesor.Cod_profesor} value={profesor.Cod_profesor}>
-              {profesor.Nombre_profesor.toUpperCase()}
+              {`${profesor.Nombre_completo.toUpperCase()} - ID: ${profesor.Numero_identidad}`}
             </option>
           ))}
         </CFormSelect>
@@ -1162,19 +1214,8 @@ useEffect(() => {
     <CButton
       color="secondary"
       onClick={() => {
-        swal.fire({
-          title: '¿Estás seguro?',
-          text: 'Si sales ahora, perderás todos los cambios realizados.',
-          icon: 'warning',
-          showCancelButton: true,
-          confirmButtonText: 'Salir',
-          cancelButtonText: 'Cancelar',
-        }).then((result) => {
-          if (result.isConfirmed) {
-            setModalUpdateVisible(false);
-            resetSeccionToUpdate(); // Restablece los valores del formulario
-          }
-        });
+        handleCloseModal();
+        resetSeccionToUpdate();
       }}
     >
       Cancelar
@@ -1204,4 +1245,3 @@ useEffect(() => {
 };
 
 export default ListaSecciones;
-

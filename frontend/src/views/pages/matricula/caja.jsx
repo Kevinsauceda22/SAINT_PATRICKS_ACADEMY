@@ -39,6 +39,7 @@ const CajasMatriculas = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [modalNuevaCajaVisible, setModalNuevaCajaVisible] = useState(false);
   const [valorMatricula, setValorMatricula] = useState(null); // Estado para almacenar el valor
+  const [descuentos, setDescuentos] = useState([]); // Estado para almacenar los descuentos
   const [pagoActual, setPagoActual] = useState({
     cod_caja: '',
     monto: '',
@@ -124,6 +125,7 @@ const handleInputChange = (e) => {
   }
 };
 
+
 // Bloquear copiar y pegar
 const preventCopyPaste = (e) => {
   e.preventDefault();
@@ -194,12 +196,11 @@ const preventCopyPaste = (e) => {
         return;
       }
   
-      // Asegurar que el concepto "Matricula" esté cargado antes de continuar
+      // Validar que el concepto "Matricula" esté cargado antes de continuar
       if (!pagoActual.cod_concepto) {
         try {
           const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
           if (response.status === 200 && response.data.cod_concepto) {
-            // Establecer el concepto "Matricula" en el estado
             pagoActual.cod_concepto = response.data.cod_concepto;
           } else {
             MySwal.fire({
@@ -243,41 +244,33 @@ const preventCopyPaste = (e) => {
         return;
       }
   
-      if (pagoActual.aplicar_descuento && (isNaN(pagoActual.valor_descuento) || parseFloat(pagoActual.valor_descuento) <= 0)) {
-        MySwal.fire({
-          icon: 'warning',
-          title: 'Descuento inválido',
-          text: 'El valor del descuento debe ser un número válido mayor a 0.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
+      // Validar descuento si aplica
+      let descuentoAplicado = 0;
+  
+      if (pagoActual.aplicar_descuento && pagoActual.cod_descuento) {
+        const porcentajeDescuento = parseFloat(pagoActual.valor_descuento);
+  
+        if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
+          MySwal.fire({
+            icon: 'warning',
+            title: 'Descuento inválido',
+            text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
+  
+        // Calcular el descuento en base al porcentaje
+        descuentoAplicado = (monto * porcentajeDescuento) / 100;
       }
   
-      if (pagoActual.aplicar_descuento && parseFloat(pagoActual.valor_descuento) > monto) {
-        MySwal.fire({
-          icon: 'warning',
-          title: 'Descuento inválido',
-          text: 'El valor del descuento no puede ser mayor al monto.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
+      const montoFinal = monto - descuentoAplicado;
   
-      if (pagoActual.descripcion_descuento && pagoActual.descripcion_descuento.length > 25) {
+      if (montoFinal < 0) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Descripción de descuento inválida',
-          text: 'La descripción del descuento no puede exceder los 25 caracteres.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
-  
-      if (pagoActual.descripcion_descuento && /[^A-Z0-9 ]/.test(pagoActual.descripcion_descuento)) {
-        MySwal.fire({
-          icon: 'warning',
-          title: 'Descripción de descuento inválida',
-          text: 'La descripción del descuento solo puede contener letras, números y espacios.',
+          title: 'Monto inválido',
+          text: 'El monto final no puede ser negativo.',
           confirmButtonText: 'Entendido',
         });
         return;
@@ -285,15 +278,11 @@ const preventCopyPaste = (e) => {
   
       // Preparar los datos para el envío
       const datosPago = {
-        ...pagoActual,
-        monto, // Asegura que el monto siempre tenga el valor correcto
-        aplicar_descuento: pagoActual.aplicar_descuento || false,
-        valor_descuento: pagoActual.aplicar_descuento
-          ? parseFloat(pagoActual.valor_descuento)
-          : null,
-        descripcion_descuento: pagoActual.aplicar_descuento
-          ? pagoActual.descripcion_descuento
-          : null,
+        cod_caja: pagoActual.cod_caja,
+        monto: montoFinal, // Monto ajustado con descuento aplicado
+        descripcion: pagoActual.descripcion,
+        cod_concepto: pagoActual.cod_concepto,
+        cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
       };
   
       console.log('Datos enviados al servidor:', datosPago); // Depuración
@@ -308,7 +297,36 @@ const preventCopyPaste = (e) => {
           text: 'El pago se ha registrado correctamente.',
           confirmButtonText: 'Aceptar',
         });
+  
+        // Construir datos de la caja para el reporte individual
+        const cajaConDatos = {
+          Cod_caja: pagoActual.cod_caja,
+          Nombre_Padre: 'Nombre del Padre', // Sustituir con los datos reales si están disponibles
+          Apellido_Padre: 'Apellido del Padre', // Sustituir con los datos reales si están disponibles
+          Descripcion: pagoActual.descripcion,
+          Monto: montoFinal,
+          Estado_pago: 'Pagado',
+          Fecha_pago: new Date(),
+          Hora_registro: new Date(),
+        };
+  
+        // Preguntar al usuario si desea generar el recibo
+        MySwal.fire({
+          title: '¿Deseas descargar el recibo?',
+          text: 'El recibo se generará como un archivo PDF.',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, generar',
+          cancelButtonText: 'No',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            // Generar e imprimir el PDF del reporte individual
+            generarReporteIndividual(cajaConDatos, dineroRecibido, vuelto);
+          }
+        });
+  
         setModalVisible(false); // Cerrar el modal
+        resetRegistrarPagoModal(); // Reiniciar el formulario
         obtenerCajasPendientes(); // Actualizar la lista de cajas
       }
     } catch (error) {
@@ -333,12 +351,12 @@ const preventCopyPaste = (e) => {
     }
   };
   
+  
+  // Obtener el concepto "Matricula"
   useEffect(() => {
     const fetchConceptoMatricula = async () => {
       try {
-        const response = await axios.get(
-          'http://localhost:4000/api/caja/concepto/matricula'
-        );
+        const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
         if (response.status === 200) {
           setPagoActual((prevState) => ({
             ...prevState,
@@ -352,7 +370,25 @@ const preventCopyPaste = (e) => {
   
     fetchConceptoMatricula();
   }, []);
-    
+  
+  // Obtener los descuentos disponibles
+  useEffect(() => {
+    const fetchDescuentos = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/caja/descuentos');
+        if (response.status === 200 && response.data.data) {
+          setDescuentos(response.data.data);
+          console.log('Descuentos obtenidos:', response.data.data);
+        } else {
+          console.error('La respuesta no contiene datos de descuentos:', response.data);
+        }
+      } catch (error) {
+        console.error('Error al obtener los descuentos:', error.message);
+      }
+    };
+  
+    fetchDescuentos();
+  }, []);
   
   
   const crearNuevaCaja = async () => {
@@ -501,12 +537,60 @@ const preventCopyPaste = (e) => {
       });
     }
   };
+  
 
   const paginatedData = pagosPendientes
-    .filter((pago) =>
-      `${pago.Nombre_Padre} ${pago.Apellido_Padre}`.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  .filter((pago) => {
+    const searchLower = searchTerm.toLowerCase();
+
+    // Filtrar por nombre completo o por DNI
+    return (
+      `${pago.Nombre_Padre} ${pago.Apellido_Padre}`.toLowerCase().includes(searchLower) || 
+      (pago.DNI_Padre && pago.DNI_Padre.toString().includes(searchTerm)) // Verificar si el DNI incluye el término
+    );
+  })
+  .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+useEffect(() => {
+  console.log('Datos de pagos pendientes:', pagosPendientes);
+}, [pagosPendientes]);
+
+const buscarCajasPorDni = async (dni) => {
+  try {
+    if (!dni || dni.trim() === '') {
+      throw new Error('El campo DNI está vacío. Por favor, ingrese un DNI válido.');
+    }
+
+    // URL del endpoint que has configurado
+    const url = `http://localhost:4000/api/caja/buscar-por-dni?dni=${dni}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Error al buscar cajas por DNI.');
+    }
+
+    const data = await response.json();
+
+    if (!data || data.length === 0) {
+      alert('No se encontraron resultados para el DNI ingresado.');
+      return null; // Retorna null si no hay datos
+    }
+
+    console.log('Resultados de la búsqueda:', data);
+    return data; // Devuelve los resultados de la búsqueda para gestionarlos en la UI
+  } catch (error) {
+    console.error('Error al realizar la búsqueda:', error.message);
+    return null; // Devuelve null si ocurre un error
+  }
+};
+
 
   const totalPages = Math.ceil(pagosPendientes.length / itemsPerPage);
   const handleDineroRecibido = (valor) => {
@@ -830,41 +914,56 @@ const preventCopyPaste = (e) => {
 
   </CCol>
 </CRow>
-    {/* Búsqueda y Selector de Paginación */}
-    <CRow className="justify-content-between align-items-center mb-3">
-      <CCol xs={4} md={3}>
-        <CFormInput
-          placeholder="Buscar por nombre del padre"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            border: '1px solid #ccc',
-            borderRadius: '5px',
-            fontSize: '0.9rem',
-          }}
-        />
-      </CCol>
-      <CCol xs="auto">
-        <CFormSelect
-          value={itemsPerPage}
-          onChange={(e) => {
-            setItemsPerPage(parseInt(e.target.value));
-            setCurrentPage(1); // Reiniciar a la primera página al cambiar la cantidad de elementos
-          }}
-          style={{
-            border: '1px solid #ccc',
-            borderRadius: '5px',
-            fontSize: '0.9rem',
-            color: '#4A4A4A',
-          }}
-        >
-          <option value={5}>Mostrar 5 registros</option>
-          <option value={10}>Mostrar 10 registros</option>
-          <option value={20}>Mostrar 20 registros</option>
-        </CFormSelect>
-      </CCol>
-    </CRow>
-  
+ {/* Búsqueda y Selector de Paginación */}
+{/* Búsqueda y Selector de Paginación */}
+<CRow className="justify-content-between align-items-center mb-3">
+  <CCol xs={4} md={3}>
+    <CFormInput
+      placeholder="Buscar por nombre o DNI del padre" // Refleja el filtro actualizado
+      value={searchTerm}
+      onChange={async (e) => {
+        const inputValue = e.target.value;
+        setSearchTerm(inputValue);
+
+        // Realizar la búsqueda en el backend si hay un término ingresado
+        if (inputValue.trim() !== '') {
+          const results = await buscarCajasPorDni(inputValue); // Función fetch creada previamente
+          if (results) {
+            setPagosPendientes(results.data || []); // Actualiza el estado con los resultados
+          }
+        } else {
+          // Si no hay término de búsqueda, carga todas las cajas pendientes
+          obtenerCajasPendientes();
+        }
+      }}
+      style={{
+        border: '1px solid #ccc',
+        borderRadius: '5px',
+        fontSize: '0.9rem',
+      }}
+    />
+  </CCol>
+  <CCol xs="auto">
+    <CFormSelect
+      value={itemsPerPage}
+      onChange={(e) => {
+        setItemsPerPage(parseInt(e.target.value));
+        setCurrentPage(1); // Reiniciar a la primera página al cambiar la cantidad de elementos
+      }}
+      style={{
+        border: '1px solid #ccc',
+        borderRadius: '5px',
+        fontSize: '0.9rem',
+        color: '#4A4A4A',
+      }}
+    >
+      <option value={5}>Mostrar 5 registros</option>
+      <option value={10}>Mostrar 10 registros</option>
+      <option value={20}>Mostrar 20 registros</option>
+    </CFormSelect>
+  </CCol>
+</CRow>
+
     {/* Tabla de Datos */}
     <CTable hover bordered className="shadow-sm" style={{ borderRadius: '10px' }}>
   <CTableHead style={{ backgroundColor: '#0056b3', color: 'white' }}>
@@ -1121,129 +1220,63 @@ const preventCopyPaste = (e) => {
   </CFormSelect>
 </CInputGroup>
 
-      {/* Checkbox para aplicar descuento */}
-      <div className="form-check mb-4">
-        <input
-          type="checkbox"
-          className="form-check-input shadow-sm"
-          id="aplicarDescuento"
-          checked={pagoActual.aplicar_descuento}
-          onChange={(e) => setPagoActual({ ...pagoActual, aplicar_descuento: e.target.checked })}
-        />
-        <label className="form-check-label text-muted" htmlFor="aplicarDescuento">
-          Aplicar Descuento
-        </label>
-      </div>
+     {/* Checkbox para aplicar descuento */}
+<div className="form-check mb-4">
+  <input
+    type="checkbox"
+    className="form-check-input shadow-sm"
+    id="aplicarDescuento"
+    checked={pagoActual.aplicar_descuento}
+    onChange={(e) => setPagoActual({ ...pagoActual, aplicar_descuento: e.target.checked })}
+  />
+  <label className="form-check-label text-muted" htmlFor="aplicarDescuento">
+    Aplicar Descuento
+  </label>
+</div>
 
-      {/* Campos adicionales para el descuento */}
-      {pagoActual.aplicar_descuento && (
-        <>
-          {/* Valor del descuento */}
-          <CInputGroup className="mb-3">
-            <CInputGroupText className="bg-white border-0">L</CInputGroupText>
-            <CFormInput
-              type="number"
-              name="valor_descuento"
-              placeholder="Descuento en Lempiras"
-              value={pagoActual.valor_descuento || ''}
-              onChange={(e) => {
-                const value = e.target.value;
-                if (/[^0-9.]/.test(value)) {
-                  setErrors({ valor_descuento: 'El descuento solo puede contener números y puntos.' });
-                } else if (parseFloat(value) > parseFloat(pagoActual.monto || 0)) {
-                  setErrors({ valor_descuento: 'El descuento no puede ser mayor al monto.' });
-                } else {
-                  setErrors({ valor_descuento: '' });
-                }
-                setPagoActual({ ...pagoActual, valor_descuento: value });
-              }}
-              onPaste={(e) => e.preventDefault()}
-              onCopy={(e) => e.preventDefault()}
-              className={`form-control border-0 shadow-sm ${
-                errors.valor_descuento ? 'is-invalid' : ''
-              }`}
-              required
-            />
-          </CInputGroup>
-          {errors.valor_descuento && <small className="text-danger">{errors.valor_descuento}</small>}
+{/* Selección de porcentaje de descuento */}
+{pagoActual.aplicar_descuento && (
+  <CInputGroup className="mb-3">
+    <CInputGroupText className="bg-white border-0">%</CInputGroupText>
+    <CFormSelect
+      name="cod_descuento"
+      value={pagoActual.cod_descuento || ''} // Asegúrate de que el estado esté vinculado al código del descuento
+      onChange={(e) => {
+        const selectedCodDescuento = e.target.value;
+        const descuentoSeleccionado = descuentos.find(
+          (descuento) => descuento.Cod_descuento.toString() === selectedCodDescuento
+        );
 
-          {/* Descripción del descuento */}
-          <CInputGroup className="mb-3">
-            <CInputGroupText className="bg-white border-0">Desc.</CInputGroupText>
-            <CFormInput
-              type="text"
-              name="descripcion_descuento"
-              placeholder="Descripción del descuento"
-              value={pagoActual.descripcion_descuento || ''}
-              maxLength={25}
-              onChange={(e) => {
-                const value = e.target.value.toUpperCase();
-                if (/[^A-Z0-9 ]/.test(value)) {
-                  setErrors({ descripcion_descuento: 'No se permiten símbolos en la descripción.' });
-                } else if (/([A-Z])\1\1/.test(value)) {
-                  setErrors({
-                    descripcion_descuento: 'No se permiten tres letras iguales consecutivas.',
-                  });
-                } else {
-                  setErrors({ descripcion_descuento: '' });
-                }
-                setPagoActual({ ...pagoActual, descripcion_descuento: value });
-              }}
-              onPaste={(e) => e.preventDefault()}
-              onCopy={(e) => e.preventDefault()}
-              className={`form-control border-0 shadow-sm ${
-                errors.descripcion_descuento ? 'is-invalid' : ''
-              }`}
-              required
-            />
-          </CInputGroup>
-          {errors.descripcion_descuento && (
-            <small className="text-danger">{errors.descripcion_descuento}</small>
-          )}
-        </>
-      )}
+        if (descuentoSeleccionado) {
+          const porcentaje = parseFloat(descuentoSeleccionado.Valor) * 100; // Convertir a porcentaje
+          const montoBase = parseFloat(pagoActual.monto || 0);
 
-      {/* Campo para dinero recibido */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilDollar} className="text-muted" />
-        </CInputGroupText>
-        <CFormInput
-          type="number"
-          placeholder="Dinero recibido (Lempiras)"
-          value={dineroRecibido}
-          onChange={(e) => {
-            const recibido = parseFloat(e.target.value) || 0;
+          // Calcular el monto con el descuento aplicado
+          const descuentoAplicado = montoBase * (porcentaje / 100);
+          const montoFinal = montoBase - descuentoAplicado;
 
-            // Calcular el monto ajustado con descuento aplicado
-            const montoBase = parseFloat(pagoActual.monto || 0);
-            const descuento = pagoActual.aplicar_descuento
-              ? parseFloat(pagoActual.valor_descuento || 0)
-              : 0;
-            const montoConDescuento = montoBase - descuento;
+          // Actualizar el estado
+          setPagoActual({
+            ...pagoActual,
+            cod_descuento: descuentoSeleccionado.Cod_descuento,
+            valor_descuento: descuentoSeleccionado.Valor, // Mantén el valor original para el backend
+            monto_final: montoFinal > 0 ? montoFinal : 0, // Asegúrate de que no sea negativo
+          });
+        }
+      }}
+      className="form-select border-0 shadow-sm"
+      required
+    >
+      <option value="">Seleccionar descuento</option>
+      {descuentos.map((descuento) => (
+        <option key={descuento.Cod_descuento} value={descuento.Cod_descuento}>
+          {descuento.Valor * 100}% - {descuento.Nombre_descuento}
+        </option>
+      ))}
+    </CFormSelect>
+  </CInputGroup>
+)}
 
-            // Actualizar estado de dinero recibido y vuelto
-            setDineroRecibido(recibido);
-            setVuelto(recibido - montoConDescuento); // Calcular el vuelto ajustado
-          }}
-          className="form-control border-0 shadow-sm"
-          required
-        />
-      </CInputGroup>
-
-      {/* Mostrar el vuelto calculado */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilWallet} className="text-muted" />
-        </CInputGroupText>
-        <CFormInput
-          type="text"
-          placeholder="Vuelto (Lempiras)"
-          value={vuelto > 0 ? vuelto.toFixed(2) : '0.00'} // Mostrar el vuelto con 2 decimales
-          className="form-control border-0 shadow-sm"
-          readOnly
-        />
-      </CInputGroup>
     </CForm>
   </CModalBody>
   <CModalFooter className="d-flex justify-content-end border-0">
@@ -1401,99 +1434,64 @@ const preventCopyPaste = (e) => {
         </CFormSelect>
       </CInputGroup>
 
-      {/* Checkbox para aplicar descuento */}
-      <div className="form-check mb-4">
-        <input
-          type="checkbox"
-          className="form-check-input shadow-sm"
-          id="aplicarDescuentoNuevaCaja"
-          checked={nuevaCaja.aplicar_descuento}
-          onChange={(e) => {
-            const aplicar = e.target.checked;
-            setNuevaCaja({
-              ...nuevaCaja,
-              aplicar_descuento: aplicar,
-              valor_descuento: aplicar ? nuevaCaja.valor_descuento || 0 : null,
-              descripcion_descuento: aplicar ? nuevaCaja.descripcion_descuento || '' : null,
-            });
-          }}
-        />
-        <label className="form-check-label text-muted" htmlFor="aplicarDescuentoNuevaCaja">
-          Aplicar Descuento
-        </label>
-      </div>
+       {/* Checkbox para aplicar descuento */}
+<div className="form-check mb-4">
+  <input
+    type="checkbox"
+    className="form-check-input shadow-sm"
+    id="aplicarDescuento"
+    checked={pagoActual.aplicar_descuento}
+    onChange={(e) => setPagoActual({ ...pagoActual, aplicar_descuento: e.target.checked })}
+  />
+  <label className="form-check-label text-muted" htmlFor="aplicarDescuento">
+    Aplicar Descuento
+  </label>
+</div>
 
-      {/* Campos adicionales para el descuento */}
-      {nuevaCaja.aplicar_descuento && (
-        <>
-          {/* Valor del descuento */}
-          <CInputGroup className="mb-3">
-            <CInputGroupText className="bg-white border-0">L</CInputGroupText>
-            <CFormInput
-              type="number"
-              name="valor_descuento"
-              placeholder="Descuento en Lempiras"
-              value={nuevaCaja.valor_descuento || ''}
-              onChange={(e) =>
-                setNuevaCaja({
-                  ...nuevaCaja,
-                  valor_descuento: parseFloat(e.target.value) || 0,
-                })
-              }
-              className="form-control border-0 shadow-sm"
-              required
-            />
-          </CInputGroup>
+{/* Selección de porcentaje de descuento */}
+{pagoActual.aplicar_descuento && (
+  <CInputGroup className="mb-3">
+    <CInputGroupText className="bg-white border-0">%</CInputGroupText>
+    <CFormSelect
+      name="cod_descuento"
+      value={pagoActual.cod_descuento || ''} // Vincula al código del descuento seleccionado
+      onChange={(e) => {
+        const selectedCodDescuento = e.target.value;
+        const descuentoSeleccionado = descuentos.find(
+          (descuento) => descuento.Cod_descuento.toString() === selectedCodDescuento
+        );
 
-          {/* Descripción del descuento */}
-          <CInputGroup className="mb-3">
-            <CInputGroupText className="bg-white border-0">Desc.</CInputGroupText>
-            <CFormInput
-              type="text"
-              name="descripcion_descuento"
-              placeholder="Descripción del descuento"
-              value={nuevaCaja.descripcion_descuento || ''}
-              onChange={(e) =>
-                setNuevaCaja({
-                  ...nuevaCaja,
-                  descripcion_descuento: e.target.value.toUpperCase(),
-                })
-              }
-              className="form-control border-0 shadow-sm"
-              required
-            />
-          </CInputGroup>
-        </>
-      )}
+        if (descuentoSeleccionado) {
+          const valorDescuento = parseFloat(descuentoSeleccionado.Valor); // Valor original (e.g., 0.1 para 10%)
+          const montoBase = parseFloat(pagoActual.monto || 0);
 
-      {/* Campo para dinero recibido */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilDollar} className="text-muted" />
-        </CInputGroupText>
-        <CFormInput
-          type="number"
-          placeholder="Dinero recibido (Lempiras)"
-          value={dineroRecibido}
-          onChange={(e) => handleDineroRecibido(e.target.value)}
-          className="form-control border-0 shadow-sm"
-          required
-        />
-      </CInputGroup>
+          // Calcular el monto con el descuento aplicado
+          const descuentoAplicado = montoBase * valorDescuento;
+          const montoFinal = montoBase - descuentoAplicado;
 
-      {/* Mostrar el vuelto calculado */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilWallet} className="text-muted" />
-        </CInputGroupText>
-        <CFormInput
-          type="text"
-          placeholder="Vuelto (Lempiras)"
-          value={vuelto > 0 ? vuelto.toFixed(2) : '0.00'}
-          className="form-control border-0 shadow-sm"
-          readOnly
-        />
-      </CInputGroup>
+          // Actualizar el estado
+          setPagoActual({
+            ...pagoActual,
+            cod_descuento: descuentoSeleccionado.Cod_descuento,
+            valor_descuento: descuentoSeleccionado.Valor, // Mantén el valor original para el backend
+            monto_final: montoFinal > 0 ? montoFinal : 0, // Asegúrate de que no sea negativo
+          });
+        }
+      }}
+      className="form-select border-0 shadow-sm"
+      required
+    >
+      <option value="">Seleccionar descuento</option>
+      {descuentos.map((descuento) => (
+        <option key={descuento.Cod_descuento} value={descuento.Cod_descuento}>
+          {`${parseFloat(descuento.Valor) * 100}% - ${descuento.Nombre_descuento}`}
+        </option>
+      ))}
+    </CFormSelect>
+  </CInputGroup>
+)}
+
+    
     </CForm>
   </CModalBody>
   <CModalFooter className="d-flex justify-content-end border-0">

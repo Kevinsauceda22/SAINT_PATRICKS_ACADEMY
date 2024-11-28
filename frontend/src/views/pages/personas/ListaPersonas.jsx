@@ -93,7 +93,7 @@ const ListaPersonas = () => {
   const [generos, setGeneros] = useState([])
   const [departamentos, setDepartamentos] = useState([])
 
-
+  
   const [municipio, setMunicipio] = useState([])
   const [buscadorMunicipio, setBuscadorMunicipio] = useState(''); // Valor del input de búsqueda
   const [municipiosFiltrados, setMunicipiosFiltrados] = useState([]); // Resultados filtrados
@@ -384,9 +384,8 @@ const handleBuscarNacionalidad = (e) => {
 const handleSeleccionarNacionalidad = (nacionalidad) => {
   setBuscadorNacionalidad(`${nacionalidad.Id_nacionalidad} - ${nacionalidad.pais_nacionalidad}`); // Mostrar en el input
   setSelectedNacionalidad(nacionalidad.pais_nacionalidad); // Guardar solo pais_nacionalidad para la inserción
-  setIsDropdownOpenNacionalidad(false); // Cerrar el dropdown
-
-  // Aquí puedes agregar lógica adicional para almacenar la nacionalidad seleccionada
+  setIsDropdownOpenNacionalidad(false);
+  setNuevaPersona(prev => ({ ...prev, cod_nacionalidad: nacionalidad.Cod_nacionalidad }));
   console.log('Nacionalidad seleccionada:', nacionalidadSeleccionada); // Esto es solo para ver qué se seleccionó
 
 };
@@ -412,9 +411,10 @@ const handleBuscarMunicipio = (e) => {
 
 const handleSeleccionarMunicipio = (municipio) => {
   setBuscadorMunicipio(`${municipio.nombre_municipio.toUpperCase()} - ${municipio.nombre_departamento.toUpperCase()}`);
-  setSelectedMunicipio(municipio.Cod_municipio);
-  setNuevaPersona(prev => ({ ...prev, cod_municipio: municipio.Cod_municipio })); // Asegúrate de actualizar nuevaPersona con cod_municipio
+  setSelectedMunicipio(municipio.cod_municipio);
+  setNuevaPersona(prev => ({ ...prev, cod_municipio: municipio.cod_municipio }));
   setIsDropdownOpenMunicipio(false);
+  console.log('Municipio seleccionado:', municipio);
 };
 
 
@@ -558,7 +558,7 @@ const handleCreatePersona = async () => {
   }
 
   // Log para verificar los datos antes de enviar
-  console.log('Datos a enviar en handle create persona:', {
+  console.log('Datos a enviar:', {
     dni_persona: dniSinGuiones,
     Nombre: nuevaPersona.Nombre,
     Segundo_nombre: nuevaPersona.Segundo_nombre,
@@ -569,9 +569,9 @@ const handleCreatePersona = async () => {
     Estado_Persona: nuevaPersona.Estado_Persona,
     principal: nuevaPersona.principal,
     cod_tipo_persona: nuevaPersona.cod_tipo_persona,
-    cod_nacionalidad: buscadorNacionalidad.cod_nacionalidad,
+    cod_nacionalidad: nuevaPersona.cod_nacionalidad,
     cod_departamento: nuevaPersona.cod_departamento,
-    cod_municipio: selectedMunicipio, // Asegúrate de que este valor se pase correctamente
+    cod_municipio: nuevaPersona.cod_municipio,
     cod_genero: nuevaPersona.cod_genero,
   });
 
@@ -590,9 +590,9 @@ const handleCreatePersona = async () => {
         Estado_Persona: nuevaPersona.Estado_Persona,
         principal: nuevaPersona.principal,
         cod_tipo_persona: nuevaPersona.cod_tipo_persona,
-        cod_nacionalidad: selectedNacionalidad,
+        cod_nacionalidad: nuevaPersona.cod_nacionalidad,
         cod_departamento: nuevaPersona.cod_departamento,
-        cod_municipio: selectedMunicipio, // Asegúrate de que este valor se pase correctamente
+        cod_municipio: nuevaPersona.cod_municipio,
         cod_genero: nuevaPersona.cod_genero,
       }),
     });
@@ -628,6 +628,8 @@ const handleCreatePersona = async () => {
     });
   }
 };
+
+
 
 
   {/***************************************************FUNCION PARA ACTUALIZAR**************************************************************/}
@@ -1468,42 +1470,37 @@ return (
                   <div style={{ color: 'red' }}>{errorMessages.cod_tipo_persona}</div>
                 )}
 
-                    <div className="mb-3">
-                        <div className="input-group mb-3">
-                          <span className="input-group-text">Nacionalidad</span>
-                          <input
-                            type="text"
-                            className="form-control"
-                            value={buscadorNacionalidad} // Valor del input
-                            onChange={handleBuscarNacionalidad} // Llamar a la función de filtrado al cambiar el valor
-                            placeholder="Buscar por sigla de pais o letra"
-                          />
-                          <CButton type="button">
-                            <CIcon icon={cilSearch} />
-                          </CButton>
-                        </div>
-
-                        {/* Dropdown de resultados filtrados */}
-                        {isDropdownOpenNacionalidad && nacionalidadesFiltradas.length > 0 && (
+                  <div className="mb-3">
+                    <CInputGroup className="mb-3">
+                      <CInputGroupText>
+                        Nacionalidad
+                      </CInputGroupText>
+                      <CFormInput
+                        type="text"
+                        value={buscadorNacionalidad}
+                        onChange={handleBuscarNacionalidad}
+                        placeholder="Buscar por sigla de pais o letra"
+                      />
+                      <CButton type="button">
+                        <CIcon icon={cilSearch} />
+                      </CButton>
+                    </CInputGroup>
+                    {isDropdownOpenNacionalidad && nacionalidadesFiltradas.length > 0 && (
+                      <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+                        {nacionalidadesFiltradas.map((nacionalidad) => (
                           <div
-                            className="dropdown-menu show"
-                            style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}
+                            key={nacionalidad.Cod_nacionalidad}
+                            className="dropdown-item"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => handleSeleccionarNacionalidad(nacionalidad)}
                           >
-                            {nacionalidadesFiltradas.map((nacionalidad) => (
-                              <div
-                                key={nacionalidad.Cod_nacionalidad}
-                                className="dropdown-item"
-                                style={{ cursor: 'pointer' }}
-                                onClick={() => handleSeleccionarNacionalidad(nacionalidad)} // Seleccionar nacionalidad
-                              >
-                                {nacionalidad.Id_nacionalidad.toUpperCase()} - {nacionalidad.pais_nacionalidad.toUpperCase()}
-                              </div>
-                            ))}
+                            {nacionalidad.Id_nacionalidad} - {nacionalidad.pais_nacionalidad}
                           </div>
-                        )}
+                        ))}
                       </div>
-
-                      <CInputGroup className="mb-3">
+                    )}
+                  </div>
+                  <CInputGroup className="mb-3">
                   <CInputGroupText>Departamento</CInputGroupText>
                   <CFormSelect
                     value={nuevaPersona.cod_departamento || ''}
@@ -1526,35 +1523,37 @@ return (
                 )}
                 
 
-                <div className="input-group mb-3">
-                <span className="input-group-text">Municipio</span>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={buscadorMunicipio}
-                  onChange={handleBuscarMunicipio}
-                  placeholder="Buscar por nombre del municipio"
-                />
-                <CButton type="button">
-                  <CIcon icon={cilSearch} />
-                </CButton>
-              </div>
+                  <div className="mb-3">
+                  <CInputGroup className="mb-3">
+                    <CInputGroupText>
+                      Municipio
+                    </CInputGroupText>
+                    <CFormInput
+                      type="text"
+                      value={buscadorMunicipio}
+                      onChange={handleBuscarMunicipio}
+                      placeholder="Buscar por nombre del municipio"
+                    />
+                    <CButton type="button">
+                      <CIcon icon={cilSearch} />
+                    </CButton>
+                  </CInputGroup>
 
-              {isDropdownOpenMunicipio && municipiosFiltrados.length > 0 && (
-                <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
-                  {municipiosFiltrados.map((municipio) => (
-                    <div
-                      key={municipio.Cod_municipio}
-                      className="dropdown-item"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => handleSeleccionarMunicipio(municipio)}
-                    >
-                      {municipio.nombre_municipio.toUpperCase()} - {municipio.nombre_departamento.toUpperCase()}
+                  {isDropdownOpenMunicipio && municipiosFiltrados.length > 0 && (
+                    <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+                      {municipiosFiltrados.map((municipio) => (
+                        <div
+                          key={municipio.cod_municipio}
+                          className="dropdown-item"
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => handleSeleccionarMunicipio(municipio)}
+                        >
+                          {municipio.nombre_municipio.toUpperCase()} - {municipio.nombre_departamento.toUpperCase()}
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-
                 <CInputGroup className="mb-3">
                   <CInputGroupText>Género</CInputGroupText>
                   <CFormSelect
@@ -1563,7 +1562,6 @@ return (
                       setNuevaPersona({ ...nuevaPersona, cod_genero: e.target.value })
                     }
                     required
-                    style={{ color: '#6c757d' }} // Cambié el color a gris claro
                   >
                     <option value="">Seleccione un género</option>
                     {generos &&

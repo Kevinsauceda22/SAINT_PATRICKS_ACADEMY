@@ -1,4 +1,9 @@
+
 import conectarDB from '../../../config/db.js';
+import { enviarNotificacionNuevaActividad,
+         enviarNotificacionCancelacionActividad,
+         enviarNotificacionCambioActividad} from '../../../helpers/emailHelper.js';
+
 const pool = await conectarDB();
 
 // Controlador para obtener actividades extracurriculares
@@ -174,3 +179,310 @@ export const obtenerSecciones = async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
 };
+
+
+export const obtenerPadresYGradosSecciones = async (req, res) => {
+    try {
+        // Paso 1: Llamar al procedimiento almacenado para obtener los padres
+        console.log("Ejecutando sp_usuariosRol1ActividadesExtra...");
+        const [padres] = await pool.query('CALL sp_usuariosRol1ActividadesExtra()');
+
+        // Verificar si se encontraron padres
+        console.log("Resultado de sp_usuariosRol1ActividadesExtra:", padres[0]);
+        if (padres[0].length === 0) {
+            console.warn("No se encontraron padres en el primer procedimiento.");
+            return res.status(404).json({ message: 'No se encontraron padres de estudiantes' });
+        }
+
+        // Array para almacenar la información combinada
+        const resultados = [];
+
+        // Paso 2: Iterar sobre cada padre para buscar a sus estudiantes
+        for (const padre of padres[0]) {
+            const { cod_persona: codPersonaPadre } = padre;
+            console.log(`Procesando padre con cod_persona: ${codPersonaPadre}`);
+
+            // Buscar estudiantes relacionados con el padre en tbl_estructura_familiar
+            console.log(`Buscando estudiantes para el padre ${codPersonaPadre} en tbl_estructura_familiar...`);
+            const [estudiantes] = await pool.query(
+                `SELECT cod_persona_estudiante 
+                 FROM tbl_estructura_familiar 
+                 WHERE cod_persona_padre = ?`,
+                [codPersonaPadre]
+            );
+
+            console.log(`Estudiantes encontrados para el padre ${codPersonaPadre}:`, estudiantes);
+            if (estudiantes.length === 0) {
+                console.warn(`No se encontraron estudiantes para el padre con cod_persona ${codPersonaPadre}.`);
+                continue; // Pasar al siguiente padre
+            }
+
+            // Paso 3: Buscar grados y secciones de cada estudiante
+            for (const estudiante of estudiantes) {
+                const { cod_persona_estudiante: codPersonaEstudiante } = estudiante;
+                console.log(`Buscando grados y secciones para el estudiante con cod_persona: ${codPersonaEstudiante}`);
+
+                // Llamar al procedimiento para obtener grados y secciones
+                const [gradoSeccion] = await pool.query(
+                    'CALL GetGradoSeccionYPadre(?)',
+                    [codPersonaEstudiante]
+                );
+
+                console.log(`Resultado de GetGradoSeccionYPadre para el estudiante ${codPersonaEstudiante}:`, gradoSeccion[0]);
+                if (gradoSeccion[0].length === 0) {
+                    console.warn(`No se encontraron grados y secciones para el estudiante ${codPersonaEstudiante}.`);
+                    continue; // Pasar al siguiente estudiante
+                }
+
+                // Combinar información del padre, estudiante, grado y sección
+                for (const seccion of gradoSeccion[0]) {
+                    resultados.push({
+                        nombre_completo_padre: padre.nombre_completo,
+                        correo_usuario: padre.correo_usuario,
+                        cod_persona_padre: codPersonaPadre,
+                        cod_persona_estudiante: codPersonaEstudiante,
+                        cod_grado: seccion.cod_grado,
+                        cod_seccion: seccion.cod_seccion,
+                        nombre_padre: seccion.nombre_padre,
+                    });
+                }
+            }
+        }
+
+        // Verificar si hay resultados combinados
+        if (resultados.length > 0) {
+            console.log("Resultados finales:", resultados);
+            res.status(200).json(resultados);
+        } else {
+            console.warn("No se encontraron grados y secciones para los estudiantes de los padres.");
+            res.status(404).json({
+                message: 'No se encontraron grados y secciones para los estudiantes de los padres',
+            });
+        }
+    } catch (error) {
+        console.error('Error al obtener la información:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
+
+
+export const notificarNuevaActividad = async (req, res) => {
+    try {
+        // Parámetros enviados desde la solicitud (por ejemplo, cod_seccion y actividad)
+        const { cod_seccion } = req.params; // Sección que queremos filtrar
+        const { nombre, fecha, hora, lugar, descripcion } = req.body.actividad; // Detalles de la actividad
+
+        // Paso 1: Obtener los padres relacionados con la sección
+        console.log(`Buscando padres de la sección ${cod_seccion}...`);
+        const [padres] = await pool.query('CALL sp_usuariosRol1ActividadesExtra()');
+
+        if (padres[0].length === 0) {
+            return res.status(404).json({ message: 'No se encontraron padres en esta sección' });
+        }
+
+        // Paso 2: Buscar estudiantes relacionados y filtrar por sección
+        const resultados = [];
+
+        for (const padre of padres[0]) {
+            const { cod_persona: codPersonaPadre, nombre_completo, correo_usuario } = padre;
+
+            // Buscar estudiantes relacionados con el padre
+            const [estudiantes] = await pool.query(
+                `SELECT cod_persona_estudiante 
+                 FROM tbl_estructura_familiar 
+                 WHERE cod_persona_padre = ?`,
+                [codPersonaPadre]
+            );
+
+            for (const estudiante of estudiantes) {
+                const { cod_persona_estudiante: codPersonaEstudiante } = estudiante;
+
+                // Buscar grado y sección del estudiante
+                const [gradoSeccion] = await pool.query(
+                    'CALL GetGradoSeccionYPadre(?)',
+                    [codPersonaEstudiante]
+                );
+
+                for (const seccion of gradoSeccion[0]) {
+                    // Filtrar por la sección proporcionada
+                    if (seccion.cod_seccion === parseInt(cod_seccion)) {
+                        resultados.push({
+                            correo_padre: correo_usuario,
+                            nombre_padre: nombre_completo,
+                        });
+                    }
+                }
+            }
+        }
+
+        if (resultados.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron padres relacionados con esta sección' });
+        }
+
+        // Paso 3: Enviar correos a los padres
+        console.log('Enviando correos a los padres...');
+        for (const resultado of resultados) {
+            await enviarNotificacionNuevaActividad(resultado.correo_padre, resultado.nombre_padre, {
+                nombre,
+                fecha,
+                hora,
+                lugar,
+                descripcion,
+            });
+        }
+
+        // Respuesta de éxito
+        res.status(200).json({ message: 'Notificaciones enviadas correctamente a los padres' });
+    } catch (error) {
+        console.error('Error al enviar notificaciones:', error);
+        res.status(500).json({ message: 'Error al enviar notificaciones', error: error.message });
+    }
+};
+
+export const notificarCancelacionActividad = async (req, res) => {
+    try {
+        // Obtener los datos de la solicitud
+        const { cod_seccion } = req.params; // Código de la sección (de la URL)
+        const { actividad, motivo } = req.body; // Datos de la actividad y motivo (del cuerpo)
+
+        const { nombre, fecha, hora, lugar } = actividad; // Detalles de la actividad cancelada
+
+        // Paso 1: Obtener los padres relacionados con la sección
+        console.log(`Buscando padres de la sección ${cod_seccion}...`);
+        const [padres] = await pool.query('CALL sp_usuariosRol1ActividadesExtra()');
+
+        if (padres[0].length === 0) {
+            return res.status(404).json({ message: 'No se encontraron padres en esta sección' });
+        }
+
+        // Paso 2: Buscar estudiantes relacionados y filtrar por sección
+        const resultados = [];
+
+        for (const padre of padres[0]) {
+            const { cod_persona: codPersonaPadre, nombre_completo, correo_usuario } = padre;
+
+            // Buscar estudiantes relacionados con el padre
+            const [estudiantes] = await pool.query(
+                `SELECT cod_persona_estudiante 
+                 FROM tbl_estructura_familiar 
+                 WHERE cod_persona_padre = ?`,
+                [codPersonaPadre]
+            );
+
+            for (const estudiante of estudiantes) {
+                const { cod_persona_estudiante: codPersonaEstudiante } = estudiante;
+
+                // Buscar grado y sección del estudiante
+                const [gradoSeccion] = await pool.query(
+                    'CALL GetGradoSeccionYPadre(?)',
+                    [codPersonaEstudiante]
+                );
+
+                for (const seccion of gradoSeccion[0]) {
+                    // Filtrar por la sección proporcionada
+                    if (seccion.cod_seccion === parseInt(cod_seccion)) {
+                        resultados.push({
+                            correo_padre: correo_usuario,
+                            nombre_padre: nombre_completo,
+                        });
+                    }
+                }
+            }
+        }
+
+        if (resultados.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron padres relacionados con esta sección' });
+        }
+
+        // Paso 3: Enviar correos de cancelación a los padres
+        console.log('Enviando correos de cancelación a los padres...');
+        for (const resultado of resultados) {
+            await enviarNotificacionCancelacionActividad(
+                resultado.correo_padre,
+                resultado.nombre_padre,
+                { nombre, fecha, hora, lugar },
+                motivo
+            );
+        }
+
+        // Responder con éxito
+        res.status(200).json({ message: 'Notificaciones de cancelación enviadas correctamente a los padres' });
+    } catch (error) {
+        console.error('Error al enviar notificaciones de cancelación:', error);
+        res.status(500).json({ message: 'Error al enviar notificaciones de cancelación', error: error.message });
+    }
+};
+
+
+export const notificarCambioActividad = async (req, res) => {
+    try {
+        // Parámetros enviados desde la solicitud
+        const { cod_seccion } = req.params; // Código de la sección (de la URL)
+        const { actividad_anterior, actividad_actual } = req.body; // Detalles de la actividad anterior y actual (del cuerpo)
+
+        // Paso 1: Obtener los padres relacionados con la sección
+        console.log(`Buscando padres de la sección ${cod_seccion}...`);
+        const [padres] = await pool.query('CALL sp_usuariosRol1ActividadesExtra()');
+
+        if (padres[0].length === 0) {
+            return res.status(404).json({ message: 'No se encontraron padres en esta sección' });
+        }
+
+        // Paso 2: Buscar estudiantes relacionados y filtrar por sección
+        const resultados = [];
+
+        for (const padre of padres[0]) {
+            const { cod_persona: codPersonaPadre, nombre_completo, correo_usuario } = padre;
+
+            // Buscar estudiantes relacionados con el padre
+            const [estudiantes] = await pool.query(
+                `SELECT cod_persona_estudiante 
+                 FROM tbl_estructura_familiar 
+                 WHERE cod_persona_padre = ?`,
+                [codPersonaPadre]
+            );
+
+            for (const estudiante of estudiantes) {
+                const { cod_persona_estudiante: codPersonaEstudiante } = estudiante;
+
+                // Buscar grado y sección del estudiante
+                const [gradoSeccion] = await pool.query(
+                    'CALL GetGradoSeccionYPadre(?)',
+                    [codPersonaEstudiante]
+                );
+
+                for (const seccion of gradoSeccion[0]) {
+                    // Filtrar por la sección proporcionada
+                    if (seccion.cod_seccion === parseInt(cod_seccion)) {
+                        resultados.push({
+                            correo_padre: correo_usuario,
+                            nombre_padre: nombre_completo,
+                        });
+                    }
+                }
+            }
+        }
+
+        if (resultados.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron padres relacionados con esta sección' });
+        }
+
+        // Paso 3: Enviar correos de actualización a los padres
+        console.log('Enviando correos de actualización a los padres...');
+        for (const resultado of resultados) {
+            await enviarNotificacionCambioActividad(
+                resultado.correo_padre,
+                resultado.nombre_padre,
+                actividad_anterior,
+                actividad_actual
+            );
+        }
+
+        // Responder con éxito
+        res.status(200).json({ message: 'Notificaciones de actualización enviadas correctamente a los padres' });
+    } catch (error) {
+        console.error('Error al enviar notificaciones de actualización:', error);
+        res.status(500).json({ message: 'Error al enviar notificaciones de actualización', error: error.message });
+    }
+};
+
