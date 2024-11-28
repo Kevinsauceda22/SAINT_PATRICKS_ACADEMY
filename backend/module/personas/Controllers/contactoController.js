@@ -56,14 +56,6 @@ export const actualizarContacto = async (req, res) => {
     const pool = await conectarDB();
 
     try {
-        // Verificar si el contacto existe
-        const [result] = await pool.query('CALL P_Get_Contacto_Por_Codigo(?)', [cod_contacto]);
-        const existingRecord = result[0]; // Verificar si hay algún registro
-
-        if (!existingRecord) {
-            return res.status(404).json({ Mensaje: 'Contacto no encontrado' });
-        }
-
         // Proceder con la actualización si el contacto existe
         await pool.query('CALL P_Update_Contacto(?, ?, ?, ?)', [
             cod_contacto,

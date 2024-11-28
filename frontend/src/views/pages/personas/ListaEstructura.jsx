@@ -124,6 +124,9 @@ const ListaEstructura = () => {
     setBuscadorRelacionEstudianteActualizar(persona.fullName); // Mostramos el nombre seleccionado
     setIsDropdownOpenEstudianteActualizar(false);
   };
+
+
+  
   
   const handleBuscarRelacionPadreActualizar = (e) => {
     const filtro = e.target.value.toLowerCase();

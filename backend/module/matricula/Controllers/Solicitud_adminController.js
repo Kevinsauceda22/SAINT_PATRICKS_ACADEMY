@@ -60,6 +60,37 @@ export const obtenerSolicitudesx = async (req, res) => {
         return res.status(500).json({ message: 'Error al obtener las solicitudes', error: error.message });
     }
 };
+export const obtenerPersonaPorDni = async (req, res) => {
+    const { dni } = req.params; // Obtener DNI desde los parámetros de la URL
+  
+    if (!dni) {
+        return res.status(400).json({ message: 'El parámetro DNI es obligatorio.' });
+    }
+  
+    try {
+        // Llamar al procedimiento almacenado
+        const query = 'CALL obtener_persona_por_dni(?)';
+        const [results] = await pool.query(query, [dni]);
+  
+        if (!results || results[0].length === 0) {
+            return res.status(404).json({ message: 'No se encontró ninguna persona con ese DNI.' });
+        }
+  
+        // Extraer el resultado
+        const persona = results[0][0];
+  
+        res.status(200).json({
+            cod_persona: persona.cod_persona,
+            nombre_completo: persona.nombre_completo.trim(), // Asegurar que el nombre completo esté limpio
+        });
+    } catch (error) {
+        console.error('Error al buscar persona por DNI:', error);
+        res.status(500).json({
+            message: 'Ocurrió un error al buscar la persona.',
+            error: error.message,
+        });
+    }
+};
 
 export const insertarSolicitud = async (req, res) => {
     const { Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto, Persona_requerida } = req.body;
@@ -226,7 +257,6 @@ export const insertarSolicitud = async (req, res) => {
         });
     }
 };
-
 
   
 
