@@ -379,4 +379,3 @@ export const eliminarSeccion = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
-
