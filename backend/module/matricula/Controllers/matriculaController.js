@@ -342,9 +342,17 @@ export const obtenerAlumnosPorSeccion = async (req, res) => {
   const { cod_seccion } = req.params;
   const { anio_academico } = req.query;
 
+  // Validación inicial
+  if (!cod_seccion || !anio_academico) {
+    return res.status(400).json({
+      message: 'El código de la sección y el año académico son requeridos.',
+    });
+  }
+
   try {
-    // Asegúrate de que la consulta SQL sea correcta
-    const [alumnos] = await pool.query(`
+    // Consulta SQL
+    const [alumnos] = await pool.query(
+      `
       SELECT 
         m.Cod_matricula,
         p.Nombre,
@@ -361,18 +369,30 @@ export const obtenerAlumnosPorSeccion = async (req, res) => {
       LEFT JOIN tbl_secciones AS s ON sm.Cod_seccion = s.Cod_secciones
       JOIN tbl_periodo_matricula AS pm ON m.Cod_periodo_matricula = pm.Cod_periodo_matricula
       WHERE sm.Cod_seccion = ? AND pm.Anio_academico = ?
-    `, [cod_seccion, anio_academico]);
+      `,
+      [cod_seccion, anio_academico]
+    );
 
-    if (alumnos.length === 0) {
-      return res.status(404).json({ message: 'No se encontraron alumnos matriculados para esta sección y año académico.' });
+    console.log('Resultado de la consulta:', alumnos);
+
+    // Verificar si no se encontraron alumnos
+    if (!alumnos || alumnos.length === 0) {
+      return res.status(404).json({
+        message: 'No se encontraron alumnos matriculados para esta sección y año académico.',
+      });
     }
 
+    // Enviar los alumnos encontrados
     res.status(200).json({ data: alumnos });
   } catch (error) {
     console.error('Error al obtener alumnos por sección:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    res.status(500).json({
+      message: 'Error interno del servidor al obtener los alumnos por sección.',
+      error: error.message,
+    });
   }
-};// Controlador para obtener el horario basado en la sección del alumno
+};
+// Controlador para obtener el horario basado en la sección del alumno
 export const obtenerHorarioPorSeccion = async (req, res) => {
   const { cod_seccion } = req.params; // Obtiene el código de la sección desde la URL
 

@@ -709,6 +709,27 @@ const exportToExcel = () => {
         },
       });
   
+      // Función para obtener el nombre del maestro
+      const obtenerNombreMaestro = async (codSeccion) => {
+        try {
+          const response = await fetch(`http://localhost:4000/api/matricula/secciones/${matricula.Cod_grado}?cod_periodo_matricula=${matricula.Cod_periodo_matricula}`);
+          if (response.ok) {
+            const result = await response.json();
+            const seccion = result.data.find((sec) => sec.Cod_secciones === codSeccion);
+            if (seccion && seccion.Nombre_profesor) {
+              return `${seccion.Nombre_profesor} ${seccion.Apellido_profesor || ''}`.trim();
+            }
+            return 'Sin Maestro Asignado'; // Valor predeterminado si no hay maestro
+          } else {
+            console.warn('Error al obtener las secciones.');
+            return 'Error al obtener el maestro';
+          }
+        } catch (error) {
+          console.error('Error al obtener el maestro:', error);
+          return 'Error al obtener el maestro';
+        }
+      };
+  
       // Obtener las opciones de matrícula
       let opciones = {};
       try {
@@ -725,13 +746,17 @@ const exportToExcel = () => {
   
       // Obtener los datos del horario
       let horarios = [];
+      let nombreMaestro = 'N/A'; // Valor predeterminado para el maestro
       if (matricula.Cod_seccion) {
         try {
           const response = await fetch(`http://localhost:4000/api/matricula/horario/${matricula.Cod_seccion}`);
           if (response.ok) {
             const result = await response.json();
             horarios = result.data || [];
-            console.log('Horarios cargados:', horarios); // Para depuración
+            console.log('Horarios cargados:', horarios);
+  
+            // Usar la función para obtener el nombre del maestro
+            nombreMaestro = await obtenerNombreMaestro(matricula.Cod_seccion);
           } else {
             console.warn('Error al obtener los horarios de la sección');
           }
@@ -752,7 +777,6 @@ const exportToExcel = () => {
       // Validar y asignar datos con valores predeterminados
       const codificacion = matricula.codificacion_matricula || 'N/A';
       const fechaMatricula = matricula.fecha_matricula?.split('T')[0] || 'N/A';
-  
       const nombreCompleto = [
         matricula.Nombre_Hijo || 'N/A',
         matricula.Segundo_nombre_Hijo || '',
@@ -761,23 +785,18 @@ const exportToExcel = () => {
       ]
         .filter(Boolean)
         .join(' ');
-  
       const fechaNacimiento = matricula.fecha_nacimiento_hijo?.split('T')[0] || 'N/A';
       const nombrePadre = matricula.Nombre_Padre || 'N/A';
       const apellidoPadre = matricula.Apellido_Padre || 'N/A';
-  
       const estadoMatricula = opciones.estados_matricula?.find(
         (e) => e.Cod_estado_matricula === matricula.Cod_estado_matricula
       )?.Tipo || 'N/A';
-  
       const periodoMatricula = opciones.periodos_matricula?.find(
         (p) => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula
       )?.Anio_academico || 'N/A';
-  
       const tipoMatricula = opciones.tipos_matricula?.find(
         (t) => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula
       )?.Tipo || 'N/A';
-  
       const grado = matricula.Nombre_grado || 'N/A';
       const seccion = matricula.Nombre_seccion || 'N/A';
   
@@ -840,6 +859,7 @@ const exportToExcel = () => {
             ['Tipo de Matrícula', tipoMatricula],
             ['Grado', grado],
             ['Sección', seccion],
+            ['Maestro', nombreMaestro], // Incluimos el nombre del maestro
           ],
           styles: { fontSize: 10, cellPadding: 4 },
           headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255] },
@@ -894,7 +914,6 @@ const exportToExcel = () => {
       console.error('Error al generar el PDF:', error);
       Swal.fire('Error', 'No se pudo generar el PDF. Intente nuevamente.', 'error');
     }
-
   
     const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
