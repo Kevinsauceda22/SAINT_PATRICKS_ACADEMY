@@ -41,7 +41,7 @@ const ListaGestion_Academica = () => {
   const [currentPage, setCurrentPage] = useState(1); // Página actual
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Registros por página
   const [searchTerm, setSearchTerm] = useState(''); // Término de búsqueda
-  const [searchField, setSearchField] = useState('Nombre_seccion'); // Campo por el que se busca
+  const [searchField, setSearchField] = useState('Total_secciones'); // Campo por el que se busca
 
   // Hook para cargar datos al montar el componente
   useEffect(() => {
@@ -60,6 +60,27 @@ const ListaGestion_Academica = () => {
       Swal.fire('Error', 'No se pudieron obtener los agrupadores.', 'error');
     }
   };
+
+  useEffect(() => {
+    const fetchPeriodoActivo = async () => {
+      try {
+        const response = await fetch("http://localhost:4000/api/secciones_asignaturas/periodo_activo");
+        const data = await response.json();
+  
+        if (response.ok) {
+          setIsPeriodoActivo(data.activo); // Configura el estado basado en la respuesta de la API
+        } else {
+          setIsPeriodoActivo(false); // Si no hay período activo
+        }
+      } catch (error) {
+        console.error("Error al verificar el período activo:", error);
+        setIsPeriodoActivo(false); // Si ocurre un error, asume que no está activo
+      }
+    };
+  
+    fetchPeriodoActivo();
+  }, []);
+  
   
   // Función para obtener periodos desde la API
   const fetchPeriodos = async () => {
@@ -395,19 +416,31 @@ const ListaGestion_Academica = () => {
       setCurrentPage(pageNumber);
     }
   };
-  
-  const normalizeString = (str) =>
-    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+  const normalizeString = (str) => {
+    if (!str) return '';
+    return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  };
   
   const filteredAgrupadores = agrupadores.filter((agrupador) => {
     const normalizedSearchTerm = normalizeString(searchTerm);
-    return normalizeString(agrupador.Anio_academico.toString()).includes(normalizedSearchTerm);
+  
+    if (!searchTerm) return true; // Si no hay término de búsqueda, devolver todo.
+  
+    if (searchField === 'Total_secciones') {
+      return agrupador.Total_secciones.toString().includes(normalizedSearchTerm);
+    } else if (searchField === 'Anio_academico') {
+      return agrupador.Anio_academico.toString().includes(normalizedSearchTerm);
+    }
+  
+    return false;
   });
   
+
   const indexOfLastRecord = currentPage * recordsPerPage; // Último índice de registro
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage; // Primer índice de registro
   const currentRecords = filteredAgrupadores.slice(indexOfFirstRecord, indexOfLastRecord); // Registros actuales
-  
+
 
   // Función para guardar un nuevo agrupador
   const handleGuardarAgrupador = async () => {
@@ -456,6 +489,14 @@ const ListaGestion_Academica = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           value={searchTerm}
         />
+        <CFormSelect
+          aria-label="Buscar por"
+          onChange={(e) => setSearchField(e.target.value)}
+          style={{ marginLeft: '10px' }}
+        >
+          <option value="Total_secciones">Total Secciones</option>
+          <option value="Anio_academico">Año Académico</option>
+        </CFormSelect>
       </CInputGroup>
     </CCol>
 
@@ -533,7 +574,7 @@ const ListaGestion_Academica = () => {
     </CTableHead>
     <CTableBody>
       {agrupadores.length > 0 ? (
-        currentRecords.map((agrupador, index) => (
+        agrupadores.map((agrupador, index) => (
           <CTableRow
             key={agrupador.Cod_agrupadora}
             style={{
