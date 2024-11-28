@@ -59,6 +59,7 @@ const ListaEstructura = () => {
     descripcion: '',
   });
   const [estructuraToUpdate, setEstructuraToUpdate] = useState({});
+  const [errorMessages, setErrorMessages] = useState({}); // Inicializar estado para mensajes de error
   const [estructuraToDelete, setEstructuraToDelete] = useState({});
   const [personas, setPersonas] = useState([]);
   const [personasFiltradas, setPersonasFiltradas] = useState([]);
@@ -1005,17 +1006,79 @@ return (
 
       {/* Campo de Descripción */}
       <CInputGroup className="mt-3">
-        <CInputGroupText>Descripción</CInputGroupText>
-        <CFormInput
-          type="text"
-          value={nuevaEstructura.descripcion}
-          onChange={e => setNuevaEstructuraFamiliar(prev => ({
-            ...prev,
-            descripcion: e.target.value,
-          }))}
-          placeholder="Descripción de la relación"
-        />
-      </CInputGroup>
+  {errorMessages.descripcion && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.descripcion}
+    </div>
+  )}
+
+  
+  <CInputGroupText>Descripción</CInputGroupText>
+  <CFormInput
+    type="text"
+    value={nuevaEstructura.descripcion}
+    onChange={e => {
+      const value = e.target.value;
+
+      // Bloquear secuencias de más de tres letras repetidas
+      if (/(.)\1{2,}/.test(value)) {
+        setErrorMessages((prevErrors) => ({
+          ...prevErrors,
+          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.'
+        }));
+        return;
+      }
+
+      // Bloquear caracteres especiales, solo letras, números, espacios, guiones y puntos permitidos
+      if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
+        setErrorMessages((prevErrors) => ({
+          ...prevErrors,
+          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.'
+        }));
+        return;
+      }
+
+      // Bloquear más de un espacio consecutivo
+      if (/\s{2,}/.test(value)) {
+        setErrorMessages((prevErrors) => ({
+          ...prevErrors,
+          descripcion: 'La descripción no puede contener más de un espacio consecutivo.'
+        }));
+        return;
+      }
+
+      // Verifica si el campo está vacío
+      const erroresTemp = { ...errorMessages };
+      if (!value.trim()) {
+        erroresTemp.descripcion = 'La descripción no puede estar vacía.';
+      } else if (value.length < 2) {
+        erroresTemp.descripcion = 'La descripción debe tener al menos 2 caracteres.';
+      } else {
+        erroresTemp.descripcion = '';
+      }
+
+      setNuevaEstructuraFamiliar(prev => ({
+        ...prev,
+        descripcion: value,
+      }));
+      setErrorMessages(erroresTemp);
+    }}
+    placeholder="Descripción de la relación"
+    required
+  />
+</CInputGroup>
+
+{/* Estilos dentro del componente */}
+<style jsx>{`
+  .error-message {
+    color: red;
+    font-size: 12px;  /* Tamaño de texto más pequeño */
+    margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
+    margin-bottom: 0;
+    margin-left: 12px;  /* Para alinearlo con el texto del input */
+  }
+`}</style>
+
     </CForm>
   </CModalBody>
   <CModalFooter>
