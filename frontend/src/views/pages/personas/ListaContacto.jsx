@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react'; 
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilPrint, cilSave } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilPrint, cilSave, cilArrowLeft } from '@coreui/icons';
 import swal from 'sweetalert2';
+import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom'
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import {
   CButton,
@@ -42,9 +44,85 @@ const ListaContacto = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(5);
-  const [nuevoContacto, setNuevoContacto] = useState({ cod_persona: '', tipo_contacto: '', Valor: '' });
+  const [nuevoContacto, setNuevoContacto] = useState({ cod_persona: '', cod_tipo_contacto: '', Valor: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [buscadorCodPersona, setBuscadorCodPersona] = useState('');
+  const [personasFiltradas, setPersonasFiltradas] = useState([]);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [personas, setPersonas] = useState([]);
 
+  
+
+// Filtrar contactos por cod_persona
+
+
+
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Recupera personaSeleccionada del estado o maneja el caso en que no esté disponible
+  const { personaSeleccionada } = location.state || {};
+
+  // Manejo de error si personaSeleccionada no está definida
+  if (!personaSeleccionada) {
+    console.warn('No se ha proporcionado una persona seleccionada. Redirigiendo...');
+    navigate('/'); // O a donde desees redirigir en caso de error
+    return null; // No renderizar nada mientras se redirige
+  }
+
+  // Filtrar contactos relacionados con la persona seleccionada
+  const contactosFiltrados = contacto.filter(
+    contacto => contacto.cod_persona === personaSeleccionada.cod_persona
+  );
+
+  const volverAListaPersonas = () => {
+    navigate('/ListaPersonas');
+  };
+
+  useEffect(() => {
+    console.log(personaSeleccionada);
+  }, [personaSeleccionada]);
+
+{/*******************************************************************************************************************/}
+useEffect(() => {
+  const cargarPersonas = async () => {
+    const respuesta = await fetch('http://localhost:4000/api/estructuraFamiliar/verPersonas');
+    const datos = await respuesta.json();
+    setPersonas(datos);
+  };
+  cargarPersonas();
+}, []);
+
+
+const handleBuscarCodPersona = (e) => {
+  const filtro = e.target.value.toLowerCase();
+  setBuscadorCodPersona(filtro);
+
+  if (filtro.trim() === '') {
+    setPersonasFiltradas([]);
+    setIsDropdownOpen(false);
+    return;
+  }
+
+  const filtradas = personas.filter(persona =>
+    (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
+    (persona.dni_persona && persona.dni_persona.includes(filtro))
+  );
+
+  setPersonasFiltradas(filtradas);
+  setIsDropdownOpen(filtradas.length > 0);
+};
+
+const handleSeleccionarCodPersona = (persona) => {
+  const nombreCompleto = `${persona.fullName}`;
+  contactoToUpdate
+    ? setContactoToUpdate({ ...contactoToUpdate, cod_persona: persona.cod_persona, nombrePersona: nombreCompleto })
+    : setNuevoContacto({ ...nuevoContacto, cod_persona: persona.cod_persona, nombrePersona: nombreCompleto });
+  setBuscadorCodPersona(nombreCompleto);
+  setIsDropdownOpen(false);
+};
+
+{/*******************************************************************************************************************/}
   useEffect(() => {
     fetchContactos();
     fetchTiposContacto(); // Llamar a la función para cargar los tipos de contacto al montar el componente
@@ -63,18 +141,23 @@ const ListaContacto = () => {
       swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la lista de contactos.' });
     }
   };
+
+
   
-  const fetchTiposContacto = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
-      if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
-      const data = await response.json();
-      setTiposContacto(data.map(item => item.tipo_contacto)); // Extraer solo la columna 'tipo_contacto'
-    } catch (error) {
-      console.error('Error fetching tipos de contacto:', error);
-      swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar los tipos de contacto.' });
-    }
-  };
+  
+const fetchTiposContacto = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
+    if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
+    const data = await response.json();
+    
+    // Guardar toda la lista de tipos de contacto
+    setTiposContacto(data); // data ya contiene objetos con Cod_tipo_contacto y tipo_contacto
+  } catch (error) {
+    console.error('Error fetching tipos de contacto:', error);
+  }
+};
+
 
   const exportToExcel = () => {
     if (!filteredContacto.length) return swal.fire({ icon: 'warning', title: 'Sin Datos', text: 'No hay datos para exportar.' });
@@ -232,20 +315,26 @@ const ListaContacto = () => {
     if (isSubmitting) return;
   
     const errors = [];
-    const contactoActual = contactoToUpdate ? contactoToUpdate : nuevoContacto;
+    const contactoActual = contactoToUpdate ? { ...contactoToUpdate } : { ...nuevoContacto };
+  
+    // Convertir tipo_contacto a entero
+    if (contactoActual.tipo_contacto) {
+      contactoActual.tipo_contacto = parseInt(contactoActual.tipo_contacto, 10);
+    }
   
     // Validaciones de campos vacíos para creación y edición
-    if (!contactoActual.cod_persona || contactoActual.cod_persona.trim() === '') {
-      errors.push("El campo 'Código Persona' no debe estar vacío.");
+    if (!contactoActual.cod_persona || contactoActual.cod_persona.toString().trim() === '') {
+      errors.push("El campo 'Nombre' no debe estar vacío.");
     } else if (isNaN(contactoActual.cod_persona) || parseInt(contactoActual.cod_persona) <= 0) {
       errors.push("El 'Código Persona' debe ser un número entero positivo.");
     } else if (contactoActual.cod_persona.toString().length > 11) {
       errors.push("El 'Código Persona' no debe tener más de 11 dígitos.");
     }
   
-    if (!contactoActual.tipo_contacto || contactoActual.tipo_contacto.trim() === '') {
-      errors.push("El campo 'Tipo de Contacto' no debe estar vacío.");
+    if (contactoActual.Valor && !isNaN(contactoActual.Valor) && parseInt(contactoActual.Valor, 10) <= 0) {
+      errors.push("El campo 'Valor' debe ser un número entero positivo si es un teléfono.");
     }
+    
   
     if (!contactoActual.Valor || contactoActual.Valor.trim() === '') {
       errors.push("El campo 'Valor' no debe estar vacío.");
@@ -260,26 +349,15 @@ const ListaContacto = () => {
   
     // Validación de duplicados mejorada
     const duplicados = contacto.filter(item => {
-      // Si es el mismo registro que estamos editando, lo ignoramos
       if (contactoToUpdate && item.cod_contacto === contactoToUpdate.cod_contacto) {
         return false;
       }
-      // Verificamos si el código persona o el valor coinciden con algún otro registro
-      return item.cod_persona === contactoActual.cod_persona || 
              item.Valor.toLowerCase() === contactoActual.Valor.toLowerCase();
     });
   
     if (duplicados.length > 0) {
       let mensajeDuplicados = "Se encontraron los siguientes datos duplicados:<br/><br/>";
-      
-      // Verificamos específicamente qué campos están duplicados
-      const duplicadoCodPersona = duplicados.find(item => item.cod_persona === contactoActual.cod_persona);
       const duplicadoValor = duplicados.find(item => item.Valor.toLowerCase() === contactoActual.Valor.toLowerCase());
-      
-      if (duplicadoCodPersona) {
-        mensajeDuplicados += `El Código Persona '${duplicadoCodPersona.cod_persona}' ya existe en otro registro.<br/>`;
-      }
-      
       if (duplicadoValor) {
         mensajeDuplicados += `El Valor '${duplicadoValor.Valor}' ya existe en otro registro.`;
       }
@@ -310,19 +388,20 @@ const ListaContacto = () => {
     const method = contactoToUpdate ? 'PUT' : 'POST';
     const body = JSON.stringify(contactoActual);
   
+    // Log para verificar los datos que se están enviando
+    console.log("Datos enviados:", contactoActual);
+  
     try {
       const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
       const result = await response.json();
   
-      // ... resto del código igual hasta el bloque if(response.ok) ...
-
       if (response.ok) {
         swal.fire({
           icon: 'success',
           title: contactoToUpdate ? 'Contacto actualizado' : 'Contacto creado',
           text: result.Mensaje || 'Operación realizada con éxito',
         });
-      
+  
         if (contactoToUpdate) {
           // Actualiza el registro específico
           setContacto((prevContactos) =>
@@ -339,14 +418,13 @@ const ListaContacto = () => {
             { cod_contacto: result.cod_contacto, ...nuevoContacto },
           ]);
         }
-      
+  
         // Limpia los valores y cierra el modal
-        setNuevoContacto({ cod_persona: '', tipo_contacto: '', Valor: '' });
+        setNuevoContacto({ cod_persona: '', tipo_contacto: '', Valor: '', nombrePersona: '' });
         setContactoToUpdate(null);
         setModalVisible(false);
       }
-      
-
+  
     } catch (error) {
       console.error("Error en la solicitud:", error);
       swal.fire({ icon: 'error', title: 'Error', text: 'Error en el servidor.' });
@@ -354,6 +432,7 @@ const ListaContacto = () => {
       setIsSubmitting(false);
     }
   };
+   
   
   
   const handleDeleteContacto = async (cod_contacto, descripcionContacto) => {
@@ -424,10 +503,41 @@ const ListaContacto = () => {
     <CContainer>
       <CRow className="align-items-center mb-5">
         <CCol xs="8" md="9"><h1>Mantenimiento Contactos</h1></CCol>
-        <CCol xs="4" md="3" className="text-end">
-          <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={() => { setModalVisible(true); setContactoToUpdate(null); }}>
-            <CIcon icon={cilPlus} /> Nuevo
-          </CButton>
+        <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+          
+        <CCol
+  xs="12"
+  md="4"
+  className="d-flex flex-column flex-md-row justify-content-md-end align-items-center gap-2"
+>
+  {/* Botón Personas */}
+  <CButton
+    color="secondary"
+    onClick={volverAListaPersonas}
+    style={{
+      minWidth: '120px', // Asegura un ancho mínimo consistente
+    }}
+  >
+    <CIcon icon={cilArrowLeft} /> Personas
+  </CButton>
+
+  {/* Botón Nuevo */}
+  <CButton
+    style={{
+      backgroundColor: '#4B6251', // Color personalizado
+      color: 'white',
+      minWidth: '120px', // Asegura un ancho consistente
+      borderRadius: '5px', // Bordes redondeados para apariencia moderna
+    }}
+    onClick={() => {
+      setModalVisible(true);
+      setContactoToUpdate(null);
+    }}
+  >
+    <CIcon icon={cilPlus} /> Nuevo
+  </CButton>
+</CCol>
+
           <CDropdown className="ms-3">
             <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
               <CIcon icon={cilDescription} /> Reporte
@@ -480,18 +590,24 @@ const ListaContacto = () => {
           <CTableHead>
             <CTableRow>
               <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>Código Persona</CTableHeaderCell>
+              <CTableHeaderCell>Nombre</CTableHeaderCell>
               <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
               <CTableHeaderCell>Valor</CTableHeaderCell>
               <CTableHeaderCell>Acciones</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
           <CTableBody>
-            {currentRecords.map((item, index) => (
+            {contactosFiltrados.map((item, index) => (
               <CTableRow key={item.cod_contacto}>
                 <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-                <CTableDataCell>{item.cod_persona}</CTableDataCell>
-                <CTableDataCell>{item.tipo_contacto}</CTableDataCell>
+                <CTableDataCell>
+                  {personaSeleccionada
+                    ? `${personaSeleccionada.Nombre} ${personaSeleccionada.Segundo_nombre} ${personaSeleccionada.Primer_apellido} ${personaSeleccionada.Segundo_apellido}`
+                    : 'Información no disponible'}
+                </CTableDataCell>
+                <CTableDataCell>
+                  {tiposContacto.find(tc => tc.Cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
+                </CTableDataCell>
                 <CTableDataCell>{item.Valor}</CTableDataCell>
                 <CTableDataCell>
                   <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
@@ -553,81 +669,103 @@ const ListaContacto = () => {
       </CPagination>
 
       <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-        <CModalHeader><CModalTitle>{contactoToUpdate ? 'Actualizar Contacto' : 'Crear Nuevo Contacto'}</CModalTitle></CModalHeader>
-        <CModalBody>
-          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
-            <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
-              Código Persona
-            </div>
-            <CFormInput
-              placeholder="Código Persona"
-              value={contactoToUpdate?.cod_persona || nuevoContacto.cod_persona}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 11);
-                contactoToUpdate
-                  ? setContactoToUpdate({ ...contactoToUpdate, cod_persona: value })
-                  : setNuevoContacto({ ...nuevoContacto, cod_persona: value });
-              }}
-              className="border-0"
-            />
-          </div>
+  <CModalHeader>
+    <CModalTitle>{contactoToUpdate ? 'Actualizar Contacto' : 'Crear Nuevo Contacto'}</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    
+    {/* Campo de búsqueda para Cod Persona */}
+    <div className="mb-3">
+      <CInputGroup className="mb-3">
+        <CInputGroupText>
+          Nombre
+        </CInputGroupText>
+        <CFormInput
+          type="text"
+          value={buscadorCodPersona || (contactoToUpdate ? contactoToUpdate.nombrePersona : nuevoContacto.nombrePersona) || ''}
+          onChange={handleBuscarCodPersona}
+          placeholder="Buscar por DNI o nombre"
+        />
+        <CButton type="button">
+          <CIcon icon={cilSearch} />
+        </CButton>
+      </CInputGroup>
 
-          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
-            <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
-              Tipo de Contacto
-            </div>
-            <CFormSelect
-              value={contactoToUpdate?.tipo_contacto || nuevoContacto.tipo_contacto}
-              onChange={(e) => {
-                const value = e.target.value;
-                contactoToUpdate
-                  ? setContactoToUpdate({ ...contactoToUpdate, tipo_contacto: value })
-                  : setNuevoContacto({ ...nuevoContacto, tipo_contacto: value });
-              }}
-              className="border-0"
+      {isDropdownOpen && personasFiltradas.length > 0 && (
+        <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+          {personasFiltradas.map(persona => (
+            <div
+              key={persona.cod_persona}
+              className="dropdown-item"
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleSeleccionarCodPersona(persona)}
             >
-              <option value="">Seleccione un tipo de contacto</option>
-              {tiposContacto.map((tipo, index) => (
-                <option key={index} value={tipo}>{tipo}</option>
-              ))}
-            </CFormSelect>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
-            <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
-              Valor
+              {persona.dni_persona} - {persona.fullName}
             </div>
-            <CFormInput
-              placeholder="Valor"
-              value={contactoToUpdate?.Valor || nuevoContacto.Valor}
-              onChange={(e) => {
-                let value = e.target.value.slice(0, 50); // Limitar a 50 caracteres
-                // Bloquear si hay más de un espacio entre palabras/números
-                if (/(\s{2,})/.test(value)) return;
-                contactoToUpdate
-                  ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
-                  : setNuevoContacto({ ...nuevoContacto, Valor: value });
-              }}
-              className="border-0"
-            />
-          </div>
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
-          <CButton
-            onClick={handleCreateOrUpdate}
-            style={
-              contactoToUpdate
-                ? { backgroundColor: '#FFD700', color: 'white' } // Color amarillo con letras blancas
-                : { backgroundColor: '#4B6251', color: 'white' } // Mantener el estilo actual del botón "Guardar"
-            }
-          >
-            <CIcon icon={contactoToUpdate ? cilPen : cilSave} />
-            &nbsp;
-            {contactoToUpdate ? 'Actualizar' : 'Guardar'}
-          </CButton>
-        </CModalFooter>
-      </CModal>
+          ))}
+        </div>
+      )}
+    </div>
+
+    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
+      <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
+        Tipo de Contacto
+      </div>
+      <CFormSelect
+        value={contactoToUpdate?.cod_tipo_contacto || nuevoContacto.cod_tipo_contacto}
+        onChange={(e) => {
+          const value = e.target.value;
+          contactoToUpdate
+            ? setContactoToUpdate({ ...contactoToUpdate, cod_tipo_contacto: value })
+            : setNuevoContacto({ ...nuevoContacto, cod_tipo_contacto: value });
+        }}
+        className="border-0"
+      >
+        <option value="">Seleccione un tipo de contacto</option>
+        {tiposContacto.map((tipo) => 
+          ( <option key={tipo.Cod_tipo_contacto} value={tipo.Cod_tipo_contacto}> 
+          {tipo.tipo_contacto} </option>
+        ))}
+      </CFormSelect>
+    </div>
+
+    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
+      <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
+        Valor
+      </div>
+      <CFormInput
+        placeholder="Valor"
+        value={contactoToUpdate?.Valor || nuevoContacto.Valor}
+        onChange={(e) => {
+          let value = e.target.value.slice(0, 50); // Limitar a 50 caracteres
+          if (/(\s{2,})/.test(value)) return; // Bloquear si hay más de un espacio entre palabras/números
+          contactoToUpdate
+            ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
+            : setNuevoContacto({ ...nuevoContacto, Valor: value });
+        }}
+        className="border-0"
+      />
+    </div>
+
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
+    <CButton
+      onClick={handleCreateOrUpdate}
+      style={
+        contactoToUpdate
+          ? { backgroundColor: '#FFD700', color: 'white' } // Color amarillo con letras blancas
+          : { backgroundColor: '#4B6251', color: 'white' } // Mantener el estilo actual del botón "Guardar"
+      }
+    >
+      <CIcon icon={contactoToUpdate ? cilPen : cilSave} />
+      &nbsp;
+      {contactoToUpdate ? 'Actualizar' : 'Guardar'}
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
     </CContainer>
   );
 };
