@@ -712,14 +712,18 @@ const exportToExcel = () => {
       // Función para obtener el nombre del maestro
       const obtenerNombreMaestro = async (codSeccion) => {
         try {
-          const response = await fetch(`http://localhost:4000/api/matricula/secciones/${matricula.Cod_grado}?cod_periodo_matricula=${matricula.Cod_periodo_matricula}`);
+          const response = await fetch(
+            `http://localhost:4000/api/matricula/secciones/${matricula.Cod_grado}?cod_periodo_matricula=${matricula.Cod_periodo_matricula}`
+          );
           if (response.ok) {
             const result = await response.json();
-            const seccion = result.data.find((sec) => sec.Cod_secciones === codSeccion);
+            const seccion = result.data.find(
+              (sec) => sec.Cod_secciones === codSeccion
+            );
             if (seccion && seccion.Nombre_profesor) {
               return `${seccion.Nombre_profesor} ${seccion.Apellido_profesor || ''}`.trim();
             }
-            return 'Sin Maestro Asignado'; // Valor predeterminado si no hay maestro
+            return 'Sin Maestro Asignado';
           } else {
             console.warn('Error al obtener las secciones.');
             return 'Error al obtener el maestro';
@@ -736,7 +740,6 @@ const exportToExcel = () => {
         const response = await fetch('http://localhost:4000/api/matricula/opciones');
         if (response.ok) {
           opciones = await response.json();
-          console.log('Opciones cargadas:', opciones); // Para depuración
         } else {
           console.warn('Error al obtener las opciones de matrícula');
         }
@@ -746,16 +749,15 @@ const exportToExcel = () => {
   
       // Obtener los datos del horario
       let horarios = [];
-      let nombreMaestro = 'N/A'; // Valor predeterminado para el maestro
+      let nombreMaestro = 'N/A';
       if (matricula.Cod_seccion) {
         try {
-          const response = await fetch(`http://localhost:4000/api/matricula/horario/${matricula.Cod_seccion}`);
+          const response = await fetch(
+            `http://localhost:4000/api/matricula/horario/${matricula.Cod_seccion}`
+          );
           if (response.ok) {
             const result = await response.json();
             horarios = result.data || [];
-            console.log('Horarios cargados:', horarios);
-  
-            // Usar la función para obtener el nombre del maestro
             nombreMaestro = await obtenerNombreMaestro(matricula.Cod_seccion);
           } else {
             console.warn('Error al obtener los horarios de la sección');
@@ -765,47 +767,19 @@ const exportToExcel = () => {
         }
       }
   
-      // Validar datos y continuar con valores predeterminados si faltan
+      // Validar datos
       if (!matricula.Cod_seccion) {
-        console.warn('Falta el dato de la sección. Usando valores predeterminados.');
-        matricula.Nombre_seccion = 'Sin Asignar'; // Asignar un valor predeterminado
+        matricula.Nombre_seccion = 'Sin Asignar';
         matricula.Cod_seccion = 'N/A';
       }
   
       const doc = new jsPDF();
   
-      // Validar y asignar datos con valores predeterminados
-      const codificacion = matricula.codificacion_matricula || 'N/A';
-      const fechaMatricula = matricula.fecha_matricula?.split('T')[0] || 'N/A';
-      const nombreCompleto = [
-        matricula.Nombre_Hijo || 'N/A',
-        matricula.Segundo_nombre_Hijo || '',
-        matricula.Apellido_Hijo || 'N/A',
-        matricula.Segundo_apellido_Hijo || '',
-      ]
-        .filter(Boolean)
-        .join(' ');
-      const fechaNacimiento = matricula.fecha_nacimiento_hijo?.split('T')[0] || 'N/A';
-      const nombrePadre = matricula.Nombre_Padre || 'N/A';
-      const apellidoPadre = matricula.Apellido_Padre || 'N/A';
-      const estadoMatricula = opciones.estados_matricula?.find(
-        (e) => e.Cod_estado_matricula === matricula.Cod_estado_matricula
-      )?.Tipo || 'N/A';
-      const periodoMatricula = opciones.periodos_matricula?.find(
-        (p) => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula
-      )?.Anio_academico || 'N/A';
-      const tipoMatricula = opciones.tipos_matricula?.find(
-        (t) => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula
-      )?.Tipo || 'N/A';
-      const grado = matricula.Nombre_grado || 'N/A';
-      const seccion = matricula.Nombre_seccion || 'N/A';
-  
+      // Encabezado
       const img = new Image();
-      const defaultLogo = './src/assets/brand/logo_saint_patrick.png';
-      img.src = matricula.logo || defaultLogo;
+      img.src = matricula.logo || './src/assets/brand/logo_saint_patrick.png';
   
       img.onload = () => {
-        // Encabezado
         doc.addImage(img, 'PNG', 10, 10, 30, 30);
         doc.setFontSize(18);
         doc.setTextColor(0, 102, 51);
@@ -826,9 +800,24 @@ const exportToExcel = () => {
   
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-        doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-        doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+        doc.text(
+          'Casa Club del periodista, Colonia del Periodista',
+          doc.internal.pageSize.width / 2,
+          40,
+          { align: 'center' }
+        );
+        doc.text(
+          'Teléfono: (504) 2234-8871',
+          doc.internal.pageSize.width / 2,
+          45,
+          { align: 'center' }
+        );
+        doc.text(
+          'Correo: info@saintpatrickacademy.edu',
+          doc.internal.pageSize.width / 2,
+          50,
+          { align: 'center' }
+        );
   
         doc.setDrawColor(0, 102, 51);
         doc.setLineWidth(0.5);
@@ -839,11 +828,24 @@ const exportToExcel = () => {
         doc.setTextColor(0);
         doc.text('Información del Estudiante:', 10, 65);
         doc.setFontSize(10);
-        doc.text(`Código de Matrícula: ${codificacion}`, 10, 75);
-        doc.text(`Fecha de Matrícula: ${fechaMatricula}`, 10, 80);
-        doc.text(`Nombre Completo: ${nombreCompleto}`, 10, 85);
-        doc.text(`Fecha de Nacimiento: ${fechaNacimiento}`, 10, 90);
-        doc.text(`Padre/Madre/Tutor: ${nombrePadre} ${apellidoPadre}`, 10, 95);
+        doc.text(`Código de Matrícula: ${matricula.codificacion_matricula || 'N/A'}`, 10, 75);
+        doc.text(`Fecha de Matrícula: ${matricula.fecha_matricula?.split('T')[0] || 'N/A'}`, 10, 80);
+        doc.text(
+          `Nombre Completo: ${
+            [
+              matricula.Nombre_Hijo || 'N/A',
+              matricula.Segundo_nombre_Hijo || '',
+              matricula.Apellido_Hijo || 'N/A',
+              matricula.Segundo_apellido_Hijo || '',
+            ]
+              .filter(Boolean)
+              .join(' ')
+          }`,
+          10,
+          85
+        );
+        doc.text(`Fecha de Nacimiento: ${matricula.fecha_nacimiento_hijo?.split('T')[0] || 'N/A'}`, 10, 90);
+        doc.text(`Padre/Madre/Tutor: ${matricula.Nombre_Padre || 'N/A'} ${matricula.Apellido_Padre || 'N/A'}`, 10, 95);
   
         // Detalles de Matrícula
         doc.setFontSize(12);
@@ -854,16 +856,15 @@ const exportToExcel = () => {
           startY: 110,
           head: [['Campo', 'Valor']],
           body: [
-            ['Estado', estadoMatricula],
-            ['Período', periodoMatricula],
-            ['Tipo de Matrícula', tipoMatricula],
-            ['Grado', grado],
-            ['Sección', seccion],
-            ['Maestro', nombreMaestro], // Incluimos el nombre del maestro
+            ['Estado', opciones.estados_matricula?.find((e) => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A'],
+            ['Período', opciones.periodos_matricula?.find((p) => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A'],
+            ['Tipo de Matrícula', opciones.tipos_matricula?.find((t) => t.Cod_tipo_matricula === matricula.Cod_tipo_matricula)?.Tipo || 'N/A'],
+            ['Grado', matricula.Nombre_grado || 'N/A'],
+            ['Sección', matricula.Nombre_seccion || 'N/A'],
+            ['Maestro', nombreMaestro],
           ],
-          styles: { fontSize: 10, cellPadding: 4 },
+          styles: { fontSize: 10 },
           headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255] },
-          alternateRowStyles: { fillColor: [240, 240, 240] },
         });
   
         // Horario de Clases
@@ -882,26 +883,31 @@ const exportToExcel = () => {
                 h.Hora_fin || 'N/A',
               ])
             : [['No hay horarios disponibles', '', '', '']],
-          styles: { fontSize: 10, cellPadding: 4 },
+          styles: { fontSize: 10 },
           headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255] },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
         });
   
         // Pie de página
-        const pageHeight = doc.internal.pageSize.height;
-        const creationDateTime = new Date().toLocaleString('es-ES', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`Fecha y Hora de Generación: ${creationDateTime}`, 10, pageHeight - 10);
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          const creationDateTime = new Date().toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          doc.text(`Fecha y Hora de Generación: ${creationDateTime}`, 10, doc.internal.pageSize.height - 10);
+          doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10, {
+            align: 'right',
+          });
+        }
   
-        Swal.close(); // Cerrar el indicador de carga
+        Swal.close();
         const pdfBlob = doc.output('blob');
         const pdfURL = URL.createObjectURL(pdfBlob);
         window.open(pdfURL, '_blank');
@@ -914,7 +920,7 @@ const exportToExcel = () => {
       console.error('Error al generar el PDF:', error);
       Swal.fire('Error', 'No se pudo generar el PDF. Intente nuevamente.', 'error');
     }
-  
+
     const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;

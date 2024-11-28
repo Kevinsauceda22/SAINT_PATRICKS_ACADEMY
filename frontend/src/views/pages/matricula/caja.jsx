@@ -393,150 +393,164 @@ const preventCopyPaste = (e) => {
   
   const crearNuevaCaja = async () => {
     console.log("Datos de la nueva caja:", nuevaCaja);
-  
+
     // Validación de campos obligatorios
     if (!nuevaCaja.descripcion || !nuevaCaja.monto || !nuevaCaja.cod_concepto || !nuevaCaja.dni_padre) {
-      console.log("Validación fallida");
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Todos los campos son obligatorios.',
-      });
-      return;
+        console.log("Validación fallida");
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Todos los campos son obligatorios.',
+        });
+        return;
     }
-  
-    // Validación de formato del DNI (solo números y longitud específica)
+
+    // Validación de formato del DNI
     const dniRegex = /^[0-9]{13}$/; // Asume que el DNI de Honduras tiene 13 dígitos
     if (!dniRegex.test(nuevaCaja.dni_padre)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en el DNI',
-        text: 'El DNI debe tener 13 dígitos y contener solo números.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en el DNI',
+            text: 'El DNI debe tener 13 dígitos y contener solo números.',
+        });
+        return;
     }
-  
+
     // Validación de descripción
     if (nuevaCaja.descripcion.length > 25) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede exceder los 25 caracteres.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede exceder los 25 caracteres.',
+        });
+        return;
     }
-  
+
     if (/([A-Z])\1\1/.test(nuevaCaja.descripcion)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede contener tres letras iguales consecutivas.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede contener tres letras iguales consecutivas.',
+        });
+        return;
     }
-  
+
     if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede contener símbolos o caracteres especiales.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede contener símbolos o caracteres especiales.',
+        });
+        return;
     }
-  
+
     // Validación de descuento (si aplica)
     if (nuevaCaja.aplicar_descuento) {
-      if (nuevaCaja.valor_descuento > nuevaCaja.monto) {
-        await MySwal.fire({
-          icon: 'error',
-          title: 'Error en el descuento',
-          text: 'El valor del descuento no puede ser mayor al monto total.',
-        });
-        return;
-      }
-  
-      if (nuevaCaja.descripcion_descuento && nuevaCaja.descripcion_descuento.length > 25) {
-        await MySwal.fire({
-          icon: 'error',
-          title: 'Error en la descripción del descuento',
-          text: 'La descripción del descuento no puede exceder los 25 caracteres.',
-        });
-        return;
-      }
-  
-      if (/([A-Z])\1\1/.test(nuevaCaja.descripcion_descuento)) {
-        await MySwal.fire({
-          icon: 'error',
-          title: 'Error en la descripción del descuento',
-          text: 'La descripción del descuento no puede contener tres letras iguales consecutivas.',
-        });
-        return;
-      }
-  
-      if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion_descuento)) {
-        await MySwal.fire({
-          icon: 'error',
-          title: 'Error en la descripción del descuento',
-          text: 'La descripción del descuento no puede contener símbolos o caracteres especiales.',
-        });
-        return;
-      }
+        if (nuevaCaja.valor_descuento > nuevaCaja.monto) {
+            await MySwal.fire({
+                icon: 'error',
+                title: 'Error en el descuento',
+                text: 'El valor del descuento no puede ser mayor al monto total.',
+            });
+            return;
+        }
+
+        if (nuevaCaja.descripcion_descuento && nuevaCaja.descripcion_descuento.length > 25) {
+            await MySwal.fire({
+                icon: 'error',
+                title: 'Error en la descripción del descuento',
+                text: 'La descripción del descuento no puede exceder los 25 caracteres.',
+            });
+            return;
+        }
+
+        if (/([A-Z])\1\1/.test(nuevaCaja.descripcion_descuento)) {
+            await MySwal.fire({
+                icon: 'error',
+                title: 'Error en la descripción del descuento',
+                text: 'La descripción del descuento no puede contener tres letras iguales consecutivas.',
+            });
+            return;
+        }
+
+        if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion_descuento)) {
+            await MySwal.fire({
+                icon: 'error',
+                title: 'Error en la descripción del descuento',
+                text: 'La descripción del descuento no puede contener símbolos o caracteres especiales.',
+            });
+            return;
+        }
     }
-  
+
     try {
-      // Preparar los datos para enviar al servidor, incluyendo los datos de descuento opcionales
-      const datosCaja = {
-        descripcion: nuevaCaja.descripcion,
-        monto: parseFloat(nuevaCaja.monto),
-        cod_concepto: nuevaCaja.cod_concepto,
-        dni_padre: nuevaCaja.dni_padre,
-        estado_pago: 'Pendiente',
-        aplicar_descuento: nuevaCaja.aplicar_descuento || false,
-        valor_descuento: nuevaCaja.aplicar_descuento ? parseFloat(nuevaCaja.valor_descuento) : null,
-        descripcion_descuento: nuevaCaja.aplicar_descuento ? nuevaCaja.descripcion_descuento : null,
-      };
-  
-      console.log("Datos enviados al servidor:", datosCaja);
-  
-      // Realizar la solicitud al servidor
-      const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
-  
-      // Manejo de la respuesta
-      if (response.status === 201 || response.status === 200) {
-        console.log("Caja creada exitosamente");
-  
-        // Mostrar la alerta de éxito
-        await MySwal.fire({
-          icon: 'success',
-          title: 'Éxito',
-          text: 'La nueva caja se ha creado exitosamente.',
-        });
-  
-        // Reiniciar el modal y recargar datos
-        resetNuevaCajaModal();
-        setModalNuevaCajaVisible(false);
-        obtenerCajasPendientes();
-      } else {
-        console.log("Error en el servidor:", response);
-  
-        // Manejo de error cuando el servidor no responde con 201 o 200
-        await MySwal.fire({
-          icon: 'warning',
-          title: 'Atención',
-          text: 'No se pudo crear la caja. Intente de nuevo.',
-        });
-      }
+        // Preparar los datos para enviar al servidor
+        const datosCaja = {
+            descripcion: nuevaCaja.descripcion,
+            monto: parseFloat(nuevaCaja.monto),
+            cod_concepto: nuevaCaja.cod_concepto,
+            dni_padre: nuevaCaja.dni_padre,
+            estado_pago: 'Pendiente',
+            aplicar_descuento: nuevaCaja.aplicar_descuento || false,
+            valor_descuento: nuevaCaja.aplicar_descuento ? parseFloat(nuevaCaja.valor_descuento) : null,
+            descripcion_descuento: nuevaCaja.aplicar_descuento ? nuevaCaja.descripcion_descuento : null,
+        };
+
+        console.log("Datos enviados al servidor:", datosCaja);
+
+        // Realizar la solicitud al servidor
+        const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
+
+        if (response.status === 201 || response.status === 200) {
+            console.log("Caja creada exitosamente");
+
+            // Mostrar la alerta de éxito
+            await MySwal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'La nueva caja se ha creado exitosamente.',
+            });
+
+            // Preguntar si desea imprimir el recibo
+            const imprimir = await MySwal.fire({
+                title: '¿Desea imprimir el recibo?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí',
+                cancelButtonText: 'No',
+            });
+
+            if (imprimir.isConfirmed) {
+                // Llamar a la función para generar el PDF
+                generarReporteIndividual(datosCaja, nuevaCaja.monto, 0); // Ajustar si es necesario
+            }
+
+            // Reiniciar el modal y recargar datos
+            resetNuevaCajaModal();
+            setModalNuevaCajaVisible(false);
+            obtenerCajasPendientes();
+        } else {
+            console.log("Error en el servidor:", response);
+
+            // Manejo de error cuando el servidor no responde con 201 o 200
+            await MySwal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'No se pudo crear la caja. Intente de nuevo.',
+            });
+        }
     } catch (error) {
-      console.error("Error al crear la caja:", error);
-  
-      // Manejo de errores generales
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Ocurrió un error al conectar con el servidor.',
-      });
+        console.error("Error al crear la caja:", error);
+
+        // Manejo de errores generales
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error al conectar con el servidor.',
+        });
     }
-  };
+};
+
   
 
   const paginatedData = pagosPendientes
@@ -734,7 +748,7 @@ const buscarCajasPorDni = async (dni) => {
           align: 'center',
         });
         doc.setFontSize(14);
-        doc.text('Reporte Individual de Caja', doc.internal.pageSize.width / 2, 30, {
+        doc.text('Recibo de Caja', doc.internal.pageSize.width / 2, 30, {
           align: 'center',
         });
         doc.setFontSize(10);
@@ -764,7 +778,7 @@ const buscarCajasPorDni = async (dni) => {
         // Detalles individuales en tabla
         doc.setFontSize(12);
         doc.setTextColor(0, 51, 102);
-        doc.text('Detalles de la Caja', doc.internal.pageSize.width / 2, 65, {
+        doc.text('Detalles del Recibo', doc.internal.pageSize.width / 2, 65, {
           align: 'center',
         });
   
