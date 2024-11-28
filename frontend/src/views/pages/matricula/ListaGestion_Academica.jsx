@@ -41,7 +41,7 @@ const ListaGestion_Academica = () => {
   const [currentPage, setCurrentPage] = useState(1); // Página actual
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Registros por página
   const [searchTerm, setSearchTerm] = useState(''); // Término de búsqueda
-  const [searchField, setSearchField] = useState('Total_secciones'); // Campo por el que se busca
+  const [searchField, setSearchField] = useState('Nombre_seccion'); // Campo por el que se busca
 
   // Hook para cargar datos al montar el componente
   useEffect(() => {
@@ -395,31 +395,19 @@ const ListaGestion_Academica = () => {
       setCurrentPage(pageNumber);
     }
   };
-
-  const normalizeString = (str) => {
-    if (!str) return '';
-    return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  };
+  
+  const normalizeString = (str) =>
+    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   
   const filteredAgrupadores = agrupadores.filter((agrupador) => {
     const normalizedSearchTerm = normalizeString(searchTerm);
-  
-    if (!searchTerm) return true; // Si no hay término de búsqueda, devolver todo.
-  
-    if (searchField === 'Total_secciones') {
-      return agrupador.Total_secciones.toString().includes(normalizedSearchTerm);
-    } else if (searchField === 'Anio_academico') {
-      return agrupador.Anio_academico.toString().includes(normalizedSearchTerm);
-    }
-  
-    return false;
+    return normalizeString(agrupador.Anio_academico.toString()).includes(normalizedSearchTerm);
   });
   
-
   const indexOfLastRecord = currentPage * recordsPerPage; // Último índice de registro
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage; // Primer índice de registro
   const currentRecords = filteredAgrupadores.slice(indexOfFirstRecord, indexOfLastRecord); // Registros actuales
-
+  
 
   // Función para guardar un nuevo agrupador
   const handleGuardarAgrupador = async () => {
@@ -445,95 +433,87 @@ const ListaGestion_Academica = () => {
   };
   
   return (
-      <CContainer style={{ marginTop: '40px', maxWidth: '900px' }}>
-    {/* Título centrado en negritas */}
-    <CRow className="align-items-center justify-content-center mb-5">
-      <CCol xs="12" className="text-center">
-        <h1 className="fw-bold" style={{ color: '#333' }}>
-          <CIcon icon={cilBook} className="me-2" />
-          Gestión Académica
-        </h1>
-      </CCol>
-    </CRow>
-
-    {/* Barra de búsqueda y selector de registros */}
-    <CRow className="align-items-center mb-4">
-      <CCol xs="12" md="8">
-        <CInputGroup>
-          <CInputGroupText>
-            <CIcon icon={cilSearch} />
-          </CInputGroupText>
-          <CFormInput
-            placeholder="Buscar Agrupador..."
-            onChange={(e) => setSearchTerm(e.target.value)}
-            value={searchTerm}
-          />
-          <CFormSelect
-            aria-label="Buscar por"
-            onChange={(e) => setSearchField(e.target.value)}
-            style={{ marginLeft: '10px' }}
-          >
-            <option value="Total_secciones">Total Secciones</option>
-            <option value="Anio_academico">Año Académico</option>
-          </CFormSelect>
-        </CInputGroup>
-      </CCol>
-
-      <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
-        <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
-          <div className="d-inline-flex align-items-center">
-            <span>Mostrar&nbsp;</span>
-            <CFormSelect
-              style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
-              onChange={(e) => {
-                const value = Number(e.target.value);
-                setRecordsPerPage(value);
-                setCurrentPage(1);
-              }}
-              value={recordsPerPage}
-            >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-            </CFormSelect>
-            <span>&nbsp;registros</span>
-          </div>
-        </CInputGroup>
-      </CCol>
-    </CRow>
-
-    {/* Botón "Nuevo" alineado a la derecha */}
-    <CRow className="align-items-center mb-4">
-    <CCol xs="12" className="d-flex justify-content-between">
-      {/* Botón "Nuevo" */}
-      <CButton
-        className="d-flex align-items-center gap-1 rounded shadow"
-        style={{
-          backgroundColor: '#4B6251',
-          color: 'white',
-          padding: '10px 16px',
-          fontSize: '0.9rem',
-        }}
-        onClick={() => setShowModal(true)}
-      >
-        <CIcon icon={cilPlus} /> Nuevo
-      </CButton>
-
-      {/* Botón "Generar PDF" */}
-      <CButton
-        className="d-flex align-items-center gap-1 rounded shadow"
-        style={{
-          backgroundColor: '#4B6251',
-          color: 'white',
-          padding: '10px 16px',
-          fontSize: '0.9rem',
-        }}
-        onClick={handleGenerarPDFVista}
-      >
-        <CIcon icon={cilArrowCircleBottom} className="me-1" /> Generar PDF
-      </CButton>
+    <CContainer style={{ marginTop: '40px', maxWidth: '900px' }}>
+  {/* Título centrado en negritas */}
+  <CRow className="align-items-center justify-content-center mb-5">
+    <CCol xs="12" className="text-center">
+      <h1 className="fw-bold" style={{ color: '#333' }}>
+        <CIcon icon={cilBook} className="me-2" />
+        Gestión Académica
+      </h1>
     </CCol>
   </CRow>
+
+  {/* Barra de búsqueda y selector de registros */}
+  <CRow className="align-items-center mb-4">
+    <CCol xs="12" md="8">
+      <CInputGroup>
+        <CInputGroupText>
+          <CIcon icon={cilSearch} />
+        </CInputGroupText>
+        <CFormInput
+          placeholder="Buscar Agrupador..."
+          onChange={(e) => setSearchTerm(e.target.value)}
+          value={searchTerm}
+        />
+      </CInputGroup>
+    </CCol>
+
+    <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
+      <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
+        <div className="d-inline-flex align-items-center">
+          <span>Mostrar&nbsp;</span>
+          <CFormSelect
+            style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setRecordsPerPage(value);
+              setCurrentPage(1);
+            }}
+            value={recordsPerPage}
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </CFormSelect>
+          <span>&nbsp;registros</span>
+        </div>
+      </CInputGroup>
+    </CCol>
+  </CRow>
+
+  {/* Botón "Nuevo" alineado a la derecha */}
+  <CRow className="align-items-center mb-4">
+  <CCol xs="12" className="d-flex justify-content-between">
+    {/* Botón "Nuevo" */}
+    <CButton
+      className="d-flex align-items-center gap-1 rounded shadow"
+      style={{
+        backgroundColor: '#4B6251',
+        color: 'white',
+        padding: '10px 16px',
+        fontSize: '0.9rem',
+      }}
+      onClick={() => setShowModal(true)}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
+
+    {/* Botón "Generar PDF" */}
+    <CButton
+      className="d-flex align-items-center gap-1 rounded shadow"
+      style={{
+        backgroundColor: '#4B6251',
+        color: 'white',
+        padding: '10px 16px',
+        fontSize: '0.9rem',
+      }}
+      onClick={handleGenerarPDFVista}
+    >
+      <CIcon icon={cilArrowCircleBottom} className="me-1" /> Generar PDF
+    </CButton>
+  </CCol>
+</CRow>
 
 
   {/* Tabla de agrupadores */}
@@ -553,7 +533,7 @@ const ListaGestion_Academica = () => {
     </CTableHead>
     <CTableBody>
       {agrupadores.length > 0 ? (
-        agrupadores.map((agrupador, index) => (
+        currentRecords.map((agrupador, index) => (
           <CTableRow
             key={agrupador.Cod_agrupadora}
             style={{
