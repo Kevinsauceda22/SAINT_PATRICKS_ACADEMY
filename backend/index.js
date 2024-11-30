@@ -4,8 +4,6 @@ import cors from 'cors'; // Importar cors
 import conectarDB from './config/db.js'; 
 import usuariosRoutes from './module/auth/usuario_routes.js'; 
 //----------------------------------------CALIFICACIONES RUTAS-----------------------------------------------------------
-import tipoRelacionRoutes from './module/Personas/Routes/tipoRelacionRoutes.js';
-import estructuraFamiliarRoutes from './module/Personas/Routes/estructuraFamiliarRoutes.js';
 import profesoresRoutes from './module/calificaciones/Routes/profesoresRoutes.js';
 import tiposContratoRoutes from './module/calificaciones/Routes/tiposContratosRoutes.js';
 import actividadesRoutes from './module/calificaciones/Routes/ActividadAcademica_Routes.js';
@@ -52,8 +50,8 @@ import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRo
 import estadomatriculaRoutes from './module/matricula/Routes/estadomatriculaRoutes.js';
 import departamentoRoutes from './module/matricula/Routes/departamentoRoutes.js';
 import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
-import tipoRelacionRoutes from './module/Personas/Routes/tipoRelacionRoutes.js';
-import estructuraFamiliarRoutes from './module/Personas/Routes/estructuraFamiliarRoutes.js';
+import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
+import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
 import catalogoCuentasRoutes from './module/Contabilidad/Contabilidad_routes.js'; // Cambia la ruta según tu estructura de carpetas
 import libroDiarioRoutes from './module/Contabilidad/librodiario_routes.js'; // Asegúrate de usar la ruta correcta
 import PermisosRoutes from './module/Permisos/Permisos_routes.js'; // Asegúrate de usar la ruta correcta
