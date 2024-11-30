@@ -102,7 +102,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     if (personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructurasFamiliares/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
         setEstructurasFamiliares(datos);
       };
@@ -139,7 +139,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     const resultados = personas.filter(
       (persona) =>
-        persona.fullName?.toLowerCase().includes(buscadorRelacion.toLowerCase()) ||
+        persona.fullName?.toUpperCase().includes(buscadorRelacion.toUpperCase()) ||
         persona.dni_persona?.includes(buscadorRelacion)
     );
     setPersonasFiltradas(resultados);

@@ -604,7 +604,7 @@ const fetchTiposContacto = async () => {
                     : 'Información no disponible'}
                 </CTableDataCell>
                 <CTableDataCell>
-                  {tiposContacto.find(tc => tc.Cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
+                  {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
                 </CTableDataCell>
                 <CTableDataCell>{item.Valor}</CTableDataCell>
                 <CTableDataCell>
@@ -721,7 +721,7 @@ const fetchTiposContacto = async () => {
       >
         <option value="">Seleccione un tipo de contacto</option>
         {tiposContacto.map((tipo) => 
-          ( <option key={tipo.Cod_tipo_contacto} value={tipo.Cod_tipo_contacto}> 
+          ( <option key={tipo.cod_tipo_contacto} value={tipo.cod_tipo_contacto}> 
           {tipo.tipo_contacto} </option>
         ))}
       </CFormSelect>
