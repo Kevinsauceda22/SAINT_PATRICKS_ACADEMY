@@ -364,7 +364,7 @@ const preventCopyPaste = (e) => {
           }));
         }
       } catch (error) {
-        console.error('Error al obtener el concepto "Matricula":', error);
+        console.error('Error al obtener el concepto "Pago de matricula":', error);
       }
     };
   
@@ -1230,7 +1230,7 @@ const buscarCajasPorDni = async (dni) => {
     required
   >
     {/* Muestra "Matricula" como única opción */}
-    <option value={pagoActual.cod_concepto}>Matricula</option>
+    <option value={pagoActual.cod_concepto}>Pago de matricula</option>
   </CFormSelect>
 </CInputGroup>
 
