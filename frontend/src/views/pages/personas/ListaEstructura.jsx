@@ -1004,27 +1004,20 @@ return (
         </CFormSelect>
       </CInputGroup>
 
-      {/* Campo de Descripción */}
-      <CInputGroup className="mt-3">
-  {errorMessages.descripcion && (
-    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-      {errorMessages.descripcion}
-    </div>
-  )}
-
-  
+{/* Campo de Descripción */}
+<CInputGroup className="mt-3">
   <CInputGroupText>Descripción</CInputGroupText>
   <CFormInput
     type="text"
     value={nuevaEstructura.descripcion}
-    onChange={e => {
-      const value = e.target.value;
+    onChange={(e) => {
+      const value = e.target.value.toUpperCase(); // Convertir a mayúsculas
 
       // Bloquear secuencias de más de tres letras repetidas
       if (/(.)\1{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.'
+          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
         }));
         return;
       }
@@ -1033,7 +1026,7 @@ return (
       if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.'
+          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
         }));
         return;
       }
@@ -1042,12 +1035,12 @@ return (
       if (/\s{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de un espacio consecutivo.'
+          descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
         }));
         return;
       }
 
-      // Verifica si el campo está vacío
+      // Validar longitud mínima y campo vacío
       const erroresTemp = { ...errorMessages };
       if (!value.trim()) {
         erroresTemp.descripcion = 'La descripción no puede estar vacía.';
@@ -1057,7 +1050,8 @@ return (
         erroresTemp.descripcion = '';
       }
 
-      setNuevaEstructuraFamiliar(prev => ({
+      // Actualizar estado con el valor en mayúsculas
+      setNuevaEstructuraFamiliar((prev) => ({
         ...prev,
         descripcion: value,
       }));
@@ -1067,8 +1061,11 @@ return (
     required
   />
 </CInputGroup>
-
-{/* Estilos dentro del componente */}
+{errorMessages.descripcion && (
+  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+    {errorMessages.descripcion}
+  </div>
+)}
 <style jsx>{`
   .error-message {
     color: red;
@@ -1078,6 +1075,8 @@ return (
     margin-left: 12px;  /* Para alinearlo con el texto del input */
   }
 `}</style>
+
+
 
     </CForm>
   </CModalBody>
@@ -1091,7 +1090,7 @@ return (
 
 
 
-{/********************************* Modal para actualizar estructura familiar***************************************************/}
+{/********************************* MODAL PARA ACTUALIZAR ESTRUCTURA ***************************************************/}
 <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
@@ -1207,11 +1206,9 @@ return (
   </CModalFooter>
 </CModal>
 
+{/****************************************FIN DEL MODAL DE ACTUALIZAR********************************************************/}
 
-{/* Fin del modal actualizar */}
-
-
-      {/* Modal para eliminar una estructura */}
+{/******************************************MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
       <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
@@ -1229,7 +1226,7 @@ return (
           </CButton>
         </CModalFooter>
       </CModal>
-      {/* Fin de eliminar  */}
+{/******************************************FIN MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
 
 
     </CContainer>
