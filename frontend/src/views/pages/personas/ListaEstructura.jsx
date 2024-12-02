@@ -102,7 +102,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     if (personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructurasFamiliares/${personaSeleccionada.cod_persona}`);
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
         setEstructurasFamiliares(datos);
       };
@@ -139,7 +139,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     const resultados = personas.filter(
       (persona) =>
-        persona.fullName?.toUpperCase().includes(buscadorRelacion.toUpperCase()) ||
+        persona.fullName?.toLowerCase().includes(buscadorRelacion.toLowerCase()) ||
         persona.dni_persona?.includes(buscadorRelacion)
     );
     setPersonasFiltradas(resultados);
@@ -1004,20 +1004,27 @@ return (
         </CFormSelect>
       </CInputGroup>
 
-{/* Campo de Descripción */}
-<CInputGroup className="mt-3">
+      {/* Campo de Descripción */}
+      <CInputGroup className="mt-3">
+  {errorMessages.descripcion && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.descripcion}
+    </div>
+  )}
+
+  
   <CInputGroupText>Descripción</CInputGroupText>
   <CFormInput
     type="text"
     value={nuevaEstructura.descripcion}
-    onChange={(e) => {
-      const value = e.target.value.toUpperCase(); // Convertir a mayúsculas
+    onChange={e => {
+      const value = e.target.value;
 
       // Bloquear secuencias de más de tres letras repetidas
       if (/(.)\1{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
+          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.'
         }));
         return;
       }
@@ -1026,7 +1033,7 @@ return (
       if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
+          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.'
         }));
         return;
       }
@@ -1035,12 +1042,12 @@ return (
       if (/\s{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
+          descripcion: 'La descripción no puede contener más de un espacio consecutivo.'
         }));
         return;
       }
 
-      // Validar longitud mínima y campo vacío
+      // Verifica si el campo está vacío
       const erroresTemp = { ...errorMessages };
       if (!value.trim()) {
         erroresTemp.descripcion = 'La descripción no puede estar vacía.';
@@ -1050,8 +1057,7 @@ return (
         erroresTemp.descripcion = '';
       }
 
-      // Actualizar estado con el valor en mayúsculas
-      setNuevaEstructuraFamiliar((prev) => ({
+      setNuevaEstructuraFamiliar(prev => ({
         ...prev,
         descripcion: value,
       }));
@@ -1061,11 +1067,8 @@ return (
     required
   />
 </CInputGroup>
-{errorMessages.descripcion && (
-  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-    {errorMessages.descripcion}
-  </div>
-)}
+
+{/* Estilos dentro del componente */}
 <style jsx>{`
   .error-message {
     color: red;
@@ -1075,8 +1078,6 @@ return (
     margin-left: 12px;  /* Para alinearlo con el texto del input */
   }
 `}</style>
-
-
 
     </CForm>
   </CModalBody>
@@ -1090,7 +1091,7 @@ return (
 
 
 
-{/********************************* MODAL PARA ACTUALIZAR ESTRUCTURA ***************************************************/}
+{/********************************* Modal para actualizar estructura familiar***************************************************/}
 <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
@@ -1206,9 +1207,11 @@ return (
   </CModalFooter>
 </CModal>
 
-{/****************************************FIN DEL MODAL DE ACTUALIZAR********************************************************/}
 
-{/******************************************MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
+{/* Fin del modal actualizar */}
+
+
+      {/* Modal para eliminar una estructura */}
       <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
@@ -1226,7 +1229,7 @@ return (
           </CButton>
         </CModalFooter>
       </CModal>
-{/******************************************FIN MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
+      {/* Fin de eliminar  */}
 
 
     </CContainer>

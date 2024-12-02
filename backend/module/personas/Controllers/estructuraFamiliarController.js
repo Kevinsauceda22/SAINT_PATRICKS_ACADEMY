@@ -129,19 +129,23 @@ export const obtenerPersonasPorRol= async (req, res) => {
 };
 
 
+
+
+
+
 //Controlador para crear 
 export const crearEstructuraFamiliar = async (req, res) => {
     const {
-        cod_persona_estudiante,
         cod_persona_padre,
+        cod_persona_estudiante,
         cod_tipo_relacion,
         descripcion,
     } = req.body;
 
     try {
         await pool.query('CALL P_Post_EstructuraFamiliar(?, ?, ?, ?)', [
-            cod_persona_estudiante,
             cod_persona_padre,
+            cod_persona_estudiante,
             cod_tipo_relacion,
             descripcion
         ]);
@@ -158,19 +162,19 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
     const { Cod_genealogia } = req.params; // Obtiene el código del aula desde la URL
 
     const {
-        cod_persona_estudiante,
-        cod_persona_padre,
-        cod_tipo_relacion,
         descripcion,
+        cod_persona_padre,
+        cod_persona_estudiante,
+        cod_tipo_relacion
     } = req.body;
 
     try {
         await pool.query('CALL P_Put_EstructuraFamiliar(?, ?, ?, ?, ?)', [
             Cod_genealogia,
-            cod_persona_estudiante,
+            descripcion,
             cod_persona_padre,
-            cod_tipo_relacion,
-            descripcion
+            cod_persona_estudiante,
+            cod_tipo_relacion
         ]);
 
         res.status(200).json({ mensaje: ' actualizada exitosamente' });
@@ -202,3 +206,4 @@ export const eliminarEstructuraFamiliar = async (req, res) => {
         return res.status(500).json({ message: 'Ocurrió un error al intentar eliminar Estructura Familiar.', error });
     }
 };
+

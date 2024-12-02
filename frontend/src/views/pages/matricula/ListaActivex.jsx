@@ -51,10 +51,6 @@ const ListaActividades = () => {
   const [searchField, setSearchField] = useState("Nombre_actividad"); // Campo predeterminado
   const [horaInicioOriginal, setHoraInicioOriginal] = useState(null); // Estado para almacenar las horas originales
   const [horaFinalOriginal, setHoraFinalOriginal] = useState(null);
-  const [motivoCancelacion, setMotivoCancelacion] = useState(""); // Estado para almacenar el motivo
-
-  const [mostrarMotivo, setMostrarMotivo] = useState(false); // Control de visibilidad del campo de motivo
-
 
   // Cargar actividades al inicio
   useEffect(() => {
@@ -76,31 +72,40 @@ const ListaActividades = () => {
     }
   };
 
-  const fetchSecciones = async () => {
+  const fetchSecciones = async (Cod_secciones = 0) => { // Valor predeterminado: 0
     try {
-        const response = await fetch('http://localhost:4000/api/obtener_secciones/0'); // Usa /0 para obtener todas las secciones
+        const url = `http://localhost:4000/api/obtener_secciones/${Cod_secciones}`;
+        console.log(`Fetching: ${url}`); // Log para depuración
+        const response = await fetch(url);
+
         if (!response.ok) {
             console.error(`HTTP Error: ${response.status}`);
             throw new Error('Error al obtener las secciones');
         }
+
         const data = await response.json();
-        console.log('Datos obtenidos del servidor:', data); // Depuración
+        console.log('Datos obtenidos del servidor:', data);
+
         if (!Array.isArray(data)) {
             throw new Error('La respuesta del servidor no es un array');
         }
+
         const seccionesConGrado = data.map((seccion) => ({
             ...seccion,
-            SeccionGrado: `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`,
+            SeccionGrado: `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`, // Concatenar sección y grado
         }));
+
+        console.log('Secciones procesadas:', seccionesConGrado);
         setSecciones(seccionesConGrado);
     } catch (error) {
         console.error('Error en fetchSecciones:', error.message);
     }
 };
+  
 
   // Cargar secciones al inicio
   useEffect(() => {
-    fetchSecciones(); // Pasa 0 para obtener todas las secciones
+    fetchSecciones(0); // Pasa 0 para obtener todas las secciones
   }, []);
 
   // Validar si hay letras consecutivas repetidas dos veces
@@ -122,7 +127,12 @@ const ListaActividades = () => {
     .toISOString()
     .split('T')[0];
 
-  
+  // Validar hora de inicio y hora final
+  const validarHoras = (horaInicio, horaFinal) => {
+    const inicio = new Date(`1970-01-01T${horaInicio}:00`);
+    const final = new Date(`1970-01-01T${horaFinal}:00`);
+    return final > inicio; // Valida que la hora de finalización sea después de la hora de inicio
+  };
 
   // Validar si hay traslape de actividades en la misma sección, grado, fecha y horario
   const verificarTraslape = (actividad) => {
@@ -177,120 +187,11 @@ const ListaActividades = () => {
       setModalVisibility(false);
     }
   };
-// Función para manejar el cambio de estado
-const handleEstadoChange = async (idActividad, estadoActual) => {
-  const nuevoEstado = estadoActual === 'Activa' ? 'Cancelada' : 'Activa'; // Determina el nuevo estado
 
-  // Si el nuevo estado es 'Cancelada', mostramos el campo para ingresar el motivo
-  if (nuevoEstado === 'Cancelada') {
-    swal.fire({
-      title: 'Motivo de la cancelación',
-      input: 'textarea',
-      inputPlaceholder: 'Por favor, ingrese el motivo de la cancelación...',
-      showCancelButton: true,
-      confirmButtonText: 'Enviar',
-      cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#4B6251', // Botón verde para enviar
-      allowOutsideClick: false, // No permitir cerrar el modal al hacer clic fuera
-      preConfirm: (motivo) => {
-        // Validar si el motivo está vacío
-        if (!motivo || motivo.trim() === "") {
-          swal.showValidationMessage('El motivo es obligatorio');
-          return false; // Impide continuar si el motivo está vacío
-        }
-
-        // Validar que no contenga caracteres especiales
-        const regex = /^[a-zA-Z0-9\s]*$/; // Permite solo letras, números y espacios
-        if (!regex.test(motivo)) {
-          swal.showValidationMessage('El motivo no puede contener caracteres especiales.');
-          return false; // Impide continuar si contiene caracteres no permitidos
-        }
-
-        // Validar que no haya 3 espacios consecutivos
-        const espaciosConsecutivos = /\s{3,}/;
-        if (espaciosConsecutivos.test(motivo)) {
-          swal.showValidationMessage('El motivo no puede contener 3 espacios consecutivos.');
-          return false; // Impide continuar si hay 3 espacios consecutivos
-        }
-
-        // Validar que no haya 3 letras consecutivas repetidas
-        const letrasRepetidas = /(.)\1\1/;
-        if (letrasRepetidas.test(motivo)) {
-          swal.showValidationMessage('El motivo no puede contener 3 letras consecutivas repetidas.');
-          return false; // Impide continuar si hay 3 letras repetidas consecutivas
-        }
-
-        return motivo.trim(); // Devuelve el motivo ingresado solo si es válido
-      },
-      didOpen: (popup) => {
-        // Deshabilitar la capacidad de copiar y pegar en el textarea
-        const input = popup.querySelector('textarea');
-        
-        // Deshabilitar el pegado (paste) y la copia (copy)
-        input.addEventListener('copy', (e) => {
-          e.preventDefault();
-          swal.showValidationMessage('No puedes copiar en este campo.');
-        });
-        input.addEventListener('paste', (e) => {
-          e.preventDefault();
-          swal.showValidationMessage('No puedes pegar en este campo.');
-        });
-
-        // Convertir el texto a mayúsculas mientras el usuario escribe
-        input.addEventListener('input', (e) => {
-          input.value = input.value.toUpperCase();  // Convertir a mayúsculas
-
-          // Validar 3 espacios consecutivos
-          if (/\s{3,}/.test(input.value)) {
-            swal.showValidationMessage('El motivo no puede contener 3 espacios consecutivos.');
-          }
-
-          // Validar 3 letras consecutivas repetidas
-          if (/(.)\1\1/.test(input.value)) {
-            swal.showValidationMessage('El motivo no puede contener 3 letras consecutivas repetidas.');
-          }
-
-          // Eliminar caracteres especiales en tiempo real
-          if (/[^a-zA-Z0-9\s]/g.test(input.value)) {
-            swal.showValidationMessage('El motivo contiene caracteres no permitidos. Solo se permiten letras, números y espacios.');
-          }
-
-          // Elimina cualquier caracter no permitido
-          input.value = input.value.replace(/[^a-zA-Z0-9\s]/g, '');
-        });
-      }
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        const motivoCancelacion = result.value; // El motivo que se ingresó
-
-        // Llamamos a la función de actualización del estado solo si se proporcionó el motivo
-        try {
-          const response = await fetch('http://localhost:4000/api/actividades/cambiar_estado', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              p_Cod_actividades_extracurriculares: idActividad,
-              p_Estado: nuevoEstado,
-              p_Motivo: motivoCancelacion, // Enviamos el motivo directamente
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            swal.fire('Estado actualizado', data.mensaje, 'success');
-            fetchActividades(); // Recargar actividades
-          } else {
-            const errorData = await response.json();
-            swal.fire('Error', errorData.mensaje || 'No se pudo cambiar el estado.', 'error');
-          }
-        } catch (error) {
-          console.error('Error al cambiar el estado:', error);
-          swal.fire('Error', 'Hubo un problema al cambiar el estado.', 'error');
-        }
-      }
-    });
-  } else {
-    // Si el estado no es 'Cancelada', se cambia sin motivo
+  // Estado de la actividad
+  const handleEstadoChange = async (idActividad, estadoActual) => {
+    const nuevoEstado = estadoActual === 'Activa' ? 'Cancelada' : 'Activa'; // Determina el nuevo estado
+  
     try {
       const response = await fetch('http://localhost:4000/api/actividades/cambiar_estado', {
         method: 'PUT',
@@ -300,22 +201,40 @@ const handleEstadoChange = async (idActividad, estadoActual) => {
           p_Estado: nuevoEstado,
         }),
       });
-
+  
       if (response.ok) {
         const data = await response.json();
-        swal.fire('Estado actualizado', data.mensaje, 'success');
-        fetchActividades(); // Recargar actividades
+  
+        // Mostrar un mensaje de éxito
+        swal.fire({
+          icon: 'success',
+          title: 'Estado actualizado',
+          text: data.mensaje,
+        });
+  
+        // Recargar actividades para reflejar el cambio
+        fetchActividades();
       } else {
         const errorData = await response.json();
-        swal.fire('Error', errorData.mensaje || 'No se pudo cambiar el estado.', 'error');
+  
+        // Mostrar un mensaje de error
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorData.mensaje || 'No se pudo cambiar el estado.',
+        });
       }
     } catch (error) {
       console.error('Error al cambiar el estado:', error);
-      swal.fire('Error', 'Hubo un problema al cambiar el estado.', 'error');
+  
+      // Mostrar un mensaje de error genérico
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un problema al cambiar el estado.',
+      });
     }
-  }
-};
-
+  };
   
   // Resetear datos de actividad nueva
   const resetNuevaActividad = () => {
@@ -492,87 +411,54 @@ const generatePDF = () => {
 };
 
   // FUNCIONES CRUD //
-// Función para crear actividad
-const handleCreateActividad = async () => {
-  const { Nombre, Descripcion, Cod_secciones, Hora_inicio, Hora_final, Fecha } = nuevaActividad;
 
-  // **Depuración: Verifica los valores recibidos antes de validar**
-  console.log('Datos para crear actividad:', {
-    Nombre,
-    Descripcion,
-    Cod_secciones,
-    Hora_inicio,
-    Hora_final,
-    Fecha,
-  });
-
-  // **Validar que todos los campos requeridos tengan valores**
-  if (!Nombre || !Descripcion || !Hora_inicio || !Hora_final || !Cod_secciones || !Fecha) {
-    swal.fire('Error', 'Todos los campos son requeridos.', 'error');
-    return;
-  }
-
-  // **Validar que Cod_secciones sea un número**
-  if (isNaN(parseInt(Cod_secciones))) {
-    swal.fire('Error', 'La sección seleccionada es inválida.', 'error');
-    return;
-  }
-
- 
-
-  // **Validar traslape de actividades**
-  if (verificarTraslape(nuevaActividad)) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Traslape de actividades',
-      text: 'Ya existe una actividad programada en esta sección y horario.',
-    });
-    return;
-  }
-
-  // **Si todas las validaciones pasan, se procede con la creación**
-  try {
-    const response = await fetch('http://localhost:4000/api/actividades/extracurriculares', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        p_Nombre: Nombre,
-        p_Descripcion: Descripcion,
-        p_Hora_inicio: Hora_inicio,
-        p_Hora_final: Hora_final,
-        Cod_secciones: parseInt(Cod_secciones), // Enviar Cod_secciones como número
-        p_Fecha: Fecha,
-      }),
-    });
-
-    // **Manejo de la respuesta del servidor**
-    if (response.ok) {
-      swal.fire({
-        icon: 'success',
-        title: 'Creación exitosa',
-        text: '¡Éxito! La actividad ha sido creada correctamente.',
-      });
-      setModalVisible(false);
-      fetchActividades(); // Recargar actividades
-      resetNuevaActividad(); // Resetear formulario
-    } else {
-      const errorData = await response.json();
-      const detalleError = errorData.detalle || errorData.mensaje || 'Error desconocido.';
-      swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: `Error al crear la actividad. Detalle: ${detalleError}`,
-      });
+  // Función para crear actividad
+  const handleCreateActividad = async () => {
+    const { Nombre, Descripcion, Nombre_seccion, Hora_inicio, Hora_final, Fecha } = nuevaActividad;
+    // Validar que todos los campos requeridos tengan valores
+    if (!Nombre || !Descripcion || !Hora_inicio || !Hora_final || !Nombre_seccion || !Fecha) {
+      swal.fire('Error', 'Todos los campos son requeridos.', 'error');
+      return;
     }
-  } catch (error) {
-    console.error('Error: hubo un problema al crear la actividad:', error);
-    swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Error inesperado al crear la actividad. Por favor, intenta nuevamente.',
-    });
-  }
-};
+    // Validar que la hora de finalización sea después de la hora de inicio
+    if (!validarHoras(Hora_inicio, Hora_final)) {
+      swal.fire({ icon: 'warning', title: 'Error en las horas', text: 'La hora de finalización debe ser posterior a la hora de inicio.' });
+      return;
+    }
+    // Validar traslape de actividades
+    if (verificarTraslape(nuevaActividad)) {
+      swal.fire({ icon: 'warning', title: 'Traslape de actividades', text: 'Ya existe una actividad programada en esta sección y horario.' });
+      return;
+    }
+    // Si todas las validaciones pasan, se procede con la creación
+    try {
+      const response = await fetch('http://localhost:4000/api/actividades/extracurriculares', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          p_Nombre: Nombre,
+          p_Descripcion: Descripcion,
+          p_Hora_inicio: Hora_inicio,
+          p_Hora_final: Hora_final,
+          p_Nombre_seccion: Nombre_seccion,
+          p_Fecha: Fecha,
+        }),
+      });
+
+      if (response.ok) {
+        swal.fire({ icon: 'success', title: 'Creación exitosa', text: '¡Éxito!, La actividad ha sido creada correctamente.' });
+        setModalVisible(false);
+        fetchActividades();
+        resetNuevaActividad();
+      } else {
+        const errorData = await response.json();
+        swal.fire({ icon: 'error', title: 'Error', text: `Error, no se pudo crear la actividad. Detalle: ${errorData.mensaje}` });
+      }
+    } catch (error) {
+      console.error('Error. hubo un problema al crear la actividad:', error);
+      swal.fire({ icon: 'error', title: 'Error', text: 'Error, hubo un problema al crear la actividad.' });
+    }
+  };
 
   // Función para actualizar actividad
   const handleUpdateActividad = async () => {
@@ -582,7 +468,11 @@ const handleCreateActividad = async () => {
       swal.fire('Error', 'Todos los campos son requeridos.', 'error');
       return;
     }
-   
+    // Validar que la hora de finalización sea después de la hora de inicio solo si se modificaron las horas
+    if ((Hora_inicio !== horaInicioOriginal || Hora_final !== horaFinalOriginal) && !validarHoras(Hora_inicio, Hora_final)) {
+      swal.fire({ icon: 'warning', title: 'Error en las horas', text: 'La hora de finalización debe ser posterior a la hora de inicio.' });
+      return;
+    }
     // Validar traslape de actividades
     if (verificarTraslape(actividadToUpdate)) {
       swal.fire({ icon: 'warning', title: 'Traslape de actividades', text: 'Error. La actividad ya existe' });
@@ -715,7 +605,7 @@ const handleCreateActividad = async () => {
             className="mb-3 mb-md-0 me-md-3"
             onClick={() => {
               setModalVisible(true);
-              
+              setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
             }}
           >
             <CIcon icon={cilPlus} /> Nuevo
@@ -828,8 +718,8 @@ const handleCreateActividad = async () => {
             {currentRecords.map((actividad, index) => {
               const rowIndex = indexOfFirstRecord + index + 1;
               const seccion = secciones.find(
-                (s) => s.Cod_secciones === actividad.Cod_secciones
-              );          
+                (s) => s.Nombre_seccion === actividad.Nombre_seccion
+              );
               return (
                 <CTableRow key={actividad.Cod_actividades_extracurriculares}>
                   {/* Columna de índice ordenado */}
@@ -859,9 +749,11 @@ const handleCreateActividad = async () => {
                   <CTableDataCell className="text-center">
                     {actividad.Hora_final}
                   </CTableDataCell>
-                  
-                  <CTableDataCell className="text-center" style={{ textTransform: 'uppercase' }}>
-                    {seccion ? `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}` : 'Sección no encontrada'}
+                  <CTableDataCell
+                    className="text-center"
+                    style={{ textTransform: 'uppercase' }}
+                  >
+                    {seccion ? seccion.SeccionGrado : 'Sección no encontrada'}
                   </CTableDataCell>
                   <CTableDataCell className="text-center">
                     {new Date(actividad.Fecha).toLocaleDateString('es-ES')}
@@ -908,7 +800,6 @@ const handleCreateActividad = async () => {
                         />
                         {actividad.Estado === 'Activa' ? 'Cancelar' : 'Activar'}
                       </CButton>
-
                     </div>
                   </CTableDataCell>
                 </CTableRow>
@@ -1042,25 +933,16 @@ const handleCreateActividad = async () => {
             <CInputGroup className="mb-3">
               <CInputGroupText>Sección y Grado</CInputGroupText>
               <CFormSelect
-                value={nuevaActividad.Cod_secciones}
-                onChange={(e) => {
-                    const valorSeleccionado = parseInt(e.target.value);
-                   
-                    setNuevaActividad({ ...nuevaActividad, Cod_secciones: valorSeleccionado });
-                }}
-            >
+                value={nuevaActividad.Nombre_seccion}
+                onChange={(e) => setNuevaActividad({ ...nuevaActividad, Nombre_seccion: e.target.value })}
+              >
                 <option value="">Seleccione una sección y grado</option>
-                {secciones.map((seccion) => {
-      
-                    return (
-                        <option key={seccion.Cod_secciones} value={seccion.Cod_secciones}>
-                            {seccion.SeccionGrado}
-                        </option>
-                    );
-                })}
-            </CFormSelect>
-
-
+                {secciones.map((seccion) => (
+                  <option key={seccion.Cod_secciones} value={seccion.Nombre_seccion}>
+                    {`${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`}
+                  </option>
+                ))}
+              </CFormSelect>
             </CInputGroup>
   
             {/* Campo para fecha */}

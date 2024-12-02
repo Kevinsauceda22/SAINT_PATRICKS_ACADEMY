@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilPrint } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave } from '@coreui/icons';
 import swal from 'sweetalert2';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import {
@@ -31,8 +31,7 @@ import {
 } from '@coreui/react';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
+import logo from 'src/assets/brand/logo_saint_patrick.png';
 
 const ListaGeneroPersona = () => {
   const [generos, setGeneros] = useState([]);
@@ -42,6 +41,7 @@ const ListaGeneroPersona = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(5);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     fetchGeneros();
@@ -54,7 +54,13 @@ const ListaGeneroPersona = () => {
         throw new Error(`Error en la solicitud: ${response.statusText}`);
       }
       const data = await response.json();
-      setGeneros(data);
+  
+      // Ordenar alfabéticamente por 'Tipo_genero'
+      const sortedData = data.sort((a, b) =>
+        a.Tipo_genero.localeCompare(b.Tipo_genero, 'es', { sensitivity: 'base' }) // Comparación alfabética
+      );
+  
+      setGeneros(sortedData); // Asignar datos ordenados al estado
     } catch (error) {
       console.error('Error fetching generos:', error);
       swal.fire({
@@ -64,541 +70,291 @@ const ListaGeneroPersona = () => {
       });
     }
   };
-
-  const exportToExcel = async () => {
-    try {
-      if (!currentRecords || currentRecords.length === 0) {
-        swal.fire({ icon: 'warning', title: 'Sin Datos', text: 'No hay datos para exportar.' });
-        return;
-      }
-  
-      const fileName = prompt("Ingrese el nombre del archivo para el reporte Excel:", "Reporte_Géneros");
-      if (!fileName) {
-        console.warn('Exportación cancelada. No se proporcionó un nombre de archivo.');
-        return;
-      }
-  
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Géneros');
-  
-      // Agregar el logo con tamaño reducido y bien posicionado
-      const logoPath = '/logo.jpg';
-      try {
-        const logoBuffer = await fetch(logoPath).then((res) => res.arrayBuffer());
-        const logoId = workbook.addImage({
-          buffer: logoBuffer,
-          extension: 'jpeg',
-        });
-        worksheet.addImage(logoId, {
-          tl: { col: 0.2, row: 1 }, // Posición inicial ajustada (columna A y fila 2)
-          ext: { width: 120, height: 80 }, // Tamaño del logo reducido
-        });
-      } catch (err) {
-        console.warn('No se pudo cargar el logo:', err);
-      }
-  
-      // Encabezados y subtítulos centrados
-      worksheet.mergeCells('C1:H1');
-      worksheet.getCell('C1').value = "SAINT PATRICK'S ACADEMY";
-      worksheet.getCell('C1').font = { size: 18, bold: true, color: { argb: '006633' } };
-      worksheet.getCell('C1').alignment = { horizontal: 'center', vertical: 'middle' };
-  
-      worksheet.mergeCells('C2:H2');
-      worksheet.getCell('C2').value = 'Reporte de Géneros';
-      worksheet.getCell('C2').font = { size: 14, bold: true, color: { argb: '006633' } };
-      worksheet.getCell('C2').alignment = { horizontal: 'center', vertical: 'middle' };
-  
-      worksheet.mergeCells('C3:H3');
-      worksheet.getCell('C3').value = 'Casa Club del periodista, Colonia del Periodista';
-      worksheet.getCell('C3').font = { size: 10, color: { argb: '666666' } };
-      worksheet.getCell('C3').alignment = { horizontal: 'center', vertical: 'middle' };
-  
-      worksheet.mergeCells('C4:H4');
-      worksheet.getCell('C4').value = 'Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu';
-      worksheet.getCell('C4').font = { size: 10, color: { argb: '666666' } };
-      worksheet.getCell('C4').alignment = { horizontal: 'center', vertical: 'middle' };
-  
-      worksheet.addRow([]); // Espacio vacío debajo del encabezado
-  
-      // Encabezado de tabla en las columnas E y F
-      const header = ['#', 'Tipo de Género'];
-      const headerRow = worksheet.addRow(['', '', '', '', ...header]); // Desplazar el encabezado a las columnas E y F
-      headerRow.eachCell((cell, colNumber) => {
-        if (colNumber >= 5) { // Solo aplicar estilo a las columnas E y F
-          cell.font = { bold: true, color: { argb: 'FFFFFF' } };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        }
-      });
-  
-      // Filas de datos centradas en las columnas E y F
-      currentRecords.forEach((item, index) => {
-        const row = worksheet.addRow(['', '', '', '', index + 1, item.Tipo_genero.toUpperCase()]);
-        row.eachCell((cell, colNumber) => {
-          if (colNumber >= 5) { // Solo aplicar estilo a las columnas E y F
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          }
-        });
-        if (index % 2 === 0) {
-          row.eachCell((cell, colNumber) => {
-            if (colNumber >= 5) { // Alternar color solo en las columnas E y F
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8F5E9' } };
-            }
-          });
-        }
-      });
-  
-      // Ajustar anchos de columnas
-      worksheet.getColumn(5).width = 5; // Número (#)
-      worksheet.getColumn(6).width = 30; // Tipo de Género
-  
-      try {
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(blob, `${fileName}.xlsx`);
-      } catch (err) {
-        console.error('Error al generar el archivo:', err);
-      }
-    } catch (error) {
-      console.error('Error al exportar a Excel:', error);
-      swal.fire({ icon: 'error', title: 'Error', text: 'Hubo un problema al exportar a Excel.' });
-    }
-  };
   
   const exportToPDF = () => {
     const doc = new jsPDF();
     const img = new Image();
-    img.src = '/logo.jpg'; // Ruta del logo
-
-    const fileName = prompt('Ingrese el nombre del archivo (sin extensión):', 'Reporte_Generos');
-    if (!fileName) {
-        console.warn('Exportación cancelada. No se proporcionó un nombre de archivo.');
-        return;
-    }
-
-    // Usa los registros actuales de la tabla
-    const datosVista = currentRecords;
-
-    if (!datosVista || datosVista.length === 0) {
-        alert('No hay datos visibles para exportar.');
-        return;
-    }
-
+    img.src = logo; // Usa el logo importado
+  
     img.onload = () => {
-        try {
-            doc.addImage(img, 'JPEG', 10, 10, 30, 30);
-
-            doc.setFontSize(18);
-            doc.setTextColor(0, 102, 51);
-            doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
-            doc.setFontSize(14);
-            doc.text('Reporte de Géneros', doc.internal.pageSize.width / 2, 30, { align: 'center' });
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-            doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-            doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
-
-            doc.setLineWidth(0.5);
-            doc.setDrawColor(0, 102, 51);
-            doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-
-            doc.autoTable({
-                startY: 60,
-                head: [['#', 'Tipo de Género']],
-                body: datosVista.map((genero, index) => [index + 1, genero.Tipo_genero]),
-                headStyles: {
-                    fillColor: [0, 102, 51],
-                    textColor: [255, 255, 255],
-                    fontSize: 10,
-                },
-                styles: {
-                    fontSize: 10,
-                    cellPadding: 3,
-                },
-                alternateRowStyles: { fillColor: [240, 248, 255] },
-            });
-
-            const date = new Date().toLocaleDateString();
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-
-            doc.save(`${fileName}.pdf`);
-        } catch (error) {
-            console.error('Error al generar el PDF:', error);
-            alert('Ocurrió un error al generar el PDF.');
-        }
-    };
-
-    img.onerror = () => {
-        console.error('No se pudo cargar el logo. El PDF se generará sin el logo.');
-        alert('No se pudo cargar el logo. El PDF no se generará.');
-    };
-};
-
-
-const handlePrintGeneral = () => {
-  const printWindow = window.open('', '', 'width=800,height=600');
-  const imgPath = window.location.origin + '/logo.jpg'; // Ruta relativa al logo
-
-  // Usa los registros visibles en la tabla actual
-  const dataToPrint = currentRecords.length ? currentRecords : generos;
-
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Imprimir Reporte General</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            color: #333;
-          }
-          .header {
-            position: relative;
-            margin-bottom: 30px; /* Incrementa la separación del logo */
-          }
-          .header img {
-            position: absolute;
-            left: 10px;
-            top: 5px; /* Ajusta el logo más cerca del encabezado */
-            width: 100px; /* Tamaño del logo */
-            height: auto;
-          }
-          .header .text {
-            text-align: center;
-            margin-left: 120px; /* Centra el texto correctamente */
-          }
-          .header .text h1 {
-            font-size: 18px;
-            color: #006633; /* Verde oscuro */
-            margin: 0;
-          }
-          .header .text h2 {
-            font-size: 14px;
-            color: #006633; /* Verde oscuro */
-            margin: 5px 0 0;
-          }
-          .info {
-            text-align: center;
-            font-size: 10px;
-            color: #666; /* Gris oscuro */
-            margin-top: 5px;
-          }
-          .divider {
-            border-top: 0.5px solid #006633; /* Línea divisoria verde */
-            margin: 20px 0; /* Aumenta la separación */
-          }
-          table {
-            width: 100%; /* La tabla abarca todo el ancho */
-            border-collapse: collapse;
-            margin-top: 20px;
-          }
-          th, td {
-            border: 1px solid #006633; /* Borde verde */
-            padding: 10px;
-            text-align: left; /* Texto alineado a la izquierda */
-          }
-          th {
-            background-color: #006633; /* Verde oscuro */
-            color: #fff; /* Texto blanco */
-            font-size: 14px;
-          }
-          tr:nth-child(even) {
-            background-color: #E8F5E9; /* Verde claro */
-          }
-          tr:nth-child(odd) {
-            background-color: #f2f2f2; /* Gris claro */
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <img src="${imgPath}" alt="Logo" />
-          <div class="text">
-            <h1>SAINT PATRICK'S ACADEMY</h1>
-            <h2>Reporte de Géneros</h2>
-            <div class="info">
-              <p>Casa Club del periodista, Colonia del Periodista</p>
-              <p>Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu</p>
-            </div>
-          </div>
-        </div>
-        <div class="divider"></div>
-        <table>
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Tipo de Género</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${dataToPrint.map(
-              (item, index) => `
-                <tr>
-                  <td>${index + 1}</td>
-                  <td>${item.Tipo_genero.toUpperCase()}</td>
-                </tr>`
-            ).join('')}
-          </tbody>
-        </table>
-      </body>
-    </html>
-  `);
-
-  printWindow.document.close();
-  printWindow.print();
-};
-
-const exportToPDFIndividual = (genero) => {
-  const doc = new jsPDF();
-  const img = new Image();
-  img.src = '/logo.jpg'; // Ruta del logo
-
-  img.onload = () => {
-    try {
-      doc.addImage(img, 'JPEG', 10, 10, 30, 30);
-
+      // Encabezado
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+  
       doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
+      doc.setTextColor(0, 102, 51); // Verde oscuro
       doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
+  
       doc.setFontSize(14);
-      doc.text('Reporte Individual - Género', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+      doc.text('Reporte de Géneros', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+  
       doc.setFontSize(10);
-      doc.setTextColor(100);
+      doc.setTextColor(100); // Gris oscuro
       doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
       doc.text('Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-
+  
+      // Línea divisoria
       doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 50, doc.internal.pageSize.width - 10, 50);
-
+      doc.setDrawColor(0, 102, 51); // Verde oscuro
+      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+  
+      // Tabla
       doc.autoTable({
         startY: 60,
         head: [['#', 'Tipo de Género']],
-        body: [[1, genero.Tipo_genero]],
+        body: currentRecords.map((genero, index) => [index + 1, genero.Tipo_genero]),
         headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
+          fillColor: [0, 102, 51], // Verde oscuro
+          textColor: [255, 255, 255], // Blanco
           fontSize: 10,
         },
         styles: {
           fontSize: 10,
           cellPadding: 3,
         },
-        alternateRowStyles: { fillColor: [240, 248, 255] },
+        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro para filas alternas
       });
-
-      const date = new Date().toLocaleDateString();
+  
+      // Pie de página
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+  
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+  
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51); // Verde
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
+        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
+      }
+  
+      doc.save('Reporte_Generos.pdf');
+      window.open(doc.output('bloburl'));
+    };
+  
+    img.onerror = () => {
+      alert('No se pudo cargar el logo. El PDF no se generará.');
+    };
+  };
+  
+  
+  const exportToPDFIndividual = (genero) => {
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = logo; // Usa el logo importado
+  
+    img.onload = () => {
+      // Encabezado
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+  
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51); // Verde oscuro
+      doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
+  
+      doc.setFontSize(14);
+      doc.text(
+        `Reporte Individual de Tipo de Género: ${genero.Tipo_genero.toUpperCase()}`,
+        doc.internal.pageSize.width / 2,
+        30,
+        { align: 'center' }
+      );
+  
       doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-
+      doc.setTextColor(100); // Gris oscuro
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+      doc.text('Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+  
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51); // Verde oscuro
+      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+  
+      // Tabla
+      doc.autoTable({
+        startY: 60,
+        head: [['#', 'Tipo de Género']],
+        body: [[1, genero.Tipo_genero]],
+        headStyles: {
+          fillColor: [0, 102, 51], // Verde oscuro
+          textColor: [255, 255, 255], // Blanco
+          fontSize: 10,
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro para filas alternas
+      });
+  
+      // Pie de página
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+  
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+  
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51); // Verde
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
+        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
+      }
+  
       doc.save(`Reporte_Individual_${genero.Tipo_genero}.pdf`);
-    } catch (error) {
-      console.error('Error al generar el PDF:', error);
-      alert('Ocurrió un error al generar el PDF.');
-    }
+      window.open(doc.output('bloburl'));
+    };
+  
+    img.onerror = () => {
+      alert('No se pudo cargar el logo. El PDF no se generará.');
+    };
   };
-
-  img.onerror = () => {
-    console.error('No se pudo cargar el logo. El PDF se generará sin el logo.');
-    alert('No se pudo cargar el logo.');
-  };
-};
-
-const exportToExcelIndividual = async (genero, index) => {
-  const fileName = prompt(
-    "Ingrese el nombre del archivo Excel:",
-    `Reporte_Género_${genero.Tipo_genero}_${index + 1}`
-  );
-  if (!fileName) return;
-
-  const workbook = new ExcelJS.Workbook();
-  const worksheet = workbook.addWorksheet('Reporte_Género');
-
-  // Agregar el logo con tamaño reducido y bien posicionado
-  const logoPath = '/logo.jpg';
-  try {
-    const logoBuffer = await fetch(logoPath).then((res) => res.arrayBuffer());
-    const logoId = workbook.addImage({
-      buffer: logoBuffer,
-      extension: 'jpeg',
-    });
-    worksheet.addImage(logoId, {
-      tl: { col: 0.2, row: 1 }, // Posición inicial ajustada
-      ext: { width: 120, height: 80 }, // Tamaño reducido y proporcional
-    });
-  } catch (err) {
-    console.warn('No se pudo cargar el logo:', err);
-  }
-
-  // Encabezados y subtítulos centrados
-  worksheet.mergeCells('C1:G1');
-  worksheet.getCell('C1').value = "SAINT PATRICK'S ACADEMY";
-  worksheet.getCell('C1').font = { size: 18, bold: true, color: { argb: '006633' } };
-  worksheet.getCell('C1').alignment = { horizontal: 'center', vertical: 'middle' };
-
-  worksheet.mergeCells('C2:G2');
-  worksheet.getCell('C2').value = 'Reporte Individual - Género';
-  worksheet.getCell('C2').font = { size: 14, bold: true, color: { argb: '006633' } }; // Título en verde
-  worksheet.getCell('C2').alignment = { horizontal: 'center', vertical: 'middle' };
-
-  worksheet.mergeCells('C3:G3');
-  worksheet.getCell('C3').value = 'Casa Club del periodista, Colonia del Periodista';
-  worksheet.getCell('C3').font = { size: 10, color: { argb: '666666' } };
-  worksheet.getCell('C3').alignment = { horizontal: 'center', vertical: 'middle' };
-
-  worksheet.mergeCells('C4:G4');
-  worksheet.getCell('C4').value = 'Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu';
-  worksheet.getCell('C4').font = { size: 10, color: { argb: '666666' } };
-  worksheet.getCell('C4').alignment = { horizontal: 'center', vertical: 'middle' };
-
-  worksheet.addRow([]); // Espacio vacío debajo del encabezado
-
-  // Encabezado de tabla en las columnas E y F
-  const header = ['#', 'Tipo de Género'];
-  const headerRow = worksheet.addRow(['', '', '', '', ...header]); // Mantiene la posición de la tabla en las columnas E y F
-  headerRow.eachCell((cell, colNumber) => {
-    if (colNumber >= 5) { // Solo aplicar estilo a las columnas E y F
-      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    }
-  });
-
-  // Asegurarse de que el índice sea válido y correcto
-  const registroNumero = index + 1; // Calcula correctamente el número del registro
-
-  // Fila de datos centradas en las columnas E y F
-  const row = worksheet.addRow(['', '', '', '', registroNumero, genero.Tipo_genero.toUpperCase()]);
-  row.eachCell((cell, colNumber) => {
-    if (colNumber >= 5) { // Solo aplicar estilo a las columnas E y F
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    }
-  });
-  row.eachCell((cell, colNumber) => {
-    if (colNumber >= 5) { // Alternar color solo en las columnas E y F
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'E8F5E9' } };
-    }
-  });
-
-  // Ajustar anchos de columnas
-  worksheet.getColumn(5).width = 5; // Número (#)
-  worksheet.getColumn(6).width = 30; // Tipo de Género
-
-  try {
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `${fileName}.xlsx`);
-  } catch (err) {
-    console.error('Error al generar el archivo:', err);
-  }
-};
-
-const handlePrintIndividual = (genero) => {
-  const printWindow = window.open('', '', 'width=800,height=600');
-  const imgPath = window.location.origin + '/logo.jpg';
-
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>Reporte Individual</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; color: #333; }
-          .header img { width: 100px; height: auto; }
-          table { width: 100%; border-collapse: collapse; }
-          th, td { border: 1px solid #006633; padding: 10px; text-align: left; }
-          th { background-color: #006633; color: #fff; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <img src="${imgPath}" alt="Logo" />
-          <h1>SAINT PATRICK'S ACADEMY</h1>
-          <h2>Reporte Individual</h2>
-        </div>
-        <table>
-          <tr><th>#</th><th>Tipo de Género</th></tr>
-          <tr><td>1</td><td>${genero.Tipo_genero.toUpperCase()}</td></tr>
-        </table>
-      </body>
-    </html>
-  `);
-
-  printWindow.document.close();
-  printWindow.print();
-};
-
+  
  
   const handleCreateOrUpdate = async () => {
-    const isUpdating = !!generoToUpdate; // Detectar si estamos actualizando
-    const genero = isUpdating ? generoToUpdate : nuevoGenero;
+    console.log('Ejecutando handleCreateOrUpdate...');
+    if (isSubmitting) {
+      console.log('Botón deshabilitado, ya se está procesando.');
+      return;
+    }
+    setIsSubmitting(true);
   
-    if (!genero.Tipo_genero.trim()) {
+    const genero = generoToUpdate || nuevoGenero; // Determinar si es creación o actualización
+  
+    // **VALIDACIONES**
+    console.log('Inicia validaciones...');
+    if (!generoToUpdate.Tipo_genero.trim()) {
       swal.fire({
-        icon: 'warning',
-        title: 'Campo vacío',
-        text: 'El campo "Tipo de Género" no puede estar vacío.',
+        icon: 'error',
+        html: '<b>El campo "Tipo de Género" no puede estar vacío.</b>',
+        timer: 3000,
+        showConfirmButton: false,
       });
       return;
     }
+    
   
+    const isDuplicate = generos.some(
+      (item) =>
+        item.Tipo_genero.toUpperCase() === genero.Tipo_genero.trim().toUpperCase() &&
+        (!generoToUpdate || item.Cod_genero !== generoToUpdate.Cod_genero)
+    );
+  
+    if (isDuplicate) {
+      swal.fire({
+        icon: 'error',
+        html: `<b>El tipo de género "${genero.Tipo_genero.trim()}" ya existe.</b>`,
+        timer: 3000,
+        showConfirmButton: false,
+      });
+      setIsSubmitting(false);
+      return;
+    }
+  
+    const vocalRegex = /[aeiouáéíóúü]/i;
+    if (!vocalRegex.test(genero.Tipo_genero)) {
+      swal.fire({
+        icon: 'error',
+        html: '<b>El "Tipo de Género" debe contener al menos una vocal.</b>',
+        timer: 3000,
+        showConfirmButton: false,
+      });
+      setIsSubmitting(false);
+      return;
+    }
+  
+    // **CONSTRUCCIÓN DE SOLICITUD**
+    const url = generoToUpdate
+      ? `http://localhost:4000/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`
+      : 'http://localhost:4000/api/generoPersona/crearGeneroPersona';
+    const method = generoToUpdate ? 'PUT' : 'POST';
+    const body = JSON.stringify({ Tipo_genero: genero.Tipo_genero.trim() });
+  
+    console.log('Enviando datos al servidor:', { url, method, body });
+  
+    // **SOLICITUD AL SERVIDOR**
     try {
-      const url = isUpdating
-        ? `http://localhost:4000/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`
-        : 'http://localhost:4000/api/generoPersona/crearGeneroPersona';
-      const method = isUpdating ? 'PUT' : 'POST';
-  
-      console.log('Enviando datos:', JSON.stringify({ Tipo_genero: genero.Tipo_genero.trim() })); // Debug
-  
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ Tipo_genero: genero.Tipo_genero.trim() }),
+        body,
       });
   
-      const result = await response.json();
+      if (!response.ok) {
+        const errorResult = await response.json();
+        throw new Error(errorResult.Mensaje || 'Error inesperado en el servidor.');
+      }
   
-      if (response.ok) {
-        if (isUpdating) {
-          setGeneros((prevGeneros) =>
-            prevGeneros.map((item) =>
+      const result = await response.json();
+      console.log('Respuesta exitosa:', result);
+  
+      if (generoToUpdate) {
+        setGeneros((prevGeneros) =>
+          prevGeneros
+            .map((item) =>
               item.Cod_genero === generoToUpdate.Cod_genero
                 ? { ...item, Tipo_genero: genero.Tipo_genero.trim() }
                 : item
             )
-          );
-        } else {
-          setGeneros((prevGeneros) => [
-            ...prevGeneros,
-            { Cod_genero: result.Cod_genero, Tipo_genero: genero.Tipo_genero.trim() },
-          ]);
-        }
-  
+            .sort((a, b) => a.Tipo_genero.localeCompare(b.Tipo_genero))
+        );
         swal.fire({
           icon: 'success',
-          title: isUpdating ? 'Género actualizado' : 'Género creado',
-          text: `El género fue ${isUpdating ? 'actualizado' : 'creado'} exitosamente.`,
+          html: '<b>Tipo de género actualizado exitosamente.</b>',
+          timer: 3000,
+          showConfirmButton: false,
         });
-  
-        setModalVisible(false);
-        setNuevoGenero({ Cod_genero: '', Tipo_genero: '' });
-        setGeneroToUpdate(null);
       } else {
-        throw new Error(result.message || 'No se pudo realizar la operación.');
+        setGeneros((prevGeneros) => [
+          ...prevGeneros,
+          { Cod_genero: result.Cod_genero, Tipo_genero: genero.Tipo_genero.trim() },
+        ].sort((a, b) => a.Tipo_genero.localeCompare(b.Tipo_genero)));
+        swal.fire({
+          icon: 'success',
+          html: '<b>Tipo de género creado exitosamente.</b>',
+          timer: 3000,
+          showConfirmButton: false,
+        });
       }
+  
+      setModalVisible(false);
+      setNuevoGenero({ Cod_genero: '', Tipo_genero: '' });
+      setGeneroToUpdate(null);
     } catch (error) {
       console.error('Error en la operación:', error);
       swal.fire({
         icon: 'error',
-        title: 'Error en el servidor',
-        text: error.message || 'Inténtalo más tarde.',
+        html: `<b>${error.message}</b>`,
+        timer: 3000,
+        showConfirmButton: false,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
+
   const handleDeleteGenero = async (Cod_genero, Tipo_genero) => {
     try {
       const confirmResult = await swal.fire({
@@ -626,20 +382,22 @@ const handlePrintIndividual = (genero) => {
         fetchGeneros();
         swal.fire({
           icon: 'success',
-          title: 'Género eliminado',
-          text: `El género "${Tipo_genero}" fue eliminado correctamente.`, // Mensaje de éxito con el valor
+          html: `<br><b>El género "${Tipo_genero}" fue eliminado correctamente.</b>`,
+          timer: 3000, // Duración en milisegundos
+          showConfirmButton: false, // No mostrar botón de OK
         });
       } else {
-        throw new Error(result.Mensaje || `No se pudo eliminar el género "${Tipo_genero}".`);
+        throw new Error(result.Mensaje || `<b>No se pudo eliminar el género "${Tipo_genero}".</b>`);
       }
-    } catch (error) {
-      console.error('Error eliminando el género:', error);
-      swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || `No se pudo eliminar el género "${Tipo_genero}".`,
-      });
-    }
+      } catch (error) {
+        console.error('Error eliminando el género:', error);
+        swal.fire({
+          icon: 'error',
+          html: `<b>Error</b><br><b>${error.message || `No se pudo eliminar el género "${Tipo_genero}".`}</b>`,
+          timer: 3000, // Duración en milisegundos
+          showConfirmButton: false, // No mostrar botón de OK
+        });
+      }    
   };
   
 
@@ -676,22 +434,12 @@ const handlePrintIndividual = (genero) => {
           }}>
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
-          <CDropdown>
-  <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', marginLeft: '10px' }}>
-    <CIcon icon={cilDescription} /> Reporte
-  </CDropdownToggle>
-  <CDropdownMenu>
-    <CDropdownItem onClick={exportToExcel}>
-      <i className="fa fa-file-excel-o" style={{ marginRight: '5px' }}></i> Descargar en Excel
-    </CDropdownItem>
-    <CDropdownItem onClick={exportToPDF}>
-      <i className="fa fa-file-pdf-o" style={{ marginRight: '5px' }}></i> Descargar en PDF
-    </CDropdownItem>
-    <CDropdownItem onClick={handlePrintGeneral}>
-      <CIcon icon={cilPrint} style={{ marginRight: '5px' }} /> Imprimir
-    </CDropdownItem>
-  </CDropdownMenu>
-</CDropdown>
+          <CButton
+  style={{ backgroundColor: '#6C8E58', color: 'white', marginRight: '10px' }}
+  onClick={exportToPDF} // Llama a la función que genera el reporte general
+>
+  <CIcon icon={cilDescription} /> Descargar PDF
+</CButton>
 
           <div className="mt-2" style={{ textAlign: 'right' }}>
             <span>Mostrar </span>
@@ -761,34 +509,16 @@ const handlePrintIndividual = (genero) => {
           <CIcon icon={cilTrash} />
         </CButton>
 
-        {/* Botón desplegable de reportes con flecha en negro */}
-        <CDropdown variant="btn-group" style={{ marginLeft: '5px' }}>
-          <CDropdownToggle
-            size="sm"
-            style={{
-              backgroundColor: '#007bff', // Azul exacto
-              color: 'white',
-              border: 'none',
-            }}
-            className="dropdown-toggle-black" // Clase personalizada
-          >
-            <CIcon icon={cilDescription} style={{ color: 'black' }} /> {/* Ícono en negro */}
-          </CDropdownToggle>
-          <CDropdownMenu>
-            <CDropdownItem onClick={() => exportToExcelIndividual(genero)}>
-              <CIcon icon="cil-file-excel" className="me-2" />
-              Descargar en Excel
-            </CDropdownItem>
-            <CDropdownItem onClick={() => exportToPDFIndividual(genero)}>
-              <CIcon icon="cil-file-pdf" className="me-2" />
-              Descargar en PDF
-            </CDropdownItem>
-            <CDropdownItem onClick={() => handlePrintIndividual(genero)}>
-              <CIcon icon={cilPrint} className="me-2" />
-              Imprimir
-            </CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
+        <CButton
+  color="info" // Define el color del botón como 'info' (azul)
+  size="sm"
+  style={{ marginLeft: '5px' }}
+  onClick={() => exportToPDFIndividual(genero)} // Llama a la función correcta con el parámetro 'genero'
+>
+  <CIcon icon={cilDescription} style={{ marginRight: '5px' }} /> {/* Ícono antes del texto */}
+  Descargar PDF
+</CButton>
+
       </CTableDataCell>
     </CTableRow>
   ))}
@@ -847,16 +577,51 @@ const handlePrintIndividual = (genero) => {
           <CInputGroup className="mb-3">
             <CInputGroupText>Tipo de Género</CInputGroupText>
             <CFormInput
-              placeholder="Ingrese el tipo de género"
-              value={generoToUpdate ? generoToUpdate.Tipo_genero : nuevoGenero.Tipo_genero}
-              onChange={(e) => {
-                if (generoToUpdate) {
-                  setGeneroToUpdate({ ...generoToUpdate, Tipo_genero: e.target.value });
-                } else {
-                  setNuevoGenero({ ...nuevoGenero, Tipo_genero: e.target.value });
-                }
-              }}
-            />
+  placeholder="Ingrese el tipo de género"
+  value={generoToUpdate ? generoToUpdate.Tipo_genero : nuevoGenero.Tipo_genero}
+  onChange={(e) => {
+    // Convertir a mayúsculas, eliminar números y restringir a 100 caracteres
+    let value = e.target.value
+      .replace(/\s{2,}/g, ' ') // Eliminar espacios consecutivos
+      .replace(/[0-9]/g, '') // Eliminar números
+      .toUpperCase(); // Convertir a mayúsculas
+
+    if (value.length > 100) {
+      value = value.slice(0, 100); // Limitar a 100 caracteres
+    }
+
+    if (generoToUpdate) {
+      setGeneroToUpdate({ ...generoToUpdate, Tipo_genero: value });
+    } else {
+      setNuevoGenero({ ...nuevoGenero, Tipo_genero: value });
+    }
+  }}
+  onKeyDown={(e) => {
+    const inputValue = e.target.value;
+
+    // Bloquear espacios al inicio y espacios consecutivos
+    if (
+      (e.key === ' ' && (inputValue === '' || inputValue.endsWith(' '))) || // Bloquear espacio al inicio o consecutivo
+      (inputValue.length === 0 && e.key === ' ') // Bloquear espacio como primer carácter
+    ) {
+      e.preventDefault();
+    }
+
+    // Permitir solo letras, espacio, retroceso y borrar
+    const isLetter = /^[A-Z]$/i.test(e.key);
+    const isSpace = e.key === ' ';
+    const isBackspaceOrDelete = e.key === 'Backspace' || e.key === 'Delete';
+
+    if (!isLetter && !isSpace && !isBackspaceOrDelete) {
+      e.preventDefault(); // Bloquear otros caracteres (incluidos números)
+    }
+
+    // Restringir la longitud máxima del campo a 100 caracteres
+    if (inputValue.length >= 100 && !isBackspaceOrDelete) {
+      e.preventDefault();
+    }
+  }}
+/>
           </CInputGroup>
         </CModalBody>
         <CModalFooter>

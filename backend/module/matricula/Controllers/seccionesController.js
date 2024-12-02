@@ -1,7 +1,28 @@
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
-// Obtener secciones por id
+// Controlador para obtener las secciones
+export const obtenerSecciones = async (req, res) => {
+    try {
+        // Obtenemos el parámetro 'Cod_secciones' de la solicitud
+        const { Cod_secciones } = req.params;
+
+        // Llamamos al procedimiento almacenado con el parámetro
+        const [rows] = await pool.query('CALL sp_obtener_secciones(?)', [Cod_secciones]);
+
+        // Verificamos si se encontraron resultados
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ message: 'No se encontraron secciones' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las secciones:', error);
+        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+};
+
+// Controlador para obtener las secciones por ID
 export const obtenerSeccionPorId = async (req, res) => {
     const { Cod_secciones } = req.params;
 
@@ -19,7 +40,7 @@ export const obtenerSeccionPorId = async (req, res) => {
     }
 };
 
-// Obtener el período académico activo
+// Controlador para obtener el período académico activo
 export const obtenerPeriodoActivo = async (req, res) => {
     try {
         // Consulta para obtener el período activo
@@ -46,7 +67,7 @@ export const obtenerPeriodoActivo = async (req, res) => {
     }
 };
 
-// Obtener secciones por periodo
+// Controlador para obtener secciones por periodo
 export const obtenerSeccionesPorPeriodo = async (req, res) => {
     const { Cod_periodo_matricula } = req.params;
 
@@ -71,11 +92,8 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
             JOIN tbl_periodo_matricula p ON s.Cod_periodo_matricula = p.Cod_periodo_matricula
             WHERE s.Cod_periodo_matricula = ?;
         `;
-
         console.log("Ejecutando consulta con:", query, Cod_periodo_matricula);
-
         const [rows] = await pool.query(query, [Cod_periodo_matricula]);
-
         console.log("Resultado de la consulta:", rows);
 
         if (rows.length === 0) {
@@ -186,8 +204,6 @@ export const generarNombreSeccion = async (req, res) => {
             FROM tbl_secciones
             WHERE Cod_grado = ? AND Cod_periodo_matricula = ?;
         `;
-
-
         const [rows] = await pool.query(query, [codGrado, anioAcademico]);
 
         // Obtener el último número y calcular el siguiente
@@ -257,9 +273,7 @@ export const crearSeccion = async (req, res) => {
     if (!p_Cod_aula || !p_Cod_grado || !p_Cod_Profesor || !p_Cod_periodo_matricula) {
         return res.status(400).json({ mensaje: 'Todos los campos son requeridos.' });
     }
-
     const connection = await pool.getConnection();
-
     try {
         await connection.beginTransaction();
 
@@ -276,8 +290,6 @@ export const crearSeccion = async (req, res) => {
         if (!Cod_secciones) {
             throw new Error('No se pudo obtener el ID de la sección creada. Verifica el procedimiento almacenado.');
         }
-        
-
         console.log('ID de la sección creada:', Cod_secciones);
 
         // Paso 2: Consultar las asignaturas del grado en tbl_grados_asignaturas
@@ -285,11 +297,9 @@ export const crearSeccion = async (req, res) => {
             'SELECT Cod_grados_asignaturas FROM tbl_grados_asignaturas WHERE Cod_grado = ?',
             [p_Cod_grado]
         );
-
         if (!asignaturas.length) {
             throw new Error('No se encontraron asignaturas asociadas al grado.');
         }
-
         // Paso 3: Insertar en tbl_secciones_asignaturas
         const seccionesAsignaturasValues = asignaturas.map(asignatura => [
             Cod_secciones,
@@ -298,16 +308,13 @@ export const crearSeccion = async (req, res) => {
             asignatura.Cod_grados_asignaturas,
             null, // Dias_nombres
         ]);
-
         console.log('Valores para insertar en secciones_asignaturas:', seccionesAsignaturasValues);
 
         await connection.query(
             'INSERT INTO tbl_secciones_asignaturas (Cod_secciones, Hora_inicio, Hora_fin, Cod_grados_asignaturas, Dias_nombres) VALUES ?',
             [seccionesAsignaturasValues]
         );
-
         await connection.commit();
-
         res.status(201).json({
             mensaje: 'Sección creada correctamente con asignaturas vinculadas.',
             Cod_secciones,
@@ -327,25 +334,21 @@ export const crearSeccion = async (req, res) => {
 // Controlador para actualizar una sección
 export const actualizarSeccion = async (req, res) => {
     const { p_Cod_secciones, p_Nombre_seccion, p_Numero_aula, p_Nombre_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
-
     try {
         // Validación de campos requeridos
         if (!p_Cod_secciones || !p_Nombre_seccion || !p_Numero_aula || !p_Nombre_grado || !p_Cod_Profesor || !p_Cod_periodo_matricula) {
             return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
         }
-
         // Validación para verificar si el número de aula existe en la base de datos
         const [aulaResult] = await pool.query('SELECT Cod_aula FROM tbl_aula WHERE Numero_aula = ?', [p_Numero_aula]);
         if (aulaResult.length === 0) {
             return res.status(400).json({ mensaje: "El aula especificada no existe." });
         }
-
         // Llamar al procedimiento almacenado para actualizar la sección
         const [result] = await pool.query(
             'CALL sp_actualizar_secciones(?, ?, ?, ?, ?, ?)',
             [p_Cod_secciones, p_Nombre_seccion, p_Numero_aula, p_Nombre_grado, p_Cod_Profesor, p_Cod_periodo_matricula]
         );
-
         return res.status(200).json({ mensaje: 'Sección actualizada correctamente.', data: result });
     } catch (error) {
         console.error('Error al actualizar la sección:', error);
@@ -356,10 +359,10 @@ export const actualizarSeccion = async (req, res) => {
     }
 };
 
+
 // Controlador para eliminar una sección
 export const eliminarSeccion = async (req, res) => {
     const { Cod_seccion } = req.params;
-
     try {
         const [result] = await pool.query('CALL sp_eliminar_secciones(?)', [Cod_seccion]);
 

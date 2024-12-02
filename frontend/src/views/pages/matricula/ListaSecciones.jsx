@@ -38,58 +38,70 @@ const ListaSecciones = () => {
   const [esPeriodoActivo, setEsPeriodoActivo] = useState(true); // Por defecto, asumimos que es activo
   const [searchProfesor, setSearchProfesor] = useState(''); // Término de búsqueda
   const [filteredProfesores, setFilteredProfesores] = useState(profesores); // Profesores filtrados
+  const [showDropdown, setShowDropdown] = useState(false); // Controlar la visibilidad del dropdown
 
 
-  // Función para obtener el período académico activo
-  const fetchPeriodoAcademico = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/secciones/periodo_academico/activo');
-      const data = await response.json();
+// Función para obtener el período académico activo
+const fetchPeriodoAcademico = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/secciones/periodo_academico/activo');
+    const data = await response.json();
 
-      if (data && data.Anio_academico) {
-        setAnioAcademicoActivo(data.Anio_academico); // Actualizar el estado con el período activo
-        setPeriodoAcademico([{ Cod_periodo_matricula: data.Cod_periodo_matricula, Anio_academico: data.Anio_academico }]);
-      } else {
-        console.warn('No se encontró el año académico activo.');
-      }
-    } catch (error) {
-      console.error('Error al obtener el período académico activo:', error);
+    if (data && data.Anio_academico) {
+      setAnioAcademicoActivo(data.Anio_academico); // Actualizar el estado con el período activo
+      setPeriodoAcademico([{ Cod_periodo_matricula: data.Cod_periodo_matricula, Anio_academico: data.Anio_academico }]);
+    } else {
+      console.warn('No se encontró el año académico activo.');
     }
-  };
+  } catch (error) {
+    console.error('Error al obtener el período académico activo:', error);
+  }
+};
 
-  // Función para obtener las secciones del período seleccionado
-  const fetchSeccionesPeriodo = async (periodo) => {
-    try {
-      const response = await fetch(
-        `http://localhost:4000/api/secciones/obtener_seccperiodo/${periodo}`
-      );
-      const data = await response.json();
+// Función para obtener las secciones del período seleccionado
+const fetchSeccionesPeriodo = async (periodo) => {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/secciones/obtener_seccperiodo/${periodo}`
+    );
+    const data = await response.json();
 
-      if (response.ok) {
-        setSecciones(data.map((seccion, index) => ({ ...seccion, originalIndex: index + 1 })));
-      } else {
-        setSecciones([]);
-        swal.fire('Atención', `No se encontraron secciones en este periodo académico`, 'info');
-      }
-    } catch (error) {
-      console.error('Error al cargar secciones:', error);
-      swal.fire('Error', 'Hubo un problema al cargar las secciones.', 'error');
+    if (response.ok) {
+      setSecciones(data.map((seccion, index) => ({ ...seccion, originalIndex: index + 1 })));
+    } else {
+      setSecciones([]);
+      swal.fire('Atención', `No se encontraron secciones para el período ${periodo}`, 'info');
     }
-  };
+  } catch (error) {
+    console.error('Error al cargar secciones:', error);
+    swal.fire('Error', 'Hubo un problema al cargar las secciones.', 'error');
+  }
+};
 
-  // Efecto para recargar las secciones cuando se cierra el modal
-  useEffect(() => {
-    if (modalVisible === false && periodoSeleccionado) {
-      fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
-    }
-  }, [modalVisible, periodoSeleccionado]);
+// Efecto para cargar el período activo al montar el componente
+useEffect(() => {
+  if (periodoSeleccionado) {
+    console.log('Cargando secciones para el período seleccionado:', periodoSeleccionado);
+    fetchSeccionesPeriodo(periodoSeleccionado);
+  } else {
+    console.warn('No se encontró un período seleccionado.');
+    fetchPeriodoAcademico();
+  }
+}, [periodoSeleccionado]);
 
-  // Para mostrar los datos en la tabla o modal
-  useEffect(() => {
-    if (anioAcademicoActivo) {
-      console.log('Período académico activo:', anioAcademicoActivo);
-    }
-  }, [anioAcademicoActivo]);
+// Efecto para recargar las secciones cuando se cierra el modal
+useEffect(() => {
+  if (modalVisible === false && periodoSeleccionado) {
+    fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
+  }
+}, [modalVisible, periodoSeleccionado]);
+
+// Para mostrar los datos en la tabla o modal
+useEffect(() => {
+  if (anioAcademicoActivo) {
+    console.log('Período académico activo:', anioAcademicoActivo);
+  }
+}, [anioAcademicoActivo]);
 
 
   useEffect(() => {
@@ -126,31 +138,28 @@ const ListaSecciones = () => {
       swal.fire('Error', 'No se permiten tres caracteres iguales consecutivos.', 'error');
       return '';
     }
-
     return value;
   };
 
+  
   const handleGestionarClick = (seccion) => {
     const { Cod_secciones, Nombre_grado } = seccion;
-  
+
     console.log('Navegando a lista-secciones-asignatura con:', { 
-      seccionSeleccionada: Cod_secciones, 
-      periodoSeleccionado, 
-      gradoSeleccionado: Nombre_grado,
-      profesores // Asegúrate de pasar los profesores aquí
-    });
-  
-    navigate(`/lista-secciones-asignatura/`, { 
-      state: { 
         seccionSeleccionada: Cod_secciones, 
         periodoSeleccionado, 
-        gradoSeleccionado: Nombre_grado,
-        profesores // Aquí también
-      } 
+        gradoSeleccionado: Nombre_grado 
     });
-  };
 
-  // Funcion para cargar segun el estado y los botones
+    navigate(`/lista-secciones-asignatura/`, { 
+        state: { 
+            seccionSeleccionada: Cod_secciones, 
+            periodoSeleccionado, 
+            gradoSeleccionado: Nombre_grado 
+        } 
+    });
+};
+  
   useEffect(() => {
     if (periodoSeleccionado) {
       console.log('Cargando estado del período seleccionado:', periodoSeleccionado);
@@ -292,14 +301,13 @@ const ListaSecciones = () => {
     return periodo ? periodo.Anio_academico : 'Año académico no disponible';
   };
   
-
   const volverAListaGestion_Academica = () => {
     navigate('/gestion_academica');
   };
 
   // Función para manejar la paginación
   const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredSecciones.length / recordsPerPage)) {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(secciones.length / recordsPerPage)) {
       setCurrentPage(pageNumber);
     }
   };
@@ -319,7 +327,7 @@ const ListaSecciones = () => {
       } else if (searchField === "Nombre_grado") {
         return normalizeString(seccion.Nombre_grado).includes(normalizedSearchTerm);
       } else if (searchField === "Nombre_profesor") {
-        const profesorName = getProfesorFullName(seccion.Cod_Profesor);
+        const profesorName = getProfesorName(seccion.Cod_Profesor);
         return normalizeString(profesorName).includes(normalizedSearchTerm);
       }
       return false;
@@ -332,26 +340,25 @@ const ListaSecciones = () => {
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRecord);
 
+  
   // Validaciones
 
-
-
- // Validar campos obligatorios 
- const validateStep = () => {
-  if (step === 1) { // Anteriormente paso 2
-    if (!edificioSeleccionado || !nuevaSeccion.Cod_aula || !nuevaSeccion.Cod_grado) {
-      swal.fire('Error', 'Debe seleccionar un edificio, aula y grado.', 'error');
-      return false;
+  // Validar campos obligatorios 
+  const validateStep = () => {
+    if (step === 1) { // Anteriormente paso 2
+      if (!edificioSeleccionado || !nuevaSeccion.Cod_aula || !nuevaSeccion.Cod_grado) {
+        swal.fire('Error', 'Debe seleccionar un edificio, aula y grado.', 'error');
+        return false;
+      }
     }
-  }
-  if (step === 2) { // Anteriormente paso 3
-    if (!nuevaSeccion.Cod_profesor) {
-      swal.fire('Error', 'Debe seleccionar un profesor.', 'error');
-      return false;
+    if (step === 2) { // Anteriormente paso 3
+      if (!nuevaSeccion.Cod_profesor) {
+        swal.fire('Error', 'Debe seleccionar un profesor.', 'error');
+        return false;
+      }
     }
-  }
-  return true;
-};
+    return true;
+  };
 
   const nextStep = () => {
     if (validateStep()) {
@@ -362,55 +369,54 @@ const ListaSecciones = () => {
   // Exportar datos a PDF
   const generateSeccionesPDF = () => {
     const doc = new jsPDF();
-
+  
     if (!filteredSecciones || filteredSecciones.length === 0) {
       alert('No hay datos para exportar.');
       return;
     }
-
+  
     const img = new Image();
     img.src = logo;
-
+  
     img.onload = () => {
       const pageWidth = doc.internal.pageSize.width;
-
+  
       // Encabezado
       doc.addImage(img, 'PNG', 10, 10, 45, 45);
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
       doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
+  
       doc.setFontSize(10);
       doc.setTextColor(100);
       doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
       doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
       doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
+  
       // Subtítulo con el periodo académico
       const periodoAcademico = getPeriodoAcademico(filteredSecciones[0].Cod_periodo_matricula) || 'SIN PERIODO';
       doc.setFontSize(14);
       doc.setTextColor(0, 102, 51);
       doc.text(`Listado de Secciones - Año Académico ${periodoAcademico}`, pageWidth / 2, 50, { align: 'center' });
-
+  
       doc.setLineWidth(0.5);
       doc.setDrawColor(0, 102, 51);
       doc.line(10, 55, pageWidth - 10, 55);
-
+  
       doc.setFontSize(12);
-      doc.setTextColor(50); // Gris oscuro
+      doc.setTextColor(0);
       doc.text('Listado Detallado de Secciones', pageWidth / 2, 65, { align: 'center' });
-
-
+  
       // Tabla de datos sin el periodo académico
-      const tableColumn = ['#', 'Sección', 'Aula', 'Grado', 'Maestro guía'];
+      const tableColumn = ['#', 'Sección', 'Aula', 'Grado', 'Profesor'];
       const tableRows = filteredSecciones.map((seccion, index) => [
         { content: (index + 1).toString(), styles: { halign: 'center' } },
         { content: seccion.Nombre_seccion?.toUpperCase() || 'SIN NOMBRE', styles: { halign: 'center' } },
         seccion.Numero_aula?.toString() || 'SIN AULA',
         seccion.Nombre_grado?.toUpperCase() || 'SIN GRADO',
         { content: getProfesorFullName(seccion.Cod_Profesor) || 'SIN PROFESOR', styles: { halign: 'center' } },
-      ]);
-
+        ]);
+  
       doc.autoTable({
         startY: 70,
         head: [tableColumn],
@@ -431,13 +437,13 @@ const ListaSecciones = () => {
         didDrawPage: (data) => {
           const pageCount = doc.internal.getNumberOfPages();
           const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
+  
           // Pie de página
           const footerY = doc.internal.pageSize.height - 10;
           doc.setFontSize(10);
           doc.setTextColor(0, 102, 51);
           doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-
+  
           const now = new Date();
           const dateString = now.toLocaleDateString('es-HN', {
             year: 'numeric',
@@ -452,23 +458,33 @@ const ListaSecciones = () => {
           doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
         },
       });
-
-      // Convertir PDF en Blob y mostrar en una nueva pestaña
+  
+      // Convertir PDF en Blob
       const pdfBlob = doc.output('blob');
       const pdfURL = URL.createObjectURL(pdfBlob);
-
-      // Abrir el visor de PDF predeterminado del navegador con el título y nombre de archivo especificado
-      const newWindow = window.open(pdfURL, '_blank');
-      if (newWindow) {
-        newWindow.document.title = 'Reporte de Secciones';
-        newWindow.document.filename = 'reporte_de_secciones.pdf';
-      }
+  
+      // Crear ventana con visor
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(`
+        <html>
+          <head><title>Reporte de Secciones</title></head>
+          <body style="margin:0;">
+            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+            <div style="position:fixed;top:10px;right:200px;">
+              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_de_Secciones.pdf'; a.click();">
+                Descargar PDF
+              </button>
+            </div>
+          </body>
+        </html>`);
     };
-
+  
     img.onerror = () => {
       alert('No se pudo cargar el logo.');
     };
   };
+
 
   // Funciones CRUD
 
@@ -488,7 +504,7 @@ const ListaSecciones = () => {
       Cod_aula: '',
       Cod_grado: '',
       Cod_profesor: '',
-      Cod_periodo_matricula: periodoSeleccionado || periodoAcademico[0]?.Cod_periodo_matricula, // Usa el período seleccionado
+      Cod_periodo_matricula: periodoAcademico[0]?.Cod_periodo_matricula || '', // Usa el período activo si existe
     });
     setEdificioSeleccionado(''); // Resetea el edificio seleccionado
     setAulasFiltradas([]); // Limpia las aulas filtradas
@@ -539,7 +555,7 @@ const ListaSecciones = () => {
         p_Cod_aula: nuevaSeccion.Cod_aula,
         p_Cod_grado: nuevaSeccion.Cod_grado,
         p_Cod_Profesor: nuevaSeccion.Cod_profesor,
-        p_Cod_periodo_matricula: nuevaSeccion.Cod_periodo_matricula, // Enviar el código del periodo
+        p_Cod_periodo_matricula: nuevaSeccion.Cod_periodo_matricula || periodoAcademico[0]?.Cod_periodo_matricula, // Enviar el código del periodo
       }),
     });
 
@@ -547,11 +563,10 @@ const ListaSecciones = () => {
 
     if (response.ok) {
       swal.fire('Creación exitosa', 'La sección ha sido creada correctamente.', 'success');
-      fetchSeccionesPeriodo(periodoSeleccionado);
+      fetchSecciones(); // Actualizar la lista de secciones
       setModalVisible(false); // Cerrar el modal
       resetNuevaSeccion(); // Limpiar los datos del formulario
     } else {
-      const data = await response.json();
       swal.fire('Error', data.mensaje || 'No se pudo crear la sección.', 'error');
     }
   } catch (error) {
@@ -618,6 +633,7 @@ const ListaSecciones = () => {
     }
   };
   
+
   const resetSeccionToUpdate = () => {
     // Limpia los datos del estado `seccionToUpdate`
     setSeccionToUpdate({
@@ -681,6 +697,7 @@ const ListaSecciones = () => {
       }
     });
   };
+  
     
   return (
     <CContainer>
@@ -763,30 +780,8 @@ const ListaSecciones = () => {
   </CRow>
 
   {/* Contenedor de la barra de búsqueda y el selector de registros */}
-<div className="filter-container mb-4">
-  <CRow className="align-items-center">
-    {/* Botón Limpiar en el borde izquierdo */}
-    <CCol xs="12" md="2" className="text-start">
-      <CButton
-        color="light"
-        onClick={() => {
-          setSearchTerm('');
-          setSearchField('Nombre_seccion');
-        }}
-        style={{
-          padding: "6px 12px",
-          fontSize: "0.9rem",
-          backgroundColor: "#E0E0E0", // Gris claro
-          color: "#000",
-          border: "1px solid #CCC",
-        }}
-      >
-        Limpiar
-      </CButton>
-    </CCol>
-
-    {/* Barra de búsqueda */}
-    <CCol xs="12" md="6" className="d-flex align-items-center gap-2">
+  <CRow className="align-items-center mb-4">
+    <CCol xs="12" md="8">
       <CInputGroup>
         <CInputGroupText>
           <CIcon icon={cilSearch} />
@@ -795,55 +790,42 @@ const ListaSecciones = () => {
           placeholder="Buscar Sección..."
           onChange={(e) => setSearchTerm(validateInput(e.target.value))}
           value={searchTerm}
-          style={{
-            padding: "6px",
-            fontSize: "0.9rem",
-          }}
         />
         <CFormSelect
           aria-label="Buscar por"
           onChange={(e) => setSearchField(e.target.value)}
-          style={{
-            marginLeft: "10px",
-            fontSize: "0.9rem",
-          }}
+          style={{ marginLeft: "10px" }}
         >
           <option value="Nombre_seccion">Nombre Sección</option>
           <option value="Numero_aula">Aula</option>
           <option value="Nombre_grado">Grado</option>
-          <option value="Nombre_profesor">Maestro guía</option>
+          <option value="Nombre_profesor">Profesor</option>
         </CFormSelect>
       </CInputGroup>
     </CCol>
 
-    {/* Selector de número de registros */}
-    <CCol xs="12" md="4" className="text-md-end">
-      <CInputGroup style={{ width: "auto", display: "inline-flex", alignItems: "center" }}>
-        <span>Mostrar&nbsp;</span>
-        <CFormSelect
-          style={{
-            padding: "6px",
-            fontSize: "0.9rem",
-            width: "80px",
-            textAlign: "center",
-          }}
-          onChange={(e) => {
-            const value = Number(e.target.value);
-            setRecordsPerPage(value);
-            setCurrentPage(1);
-          }}
-          value={recordsPerPage}
-        >
-          <option value="5">5</option>
-          <option value="10">10</option>
-          <option value="20">20</option>
-        </CFormSelect>
-        <span>&nbsp;registros</span>
+    <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
+      <CInputGroup style={{ width: "auto", display: "inline-block" }}>
+        <div className="d-inline-flex align-items-center">
+          <span>Mostrar&nbsp;</span>
+          <CFormSelect
+            style={{ width: "80px", display: "inline-block", textAlign: "center" }}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              setRecordsPerPage(value);
+              setCurrentPage(1);
+            }}
+            value={recordsPerPage}
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </CFormSelect>
+          <span>&nbsp;registros</span>
+        </div>
       </CInputGroup>
     </CCol>
   </CRow>
-</div>
-
 
   {/* Tabla de secciones */}
   <div
@@ -863,7 +845,7 @@ const ListaSecciones = () => {
             Aula
           </CTableHeaderCell>
           <CTableHeaderCell style={{ width: "20%" }}>Grado</CTableHeaderCell>
-          <CTableHeaderCell style={{ width: "20%" }}>Maestro guía</CTableHeaderCell>
+          <CTableHeaderCell style={{ width: "20%" }}>Profesor</CTableHeaderCell>
           <CTableHeaderCell className="text-center" style={{ width: "20%" }}>
             Periodo Matrícula
           </CTableHeaderCell>
@@ -893,11 +875,11 @@ const ListaSecciones = () => {
                   color="warning"
                   onClick={() => openUpdateModal(seccion.Cod_secciones)}
                   className="me-2"
-                  disabled={!esPeriodoActivo}
+                  disabled={!esPeriodoActivo} // Deshabilita si el período está inactivo
                 >
                   <CIcon icon={cilPen} />
               </CButton>
-               {/* Tabla de secciones 
+
                 <CButton
                   color="danger"
                   onClick={() => openDeleteModal(seccion)} // Solo abre el modal si el período está activo
@@ -905,7 +887,7 @@ const ListaSecciones = () => {
                   disabled={!esPeriodoActivo} // Deshabilita si el período está inactivo
                 >
                   <CIcon icon={cilTrash} />
-                </CButton>*/}
+                </CButton>
 
                 <CButton
                   color="info"
@@ -920,8 +902,9 @@ const ListaSecciones = () => {
       </CTableBody>
     </CTable>
   </div>
-</div>
-      {/* Paginación Fija */}
+  </div>
+
+  {/* Paginación Fija */}
       <div
         className="pagination-container"
         style={{
@@ -976,88 +959,95 @@ const ListaSecciones = () => {
   </div>
 
       {/* Modal Crear Sección */}
-<CModal
-  visible={modalVisible}
-  onClose={() => {
-    setModalVisible(false);
-    setStep(1); // Reinicia al primer paso
-    resetNuevaSeccion(); // Limpia los datos
-  }}
-  backdrop="static"
-  size="md"
->
-  <CModalHeader closeButton={false}>
-    <CModalTitle>Crear Nueva Sección - Paso {step}</CModalTitle>
-    <CButton className="btn-close" aria-label="Close" onClick={handleCloseModal} />
-  </CModalHeader>
-  <CModalBody>
+     <CModal
+        visible={modalVisible}
+        onClose={() => {
+          setModalVisible(false);
+          setStep(1); // Reinicia al primer paso
+          resetNuevaSeccion(); // Limpia los datos
+        }}
+        backdrop="static"
+        size="md"
+      >
+      <CModalHeader closeButton={false}>
+        <CModalTitle>Crear Nueva Sección - Paso {step}</CModalTitle>
+        <CButton className="btn-close" aria-label="Close" onClick={handleCloseModal} />
+      </CModalHeader>
+      <CModalBody>
+
         {/* Paso 1: Selección de Aula y Grado */}
         {step === 1 && ( // Anteriormente paso 2
-  <div>
-    <h5>Selecciona el Edificio, Aula y Grado</h5>
-    <hr />
-    <CInputGroup className="mb-3">
-      <CInputGroupText>Edificio</CInputGroupText>
-      <CFormSelect
-        value={edificioSeleccionado}
-        onChange={(e) => {
-          setEdificioSeleccionado(e.target.value);
-          setNuevaSeccion({ ...nuevaSeccion, Cod_aula: '' });
+        <div>
+          <h5>Selecciona el Edificio, Aula y Grado</h5>
+          <hr />
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Edificio</CInputGroupText>
+            <CFormSelect
+              value={edificioSeleccionado}
+              onChange={(e) => {
+                setEdificioSeleccionado(e.target.value);
+                setNuevaSeccion({ ...nuevaSeccion, Cod_aula: '' });
+              }}
+            >
+              <option value="">Seleccione un Edificio</option>
+              {edificios.map((edificio) => (
+                <option key={edificio.Cod_edificio} value={edificio.Cod_edificio}>
+                  {edificio.Nombre_edificios.toUpperCase()}
+                </option>
+              ))}
+            </CFormSelect>
+          </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Aula</CInputGroupText>
+            <CFormSelect
+              value={nuevaSeccion.Cod_aula}
+              onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, Cod_aula: e.target.value })}
+              disabled={!edificioSeleccionado}
+            >
+              <option value="">Seleccione un Aula</option>
+              {aulasFiltradas.map((aula) => (
+                <option key={aula.Cod_aula} value={aula.Cod_aula}>
+                  {aula.Numero_aula}
+                </option>
+              ))}
+            </CFormSelect>
+          </CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Grado</CInputGroupText>
+            <CFormSelect
+          value={nuevaSeccion.Cod_grado}
+          onChange={(e) => {
+          const selectedGrado = e.target.value;
+          setNuevaSeccion((prev) => ({ ...prev, Cod_grado: selectedGrado }));
+          handleGenerateSectionName(selectedGrado); // Llamada a la API para generar el nombre
         }}
       >
-        <option value="">Seleccione un Edificio</option>
-        {edificios.map((edificio) => (
-          <option key={edificio.Cod_edificio} value={edificio.Cod_edificio}>
-            {edificio.Nombre_edificios.toUpperCase()}
+        <option value="">Seleccione un Grado</option>
+        {grados.map((grado) => (
+          <option key={grado.Cod_grado} value={grado.Cod_grado}>
+            {grado.Nombre_grado}
           </option>
         ))}
-      </CFormSelect>
-    </CInputGroup>
-    <CInputGroup className="mb-3">
-      <CInputGroupText>Aula</CInputGroupText>
-      <CFormSelect
-        value={nuevaSeccion.Cod_aula}
-        onChange={(e) => setNuevaSeccion({ ...nuevaSeccion, Cod_aula: e.target.value })}
-        disabled={!edificioSeleccionado}
-      >
-        <option value="">Seleccione un Aula</option>
-        {aulasFiltradas.map((aula) => (
-          <option key={aula.Cod_aula} value={aula.Cod_aula}>
-            {aula.Numero_aula}
-          </option>
-        ))}
-      </CFormSelect>
-    </CInputGroup>
-    <CInputGroup className="mb-3">
-      <CInputGroupText>Grado</CInputGroupText>
-      <CFormSelect
-  value={nuevaSeccion.Cod_grado}
-  onChange={(e) => {
-    const selectedGrado = e.target.value;
-    setNuevaSeccion((prev) => ({ ...prev, Cod_grado: selectedGrado }));
-    handleGenerateSectionName(selectedGrado); // Llamada a la API para generar el nombre
-  }}
->
-  <option value="">Seleccione un Grado</option>
-  {grados.map((grado) => (
-    <option key={grado.Cod_grado} value={grado.Cod_grado}>
-      {grado.Nombre_grado}
-    </option>
-  ))}
-</CFormSelect>
+        </CFormSelect>
 
-    </CInputGroup>
-  </div>
-)}
+        </CInputGroup>
+        </div>
+      )}
 
+  {step === 2 && (
+        <div>
+          <h5>Profesor y Período de Matrícula</h5>
+          <hr />
+          
+          <div>
+   {/* Nombre de la Sección */}
+   <CInputGroup className="mb-3">
+       <CInputGroupText>Nombre de la Sección</CInputGroupText>
+       <CFormInput value={nuevaSeccion.Nombre_seccion || 'Aún no generado'}
+          readOnly
+        />
+      </CInputGroup>
 
-{step === 2 && (
-  <div>
-    <h5>Profesor y Período de Matrícula</h5>
-    <hr />
-    
-    <div>
-  
     {/* Período Académico */}
     <CInputGroup className="mb-3">
         <CInputGroupText>Período Matrícula</CInputGroupText>
@@ -1106,14 +1096,14 @@ const ListaSecciones = () => {
                 >
                     {`ID: ${profesor.Numero_identidad} - ${profesor.Nombre_completo}`}
                 </li>
-            ))}
-        </ul>
+             ))}
+         </ul>
      </div>
-  </div>
+ </div>
 </div>
 )}
-
   </CModalBody>
+
   <CModalFooter>
     {step > 1 && <CButton color="secondary" onClick={prevStep}>Atrás</CButton>}
     {step < 2 ? (
@@ -1145,28 +1135,16 @@ const ListaSecciones = () => {
         <CFormInput value={seccionToUpdate.p_Cod_secciones || ''} readOnly />
       </CInputGroup>
 
-      {/* Nombre de la Sección */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Nombre de la Sección</CInputGroupText>
-        <CFormInput
-          value={seccionToUpdate.p_Nombre_seccion || ''}
-          readOnly
-        />
-      </CInputGroup>
       {/* Grado */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Grado</CInputGroupText>
-        <CFormSelect
-          value={seccionToUpdate.p_Nombre_grado || ''}
-          disabled // Esto hace que el selector sea de solo lectura
-        >
-          <option value="">Seleccione un Grado</option>
-          {grados.map((grado) => (
-            <option key={grado.Cod_grado} value={grado.Nombre_grado}>
-              {grado.Nombre_grado.toUpperCase()}
-            </option>
-          ))}
-        </CFormSelect>
+        <CFormInput value={seccionToUpdate.p_Nombre_grado || ''} readOnly />
+      </CInputGroup>
+
+      {/* Nombre de la Sección */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Nombre de la Sección</CInputGroupText>
+        <CFormInput value={seccionToUpdate.p_Nombre_seccion || ''} readOnly />
       </CInputGroup>
 
       {/* Selección de Edificio */}
@@ -1264,4 +1242,6 @@ const ListaSecciones = () => {
     </CContainer>
   );
 };
+
 export default ListaSecciones;
+

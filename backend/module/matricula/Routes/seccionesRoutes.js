@@ -1,23 +1,11 @@
 // Archivo: seccionesRoutes.js
 import express from 'express';
-import { obtenerSeccionPorId, 
-         obtenerSeccionesPorPeriodo,
-         obtenerPeriodoActivo,
-         obtenerEdificios, 
-         obtenerEdificioPorId, 
-         obtenerAulasPorEdificio, 
-         obtenerAulas, 
-         obtenerGrados,
-         obtenerSeccionesPorGrado,  
-         obtenerProfesores, 
-         obtenerPeriodos, 
-         generarNombreSeccion, 
-         crearSeccion, 
-         actualizarSeccion, 
-         eliminarSeccion 
-} from '../Controllers/seccionesController.js';
+import { obtenerSecciones, obtenerSeccionPorId, obtenerEdificios, obtenerPeriodoActivo,obtenerSeccionesPorPeriodo,obtenerEdificioPorId, obtenerAulasPorEdificio, obtenerAulas, generarNombreSeccion, obtenerGrados, obtenerSeccionesPorGrado, obtenerProfesores, obtenerPeriodos, crearSeccion, actualizarSeccion, eliminarSeccion } from '../Controllers/seccionesController.js';
 
 const router = express.Router();
+
+// Ruta para obtener todas las secciones 
+router.get('/obtener_secciones/:Cod_secciones?', obtenerSecciones);
 
 // Ruta para obtener una sección específica
 router.get('/obtener_seccion/:Cod_secciones', obtenerSeccionPorId);
