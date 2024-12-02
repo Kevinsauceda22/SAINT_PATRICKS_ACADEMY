@@ -396,7 +396,6 @@ const preventCopyPaste = (e) => {
 
     // Validación de campos obligatorios
     if (!nuevaCaja.descripcion || !nuevaCaja.monto || !nuevaCaja.cod_concepto || !nuevaCaja.dni_padre) {
-        console.log("Validación fallida");
         await MySwal.fire({
             icon: 'error',
             title: 'Error',
@@ -445,55 +444,44 @@ const preventCopyPaste = (e) => {
     }
 
     // Validación de descuento (si aplica)
-    if (nuevaCaja.aplicar_descuento) {
-        if (nuevaCaja.valor_descuento > nuevaCaja.monto) {
+    let descuentoAplicado = 0;
+
+    if (nuevaCaja.aplicar_descuento && nuevaCaja.valor_descuento) {
+        const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
+
+        if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
             await MySwal.fire({
                 icon: 'error',
                 title: 'Error en el descuento',
-                text: 'El valor del descuento no puede ser mayor al monto total.',
+                text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
             });
             return;
         }
 
-        if (nuevaCaja.descripcion_descuento && nuevaCaja.descripcion_descuento.length > 25) {
-            await MySwal.fire({
-                icon: 'error',
-                title: 'Error en la descripción del descuento',
-                text: 'La descripción del descuento no puede exceder los 25 caracteres.',
-            });
-            return;
-        }
+        descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
+    }
 
-        if (/([A-Z])\1\1/.test(nuevaCaja.descripcion_descuento)) {
-            await MySwal.fire({
-                icon: 'error',
-                title: 'Error en la descripción del descuento',
-                text: 'La descripción del descuento no puede contener tres letras iguales consecutivas.',
-            });
-            return;
-        }
+    const montoFinal = nuevaCaja.monto - descuentoAplicado;
 
-        if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion_descuento)) {
-            await MySwal.fire({
-                icon: 'error',
-                title: 'Error en la descripción del descuento',
-                text: 'La descripción del descuento no puede contener símbolos o caracteres especiales.',
-            });
-            return;
-        }
+    if (montoFinal < 0) {
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en el monto',
+            text: 'El monto final no puede ser negativo.',
+        });
+        return;
     }
 
     try {
         // Preparar los datos para enviar al servidor
         const datosCaja = {
             descripcion: nuevaCaja.descripcion,
-            monto: parseFloat(nuevaCaja.monto),
+            monto: montoFinal, // Monto ajustado con descuento aplicado
             cod_concepto: nuevaCaja.cod_concepto,
             dni_padre: nuevaCaja.dni_padre,
             estado_pago: 'Pendiente',
             aplicar_descuento: nuevaCaja.aplicar_descuento || false,
-            valor_descuento: nuevaCaja.aplicar_descuento ? parseFloat(nuevaCaja.valor_descuento) : null,
-            descripcion_descuento: nuevaCaja.aplicar_descuento ? nuevaCaja.descripcion_descuento : null,
+            cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
         };
 
         console.log("Datos enviados al servidor:", datosCaja);
@@ -503,6 +491,19 @@ const preventCopyPaste = (e) => {
 
         if (response.status === 201 || response.status === 200) {
             console.log("Caja creada exitosamente");
+
+            // Construir datos para el PDF
+            const cajaConDatos = {
+                Cod_caja: response.data.cod_caja || 'No disponible',
+                Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
+                Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
+                Descripcion: nuevaCaja.descripcion,
+                Monto: montoFinal,
+                Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
+                Estado_pago: 'Pendiente',
+                Fecha_pago: new Date(),
+                Hora_registro: new Date(),
+            };
 
             // Mostrar la alerta de éxito
             await MySwal.fire({
@@ -516,13 +517,13 @@ const preventCopyPaste = (e) => {
                 title: '¿Desea imprimir el recibo?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Sí',
+                confirmButtonText: 'Sí, generar',
                 cancelButtonText: 'No',
             });
 
             if (imprimir.isConfirmed) {
                 // Llamar a la función para generar el PDF
-                generarReporteIndividual(datosCaja, nuevaCaja.monto, 0); // Ajustar si es necesario
+                generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
             }
 
             // Reiniciar el modal y recargar datos
@@ -550,6 +551,7 @@ const preventCopyPaste = (e) => {
         });
     }
 };
+
 
   
 
