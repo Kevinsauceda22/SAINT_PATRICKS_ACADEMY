@@ -319,39 +319,37 @@ const enviarCorreoRecuperacion = async (correo, token) => {
     } catch (error) {
         console.error('Error al enviar el correo de recuperación:', error.message);
     }
-};const enviarNotificacionNuevaActividad = async (correo_padre, nombre_padre, actividad) => {
+};
+
+const enviarNotificacionNuevaActividad = async (correo_padre, nombre_padre, actividad) => {
     const content = `
         <div class="welcome-text">
-            Estimado/a ${nombre_padre}
+            <strong style="color: #000;"> Estimado/a ${nombre_padre}</strong>
         </div>
         <div class="message-box">
             Le informamos que se ha programado una nueva actividad académica para su hijo/a.
         </div>
 
         <div class="message-box" style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
-            <p style="margin: 0;"><strong>Detalles de la actividad:</strong></p>
-            <div style="margin: 15px 0;">
-                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${actividad.nombre}</p>
-                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${actividad.fecha}</p>
-                <p style="margin: 5px 0;"><strong>Hora:</strong> ${actividad.hora}</p>
-                <p style="margin: 5px 0;"><strong>Lugar:</strong> ${actividad.lugar}</p>
-                <p style="margin: 5px 0;"><strong>Descripción:</strong> ${actividad.descripcion}</p>
+            <p style="margin: 0; color: #000;"><strong>Detalles de la actividad programada:</strong></p>
+            <div style="margin: 15px 0; color: #000;">
+             <p style="margin: 5px 0; color: #000;"><strong>Grado:</strong> ${actividad.nombre_grado}</p> <!-- Cambio aquí -->
+                <p style="margin: 5px 0; color: #000;"><strong>Sección:</strong> ${actividad.nombre_seccion}</p> <!-- Cambio aquí -->
+                <p style="margin: 5px 0; color: #000;;"><strong>Nombre:</strong> ${actividad.nombre}</p>
+                 <p style="margin: 5px 0; color: #000;;"><strong>Descripción:</strong> ${actividad.descripcion}</p>
+                <p style="margin: 5px 0; color: #000;;"><strong>Fecha:</strong> ${actividad.fecha}</p>
+                <p style="margin: 5px 0; color: #000;;"><strong>Hora:</strong> ${actividad.hora}</p>
+               
             </div>
         </div>
 
         <div class="message-box" style="background-color: #fff3e0; border-left: 4px solid #ff9800;">
             <p><strong>⚠️ Importante:</strong></p>
-            <ul style="margin: 10px 0; padding-left: 20px;">
+            <ul style="margin: 10px 0; padding-left: 20px; color: #000;">
                 <li>Por favor, tome nota de la fecha y hora de la actividad.</li>
                 <li>Asegúrese de que su hijo/a cuente con los materiales necesarios.</li>
                 <li>Si tiene alguna pregunta, no dude en contactar con el profesor responsable.</li>
             </ul>
-        </div>
-
-        <div class="message-box" style="text-align: center;">
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/calendario" class="verify-button">
-                Ver Calendario de Actividades
-            </a>
         </div>
     `;
 
@@ -369,42 +367,33 @@ const enviarCorreoRecuperacion = async (correo, token) => {
         throw new Error('Error al enviar el correo de notificación de nueva actividad');
     }
 };
-
-const enviarNotificacionCancelacionActividad = async (correo_padre, nombre_padre, actividad, motivo) => {
+const enviarNotificacionCancelacionActividad = async (correo_padre, nombre_padre, actividad) => {
     const content = `
-        <div class="welcome-text">
-            Estimado/a ${nombre_padre}
-        </div>
-        <div class="message-box" style="background-color: #ffebee; border-left: 4px solid #ef5350;">
-            <p><strong>Aviso Importante:</strong></p>
-            <p>Le informamos que la siguiente actividad académica ha sido cancelada:</p>
-        </div>
+    <div class="welcome-text">
+        <strong style="color: #000;">Estimado/a ${nombre_padre},</strong>
+    </div>
+    <div class="message-box" style="background-color: #ffebee; border-left: 4px solid #ef5350; padding: 10px;">
+        <p ><strong style="color: #000;">Aviso Importante:</strong></p>
+        <p style="color: #000;">Le informamos que la siguiente actividad académica ha sido cancelada.</p>
+        <p><strong>Motivo de la cancelación:</strong> ${actividad.motivo_cancelacion}</p> <!-- Mostrar motivo -->
+    </div>
 
-        <div class="message-box">
-            <p style="margin: 0;"><strong>Detalles de la actividad cancelada:</strong></p>
-            <div style="margin: 15px 0;">
-                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${actividad.nombre}</p>
-                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${actividad.fecha}</p>
-                <p style="margin: 5px 0;"><strong>Hora:</strong> ${actividad.hora}</p>
-                <p style="margin: 5px 0;"><strong>Lugar:</strong> ${actividad.lugar}</p>
-            </div>
+    <div class="message-box" style="background-color: #fff3e0; border-left: 4px solid #ff9800;">
+        <p style="margin: 0; color: #000;"><strong>Detalles de la actividad cancelada:</strong></p>
+        <div style="margin: 15px 0; color: #000;">
+            <p style="margin: 5px 0; color: #000;"><strong>Grado:</strong> ${actividad.nombre_grado}</p>
+            <p style="margin: 5px 0; color: #000;"><strong>Sección:</strong> ${actividad.nombre_seccion}</p>
+            <p style="margin: 5px 0; color: #000;"><strong>Nombre:</strong> ${actividad.nombre}</p>
+            <p style="margin: 5px 0; color: #000;"><strong>Descripción:</strong> ${actividad.descripcion}</p>
+            <p style="margin: 5px 0; color: #000;"><strong>Fecha:</strong> ${actividad.fecha}</p>
+            <p style="margin: 5px 0; color: #000;"><strong>Hora:</strong> ${actividad.hora}</p>
         </div>
+    </div>
 
-        <div class="message-box" style="background-color: #f5f5f5; border-left: 4px solid #9e9e9e;">
-            <p><strong>Motivo de la cancelación:</strong></p>
-            <p>${motivo}</p>
-        </div>
-
-        <div class="message-box">
-            <p>En caso de que la actividad sea reprogramada, se le notificará oportunamente a través de un nuevo correo electrónico.</p>
-            <p>Lamentamos cualquier inconveniente que esto pueda causar.</p>
-        </div>
-
-        <div class="message-box" style="text-align: center;">
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/calendario" class="verify-button">
-                Ver Calendario Actualizado
-            </a>
-        </div>
+    <div class="message-box" style="padding: 10px;">
+        <p>En caso de que la actividad sea reprogramada, se le notificará oportunamente a través de un nuevo correo electrónico.</p>
+        <p>Lamentamos cualquier inconveniente que esto pueda causar.</p>
+    </div>
     `;
 
     try {
@@ -414,8 +403,7 @@ const enviarNotificacionCancelacionActividad = async (correo_padre, nombre_padre
             subject: 'Cancelación de Actividad Académica - Saint Patrick\'s Academy',
             html: getEmailTemplate(content, 'Cancelación de Actividad'),
         });
-        console.log('Correo de cancelación de actividad enviado correctamente');
-        return true;
+        console.log(`Correo enviado a ${correo_padre}`);
     } catch (error) {
         console.error('Error al enviar el correo de cancelación:', error.message);
         throw new Error('Error al enviar el correo de notificación de cancelación');
@@ -423,45 +411,32 @@ const enviarNotificacionCancelacionActividad = async (correo_padre, nombre_padre
 };
 
 
-const enviarNotificacionCambioActividad = async (correo_padre, nombre_padre, actividad_anterior, actividad_actual) => {
+const enviarNotificacionCambioActividad = async (correo_padre, nombre_padre, actividad_actual) => {
     const content = `
         <div class="welcome-text">
-            Estimado/a ${nombre_padre}
+          <strong style="color: #000;"> Estimado/a ${nombre_padre}</strong>
         </div>
         <div class="message-box" style="background-color: #fffde7; border-left: 4px solid #ffeb3b;">
             <p><strong>Aviso Importante:</strong></p>
             <p>Le informamos que la siguiente actividad académica ha sido actualizada:</p>
         </div>
-
-        <div class="message-box">
-            <p style="margin: 0;"><strong>Detalles anteriores de la actividad:</strong></p>
-            <div style="margin: 15px 0;">
-                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${actividad_anterior.nombre}</p>
-                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${actividad_anterior.fecha}</p>
-                <p style="margin: 5px 0;"><strong>Hora:</strong> ${actividad_anterior.hora}</p>
-                <p style="margin: 5px 0;"><strong>Lugar:</strong> ${actividad_anterior.lugar}</p>
-            </div>
-        </div>
-
+      
         <div class="message-box" style="background-color: #e8f5e9; border-left: 4px solid #4caf50;">
-            <p style="margin: 0;"><strong>Detalles actualizados de la actividad:</strong></p>
-            <div style="margin: 15px 0;">
-                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${actividad_actual.nombre}</p>
-                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${actividad_actual.fecha}</p>
-                <p style="margin: 5px 0;"><strong>Hora:</strong> ${actividad_actual.hora}</p>
-                <p style="margin: 5px 0;"><strong>Lugar:</strong> ${actividad_actual.lugar}</p>
-                <p style="margin: 5px 0;"><strong>Descripción:</strong> ${actividad_actual.descripcion}</p>
+         <p style="margin: 0; color: #000;"><strong>Detalles de la actividad actualizada:</strong></p>
+            <div style="margin: 15px 0; color: #000;">
+               <p style="margin: 5px 0; color: #000;"><strong >Grado:</strong> ${actividad_actual.grado}</p>
+               <p style="margin: 5px 0; color: #000;"><strong >Sección:</strong> ${actividad_actual.seccion}</p>
+                <p style="margin: 5px 0; color: #000;"><strong >Nombre:</strong> ${actividad_actual.nombre}</p>
+                <p style="margin: 5px 0; color: #000;"><strong >Descripción:</strong> ${actividad_actual.descripcion}</p>
+                <p style="margin: 5px 0; color: #000;"><strong >Fecha:</strong> ${actividad_actual.fecha}</p>
+                <p style="margin: 5px 0; color: #000;"><strong >Hora:</strong> ${actividad_actual.hora}</p>
+                
+
             </div>
         </div>
 
         <div class="message-box">
             <p>Por favor, tome nota de los nuevos detalles de la actividad. Agradecemos su atención y comprensión.</p>
-        </div>
-
-        <div class="message-box" style="text-align: center;">
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/calendario" class="verify-button">
-                Ver Calendario Actualizado
-            </a>
         </div>
     `;
 
@@ -479,6 +454,8 @@ const enviarNotificacionCambioActividad = async (correo_padre, nombre_padre, act
         throw new Error('Error al enviar el correo de notificación de actualización');
     }
 };
+
+
 
 
 
