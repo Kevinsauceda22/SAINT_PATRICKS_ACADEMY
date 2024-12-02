@@ -480,6 +480,166 @@ const enviarNotificacionCambioActividad = async (correo_padre, nombre_padre, act
     }
 };
 
+const enviarNotificacionNuevaCita = async (correo_usuario, nombre_usuario, citaDetalles) => {
+    const content = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #4B6251; text-align: center;">Saint Patrick's Academy</h2>
+            <hr style="border: 1px solid #4caf50;" />
+            
+            <div class="welcome-text" style="margin-bottom: 20px;">
+                <p>Estimado/a <strong>${nombre_usuario}</strong>,</p>
+                <p>Te informamos que se ha programado una nueva cita con los siguientes detalles:</p>
+            </div>
+
+            <div class="message-box" style="background-color: #e8f5e9; border-left: 4px solid #4caf50; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+                <p style="margin: 5px 0;"><strong>Nombre:</strong> ${citaDetalles.Nombre_solicitud}</p>
+                <p style="margin: 5px 0;"><strong>Fecha:</strong> ${citaDetalles.Fecha_solicitud}</p>
+                <p style="margin: 5px 0;"><strong>Hora de inicio:</strong> ${citaDetalles.Hora_Inicio}</p>
+                <p style="margin: 5px 0;"><strong>Hora de fin:</strong> ${citaDetalles.Hora_Fin || 'N/A'}</p>
+                <p style="margin: 5px 0;"><strong>Asunto:</strong> ${citaDetalles.Asunto}</p>
+                <p style="margin: 5px 0;"><strong>Persona requerida:</strong> ${citaDetalles.Persona_requerida}</p>
+            </div>
+
+            <div class="message-box" style="padding: 10px; margin-bottom: 20px; border: 1px solid #4caf50; border-radius: 5px; background-color: #f1f8e9;">
+                <h3 style="margin: 0; color: #4caf50;">Recomendaciones:</h3>
+                <p style="margin: 0;">1. Por favor, asegúrese de asistir puntualmente.</p>
+                <p style="margin: 0;">2. Verifique los detalles antes de la fecha y hora indicada.</p>
+                <p style="margin: 0;">3. Contacte al responsable en caso de dudas o cambios.</p>
+            </div>
+
+            <div class="message-box" style="text-align: center; margin-top: 20px;">
+                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                   style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+                    Ver Detalles de la Cita
+                </a>
+            </div>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+            to: correo_usuario,
+            subject: 'Nueva Cita Programada - Saint Patrick\'s Academy',
+            html: getEmailTemplate(content, 'Nueva Cita Programada'),
+        });
+        console.log('Correo de notificación de nueva cita enviado correctamente');
+    } catch (error) {
+        console.error('Error al enviar el correo de nueva cita:', error.message);
+        throw new Error('Error al enviar el correo de notificación de nueva cita');
+    }
+};
+
+const enviarNotificacionCambioCita = async (correo_usuario, nombre_usuario, citaAnterior, citaActual) => {
+    const content = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #4B6251; text-align: center;">Saint Patrick's Academy</h2>
+            <hr style="border: 1px solid #4caf50;" />
+            <p>Estimado/a <strong>${nombre_usuario}</strong>,</p>
+            <p style="font-size: 16px; color: #555;">Se han realizado cambios importantes en la siguiente cita:</p>
+
+            <div class="message-box" style="margin-bottom: 20px;">
+                <h3 style="color: #388e3c;">Nuevos Detalles:</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tr style="background-color: #e8f5e9; color: #388e3c;">
+                        <th style="padding: 10px; text-align: left;">Campo</th>
+                        <th style="padding: 10px; text-align: left;">Valor</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Nombre</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${citaActual?.Nombre_solicitud || 'Sin especificar'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Fecha</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${citaActual?.Fecha_solicitud || 'Sin especificar'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Hora</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${citaActual?.Hora_Inicio || 'N/A'} - ${citaActual?.Hora_Fin || 'N/A'}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="message-box" style="padding: 10px; margin-bottom: 20px; border: 1px solid #4caf50; border-radius: 5px; background-color: #f1f8e9;">
+                <h3 style="margin: 0; color: #4caf50;">Recomendaciones:</h3>
+                <p style="margin: 0;">1. Verifique los nuevos detalles de la cita.</p>
+                <p style="margin: 0;">2. Actualice su calendario según los cambios.</p>
+                <p style="margin: 0;">3. Contacte al responsable si tiene alguna consulta.</p>
+            </div>
+
+            <p style="text-align: center; margin-top: 20px;">
+                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+                    Ver Detalles de la Cita
+                </a>
+            </p>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+            to: correo_usuario,
+            subject: 'Cita Actualizada - Saint Patrick\'s Academy',
+            html: getEmailTemplate(content, 'Cita Actualizada'),
+        });
+        console.log('Notificación de cambio de cita enviada correctamente.');
+    } catch (error) {
+        console.error('Error al enviar notificación de cambio de cita:', error.message);
+        throw new Error('Error al enviar notificación de cambio de cita');
+    }
+};
+
+const enviarNotificacionCancelacionCita = async (correo_usuario, nombre_usuario, citaNombre, motivo) => {
+    const content = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #4B6251; text-align: center;">Saint Patrick's Academy</h2>
+            <hr style="border: 1px solid #ef5350;" />
+            
+            <div class="welcome-text" style="margin-bottom: 20px;">
+                <p>Estimado/a <strong>${nombre_usuario}</strong>,</p>
+                <p>Te informamos que la siguiente cita ha sido cancelada:</p>
+            </div>
+
+            <div class="message-box" style="background-color: #ffebee; border-left: 4px solid #ef5350; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+                <p><strong>Cita Cancelada:</strong> ${citaNombre}</p>
+            </div>
+
+            <div class="message-box" style="padding: 10px; margin-bottom: 20px; border: 1px solid #ef5350; border-radius: 5px; background-color: #ffe6e6;">
+                <h3 style="margin: 0; color: #ef5350;">Motivo de Cancelación:</h3>
+                <p>${motivo || 'No especificado'}</p>
+            </div>
+
+            <div class="message-box" style="padding: 10px; margin-bottom: 20px; border: 1px solid #ef5350; border-radius: 5px; background-color: #ffe6e6;">
+                <h3 style="margin: 0; color: #ef5350;">Recomendaciones:</h3>
+                <p style="margin: 0;">1. Si esta cancelación afecta su agenda, considere reorganizar sus compromisos.</p>
+                <p style="margin: 0;">2. Contacte al responsable si requiere aclaraciones adicionales.</p>
+            </div>
+
+            <div class="message-box" style="text-align: center; margin-top: 20px;">
+                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                   style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+                    Ver Detalles de la Cita
+                </a>
+            </div>
+        </div>
+    `;
+
+    try {
+        await transporter.sendMail({
+            from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+            to: correo_usuario,
+            subject: 'Cita Cancelada - Saint Patrick\'s Academy',
+            html: getEmailTemplate(content, 'Cita Cancelada'),
+        });
+        console.log('Notificación de cancelación enviada correctamente.');
+    } catch (error) {
+        console.error('Error al enviar notificación de cancelación de cita:', error.message);
+        throw new Error('Error al enviar notificación de cancelación de cita');
+    }
+};
+
+
+
 
 
 export { 
@@ -488,5 +648,8 @@ export {
     enviarCorreoCredencialesTemporales,
     enviarNotificacionNuevaActividad,
     enviarNotificacionCancelacionActividad,
-    enviarNotificacionCambioActividad
+    enviarNotificacionCambioActividad,
+    enviarNotificacionNuevaCita,
+    enviarNotificacionCancelacionCita,
+    enviarNotificacionCambioCita
 };
