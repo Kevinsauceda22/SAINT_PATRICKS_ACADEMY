@@ -18,23 +18,6 @@ export const obtenerPersonas = async (req, res) => {
     }
 };
 
-//CONTROLADOR PARA OBTENER DETALLE PERSONA
-export const obtenerDetallePersona = async (req, res) => {
-    const { cod_persona } = req.params; // Obtiene el código de la persona desde la URL
-
-    try {
-        const [rows] = await pool.query('CALL P_Get_Persona_Detalle(?)', [cod_persona]);
-
-        if (rows[0].length > 0) {
-            res.status(200).json(rows[0][0]); // Retorna el primer resultado como un objeto
-        } else {
-            res.status(404).json({ message: 'No se encontró la persona' });
-        }
-    } catch (error) {
-        console.error('Error al obtener el detalle de la persona:', error);
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
-    }
-};
 
 //CONTROLADOR PARA OBTENER DEPARTAMENTOS
 export const obtenerDepartamentos = async (req, res) => {

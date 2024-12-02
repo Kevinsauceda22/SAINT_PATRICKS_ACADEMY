@@ -279,8 +279,8 @@ export const obtenerTodasLasMatriculasPendientes = async (req, res) => {
         tbl_personas AS padre ON estructura.Cod_persona_padre = padre.cod_persona
       JOIN 
         tbl_caja AS c ON matricula.Cod_caja = c.cod_caja
-      WHERE 
-        c.Estado_pago = 'Pendiente'
+      WHERE c.Estado_pago = 'Pendiente' OR c.Estado_pago = 'Pagado';
+
     `);
 
     // Verificar si hay matrículas pendientes
@@ -338,9 +338,7 @@ export const insertarCajaOficialConDescuento = async (req, res) => {
     monto,
     descripcion,
     cod_concepto,
-    aplicar_descuento,
-    valor_descuento,
-    descripcion_descuento,
+    cod_descuento,
   } = req.body;
 
   if (!dni_padre || !monto || !descripcion || !cod_concepto) {
@@ -348,7 +346,7 @@ export const insertarCajaOficialConDescuento = async (req, res) => {
   }
 
   try {
-    // Paso 1: Obtener el cod_persona del padre
+    // Paso 1: Verificar si el padre existe
     const [[padre]] = await pool.query(
       'SELECT cod_persona FROM tbl_personas WHERE dni_persona = ?',
       [dni_padre]
@@ -360,53 +358,56 @@ export const insertarCajaOficialConDescuento = async (req, res) => {
 
     const cod_persona = padre.cod_persona;
 
-    // Paso 2: Insertar la nueva caja en TBL_CAJA
+    // Paso 2: Insertar la nueva caja
     const [resultCaja] = await pool.query(
       'INSERT INTO tbl_caja (Fecha, Monto, Descripcion, Cod_persona, Cod_concepto, Estado_pago) VALUES (CURDATE(), ?, ?, ?, ?, ?)',
-      [monto, descripcion, cod_persona, cod_concepto, 'Pendiente']
+      [monto, descripcion, cod_persona, cod_concepto, 'Pagado']
     );
 
     const nuevoCodCaja = resultCaja.insertId;
 
     let descuentoAplicado = 0;
-    let codDescuento = null;
 
-    if (aplicar_descuento) {
-      // Paso 3: Crear el descuento en TBL_DESCUENTOS
-      const fechaActual = new Date();
-      const [resultDescuento] = await pool.query(
-        'INSERT INTO tbl_descuentos (Valor, Fecha_inicio, Fecha_fin, Descripcion) VALUES (?, ?, DATE_ADD(?, INTERVAL 30 DAY), ?)',
-        [valor_descuento, fechaActual, fechaActual, descripcion_descuento]
+    // Paso 3: Verificar y aplicar descuento
+    if (cod_descuento) {
+      const [[descuento]] = await pool.query(
+        'SELECT Valor, IF(Valor <= 1, "PORCENTAJE", "MONTO") AS Tipo FROM tbl_descuentos WHERE Cod_descuento = ?',
+        [cod_descuento]
       );
 
-      codDescuento = resultDescuento.insertId;
-
-      // Calcular el descuento aplicado
-      if (valor_descuento <= 1) {
-        descuentoAplicado = monto * valor_descuento; // Porcentaje
-      } else {
-        descuentoAplicado = valor_descuento; // Monto fijo
+      if (!descuento) {
+        return res.status(404).json({ message: 'El descuento proporcionado no existe.' });
       }
 
-      // Paso 4: Registrar la relación entre caja y descuento en TBL_CAJA_DESCUENTO
+      const { Valor: valor_descuento, Tipo: tipo_descuento } = descuento;
+
+      if (tipo_descuento === 'PORCENTAJE') {
+        descuentoAplicado = monto * valor_descuento; // Descuento porcentual
+      } else {
+        descuentoAplicado = valor_descuento; // Descuento fijo
+      }
+
+      // Registrar la relación entre caja y descuento
       await pool.query(
         'INSERT INTO tbl_caja_descuento (Cod_caja, Cod_descuento) VALUES (?, ?)',
-        [nuevoCodCaja, codDescuento]
-      );
-
-      // Actualizar el monto en TBL_CAJA
-      const montoFinal = Math.max(0, monto - descuentoAplicado);
-      await pool.query(
-        'UPDATE tbl_caja SET Monto = ? WHERE Cod_caja = ?',
-        [montoFinal, nuevoCodCaja]
+        [nuevoCodCaja, cod_descuento]
       );
     }
+
+    // Calcular el monto final
+    const montoFinal = Math.max(0, monto - descuentoAplicado);
+
+    // Paso 4: Actualizar la caja con el monto final
+    await pool.query(
+      'UPDATE tbl_caja SET Monto = ? WHERE Cod_caja = ?',
+      [montoFinal, nuevoCodCaja]
+    );
 
     res.status(201).json({
       message: 'Caja oficial creada exitosamente.',
       cod_caja: nuevoCodCaja,
       descuento_aplicado: descuentoAplicado,
-      cod_descuento: codDescuento,
+      monto_final: montoFinal,
     });
   } catch (error) {
     console.error('Error al crear la caja oficial con descuento:', error);
@@ -414,9 +415,10 @@ export const insertarCajaOficialConDescuento = async (req, res) => {
   }
 };
 
+
 export const obtenerTodasLasCajasPendientes = async (req, res) => {
   try {
-    const [cajasPendientes] = await pool.query(`
+    const [cajas] = await pool.query(`
       SELECT 
         c.Cod_caja,
         c.Monto,
@@ -431,32 +433,33 @@ export const obtenerTodasLasCajasPendientes = async (req, res) => {
       LEFT JOIN 
         tbl_personas AS p ON c.Cod_persona = p.Cod_persona
       WHERE 
-        c.Estado_pago = 'Pendiente'
+        c.Estado_pago IN ('Pendiente', 'Pagado')
       ORDER BY 
         c.Fecha DESC, 
         c.Hora_registro DESC
     `);
 
     // Si no hay resultados
-    if (!cajasPendientes.length) {
-      return res.status(404).json({ message: 'No se encontraron cajas pendientes.' });
+    if (!cajas.length) {
+      return res.status(404).json({ message: 'No se encontraron cajas con los estados especificados.' });
     }
 
     // Devolver los datos al frontend
-    return res.status(200).json({ data: cajasPendientes });
+    return res.status(200).json({ data: cajas });
   } catch (error) {
-    console.error('Error al obtener las cajas pendientes:', error);
+    console.error('Error al obtener las cajas:', error);
     return res.status(500).json({
-      message: 'Ocurrió un error al obtener las cajas pendientes.',
+      message: 'Ocurrió un error al obtener las cajas.',
       error: error.message,
     });
   }
 };
+
 // Controlador para obtener el valor del parámetro "Matricula"
 export const obtenerValorMatricula = async (req, res) => {
   try {
     // Consulta para obtener el valor del parámetro "Matricula"
-    const [rows] = await pool.query('SELECT Valor FROM bl_parametros WHERE Parametro = ?', ['Matricula']);
+    const [rows] = await pool.query('SELECT Valor FROM tbl_parametros WHERE Parametro = ?', ['Matricula']);
 
     if (rows.length === 0) {
       // Si no se encuentra el parámetro
@@ -476,20 +479,20 @@ export const obtenerConceptoMatricula = async (req, res) => {
     // Consulta para obtener el código del concepto "Matricula"
     const [rows] = await pool.query(
       'SELECT Cod_concepto FROM tbl_concepto_pago WHERE Concepto = ?',
-      ['matricula']
+      ['Pago de matricula']
     );
 
     if (rows.length === 0) {
       // Si no se encuentra el concepto
       return res
         .status(404)
-        .json({ message: 'El concepto "Matricula" no se encontró.' });
+        .json({ message: 'El concepto "Pago de matricula" no se encontró.' });
     }
 
     // Devolver solo el código del concepto
     res.status(200).json({ cod_concepto: rows[0].Cod_concepto });
   } catch (error) {
-    console.error('Error al obtener el concepto "Matricula":', error);
+    console.error('Error al obtener el concepto "Pago de matricula":', error);
     res.status(500).json({ message: 'Error interno del servidor.' });
   }
 };
@@ -530,6 +533,43 @@ export const buscarCajasPorDni = async (req, res) => {
     res.status(200).json({ data: results });
   } catch (error) {
     console.error('Error al buscar cajas por DNI:', error);
+    res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
+  }
+};
+
+export const obtenerValorMensualidad = async (req, res) => {
+  const { concepto } = req.query; // Recibe el concepto desde el frontend
+
+  try {
+    // Validar si el parámetro 'concepto' es proporcionado
+    if (!concepto || typeof concepto !== 'string') {
+      return res.status(400).json({
+        message: 'El parámetro "concepto" es obligatorio y debe ser una cadena de texto.',
+      });
+    }
+
+    // Validar si el concepto es una mensualidad
+    if (!concepto.toLowerCase().includes('mensualidad')) {
+      return res.status(200).json({ valor: null }); // No es una mensualidad, retorna null
+    }
+
+    // Consultar el valor de la mensualidad en `tbl_parametros`
+    const [rows] = await pool.query(
+      'SELECT Valor FROM tbl_parametros WHERE Parametro = ?',
+      ['Mensualidad']
+    );
+
+    // Validar si existe el valor
+    if (rows.length === 0 || !rows[0].Valor) {
+      return res.status(404).json({
+        message: 'No se encontró el valor de la mensualidad en los parámetros.',
+      });
+    }
+
+    // Retornar el valor de la mensualidad
+    res.status(200).json({ valor: rows[0].Valor });
+  } catch (error) {
+    console.error('Error al obtener el valor de la mensualidad:', error);
     res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
   }
 };

@@ -104,6 +104,11 @@ app.use('/api/roles', PermisosRoutes);
 // Registrar las rutas
 app.use('/api/usuarios', cuentasRouter);
 
+
+//Personas
+app.use('/api/tipoRelacion', tipoRelacionRoutes);
+app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
+
 // Calificaciones
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/auth/', usuariosRoutes); 
