@@ -22,7 +22,7 @@ import {
   CFormSelect,
 } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription } from "@coreui/icons";
+import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilDescription, cilWarning } from "@coreui/icons";
 import swal from "sweetalert2";
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import { jsPDF } from 'jspdf';
@@ -36,7 +36,19 @@ const ListaNacionalidad = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Número inicial de registros por página
-
+  const [nuevaNacionalidad, setNuevaNacionalidad] = useState({
+    Id_nacionalidad: "",
+    pais_nacionalidad: "",
+    pais: "",
+  });
+  const [errors, setErrors] = useState({
+    Id_nacionalidad: "",
+    pais_nacionalidad: "",
+    pais: "",
+  });
+  
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   useEffect(() => {
     fetchNacionalidades();
   }, []);
@@ -46,8 +58,10 @@ const ListaNacionalidad = () => {
       const response = await fetch("http://localhost:4000/api/nacionalidad/verNacionalidades");
       if (!response.ok) throw new Error("Error al cargar nacionalidades");
       const data = await response.json();
-      // Ordenar las nacionalidades alfabéticamente por el campo 'pais'
-      const sortedData = data.sort((a, b) => a.pais.localeCompare(b.pais));
+      
+      // Ordenar alfabéticamente por Id_nacionalidad
+      const sortedData = data.sort((a, b) => a.Id_nacionalidad.localeCompare(b.Id_nacionalidad));
+  
       setNacionalidades(sortedData);
     } catch (error) {
       console.error("Error:", error);
@@ -185,70 +199,224 @@ const ListaNacionalidad = () => {
     window.open(pdfBlobUrl); // Abre el archivo automáticamente en el navegador
   };
   
+  const handleCreateOrUpdateNacionalidad = async () => {
+    if (isSubmitting) return;
   
-
-  const handleSaveNacionalidad = async () => {
+    const errorsTemp = {};
+  
+    // Validar campos vacíos
+    if (!nuevaNacionalidad.Id_nacionalidad.trim()) {
+      errorsTemp.Id_nacionalidad = 'El campo "Id Nacionalidad" no puede estar vacío.';
+    }
+  
+    if (!nuevaNacionalidad.pais_nacionalidad.trim()) {
+      errorsTemp.pais_nacionalidad = 'El campo "País Nacionalidad" no puede estar vacío.';
+    }
+  
+    if (!nuevaNacionalidad.pais.trim()) {
+      errorsTemp.pais = 'El campo "País" no puede estar vacío.';
+    }
+  
+    // Validar si contiene al menos una vocal
+    const vocalRegex = /[AEIOUÁÉÍÓÚÜÑ]/i;
+    if (nuevaNacionalidad.pais_nacionalidad.trim() && !vocalRegex.test(nuevaNacionalidad.pais_nacionalidad)) {
+      errorsTemp.pais_nacionalidad = 'El campo "País Nacionalidad" debe contener al menos una vocal.';
+    }
+  
+    if (nuevaNacionalidad.pais.trim() && !vocalRegex.test(nuevaNacionalidad.pais)) {
+      errorsTemp.pais = 'El campo "País" debe contener al menos una vocal.';
+    }
+  
+    // Si hay errores, establecerlos y salir
+    if (Object.keys(errorsTemp).length > 0) {
+      setErrors(errorsTemp);
+  
+      // Limpiar los errores automáticamente después de 5 segundos
+      setTimeout(() => {
+        setErrors({});
+      }, 5000);
+      return;
+    }
+  
+    // Validar duplicados
+    const duplicados = [];
+    if (
+      nacionalidades.some(
+        (item) =>
+          item.Id_nacionalidad.toUpperCase() === nuevaNacionalidad.Id_nacionalidad.trim().toUpperCase() &&
+          (!nacionalidadToEdit || item.Cod_nacionalidad !== nacionalidadToEdit.Cod_nacionalidad)
+      )
+    ) {
+      duplicados.push(`<b>El Id Nacionalidad "${nuevaNacionalidad.Id_nacionalidad.trim()}" ya existe.</b>`);
+    }
+  
+    if (
+      nacionalidades.some(
+        (item) =>
+          item.pais_nacionalidad.toUpperCase() === nuevaNacionalidad.pais_nacionalidad.trim().toUpperCase() &&
+          (!nacionalidadToEdit || item.Cod_nacionalidad !== nacionalidadToEdit.Cod_nacionalidad)
+      )
+    ) {
+      duplicados.push(`<b>El País Nacionalidad "${nuevaNacionalidad.pais_nacionalidad.trim()}" ya existe.</b>`);
+    }
+  
+    if (
+      nacionalidades.some(
+        (item) =>
+          item.pais.toUpperCase() === nuevaNacionalidad.pais.trim().toUpperCase() &&
+          (!nacionalidadToEdit || item.Cod_nacionalidad !== nacionalidadToEdit.Cod_nacionalidad)
+      )
+    ) {
+      duplicados.push(`<b>El País "${nuevaNacionalidad.pais.trim()}" ya existe.</b>`);
+    }
+  
+    // Mostrar errores de duplicados
+    if (duplicados.length > 0) {
+      const mensaje = duplicados.join('<br>');
+      swal.fire({
+        icon: "error",
+        html: mensaje,
+        timer: 4000,
+        showConfirmButton: false,
+      });
+      return;
+    }
+  
+    setErrors({});
+    setIsSubmitting(true);
+  
+    const url = nacionalidadToEdit
+      ? `http://localhost:4000/api/nacionalidad/actualizarNacionalidades/${nacionalidadToEdit.Cod_nacionalidad}`
+      : "http://localhost:4000/api/nacionalidad/crearNacionalidades";
+  
+    const method = nacionalidadToEdit ? "PUT" : "POST";
+  
     try {
-      const method = nacionalidadToEdit ? "PUT" : "POST";
-      const url = nacionalidadToEdit
-        ? `http://localhost:4000/api/nacionalidad/actualizarNacionalidades/${nacionalidadToEdit.Cod_nacionalidad}`
-        : "http://localhost:4000/api/nacionalidad/crearNacionalidades";
-
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nacionalidadToEdit),
+        body: JSON.stringify(nuevaNacionalidad),
       });
-
-      if (!response.ok) throw new Error("Error al guardar nacionalidad");
-
-      swal.fire("Éxito", "Nacionalidad guardada correctamente.", "success");
-      fetchNacionalidades();
-      setModalVisible(false);
-      setNacionalidadToEdit(null);
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        if (nacionalidadToEdit) {
+          setNacionalidades((prevNacionalidades) =>
+            prevNacionalidades.map((item) =>
+              item.Cod_nacionalidad === nacionalidadToEdit.Cod_nacionalidad ? nuevaNacionalidad : item
+            )
+          );
+          swal.fire({
+            icon: "success",
+            html: "<b>Nacionalidad actualizada exitosamente.</b>",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+        } else {
+          setNacionalidades((prevNacionalidades) => [...prevNacionalidades, result]);
+          swal.fire({
+            icon: "success",
+            html: "<b>Nacionalidad creada exitosamente.</b>",
+            timer: 3000,
+            showConfirmButton: false,
+          });
+        }
+        setModalVisible(false);
+        setNuevaNacionalidad({ Id_nacionalidad: "", pais_nacionalidad: "", pais: "" });
+        setNacionalidadToEdit(null);
+        await fetchNacionalidades();
+      } else {
+        swal.fire({
+          icon: "error",
+          html: `<b>${result.Mensaje}</b>`,
+          timer: 3000,
+          showConfirmButton: false,
+        });
+      }
     } catch (error) {
       console.error("Error:", error);
-      swal.fire("Error", "No se pudo guardar la nacionalidad.", "error");
+      swal.fire({
+        icon: "error",
+        html: "<b>Error en el servidor.</b>",
+        timer: 3000,
+        showConfirmButton: false,
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
+  
 
-  const handleDeleteNacionalidad = async (Cod_nacionalidad) => {
+  const handleDeleteNacionalidad = async (Cod_nacionalidad, Id_nacionalidad) => {
     try {
-      const result = await swal.fire({
-        title: "¿Estás seguro?",
-        text: "Esta acción no se puede deshacer.",
-        icon: "warning",
+      console.log("Intentando eliminar nacionalidad:", Cod_nacionalidad, Id_nacionalidad);
+  
+      const confirmResult = await swal.fire({
+        title: "Confirmar Eliminación",
+        html: `¿Estás seguro de que deseas eliminar la nacionalidad: <strong>${Id_nacionalidad || "N/A"}</strong>?`,
         showCancelButton: true,
-        confirmButtonText: "Sí, eliminar",
+        confirmButtonColor: "#FF6B6B", // Color rojo para el botón de confirmar
+        cancelButtonColor: "#6C757D", // Color gris para el botón de cancelar
         cancelButtonText: "Cancelar",
+        confirmButtonText: '<i class="fa fa-trash"></i> Eliminar',
+        reverseButtons: true,
+        focusCancel: true, // Enfoca el botón de cancelar
       });
-
-      if (!result.isConfirmed) return;
-
+  
+      if (!confirmResult.isConfirmed) return;
+  
+      console.log("Enviando solicitud DELETE...");
+  
       const response = await fetch(
-        `http://localhost:4000/api/nacionalidad/eliminarNacionalidades/${Cod_nacionalidad}`,
-        { method: "DELETE" }
+        `http://localhost:4000/api/nacionalidad/eliminarNacionalidades/${encodeURIComponent(Cod_nacionalidad)}`,
+        {
+          method: "DELETE",
+        }
       );
-
-      if (!response.ok) throw new Error("Error al eliminar nacionalidad");
-
-      swal.fire("Eliminado", "Nacionalidad eliminada correctamente.", "success");
-      fetchNacionalidades();
+  
+      console.log("Respuesta del servidor:", response);
+  
+      const result = await response.json();
+      console.log("Resultado del servidor:", result);
+  
+      if (response.ok) {
+        setNacionalidades((prevNacionalidades) =>
+          prevNacionalidades.filter((item) => item.Cod_nacionalidad !== Cod_nacionalidad)
+        );
+        swal.fire({
+          icon: "success",
+          html: "<b>Nacionalidad eliminada exitosamente</b>",
+          timer: 3000,
+          showConfirmButton: false,
+        });
+      } else {
+        throw new Error(result.Mensaje || "Error al eliminar");
+      }
     } catch (error) {
-      console.error("Error:", error);
-      swal.fire("Error", "No se pudo eliminar la nacionalidad.", "error");
+      console.error("Error eliminando la nacionalidad:", error);
+      swal.fire({
+        icon: "error",
+        title: "Error",
+        text: error.message || "No se pudo eliminar la nacionalidad.",
+        timer: 3000,
+        showConfirmButton: false,
+      });
     }
   };
-
+  
+  
   const handleRecordsPerPageChange = (e) => {
     setRecordsPerPage(Number(e.target.value));
     setCurrentPage(1); // Reiniciar a la primera página
   };
 
   const filteredNacionalidades = nacionalidades.filter((nac) =>
-    nac.pais_nacionalidad.toLowerCase().includes(searchTerm.toLowerCase())
+    nac.Id_nacionalidad.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    nac.pais_nacionalidad.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    nac.pais.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
+  
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredNacionalidades.slice(indexOfFirstRecord, indexOfLastRecord);
@@ -258,195 +426,289 @@ const ListaNacionalidad = () => {
 
   return (
     <CContainer>
-      <CRow className="align-items-center mb-5">
-  <CCol xs="8" md="9">
-    <h1>Mantenimiento Nacionalidades</h1>
-  </CCol>
-  <CCol xs="4" md="3" className="text-end">
-    <CButton
-      style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '10px' }}
-      onClick={() => setModalVisible(true)}
-    >
-      <CIcon icon={cilPlus} /> Nuevo
-    </CButton>
-    <CButton
-      style={{ backgroundColor: '#6C8E58', color: 'white' }}
-      onClick={exportToPDF} // Llama a la función que genera el reporte general
-    >
-      <CIcon icon={cilDescription} /> Descargar PDF
-    </CButton>
-    <div className="mt-2" style={{ textAlign: 'right' }}>
-      <span>Mostrar </span>
-      <CFormSelect
-        value={recordsPerPage}
-        onChange={handleRecordsPerPageChange}
-        style={{ maxWidth: '70px', display: 'inline-block', margin: '0 5px' }}
+  <CRow className="align-items-center mb-5">
+    <CCol xs="8" md="9">
+      <h1>Mantenimiento Nacionalidades</h1>
+    </CCol>
+    <CCol xs="4" md="3" className="text-end">
+      <CButton
+        style={{ backgroundColor: "#4B6251", color: "white", marginRight: "10px" }}
+        onClick={() => {
+          setModalVisible(true);
+          setNacionalidadToEdit(null);
+          setNuevaNacionalidad({ Id_nacionalidad: "", pais_nacionalidad: "", pais: "" });
+        }}
       >
-        <option value={5}>5</option>
-        <option value={10}>10</option>
-        <option value={20}>20</option>
-      </CFormSelect>
-      <span> registros</span>
-    </div>
-  </CCol>
-</CRow>
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+      <CButton
+        style={{ backgroundColor: "#6C8E58", color: "white" }}
+        onClick={exportToPDF} // Función de reporte general
+      >
+        <CIcon icon={cilDescription} /> Descargar PDF
+      </CButton>
+      <div className="mt-2" style={{ textAlign: "right" }}>
+        <span>Mostrar </span>
+        <CFormSelect
+          value={recordsPerPage}
+          onChange={handleRecordsPerPageChange}
+          style={{ maxWidth: "70px", display: "inline-block", margin: "0 5px" }}
+        >
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+        </CFormSelect>
+        <span> registros</span>
+      </div>
+    </CCol>
+  </CRow>
 
+  <CInputGroup className="mb-3" style={{ maxWidth: "400px" }}>
+    <CInputGroupText>
+      <CIcon icon={cilSearch} />
+    </CInputGroupText>
+    <CFormInput
+      placeholder="Buscar nacionalidad..."
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+    <CButton
+      style={{
+        backgroundColor: "#f0f0f0",
+        border: "2px solid #d3d3d3",
+        color: "#4B6251",
+      }}
+      onClick={() => setSearchTerm("")}
+    >
+      <i className="fa fa-broom" style={{ marginRight: "5px" }}></i> Limpiar
+    </CButton>
+  </CInputGroup>
 
-      <CInputGroup className="mb-3" style={{ maxWidth: '400px' }}>
-        <CInputGroupText>
-          <CIcon icon={cilSearch} />
-        </CInputGroupText>
-        <CFormInput
-          placeholder="Buscar nacionalidad..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <CButton
-  style={{
-    backgroundColor: "#f0f0f0",
-    border: "2px solid #d3d3d3",
-    color: "#4B6251",
-  }}
->
-<i className="fa fa-broom" style={{ marginRight: '5px' }}></i> Limpiar
-</CButton>
-
-      </CInputGroup>
-
-
-
-      <CTable striped bordered hover>
-        <CTableHead>
-          <CTableRow>
-            <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>Id Nacionalidad</CTableHeaderCell>
-            <CTableHeaderCell>País Nacionalidad</CTableHeaderCell>
-            <CTableHeaderCell>País</CTableHeaderCell>
-            <CTableHeaderCell>Acciones</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-        <CTableBody>
-          {currentRecords.map((nac, index) => (
-            <CTableRow key={nac.Cod_nacionalidad}>
-              <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-              <CTableDataCell>{nac.Id_nacionalidad}</CTableDataCell>
-              <CTableDataCell>{nac.pais_nacionalidad}</CTableDataCell>
-              <CTableDataCell>{nac.pais}</CTableDataCell>
-              <CTableDataCell>
-                <CButton
-                  color="warning"
-                  size="sm"
-                  onClick={() => {
-                    setNacionalidadToEdit(nac);
-                    setModalVisible(true);
-                  }}
-                >
-                  <CIcon icon={cilPen} />
-                </CButton>
-                <CButton
-                  color="danger"
-                  size="sm"
-                  className="ms-2"
-                  onClick={() => handleDeleteNacionalidad(nac.Cod_nacionalidad)}
-                >
-                  <CIcon icon={cilTrash} />
-                </CButton>
-                <CButton
-  color="info"
+  <CTable striped bordered hover>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell>Id Nacionalidad</CTableHeaderCell>
+        <CTableHeaderCell>País Nacionalidad</CTableHeaderCell>
+        <CTableHeaderCell>País</CTableHeaderCell>
+        <CTableHeaderCell>Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords.map((nac, index) => (
+        <CTableRow key={nac.Cod_nacionalidad}>
+          <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
+          <CTableDataCell>{nac.Id_nacionalidad}</CTableDataCell>
+          <CTableDataCell>{nac.pais_nacionalidad}</CTableDataCell>
+          <CTableDataCell>{nac.pais}</CTableDataCell>
+          <CTableDataCell>
+            <CButton
+              color="warning"
+              size="sm"
+              onClick={() => {
+                setNacionalidadToEdit(nac);
+                setNuevaNacionalidad(nac);
+                setModalVisible(true);
+              }}
+            >
+              <CIcon icon={cilPen} /> 
+            </CButton>
+            <CButton
+  color="danger"
   size="sm"
   className="ms-2"
-  onClick={() => exportIndividualToPDF(nac)}
+  onClick={() => handleDeleteNacionalidad(nac.Cod_nacionalidad, nac.Id_nacionalidad)}
 >
-<CIcon icon={cilDescription} style={{ color: "black", marginRight: "5px" }} />
-  Descargar PDF
+  <CIcon icon={cilTrash} />
 </CButton>
 
-              </CTableDataCell>
-            </CTableRow>
-          ))}
-        </CTableBody>
-      </CTable>
+            <CButton
+              color="info"
+              size="sm"
+              className="ms-2"
+              onClick={() => exportIndividualToPDF(nac)} // Función de reporte individual
+            >
+              <CIcon icon={cilDescription} style={{ color: "black", marginRight: "5px" }} />
+              Descargar PDF
+            </CButton>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
 
-      <CPagination align="center" className="my-3">
-  <CButton
-    style={{
-      backgroundColor: "#7fa573", // Verde claro
-      color: "white",
-      padding: "10px 20px",
-      marginRight: "10px",
-      borderRadius: "5px",
-      border: "none",
-      fontSize: "16px",
-    }}
-    onClick={() => paginate(currentPage - 1)}
-    disabled={currentPage === 1}
-  >
-    Anterior
-  </CButton>
-  <CButton
-    style={{
-      backgroundColor: "#7fa573", // Verde claro
-      color: "white",
-      padding: "10px 20px",
-      marginLeft: "10px",
-      borderRadius: "5px",
-      border: "none",
-      fontSize: "16px",
-    }}
-    onClick={() => paginate(currentPage + 1)}
-    disabled={currentPage === totalPages || filteredNacionalidades.length === 0}
-  >
-    Siguiente
-  </CButton>
-  <span
-    style={{
-      marginLeft: "20px",
-      color: "black",
-      fontSize: "16px",
-    }}
-  >
-    Página {currentPage} de {totalPages}
-  </span>
-</CPagination>
+  <CPagination align="center" className="my-3">
+    <CButton
+      style={{
+        backgroundColor: "#7fa573", // Verde claro
+        color: "white",
+        padding: "10px 20px",
+        marginRight: "10px",
+        borderRadius: "5px",
+        border: "none",
+        fontSize: "16px",
+      }}
+      onClick={() => paginate(currentPage - 1)}
+      disabled={currentPage === 1}
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{
+        backgroundColor: "#7fa573", // Verde claro
+        color: "white",
+        padding: "10px 20px",
+        marginLeft: "10px",
+        borderRadius: "5px",
+        border: "none",
+        fontSize: "16px",
+      }}
+      onClick={() => paginate(currentPage + 1)}
+      disabled={currentPage === totalPages || filteredNacionalidades.length === 0}
+    >
+      Siguiente
+    </CButton>
+    <span
+      style={{
+        marginLeft: "20px",
+        color: "black",
+        fontSize: "16px",
+      }}
+    >
+      Página {currentPage} de {totalPages}
+    </span>
+  </CPagination>
+
+  <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+    <CModalHeader>
+      <CModalTitle>
+        {nacionalidadToEdit ? "Actualizar Nacionalidad" : "Nueva Nacionalidad"}
+      </CModalTitle>
+    </CModalHeader>
+    <CModalBody>
+  {/* Campo Id Nacionalidad */}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Id Nacionalidad</CInputGroupText>
+    <CFormInput
+      placeholder="Ingrese ID Nacionalidad"
+      value={nuevaNacionalidad.Id_nacionalidad}
+      onChange={(e) => {
+        let value = e.target.value
+          .replace(/[^A-Za-zÁÉÍÓÚÜÑ0-9 ]/gi, '') // Permitir solo letras, números y espacios
+          .replace(/^\s+/, '') // Eliminar espacios al inicio
+          .replace(/\s{2,}/g, ' ') // Reemplazar múltiples espacios por uno
+          .toUpperCase(); // Convertir a mayúsculas
+
+        if (value.length <= 25) {
+          setNuevaNacionalidad({ ...nuevaNacionalidad, Id_nacionalidad: value });
+        }
+      }}
+      onKeyDown={(e) => {
+        if (nuevaNacionalidad.Id_nacionalidad.length >= 25 && e.key !== "Backspace") {
+          e.preventDefault();
+        }
+      }}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+      onPaste={(e) => e.preventDefault()}
+    />
+  </CInputGroup>
+  {errors.Id_nacionalidad && (
+    <div style={{ marginTop: "5px", fontSize: "0.9rem", fontWeight: "bold", color: "#000000", display: "flex", alignItems: "center" }}>
+      <CIcon icon={cilWarning} style={{ color: "#FFC107", marginRight: "5px", fontSize: "1.2rem" }} />
+      {errors.Id_nacionalidad}
+    </div>
+  )}
+
+  {/* Campo País Nacionalidad */}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>País Nacionalidad</CInputGroupText>
+    <CFormInput
+      placeholder="Ingrese País Nacionalidad"
+      value={nuevaNacionalidad.pais_nacionalidad}
+      onChange={(e) => {
+        let value = e.target.value
+          .replace(/[^A-Za-zÁÉÍÓÚÜÑ ]/gi, '') // Permitir solo letras y espacios
+          .replace(/^\s+/, '') // Eliminar espacios al inicio
+          .replace(/\s{2,}/g, ' ') // Reemplazar múltiples espacios por uno
+          .toUpperCase();
+
+        if (value.length <= 100) {
+          setNuevaNacionalidad({ ...nuevaNacionalidad, pais_nacionalidad: value });
+        }
+      }}
+      onKeyDown={(e) => {
+        if (nuevaNacionalidad.pais_nacionalidad.length >= 100 && e.key !== "Backspace") {
+          e.preventDefault();
+        }
+      }}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+      onPaste={(e) => e.preventDefault()}
+    />
+  </CInputGroup>
+  {errors.pais_nacionalidad && (
+    <div style={{ marginTop: "5px", fontSize: "0.9rem", fontWeight: "bold", color: "#000000", display: "flex", alignItems: "center" }}>
+      <CIcon icon={cilWarning} style={{ color: "#FFC107", marginRight: "5px", fontSize: "1.2rem" }} />
+      {errors.pais_nacionalidad}
+    </div>
+  )}
+
+  {/* Campo País */}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>País</CInputGroupText>
+    <CFormInput
+      placeholder="Ingrese País"
+      value={nuevaNacionalidad.pais}
+      onChange={(e) => {
+        let value = e.target.value
+          .replace(/[^A-Za-zÁÉÍÓÚÜÑ ]/gi, '') // Permitir solo letras y espacios
+          .replace(/^\s+/, '') // Eliminar espacios al inicio
+          .replace(/\s{2,}/g, ' ') // Reemplazar múltiples espacios por uno
+          .toUpperCase();
+
+        if (value.length <= 250) {
+          setNuevaNacionalidad({ ...nuevaNacionalidad, pais: value });
+        }
+      }}
+      onKeyDown={(e) => {
+        if (nuevaNacionalidad.pais.length >= 250 && e.key !== "Backspace") {
+          e.preventDefault();
+        }
+      }}
+      onCopy={(e) => e.preventDefault()}
+      onCut={(e) => e.preventDefault()}
+      onPaste={(e) => e.preventDefault()}
+    />
+  </CInputGroup>
+  {errors.pais && (
+    <div style={{ marginTop: "5px", fontSize: "0.9rem", fontWeight: "bold", color: "#000000", display: "flex", alignItems: "center" }}>
+      <CIcon icon={cilWarning} style={{ color: "#FFC107", marginRight: "5px", fontSize: "1.2rem" }} />
+      {errors.pais}
+    </div>
+  )}
+</CModalBody>
 
 
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-        <CModalHeader>
-          <CModalTitle>{nacionalidadToEdit ? "Editar Nacionalidad" : "Nueva Nacionalidad"}</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <CFormInput
-            label="Id Nacionalidad"
-            value={nacionalidadToEdit?.Id_nacionalidad || ""}
-            onChange={(e) =>
-              setNacionalidadToEdit({ ...nacionalidadToEdit, Id_nacionalidad: e.target.value })
-            }
-            className="mb-3"
-          />
-          <CFormInput
-            label="País Nacionalidad"
-            value={nacionalidadToEdit?.pais_nacionalidad || ""}
-            onChange={(e) =>
-              setNacionalidadToEdit({ ...nacionalidadToEdit, pais_nacionalidad: e.target.value })
-            }
-            className="mb-3"
-          />
-          <CFormInput
-            label="País"
-            value={nacionalidadToEdit?.pais || ""}
-            onChange={(e) => setNacionalidadToEdit({ ...nacionalidadToEdit, pais: e.target.value })}
-          />
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>
-            Cancelar
-          </CButton>
-          <CButton color="primary" onClick={handleSaveNacionalidad}>
-            Guardar
-          </CButton>
-        </CModalFooter>
-      </CModal>
-    </CContainer>
+
+    <CModalFooter>
+      <CButton color="secondary" onClick={() => setModalVisible(false)}>
+        Cancelar
+      </CButton>
+      <CButton
+        onClick={handleCreateOrUpdateNacionalidad}
+        style={{
+          backgroundColor: nacionalidadToEdit ? "#FFD700" : "#4B6251",
+          color: "white",
+        }}
+      >
+        <CIcon icon={nacionalidadToEdit ? cilPen : cilSave} />
+        &nbsp;
+        {nacionalidadToEdit ? "Actualizar" : "Guardar"}
+      </CButton>
+    </CModalFooter>
+  </CModal>
+</CContainer>
   );
 };
 

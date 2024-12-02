@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilWarning } from '@coreui/icons';
 import swal from 'sweetalert2';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import {
@@ -42,6 +42,9 @@ const ListaGeneroPersona = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({ tipo_genero: '' });
+
+
 
   useEffect(() => {
     fetchGeneros();
@@ -233,133 +236,123 @@ const ListaGeneroPersona = () => {
   
  
   const handleCreateOrUpdate = async () => {
-    console.log('Ejecutando handleCreateOrUpdate...');
-    if (isSubmitting) {
-      console.log('Botón deshabilitado, ya se está procesando.');
-      return;
-    }
-    setIsSubmitting(true);
-  
-    const genero = generoToUpdate || nuevoGenero; // Determinar si es creación o actualización
-  
-    // **VALIDACIONES**
-    console.log('Inicia validaciones...');
-    if (!generoToUpdate.Tipo_genero.trim()) {
-      swal.fire({
-        icon: 'error',
-        html: '<b>El campo "Tipo de Género" no puede estar vacío.</b>',
-        timer: 3000,
-        showConfirmButton: false,
-      });
-      return;
-    }
-    
-  
-    const isDuplicate = generos.some(
-      (item) =>
-        item.Tipo_genero.toUpperCase() === genero.Tipo_genero.trim().toUpperCase() &&
-        (!generoToUpdate || item.Cod_genero !== generoToUpdate.Cod_genero)
-    );
-  
-    if (isDuplicate) {
-      swal.fire({
-        icon: 'error',
-        html: `<b>El tipo de género "${genero.Tipo_genero.trim()}" ya existe.</b>`,
-        timer: 3000,
-        showConfirmButton: false,
-      });
-      setIsSubmitting(false);
-      return;
-    }
-  
-    const vocalRegex = /[aeiouáéíóúü]/i;
-    if (!vocalRegex.test(genero.Tipo_genero)) {
-      swal.fire({
-        icon: 'error',
-        html: '<b>El "Tipo de Género" debe contener al menos una vocal.</b>',
-        timer: 3000,
-        showConfirmButton: false,
-      });
-      setIsSubmitting(false);
-      return;
-    }
-  
-    // **CONSTRUCCIÓN DE SOLICITUD**
-    const url = generoToUpdate
-      ? `http://localhost:4000/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`
-      : 'http://localhost:4000/api/generoPersona/crearGeneroPersona';
-    const method = generoToUpdate ? 'PUT' : 'POST';
-    const body = JSON.stringify({ Tipo_genero: genero.Tipo_genero.trim() });
-  
-    console.log('Enviando datos al servidor:', { url, method, body });
-  
-    // **SOLICITUD AL SERVIDOR**
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body,
-      });
-  
-      if (!response.ok) {
-        const errorResult = await response.json();
-        throw new Error(errorResult.Mensaje || 'Error inesperado en el servidor.');
-      }
-  
-      const result = await response.json();
-      console.log('Respuesta exitosa:', result);
-  
-      if (generoToUpdate) {
-        setGeneros((prevGeneros) =>
-          prevGeneros
-            .map((item) =>
-              item.Cod_genero === generoToUpdate.Cod_genero
-                ? { ...item, Tipo_genero: genero.Tipo_genero.trim() }
-                : item
-            )
-            .sort((a, b) => a.Tipo_genero.localeCompare(b.Tipo_genero))
-        );
-        swal.fire({
-          icon: 'success',
-          html: '<b>Tipo de género actualizado exitosamente.</b>',
-          timer: 3000,
-          showConfirmButton: false,
-        });
-      } else {
-        setGeneros((prevGeneros) => [
-          ...prevGeneros,
-          { Cod_genero: result.Cod_genero, Tipo_genero: genero.Tipo_genero.trim() },
-        ].sort((a, b) => a.Tipo_genero.localeCompare(b.Tipo_genero)));
-        swal.fire({
-          icon: 'success',
-          html: '<b>Tipo de género creado exitosamente.</b>',
-          timer: 3000,
-          showConfirmButton: false,
-        });
-      }
-  
-      setModalVisible(false);
-      setNuevoGenero({ Cod_genero: '', Tipo_genero: '' });
-      setGeneroToUpdate(null);
-    } catch (error) {
-      console.error('Error en la operación:', error);
-      swal.fire({
-        icon: 'error',
-        html: `<b>${error.message}</b>`,
-        timer: 3000,
-        showConfirmButton: false,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
+    if (isSubmitting) return;
 
+    console.log('Datos enviados:', {
+      Cod_genero: generoToUpdate?.Cod_genero, // Esto debe ser un número
+      Tipo_genero: nuevoGenero.Tipo_genero,
+    });
+    const errorsTemp = {};
+
+    // Validar si el campo está vacío
+    if (!nuevoGenero.Tipo_genero.trim()) {
+        errorsTemp.tipo_genero = 'El campo "Tipo de Género" no puede estar vacío.';
+    }
+
+    // Validar si contiene al menos una vocal
+    const vocalRegex = /[AEIOUÁÉÍÓÚÜÑ]/i;
+    if (nuevoGenero.Tipo_genero.trim() && !vocalRegex.test(nuevoGenero.Tipo_genero)) {
+        errorsTemp.tipo_genero = 'El "Tipo de Género" debe contener al menos una vocal.';
+    }
+
+    // Si hay errores, mostrar y detener la ejecución
+    if (Object.keys(errorsTemp).length > 0) {
+        setErrors(errorsTemp);
+        setTimeout(() => setErrors({}), 5000); // Limpiar errores tras 5 segundos
+        return;
+    }
+
+    // Validar duplicados
+    const isDuplicate = generos.some(
+        (item) =>
+            item.Tipo_genero.toUpperCase() === nuevoGenero.Tipo_genero.trim().toUpperCase() &&
+            (!generoToUpdate || item.Cod_genero !== generoToUpdate.Cod_genero)
+    );
+
+    if (isDuplicate) {
+        swal.fire({
+            icon: 'error',
+            html: `<b>El tipo de género "${nuevoGenero.Tipo_genero.trim()}" ya existe.</b>`,
+            timer: 3000,
+            showConfirmButton: false,
+        });
+        return;
+    }
+
+    // Si no hay errores, proceder con la operación
+    setErrors({});
+    setIsSubmitting(true);
+
+    const url = generoToUpdate
+        ? `http://localhost:4000/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`
+        : 'http://localhost:4000/api/generoPersona/crearGeneroPersona';
+    const method = generoToUpdate ? 'PUT' : 'POST';
+    const body = JSON.stringify({ Tipo_genero: nuevoGenero.Tipo_genero.trim() });
+
+    try {
+        const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
+        const result = await response.json();
+
+        if (response.ok) {
+            if (generoToUpdate) {
+                // Actualizar género en la lista existente
+                setGeneros((prevGeneros) =>
+                    prevGeneros.map((item) =>
+                        item.Cod_genero === generoToUpdate.Cod_genero
+                            ? { ...item, Tipo_genero: nuevoGenero.Tipo_genero.trim() }
+                            : item
+                    )
+                );
+                console.log('Respuesta del backend:', result); // Verifica la respuesta
+                swal.fire({
+                    icon: 'success',
+                    html: '<b>Tipo de género actualizado exitosamente.</b>',
+                    timer: 3000,
+                    showConfirmButton: false,
+                });
+            } else {
+                // Agregar un nuevo género a la lista
+                setGeneros((prevGeneros) => [
+                    ...prevGeneros,
+                    { Cod_genero: result.Cod_genero, Tipo_genero: nuevoGenero.Tipo_genero.trim() },
+                ]);
+                swal.fire({
+                    icon: 'success',
+                    html: '<b>Tipo de género creado exitosamente.</b>',
+                    timer: 3000,
+                    showConfirmButton: false,
+                });
+            }
+
+            // Resetear estados y cerrar modal
+            setModalVisible(false);
+            setNuevoGenero({ Cod_genero: '', Tipo_genero: '' });
+            setGeneroToUpdate(null);
+        } else {
+            throw new Error(result.Mensaje || 'Error en el servidor.');
+        }
+        fetchGeneros(); // Recargar la lista
+    setModalVisible(false); // Cerrar el modal
+    } catch (error) {
+        swal.fire({
+            icon: 'error',
+            html: `<b>${error.message}</b>`,
+            timer: 3000,
+            showConfirmButton: false,
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
+};
+
+  
   const handleDeleteGenero = async (Cod_genero, Tipo_genero) => {
     try {
+      console.log('Intentando eliminar género:', Cod_genero, Tipo_genero);
+  
       const confirmResult = await swal.fire({
         title: 'Confirmar Eliminación',
-        html: `¿Estás seguro de que deseas eliminar el género: <strong>${Tipo_genero}</strong>?`, // Muestra correctamente el valor
+        html: `¿Estás seguro de que deseas eliminar el género: <strong>${Tipo_genero || 'N/A'}</strong>?`,
         showCancelButton: true,
         confirmButtonColor: '#FF6B6B',
         cancelButtonColor: '#6C757D',
@@ -371,33 +364,41 @@ const ListaGeneroPersona = () => {
   
       if (!confirmResult.isConfirmed) return;
   
+      // Log para confirmar URL generada
+  
       const response = await fetch(
-        `http://localhost:4000/api/generoPersona/eliminarGeneroPersona/${encodeURIComponent(Cod_genero)}`,
-        { method: 'DELETE' }
+        `http://localhost:4000/api/generoPersona/eliminarGeneroPersona/${encodeURIComponent(Cod_genero)}`,{ 
+          method: 'DELETE' }
       );
   
+      console.log('Respuesta del servidor:', response);
+  
       const result = await response.json();
+      console.log('Resultado del servidor:', result);
   
       if (response.ok) {
-        fetchGeneros();
+        setGeneros((prevGeneros) =>
+          prevGeneros.filter((item) => item.Cod_genero !== Cod_genero)
+        );
         swal.fire({
           icon: 'success',
-          html: `<br><b>El género "${Tipo_genero}" fue eliminado correctamente.</b>`,
-          timer: 3000, // Duración en milisegundos
-          showConfirmButton: false, // No mostrar botón de OK
+          html: '<b>Género eliminado exitosamente</b>',
+          timer: 3000,
+          showConfirmButton: false,
         });
       } else {
-        throw new Error(result.Mensaje || `<b>No se pudo eliminar el género "${Tipo_genero}".</b>`);
+        throw new Error(result.Mensaje || 'Error al eliminar');
       }
-      } catch (error) {
-        console.error('Error eliminando el género:', error);
-        swal.fire({
-          icon: 'error',
-          html: `<b>Error</b><br><b>${error.message || `No se pudo eliminar el género "${Tipo_genero}".`}</b>`,
-          timer: 3000, // Duración en milisegundos
-          showConfirmButton: false, // No mostrar botón de OK
-        });
-      }    
+    } catch (error) {
+      console.error('Error eliminando el género:', error);
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: error.message || 'No se pudo eliminar el género.',
+        timer: 3000,
+        showConfirmButton: false,
+      });
+    }
   };
   
 
@@ -428,7 +429,7 @@ const ListaGeneroPersona = () => {
       <CRow className="align-items-center mb-5">
         <CCol xs="8" md="9"><h1>Mantenimieno Géneros</h1></CCol>
         <CCol xs="4" md="3" className="text-end">
-          <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={() => {
+          <CButton style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '15px'}} onClick={() => {
             setModalVisible(true);
             setGeneroToUpdate(null);
           }}>
@@ -489,15 +490,17 @@ const ListaGeneroPersona = () => {
       <CTableDataCell>
         {/* Botón de editar */}
         <CButton
-          color="warning"
-          size="sm"
-          onClick={() => {
-            setGeneroToUpdate(genero);
-            setModalVisible(true);
-          }}
-        >
-          <CIcon icon={cilPen} />
-        </CButton>
+  color="warning"
+  size="sm"
+  onClick={() => {
+    console.log('Editar registro:', genero); // Agrega un log para verificar
+    setGeneroToUpdate(genero); // Guarda el registro que estás editando
+    setNuevoGenero({ ...genero }); // Carga los datos del registro en el formulario
+    setModalVisible(true); // Abre el modal
+  }}
+>
+  <CIcon icon={cilPen} />
+</CButton>
 
         {/* Botón de eliminar */}
         <CButton
@@ -566,86 +569,76 @@ const ListaGeneroPersona = () => {
 </CPagination>
 
 
-      <CModal visible={modalVisible} onClose={() => {
-        setModalVisible(false);
-        setGeneroToUpdate(null);
-      }}>
+<CModal
+  visible={modalVisible}
+  onClose={() => {
+    setModalVisible(false); // Cerrar el modal
+    setGeneroToUpdate(null); // Limpiar el estado de edición
+    setNuevoGenero({ Cod_genero: '', Tipo_genero: '' }); // Limpiar los datos del formulario
+  }}
+>
         <CModalHeader>
           <CModalTitle>{generoToUpdate ? 'Actualizar Género' : 'Crear Nuevo Género'}</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          <CInputGroup className="mb-3">
-            <CInputGroupText>Tipo de Género</CInputGroupText>
-            <CFormInput
-  placeholder="Ingrese el tipo de género"
-  value={generoToUpdate ? generoToUpdate.Tipo_genero : nuevoGenero.Tipo_genero}
-  onChange={(e) => {
-    // Convertir a mayúsculas, eliminar números y restringir a 100 caracteres
-    let value = e.target.value
-      .replace(/\s{2,}/g, ' ') // Eliminar espacios consecutivos
-      .replace(/[0-9]/g, '') // Eliminar números
-      .toUpperCase(); // Convertir a mayúsculas
+    <CInputGroup className="mb-3">
+        <CInputGroupText style={{ backgroundColor: '#f0f0f0', color: 'black' }}>Tipo Género</CInputGroupText>
+        <CFormInput
+            placeholder="Tipo de Género"
+            value={nuevoGenero.Tipo_genero}
+            onChange={(e) => {
+                let value = e.target.value
+                    .replace(/[^A-ZÁÉÍÓÚÜÑ ]/gi, '')
+                    .replace(/^\s+/, '')
+                    .replace(/\s{2,}/g, ' ')
+                    .toUpperCase();
 
-    if (value.length > 100) {
-      value = value.slice(0, 100); // Limitar a 100 caracteres
-    }
-
-    if (generoToUpdate) {
-      setGeneroToUpdate({ ...generoToUpdate, Tipo_genero: value });
-    } else {
-      setNuevoGenero({ ...nuevoGenero, Tipo_genero: value });
-    }
-  }}
-  onKeyDown={(e) => {
-    const inputValue = e.target.value;
-
-    // Bloquear espacios al inicio y espacios consecutivos
-    if (
-      (e.key === ' ' && (inputValue === '' || inputValue.endsWith(' '))) || // Bloquear espacio al inicio o consecutivo
-      (inputValue.length === 0 && e.key === ' ') // Bloquear espacio como primer carácter
-    ) {
-      e.preventDefault();
-    }
-
-    // Permitir solo letras, espacio, retroceso y borrar
-    const isLetter = /^[A-Z]$/i.test(e.key);
-    const isSpace = e.key === ' ';
-    const isBackspaceOrDelete = e.key === 'Backspace' || e.key === 'Delete';
-
-    if (!isLetter && !isSpace && !isBackspaceOrDelete) {
-      e.preventDefault(); // Bloquear otros caracteres (incluidos números)
-    }
-
-    // Restringir la longitud máxima del campo a 100 caracteres
-    if (inputValue.length >= 100 && !isBackspaceOrDelete) {
-      e.preventDefault();
-    }
-  }}
-/>
-          </CInputGroup>
-        </CModalBody>
-        <CModalFooter>
-          <CButton
-            color="secondary"
-            onClick={() => {
-              setModalVisible(false);
-              setGeneroToUpdate(null);
+                if (value.length <= 50 || value.length < nuevoGenero.Tipo_genero.length) {
+                    setNuevoGenero({ ...nuevoGenero, Tipo_genero: value });
+                }
             }}
-          >
-            Cancelar
-          </CButton>
-          <CButton
-  style={generoToUpdate
-    ? { backgroundColor: '#FFD700', color: 'white' } // Estilo para actualizar
-    : { backgroundColor: '#4B6251', color: 'white' } // Estilo para guardar
-  }
-  onClick={handleCreateOrUpdate} // Llamar a la función unificada
->
-  <CIcon icon={generoToUpdate ? cilPen : cilSave} /> {/* Icono dinámico */}
-  {generoToUpdate ? 'Actualizar' : 'Guardar'} {/* Texto dinámico */}
-</CButton>
+            onKeyDown={(e) => {
+                if (e.key === ' ' && (!nuevoGenero.Tipo_genero || nuevoGenero.Tipo_genero.endsWith(' '))) {
+                    e.preventDefault();
+                }
+            }}
+        />
+    </CInputGroup>
+    {errors.tipo_genero && (
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px', fontSize: '0.9rem' }}>
+            <CIcon
+                icon={cilWarning}
+                style={{ color: '#FFC107', marginRight: '5px', fontSize: '1.2rem' }}
+            />
+            <span style={{ fontWeight: 'bold', color: '#000000' }}>{errors.tipo_genero}</span>
+        </div>
+    )}
+</CModalBody>
 
-        </CModalFooter>
+
+<CModalFooter>
+  <CButton
+    color="secondary"
+    onClick={() => {
+      setModalVisible(false); // Cerrar el modal
+      setGeneroToUpdate(null); // Limpiar el estado de edición
+      setNuevoGenero({ Cod_genero: '', Tipo_genero: '' }); // Limpiar el formulario
+    }}
+  >
+    Cancelar
+  </CButton>
+  <CButton
+    style={generoToUpdate
+      ? { backgroundColor: '#FFD700', color: 'white' } // Estilo para actualizar
+      : { backgroundColor: '#4B6251', color: 'white' } // Estilo para guardar
+    }
+    onClick={handleCreateOrUpdate} // Llama a la función unificada
+  >
+    <CIcon icon={generoToUpdate ? cilPen : cilSave} /> {/* Icono dinámico */}
+    {generoToUpdate ? 'Actualizar' : 'Guardar'} {/* Texto dinámico */}
+  </CButton>
+</CModalFooter>
+
       </CModal>
     </CContainer>
   );

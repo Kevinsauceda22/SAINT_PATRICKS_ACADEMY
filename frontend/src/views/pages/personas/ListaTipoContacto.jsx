@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilWarning } from '@coreui/icons';
 import swal from 'sweetalert2';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import {
@@ -42,6 +42,10 @@ const ListaTipoContacto = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(5);
+  const [errors, setErrors] = useState({
+  tipo_contacto: '',
+});
+
 
   useEffect(() => {
     fetchTiposContacto();
@@ -231,6 +235,32 @@ const ListaTipoContacto = () => {
 const handleCreateOrUpdate = async () => {
   if (isSubmitting) return;
 
+  const errorsTemp = {};
+
+  // Validar si el campo está vacío
+  if (!nuevoTipoContacto.tipo_contacto.trim()) {
+    errorsTemp.tipo_contacto = 'El campo "Tipo de Contacto" no puede estar vacío.';
+  }
+
+  // Validar si contiene al menos una vocal
+  const vocalRegex = /[AEIOUÁÉÍÓÚÜÑ]/i;
+  if (nuevoTipoContacto.tipo_contacto.trim() && !vocalRegex.test(nuevoTipoContacto.tipo_contacto)) {
+    errorsTemp.tipo_contacto = 'El "Tipo de Contacto" debe contener al menos una vocal.';
+  }
+
+  // Si hay errores, establecerlos y salir
+  if (Object.keys(errorsTemp).length > 0) {
+    setErrors(errorsTemp);
+
+    // Limpiar los errores automáticamente después de 3 segundos
+    setTimeout(() => {
+      setErrors({});
+    }, 5000);
+
+    return;
+  }
+
+  // Validar duplicados
   const isDuplicate = tiposContacto.some(
     (item) =>
       item.tipo_contacto.toUpperCase() === nuevoTipoContacto.tipo_contacto.trim().toUpperCase() &&
@@ -244,71 +274,42 @@ const handleCreateOrUpdate = async () => {
       timer: 3000,
       showConfirmButton: false,
     });
-    setIsSubmitting(false);
     return;
   }
 
+  // Si no hay errores, limpiar mensajes y proceder
+  setErrors({});
   setIsSubmitting(true);
+
   const url = tipoContactoToUpdate
     ? `http://localhost:4000/api/tipoContacto/actualizarTipoContacto/${tipoContactoToUpdate.cod_tipo_contacto}`
     : 'http://localhost:4000/api/tipoContacto/crearTipoContacto';
   const method = tipoContactoToUpdate ? 'PUT' : 'POST';
   const body = JSON.stringify({ tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() });
 
-  if (!nuevoTipoContacto.tipo_contacto.trim()) {
-    swal.fire({
-      icon: 'error',
-      html: '<b>El campo "Tipo de Contacto" no puede estar vacío.</b>',
-      timer: 3000,
-      showConfirmButton: false,
-    });
-    setIsSubmitting(false);
-    return;
-  }
-
-  const vocalRegex = /[aeiouáéíóúü]/i;
-  if (!vocalRegex.test(nuevoTipoContacto.tipo_contacto)) {
-    swal.fire({
-      icon: 'error',
-      html: '<b>El "Tipo de Contacto" debe contener al menos una vocal.</b>',
-      timer: 3000,
-      showConfirmButton: false,
-    });
-    setIsSubmitting(false);
-    return;
-  }
-
   try {
     const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
     const result = await response.json();
 
     if (response.ok) {
-      if (tipoContactoToUpdate) {
-        setTiposContacto((prevTipos) =>
-          prevTipos.map((item) =>
+      const updatedList = tipoContactoToUpdate
+        ? tiposContacto.map((item) =>
             item.cod_tipo_contacto === tipoContactoToUpdate.cod_tipo_contacto
               ? { ...item, tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() }
               : item
-          ).sort((a, b) => a.tipo_contacto.localeCompare(b.tipo_contacto))
-        );
-        swal.fire({
-          icon: 'success',
-          html: '<b>Tipo de contacto actualizado exitosamente</b>',
-          timer: 3000,
-          showConfirmButton: false,
-        });        
-      } else {
-        setTiposContacto((prevTipos) => [
-          ...prevTipos,
-          { cod_tipo_contacto: result.cod_tipo_contacto, tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() },
-        ].sort((a, b) => a.tipo_contacto.localeCompare(b.tipo_contacto)));
-        swal.fire({
-          icon: 'success',
-          html: '<b>Tipo de contacto creado exitosamente</b>',
-          timer: 3000,
-          showConfirmButton: false,
-        });
-      }
+          )
+        : [...tiposContacto, { cod_tipo_contacto: result.cod_tipo_contacto, tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() }];
+
+      setTiposContacto(updatedList.sort((a, b) => a.tipo_contacto.localeCompare(b.tipo_contacto)));
+      swal.fire({
+        icon: 'success',
+        html: tipoContactoToUpdate
+          ? '<b>Tipo de contacto actualizado exitosamente</b>'
+          : '<b>Tipo de contacto creado exitosamente</b>',
+        timer: 3000,
+        showConfirmButton: false,
+      });
+
       setModalVisible(false);
       setNuevoTipoContacto({ tipo_contacto: '' });
       setTipoContactoToUpdate(null);
@@ -332,7 +333,6 @@ const handleCreateOrUpdate = async () => {
     setIsSubmitting(false);
   }
 };
-
 
 
 const handleDeleteTipoContacto = async (cod_tipo_contacto, tipo_contacto) => {
@@ -523,34 +523,47 @@ const currentRecords = filteredTiposContacto.slice(indexOfFirstRecord, indexOfLa
       <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
         <CModalHeader><CModalTitle>{tipoContactoToUpdate ? 'Actualizar Tipo de Contacto' : 'Crear Nuevo Tipo de Contacto'}</CModalTitle></CModalHeader>
         <CModalBody>
-          <CInputGroup className="mb-3">
-            <CInputGroupText style={{ backgroundColor: '#f0f0f0', color: 'black' }}>
-              Tipo Contacto
-            </CInputGroupText>
-            <CFormInput
-              placeholder="Tipo de Contacto"
-              value={nuevoTipoContacto.tipo_contacto}
-              onChange={(e) => {
-                let value = e.target.value.replace(/[0-9]/g, ''); // Elimina números
-                value = value.replace(/\s{2,}/g, ' '); // Permite solo un espacio entre palabras
-                setNuevoTipoContacto({ tipo_contacto: value.toUpperCase() }); // Convierte a mayúsculas
-              }}
-              onKeyDown={(e) => {
-                if (e.key === ' ') {
-                  const inputValue = nuevoTipoContacto.tipo_contacto;
-                  if (inputValue.endsWith(' ') || inputValue === '') {
-                    e.preventDefault(); // Bloquea la tecla de espacio si ya hay un espacio al final o si el input está vacío
-                  }
-                }
-                // Bloquea la entrada si se alcanza el límite de 50 caracteres
-                if (nuevoTipoContacto.tipo_contacto.length >= 50 && e.key !== 'Backspace' && e.key !== 'Delete') {
-                  e.preventDefault();
-                }
-              }}
-            />
-          </CInputGroup>
-        </CModalBody>
+  <CInputGroup className="mb-3">
+    <CInputGroupText style={{ backgroundColor: '#f0f0f0', color: 'black' }}>Tipo Contacto</CInputGroupText>
+    <CFormInput
+      placeholder="Tipo de Contacto"
+      value={nuevoTipoContacto.tipo_contacto}
+      onChange={(e) => {
+        let value = e.target.value
+          .replace(/[^A-ZÁÉÍÓÚÜÑ ]/gi, '') // Permitir solo letras y espacios
+          .replace(/^\s+/, '') // Eliminar espacios al inicio
+          .replace(/\s{2,}/g, ' ') // Reemplazar múltiples espacios por uno
+          .toUpperCase(); // Convertir a mayúsculas
 
+        // Permitir eliminar caracteres aunque esté en el límite
+        if (value.length <= 50 || value.length < nuevoTipoContacto.tipo_contacto.length) {
+          setNuevoTipoContacto({ tipo_contacto: value });
+        }
+      }}
+      onKeyDown={(e) => {
+        const inputValue = nuevoTipoContacto.tipo_contacto;
+
+        // Prevenir espacios iniciales o múltiples espacios
+        if (e.key === ' ' && (inputValue === '' || inputValue.endsWith(' '))) {
+          e.preventDefault();
+        }
+      }}
+      onCopy={(e) => e.preventDefault()} // Bloquear copiar
+      onCut={(e) => e.preventDefault()}  // Bloquear cortar
+      onPaste={(e) => e.preventDefault()} // Bloquear pegar
+    />
+  </CInputGroup>
+  {/* Mostrar mensaje de error */}
+  {errors.tipo_contacto && (
+    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px', fontSize: '0.9rem' }}>
+      <CIcon
+        icon={cilWarning}
+        style={{ color: '#FFC107', marginRight: '5px', fontSize: '1.2rem' }}
+      />
+      <span style={{ fontWeight: 'bold', color: '#000000' }}>{errors.tipo_contacto}</span>
+    </div>
+  )}
+</CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
           <CButton

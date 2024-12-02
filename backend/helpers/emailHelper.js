@@ -640,6 +640,83 @@ const enviarNotificacionCancelacionCita = async (correo_usuario, nombre_usuario,
 
 
 
+const enviarNotificacionCambioCitaPadres = async (correo_padre, nombre_padre, citaActual) => {
+    const content = 
+        `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #4B6251; text-align: center;">Saint Patrick's Academy</h2>
+            <hr style="border: 1px solid #4caf50;" />
+            <p>Estimado/a <strong>${nombre_padre}</strong>,</p>
+            <p style="font-size: 16px; color: #555;">Se han realizado cambios importantes en la cita agendada:</p>
+
+            <div style="margin-bottom: 20px;">
+                <h3 style="color: #388e3c;">Nuevos Detalles:</h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <tr style="background-color: #e8f5e9; color: #388e3c;">
+                        <th style="padding: 10px; text-align: left;">Campo</th>
+                        <th style="padding: 10px; text-align: left;">Valor</th>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Nombre</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${citaActual.Nombre_solicitud || 'Sin especificar'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Fecha</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${citaActual.Fecha_solicitud || 'Sin especificar'}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 10px; border: 1px solid #ddd;">Hora</td>
+                        <td style="padding: 10px; border: 1px solid #ddd;">${citaActual.Hora_Inicio || 'N/A'} - ${citaActual.Hora_Fin || 'N/A'}</td>
+                    </tr>
+                </table>
+            </div>
+            <p style="text-align: center; margin-top: 20px;">
+                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                   style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+                    Ver Detalles de la Cita
+                </a>
+            </p>
+        </div>`;
+
+    await transporter.sendMail({
+        from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+        to: correo_padre,
+        subject: 'Cambio en la Cita - Saint Patrick\'s Academy',
+        html: content,
+    });
+};
+
+const enviarNotificacionCancelacionCitaPadres = async (correo_padre, nombre_padre, citaNombre, motivo) => {
+    const content = 
+        `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h2 style="color: #4B6251; text-align: center;">Saint Patrick's Academy</h2>
+            <hr style="border: 1px solid #ef5350;" />
+            <p>Estimado/a <strong>${nombre_padre}</strong>,</p>
+            <p>Lamentamos informarle que la siguiente cita ha sido cancelada:</p>
+
+            <div style="background-color: #ffebee; border-left: 4px solid #ef5350; padding: 10px; margin-bottom: 20px; border-radius: 5px;">
+                <p><strong>Cita Cancelada:</strong> ${citaNombre}</p>
+            </div>
+
+            <div style="padding: 10px; margin-bottom: 20px; border: 1px solid #ef5350; border-radius: 5px; background-color: #ffe6e6;">
+                <h3 style="margin: 0; color: #ef5350;">Motivo de Cancelación:</h3>
+                <p>${motivo || 'No especificado'}</p>
+            </div>
+
+            <p style="text-align: center; margin-top: 20px;">
+                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                   style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+                    Ver Detalles de la Cita
+                </a>
+            </p>
+        </div>`;
+
+    await transporter.sendMail({
+        from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
+        to: correo_padre,
+        subject: 'Cancelación de Cita - Saint Patrick\'s Academy',
+        html: content,
+    });
+};
 
 
 export { 
@@ -651,5 +728,7 @@ export {
     enviarNotificacionCambioActividad,
     enviarNotificacionNuevaCita,
     enviarNotificacionCancelacionCita,
-    enviarNotificacionCambioCita
+    enviarNotificacionCambioCita,
+    enviarNotificacionCambioCitaPadres, 
+    enviarNotificacionCancelacionCitaPadres
 };
