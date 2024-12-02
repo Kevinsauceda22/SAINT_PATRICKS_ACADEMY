@@ -1,30 +1,31 @@
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
-// Controlador para obtener detalles de una sección de asignatura específica o todas las secciones
+// Controlador para obtener detalles de una sección asignatura específica
 export const obtenerDetalleSeccionAsignatura = async (req, res) => {
-    const { Cod_seccion_asignatura } = req.params; // Extraemos el parámetro de la URL
+    const { Cod_seccion_asignatura } = req.params;
 
     try {
-        // Llamada al procedimiento almacenado con el parámetro Cod_seccion_asignatura
-        let query = 'CALL sp_obtener_detalle_seccion_asignatura(?)';
-        
-        // Pasamos el parámetro, si no está definido, se envía 0 para obtener todos los detalles
-        let params = [Cod_seccion_asignatura ? Cod_seccion_asignatura : 0];
+        // Llamada al procedimiento almacenado
+        const query = `CALL sp_obtener_detalle_seccion_asignatura(?);`;
+        const [resultado] = await pool.query(query, [Cod_seccion_asignatura]);
 
-        // Ejecutamos el procedimiento almacenado
-        const [rows] = await pool.query(query, params);
-
-        // Verificamos si hay resultados
-        if (!rows || rows[0].length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontraron detalles para la sección de asignatura especificada.' });
+        if (!resultado || !resultado[0]) {
+            return res.status(404).json({ mensaje: 'No se encontraron datos para la sección asignatura proporcionada' });
         }
 
-        // Devolvemos los detalles de la sección o de todas las secciones, según el parámetro
-        res.status(200).json(rows[0]); // Devuelve la primera tabla resultante del procedimiento
+        // Verificación de los datos obtenidos
+        console.log("Resultado del procedimiento almacenado:", resultado[0]);
+
+        // Si el resultado no contiene días, deberíamos revisar qué está pasando en la respuesta
+        if (!resultado[0][0].Nombre_dia) {
+            console.error('Días no encontrados en el resultado:', resultado[0]);
+        }
+
+        res.json(resultado[0][0]);
     } catch (error) {
-        console.error('Error al obtener detalles de la sección de asignatura:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+        console.error('Error al obtener datos de la sección asignatura:', error.message);
+        res.status(500).json({ mensaje: 'Error al obtener los datos de la sección asignatura' });
     }
 };
 
@@ -63,8 +64,6 @@ export const obtenerSecciones = async (req, res) => {
     }
 };
 
-
-
 // Controlador para obtener todos los días
 export const obtenerDias = async (req, res) => {
     try {
@@ -72,9 +71,10 @@ export const obtenerDias = async (req, res) => {
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener dias:', error);
-        res.status(500).json({ mensaje: 'Error al obtener dias' });
+        res.status(500).json({ mensaje: 'Error al obtener días' });
     }
 };
+
 // Controlador para obtener todos los grados y asignaturas
 export const obtenerGradosAsignaturas = async (req, res) => {
     try {
@@ -102,6 +102,7 @@ export const obtenerGradosAsignaturas = async (req, res) => {
     }
 };
 
+// Controlador para crear el horario
 export const crearHorarioSeccionAsignatura = async (req, res) => {
     const { p_Cod_grados_asignaturas, p_Cod_secciones, p_Cod_dias, p_Hora_inicio, p_Hora_fin } = req.body;
 
@@ -109,6 +110,13 @@ export const crearHorarioSeccionAsignatura = async (req, res) => {
         // Validación de campos requeridos
         if (!p_Cod_grados_asignaturas || !p_Cod_secciones || !p_Cod_dias || !p_Hora_inicio || !p_Hora_fin) {
             return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
+        }
+
+        // Validación de rango de horas
+        if (p_Hora_inicio < "07:00" || p_Hora_inicio > "14:00" || p_Hora_fin < "07:00" || p_Hora_fin > "14:00") {
+            return res.status(400).json({
+                mensaje: "Las horas deben estar entre 07:00 AM y 14:00 PM.",
+            });
         }
 
         // Llamada al procedimiento almacenado para insertar el horario
@@ -121,135 +129,162 @@ export const crearHorarioSeccionAsignatura = async (req, res) => {
         return res.status(201).json({ mensaje: "Horario de sección asignatura insertado con éxito", data: result });
     } catch (error) {
         console.error('Error al insertar el horario de la sección asignatura:', error);
-
-        // Revisar si el error tiene una propiedad `sqlState` o `sqlMessage`
-        if (error.code === 'ER_SIGNAL_EXCEPTION') {
-            // Si es un error de SQL que fue lanzado por SIGNAL, manejamos el mensaje de la base de datos
-            return res.status(400).json({ mensaje: error.sqlMessage });
-        }
-
-        // Si no es un error específico de SIGNAL, manejar otros errores
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
 
-
-// Controlador para actualizar una sección asignatura
+// Controlador para actualizar
+/*
 export const actualizarSeccionAsignatura = async (req, res) => {
-    const { 
-        p_Cod_seccion_asignatura, 
-        p_Cod_secciones, 
-        p_Hora_inicio, 
-        p_Hora_fin, 
-        p_Cod_grados_asignaturas, 
-        p_Cod_dias 
-    } = req.body;
+    const { Cod_seccion_asignatura, Dias_nombres, Hora_inicio, Hora_fin } = req.body;
 
     try {
-        // Validación de campos requeridos
-        if (!p_Cod_seccion_asignatura || !p_Cod_secciones || !p_Hora_inicio || !p_Hora_fin || !p_Cod_grados_asignaturas || !p_Cod_dias) {
+        const query = `
+            UPDATE tbl_secciones_asignaturas
+            SET Dias_nombres = ?, Hora_inicio = ?, Hora_fin = ?
+            WHERE Cod_seccion_asignatura = ?;
+        `;
+
+        const [resultado] = await pool.query(query, [
+            Dias_nombres || null, // Guardar los días o NULL si no se envían
+            Hora_inicio,
+            Hora_fin,
+            Cod_seccion_asignatura,
+        ]);
+
+        if (resultado.affectedRows === 0) {
+            return res.status(404).json({ mensaje: 'No se encontró la sección asignatura para actualizar' });
+        }
+
+        res.json({ mensaje: 'Sección asignatura actualizada correctamente' });
+    } catch (error) {
+        console.error('Error al actualizar sección asignatura:', error.message);
+        res.status(500).json({ mensaje: 'Error al actualizar la sección asignatura' });
+    }
+};*/
+export const actualizarSeccionAsignatura = async (req, res) => {
+    try {
+        const {
+            p_Cod_seccion_asignatura,
+            p_Cod_secciones,
+            p_Hora_inicio,
+            p_Hora_fin,
+            p_Cod_grados_asignaturas,
+            p_Cod_dias
+        } = req.body;
+
+        // Validación de parámetros
+        if (
+            !p_Cod_seccion_asignatura ||
+            !p_Cod_secciones ||
+            !p_Hora_inicio ||
+            !p_Hora_fin ||
+            !p_Cod_grados_asignaturas ||
+            !p_Cod_dias
+        ) {
             return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
         }
 
-        // Validación para asegurar que el horario de inicio sea menor que el horario de fin
-        if (p_Hora_inicio >= p_Hora_fin) {
-            return res.status(400).json({ mensaje: "La hora de inicio debe ser menor a la hora de fin." });
+        // Ejecución del procedimiento almacenado
+        const result = await pool.query('CALL sp_actualizar_secciones_asignaturas(?, ?, ?, ?, ?, ?)', [
+            p_Cod_seccion_asignatura,
+            p_Cod_secciones,
+            p_Hora_inicio,
+            p_Hora_fin,
+            p_Cod_grados_asignaturas,
+            p_Cod_dias
+        ]);
+
+        // Validación del resultado
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ mensaje: "El registro no existe." });
         }
 
-       // Convertir p_Cod_dias a un arreglo si es una cadena separada por comas
-            let diasArray = [];
-            if (typeof p_Cod_dias === 'string') {
-                diasArray = p_Cod_dias.split(',').map(Number); // Convierte la cadena en un arreglo de números
-            } else if (Array.isArray(p_Cod_dias)) {
-                diasArray = p_Cod_dias; // Si ya es un arreglo, lo utilizamos directamente
-            }
-
-            console.log('Arreglo de días procesado:', diasArray);
-
-        // Llamada al procedimiento almacenado para actualizar la sección asignatura
-        const [result] = await pool.query(
-            'CALL sp_actualizar_secciones_asignaturas(?, ?, ?, ?, ?, ?)',
-            [p_Cod_seccion_asignatura, p_Cod_secciones, p_Hora_inicio, p_Hora_fin, p_Cod_grados_asignaturas, p_Cod_dias]
-        );
-
-        return res.status(200).json({ mensaje: 'Sección asignatura actualizada correctamente.', data: result });
+        return res.status(200).json({ mensaje: "Sección asignatura actualizada correctamente." });
     } catch (error) {
-        console.error('Error al actualizar la sección asignatura:', error);
-        if (error.sqlState === '45000') {
-            return res.status(400).json({ mensaje: error.message });
+        console.error(error);
+
+        // Manejo de errores específicos
+        if (error.code === 'ER_SIGNAL_EXCEPTION') {
+            return res.status(500).json({ mensaje: error.sqlMessage || "Error interno del servidor." });
         }
-        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+
+        // Manejo de errores generales
+        return res.status(500).json({ mensaje: "Error al actualizar la sección asignatura." });
     }
 };
 
+
+
+// Controlador para obtener asignaturas y horarios
 export const obtenerAsignaturasyHorarios = async (req, res) => {
-    const { cod_seccion } = req.params;
+    const { cod_seccion } = req.params; // Obtener el parámetro cod_seccion desde la URL
 
     console.log("cod_seccion recibido:", cod_seccion);
 
+    // Validar que el parámetro esté presente
     if (!cod_seccion) {
         return res.status(400).json({ mensaje: "El código de la sección es requerido." });
     }
 
     try {
+        // Consulta SQL para obtener asignaturas, horarios, datos de la sección y nombre del profesor
         const query = `
-            SELECT 
-                sa.Cod_seccion_asignatura,
-                s.Cod_secciones,
-                a.Cod_asignatura,
-                a.Nombre_asignatura,
-                g.Nombre_grado,
-                s.Nombre_seccion,
-                sa.Hora_inicio,
-                sa.Hora_fin,
-                GROUP_CONCAT(DISTINCT d.prefijo_dia ORDER BY d.Cod_dias SEPARATOR ', ') AS dias,
-                CONCAT(
-                    COALESCE(p.Nombre, ''),
-                    ' ',
-                    COALESCE(p.Primer_apellido, ''),
-                    ' ',
-                    COALESCE(p.Segundo_apellido, '')
-                ) AS Nombre_completo
-            FROM 
-                tbl_secciones s
-            JOIN 
-                tbl_secciones_asignaturas sa ON sa.Cod_secciones = s.Cod_secciones
-            JOIN 
-                tbl_grados_asignaturas ga ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
-            JOIN 
-                tbl_asignaturas a ON ga.Cod_asignatura = a.Cod_asignatura
-            JOIN 
-                tbl_grados g ON ga.Cod_grado = g.Cod_grado
-            LEFT JOIN 
-                tbl_secciones_asignaturas_dias sad ON sa.Cod_seccion_asignatura = sad.Cod_seccion_asignatura
-            LEFT JOIN 
-                tbl_dias d ON sad.Cod_dias = d.Cod_dias
-            LEFT JOIN 
-                tbl_profesores prof ON prof.Cod_profesor = s.Cod_profesor
-            LEFT JOIN 
-                tbl_personas p ON prof.cod_persona = p.cod_persona
-            WHERE 
-                s.Cod_secciones = ?
-            GROUP BY 
-                sa.Cod_seccion_asignatura, s.Cod_secciones, a.Cod_asignatura, a.Nombre_asignatura, 
-                g.Nombre_grado, s.Nombre_seccion, sa.Hora_inicio, sa.Hora_fin, Nombre_completo;
+                    SELECT 
+            sa.Cod_seccion_asignatura,
+            s.Cod_secciones,
+            a.Cod_asignatura,
+            a.Nombre_asignatura,
+            g.Nombre_grado,
+            s.Nombre_seccion,
+            sa.Hora_inicio,
+            sa.Hora_fin,
+            GROUP_CONCAT(DISTINCT d.prefijo_dia ORDER BY d.Cod_dias SEPARATOR ', ') AS dias,
+            CONCAT(p.Nombre, ' ', p.Primer_apellido, ' ', p.Segundo_apellido) AS Nombre_completo
+        FROM 
+            tbl_secciones s
+        JOIN 
+            tbl_secciones_asignaturas sa ON sa.Cod_secciones = s.Cod_secciones
+        JOIN 
+            tbl_grados_asignaturas ga ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
+        JOIN 
+            tbl_asignaturas a ON ga.Cod_asignatura = a.Cod_asignatura
+        JOIN 
+            tbl_grados g ON ga.Cod_grado = g.Cod_grado
+        LEFT JOIN 
+            tbl_secciones_asignaturas_dias sad ON sa.Cod_seccion_asignatura = sad.Cod_seccion_asignatura
+        LEFT JOIN 
+            tbl_dias d ON sad.Cod_dias = d.Cod_dias
+        LEFT JOIN 
+            tbl_profesores prof ON prof.Cod_profesor = s.Cod_profesor -- Relación con profesores
+        LEFT JOIN 
+            tbl_personas p ON prof.cod_persona = p.cod_persona -- Relación con personas
+        WHERE 
+            s.Cod_secciones = ?
+        GROUP BY 
+            sa.Cod_seccion_asignatura, s.Cod_secciones, a.Cod_asignatura, a.Nombre_asignatura, 
+            g.Nombre_grado, s.Nombre_seccion, sa.Hora_inicio, sa.Hora_fin, Nombre_completo;
         `;
 
+        // Ejecutar la consulta
         const [rows] = await pool.query(query, [cod_seccion]);
         console.log("Datos devueltos por la consulta SQL:", rows);
 
+
+        console.log("Resultado de la consulta:", rows);
+
+        // Si no se encuentran resultados, devolver un mensaje informativo
         if (rows.length === 0) {
             return res.status(404).json({ mensaje: "No se encontraron asignaturas para la sección proporcionada." });
         }
 
+        // Responder con los datos obtenidos
         res.status(200).json(rows);
     } catch (error) {
         console.error("Error en la consulta:", error);
         res.status(500).json({ mensaje: "Error al obtener las asignaturas.", error });
     }
 };
-
-
 
 // Controlador para obtener asignaturas específicas de una sección y grado
 export const obtenerAsignaturasPorSeccionYGrado = async (req, res) => {
@@ -340,12 +375,12 @@ export const obtenerSeccionesPorGrado = async (req, res) => {
         res.status(500).json({ mensaje: "Error al obtener las secciones.", error });
     }
 };
+
+// Obtener detalles de la seccion
 export const getDetalleSeccionAsignatura = async (req, res) => {
     const { Cod_seccion_asignatura } = req.params;
-    console.log('Parámetro recibido:', Cod_seccion_asignatura); // Log para verificar el parámetro
 
     try {
-        // Consulta que incluye los nombres relacionados
         const query = `
             SELECT 
                 sa.Cod_seccion_asignatura,
@@ -360,22 +395,23 @@ export const getDetalleSeccionAsignatura = async (req, res) => {
             INNER JOIN tbl_grados_asignaturas ga ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
             INNER JOIN tbl_grados g ON ga.Cod_grado = g.Cod_grado
             INNER JOIN tbl_asignaturas a ON ga.Cod_asignatura = a.Cod_asignatura
-            WHERE sa.Cod_seccion_asignatura = ?`;
+            WHERE sa.Cod_seccion_asignatura = ?;
+        `;
 
         const [resultado] = await pool.query(query, [Cod_seccion_asignatura]);
-
-        console.log('Resultado de la consulta:', resultado); // Log para depurar el resultado de la consulta
 
         if (resultado.length === 0) {
             return res.status(404).json({ mensaje: 'No se encontraron datos para la sección asignatura proporcionada' });
         }
 
-        res.json(resultado[0]); // Devuelve los datos de la sección asignatura encontrada
+        res.json(resultado[0]);
     } catch (error) {
-        console.error('Error al obtener datos de la sección asignatura:', error.message); // Log detallado del error
+        console.error('Error al obtener datos de la sección asignatura:', error.message);
         res.status(500).json({ mensaje: 'Error al obtener los datos de la sección asignatura' });
     }
 };
+
+
 
 export const obtenerAsignaturasPorProfesor = async (req, res) => {
     try {
@@ -455,22 +491,30 @@ export const obtenerAsignaturasPorGradoYSeccion = async (req, res) => {
                 a.Nombre_asignatura,
                 COALESCE(sa.Hora_inicio, '00:00') AS Hora_inicio,
                 COALESCE(sa.Hora_fin, '00:00') AS Hora_fin,
-                COALESCE(GROUP_CONCAT(d.prefijo_dia ORDER BY d.prefijo_dia SEPARATOR ', '), 'No asignado') AS Dias_nombres
-            FROM tbl_secciones s
-            JOIN tbl_grados g 
-                ON s.Cod_grado = g.Cod_grado
-            JOIN tbl_grados_asignaturas ga 
-                ON g.Cod_grado = ga.Cod_grado
-            JOIN tbl_asignaturas a 
-                ON ga.Cod_asignatura = a.Cod_asignatura
-            LEFT JOIN tbl_secciones_asignaturas sa 
-                ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
+                COALESCE(GROUP_CONCAT(d.prefijo_dia ORDER BY d.prefijo_dia SEPARATOR ', '), 'No asignado') AS Dias_nombres,
+                prof.Cod_profesor, -- Incluye el código del profesor
+                CONCAT(p.Nombre, ' ', p.Primer_apellido, ' ', p.Segundo_apellido) AS Nombre_profesor -- Nombre completo del profesor
+            FROM 
+                tbl_secciones s
+            JOIN 
+                tbl_grados g ON s.Cod_grado = g.Cod_grado
+            JOIN 
+                tbl_grados_asignaturas ga ON g.Cod_grado = ga.Cod_grado
+            JOIN 
+                tbl_asignaturas a ON ga.Cod_asignatura = a.Cod_asignatura
+            LEFT JOIN 
+                tbl_secciones_asignaturas sa ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
                 AND sa.Cod_secciones = s.Cod_secciones
-            LEFT JOIN tbl_secciones_asignaturas_dias sad 
-                ON sa.Cod_seccion_asignatura = sad.Cod_seccion_asignatura
-            LEFT JOIN tbl_dias d 
-                ON sad.Cod_dias = d.Cod_dias
-            WHERE s.Cod_secciones = ?
+            LEFT JOIN 
+                tbl_secciones_asignaturas_dias sad ON sa.Cod_seccion_asignatura = sad.Cod_seccion_asignatura
+            LEFT JOIN 
+                tbl_dias d ON sad.Cod_dias = d.Cod_dias
+            LEFT JOIN 
+                tbl_profesores prof ON prof.Cod_profesor = s.Cod_profesor -- Relacionamos la tabla de profesores
+            LEFT JOIN 
+                tbl_personas p ON prof.Cod_persona = p.Cod_persona -- Relacionamos la tabla de personas para obtener el nombre completo del profesor
+            WHERE 
+                s.Cod_secciones = ?
             GROUP BY 
                 s.Cod_secciones, -- Agregar Cod_secciones al GROUP BY
                 sa.Cod_seccion_asignatura, -- Agregar Cod_seccion_asignatura al GROUP BY
@@ -479,7 +523,10 @@ export const obtenerAsignaturasPorGradoYSeccion = async (req, res) => {
                 s.Nombre_seccion, 
                 a.Nombre_asignatura, 
                 sa.Hora_inicio, 
-                sa.Hora_fin;
+                sa.Hora_fin,
+                prof.Cod_profesor, -- Incluimos el Cod_profesor en el GROUP BY
+                p.Nombre, p.Primer_apellido, p.Segundo_apellido; -- Incluimos las columnas necesarias para el nombre completo del profesor
+
 
             `,
             [Cod_seccion]
@@ -493,10 +540,4 @@ export const obtenerAsignaturasPorGradoYSeccion = async (req, res) => {
             error: error.message 
         });
     }
-};
-
-
-
-
-
-  
+};  
