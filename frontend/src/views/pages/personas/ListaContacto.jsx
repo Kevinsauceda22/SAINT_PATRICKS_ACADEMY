@@ -499,74 +499,81 @@ const fetchTiposContacto = async () => {
 
   return (
     <CContainer>
-      <CRow className="align-items-center mb-5">
-        <CCol xs="8" md="9"><h1>Mantenimiento Contactos</h1></CCol>
-        <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
-          
-        <CCol
-  xs="12"
-  md="4"
-  className="d-flex flex-column flex-md-row justify-content-md-end align-items-center gap-2"
->
-  {/* Botón Personas */}
-  <CButton
-    color="secondary"
-    onClick={volverAListaPersonas}
-    style={{
-      minWidth: '120px', // Asegura un ancho mínimo consistente
-    }}
-  >
-    <CIcon icon={cilArrowLeft} /> Personas
-  </CButton>
+<CRow className="align-items-center mb-5">
+  {/* Título */}
+  <CCol xs="12">
+    <h1>Mantenimiento Contactos</h1>
+  </CCol>
 
-  {/* Botón Nuevo */}
-  <CButton
-    style={{
-      backgroundColor: '#4B6251', // Color personalizado
-      color: 'white',
-      minWidth: '120px', // Asegura un ancho consistente
-      borderRadius: '5px', // Bordes redondeados para apariencia moderna
-    }}
-    onClick={() => {
-      setModalVisible(true);
-      setContactoToUpdate(null);
-    }}
-  >
-    <CIcon icon={cilPlus} /> Nuevo
-  </CButton>
-</CCol>
+  {/* Selector de registros */}
+  <CCol xs="12" className="d-flex justify-content-end align-items-center mb-3">
+    <span>Mostrar </span>
+    <CFormSelect
+      value={recordsPerPage}
+      onChange={handleRecordsPerPageChange}
+      style={{
+        maxWidth: '100px',
+        display: 'inline-block',
+        margin: '0 5px',
+        textAlign: 'right',
+      }}
+    >
+      <option value={5}>5</option>
+      <option value={10}>10</option>
+      <option value={20}>20</option>
+    </CFormSelect>
+    <span> registros</span>
+  </CCol>
 
-          <CDropdown className="ms-3">
-            <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-              <CIcon icon={cilDescription} /> Reporte
-            </CDropdownToggle>
-            <CDropdownMenu>
-              <CDropdownItem onClick={exportToExcel}>
-                <i className="fa fa-file-excel-o" style={{ marginRight: '5px' }}></i> Descargar en Excel
-              </CDropdownItem>
-              <CDropdownItem onClick={exportToPDF}>
-                <i className="fa fa-file-pdf-o" style={{ marginRight: '5px' }}></i> Descargar en PDF
-              </CDropdownItem>
-              <CDropdownItem onClick={handlePrintGeneral}>
-                <CIcon icon={cilPrint} /> Imprimir
-              </CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
-          <div className="mt-2" style={{ textAlign: 'right' }}>
-            <span>Mostrar </span>
-            <CFormSelect
-              value={recordsPerPage}
-              onChange={handleRecordsPerPageChange}
-              style={{ maxWidth: '70px', display: 'inline-block', margin: '0 5px' }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-            </CFormSelect>
-            <span> registros</span>
-          </div>
-        </CCol>
-      </CRow>
+  {/* Botones */}
+  <CCol xs="12" md="12" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2">
+    {/* Botón Personas */}
+    <CButton
+      color="secondary"
+      onClick={volverAListaPersonas}
+      style={{
+        minWidth: '120px', // Asegura un ancho mínimo consistente
+      }}
+    >
+      <CIcon icon={cilArrowLeft} /> Personas
+    </CButton>
+
+    {/* Botón Nuevo */}
+    <CButton
+      style={{
+        backgroundColor: '#4B6251', // Color personalizado
+        color: 'white',
+        minWidth: '120px', // Asegura un ancho consistente
+        borderRadius: '5px', // Bordes redondeados para apariencia moderna
+      }}
+      onClick={() => {
+        setModalVisible(true);
+        setContactoToUpdate(null);
+      }}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
+
+    {/* Dropdown Reporte */}
+    <CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
+        <CIcon icon={cilDescription} /> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportToExcel}>
+          <i className="fa fa-file-excel-o" style={{ marginRight: '5px' }}></i> Descargar en Excel
+        </CDropdownItem>
+        <CDropdownItem onClick={exportToPDF}>
+          <i className="fa fa-file-pdf-o" style={{ marginRight: '5px' }}></i> Descargar en PDF
+        </CDropdownItem>
+        <CDropdownItem onClick={handlePrintGeneral}>
+          <CIcon icon={cilPrint} /> Imprimir
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
+
 
       <CInputGroup className="mb-3" style={{ maxWidth: '400px' }}>
         <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
@@ -600,13 +607,13 @@ const fetchTiposContacto = async () => {
                 <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
                 <CTableDataCell>
                   {personaSeleccionada
-                    ? `${personaSeleccionada.Nombre} ${personaSeleccionada.Segundo_nombre} ${personaSeleccionada.Primer_apellido} ${personaSeleccionada.Segundo_apellido}`
+                    ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
                     : 'Información no disponible'}
                 </CTableDataCell>
                 <CTableDataCell>
-                  {tiposContacto.find(tc => tc.Cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
+                  {tiposContacto.find(tc => tc.Cod_tipo_contacto === item.Cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
                 </CTableDataCell>
-                <CTableDataCell>{item.Valor}</CTableDataCell>
+                <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
                 <CTableDataCell>
                   <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
                     <CIcon icon={cilPen} />
@@ -720,9 +727,10 @@ const fetchTiposContacto = async () => {
         className="border-0"
       >
         <option value="">Seleccione un tipo de contacto</option>
-        {tiposContacto.map((tipo) => 
-          ( <option key={tipo.Cod_tipo_contacto} value={tipo.Cod_tipo_contacto}> 
-          {tipo.tipo_contacto} </option>
+        {tiposContacto.map((tipo) => (
+          <option key={tipo.cod_tipo_contacto} value={tipo.cod_tipo_contacto}>
+            {tipo.tipo_contacto}
+          </option>
         ))}
       </CFormSelect>
     </div>
