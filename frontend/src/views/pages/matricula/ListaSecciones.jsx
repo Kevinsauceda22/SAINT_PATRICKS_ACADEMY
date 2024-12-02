@@ -10,8 +10,12 @@ import {
   CButton, CContainer, CForm, CDropdown, CDropdownMenu, CDropdownToggle, CDropdownItem, CFormInput, CFormSelect, CInputGroup, CInputGroupText, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CPagination, CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell, CRow, CCol,
 } from '@coreui/react';
 import { useNavigate } from 'react-router-dom';
+import AccessDenied from "../AccessDenied/AccessDenied"
+import usePermission from '../../../../context/usePermission';
+
 
 const ListaSecciones = () => {
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('Secciones');
   const [secciones, setSecciones] = useState([]);
   const [grados, setGrados] = useState([]);
   const [profesores, setProfesores] = useState([]);
@@ -697,7 +701,11 @@ useEffect(() => {
       }
     });
   };
-  
+
+    // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
     
   return (
     <CContainer>
@@ -737,6 +745,9 @@ useEffect(() => {
       className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2"
     >
       {/* Botón "Nuevo" */}
+
+
+      {canInsert && (
       <CButton
         className="d-flex align-items-center gap-1 rounded shadow"
         style={{
@@ -750,6 +761,8 @@ useEffect(() => {
       >
         <CIcon icon={cilPlus} /> Nuevo
       </CButton>
+
+      )}
 
       {/* Botón de Reporte */}
       <CDropdown>
@@ -871,6 +884,8 @@ useEffect(() => {
             <CTableDataCell>{getPeriodoAcademico(seccion.Cod_periodo_matricula)}</CTableDataCell>
             <CTableDataCell className="text-center">
               <div className="d-flex justify-content-center">
+
+                {canUpdate && (
                 <CButton
                   color="warning"
                   onClick={() => openUpdateModal(seccion.Cod_secciones)}
@@ -880,6 +895,10 @@ useEffect(() => {
                   <CIcon icon={cilPen} />
               </CButton>
 
+                )}
+
+
+                {canDelete && (
                 <CButton
                   color="danger"
                   onClick={() => openDeleteModal(seccion)} // Solo abre el modal si el período está activo
@@ -888,7 +907,7 @@ useEffect(() => {
                 >
                   <CIcon icon={cilTrash} />
                 </CButton>
-
+                )}
                 <CButton
                   color="info"
                   onClick={() => handleGestionarClick(seccion)}

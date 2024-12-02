@@ -30,9 +30,15 @@ import jsPDF from 'jspdf';
 import "jspdf-autotable";
 import { useNavigate } from 'react-router-dom';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import AccessDenied from "../AccessDenied/AccessDenied"
+import usePermission from '../../../../context/usePermission';
+
+
 
 const ListaGestion_Academica = () => {
   // Definición de estados
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('gestion_academica');
+
   const [agrupadores, setAgrupadores] = useState([]);
   const [periodos, setPeriodos] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -464,6 +470,12 @@ const ListaGestion_Academica = () => {
       Swal.fire('Error', 'Ocurrió un error al intentar crear el agrupador.', 'error');
     }
   };
+
+
+    // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
   
   return (
     <CContainer style={{ marginTop: '40px', maxWidth: '900px' }}>
@@ -527,6 +539,8 @@ const ListaGestion_Academica = () => {
   <CRow className="align-items-center mb-4">
   <CCol xs="12" className="d-flex justify-content-between">
     {/* Botón "Nuevo" */}
+
+    {canInsert && (
     <CButton
       className="d-flex align-items-center gap-1 rounded shadow"
       style={{
@@ -539,6 +553,8 @@ const ListaGestion_Academica = () => {
     >
       <CIcon icon={cilPlus} /> Nuevo
     </CButton>
+
+    )}
 
     {/* Botón "Generar PDF" */}
     <CButton

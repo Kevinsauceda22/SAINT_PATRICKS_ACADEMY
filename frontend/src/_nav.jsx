@@ -54,18 +54,8 @@ const _nav = [
         to: '/gestion_academica',
         nameobject: 'Solicitud_admin',
       },
-      {
-        component: CNavItem,
-        name: 'Listado de Secciones', 
-        to: '/lista-secciones',
-        nameobject: 'Solicitud_admin',
-      },
-      {
-        component: CNavItem,
-        name: 'Secciones asignaturas',
-        to: '/lista-secciones_asignatura',
-        nameobject: 'ListaSecciones_Asignatura',
-      }, 
+    
+  
     ],
   },
    {
