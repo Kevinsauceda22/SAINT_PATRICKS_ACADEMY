@@ -20,13 +20,14 @@ export const crearTipoPersona = async (req, res) => {
         // Llamada al procedimiento almacenado para insertar un tipo de persona
         await pool.query('CALL sp_insert_tipo_persona(?)', [Tipo]);
 
-        res.status(201).json({ Mensaje: 'Tipo de persona creado exitosamente' });
+        console.log('Tipo creado exitosamente');
+        res.status(200).json({ Mensaje: 'Tipo de persona creado exitosamente' });
+        
     } catch (error) {
         console.error('Error al crear el tipo de persona:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
-
 
 // Obtener todos los tipos de persona o uno específico por Cod_tipo_persona
 export const obtenerTipoPersona = async (req, res) => {
@@ -68,12 +69,7 @@ export const actualizarTipoPersona = async (req, res) => {
         return res.status(400).json({ Mensaje: 'El código del tipo de persona es requerido.' });
     }
 
-    // Validar que el tipo sea uno de los valores permitidos
-    const tiposValidos = ['P', 'D', 'A', 'E'];
-    if (!tiposValidos.includes(Tipo)) {
-        return res.status(400).json({ Mensaje: 'Tipo inválido. Los tipos permitidos son: ' + tiposValidos.join(', ') });
-    }
-
+  
     try {
         // Verificar si el tipo ya existe para otro registro
         const [existeTipo] = await pool.query('SELECT * FROM tbl_tipo_persona WHERE Tipo = ? AND Cod_tipo_persona != ?', [Tipo, Cod_tipo_persona]);
@@ -93,7 +89,6 @@ export const actualizarTipoPersona = async (req, res) => {
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
-
 
 // Controlador para eliminar un tipo de persona
 export const eliminarTipoPersona = async (req, res) => {
