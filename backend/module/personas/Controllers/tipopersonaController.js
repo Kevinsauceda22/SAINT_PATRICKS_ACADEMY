@@ -2,32 +2,34 @@ import conectarDB from '../../../config/db.js';
 
 const pool = await conectarDB();
 
-// Create TipoPersona - now with VARCHAR validation
 export const crearTipoPersona = async (req, res) => {
     const { Tipo } = req.body;
 
-    // Validate that the Tipo field is not empty
-    if (!Tipo || typeof Tipo !== 'string' || Tipo.trim() === '') {
-        return res.status(400).json({ Mensaje: 'El tipo de persona no puede ser vacío.' });
+    // Validar que el tipo no sea NULL
+    if (!Tipo) {
+        return res.status(400).json({ Mensaje: 'El tipo de persona no puede ser NULL' });
     }
 
     try {
-        // Check if the Tipo already exists
+        // Verificar si el tipo ya existe
         const [existeTipo] = await pool.query('SELECT * FROM tbl_tipo_persona WHERE Tipo = ?', [Tipo]);
         if (existeTipo.length > 0) {
             return res.status(400).json({ Mensaje: 'El tipo de persona ya existe' });
         }
 
-        // Call the stored procedure to insert a new TipoPersona
+        // Llamada al procedimiento almacenado para insertar un tipo de persona
         await pool.query('CALL sp_insert_tipo_persona(?)', [Tipo]);
 
-        res.status(201).json({ Mensaje: 'Tipo de persona creado exitosamente' });
+        console.log('Tipo creado exitosamente');
+        res.status(200).json({ Mensaje: 'Tipo de persona creado exitosamente' });
+        
     } catch (error) {
         console.error('Error al crear el tipo de persona:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
 
+// Obtener todos los tipos de persona o uno específico por Cod_tipo_persona
 export const obtenerTipoPersona = async (req, res) => {
     const { Cod_tipo_persona } = req.params;
 
@@ -47,7 +49,7 @@ export const obtenerTipoPersona = async (req, res) => {
 
         // Verificar si hay resultados
         if (!results || results[0].length === 0) {
-            return res.status(200).json([]); // Devolver un arreglo vacío si no hay datos
+            return res.status(404).json({ Mensaje: 'Tipo de persona no encontrado' });
         }
 
         res.status(200).json(results[0]);
@@ -57,28 +59,29 @@ export const obtenerTipoPersona = async (req, res) => {
     }
 };
 
-// Update TipoPersona
+// Controlador para actualizar un tipo de persona
 export const actualizarTipoPersona = async (req, res) => {
     const { Cod_tipo_persona } = req.params;
     const { Tipo } = req.body;
 
-    // Validate that the Tipo field is not empty
-    if (!Tipo || typeof Tipo !== 'string' || Tipo.trim() === '') {
-        return res.status(400).json({ Mensaje: 'El tipo de persona no puede ser vacío.' });
+    // Verificar que el código del tipo de persona sea válido
+    if (!Cod_tipo_persona) {
+        return res.status(400).json({ Mensaje: 'El código del tipo de persona es requerido.' });
     }
 
+  
     try {
-        // Check if the Tipo already exists for another record
-        const [existeTipo] = await pool.query(
-            'SELECT * FROM tbl_tipo_persona WHERE Tipo = ? AND Cod_tipo_persona != ?',
-            [Tipo, Cod_tipo_persona]
-        );
+        // Verificar si el tipo ya existe para otro registro
+        const [existeTipo] = await pool.query('SELECT * FROM tbl_tipo_persona WHERE Tipo = ? AND Cod_tipo_persona != ?', [Tipo, Cod_tipo_persona]);
         if (existeTipo.length > 0) {
             return res.status(400).json({ Mensaje: 'El tipo de persona ya existe' });
         }
 
-        // Call the stored procedure to update the TipoPersona
-        await pool.query('CALL sp_update_tipo_persona(?, ?)', [Cod_tipo_persona, Tipo]);
+        // Llamada al procedimiento almacenado para actualizar el tipo de persona
+        await pool.query('CALL sp_update_tipo_persona(?, ?)', [
+            Cod_tipo_persona,
+            Tipo
+        ]);
 
         res.status(200).json({ Mensaje: 'Tipo de persona actualizado exitosamente' });
     } catch (error) {
@@ -87,12 +90,12 @@ export const actualizarTipoPersona = async (req, res) => {
     }
 };
 
-// Delete TipoPersona
+// Controlador para eliminar un tipo de persona
 export const eliminarTipoPersona = async (req, res) => {
     const { Cod_tipo_persona } = req.params;
 
     try {
-        // Call the stored procedure to delete the TipoPersona
+        // Llamada al procedimiento almacenado para eliminar el tipo de persona
         await pool.query('CALL sp_delete_tipo_persona(?)', [Cod_tipo_persona]);
 
         res.status(200).json({ Mensaje: 'Tipo de persona eliminado exitosamente' });
