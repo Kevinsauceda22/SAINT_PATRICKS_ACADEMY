@@ -29,18 +29,20 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react';
+import { BsCheckCircle, BsExclamationCircle, BsDashCircle } from 'react-icons/bs';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import logo from 'src/assets/brand/logo_saint_patrick.png'; // Ruta del logo
 
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
-const TipoPersona = () => {
-  const {canSelect, canUpdate, canDelete, canInsert } = usePermission('tipopersona');
 
-  const [tiposPersona, setTiposPersona] = useState([]);
+const TipoMatricula = () => {
+  
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('tipomatricula');
+
+  const [tipos, setTipos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -49,54 +51,36 @@ const TipoPersona = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [modalVisible, setModalVisible] = useState(false);
   const [editar, setEditar] = useState(false);
-  const [estadoActual, setEstadoActual] = useState({ Tipo: '' });
+  const [estadoActual, setEstadoActual] = useState({});
 
-  useEffect(() => {
-    obtenerTiposPersona();
-  }, []);
+  const tiposValidos = ['Estandar', 'Extraordinaria', 'Beca', 'Otras'];
 
-  const obtenerTiposPersona = async () => {
+  const obtenerTipos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipopersona/tipo-persona');
+      const response = await fetch('http://localhost:4000/api/tipomatricula/tipo-matricula');
       const data = await response.json();
       if (response.ok) {
-        setTiposPersona(data);
+        setTipos(data);
         setFilteredTipos(data);
+        setLoading(false);
       } else {
-        throw new Error(data.message || 'Error al obtener los tipos de persona');
+        throw new Error(data.message || 'Error al obtener los tipos de matrícula');
       }
     } catch (error) {
       setError(error.message);
-      swal.fire({
-        title: 'Error',
-        text: error.message,
-        icon: 'error',
-        confirmButtonColor: '#4B6251',
-      });
-    } finally {
       setLoading(false);
+      swal.fire('Error', error.message, 'error');
     }
   };
 
-  const validarTipoEnTiempoReal = (texto) => {
-    const textoSinNumerosYEspeciales = texto.replace(/[^A-Za-z\s]/g, '');
-    const textoValidado = textoSinNumerosYEspeciales.toUpperCase().slice(0, 30);
-    const tresLetrasSeguidas = /(.)\1{2,}/;
-
-    if (tresLetrasSeguidas.test(textoValidado)) {
-      return estadoActual.Tipo;
+  const crearTipo = async (tipo) => {
+    if (!tiposValidos.includes(tipo)) {
+      swal.fire('Error', `Tipo inválido. Los tipos permitidos son: ${tiposValidos.join(', ')}`, 'error');
+      return;
     }
-    return textoValidado;
-  };
 
-  const handleTipoChange = (e) => {
-    const textoValido = validarTipoEnTiempoReal(e.target.value);
-    setEstadoActual({ ...estadoActual, Tipo: textoValido });
-  };
-
-  const crearTipoPersona = async (tipo) => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipopersona/tipo-persona', {
+      const response = await fetch('http://localhost:4000/api/tipomatricula/tipo-matricula', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -105,30 +89,25 @@ const TipoPersona = () => {
       });
 
       if (response.ok) {
-        swal.fire({
-          title: 'Éxito',
-          text: 'Tipo de persona creado correctamente.',
-          icon: 'success',
-          confirmButtonColor: '#4B6251',
-        });
-        obtenerTiposPersona();
+        swal.fire('Éxito', 'Tipo de matrícula creado correctamente.', 'success');
+        obtenerTipos();
       } else {
         const result = await response.json();
-        throw new Error(result.Mensaje || 'Error al crear el tipo de persona');
+        throw new Error(result.Mensaje || 'Error al crear el tipo de matrícula');
       }
     } catch (error) {
-      swal.fire({
-        title: 'Error',
-        text: error.message,
-        icon: 'error',
-        confirmButtonColor: '#4B6251',
-      });
+      swal.fire('Error', error.message, 'error');
     }
   };
 
-  const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
+  const actualizarTipo = async (codTipo, nuevoTipo) => {
+    if (!tiposValidos.includes(nuevoTipo)) {
+      swal.fire('Error', `Tipo inválido. Los tipos permitidos son: ${tiposValidos.join(', ')}`, 'error');
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:4000/api/tipopersona/tipo-persona/${codTipo}`, {
+      const response = await fetch(`http://localhost:4000/api/tipomatricula/tipo-matricula/${codTipo}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -137,52 +116,32 @@ const TipoPersona = () => {
       });
 
       if (response.ok) {
-        swal.fire({
-          title: 'Éxito',
-          text: 'Tipo de persona actualizado correctamente.',
-          icon: 'success',
-          confirmButtonColor: '#4B6251',
-        });
-        obtenerTiposPersona();
+        swal.fire('Éxito', 'Tipo de matrícula actualizado correctamente.', 'success');
+        obtenerTipos();
       } else {
         const result = await response.json();
-        throw new Error(result.Mensaje || 'Error al actualizar el tipo de persona');
+        throw new Error(result.Mensaje || 'Error al actualizar el tipo de matrícula');
       }
     } catch (error) {
-      swal.fire({
-        title: 'Error',
-        text: error.message,
-        icon: 'error',
-        confirmButtonColor: '#4B6251',
-      });
+      swal.fire('Error', error.message, 'error');
     }
   };
 
-  const eliminarTipoPersona = async (codTipo) => {
+  const eliminarTipo = async (codTipo) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/tipopersona/tipo-persona/${codTipo}`, {
+      const response = await fetch(`http://localhost:4000/api/tipomatricula/tipo-matricula/${codTipo}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        swal.fire({
-          title: 'Éxito',
-          text: 'Tipo de persona eliminado correctamente.',
-          icon: 'success',
-          confirmButtonColor: '#4B6251',
-        });
-        obtenerTiposPersona();
+        swal.fire('Éxito', 'Tipo de matrícula eliminado correctamente.', 'success');
+        obtenerTipos();
       } else {
         const result = await response.json();
-        throw new Error(result.Mensaje || 'Error al eliminar el tipo de persona');
+        throw new Error(result.Mensaje || 'Error al eliminar el tipo de matrícula');
       }
     } catch (error) {
-      swal.fire({
-        title: 'Error',
-        text: error.message,
-        icon: 'error',
-        confirmButtonColor: '#4B6251',
-      });
+      swal.fire('Error', error.message, 'error');
     }
   };
 
@@ -200,20 +159,15 @@ const TipoPersona = () => {
 
   const handleModalSubmit = async (e) => {
     e.preventDefault();
-    if (!estadoActual.Tipo) {
-      swal.fire({
-        title: 'Error',
-        text: 'El nombre del tipo no puede estar vacío ni contener caracteres especiales o tres letras iguales seguidas.',
-        icon: 'error',
-        confirmButtonColor: '#4B6251',
-      });
+    if (!estadoActual.Tipo.trim() || !tiposValidos.includes(estadoActual.Tipo)) {
+      swal.fire('Error', `Tipo inválido. Los tipos permitidos son: ${tiposValidos.join(', ')}`, 'error');
       return;
     }
 
     if (editar) {
-      await actualizarTipoPersona(estadoActual.Cod_tipo_persona, estadoActual.Tipo);
+      await actualizarTipo(estadoActual.Cod_tipo_matricula, estadoActual.Tipo);
     } else {
-      await crearTipoPersona(estadoActual.Tipo);
+      await crearTipo(estadoActual.Tipo);
     }
     setModalVisible(false);
   };
@@ -224,13 +178,11 @@ const TipoPersona = () => {
       text: 'No podrás revertir esta acción',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#4B6251',
-      cancelButtonColor: '#6c757d',
       confirmButtonText: 'Eliminar',
       cancelButtonText: 'Cancelar',
     }).then((result) => {
       if (result.isConfirmed) {
-        eliminarTipoPersona(codTipo);
+        eliminarTipo(codTipo);
       }
     });
   };
@@ -239,110 +191,67 @@ const TipoPersona = () => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
 
-    const filtered = tiposPersona.filter(tipo =>
+    const filtered = tipos.filter(tipo =>
       tipo.Tipo.toLowerCase().includes(value)
     );
     setFilteredTipos(filtered);
     setCurrentPage(0);
   };
 
-  // Función para exportar a PDF con diseño mejorado y logo
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-
-    if (tiposPersona.length === 0) {
-      console.warn('No hay datos de tipos de persona para exportar.');
-      return;
-    }
-
-    const img = new Image();
-    img.src = logo;
-
-    img.onload = () => {
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, 20, { align: 'center' });
-
-      doc.setFontSize(14);
-      doc.text('Reporte de Tipos de Persona', doc.internal.pageSize.width / 2, 30, { align: 'center' });
-
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
-
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text('Tipos de Persona:', 10, 65);
-
-      doc.autoTable({
-        startY: 70,
-        head: [['#', 'Tipo de Persona']],
-        body: tiposPersona.map((tipo, index) => [
-          index + 1,
-          tipo.Tipo.toUpperCase(),
-        ]),
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 10,
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] },
-      });
-
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      const date = new Date().toLocaleDateString();
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-
-      doc.save('Reporte_Tipos_Persona.pdf');
-    };
-
-    img.onerror = () => {
-      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
-    };
-  };
-
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      tiposPersona.map((tipo, index) => ({
-        '#': index + 1,
-        'Tipo de Persona': tipo.Tipo.toUpperCase(),
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tipos de Persona');
-    XLSX.writeFile(workbook, 'Reporte_Tipos_Persona.xlsx');
-  };
-
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredTipos.slice(indexOfFirstItem, indexOfLastItem);
 
+  useEffect(() => {
+    obtenerTipos();
+  }, []);
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text('Reporte de Tipos de Matrícula', 14, 15);
+    doc.autoTable({
+      startY: 20,
+      head: [['#', 'TIPO DE MATRÍCULA']],
+      body: tipos.map((tipo, index) => [
+        index + 1,
+        tipo.Tipo.toUpperCase(),
+      ]),
+    });
+    doc.save('Reporte_Tipos_Matricula.pdf');
+  };
+
+  const exportToExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(
+      tipos.map((tipo, index) => ({
+        '#': index + 1,
+        'Tipo de Matrícula': tipo.Tipo.toUpperCase(),
+      }))
+    );
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tipos de Matrícula');
+    XLSX.writeFile(workbook, 'Reporte_Tipos_Matricula.xlsx');
+  };
+
   const pageCount = Math.ceil(filteredTipos.length / itemsPerPage);
+
+ // Verificar permisos
+ if (!canSelect) {
+  return <AccessDenied />;
+}
 
   return (
     <CContainer>
       <CRow className="justify-content-between align-items-center mb-4">
         <CCol xs={12} md={8}>
-          <h3>Mantenimientos Tipos de Persona</h3>
+          <h3>Mantenimientos Tipos de Matrícula</h3>
         </CCol>
         <CCol xs={12} md={4} className="text-end">
+
+          {canInsert && (
           <CButton style={{ backgroundColor: '#4B6251', color: 'white', width: 'auto', height: '38px' }} onClick={openAddModal}>
             <CIcon icon={cilPlus} /> Nuevo
-          </CButton>
+          </CButton>)}
           <CDropdown className="d-inline ms-2">
             <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', width: 'auto', height: '38px' }}>
               <CIcon icon={cilFile} /> Reporte
@@ -362,7 +271,7 @@ const TipoPersona = () => {
               <CIcon icon={cilSearch} />
             </CInputGroupText>
             <CFormInput
-              placeholder="Buscar tipo de persona"
+              placeholder="Buscar tipo de matrícula"
               value={searchTerm}
               onChange={handleSearch}
               style={{ fontSize: '0.9rem' }}
@@ -406,23 +315,47 @@ const TipoPersona = () => {
         <CTableHead>
           <CTableRow>
             <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>TIPO DE PERSONA</CTableHeaderCell>
+            <CTableHeaderCell>TIPO DE MATRÍCULA</CTableHeaderCell>
             <CTableHeaderCell>Acciones</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
           {currentItems.map((tipo, index) => (
-            <CTableRow key={tipo.Cod_tipo_persona}>
+            <CTableRow key={tipo.Cod_tipo_matricula}>
               <CTableDataCell>{indexOfFirstItem + index + 1}</CTableDataCell>
-              <CTableDataCell>{tipo.Tipo.toUpperCase()}</CTableDataCell>
               <CTableDataCell>
-                <CButton color="warning" size="sm" onClick={() => openEditModal(tipo)}>
-                  <CIcon icon={cilPen} />
-                </CButton>{' '}
-                <CButton color="danger" size="sm" onClick={() => confirmDelete(tipo.Cod_tipo_persona)}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
+                {tipo.Tipo === 'Estandar' && <BsCheckCircle className="text-success me-2" />}
+                {tipo.Tipo === 'Extraordinaria' && <BsExclamationCircle className="text-warning me-2" />}
+                {tipo.Tipo === 'Beca' && <BsCheckCircle className="text-primary me-2" />}
+                {tipo.Tipo === 'Otras' && <BsDashCircle className="text-secondary me-2" />}
+                {tipo.Tipo.toUpperCase()}
               </CTableDataCell>
+              <CTableDataCell className="text-end">
+
+          {canUpdate && (
+  <CButton
+    color="warning"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => openEditModal(tipo)}
+  >
+    <CIcon icon={cilPen} />
+  </CButton>
+          )}
+  {' '}
+
+  {canDelete && (
+  <CButton
+    color="danger"
+    size="sm"
+    style={{ opacity: 0.8 }}  // Opacidad ajustada
+    onClick={() => confirmDelete(tipo.Cod_tipo_matricula)}
+  >
+    <CIcon icon={cilTrash} />
+  </CButton>
+  )}
+</CTableDataCell>
+
             </CTableRow>
           ))}
         </CTableBody>
@@ -450,31 +383,25 @@ const TipoPersona = () => {
 
       <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
         <CModalHeader closeButton>
-          <CModalTitle>{editar ? 'Editar Tipo de Persona' : 'Agregar Tipo de Persona'}</CModalTitle>
+          <CModalTitle>{editar ? 'Editar Tipo de Matrícula' : 'Agregar Tipo de Matrícula'}</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CForm onSubmit={handleModalSubmit}>
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Nombre del Tipo</CInputGroupText>
-              <CFormInput
-                type="text"
-                placeholder="Nombre del tipo"
-                value={estadoActual.Tipo || ''}
-                onChange={handleTipoChange}
-                required
-              />
-            </CInputGroup>
+            <CFormSelect
+              value={estadoActual.Tipo}
+              onChange={(e) => setEstadoActual({ ...estadoActual, Tipo: e.target.value })}
+              required
+            >
+              <option value="" disabled>Selecciona un tipo</option>
+              {tiposValidos.map((tipoValido) => (
+                <option key={tipoValido} value={tipoValido}>{tipoValido.toUpperCase()}</option>
+              ))}
+            </CFormSelect>
             <CModalFooter>
-              <CButton 
-                style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} 
-                onClick={() => setModalVisible(false)}
-              >
+              <CButton color="secondary" size="sm" onClick={() => setModalVisible(false)}>
                 Cancelar
               </CButton>
-              <CButton 
-                style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
-                type="submit"
-              >
+              <CButton color="dark" size="sm" type="submit" style={{ backgroundColor: '#617341', borderColor: '#617341' }}>
                 <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
               </CButton>
             </CModalFooter>
@@ -485,4 +412,4 @@ const TipoPersona = () => {
   );
 };
 
-export default TipoPersona;
+export default TipoMatricula;
