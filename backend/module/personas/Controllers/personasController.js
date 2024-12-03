@@ -35,6 +35,27 @@ export const obtenerDepartamentos = async (req, res) => {
     }
 };
 
+//OBTENER MUNICIPIOS CON DEPARTAMENTO
+export const obtenerMunicipiosConDepartamento = async (req, res) => {
+    try {
+      const pool = await conectarDB(); // Conectar a la base de datos
+  
+      // Ejecutar el procedimiento almacenado GetMunicipiosConDepartamento
+      const [rows] = await pool.query('CALL P_Get_Municipios_Departamento()');
+  
+      // Verificar si se encontraron resultados
+      if (rows.length > 0) {
+        res.status(200).json(rows); // Devolvemos los resultados de la consulta
+      } else {
+        res.status(404).json({ message: 'No se encontraron municipios' });
+      }
+    } catch (error) {
+      console.error('Error al obtener municipios con departamento:', error);
+      res.status(500).json({ message: 'Error en el servidor', error: error.message });
+    }
+  };
+
+  
 //CONTROLADOR PARA OBTENER TIPO DE PERSONA
 export const obtenerTipoPersona = async (req, res) => {
     try {
@@ -157,17 +178,6 @@ export const actualizarPersona = async (req, res) => {
 
     try {
 
-                // Verificar si el DNI ya existe en la base de datos
-                const [result] = await connection.query(
-                    "SELECT COUNT(*) AS count FROM tbl_personas WHERE dni_persona = ?", 
-                    [dni_persona]
-                );
-        
-                if (result[0].count > 0) {
-                    return res.status(400).json({
-                        mensaje: 'El DNI ingresado ya está registrado en el sistema.',
-                    });
-                }
                 
         // Llamada al procedimiento almacenado para actualizar
         await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [

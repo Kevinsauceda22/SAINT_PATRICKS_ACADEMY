@@ -315,24 +315,18 @@ const fetchTiposContacto = async () => {
     const errors = [];
     const contactoActual = contactoToUpdate ? { ...contactoToUpdate } : { ...nuevoContacto };
   
+    // Asignar automáticamente el código de la persona seleccionada
+    contactoActual.cod_persona = personaSeleccionada?.cod_persona;
+  
     // Convertir tipo_contacto a entero
     if (contactoActual.tipo_contacto) {
       contactoActual.tipo_contacto = parseInt(contactoActual.tipo_contacto, 10);
     }
   
     // Validaciones de campos vacíos para creación y edición
-    if (!contactoActual.cod_persona || contactoActual.cod_persona.toString().trim() === '') {
-      errors.push("El campo 'Nombre' no debe estar vacío.");
-    } else if (isNaN(contactoActual.cod_persona) || parseInt(contactoActual.cod_persona) <= 0) {
-      errors.push("El 'Código Persona' debe ser un número entero positivo.");
-    } else if (contactoActual.cod_persona.toString().length > 11) {
-      errors.push("El 'Código Persona' no debe tener más de 11 dígitos.");
+    if (!contactoActual.cod_persona) {
+      errors.push("No se ha seleccionado ninguna persona. Por favor, seleccione una persona válida.");
     }
-  
-    if (contactoActual.Valor && !isNaN(contactoActual.Valor) && parseInt(contactoActual.Valor, 10) <= 0) {
-      errors.push("El campo 'Valor' debe ser un número entero positivo si es un teléfono.");
-    }
-    
   
     if (!contactoActual.Valor || contactoActual.Valor.trim() === '') {
       errors.push("El campo 'Valor' no debe estar vacío.");
@@ -350,7 +344,7 @@ const fetchTiposContacto = async () => {
       if (contactoToUpdate && item.cod_contacto === contactoToUpdate.cod_contacto) {
         return false;
       }
-             item.Valor.toLowerCase() === contactoActual.Valor.toLowerCase();
+      return item.Valor.toLowerCase() === contactoActual.Valor.toLowerCase();
     });
   
     if (duplicados.length > 0) {
@@ -418,7 +412,7 @@ const fetchTiposContacto = async () => {
         }
   
         // Limpia los valores y cierra el modal
-        setNuevoContacto({ cod_persona: '', tipo_contacto: '', Valor: '', nombrePersona: '' });
+        setNuevoContacto({ tipo_contacto: '', Valor: '' }); // `cod_persona` ya no se incluye aquí
         setContactoToUpdate(null);
         setModalVisible(false);
       }
@@ -430,6 +424,7 @@ const fetchTiposContacto = async () => {
       setIsSubmitting(false);
     }
   };
+  
    
   
   
@@ -502,7 +497,19 @@ const fetchTiposContacto = async () => {
 <CRow className="align-items-center mb-5">
   {/* Título */}
   <CCol xs="12">
-    <h1>Mantenimiento Contactos</h1>
+    <h1>Contactos</h1>
+    {/* Nombre de la persona seleccionada */}
+    {personaSeleccionada ? (
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>CONTACTOS DE:</strong> {personaSeleccionada 
+          ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+          : 'Información no disponible'}
+      </div>
+    ) : (
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>Persona Seleccionada:</strong> Información no disponible
+      </div>
+    )}
   </CCol>
 
   {/* Selector de registros */}
@@ -611,7 +618,7 @@ const fetchTiposContacto = async () => {
                     : 'Información no disponible'}
                 </CTableDataCell>
                 <CTableDataCell>
-                  {tiposContacto.find(tc => tc.Cod_tipo_contacto === item.Cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
+                  {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
                 </CTableDataCell>
                 <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
                 <CTableDataCell>
@@ -676,42 +683,16 @@ const fetchTiposContacto = async () => {
       <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
   <CModalHeader>
     <CModalTitle>{contactoToUpdate ? 'Actualizar Contacto' : 'Crear Nuevo Contacto'}</CModalTitle>
-  </CModalHeader>
+  </CModalHeader> 
   <CModalBody>
-    
-    {/* Campo de búsqueda para Cod Persona */}
-    <div className="mb-3">
-      <CInputGroup className="mb-3">
-        <CInputGroupText>
-          Nombre
-        </CInputGroupText>
-        <CFormInput
-          type="text"
-          value={buscadorCodPersona || (contactoToUpdate ? contactoToUpdate.nombrePersona : nuevoContacto.nombrePersona) || ''}
-          onChange={handleBuscarCodPersona}
-          placeholder="Buscar por DNI o nombre"
-        />
-        <CButton type="button">
-          <CIcon icon={cilSearch} />
-        </CButton>
-      </CInputGroup>
-
-      {isDropdownOpen && personasFiltradas.length > 0 && (
-        <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
-          {personasFiltradas.map(persona => (
-            <div
-              key={persona.cod_persona}
-              className="dropdown-item"
-              style={{ cursor: 'pointer' }}
-              onClick={() => handleSeleccionarCodPersona(persona)}
-            >
-              {persona.dni_persona} - {persona.fullName}
-            </div>
-          ))}
-        </div>
-      )}
+    {/* Mostrar el nombre de la persona seleccionada */}
+    <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
+      <strong>PERSONA:</strong> {personaSeleccionada 
+        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+        : 'Información no disponible'}
     </div>
 
+    {/* Selección de Tipo de Contacto */}
     <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
       <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
         Tipo de Contacto
@@ -735,6 +716,7 @@ const fetchTiposContacto = async () => {
       </CFormSelect>
     </div>
 
+    {/* Campo de Valor */}
     <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
       <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
         Valor
@@ -752,7 +734,6 @@ const fetchTiposContacto = async () => {
         className="border-0"
       />
     </div>
-
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
@@ -770,6 +751,7 @@ const fetchTiposContacto = async () => {
     </CButton>
   </CModalFooter>
 </CModal>
+
 
 
     </CContainer>
