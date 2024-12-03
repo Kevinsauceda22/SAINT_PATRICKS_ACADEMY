@@ -97,7 +97,7 @@ export const getDetallePorPeriodo = async (req, res) => {
 export const getTodasAgrupaciones = async (req, res) => {
     try {
         // Llamada al procedimiento almacenado
-        const [resultado] = await pool.query('CALL `1600-e5`.sp_obtener_TodasAgrupacionesConEstado()');
+        const [resultado] = await pool.query('CALL sp_obtener_TodasAgrupacionesConEstado()');
 
         // Verificar si hay resultados
         if (resultado.length === 0 || resultado[0].length === 0) {
