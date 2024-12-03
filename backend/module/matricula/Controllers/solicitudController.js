@@ -31,7 +31,8 @@ export const obtenerSolicitudes = async (req, res) => {
         const [results] = await pool.query(query, params);
 
         if (!results || results[0].length === 0) {
-            return res.status(404).json({ message: 'No se encontraron solicitudes.' });
+            // Retorna un arreglo vacío si no hay solicitudes
+            return res.status(200).json([]);
         }
 
         // Procesar solicitudes para asegurar formato consistente
@@ -40,11 +41,10 @@ export const obtenerSolicitudes = async (req, res) => {
                 ? new Date(solicitud.Fecha_solicitud).toISOString().split('T')[0]
                 : null;
 
-            // Formatear Hora_Inicio y Hora_Fin correctamente
             const formattedHoraInicio = solicitud.Hora_Inicio ? solicitud.Hora_Inicio.slice(0, 5) : '00:00';
             const formattedHoraFin = solicitud.Hora_fin && solicitud.Hora_fin !== 'null'
                 ? solicitud.Hora_fin.slice(0, 5)
-                : '00:00'; // Si Hora_Fin es inválida, default "00:00"
+                : '00:00';
 
             return {
                 Cod_solicitud: solicitud.Cod_solicitud,
@@ -52,7 +52,7 @@ export const obtenerSolicitudes = async (req, res) => {
                 Nombre_solicitud: solicitud.Nombre_solicitud,
                 Fecha_solicitud: formattedFecha,
                 Hora_Inicio: formattedHoraInicio,
-                Hora_Fin: formattedHoraFin, // Solo esta Hora_Fin se envía a la vista
+                Hora_Fin: formattedHoraFin,
                 Asunto: solicitud.Asunto,
                 Persona_requerida: solicitud.Persona_requerida,
                 Estado: solicitud.Estado,
@@ -65,6 +65,7 @@ export const obtenerSolicitudes = async (req, res) => {
         return res.status(500).json({ message: 'Error al obtener las solicitudes.' });
     }
 };
+
 export const obtenerUsuariosPorRolAdmin = async (req, res) => {
   try {
       const query = 'CALL obtener_usuarios_por_rol_admin()';
@@ -314,14 +315,14 @@ export const obtenerSolicitudPorCod = async (req, res) => {
     const { Cod_solicitud } = req.params; // Obtener el parámetro de la ruta
 
     try {
-        const query = 'CALL obtener_solicitudes(?)'; // Llama al procedimiento almacenado
+        const query = 'CALL obtener_solicitudes(?)';
         const params = [Cod_solicitud];
 
         const [results] = await pool.query(query, params);
 
-        // Verificar si hay resultados
         if (!results || results[0].length === 0) {
-            return res.status(404).json({ message: 'Solicitud no encontrada' });
+            // Retorna un objeto vacío si no hay resultados
+            return res.status(200).json(null);
         }
 
         return res.status(200).json(results[0][0]); // Retornar la solicitud encontrada
@@ -330,6 +331,7 @@ export const obtenerSolicitudPorCod = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener la solicitud', error: error.message });
     }
 };
+
 
 
 
