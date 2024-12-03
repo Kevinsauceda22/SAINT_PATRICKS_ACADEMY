@@ -36,6 +36,13 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Gestión Académica',
+    to: '/gestion_academica',
+    icon: cilFolderOpen,
+    nameobject: 'Solicitud_admin',
+  },
+  {
+    component: CNavItem,
     name: 'Matrícula',
     to: '/matricula', // La ruta que deseas para la matrícula
     nameobject: 'Matricula',
@@ -43,22 +50,6 @@ const _nav = [
     icon: cilSchool,
   },
   {
-    component: CNavGroup,
-    name: 'Gestion Academica',
-    icon: cilFolderOpen,
-    nameobject: 'ListaAsignaturas',
-    items: [
-      {
-        component: CNavItem,
-        name: 'Gestión Académica',
-        to: '/gestion_academica',
-        nameobject: 'Solicitud_admin',
-      },
-    
-  
-    ],
-  },
-   {
     component: CNavItem,
     name: 'Grados Asignaturas',
     to: '/ListaGradosAsignaturas',
