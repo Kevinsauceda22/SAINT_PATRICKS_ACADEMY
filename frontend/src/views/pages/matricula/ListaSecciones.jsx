@@ -675,13 +675,15 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     }).then((result) => {
       if (result.isConfirmed) {
         setModalVisible(false);
-        resetNuevaSeccion();
-        setStep(1);
         setModalUpdateVisible(false);
         setModalDeleteVisible(false);
+        resetNuevaSeccion(); // Solo reinicia para el modal de creación
+        resetSeccionToUpdate(); // Solo reinicia para el modal de actualización
+        setStep(1); // Reinicia los pasos para el modal de creación
       }
     });
   };
+
 
   // Verificar permisos
   if (!canSelect) {
@@ -1142,7 +1144,6 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       aria-label="Close"
       onClick={() => {
         handleCloseModal();
-        resetSeccionToUpdate(); // Limpia los datos del estado
       }}
     />
   </CModalHeader>
@@ -1245,7 +1246,6 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       color="secondary"
       onClick={() => {
         handleCloseModal();
-        resetSeccionToUpdate();
       }}
     >
       Cancelar
