@@ -639,10 +639,9 @@ const enviarNotificacionCancelacionCita = async (correo_usuario, nombre_usuario,
 };
 
 
-
 const enviarNotificacionCambioCitaPadres = async (correo_padre, nombre_padre, citaActual) => {
-    const content = 
-        `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    const content = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2 style="color: #4B6251; text-align: center;">Saint Patrick's Academy</h2>
             <hr style="border: 1px solid #4caf50;" />
             <p>Estimado/a <strong>${nombre_padre}</strong>,</p>
@@ -669,13 +668,15 @@ const enviarNotificacionCambioCitaPadres = async (correo_padre, nombre_padre, ci
                     </tr>
                 </table>
             </div>
+
             <p style="text-align: center; margin-top: 20px;">
                 <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
                    style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
                     Ver Detalles de la Cita
                 </a>
             </p>
-        </div>`;
+        </div>
+    `;
 
     await transporter.sendMail({
         from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
@@ -686,8 +687,8 @@ const enviarNotificacionCambioCitaPadres = async (correo_padre, nombre_padre, ci
 };
 
 const enviarNotificacionCancelacionCitaPadres = async (correo_padre, nombre_padre, citaNombre, motivo) => {
-    const content = 
-        `<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+    const content = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h2 style="color: #4B6251; text-align: center;">Saint Patrick's Academy</h2>
             <hr style="border: 1px solid #ef5350;" />
             <p>Estimado/a <strong>${nombre_padre}</strong>,</p>
@@ -708,7 +709,8 @@ const enviarNotificacionCancelacionCitaPadres = async (correo_padre, nombre_padr
                     Ver Detalles de la Cita
                 </a>
             </p>
-        </div>`;
+        </div>
+    `;
 
     await transporter.sendMail({
         from: 'Saint Patrick\'s Academy <maradigab30@gmail.com>',
