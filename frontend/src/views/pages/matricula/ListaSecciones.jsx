@@ -683,8 +683,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         setStep(1); // Reinicia los pasos para el modal de creación
       }
     });
-  };
-
+  };  
 
   // Verificar permisos
   if (!canSelect) {
