@@ -79,7 +79,7 @@ const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
 const ListaProcedenciaPersona = React.lazy(() => import('./views/pages/personas/ListaProcedenciaPersona')); 
-const Tipopersona = React.lazy(() => import('./views/pages/personas/tipopersona'));
+const Tipopersona = React.lazy(() => import('./views/pages/personas/Tipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
