@@ -1,4 +1,5 @@
 import conectarDB from '../../../config/db.js';
+import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
 
 // Controlador para obtener detalles de una sección asignatura específica
