@@ -58,9 +58,9 @@ const ListaActividades = () => {
   }, []);
 
   // Función para obtener actividades de la base de datos
-  const fetchActividades = async () => {
+  const fetchActividades = async (Cod_actividades_extracurriculares = 0 ) => {
     try {
-      const response = await fetch('http://localhost:4000/api/actividades/extracurriculares');
+      const response = await fetch(`http://localhost:4000/api/actividades/extracurriculares/${Cod_actividades_extracurriculares}`);
       const data = await response.json();
       const dataWithIndex = data.map((actividad, index) => ({
         ...actividad,
@@ -462,7 +462,7 @@ const generatePDF = () => {
 
   // Función para actualizar actividad
   const handleUpdateActividad = async () => {
-    const { Fecha, Cod_actividades_extracurriculares, Nombre_actividad, Descripcion, Hora_inicio, Hora_final, Nombre_seccion } = actividadToUpdate;
+    const { Fecha, Codigo_actividad, Nombre_actividad, Descripcion, Hora_inicio, Hora_final, Nombre_seccion } = actividadToUpdate;
     // Validar que todos los campos requeridos tengan valores
     if (!Nombre_actividad || !Descripcion || !Hora_inicio || !Hora_final || !Nombre_seccion || !Fecha) {
       swal.fire('Error', 'Todos los campos son requeridos.', 'error');
@@ -484,7 +484,7 @@ const generatePDF = () => {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          p_Cod_actividad: Cod_actividades_extracurriculares,
+          p_Cod_actividad: Codigo_actividad,
           p_Nombre: Nombre_actividad,
           p_Descripcion: Descripcion,
           p_Hora_inicio: Hora_inicio,
@@ -990,7 +990,7 @@ const generatePDF = () => {
             {/* Campos para actualizar actividad */}
             <CInputGroup className="mb-3">
               <CInputGroupText>Identificador</CInputGroupText>
-              <CFormInput value={actividadToUpdate.Cod_actividades_extracurriculares} readOnly />
+              <CFormInput value={actividadToUpdate.Codigo_actividad} readOnly />
             </CInputGroup>
   
             {/* Campo para actualizar nombre de la actividad */}
