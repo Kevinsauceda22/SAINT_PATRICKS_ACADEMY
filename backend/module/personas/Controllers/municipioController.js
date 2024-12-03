@@ -1,4 +1,3 @@
-
 import conectarDB from '../../../config/db.js';
 
 // Controlador para obtener los municipios
