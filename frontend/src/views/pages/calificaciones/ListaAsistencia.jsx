@@ -1,9 +1,9 @@
 import React, { useEffect, useState} from 'react';
-import { cilCheckCircle,cilArrowLeft, cilSearch, cilSave, cilFile,cilSpreadsheet,cilPencil,cilInfo,cilPlus,cilPen } from '@coreui/icons';
+import { cilCheckCircle,cilArrowLeft,cilBrushAlt,cilDescription, cilSearch, cilSave, cilFile,cilSpreadsheet,cilPencil,cilInfo,cilPlus,cilPen } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import Swal from 'sweetalert2';
 
-import {CContainer,CRow,CCol,CInputGroup,CCardBody,CFormSelect,CSpinner,CTable,CTableHead,CTableHeaderCell,CTableBody,CTableRow,CTableDataCell,
+import {CContainer,CRow,CCol,CInputGroup,CCardBody,CFormSelect,CInputGroupText,CSpinner,CTable,CTableHead,CTableHeaderCell,CTableBody,CTableRow,CTableDataCell,
   CButton,CFormInput,CModal,CModalHeader,CModalBody,CModalFooter,CPopover,CPagination,CDropdownItem,CDropdown,CDropdownToggle,CDropdownMenu
 } from '@coreui/react';
 
@@ -45,7 +45,10 @@ const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea
   const [tipoFiltro, setTipoFiltro] = useState('dia');
   const [currentView, setCurrentView] = useState('secciones');
   const [nombreSeccionSeleccionada, setNombreSeccionSeleccionada] = useState('');
-
+  //para paginacion y busqueda de la vista secciones
+  const [recordsPerPage2, setRecordsPerPage2] = useState(5);
+  const [searchTerm2, setSearchTerm2] = useState('');
+  const [currentPage2, setCurrentPage2] = useState(1); 
   //Paginacion
   const [currentPage, setCurrentPage] = useState(1); // Página actual
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Registros por página
@@ -584,21 +587,41 @@ const handleObservacionChangeActualizar = (index, value) => {
     setMostrarModalNuevo(false);
   };
 
- const generarReporteExcel = () => {
+  const generarReporteExcel = () => {
+    // Validar que haya datos en la tabla
+    if (!todasAsistencias || todasAsistencias.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte excel.',
+        confirmButtonText: 'Entendido',
+      });
+      return; // Salir de la función si no hay datos
+    }
+  
+    // Obtener la fecha de registro y limpiarla si es necesario
+    const fechaRegistro = todasAsistencias.length > 0 ? formatDateTime(todasAsistencias[0].Fecha) : 'sin_fecha';
+    const fechaLimpia = fechaRegistro !== 'sin_fecha' ? fechaRegistro.split(' ')[0].replace(/[^0-9/-]/g, '') : '';
+  
+    // Crear los encabezados con la sección y la fecha de generación
     const encabezados = [
-      ["Saint Patrick Academy"],
-      ["Reporte de Asistencia"],
-      [`Sección: ${nomenclaturaSeleccionada}`, `Fecha de generación: ${new Date().toLocaleDateString()}`],
+      ["Saint Patrick's Academy"],  // Mejorado el nombre con apóstrofe correcto
+      ["Reporte de Asistencia"],    // Título claro
+      [
+        `Sección: ${nomenclaturaSeleccionada || 'No especificada'}`,  // Asegurarse de que siempre haya un valor
+        `Fecha de generación: ${new Date().toLocaleDateString()}`,    // Fecha en formato amigable
+        `Fecha de registro: ${fechaLimpia || 'Sin fecha'}`            // Mostrar la fecha limpia o 'Sin fecha'
+      ],
       [], // Espacio en blanco
-      ["Nombre Completo", "Fecha", "Estado", "Observación"]
+      ["#", "Nombre Completo", "Estado", "Observación"] // Encabezado de la tabla de datos
     ];
   
     // Crear filas con asistencias filtradas
-    const filas = todasAsistencias.map((asistencia) => [
+    const filas = todasAsistencias.map((asistencia, index) => [
+      index + 1,
       asistencia.Nombre_Completo,
-      formatDateTime(asistencia.Fecha),
       asistencia.DescripcionEstado,
-      asistencia.Observacion || ""
+      asistencia.Observacion || "N/A"  // Si no hay observación, poner "N/A"
     ]);
   
     // Combinar encabezados y filas
@@ -622,10 +645,22 @@ const handleObservacionChangeActualizar = (index, value) => {
       }
     }
   
+    // Estilo de los encabezados de la tabla
+    for (let col = 0; col < 4; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 4, c: col }); // Encabezados de la tabla en la fila 5
+      if (hojaDeTrabajo[cellAddress]) {
+        hojaDeTrabajo[cellAddress].s = {
+          font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2D6A4F" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+    }
+  
     // Ajustar el ancho de columnas automáticamente
     const ajusteColumnas = [
-      { wpx: 200 }, // Nombre Completo
-      { wpx: 150 }, // Fecha
+      { wpx: 250 },  // Número de fila
+      { wpx: 250 }, // Nombre Completo
       { wpx: 100 }, // Estado
       { wpx: 250 }  // Observación
     ];
@@ -637,16 +672,23 @@ const handleObservacionChangeActualizar = (index, value) => {
     XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Asistencia");
   
     // Guardar el archivo Excel con un nombre personalizado
-    const fechaRegistro = todasAsistencias.length > 0 ? formatDateTime(todasAsistencias[0].Fecha) : 'sin_fecha';
-    const nombreArchivo = `${nomenclaturaSeleccionada}_${fechaRegistro}.xlsx`;
+    const nombreArchivo = `${nomenclaturaSeleccionada || 'No_especificada'}_${fechaLimpia || 'sin_fecha'}.xlsx`;
     
     XLSX.writeFile(libroDeTrabajo, nombreArchivo);
   };
   
   
-
-  
   const generarReportePDF = () => {
+     // Validar que haya datos en la tabla
+   if (!todasAsistencias || todasAsistencias.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Tabla vacía',
+      text: 'No hay datos disponibles para generar el reporte.',
+      confirmButtonText: 'Entendido',
+    });
+    return; // Salir de la función si no hay datos
+  }
     const doc = new jsPDF();
     const img = new Image();
     img.src = logo;
@@ -737,7 +779,7 @@ const handleObservacionChangeActualizar = (index, value) => {
           index + 1,
           `${asistencia.Nombre_Completo || ''}`.trim(),
           asistencia.DescripcionEstado,
-          asistencia.Observacion || "Sin Observación",
+          asistencia.Observacion || "N/A",
         ]),
         headStyles: {
           fillColor: [0, 102, 51],
@@ -747,6 +789,13 @@ const handleObservacionChangeActualizar = (index, value) => {
         styles: {
           fontSize: 10,
           cellPadding: 3,
+          halign: 'center',
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+          1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
+          2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
+          3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
@@ -756,7 +805,8 @@ const handleObservacionChangeActualizar = (index, value) => {
           doc.setFontSize(10);
           doc.setTextColor(100);
           doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          doc.text(`Página ${pageNumber}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
           pageNumber += 1; // Incrementar el número de página
         },
       });
@@ -773,6 +823,16 @@ const handleObservacionChangeActualizar = (index, value) => {
   };
   
   const generarReporteseccionesExcel = () => {
+     // Validar que haya datos en la tabla
+  if (!secciones || secciones.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Tabla vacía',
+      text: 'No hay datos disponibles para generar el reporte excel.',
+      confirmButtonText: 'Entendido',
+    });
+    return; // Salir de la función si no hay datos
+  }
     const encabezados = [
       ["Saint Patrick Academy"],
       ["Reporte de Secciones"],
@@ -816,7 +876,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       { wpx: 100 }, 
       { wpx: 100 }, 
       { wpx: 100 } ,
-      { wpx: 100 }  
+      { wpx: 200 }  
     ];
   
     hojaDeTrabajo['!cols'] = ajusteColumnas;
@@ -831,6 +891,16 @@ const handleObservacionChangeActualizar = (index, value) => {
   };
   
   const generarReporteseccionesPDF = () => {
+     // Validar que haya datos en la tabla
+   if (!secciones || secciones.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Tabla vacía',
+      text: 'No hay datos disponibles para generar el reporte.',
+      confirmButtonText: 'Entendido',
+    });
+    return; // Salir de la función si no hay datos
+  }
     const doc = new jsPDF();
     const img = new Image();
     img.src = logo;
@@ -897,6 +967,14 @@ const handleObservacionChangeActualizar = (index, value) => {
         styles: {
           fontSize: 10,
           cellPadding: 3,
+          halign: 'center', // Centrado del texto en las celdas
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+          1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
+          2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
+          3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
+          4: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
@@ -906,7 +984,8 @@ const handleObservacionChangeActualizar = (index, value) => {
           doc.setFontSize(10);
           doc.setTextColor(100);
           doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          doc.text(`Página ${pageNumber}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
           pageNumber += 1; // Incrementar el número de página
         },
       });
@@ -922,8 +1001,6 @@ const handleObservacionChangeActualizar = (index, value) => {
     };
   };
     
-    
-
     const handleViewAsistencia = async (Cod_secciones, nombreSeccion) => {
       setCodSeccionSeleccionada(Cod_secciones); // Asegúrate de actualizar la sección seleccionada
       setNombreSeccionSeleccionada(nombreSeccion); // Establecer el nombre de la sección seleccionada
@@ -959,6 +1036,78 @@ const handleObservacionChangeActualizar = (index, value) => {
       return <AccessDenied />;
     }
     
+  //-------------------paginacion, buscador vista actual : secciones-----------------------------
+  const handleSearch2 = (event) => {
+    const input = event.target;
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
+
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras, números, acentos, ñ, espacios y comas
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar caracteres permitidos
+    if (!regex.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Caracteres no permitidos',
+        text: 'Solo se permiten letras, números y espacios.',
+      });
+      return;
+    }
+
+    // Validación para letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          });
+          return;
+        }
+      }
+    }
+
+    // Establecer el valor del input y resetear la página
+    setSearchTerm2(value);
+    setCurrentPage2(1); // Resetear a la primera página al buscar
+  };
+
+
+  // Filtro de búsqueda
+  const filteredSecciones= secciones.filter((seccion) =>
+    seccion.Seccion.toLowerCase().includes(searchTerm2.toLowerCase()) ||
+    seccion.Grado.toLowerCase().includes(searchTerm2.toLowerCase()) ||
+    seccion.Anio_Academico.toString().includes(searchTerm2)
+  );
+
+  // Lógica de paginación
+  const indexOfLastRecord2 = currentPage2 * recordsPerPage2;
+  const indexOfFirstRecord2 = indexOfLastRecord2 - recordsPerPage2;
+  const currentRecords2 = filteredSecciones.slice(indexOfFirstRecord2, indexOfLastRecord2);
+
+  // Cambiar página
+  const paginate2 = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredSecciones.length / recordsPerPage2)) {
+    setCurrentPage2(pageNumber);
+  }
+  }
+//------------------------------------------------------------------------------------------------------
+   
   return (
     <CContainer className="py-1">
       {cargando && (
@@ -978,7 +1127,7 @@ const handleObservacionChangeActualizar = (index, value) => {
                   style={{backgroundColor: '#6C8E58',color: 'white',fontSize: '0.85rem',cursor: 'pointer',transition: 'all 0.3s ease', }}
                   onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
                   onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
-                  Reporte
+                  <CIcon icon={cilDescription}/> Reporte
                 </CDropdownToggle>
                 <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
                   <CDropdownItem
@@ -998,7 +1147,70 @@ const handleObservacionChangeActualizar = (index, value) => {
               </CDropdown>
             </CCol>
           </CRow>
+          {/* Contenedor de la barra de búsqueda y el selector dinámico */}
+        <CRow className="align-items-center mt-4 mb-2">
+          {/* Barra de búsqueda  */}
+          <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+            <CInputGroup className="me-3" style={{ width: '350px' }}>
+              <CInputGroupText>
+                <CIcon icon={cilSearch} />
+              </CInputGroupText>
+              <CFormInput
+              style={{ width: '80px',height:'35px', display: 'inline-block',fontSize: '0.8rem'}}
+                placeholder="Buscar por año, grado o sección"
+                onChange={handleSearch2}
+                value={searchTerm2}
+                onPaste={disableCopyPaste}
+                onCopy={disableCopyPaste}
+              />
+              <CButton
+                style={{border: '1px solid #ccc',
+                  transition: 'all 0.1s ease-in-out', // Duración de la transición
+                  backgroundColor: '#F3F4F7', // Color por defecto
+                  color: '#343a40', // Color de texto por defecto
+                  height:'35px'
+                }}
+                onClick={() => {
+                  setSearchTerm2('');
+                  setCurrentPage2(1);
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
+                  e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
+                  e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
+                }}
+              >
+                <CIcon icon={cilBrushAlt} /> Limpiar
+              </CButton>
+            </CInputGroup>
+        </CCol>
 
+          {/* Selector dinámico a la par de la barra de búsqueda */}
+          <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+            <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
+              <div className="d-inline-flex align-items-center">
+                <span style={{ fontSize: '0.85rem' }}>Mostrar&nbsp;</span>
+                  <CFormSelect
+                    style={{ width: '80px',height:'35px', display: 'inline-block', textAlign: 'center' }}
+                    onChange={(e) => {
+                    const value = Number(e.target.value);
+                    setRecordsPerPage2(value);
+                    setCurrentPage2(1); // Reiniciar a la primera página cuando se cambia el número de registros
+                  }}
+                    value={recordsPerPage2}
+                  >
+                    <option value="5">5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                  </CFormSelect>
+                <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
+              </div>       
+          </CInputGroup>
+        </CCol>
+        </CRow>
           <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
             <CTable striped bordered hover responsive >
               <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
@@ -1012,7 +1224,8 @@ const handleObservacionChangeActualizar = (index, value) => {
                 </CTableRow>
               </CTableHead>
               <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
-                {secciones.map((seccion, index) => (
+              {currentRecords2.length > 0 ? (
+                currentRecords2.map((seccion, index) => (
                   <CTableRow key={index}>
                     <CTableDataCell >{index + 1}</CTableDataCell>
                     <CTableDataCell>{seccion.Seccion}</CTableDataCell>
@@ -1027,10 +1240,36 @@ const handleObservacionChangeActualizar = (index, value) => {
                       </CButton>
                     </CTableDataCell>
                   </CTableRow>
-                ))}
+                ))
+              ) : (
+                <CTableRow>
+                  <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
+                </CTableRow>
+              )}
               </CTableBody>
             </CTable>
           </div>
+          {/* Paginación Fija */}
+          <div style={{ display: 'flex',  justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
+            <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
+              <CButton
+                style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+                disabled={currentPage2 === 1} // Deshabilitar si estás en la primera página
+                onClick={() => paginate2(currentPage2 - 1)}>
+                Anterior
+              </CButton>
+              <CButton
+                style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
+                disabled={currentPage2 === Math.ceil(filteredSecciones.length / recordsPerPage2)} // Deshabilitar si estás en la última página
+                onClick={() => paginate2(currentPage2 + 1)}>
+                Siguiente
+            </CButton>
+          </CPagination>
+            {/* Mostrar total de páginas */}
+            <span style={{ marginLeft: '10px' }}>
+              Página {currentPage2} de {Math.ceil(filteredSecciones.length / recordsPerPage2)}
+            </span>
+        </div>
         </>
       )}
       {!cargando && currentView === 'asistencias' && (
@@ -1136,7 +1375,7 @@ const handleObservacionChangeActualizar = (index, value) => {
               <div className="d-inline-flex align-items-center">
                 <span style={{ fontSize: '0.85rem' }}>Mostrar&nbsp;</span>
                 <CFormSelect
-                  style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                  style={{ width: '80px',height:'35px', display: 'inline-block', textAlign: 'center' }}
                   onChange={(e) => {
                     const value = Number(e.target.value);
                     setRecordsPerPage(value);
@@ -1153,9 +1392,6 @@ const handleObservacionChangeActualizar = (index, value) => {
             </CInputGroup>
           </CCol>
          </CRow>
-
-
-
           {/* Contenido de la tabla de recuento de asistencias */}
           {recuentoAsistencias.length === 0 ? (
             <p className="text-center text-muted mt-2">No se encontraron registros de asistencia para esta sección</p>
@@ -1396,7 +1632,7 @@ const handleObservacionChangeActualizar = (index, value) => {
                   style={{ backgroundColor: '#6C8E58',color: 'white',fontSize: '0.85rem',cursor: 'pointer',transition: 'all 0.3s ease', }}
                   onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)'; }}
                   onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none';}}>
-                  Reporte
+                 <CIcon icon={cilDescription} /> Reporte
                 </CDropdownToggle>
                 <CDropdownMenu>
                   <CDropdownItem
@@ -1581,7 +1817,8 @@ const handleObservacionChangeActualizar = (index, value) => {
           <CButton color="secondary" onClick={() => setMostrarModalActualizar(false)}>
             Cerrar
           </CButton>
-          <CButton onClick={handleActualizarAsistencias}style={{ backgroundColor: '#9f7536', color: '#FFFFFF'}}>
+          <CButton onClick={handleActualizarAsistencias} onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = "#b28541"; }}
+        onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = "#9f7536"; }} style={{ backgroundColor: '#9f7536', color: '#FFFFFF'}}>
             <CIcon icon={cilPen}  /> Actualizar
           </CButton>
         </CModalFooter>

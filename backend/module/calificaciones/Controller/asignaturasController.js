@@ -1,4 +1,5 @@
 import conectarDB from '../../../config/db.js';
+import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
 
 
@@ -70,4 +71,62 @@ export const eliminarAsignatura = async (req, res) => {
         console.error('Error al eliminar la asignatura:', error);  
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });  
     }  
+};
+
+
+
+
+
+
+//----------------------------------------------------------------------------------------Parte Ariel ------------------------------------------------------------------
+
+
+
+
+
+
+
+
+export const obtenerAsignaturasPorProfesor = async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ mensaje: 'Token no proporcionado' });
+        }
+
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const codPersona = decodedToken.cod_persona;
+        if (!codPersona) {
+            return res.status(400).json({ mensaje: 'El token no contiene cod_persona' });
+        }
+
+        const [profesorResult] = await pool.query(
+            'SELECT Cod_Profesor FROM tbl_profesores WHERE Cod_Persona = ?',
+            [codPersona]
+        );
+
+        if (profesorResult.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontró un profesor con este cod_persona' });
+        }
+
+        const codProfesor = profesorResult[0].Cod_Profesor;
+
+        // Obtener `codSeccion` desde los parámetros
+        const { codSeccion } = req.params;
+
+        // Llamar al procedimiento almacenado
+        const [asignaturas] = await pool.query(
+            'CALL ObtenerAsignaturasPorProfesor(?, ?)', 
+            [codProfesor, codSeccion]
+        );
+
+        if (!asignaturas || asignaturas.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron asignaturas para esta sección.' });
+        }
+
+        res.status(200).json(asignaturas[0]); // Retornar asignaturas correctamente
+    } catch (error) {
+        console.error('Error al obtener las asignaturas:', error);
+        res.status(500).json({ mensaje: 'Error al obtener las asignaturas.', error: error.message });
+    }
 };

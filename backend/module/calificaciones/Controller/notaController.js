@@ -130,6 +130,32 @@ export const ObtenerActividadesPorAsignatura = async (req, res) => {
     }
 };
 
+// Obtener el conteo de parciales por sección
+export const ObtenerActividadesPorAsignaturaCalificadas = async (req, res) => {
+    const { Cod_seccion_asignatura } = req.query;
+
+    // Validar si el parámetro Cod_seccion_asignatura fue proporcionado
+    if (!Cod_seccion_asignatura) {
+        return res.status(400).json({ Mensaje: 'El parámetro Cod_seccion_asignatura es requerido' });
+    }
+
+    try {
+        // Ejecutar el procedimiento almacenado con el parámetro proporcionado
+        const [results] = await pool.query('CALL ObtenerActividadesCalificadas(?)', [Cod_seccion_asignatura]);
+
+        // Devolver los resultados
+        res.status(200).json(results[0]);
+    } catch (error) {
+        console.error('Error al obtener el la actividad:', error);
+
+        if (error.code === 'ER_SIGNAL_EXCEPTION') {
+            res.status(400).json({ Mensaje: error.sqlMessage });
+        } else {
+            res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        }
+    }
+};
+
 
 // Crear múltiples notas
 export const crearNota = async (req, res) => {
@@ -279,5 +305,60 @@ export const obtenerNotasPorActividad = async (req, res) => {
     } catch (error) {
         console.error('Error al obtener las notas:', error);
         res.status(500).json({ message: 'Error al obtener las notas', error });
+    }
+};
+
+
+
+
+//--------------------------------------------------------------------Cuadro------------------------
+export const obtenerNotasYPromedio = async (req, res) => {
+    const { CodSeccionMatricula } = req.params; // Parámetro en la URL
+
+    try {
+        // Llamar al procedimiento almacenado con el parámetro
+        const [rows] = await pool.query('CALL ObtenerNotasYPromedio(?)', [CodSeccionMatricula]);
+
+        if (rows[0].length > 0) {
+            // Unificar datos en un solo conjunto
+            const notasUnificadas = rows[0].reduce((resultado, notaParcial) => {
+                // Buscar si ya existe un registro para la asignatura
+                let asignatura = resultado.find(item => item.Asignatura === notaParcial.Asignatura);
+
+                if (!asignatura) {
+                    // Si no existe, crear un nuevo registro con los datos iniciales
+                    asignatura = {
+                        Asignatura: notaParcial.Asignatura,
+                        NotasParciales: [],
+                        PromedioFinal: null // Este se llenará después
+                    };
+                    resultado.push(asignatura);
+                }
+
+                // Agregar las notas parciales
+                asignatura.NotasParciales.push({
+                    Parcial: notaParcial.Parcial,
+                    Nota: notaParcial.Nota_Parcial
+                });
+
+                return resultado;
+            }, []);
+
+            // Agregar el promedio final de cada asignatura
+            rows[1].forEach(promedio => {
+                const asignatura = notasUnificadas.find(item => item.Asignatura === promedio.Asignatura);
+                if (asignatura) {
+                    asignatura.PromedioFinal = promedio.Promedio_Final;
+                }
+            });
+
+            // Enviar respuesta unificada
+            res.status(200).json(notasUnificadas);
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontraron notas para la sección proporcionada' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las notas y promedio:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };

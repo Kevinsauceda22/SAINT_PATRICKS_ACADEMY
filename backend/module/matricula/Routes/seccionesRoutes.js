@@ -14,7 +14,9 @@ import { obtenerSeccionPorId,
          generarNombreSeccion, 
          crearSeccion, 
          actualizarSeccion, 
-         eliminarSeccion 
+         eliminarSeccion,
+         obtenerSeccionesPorProfesor,
+         obtenerTodasLasSeccionesYProfesoresAdmin
 } from '../Controllers/seccionesController.js';
 
 const router = express.Router();
@@ -63,5 +65,15 @@ router.put('/actualizar_seccion', actualizarSeccion);
 
 // Ruta para eliminar una sección
 router.delete('/eliminar_seccion/:Cod_seccion', eliminarSeccion);
+
+
+
+//------------------------------------------------------------------------- Parte ariel-------------------------------------------------------------
+
+// Ruta para obtener las secciones de un profesor usando el token
+router.get('/porprofesor', obtenerSeccionesPorProfesor);
+
+// Define la ruta para obtener las secciones por profesor
+router.get('/porprofesor/:codProfesor', obtenerTodasLasSeccionesYProfesoresAdmin);
 
 export default router;

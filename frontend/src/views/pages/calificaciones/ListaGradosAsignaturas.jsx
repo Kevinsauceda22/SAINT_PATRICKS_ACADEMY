@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription, cilCheck, cilX, cilNoteAdd, cilSpreadsheet,cilFile } from '@coreui/icons';
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilInfo, cilSave, cilDescription, cilCheck, cilX, cilNoteAdd, cilSpreadsheet,cilFile } from '@coreui/icons';
 import { jsPDF } from "jspdf";
 import Swal from 'sweetalert2';
 //import "jspdf-autotable"; // Importar para tablas
@@ -10,6 +11,7 @@ import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
 import {
+    CContainer,
     CFormSelect,
     CTable,
     CTableHead,
@@ -34,6 +36,9 @@ import {
     CDropdownItem,
     CDropdownMenu,
     CDropdownToggle,
+    CInputGroup,
+    CInputGroupText,
+    CPagination,
     
 } from '@coreui/react';
 import usePermission from '../../../../context/usePermission';
@@ -49,12 +54,10 @@ const ListaGradosAsignaturas = () => {
     const [nuevoGrado, setNuevoGrado] = useState(''); // Estado para el nuevo grado
     const [selectedGrado, setSelectedGrado] = useState('');
     const [GradoAsignaturaToDelete, setGradoAsignaturaToDelete] = useState({}); // Estado para la asignatura a eliminar
-    ///const [gradoAsignaturaToUpdate, setGradoAsignaturaToUpdate] = useState({}); // Estado para la asignatura a actualizar
-    
     const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
     const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
     const [searchTerm, setSearchTerm] = useState('');
-
+    const [gradoActual, setGradoActual] = useState(null);
     const [loading, setLoading] = useState(false);
     const [modalVisible, setModalVisible] = useState(false); // Estado para controlar el modal
     const [assignModalVisible, setAssignModalVisible] = useState(false); // Estado para controlar el modal de asignación
@@ -70,7 +73,7 @@ const ListaGradosAsignaturas = () => {
         fetchAsignaturas();
     }, []);
 
-    // LLAMADO AL GET GRADOS
+    //LLAMADO AL GET GRADOS
     const fetchGrados = async () => {
         try {
           const response = await fetch('http://localhost:4000/api/grados/verGrados');
@@ -87,9 +90,27 @@ const ListaGradosAsignaturas = () => {
         }
     };
 
+    const handleOpenModal = (grado) => {
+        setGradoActual(grado); // Guarda el grado seleccionado
+        setModalVisible(true); // Abre el modal
+    };
+
     const handleEditClick = (index, gradosAsignaturas) => {
         setEditIndex(index);
         setEditedData(gradosAsignaturas); // Inicializa el estado con los datos actuales
+    };
+
+    //llamado a todos los grados y sus asignaturas
+    const fetchGradosAsignaturasOrden = async () => {
+        try {
+          const response = await fetch('http://localhost:4000/api/gradoAsignatura/obtenerGradosAsignaturasOrden'); // URL de tu API
+          const data = await response.json();
+      
+          return data; // Devuelve directamente los datos completos
+        } catch (error) {
+          console.error('Error al obtener los grados y asignaturas:', error);
+          return [];
+        }
     };
 
     // LLAMADO AL GET ASIGNATURAS
@@ -138,6 +159,13 @@ const ListaGradosAsignaturas = () => {
         return Asignatura ? Asignatura.Nombre_asignatura : 'Asignatura no encontrada';
     };
 
+    // BUSQUEDA DEL NOMBRE DE LAS ASIGNATURAS
+    const getDescripcionName = (codAsignatura) => {
+        if (!Asignaturas.length) return 'Asignaturas no disponibles';
+        const Asignatura = Asignaturas.find((c) => c.Cod_asignatura === codAsignatura);
+        return Asignatura ? Asignatura.Descripcion_asignatura : 'Asignatura no encontrada';
+    }; 
+
     // EXTRAE EL GRADO DESEADO
     const handleGradoChange = (event) => {
         const selectedValue = event.target.value;
@@ -173,115 +201,201 @@ const ListaGradosAsignaturas = () => {
         setModalDeleteVisible(true); // Abrir el modal de confirmación
     };
 
-    // LLAMADO A LA REPORTERIA EN PDF
-    const handleReporteClick = () => {
-        // Crear una nueva instancia de jsPDF
+    
+    // LLAMADO DE REPORTERÍA DE TODOS LOS GRADOS CON SUS ASIGNATURAS
+    const handleReporteClickOrden = async () => {
+        try {
+            const gradosAsignaturas = await fetchGradosAsignaturasOrden(); // Obtén los datos de la API
+
+            if (!gradosAsignaturas.length) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Sin datos',
+                    text: 'No hay información disponible para generar el reporte.',
+                    confirmButtonText: 'Entendido',
+                });
+                return;
+            }
+
+            // Agrupar asignaturas por grado
+            const agrupadoPorGrado = gradosAsignaturas.reduce((acc, item) => {
+                if (!acc[item.Nombre_grado]) {
+                    acc[item.Nombre_grado] = [];
+                }
+                acc[item.Nombre_grado].push(item);
+                return acc;
+            }, {});
+
+            // Generar el PDF con los datos agrupados
+            generatePDF_Orden(agrupadoPorGrado);
+        } catch (error) {
+            console.error('Error al generar el reporte:', error);
+        }
+    };
+
+    // GENERACIÓN DE REPORTERÍA PARA TODOS LOS GRADOS Y SUS ASIGNATURAS
+    const generatePDF_Orden = (agrupadoPorGrado) => {
         const doc = new jsPDF();
         const img = new Image();
         img.src = logo;
 
-        const fechaReporte = new Date().toLocaleDateString();
         img.onload = () => {
-            // Add the logo
-            doc.addImage(img, 'PNG', 10, 10, 30, 30); // Adjust the position and size as needed
-            
-            let yPosition = 20;
+            Object.entries(agrupadoPorGrado).forEach(([grado, asignaturas], index) => {
+                if (index > 0) doc.addPage(); // Agrega una nueva página para cada grado
 
-            // Título del PDF
+                // Encabezado del reporte
+                doc.addImage(img, 'PNG', 10, 10, 30, 30);
+                let yPosition = 20;
+
+                doc.setFontSize(18);
+                doc.setTextColor(0, 102, 51);
+                doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+                yPosition += 10;
+                doc.setFontSize(10);
+                doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+                yPosition += 4;
+                doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+                yPosition += 4;
+                doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+                yPosition += 6;
+                doc.setLineWidth(0.5);
+                doc.setDrawColor(0, 102, 51);
+                doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+
+                // Título por grado
+                yPosition += 10;
+                doc.setFontSize(14);
+                doc.setTextColor(0, 102, 51);
+                doc.text(`Grado: ${grado}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+                // Crear tabla para el grado actual
+                const tableRows = asignaturas.map((item, index) => [
+                    index + 1, // Número de fila
+                    item.Nombre_grado,
+                    item.Nombre_asignatura,
+                    item.Descripcion_asignatura
+                ]);
+
+                doc.autoTable({
+                    startY: yPosition + 10,
+                    head: [['#', 'Grado', 'ASIGNATURA', 'DESCRIPCIÓN']],
+                    body: tableRows,
+                    styles: {
+                        fontSize: 10,
+                        cellPadding: 3,
+                        halign: 'center',
+                    },
+                    headStyles: {
+                        fillColor: [0, 102, 51],
+                        textColor: [255, 255, 255],
+                    },
+                    alternateRowStyles: { fillColor: [240, 248, 255] },
+                });
+
+                // Footer
+                const pageHeight = doc.internal.pageSize.height;
+                const currentDate = new Date().toLocaleDateString();
+                const pageCount = doc.internal.getNumberOfPages();
+                const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
+
+                doc.setFontSize(10);
+                const footerText = `Fecha de generación: ${currentDate} - Página ${currentPage} de ${pageCount}`;
+                doc.text(footerText, doc.internal.pageSize.width / 2, pageHeight - 10, { align: 'center' });
+            });
+
+            // Guardar el PDF
+            doc.save("reporte_asignaturas_grado.pdf");
+        };
+    };
+
+    //llAMADO AL GENERADO DE REPORTERIA PARA UN SOLO GRADO
+    const handleReporteClick = () => {
+        const doc = new jsPDF();
+        const img = new Image();
+        img.src = logo; // Asegúrate de que "logo" sea la ruta correcta de la imagen.
+    
+        img.onload = () => {
+            // Agregar el logo
+            doc.addImage(img, 'PNG', 10, 10, 30, 30); // Logo en la esquina superior izquierda
+    
+            // Encabezado principal
             doc.setFontSize(18);
-            //doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 102, 51);
-            doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-            //doc.setFontSize(10);
-            //doc.text(`Grado: ${getGradoName}`, doc.internal.pageSize.width / 2, 35, { align: 'center' });
-            
-            yPosition += 12;
-
-            // Subtítulo
-            doc.setFontSize(16);
-            //doc.setFont("helvetica", "normal");
-            doc.text('Reporte de Información de informacion del Grados:', doc.internal.pageSize.width / 2, 25, { align: 'center' });
-            
-            // Detalles
-            //yPosition += 10;
-
-            yPosition += 8;
-            doc.text(`Fecha del reporte: ${fechaReporte}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-            
-            yPosition += 8;
-
-            // Información de contacto
+            doc.setTextColor(0, 102, 51); // Verde
+            doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, 20, { align: 'center' });
+    
+            // Subtítulo: información del colegio
             doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-            yPosition += 4;
-            doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-            yPosition += 6;
-
-            // Line Separator
+            doc.setTextColor(0, 102, 51); // Negro
+            doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 26, { align: 'center' });
+            doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+            doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 34, { align: 'center' });
+    
+            // Línea divisoria
+            doc.setDrawColor(0, 102, 51); // Verde
             doc.setLineWidth(0.5);
-            doc.setDrawColor(0, 102, 51);
-            doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
-
-            yPosition += 4;
-            // Datos que quieres incluir en el PDF
+            doc.line(10, 38, doc.internal.pageSize.width - 10, 38);
+    
+            // Título del reporte
+            doc.setFontSize(14);
+            doc.setTextColor(0, 102, 51);
+            const nombreGrado = getGradoName(gradoActual?.Cod_grado); // Ajustar según la estructura de datos
+            doc.text(`REPORTE DE ASIGNATURAS ${nombreGrado}`, doc.internal.pageSize.width / 2, 45, { align: 'center' });
+    
+            // Datos de la tabla
             const tableRows = [];
-        
             gradosAsignaturas.forEach((gradoAsignatura, index) => {
                 const rowData = [
                     index + 1,
                     getAsignaturaName(gradoAsignatura.Cod_asignatura),
-                    getGradoName(gradoAsignatura.Cod_grado)
+                    getDescripcionName(gradoAsignatura.Cod_asignatura),
                 ];
                 tableRows.push(rowData);
             });
-        
-            // Agregar la tabla al PDF usando autotable
+    
+            // Agregar la tabla con autoTable
             doc.autoTable({
-                startY: yPosition,
-                head: [['#', 'NOMBRE DE LA ASIGNATURA', 'GRADO']],
+                startY: 50, // Comienza debajo del título
+                head: [['#', 'NOMBRE DE LA ASIGNATURA', 'DESCRIPCIÓN']],
                 body: tableRows,
+                headStyles: {
+                    fillColor: [0, 102, 51], // Verde para el encabezado
+                    textColor: [255, 255, 255], // Blanco para texto del encabezado
+                },
                 styles: {
                     fontSize: 10,
-                    cellPadding: 5,
+                    halign: 'center', // Texto centrado
                 },
-                headStyles: {
-                    fillColor: [0, 102, 51],
-                    textColor: [255, 255, 255],
-                    fontStyle: 10,
-                },
-                alternateRowStyles: { fillColor: [240, 248, 255] },
-                tableWidth: 'wrap',
-                margin: { left: (doc.internal.pageSize.width - 180) / 2 },
-                // Footer with date and page number
-                didDrawPage: (data) => {
-                    const pageCount = doc.internal.getNumberOfPages();
-                    const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-                    const pageHeight = doc.internal.pageSize.height;
-                    const currentDate = new Date().toLocaleDateString();
-        
-                    // Footer
-                    doc.setFontSize(10);
-                    const footerText = `Fecha de generación: ${currentDate} - Página ${currentPage} de ${pageCount}`;
-                    doc.text(footerText, doc.internal.pageSize.width / 2, pageHeight - 10, { align: 'center' });
-                    
-                    // Abrir el PDF
-                    window.open(doc.output('bloburl'), '_blank');
-                }
-            
+                alternateRowStyles: { fillColor: [240, 248, 255] }, // Color alterno para filas
             });
-            
-            // Guardar el PDF con un nombre específico
+    
+            // Pie de página
+            const pageCount = doc.internal.getNumberOfPages();
+            const currentDate = new Date().toLocaleDateString();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(10);
+                doc.text(
+                    `Fecha de generación: ${currentDate} - Página ${i} de ${pageCount}`,
+                    doc.internal.pageSize.width / 2,
+                    doc.internal.pageSize.height - 10,
+                    { align: 'center' }
+                );
+            }
+    
+            // Abrir el PDF en una nueva pestaña
+            //window.open(doc.output('bloburl'), '_blank');
             doc.save("reporte_asignaturas_grado.pdf");
         };
-    };  
-
+    };
+    
     // LLAMADO A LA REPORTERIA EN EXCEL
     const handleReporteExcelClick = () => {
         // Encabezados de la tabla
         const encabezados = [
           ["Saint Patrick Academy"],
-          ["Reporte de Información de actividades Asignadas"],
+          ["Listado de Asignaturas del Grados:"],
           //[`Asignatura: ${selectedAsignatura}`, `Fecha de generación: ${new Date().toLocaleDateString()}`],
           [`Fecha de generación: ${new Date().toLocaleDateString()}`], // Fecha de generación
           [], // Espacio en blanco
@@ -318,151 +432,6 @@ const ListaGradosAsignaturas = () => {
         XLSX.writeFile(libroDeTrabajo, nombreArchivo);
     };
 
-    // const handleReporteClick = () => {
-    //     const doc = new jsPDF();
-    //     const img = new Image();
-    //     img.src = logo;
-    
-    //     img.onload = () => {
-    //       // Add the logo
-    //       doc.addImage(img, 'PNG', 10, 10, 30, 30); // Adjust the position and size as needed
-    
-    //       // Header Section
-    //       doc.setFontSize(16);
-    //       doc.setFont("helvetica", "bold");
-    //       doc.text('Saint Patrick Academy', doc.internal.pageSize.width / 2, 15, { align: 'center' });
-    
-    //       doc.setFontSize(12);
-    //       doc.setFont("helvetica", "normal");
-    //       doc.text('Reporte de Información de informacion de los Grados:', doc.internal.pageSize.width / 2, 25, { align: 'center' });
-    
-    //       // doc.setFontSize(10);
-    //       // doc.text(`Grados: ${setSelectedGrado}`, doc.internal.pageSize.width / 2, 35, { align: 'center' });
-    
-    //       // Line Separator
-    //       doc.setLineWidth(0.5);
-    //       doc.line(10, 38, doc.internal.pageSize.width - 10, 38);
-    
-    //       // Table Data
-    //       const tableColumn = ["#", "Nombre de la Asignatura", "Grado"];
-    //       const tableRows = [];
-
-    //       gradosAsignaturas.forEach((gradoAsignatura, index) => {
-    //         const rowData = [
-    //             index + 1,
-    //             getAsignaturaName(gradoAsignatura.Cod_asignatura),
-    //             getGradoName(gradoAsignatura.Cod_grado)
-    //         ];
-    //         tableRows.push(rowData);
-    //     });
-    
-    //     //   gradosAsignadas.forEach((gradosAsignadas, index) => {
-    //     //     const rowData = [
-    //     //       index + 1,
-    //     //       gradosAsignadas.Nombre_asignatura,
-    //     //       gradosAsignadas.Nombre_grado,
-    //     //     ];
-    //     //     tableRows.push(rowData);
-    //     //   });
-    
-    //       // Add the table using autoTable
-    //       autoTable(doc, {
-    //         startY: 40,
-    //         head: [tableColumn],
-    //         body: tableRows,
-    //         styles: {
-    //           fontSize: 8,
-    //           cellPadding: 2,
-    //         },
-    //         headStyles: {
-    //           fillColor: [21, 62, 33],
-    //           textColor: [255, 255, 255],
-    //           fontStyle: "bold",
-    //         },
-    //         alternateRowStyles: { fillColor: [245, 245, 245] },
-    //         tableWidth: 'wrap',
-    //         margin: { left: (doc.internal.pageSize.width - 190) / 2 },
-    
-    //         // Footer with date and page number
-    //         didDrawPage: (data) => {
-    //           const pageCount = doc.internal.getNumberOfPages();
-    //           const currentPage = doc.internal.getCurrentPageInfo().pageNumber;
-    //           const pageHeight = doc.internal.pageSize.height;
-    //           const currentDate = new Date().toLocaleDateString();
-    
-    //           // Footer
-    //           doc.setFontSize(10);
-    //           const footerText = `Fecha de generación: ${currentDate} - Página ${currentPage} de ${pageCount}`;
-    //           doc.text(footerText, doc.internal.pageSize.width / 2, pageHeight - 10, { align: 'center' });
-    //         }
-    //       });
-    
-    //       // Save the PDF
-    //       doc.save("reporte_grados.pdf");
-    //     };
-    
-    //     img.onerror = () => {
-    //       Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-    //     };
-    // };
-
-    // const handleReporteExcelClick = () => {
-    //     // Encabezados de la tabla
-    //     const encabezados = [
-    //       ["Saint Patrick Academy"],
-    //       ["Reporte de Información de actividades Asignadas"],
-    //       //[`Asignatura: ${selectedAsignatura}`, `Fecha de generación: ${new Date().toLocaleDateString()}`],
-    //       [], // Espacio en blanco
-    //       ["#", "Asignatura", "Grado"]
-    //     ];
-    
-    //     // Crear filas de la tabla con los datos de las actividades asignadas
-    //     const filas = gradosAsignaturas.map((gradoAsignatura, index) => [
-    //       index + 1,
-    //       gradoAsignatura.Nombre_asignatura,
-    //       gradoAsignatura.Nombre_grado,
-    //     ]);
-    
-    //     // Combinar encabezados y filas
-    //     const datos = [...encabezados, ...filas];
-    
-    //     // Crear una hoja de trabajo con los datos
-    //     const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
-    
-    //     // Ajustar el ancho de columnas automáticamente
-    //     const ajusteColumnas = [
-    //       { wpx: 50 },  // Número
-    //       { wpx: 150 }, // Asignatura
-    //       { wpx: 100 }, // Grado
-    //       { wpx: 200 }, // Nombre de la Actividad
-    //       { wpx: 150 }, // Parcial
-    //       { wpx: 120 }, // Empieza
-    //       { wpx: 120 }, // Finaliza
-    //       { wpx: 80 }   // Valor
-    //     ];
-    //     hojaDeTrabajo['!cols'] = ajusteColumnas;
-    
-    //     // Crear un libro de trabajo y añadir la hoja
-    //     const libroDeTrabajo = XLSX.utils.book_new();
-    //     XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de las Asignaturas en cada Grado");
-    
-    //     // Guardar el archivo Excel
-    //     const nombreArchivo = `reporte_asignaturas_${new Date().toLocaleDateString()}.xlsx`;
-    //     XLSX.writeFile(libroDeTrabajo, nombreArchivo);
-    // };
-
-    //DARLE FORMATO AL TIEMPO
-    // const formatDateTime = (dateTime) => {
-    //     const date = new Date(dateTime);
-    //     const formattedDate = date.toLocaleDateString('es-ES'); // Change 'es-ES' to your locale preference
-    //     const formattedTime = date.toLocaleTimeString('es-ES', {
-    //       hour: '2-digit',
-    //       minute: '2-digit',
-    //     });
-    //     return `${formattedDate} ${formattedTime}`;
-    // };
-
-
     //VALIDACIONES 
     // Función para cerrar el modal con advertencia si hay cambios sin guardar
     const handleCloseInsertModal = (closeFunction, resetFields) => {
@@ -488,100 +457,73 @@ const ListaGradosAsignaturas = () => {
         }
     };
 
-    //PARA ASIGNAR UNA ASIGNATURA AL GRADO
     // PARA ASIGNAR UNA ASIGNATURA AL GRADO
-const asignarAsignatura = async () => {
-    // Validar si la asignatura ya está asignada en el grado
-    const asignaturaDuplicada = nuevoGradosAsignaturas.some(
-        (asignatura) => asignatura.Cod_asignatura === nueva_Asignatura
-    );
+    const asignarAsignatura = async () => {
+        // Validar si la asignatura ya está asignada en el grado
+        const asignaturaDuplicada = nuevoGradosAsignaturas.some(
+            (asignatura) => asignatura.Cod_asignatura === nueva_Asignatura
+        );
 
-    if (asignaturaDuplicada) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Asignatura duplicada',
-            text: 'La asignatura seleccionada ya está asignada a este grado. Por favor, elige otra.',
-            confirmButtonText: 'Entendido',
-        });
-        return; // Detener la ejecución si hay duplicados
-    }
-
-    try {
-        // Petición al servidor para asignar la asignatura
-        const response = await fetch('http://localhost:4000/api/gradoAsignatura/crearGradoAsignatura', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                Cod_asignatura: nueva_Asignatura,
-                Cod_grado: nuevoGrado,
-            }),
-        });
-
-        if (response.ok) {
+        if (asignaturaDuplicada) {
             Swal.fire({
-                icon: 'success',
-                title: 'Asignación exitosa',
-                text: 'La asignatura fue asignada correctamente al grado.',
-            });
-
-            // Actualizar la lista local de asignaturas asignadas
-            const nuevaAsignatura = await response.json(); // Suponiendo que el backend devuelve la nueva asignación
-            setnuevoGradosAsignaturas((prev) => [...prev, nuevaAsignatura]);
-            resetAsignatura();
-
-            // Limpiar los campos del formulario
-            setNueva_Asignatura('');
-            setAssignModalVisible(false);
-        } else if (response.status === 400) { // Validación de duplicados desde el backend
-            const errorData = await response.json();
-            Swal.fire({
-                icon: 'info',
+                icon: 'warning',
                 title: 'Asignatura duplicada',
-                text: errorData.Mensaje || 'La asignatura seleccionada ya está asignada a este grado.',
+                text: 'La asignatura seleccionada ya está asignada a este grado. Por favor, elige otra.',
                 confirmButtonText: 'Entendido',
             });
-        } else {
+            return; // Detener la ejecución si hay duplicados
+        }
+
+        try {
+            // Petición al servidor para asignar la asignatura
+            const response = await fetch('http://localhost:4000/api/gradoAsignatura/crearGradoAsignatura', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    Cod_asignatura: nueva_Asignatura,
+                    Cod_grado: nuevoGrado,
+                }),
+            });
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Asignación exitosa',
+                    text: 'La asignatura fue asignada correctamente al grado.',
+                });
+
+                // Actualizar la lista local de asignaturas asignadas
+                const nuevaAsignatura = await response.json(); // Suponiendo que el backend devuelve la nueva asignación
+                setnuevoGradosAsignaturas((prev) => [...prev, nuevaAsignatura]);
+                resetAsignatura();
+
+                // Limpiar los campos del formulario
+                setNueva_Asignatura('');
+                setAssignModalVisible(false);
+            } else if (response.status === 400) { // Validación de duplicados desde el backend
+                const errorData = await response.json();
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Asignatura duplicada',
+                    text: errorData.Mensaje || 'La asignatura seleccionada ya está asignada a este grado.',
+                    confirmButtonText: 'Entendido',
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'No se pudo asignar la asignatura. Inténtalo de nuevo.',
+                });
+            }
+        } catch (error) {
+            console.error('Error al asignar la asignatura:', error);
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'No se pudo asignar la asignatura. Inténtalo de nuevo.',
+                text: 'Hubo un problema al procesar la solicitud.',
             });
-        }
-    } catch (error) {
-        console.error('Error al asignar la asignatura:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Hubo un problema al procesar la solicitud.',
-        });
-    }
-};
-
-
-    const handleSaveUpdate = async (gradoAsignatura) => {
-        try {
-            const response = await fetch('http://localhost:4000/api/gradoAsignatura/actualizarGradoAsignatura', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    Cod_grados_asignaturas : gradoAsignatura.Cod_grados_asignaturas,
-                    Cod_asignatura: editedData.Cod_asignatura || gradoAsignatura.Cod_asignatura,
-                    Cod_grado: gradoAsignatura.Cod_grado,
-                    //Valor: editedData.Valor || gradoAsignatura.Valor,
-                }),
-            });
-            if (response.ok) {
-                alert('Asignatura actualizada correctamente');
-                fetchGradosAsignaturas(); // Refrescar los datos
-                setEditIndex(null); // Salir del modo de edición
-                gradoAsignaturaToUpdate();
-            } else {
-                alert('Error al actualizar la Asignatura');
-            }
-        } catch (error) {
-            console.error('Error al actualizar la Asignatura:', error);
         }
     };
 
@@ -612,40 +554,155 @@ const asignarAsignatura = async () => {
         }
     };
 
-     // Verificar permisos
+    // Cambia el estado de la página actual después de aplicar el filtro
+    // Validar el buscador
+    const handleSearch = (event) => {
+        const input = event.target.value.toUpperCase();
+        const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
+        
+        if (!regex.test(input)) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Caracteres no permitidos',
+            text: 'Solo se permiten letras y espacios.',
+        });
+        return;
+        }
+        setSearchTerm(input);
+        setCurrentPage(1); // Resetear a la primera página al buscar
+    };
+
+    // Filtro de búsqueda
+    const filteredGrados = grados.filter((grado) =>
+        grado.Nombre_grado.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    // Lógica de paginación
+    const indexOfLastRecord = currentPage * recordsPerPage;
+    const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+    const currentRecords = filteredGrados.slice(indexOfFirstRecord, indexOfLastRecord);
+
+    // Cambiar página
+    const paginate = (pageNumber) => {
+        if (pageNumber > 0 && pageNumber <= Math.ceil(filteredGrados.length / recordsPerPage)) {
+        setCurrentPage(pageNumber);
+        }
+    };
+
+
+     //Verificar permisos
      if (!canSelect) {
         return <AccessDenied />;
       }
       
-
     return (
+        <CContainer>
             <div className="container mt-4">
-                <h3 className="text-center mb-4">PROCESO DE ASIGNACIÓN: ASIGNATURAS A LOS GRADOS</h3>
+                <CRow className="align-items-center mb-5">
+                    <CCol xs="11" className="d-flex align-items-center">
+                        {/* Título de la página */}
+                        <h2 className="mb-0">PROCESO DE ASIGNACIÓN: ASIGNATURAS A CADA GRADO</h2>
+                    </CCol>
+                </CRow>
+                
+                {/* Contenedor de la barra de búsqueda y el selector dinámico */}
+                <CRow className="align-items-center mt-4 mb-2">
+                    {/* Barra de búsqueda  */}
+                    <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+                    <CInputGroup className="me-3" style={{ width: '400px' }}>
+                        <CInputGroupText>
+                        <CIcon icon={cilSearch} />
+                        </CInputGroupText>
+                        <CFormInput
+                        placeholder="Buscar Grado..."
+                        onChange={handleSearch}
+                        value={searchTerm}
+                        />
+                        <CButton
+                        style={{
+                            border: '1px solid #ccc',
+                            transition: 'all 0.1s ease-in-out', // Duración de la transición
+                            backgroundColor: '#F3F4F7', // Color por defecto
+                            color: '#343a40' // Color de texto por defecto
+                        }}
+                        onClick={() => {
+                            setSearchTerm('');
+                            setCurrentPage(1);
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
+                            e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
+                            e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
+                        }}
+                        >
+                        <CIcon icon={cilBrushAlt} /> Limpiar
+                        </CButton>
+                    </CInputGroup>
+                    </CCol>
+
+                    {/* Selector dinámico a la par de la barra de búsqueda */}
+                    <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+                    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+                        <div className="d-inline-flex align-items-center">
+                        <span>Mostrar&nbsp;</span>
+                        <CFormSelect
+                            style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                            onChange={(e) => {
+                            const value = Number(e.target.value);
+                            setRecordsPerPage(value);
+                            setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+                            }}
+                            value={recordsPerPage}
+                        >
+                            <option value="5">5</option>
+                            <option value="10">10</option>
+                            {/* <option value="20">20</option> */}
+                        </CFormSelect>
+                        <span>&nbsp;registros</span>
+                        </div>
+                    </CInputGroup>
+                    </CCol>
+                </CRow>
                 <CCard>
                     <CCardHeader>
-                        <strong>INFORMACION DE LOS GRADOS</strong>
-                        {/* TABLA PARA MOSTRAR TODOS LOS GRADOS*/}
+                        <div className="table-container" style={{ maxHeight: '400px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong>INFORMACION DE LOS GRADOS</strong> {/* Texto alineado a la izquierda */}
+                        <CButton
+                            style={{
+                            backgroundColor: '#6C8E58',
+                            color: 'white',
+                            }}
+                            onClick={() => handleReporteClickOrden()}
+                        >
+                            <CIcon icon={cilDescription} className="me-3" /> Reporte
+                        </CButton>
+                        </div>
                         <div className="mt-4">
-                                <CTable striped>
+                                <CTable striped bordered hover>
                                     <CTableHead>
                                         <CTableRow>
                                             <CTableHeaderCell>#</CTableHeaderCell>
                                             <CTableHeaderCell>NOMBRE DE LOS GRADOS</CTableHeaderCell>
-                                            <CTableHeaderCell>ACCIONES</CTableHeaderCell>
+                                            <CTableHeaderCell style={{ textAlign: 'center', width: '40%' }}>ACCIONES</CTableHeaderCell>
                                         </CTableRow>
                                     </CTableHead>
                                     <CTableBody>
-                                        {grados.map((grado, index) => (
+                                        {currentRecords.map((grado, index) => (
                                         <CTableRow key={grado.Cod_grado}>
                                             <CTableDataCell>{index + 1}</CTableDataCell>
                                             <CTableDataCell>{grado.Nombre_grado}</CTableDataCell>
                                             <CTableDataCell>
-                                                <div style={{ display: 'flex', gap: '8px' }}> {/* Contenedor flex para alinear los botones */}
-                                                    <CButton  style={{  padding: '4px 8px', backgroundColor: '#6495ED',color: 'warning' }} onClick={() => handleInsertAsignaturaModal(grado.Cod_grado)}>
-                                                        <CIcon icon={cilNoteAdd} style={{ marginRight: '5px' }} />AGREGAR 
+                                                <div style={{ display: 'flex',justifyContent: 'center', gap: '2px'  }}> {/* Contenedor flex para alinear los botones */}
+                                                    <CButton  color="info" style={{ color: 'white', padding: '4px 12px', backgroundColor: '#4B6251',marginRight: '10px', marginBottom: '10px' }} onClick={() => handleInsertAsignaturaModal(grado.Cod_grado)}>
+                                                        <CIcon icon={cilPlus}/>
                                                     </CButton>
-                                                    <CButton  style={{  padding: '4px 8px', backgroundColor: '#F9B64E',color: 'dark' }} onClick={() => handleOpenAssignModal(grado.Cod_grado)}>
-                                                        <CIcon icon={cilSave} style={{ marginRight: '5px' }} />DETALLE 
+                                                    <CButton  color="primary" style={{ padding: '4px 10px', marginBottom: '10px' }} key={grado.Cod_grado} onClick={() => handleOpenAssignModal(grado.Cod_grado, handleOpenModal(grado))}>
+                                                        
+                                                        <CIcon icon={cilInfo} />
+                                                    
                                                     </CButton>
                                                 </div>        
                                             </CTableDataCell>
@@ -653,6 +710,28 @@ const asignarAsignatura = async () => {
                                         ))}
                                     </CTableBody>
                                 </CTable>
+                            </div>
+                            {/* Paginación Fija */}
+                            <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                <CPagination aria-label="Page navigation">
+                                <CButton
+                                    style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+                                    disabled={currentPage === 1} // Desactiva si es la primera página
+                                    onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+                                >
+                                    Anterior
+                                </CButton>
+                                <CButton
+                                    style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+                                    disabled={currentPage === Math.ceil(filteredGrados.length / recordsPerPage)} // Desactiva si es la última página
+                                    onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+                                >
+                                    Siguiente
+                                </CButton>
+                                </CPagination>
+                                <span style={{ marginLeft: '10px' }}>
+                                Página {currentPage} de {Math.ceil(filteredGrados.length / recordsPerPage)}
+                                </span>
                             </div>
                     </CCardHeader>
                         <CCardBody>
@@ -667,12 +746,12 @@ const asignarAsignatura = async () => {
                     {/* Modal para mostrar las asignaturas de los grados*/}
                     <CModal size="lg" visible={modalVisible} onClose={handleCloseModal} backdrop="static">
                         <CModalHeader onClose={handleCloseModal}>  
-                            <CModalTitle><strong>INFORMACIÓN DEL GRADO</strong></CModalTitle>  
+                            <CModalTitle><strong>ASIGNATURAS EXISTENTES EN {getGradoName(gradoActual?.Cod_grado)}</strong></CModalTitle>  
                             <CDropdown>
                                 <CDropdownToggle
                                     style={{ backgroundColor: '#6C8E58', color: 'white', marginLeft: '370px', fontSize: '0.85rem', cursor: 'pointer' }} 
                                 >
-                                REPORTE
+                                Reporte
                                 </CDropdownToggle>
                                 {/* SELECION DE REPORTERIA EN PDF Y EXCEL*/}
                                 <CDropdownMenu>
@@ -715,12 +794,12 @@ const asignarAsignatura = async () => {
                         {/*GENERACIÓN DE TABLA PARA MOSTRAR LA INFORMACION DEL GRADO*/}
                         <CModalBody>
                             {gradosAsignaturas.length > 0 ? (
-                                <CTable striped>
+                                <CTable striped bordered hover>
                                     <CTableHead>
                                         <CTableRow>
                                         <CTableHeaderCell>#</CTableHeaderCell>
                                             <CTableHeaderCell>NOMBRE DE LA ASIGNATURA</CTableHeaderCell>
-                                            <CTableHeaderCell style={{  width: '35%' }}>GRADO</CTableHeaderCell>
+                                            {/* <CTableHeaderCell style={{  width: '35%' }}>GRADO</CTableHeaderCell> */}
                                             <CTableHeaderCell style={{ textAlign: 'center', width: '15%' }}>ACCIONES</CTableHeaderCell>
                                         </CTableRow>
                                     </CTableHead>
@@ -746,7 +825,7 @@ const asignarAsignatura = async () => {
                                                     )}
                                                 </CTableDataCell>
                                                 {/* EXTRAER EL NOMBRE DEL GRADO*/}
-                                                <CTableDataCell>{getGradoName(gradoAsignatura.Cod_grado)}</CTableDataCell>
+                                                {/* <CTableDataCell>{getGradoName(gradoAsignatura.Cod_grado)}</CTableDataCell> */}
                                                 <CTableDataCell>
                                                     {editIndex === index ? (
                                                         <div style={{ display: 'flex', gap: '8px' }}> {/* Contenedor flex para alinear los botones */}
@@ -765,19 +844,19 @@ const asignarAsignatura = async () => {
                                                                 onClick={() => openDeleteModal(gradoAsignatura)}
                                                             >
                                                                 {/* ICONO PARA ABRIR EL MODAL DE ELIMINAR*/}
-                                                                <CIcon icon={cilX} /> 
+                                                                <CIcon icon={cilTrash} /> 
                                                             </CButton>
                     
                                                         </div>
                                                         ) : (
                                                             
                                                             <CButton  //BOTON PARA DESPLEGAR LAS ACCIONES DE ELIMINAR
-                                                                style={{ padding: '4px 8px', backgroundColor: '#E74C3C', color: 'white', margin: '0 41px' }} 
+                                                                style={{ padding: '4px 8px', backgroundColor: '#E57368', color: 'white', margin: '0 41px' }} 
                                                                 //color="warning" 
                                                                 onClick={() => openDeleteModal(gradoAsignatura)}
                                                             >      
                                                                 {/* ICONO DE LAPIZ PARA ABRIR LAS ACCIONES*/}  
-                                                                <CIcon icon={cilX} /> 
+                                                                <CIcon icon={cilTrash} /> 
                                                             </CButton>
                                                         )}
                                                 </CTableDataCell>
@@ -845,17 +924,19 @@ const asignarAsignatura = async () => {
                         </CModalBody>
                         <CModalFooter>
                             {/* BOTON PARA INSERTAR LA ASIGNATURA AL GRADO */}
-                            <CButton color="primary" onClick={asignarAsignatura}>
-                                ASIGNAR
+                            <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={asignarAsignatura}>
+                                Guardar
                             </CButton>
                             {/* BOTON PARA CERRAR EL MODAL */}
                             {/* <CButton color="secondary" onClick={() => setAssignModalVisible(false)}>CERRAR</CButton> */}
                             <CButton color="secondary" onClick={() => handleCloseInsertModal(setAssignModalVisible, resetAsignatura)}>
-                                CANCELAR
+                                Cancelar
                             </CButton>
                         </CModalFooter>
                 </CModal>   
             </div>
+        </CContainer>
+            
     );
 
 }

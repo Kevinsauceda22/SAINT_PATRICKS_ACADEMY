@@ -84,3 +84,40 @@ export const getPonderacionesCiclos = async (req, res) => {
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+
+
+
+
+//-----------------------------------------------Parte ariel-------------------------------------------
+
+
+// Obtener Cod_ciclo basado en Cod_ponderacion_ciclo
+export const obtenerCicloPorPonderacionCiclo = async (req, res) => {
+    try {
+      const { Cod_ponderacion_ciclo } = req.query;
+  
+      if (!Cod_ponderacion_ciclo) {
+        return res.status(400).json({ mensaje: "El parámetro Cod_ponderacion_ciclo es obligatorio." });
+      }
+  
+      const [result] = await pool.query(
+        "SELECT Cod_ciclo FROM tbl_ponderaciones_ciclos WHERE Cod_ponderacion_ciclo = ?",
+        [Cod_ponderacion_ciclo]
+      );
+  
+      if (result.length === 0) {
+        return res.status(404).json({ mensaje: "No se encontró el ciclo para la ponderación especificada." });
+      }
+  
+      res.json({ Cod_ciclo: result[0].Cod_ciclo });
+    } catch (error) {
+      console.error("Error al obtener el ciclo:", error);
+      res.status(500).json({ mensaje: "Error al obtener el ciclo para la ponderación." });
+    }
+  };
+  
+  
+
+  
+  

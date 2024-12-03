@@ -1,6 +1,7 @@
 import express from 'express';
 import {
     obtenerGradosAsignaturas,
+    obtenerGradosAsignaturasOrden,
     crearGradoAsignatura,
     actualizarGradoAsignatura,
     eliminarGradoAsignaturas
@@ -10,6 +11,7 @@ const router = express.Router();
 
 // Ruta para obtener las asignaturas de un grado específico
 router.get('/verGradosAsignaturas/:Cod_grado', obtenerGradosAsignaturas);
+router.get('/obtenerGradosAsignaturasOrden/', obtenerGradosAsignaturasOrden);
 
 // Otras rutas...
 router.post('/crearGradoAsignatura', crearGradoAsignatura);
