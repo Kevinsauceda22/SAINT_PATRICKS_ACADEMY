@@ -81,6 +81,13 @@ const ListaEstructura = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [estructurasFamiliares, setEstructurasFamiliares] = useState([]);
   const [isUpdating, setIsUpdating] = useState(false); // Cambia según el flujo
+  const [codPersonaSeleccionada, setCodPersonaSeleccionada] = useState('');
+
+
+
+
+  const [codPersona, setCodPersona] = useState('');
+
 
 
   
@@ -146,21 +153,15 @@ const ListaEstructura = () => {
     setIsDropdownOpen(buscadorRelacion.length > 0 && resultados.length > 0);
   }, [buscadorRelacion, personas]);
 
-  // Manejar búsqueda y selección de personas
-  const handleBuscarRelacion = (event) => {
-    setBuscadorRelacion(event.target.value);
-  };
-
   
 {/* ------------------------------------------------------------------------------------------------------------------------------------- */}
-
-const handleBuscarRelacionEstudiante = (e) => {
+const handleBuscarRelacion = (e) => {
   const filtro = e.target.value.toLowerCase();
-  setBuscadorRelacionEstudiante(filtro);
+  setBuscadorRelacion(filtro);
 
   if (filtro.trim() === '') {
-    setPersonasFiltradasEstudiante([]);
-    setIsDropdownOpenEstudiante(false);
+    setPersonasFiltradas([]);
+    setIsDropdownOpen(false);
     return;
   }
 
@@ -169,93 +170,38 @@ const handleBuscarRelacionEstudiante = (e) => {
     (persona.dni_persona && persona.dni_persona.includes(filtro))
   );
 
-  setPersonasFiltradasEstudiante(filtradas);
-  setIsDropdownOpenEstudiante(filtradas.length > 0);
+  setPersonasFiltradas(filtradas);
+  setIsDropdownOpen(filtradas.length > 0);
 };
 
-const handleSeleccionarPersonaEstudiante = (persona) => {
-  if (isUpdating) {
-    // Modo actualización
-    setEstructuraToUpdate(prev => ({
-      ...prev,
-      cod_persona_estudiante: persona.cod_persona,
-    }));
-  } else {
-    // Modo creación
-    setNuevaEstructuraFamiliar(prev => ({
-      ...prev,
-      cod_persona_estudiante: persona.cod_persona,
-    }));
-  }
-
-  setCodPersonaEstudiante(persona.cod_persona);
-  setIsDropdownOpenEstudiante(false);
-  setBuscadorRelacionEstudiante(`${persona.dni_persona} - ${persona.fullName}`);
+const handleSeleccionarPersona = (persona) => {
+  setCodPersonaSeleccionada(persona.cod_persona);
+  setBuscadorRelacion(`${persona.dni_persona} - ${persona.fullName}`);
+  setNuevaEstructuraFamiliar(prev => ({
+    ...prev,
+    [rolActual === 'ESTUDIANTE' ? 'cod_persona_padre' : 'cod_persona_estudiante']: persona.cod_persona,
+  }));
+  setIsDropdownOpen(false);
 };
 
-const handleBuscarRelacionPadre = (e) => {
-  const filtro = e.target.value.toLowerCase();
-  setBuscadorRelacionPadre(filtro);
-
-  if (filtro.trim() === '') {
-    setPersonasFiltradasPadre([]);
-    setIsDropdownOpenPadre(false);
+const handleSubmit = () => {
+  if (!codPersonaSeleccionada) {
+    alert('Por favor seleccione una persona.');
     return;
   }
 
-  const filtradas = personas.filter(persona =>
-    (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
-    (persona.dni_persona && persona.dni_persona.includes(filtro))
-  );
+  const nuevaEstructuraFinal = {
+    ...nuevaEstructura,
+    [rolActual === 'ESTUDIANTE' ? 'cod_persona_estudiante' : 'cod_persona_padre']: codPersonaSeleccionada,
+  };
 
-  setPersonasFiltradasPadre(filtradas);
-  setIsDropdownOpenPadre(filtradas.length > 0);
+  console.log("Estructura familiar final:", nuevaEstructuraFinal);
+  handleCreateEstructura(nuevaEstructuraFinal);
 };
-
-const handleSeleccionarPersonaPadre = (persona) => {
-  if (isUpdating) {
-    // Modo actualización
-    setEstructuraToUpdate(prev => ({
-      ...prev,
-      cod_persona_padre: persona.cod_persona,
-    }));
-  } else {
-    // Modo creación
-    setNuevaEstructuraFamiliar(prev => ({
-      ...prev,
-      cod_persona_padre: persona.cod_persona,
-    }));
-  }
-
-  setCodPersonaPadre(persona.cod_persona);
-  setIsDropdownOpenPadre(false);
-  setBuscadorRelacionPadre(`${persona.dni_persona} - ${persona.fullName}`);
-};
-
 
 
 {/* ----------------------------------------------------------------------------------------------------------------------------------------*/}
 
-  // Manejar envío del formulario
-  const handleSubmit = () => {
-    const nuevaEstructuraFinal = {
-      ...nuevaEstructura,
-      cod_persona_padre:
-        rolActual === 'PADRE'
-          ? personaSeleccionada?.cod_persona
-          : nuevaEstructura.cod_persona_padre,
-      cod_persona_estudiante:
-        rolActual === 'ESTUDIANTE'
-          ? personaSeleccionada?.cod_persona
-          : nuevaEstructura.cod_persona_estudiante,
-    };
-  
-    console.log("Estructura familiar final:", nuevaEstructuraFinal);
-  
-    // Llamar a handleCreateEstructura con la nueva estructura
-    handleCreateEstructura(nuevaEstructuraFinal);
-  };
-  
 
   // Resetear formulario
   const resetNuevaEstructuraFamiliar = () => {
@@ -709,22 +655,25 @@ const disableCopyPaste = (e) => {
   const filterEstructuraFamiliar = (estructuraFamiliar, searchTerm, personas, tipoRelacion) => {
     const searchTermLower = searchTerm.toLowerCase();
   
-    return estructuraFamiliar.map((estructura, index) => ({
-      ...estructura,
-      originalIndex: index + 1, // Agregar índice original para ordenar
-      estudianteNombre: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
-      padreNombre: personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
-      tipoRelacionNombre: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
-      descripcion: estructura.descripcion?.toUpperCase() || 'N/D'
-    })).filter((estructura) => {
-      return (
-        (estructura.estudianteNombre && estructura.estudianteNombre.toLowerCase().includes(searchTermLower)) ||
-        (estructura.padreNombre && estructura.padreNombre.toLowerCase().includes(searchTermLower)) ||
-        (estructura.tipoRelacionNombre && estructura.tipoRelacionNombre.toLowerCase().includes(searchTermLower)) ||
-        (estructura.descripcion && estructura.descripcion.toLowerCase().includes(searchTermLower))
-      );
-    });
+    return estructuraFamiliar
+      .map((estructura, index) => ({
+        ...estructura,
+        originalIndex: index + 1, // Agregar índice original para ordenar
+        estudianteNombre: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+        padreNombre: personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+        tipoRelacionNombre: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+        descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
+      }))
+      .filter(estructura => {
+        return (
+          (estructura.estudianteNombre && estructura.estudianteNombre.toLowerCase().includes(searchTermLower)) ||
+          (estructura.padreNombre && estructura.padreNombre.toLowerCase().includes(searchTermLower)) ||
+          (estructura.tipoRelacionNombre && estructura.tipoRelacionNombre.toLowerCase().includes(searchTermLower)) ||
+          (estructura.descripcion && estructura.descripcion.toLowerCase().includes(searchTermLower))
+        );
+      });
   };
+  
   
   // Uso de la función ajustada
   const filteredEstructuraFamiliar = filterEstructuraFamiliar(estructuraFamiliar, searchTerm, personas, tipoRelacion);
@@ -732,10 +681,16 @@ const disableCopyPaste = (e) => {
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord);
   
-  const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstructuraFamiliar.length / recordsPerPage)) {
-      setCurrentPage(pageNumber);
-    }
+
+  
+   // Uso dentro del componente React
+   const handleSearch = (e) => {
+    const term = e.target.value; // Obtener el valor del input de búsqueda
+    setSearchTerm(term); // Actualiza el término de búsqueda
+  
+    // Filtrar la estructura familiar con el nuevo término de búsqueda
+    const filteredData = filterEstructuraFamiliar(estructuraFamiliar, term, personas, tipoRelacion);
+    setFilterEstructuraFamiliar(filteredData); // Usar setState para almacenar los resultados filtrados
   };
   
   
@@ -782,11 +737,6 @@ const disableCopyPaste = (e) => {
     XLSX.writeFile(workbook, 'estructura_familiar.xlsx')
   }
   
-  // Uso dentro del componente React
-  const handleSearch = (searchTerm) => {
-    const filteredData = filterEstructuraFamiliar(estructuraFamiliar, searchTerm, personas, tipoRelacion)
-    setFilteredEstructuraFamiliar(filteredData) // Usando setState
-  }
   
   const handleGeneratePDF = () => {
     generatePDF(filteredEstructuraFamiliar, personas, tipoRelacion)
@@ -808,10 +758,22 @@ const disableCopyPaste = (e) => {
 return (
     <CContainer>
       <CRow className="align-items-center mb-5">
-        <CCol xs="8" md="9">
-          {/* Título de la página */}
-          <h1 className="mb-0">Estructura Familiar</h1>
-        </CCol>
+      <CCol xs="8" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Estructura Familiar</h1>
+    {/* Nombre de la persona seleccionada */}
+    {personaSeleccionada ? (
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>RELACIONES DE:</strong> {personaSeleccionada 
+          ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+          : 'Información no disponible'}
+      </div>
+    ) : (
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>Persona Seleccionada:</strong> Información no disponible
+      </div>
+    )}
+  </CCol>
         
         <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
   <CButton color="secondary" onClick={volverAListaPersonas} style={{ marginRight: '10px', minWidth: '120px' }}>
@@ -845,7 +807,9 @@ return (
             <CInputGroupText>
               <CIcon icon={cilSearch} />
             </CInputGroupText>
-            <CFormInput placeholder="Buscar estructura..." value={searchTerm} />
+            <CFormInput placeholder="Buscar estructura..." 
+            value={searchTerm}
+            onChange={handleSearch} />
             <CButton
               style={{
                 border: '1px solid #ccc',
@@ -994,6 +958,12 @@ return (
     <CModalTitle>Nueva Estructura Familiar</CModalTitle>
   </CModalHeader>
   <CModalBody>
+        {/* Mostrar el nombre de la persona seleccionada */}
+        <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
+      <strong>PERSONA:</strong> {personaSeleccionada 
+        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+        : 'Información no disponible'}
+    </div>
     <CForm>
 
       {/* Campo oculto para cod_persona_estudiante */}
@@ -1002,71 +972,38 @@ return (
       {/* Campo oculto para cod_persona_padre */}
       <input type="hidden" name="cod_persona_padre" value={codPersonaPadre} />
 
-      {/* Campo de búsqueda para Estudiante */}
-      <div className="mb-3">
-        <CInputGroup className="mb-3">
-          <CInputGroupText>
-            Estudiante
-          </CInputGroupText>
-          <CFormInput
-            type="text"
-            value={buscadorRelacionEstudiante}
-            onChange={handleBuscarRelacionEstudiante}
-            placeholder="Buscar por DNI o nombre"
-          />
-          <CButton type="button">
-            <CIcon icon={cilSearch} />
-          </CButton>
-        </CInputGroup>
+ {/* Campo de búsqueda para persona */}
 
-        {isDropdownOpenEstudiante && personasFiltradasEstudiante.length > 0 && (
-          <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
-            {personasFiltradasEstudiante.map(persona => (
-              <div
-                key={persona.cod_persona}
-                className="dropdown-item"
-                style={{ cursor: 'pointer' }}
-                onClick={() => handleSeleccionarPersonaEstudiante(persona)}
-              >
-                {persona.dni_persona} - {persona.fullName}
+ <div className="mb-3">
+            <CInputGroup className="mb-3">
+              <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
+              <CFormInput
+                type="text"
+                value={buscadorRelacion}
+                onChange={handleBuscarRelacion}
+                placeholder={`Buscar por DNI o nombre (${rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'})`}
+              />
+              <CButton type="button">
+                <CIcon icon={cilSearch} />
+              </CButton>
+            </CInputGroup>
+
+            {isDropdownOpen && personasFiltradas.length > 0 && (
+              <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+                {personasFiltradas.map(persona => (
+                  <div
+                    key={persona.cod_persona}
+                    className="dropdown-item"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleSeleccionarPersona(persona)}
+                  >
+                    {persona.dni_persona} - {persona.fullName}
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
-        )}
-      </div>
 
-      {/* Campo de búsqueda para Padre/Tutor */}
-      <div className="mb-3">
-        <CInputGroup className="mb-3">
-          <CInputGroupText>
-            Padre/Tutor
-          </CInputGroupText>
-          <CFormInput
-            type="text"
-            value={buscadorRelacionPadre}
-            onChange={handleBuscarRelacionPadre}
-            placeholder="Buscar por DNI o nombre"
-          />
-          <CButton type="button">
-            <CIcon icon={cilSearch} />
-          </CButton>
-        </CInputGroup>
-
-        {isDropdownOpenPadre && personasFiltradasPadre.length > 0 && (
-          <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
-            {personasFiltradasPadre.map(persona => (
-              <div
-                key={persona.cod_persona}
-                className="dropdown-item"
-                style={{ cursor: 'pointer' }}
-                onClick={() => handleSeleccionarPersonaPadre(persona)}
-              >
-                {persona.dni_persona} - {persona.fullName}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Selector de Tipo Relación */}
       <CInputGroup className="mt-3">
