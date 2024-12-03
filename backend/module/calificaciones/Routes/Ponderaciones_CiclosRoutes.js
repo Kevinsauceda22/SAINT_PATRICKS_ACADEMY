@@ -4,7 +4,8 @@ import {
     crearPonderacionesCiclos,
     actualizarPonderacionesCiclos,
     eliminarPonderacionesCiclos,
-    getPonderacionesCiclos
+    getPonderacionesCiclos,
+    obtenerCicloPorPonderacionCiclo 
 } from '../Controller/Ponderaciones_ciclosController.js'; // Importamos las funciones del controlador
 
 const router = express.Router();
@@ -17,5 +18,10 @@ router.get('/verPonderacionesCiclos', getPonderacionesCiclos);
 router.post('/crearPonderacionesCiclos', crearPonderacionesCiclos);
 router.put('/actualizarPonderacionesCiclos', actualizarPonderacionesCiclos);
 router.delete('/eliminarPonderacionesCiclos', eliminarPonderacionesCiclos);
+
+
+
+// Ruta para obtener el Cod_ciclo
+router.get("/ciclo", obtenerCicloPorPonderacionCiclo);
 
 export default router;

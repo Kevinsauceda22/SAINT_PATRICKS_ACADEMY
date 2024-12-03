@@ -26,6 +26,21 @@ export const obtenerGradosAsignaturas = async (req, res) => {
     }
 };
 
+export const obtenerGradosAsignaturasOrden = async (req, res) => {
+    
+    try {
+        const [rows] = await pool.query('CALL get_mostrar_grados_asignaturas( )');
+
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]); // Responder con los datos obtenidos
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontraron datos' });
+        }
+    } catch (error) {
+        console.error('Error al obtener las asignaturas:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
 
 
 export const crearGradoAsignatura = async (req, res) => {
@@ -37,21 +52,14 @@ export const crearGradoAsignatura = async (req, res) => {
     } catch (error) {
         console.error('Error al asignar una asignatura dentro del grado:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        if (error.sqlState === '45000') { // Manejar el error lanzado por SIGNAL
+            res.status(400).json({ Mensaje: 'La asignatura ya está asignada a este grado.' });
+        } else {
+            res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        }
     }
 };
 
-
-// export const actualizarGradoAsignatura = async (req, res) => {
-//     const { Cod_grados_asignaturas, Cod_grado, Cod_asignatura } = req.body;
-
-//     try {
-//         await pool.query('CALL update_grados_asignaturas(?, ?, ?)', [Cod_grados_asignaturas, Cod_grado, Cod_asignatura]);
-//         res.status(200).json({ Mensaje: 'Asignatura actualizada exitosamente' });
-//     } catch (error) {
-//         console.error('Error al actualizar la asignatura:', error);
-//         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
-//     }
-// };
 
 export const actualizarGradoAsignatura = async (req, res) => {
     const { Cod_grados_asignaturas, Cod_grado, Cod_asignatura } = req.body;

@@ -1,27 +1,36 @@
 import express from 'express';
 import {
-    obtenerActividadesAcademicas,
+   
     actualizarActividadAcademica ,
-    getActividadesPorProfesor,
     eliminarActividadAcademica,
     obtenerActividadesPorSeccionAsignatura,
     crearActividadPorAsignatura    ,
     obtenerActividadesPorAsignatura,
-    registrarActividadPorAsignatura 
+    registrarActividadPorAsignatura,
+    obtenerActividadesPorProfesorYAsignatura,
+    obtenerActividadesPorFiltro ,
+    obtenerPonderacionesPorProfesor,
+    actualizarActividad,
+    eliminarActividad,
+    obtenerValoresPorPonderacionCiclo  ,
+    validarValorActividad,
+    validarYActualizarActividad,
+    obtenerParcialesPorAsignatura,
+    obtenerActividadesPorParcialAsignatura
 } from '../Controller/activiades_AcademicasController.js'; // Importamos las funciones del controlador
 
 const router = express.Router();
 
-// Ruta para obtener todas las actividades académicas
-router.get('/veractividades', obtenerActividadesAcademicas);
 
 // Ruta para actualizar una actividad académica
 router.put('/actualizar/:id', actualizarActividadAcademica);
 
-// Ruta para obtener las actividades por Cod_profesor
-router.get('/veractividadesProfesor/:Cod_profesor', getActividadesPorProfesor);
+// Ruta para actualizar una actividad académica
+router.put('/:id', actualizarActividad );
+// Ruta para actualizar una actividad académica
+router.delete('/eliminar/:id', eliminarActividad );
 
-router.delete('/eliminarActividad', eliminarActividadAcademica);
+router.delete('/:id', eliminarActividadAcademica);
 
 // Ruta protegida por token para obtener actividades
 router.get('/obtenerActividades/:codSeccionAsignatura', obtenerActividadesPorSeccionAsignatura);
@@ -34,6 +43,26 @@ router.get('/porasignatura/:codAsignatura', obtenerActividadesPorAsignatura);
 
 // Ruta para crear una nueva actividad por asignatura
 router.post('/registrar', registrarActividadPorAsignatura);
+
+// Ruta para obtener actividades por profesor y asignatura
+router.get('/porProfesorYAsignatura/:Cod_profesor/:Cod_asignatura', obtenerActividadesPorProfesorYAsignatura);
+
+router.get('/actividadesporparcialseccion', obtenerActividadesPorFiltro);
+
+router.get('/obtenerPonderacionesPorProfesor', obtenerPonderacionesPorProfesor);
+
+// Ruta para obtener valores disponibles
+router.get("/valoresPorPonderacionCiclo", obtenerValoresPorPonderacionCiclo);
+
+
+// Ruta para validar valor de actividad
+router.post('/validar-valor', validarValorActividad);
+// Ruta para validar valor de actividad
+router.post('/validar-valoractua', validarYActualizarActividad);
+
+//////admin actividades
+router.get('/parciales/:Cod_asignatura', obtenerParcialesPorAsignatura);
+router.get('/actividades/:Cod_seccion_asignatura/:CodParcial', obtenerActividadesPorParcialAsignatura);
 
 
 export default router;

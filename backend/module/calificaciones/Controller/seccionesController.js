@@ -53,10 +53,18 @@ export const deleteSeccion = async (req, res) => {
 
 
 
+//------------------------------------------------------------------------------- Parte Ariel--------------------------------------------------------------------------
+
+
+
+
+
+
+
 
 
 // Controlador para obtener las secciones filtradas por el profesor
-// Obtener las secciones de un profesor con nombres de grado y período
+
 export const obtenerSeccionesPorProfesor = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -148,6 +156,12 @@ export const obtenerTodasLasSeccionesYProfesoresAdmin = async (req, res) => {
       res.status(500).json({ mensaje: 'Error al obtener las secciones del profesor' });
     }
   };
+  
+  
+  
+  
+  
+  
   
   
   

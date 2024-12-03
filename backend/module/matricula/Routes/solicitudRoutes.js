@@ -1,21 +1,24 @@
 import express from 'express';
-import { obtenerSolicitudes, insertarSolicitud, actualizarSolicitud, obtenerSolicitudPorCod, eliminarSolicitud } from '../Controllers/solicitudController.js';
+import checkAuth from '../../../middleware/Auth_middleware.js'; // Middleware de autenticación
+import {
+    obtenerSolicitudes,
+    insertarSolicitud,
+    actualizarSolicitud,
+    obtenerSolicitudPorCod,
+    eliminarSolicitud,
+    obtenerUsuariosPorRolAdmin,
+} from '../Controllers/solicitudController.js';
 
 const router = express.Router();
 
-// Ruta para obtener todas las solicitudes o una solicitud por Cod_solicitud
-router.get('/solicitudes', obtenerSolicitudes);
+// Rutas protegidas
+router.get('/solicitudes', checkAuth, obtenerSolicitudes); // Obtener todas las solicitudes
+router.get('/solicitudes/:Cod_solicitud', checkAuth, obtenerSolicitudPorCod); // Obtener una solicitud específica
+router.post('/solicitudes', checkAuth, insertarSolicitud); // Insertar una nueva solicitud
+router.put('/solicitudes/:Cod_solicitud', checkAuth, actualizarSolicitud); // Actualizar una solicitud
+router.delete('/solicitudes/:Cod_solicitud', checkAuth, eliminarSolicitud); // Eliminar una solicitud
 
-// Ruta para obtener una solicitud específica por Cod_solicitud
-router.get('/solicitudes/:Cod_solicitud', obtenerSolicitudPorCod);
-
-// Ruta para insertar una nueva solicitud
-router.post('/solicitudes', insertarSolicitud);
-
-// Ruta para actualizar una solicitud por Cod_solicitud
-router.put('/solicitudes/:Cod_solicitud', actualizarSolicitud);
-
-router.delete('/solicitud/:Cod_solicitud', eliminarSolicitud);
-
+// Nueva ruta protegida para obtener usuarios con rol de administrador
+router.get('/usuarios/rol-admin',checkAuth, obtenerUsuariosPorRolAdmin); // Obtener usuarios con rol de administrador
 
 export default router;

@@ -1,26 +1,40 @@
 import express from 'express';
-import {
-        obtenerActExtra,
-        crearActividadExtracurricular,
-        actualizarActividadExtracurricular,
-        eliminarActividadExtracurricular
-} from '../Controllers/actividades_extracurricularesController.js'; // Asegúrate de que esta ruta sea correcta
+import { obtenerSecciones,obtenerActividadesExtra,
+         crearActividadesExtra,
+         actualizarActividadesExtra,
+         cambiarEstadoActividad,
+         eliminarActividadExtracurricular,
+         obtenerPadresYGradosSecciones,
+         notificarNuevaActividad,
+         notificarCancelacionActividad,
+         notificarCambioActividad} from '../Controllers/actividades_extracurricularesController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
+// Ruta para obtener todas las secciones 
+router.get('/obtener_secciones/:Cod_secciones?', obtenerSecciones);
+// Ruta para obtener todas las actividades extracurriculares o una específica
+router.get('/actividades/extracurriculares/:Cod_actividades_extracurriculares?', obtenerActividadesExtra);
 
-// Ruta para obtener todas las actividades extracurriculares
-router.get('/extracurriculares', obtenerActExtra);
+// Ruta para crear una nueva actividad extracurricular
+router.post('/actividades/extracurriculares', crearActividadesExtra);
 
-//Ruta para obtener una actividad por nombre de actividad o nombre de sección
-router.get('/extracurriculares/:Nombre_actividad?/:nombreSeccion?', obtenerActExtra);
+// Ruta para actualizar una actividad extracurricular
+router.put('/actividades/extracurriculares', actualizarActividadesExtra);
+// Ruta para cambiar el estado de una actividad extracurricular
+router.put('/actividades/cambiar_estado', cambiarEstadoActividad);
 
-// Ruta para crear una actividad extracurricular
-router.post('/crearactividad', crearActividadExtracurricular);
+// Ruta para eliminar una actividad extracurricular
+router.delete('/actividades/extracurriculares/:Cod_actividad', eliminarActividadExtracurricular);
 
-// Ruta para actualizar una actividad
-router.put('/actualizaractividades', actualizarActividadExtracurricular); // Actualiza la actidad
+router.get('/padres-y-grados', obtenerPadresYGradosSecciones);
 
-// Ruta para eliminar una actividad por Cod_actividad
-router.delete('/actividades/:p_cod_actividad', eliminarActividadExtracurricular); // Nueva ruta para eliminar actividad
+// Ruta para enviar notificaciones a los padres de una sección
+router.post('/notificar-actividad/:cod_seccion', notificarNuevaActividad);
+
+// Ruta para enviar notificaciones de cancelación a los padres de una sección
+router.post('/cancelar-actividad/:cod_seccion', notificarCancelacionActividad);
+
+// Ruta para notificar cambios en actividades a los padres de una sección
+router.post('/actualizar-actividad/:cod_seccion', notificarCambioActividad);
 
 export default router;

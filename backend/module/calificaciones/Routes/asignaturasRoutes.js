@@ -3,7 +3,8 @@ import {
     obtenerAsignaturas,
     crearAsignatura,
     actualizarAsignatura,
-    eliminarAsignatura
+    eliminarAsignatura,
+    obtenerAsignaturasPorProfesor
 } from '../Controller/asignaturasController.js'; // Importamos las funciones del controlador
 
 const router = express.Router();
@@ -19,5 +20,9 @@ router.put('/actualizarAsignatura', actualizarAsignatura);
 
 // Ruta para eliminar una asignatura
 router.delete('/eliminar_asignatura', eliminarAsignatura);
+
+//-------------------------------------------Parite Ariel----------------------------------------------------------------
+// Endpoint para obtener asignaturas por profesor y sección
+router.get('/porprofesor/:codSeccion', obtenerAsignaturasPorProfesor);
 
 export default router;

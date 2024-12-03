@@ -1,5 +1,6 @@
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
+import jwt from 'jsonwebtoken';
 
 // Controlador para obtener todas las secciones
 export const obtenerSecciones = async (req, res) => {
@@ -17,6 +18,42 @@ export const obtenerSecciones = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener las secciones', error });
     }
 };
+
+export const obtenerSeccionesPorProfesor = async (req, res) => {
+    try {
+        // Verifica que el token esté presente en el encabezado
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ mensaje: 'Token no proporcionado' });
+        }
+
+        // Decodifica el token para obtener el cod_persona
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        const codPersona = decodedToken.cod_persona;
+
+        if (!codPersona) {
+            return res.status(400).json({ mensaje: 'El token no contiene cod_persona' });
+        }
+
+        // Llama al procedimiento almacenado con el cod_persona
+        const [secciones] = await pool.query('CALL get_SeccionesProfe(?)', [codPersona]);
+
+        // Si el resultado está vacío, retorna un mensaje
+        if (!secciones || secciones.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron secciones para este profesor' });
+        }
+
+        // Envía las secciones obtenidas como respuesta
+        return res.status(200).json({
+            secciones: secciones[0], // Asegúrate de que este nivel de datos sea correcto
+        });
+    } catch (error) {
+        console.error('Error al obtener las secciones:', error.message, error.stack);
+        res.status(500).json({ mensaje: 'Error al obtener las secciones' });
+    }
+};
+
+
 
 export const obtenerNomenclaturaPorSeccion = async (req, res) => {
     const { codSeccion } = req.query; // Obtener el código de la sección desde los parámetros de la query

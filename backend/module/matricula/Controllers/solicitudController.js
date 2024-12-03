@@ -1,90 +1,279 @@
+// CONTROLLER
 import conectarDB from '../../../config/db.js';
+
 const pool = await conectarDB();
-
-
-// Obtener todas las solicitudes o una solicitud por Cod_solicitud
 export const obtenerSolicitudes = async (req, res) => {
-    const { Cod_solicitud } = req.query;
-
     try {
+        const { Cod_solicitud } = req.query; // Parámetro opcional
+        const cod_persona = req.usuario?.cod_persona; // Extraer cod_persona del usuario autenticado
+
+        if (!cod_persona && !Cod_solicitud) {
+            return res.status(400).json({
+                message: 'Se requiere cod_persona para listar solicitudes o Cod_solicitud para una específica.',
+            });
+        }
+
         let query;
         let params;
 
         if (Cod_solicitud) {
-            query = 'CALL obtener_solicitudes(?)'; // Llama al procedimiento almacenado para una solicitud específica
+            // Obtener una solicitud específica
+            query = 'CALL obtener_solicitudes(?)';
             params = [Cod_solicitud];
         } else {
-            query = 'CALL obtener_solicitudes(NULL)'; // Llama al procedimiento almacenado para obtener todas las solicitudes
-            params = [null];
+            // Obtener solicitudes para el usuario autenticado
+            query = 'CALL obtener_solicitudes_por_usuario(?)';
+            params = [cod_persona];
         }
 
         const [results] = await pool.query(query, params);
 
-        // Verificar si hay resultados
         if (!results || results[0].length === 0) {
-            return res.status(404).json({ message: 'Solicitud no encontrada' });
+            return res.status(404).json({ message: 'No se encontraron solicitudes.' });
         }
 
-        // Formatear las fechas en los resultados
-        const formattedResults = results[0].map(solicitud => {
+        // Procesar solicitudes para asegurar formato consistente
+        const formattedResults = results[0].map((solicitud) => {
+            const formattedFecha = solicitud.Fecha_solicitud
+                ? new Date(solicitud.Fecha_solicitud).toISOString().split('T')[0]
+                : null;
+
+            // Formatear Hora_Inicio y Hora_Fin correctamente
+            const formattedHoraInicio = solicitud.Hora_Inicio ? solicitud.Hora_Inicio.slice(0, 5) : '00:00';
+            const formattedHoraFin = solicitud.Hora_fin && solicitud.Hora_fin !== 'null'
+                ? solicitud.Hora_fin.slice(0, 5)
+                : '00:00'; // Si Hora_Fin es inválida, default "00:00"
+
             return {
-                ...solicitud,
-                Fecha_solicitud: new Date(solicitud.Fecha_solicitud).toLocaleDateString('es-HN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                }),
-                // Mantener las horas en su formato original
-                Hora_Inicio: solicitud.Hora_Inicio, // Mantener hora de inicio original
-                Hora_fin: solicitud.Hora_fin, // Mantener hora de fin original
+                Cod_solicitud: solicitud.Cod_solicitud,
+                Cod_persona: solicitud.Cod_persona,
+                Nombre_solicitud: solicitud.Nombre_solicitud,
+                Fecha_solicitud: formattedFecha,
+                Hora_Inicio: formattedHoraInicio,
+                Hora_Fin: formattedHoraFin, // Solo esta Hora_Fin se envía a la vista
+                Asunto: solicitud.Asunto,
+                Persona_requerida: solicitud.Persona_requerida,
+                Estado: solicitud.Estado,
             };
         });
 
-        return res.status(200).json(formattedResults); // Retornar las solicitudes formateadas
+        return res.status(200).json(formattedResults);
     } catch (error) {
-        console.error('Error al obtener la solicitud:', error);
-        res.status(500).json({ message: 'Error al obtener la solicitud', error: error.message });
+        console.error('Error al obtener las solicitudes:', error);
+        return res.status(500).json({ message: 'Error al obtener las solicitudes.' });
     }
 };
+export const obtenerUsuariosPorRolAdmin = async (req, res) => {
+  try {
+      // Llamada al procedimiento almacenado
+      const query = 'CALL obtener_usuarios_por_rol_admin()';
+      const [results] = await pool.query(query);
 
+      // Validar si hay resultados
+      if (!results || results[0].length === 0) {
+          return res.status(404).json({
+              message: 'No se encontraron usuarios con rol de administrador.',
+          });
+      }
 
+      // Construir respuesta clara con los datos obtenidos
+      const usuarios = results[0].map((usuario) => ({
+          Cod_rol: usuario.Cod_rol,
+          cod_persona: usuario.cod_persona,
+          correo_usuario: usuario.correo_usuario,
+      }));
 
+      return res.status(200).json({
+          message: 'Usuarios con rol de administrador obtenidos correctamente.',
+          usuarios,
+      });
+  } catch (error) {
+      console.error('Error al obtener usuarios por rol admin:', error);
 
-// Insertar una nueva solicitud
+      // Manejo de errores con información adicional para depuración
+      return res.status(500).json({
+          message: 'Error al obtener usuarios por rol de administrador.',
+          error: error.message || 'Error desconocido',
+      });
+  }
+};
+
 export const insertarSolicitud = async (req, res) => {
-    const { Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_fin, Asunto, Persona_requerida } = req.body;
+  const { Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto, Persona_requerida } = req.body;
 
-    try {
-        const query = 'CALL insertar_solicitud(?, ?, ?, ?, ?, ?, ?)'; // Llama al procedimiento almacenado para insertar
-        const params = [Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_fin, Asunto, Persona_requerida];
+  try {
+    const now = new Date();
+    const citaDate = new Date(`${Fecha_solicitud}T${Hora_Inicio}`);
+    const horaInicioVal = parseInt(Hora_Inicio.split(':')[0], 10);
+    const horaFinVal = Hora_Fin ? parseInt(Hora_Fin.split(':')[0], 10) : null;
 
-        await pool.query(query, params);
-        return res.status(201).json({ message: 'Solicitud insertada exitosamente' });
-    } catch (error) {
-        console.error('Error al insertar la solicitud:', error);
-        res.status(500).json({ message: 'Error al insertar la solicitud', error: error.message });
+    // Validar que la fecha/hora no sean pasadas
+    if (citaDate < now) {
+      return res.status(400).json({
+        message: 'No se puede crear una cita en una fecha u hora pasada.',
+      });
     }
+
+    // Validar que las horas estén dentro del rango permitido (8:00 a.m. - 4:00 p.m.)
+    if (
+      horaInicioVal < 8 ||
+      horaInicioVal >= 16 ||
+      (horaFinVal !== null && (horaFinVal < 8 || horaFinVal > 16))
+    ) {
+      return res.status(400).json({
+        message: 'Las citas solo se pueden programar entre las 8:00 a.m. y las 4:00 p.m.',
+      });
+    }
+
+    const query = 'CALL insertar_solicitud(?, ?, ?, ?, ?, ?, ?)';
+    const params = [
+      Cod_persona,
+      Nombre_solicitud,
+      Fecha_solicitud,
+      Hora_Inicio,
+      Hora_Fin,
+      Asunto,
+      Persona_requerida,
+    ];
+
+    await pool.query(query, params);
+    return res.status(201).json({ message: 'Solicitud insertada exitosamente' });
+  } catch (error) {
+    console.error('Error al insertar la solicitud:', error);
+    return res.status(500).json({
+      message: 'Error al insertar la solicitud.',
+      error: error.message,
+    });
+  }
 };
 
-// Función para actualizar una solicitud
+
+
 export const actualizarSolicitud = async (req, res) => {
-    const { Cod_solicitud } = req.params; // Captura el Cod_solicitud de la URL
-    const { Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_fin, Asunto, Persona_requerida } = req.body;
+  const { Cod_solicitud } = req.params;
+  const {
+    Cod_persona,
+    Nombre_solicitud,
+    Fecha_solicitud,
+    Hora_Inicio,
+    Hora_Fin,
+    Asunto,
+    Persona_requerida,
+    estado, // Nuevo parámetro para el estado
+  } = req.body;
 
+  if (isNaN(Cod_solicitud)) {
+    return res.status(400).json({ message: 'Cod_solicitud debe ser un número válido.' });
+  }
+
+  if (!Cod_persona || !Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Asunto || !Persona_requerida) {
+    return res.status(400).json({
+      message: 'Todos los campos son obligatorios, excepto Hora_Fin.',
+    });
+  }
+
+  const now = new Date();
+  const citaDate = new Date(`${Fecha_solicitud}T${Hora_Inicio}`);
+  const horaInicioVal = parseInt(Hora_Inicio.split(':')[0], 10);
+  const horaFinVal = Hora_Fin ? parseInt(Hora_Fin.split(':')[0], 10) : null;
+
+  // Validar que la fecha/hora no sean pasadas
+  if (citaDate < now) {
+    return res.status(400).json({
+      message: 'No se puede actualizar una cita en una fecha u hora pasada.',
+    });
+  }
+
+  // Validar que las horas estén dentro del rango permitido (8:00 a.m. - 4:00 p.m.)
+  if (
+    horaInicioVal < 8 ||
+    horaInicioVal >= 16 ||
+    (horaFinVal !== null && (horaFinVal < 8 || horaFinVal > 16))
+  ) {
+    return res.status(400).json({
+      message: 'Las citas solo se pueden programar entre las 8:00 a.m. y las 4:00 p.m.',
+    });
+  }
+
+  // Validar coherencia de horas
+  if (Hora_Fin) {
+    const [horaInicioHoras, minutoInicio] = Hora_Inicio.split(':').map(Number);
+    const [horaFinHoras, minutoFin] = Hora_Fin.split(':').map(Number);
+
+    if (
+      horaFinHoras < horaInicioHoras ||
+      (horaFinHoras === horaInicioHoras && minutoFin <= minutoInicio)
+    ) {
+      return res.status(400).json({
+        message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
+      });
+    }
+  }
+
+  try {
+    // Determinar estado actualizado basado en el parámetro proporcionado o calcularlo automáticamente
+    let estadoActualizado = estado;
+
+    // Si el estado proporcionado no es "Cancelada", determinar el estado automáticamente
+    if (estado !== 'Cancelada') {
+      const currentDateTime = new Date();
+      const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${Hora_Fin || Hora_Inicio}`);
+
+      if (citaDateTimeEnd <= currentDateTime) {
+        estadoActualizado = 'Finalizada';
+      } else if (estado !== 'Activo') { // No sobrescribir si el estado ya es Activo
+        estadoActualizado = 'Pendiente';
+      }
+    }
+
+    // Llamar al procedimiento almacenado
+    const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?, ?)';
+    const params = [
+      parseInt(Cod_solicitud, 10),
+      Cod_persona,
+      Nombre_solicitud,
+      Fecha_solicitud,
+      Hora_Inicio,
+      Hora_Fin || null, // Permitir que Hora_Fin sea null
+      Asunto,
+      Persona_requerida,
+      estadoActualizado, // Pasar el estado actualizado
+    ];
+
+    const [results] = await pool.query(query, params);
+
+    const affectedRows = results[0]?.[0]?.affectedRows;
+
+    if (!affectedRows) {
+      return res.status(404).json({
+        message: 'Solicitud no encontrada o sin cambios.',
+      });
+    }
+
+    // Respuesta exitosa con el nuevo estado
+    res.status(200).json({
+      message: 'Solicitud actualizada correctamente.',
+      estado: estadoActualizado, // Confirmar el nuevo estado en la respuesta
+    });
+  } catch (error) {
+    console.error('Error al actualizar la solicitud:', error);
+    res.status(500).json({
+      message: 'Error al actualizar la solicitud.',
+      error: error.message,
+    });
+  }
+};
+
+
+export const actualizarEstadoCitas = async (req, res) => {
     try {
-        const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?)';
-        const params = [Cod_solicitud, Cod_persona, Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_fin, Asunto, Persona_requerida];
+        const query = 'CALL actualizar_estado_citas()'; // Llama al procedimiento almacenado para actualizar los estados
+        await pool.query(query);
 
-        const [results] = await pool.query(query, params);
-
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Solicitud no encontrada' });
-        }
-
-        return res.status(200).json({ message: 'Solicitud actualizada correctamente' });
+        return res.status(200).json({ message: 'Citas actualizadas correctamente.' });
     } catch (error) {
-        console.error('Error al actualizar la solicitud:', error);
-        res.status(500).json({ message: 'Error al actualizar la solicitud', error: error.message });
+        console.error('Error al actualizar las citas:', error);
+        return res.status(500).json({ message: 'Error al actualizar las citas', error: error.message });
     }
 };
 
@@ -111,6 +300,8 @@ export const obtenerSolicitudPorCod = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener la solicitud', error: error.message });
     }
 };
+
+
 
 // Controlador para eliminar una solicitud por Cod_solicitud
 export const eliminarSolicitud = async (req, res) => {
@@ -143,4 +334,3 @@ export const eliminarSolicitud = async (req, res) => {
         res.status(500).json({ message: 'Error al eliminar la solicitud', error: error.message });
     }
 };
-
