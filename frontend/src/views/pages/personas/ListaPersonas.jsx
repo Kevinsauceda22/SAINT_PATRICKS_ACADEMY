@@ -1365,6 +1365,7 @@ return (
     </CTableBody>
   </CTable>
 </div>
+
       </div>
 {/****************************************************PAGINACION*****************************************************************/}
       <div
@@ -1442,8 +1443,8 @@ return (
                 }
                 const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
                 const yearNow = new Date().getFullYear();
-                if (añoNacimientoDNI < yearNow - 100 || añoNacimientoDNI > yearNow) {
-                  erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 100} y ${yearNow}.`;
+                if (añoNacimientoDNI < yearNow - 90 || añoNacimientoDNI > yearNow - 4) {
+                  erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 90} y ${yearNow - 4}.`;
                 }
               }
               setErrorMessages((prevErrors) => ({
@@ -2225,8 +2226,8 @@ return (
                     }
                     const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
                     const yearNow = new Date().getFullYear();
-                    if (añoNacimientoDNI < yearNow - 100 || añoNacimientoDNI > yearNow - 4) {
-                      erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 100} y ${yearNow}.`;
+                    if (añoNacimientoDNI < yearNow - 90 || añoNacimientoDNI > yearNow - 4) {
+                      erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 90} y ${yearNow - 4}.`;
                     }
                   }
                   setErrorMessages((prevErrors) => ({
@@ -3017,8 +3018,6 @@ return (
   )
 }
 export default ListaPersonas
-
-
 
 
 

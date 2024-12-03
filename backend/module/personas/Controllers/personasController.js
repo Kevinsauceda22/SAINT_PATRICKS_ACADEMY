@@ -157,6 +157,18 @@ export const actualizarPersona = async (req, res) => {
 
     try {
 
+                // Verificar si el DNI ya existe en la base de datos
+                const [result] = await connection.query(
+                    "SELECT COUNT(*) AS count FROM tbl_personas WHERE dni_persona = ?", 
+                    [dni_persona]
+                );
+        
+                if (result[0].count > 0) {
+                    return res.status(400).json({
+                        mensaje: 'El DNI ingresado ya está registrado en el sistema.',
+                    });
+                }
+                
         // Llamada al procedimiento almacenado para actualizar
         await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             cod_persona,
