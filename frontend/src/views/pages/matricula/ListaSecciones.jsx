@@ -1,3 +1,4 @@
+// Importaciones
 import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
 import { useLocation } from 'react-router-dom';
