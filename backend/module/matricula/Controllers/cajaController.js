@@ -455,19 +455,27 @@ export const obtenerTodasLasCajasPendientes = async (req, res) => {
   }
 };
 
-// Controlador para obtener el valor del parámetro "Matricula"
+// Controlador para obtener el valor del parámetro "Matricula" y su descripción
 export const obtenerValorMatricula = async (req, res) => {
   try {
-    // Consulta para obtener el valor del parámetro "Matricula"
-    const [rows] = await pool.query('SELECT Valor FROM tbl_parametros WHERE Parametro = ?', ['Matricula']);
+    // Consulta para obtener el valor y la descripción del parámetro "Matricula"
+    const [rows] = await pool.query(
+      'SELECT Parametro, Valor FROM tbl_parametros WHERE Parametro = ?',
+      ['Pago de matricula']
+    );
 
     if (rows.length === 0) {
       // Si no se encuentra el parámetro
-      return res.status(404).json({ message: 'El valor del parámetro "Matricula" no se encontró.' });
+      return res
+        .status(404)
+        .json({ message: 'El valor del parámetro "Pago de matricula" no se encontró.' });
     }
 
-    // Devolver solo el valor del parámetro
-    res.status(200).json({ valor: rows[0].Valor });
+    // Devolver tanto el valor como la descripción del parámetro
+    res.status(200).json({
+      parametro: rows[0].Parametro, // Descripción del parámetro
+      valor: rows[0].Valor, // Valor asociado
+    });
   } catch (error) {
     console.error('Error al obtener el valor del parámetro "Matricula":', error);
     res.status(500).json({ message: 'Error interno del servidor.' });

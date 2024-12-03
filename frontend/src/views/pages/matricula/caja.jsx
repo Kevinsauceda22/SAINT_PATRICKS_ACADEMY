@@ -40,6 +40,7 @@ const CajasMatriculas = () => {
   const [modalNuevaCajaVisible, setModalNuevaCajaVisible] = useState(false);
   const [valorMatricula, setValorMatricula] = useState(null); // Estado para almacenar el valor
   const [descuentos, setDescuentos] = useState([]); // Estado para almacenar los descuentos
+  const [descripcionMatricula, setDescripcionMatricula] = useState(''); // Estado para la descripción
   const [pagoActual, setPagoActual] = useState({
     cod_caja: '',
     monto: '',
@@ -172,17 +173,22 @@ const preventCopyPaste = (e) => {
   const registrarPago = async (e) => {
     e.preventDefault();
   
-    try {
-      // Validar campos obligatorios
-      if (!pagoActual.descripcion || !pagoActual.descripcion.trim()) {
-        MySwal.fire({
-          icon: 'warning',
-          title: 'Campo obligatorio',
-          text: 'La descripción no puede estar vacía.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
+   
+  try {
+    // Usar descripción ingresada o la obtenida de la API
+    const descripcionFinal = pagoActual.descripcion || descripcionMatricula;
+
+    // Validar que exista una descripción válida
+    if (!descripcionFinal || !descripcionFinal.trim()) {
+      MySwal.fire({
+        icon: 'warning',
+        title: 'Campo obligatorio',
+        text: 'La descripción no puede estar vacía.',
+        confirmButtonText: 'Entendido',
+      });
+      return;
+    }
+
   
       const monto = parseFloat(pagoActual.monto || valorMatricula || 0);
   
@@ -280,7 +286,8 @@ const preventCopyPaste = (e) => {
       const datosPago = {
         cod_caja: pagoActual.cod_caja,
         monto: montoFinal, // Monto ajustado con descuento aplicado
-        descripcion: pagoActual.descripcion,
+        descripcion: descripcionFinal, // Usar la descripción final
+
         cod_concepto: pagoActual.cod_concepto,
         cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
       };
@@ -843,21 +850,43 @@ const buscarCajasPorDni = async (dni) => {
     };
   };
   
-   // Cargar valor de "Matricula"
-   useEffect(() => {
+  useEffect(() => {
     const cargarValorMatricula = async () => {
       try {
         const response = await axios.get('http://localhost:4000/api/caja/parametro/Matricula');
         if (response.status === 200) {
-          setValorMatricula(response.data.valor);
+          const { valor, parametro } = response.data;
+          setValorMatricula(valor); // Guarda el valor de la matrícula
+          setDescripcionMatricula(parametro); // Guarda la descripción de la matrícula
+          console.log('Descripción Matricula cargada:', parametro); // Depuración
         }
       } catch (error) {
-        console.error('Error al obtener el valor de Matricula:', error);
+        console.error('Error al obtener la descripción de Matricula:', error);
       }
     };
     cargarValorMatricula();
   }, []);
+  
+  useEffect(() => {
+    if (descripcionMatricula) {
+      setPagoActual((prev) => ({
+        ...prev,
+        descripcion: prev.descripcion || descripcionMatricula, // Si no hay descripción manual, usa descripcionMatricula
+      }));
+    }
+  }, [descripcionMatricula]);
+  
 
+// Actualizar el estado "pagoActual" con "valorMatricula" y "descripcionMatricula"
+useEffect(() => {
+  if (valorMatricula && descripcionMatricula) {
+    setPagoActual((prev) => ({
+      ...prev,
+      monto: valorMatricula, // Establece el monto
+      descripcion: descripcionMatricula, // Establece la descripción
+    }));
+  }
+}, [valorMatricula, descripcionMatricula]);
   // Actualizar el monto con el valor de "Matricula"
   useEffect(() => {
     if (valorMatricula) {
@@ -1140,34 +1169,18 @@ const buscarCajasPorDni = async (dni) => {
     <CForm onSubmit={registrarPago}>
       {/* Campo de descripción */}
       <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilDescription} className="text-muted" />
-        </CInputGroupText>
-        <CFormInput
-          type="text"
-          name="descripcion"
-          placeholder="Descripción"
-          value={pagoActual.descripcion}
-          maxLength={25}
-          onChange={(e) => {
-            const value = e.target.value.toUpperCase();
-            if (/[^A-Z0-9 ]/.test(value)) {
-              setErrors({ descripcion: 'No se permiten símbolos en la descripción.' });
-            } else if (/([A-Z])\1\1/.test(value)) {
-              setErrors({ descripcion: 'No se permiten tres letras iguales consecutivas.' });
-            } else {
-              setErrors({ descripcion: '' });
-            }
-            setPagoActual({ ...pagoActual, descripcion: value });
-          }}
-          onPaste={(e) => e.preventDefault()} // Bloquea pegar
-          onCopy={(e) => e.preventDefault()} // Bloquea copiar
-          className={`form-control border-0 shadow-sm ${errors.descripcion ? 'is-invalid' : ''}`}
-          required
-        />
-      </CInputGroup>
-      {errors.descripcion && <small className="text-danger">{errors.descripcion}</small>}
-
+  <CInputGroupText className="bg-white border-0">
+    <CIcon icon={cilDescription} className="text-muted" />
+  </CInputGroupText>
+  <CFormInput
+    type="text"
+    name="descripcion"
+    placeholder="Descripción"
+    value={descripcionMatricula || pagoActual.descripcion || ''} // Prioriza descripcionMatricula
+    readOnly // Si no deseas que sea editable
+    className="form-control border-0 shadow-sm"
+  />
+</CInputGroup>
 {/* Campo de monto */}
 <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
