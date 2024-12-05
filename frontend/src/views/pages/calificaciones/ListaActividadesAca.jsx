@@ -338,6 +338,7 @@ const handleClick = () => {
     try {
       const response = await fetch('http://localhost:4000/api/parciales/verParciales');
       const data = await response.json();
+      console.log('Datos recibidos:', data); // Verifica los datos en la consola
       setparcial(data);
     } catch (error) {
       console.error('Error al obtener los parciales:', error);
