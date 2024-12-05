@@ -336,12 +336,30 @@ const handleClick = () => {
 
   const fetchListaParcial = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/parciales/verParciales');
-      const data = await response.json();
-      console.log('Datos recibidos:', data); // Verifica los datos en la consola
-      setparcial(data);
+      const response = await fetch(`http://localhost:4000/api/parciales/verParciales`, {
+      
+        method: 'GET',
+      });
+      
+      // Registrar toda la respuesta para depuración
+      const responseData = await response.json();
+      console.log('Respuesta completa:', responseData);
+  
+      if (!response.ok) {
+        console.error('Error en la respuesta de la API:', responseData);
+        
+        throw new Error(responseData.mensaje || 'Error desconocido en la API.');
+        
+      }
+     
+     
+      // Aquí podrías manejar la respuesta si necesitas usarla más adelante
+      console.log('Parciales obtenidos:', responseData)
+  
+      setParciales(responseData);
     } catch (error) {
       console.error('Error al obtener los parciales:', error);
+      Swal.fire('Error', `Error al obtener los parciales: ${error.message}`, 'error');
     }
   };
 
@@ -612,20 +630,6 @@ const handleClick = () => {
     }
   };
 
-  const handleSeleccionarAsignatura = (asignatura) => {
-    console.log("Asignatura seleccionada:", asignatura); // Para depuración
-    setAsignaturaSeleccionada(asignatura); // Almacena la asignatura seleccionada
-    obtenerParciales(asignatura.Cod_seccion_asignatura); // Obtiene los parciales de la asignatura
-    setParciales([]); // Limpia los parciales previos
-    setActividades([]); // Limpia las actividades previas
-  };
-
-
-  const handleVerParciales1 = (asignatura) => {
-    console.log('Asignatura seleccionada:', asignatura); // Log de depuración
-    setSelectedAsignatura(asignatura);
-    obtenerParciales(asignatura.Cod_seccion_asignatura); // Llamada al backend
-  };
 
 
 
@@ -661,6 +665,8 @@ const handleClick = () => {
     setUpdateModalVisible(true);
   };
 
+
+  
   // Asegúrate de que `abrirModalCrearActividad` se llama correctamente
   const abrirModalCrearActividad = () => {
     setNuevaActividad({
