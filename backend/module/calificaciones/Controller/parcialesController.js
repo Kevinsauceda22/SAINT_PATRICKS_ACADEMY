@@ -21,12 +21,11 @@ export const obtenerParciales = async (req, res) => {
 
 // Crear un nuevo parcial
 export const crearParcial = async (req, res) => {
-    const { Nombre_parcial, Nota_recuperacion } = req.body;
+    const { Nombre_parcial } = req.body;
 
     try {
-        await pool.query('CALL insert_parcial(?, ?)', [
-            Nombre_parcial,
-            Nota_recuperacion
+        await pool.query('CALL insert_parcial(?)', [
+            Nombre_parcial
         ]);
 
         res.status(201).json({ Mensaje: 'Parcial agregado exitosamente' });
@@ -38,15 +37,14 @@ export const crearParcial = async (req, res) => {
 
 // Actualizar un parcial
 export const actualizarParcial = async (req, res) => {
-    const { Cod_parcial, Nombre_parcial, Nota_recuperacion } = req.body;
+    const { Cod_parcial, Nombre_parcial } = req.body;
 
    // console.log('Datos recibidos:', req.body); // Agregado para verificar datos
 
     try {
-        await pool.query('CALL update_parcial(?, ?, ?)', [
+        await pool.query('CALL update_parcial(?, ?)', [
             Cod_parcial,
-            Nombre_parcial,
-            Nota_recuperacion
+            Nombre_parcial
         ]);
 
         res.status(200).json({ Mensaje: 'Parcial actualizado exitosamente' });
