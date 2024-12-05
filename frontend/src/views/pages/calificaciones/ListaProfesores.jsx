@@ -61,7 +61,6 @@ const ListaProfesores = () => {
   const [profesorToUpdate, setProfesorToUpdate] = useState({});
   const [profesorToDelete, setProfesorToDelete] = useState({});
   const [profesorToReportar, setProfesorToReportar] = useState({});
-  const [profesorDetails, setProfesorDetails] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [listaPersonas, setListaPersonas] = useState([]);
   const [listaTiposContrato, setListaTiposContrato] = useState([]);
@@ -71,6 +70,8 @@ const ListaProfesores = () => {
   const inputRef = useRef(null); // referencia para el input
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
   const [modalPDFVisible, setModalPDFVisible] = useState(false); // Nuevo estado para el modal de PDF
+  // Lógica para determinar el estado en el renderizado
+  const estadoProfesor = profesores.Estado === 1 ? 'Activo' : 'Inactivo';
   const [filteredRecords, setFilteredRecords] = useState(profesores); // Inicializa con todos los profesores
   const [loading, setLoading] = useState(false);
   useEffect(() => {
@@ -80,6 +81,7 @@ const ListaProfesores = () => {
     fetchListaGradosAcademicos();
   }, []);
 
+  
 
   const fetchListaPersonas = async () => {
     try {
@@ -339,103 +341,57 @@ if (duplicada) {
 
 
 const handleUpdateProfesor = async () => {
-  // Validación para verificar que todos los campos estén llenos
-  const camposVacios = Object.values(profesorToUpdate).some(value => value === '' || value === null || value === undefined);
+  // Validar que todos los campos estén completos antes de enviar
+  const camposVacios = Object.values(profesorToUpdate).some(
+      (value) => value === '' || value === null || value === undefined
+  );
 
   if (camposVacios) {
-    swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Todos los campos deben estar llenos.',
-    });
-    return; // Salir de la función si hay campos vacíos
-  }
-
-  // Validación para fechas
-  const ingresoDate = new Date(profesorToUpdate.Fecha_ingreso);
-  const finContratoDate = new Date(profesorToUpdate.Fecha_fin_contrato);
-
-  if (ingresoDate > finContratoDate) {
-    swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'La fecha de ingreso no puede ser mayor que la fecha de fin de contrato.',
-    });
-    return;
-  }
-
-  const duplicada = profesores.some((profesor) => {
-    // Excluir al profesor actual de la comparación
-    if (profesor.Cod_profesor === profesorToUpdate.Cod_profesor) {
-      return false; // Ignora la comparación con el profesor actual
-    }
-  
-    console.log(`Comparando: ${String(profesor.cod_persona)} con ${String(profesorToUpdate.cod_persona)}`);
-    return String(profesor.cod_persona) === String(profesorToUpdate.cod_persona);
-  });
-  
-  if (duplicada) {
-    swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: `La persona seleccionada ya está registrada como profesor`,
-    });
-    return; // Salir de la función si hay un duplicado
-  }
-
-  // Validación para horas
-  const [horaEntrada, minutosEntrada] = profesorToUpdate.Hora_entrada.split(':').map(Number);
-  const [horaSalida, minutosSalida] = profesorToUpdate.Hora_salida.split(':').map(Number);
-
-  // Validar que la hora de entrada no sea mayor que la hora de salida
-  if (horaEntrada > horaSalida || (horaEntrada === horaSalida && minutosEntrada > minutosSalida)) {
-    swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'La hora de entrada no puede ser mayor que la hora de salida.',
-    });
-    return;
+      swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Todos los campos deben estar llenos.',
+      });
+      return;
   }
 
   try {
-    // Enviar la solicitud para actualizar el profesor
-    const response = await fetch('http://localhost:4000/api/profesores/actualizarprofesor', {
-      method: 'PUT', // Método HTTP para actualización
-      headers: {
-        'Content-Type': 'application/json', // Tipo de contenido
-      },
-      body: JSON.stringify(profesorToUpdate), // Convertir el objeto profesorToUpdate a JSON
-    });
-    
-        if (response.ok) {
+      const response = await fetch('http://localhost:4000/api/profesores/actualizarprofesor', {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(profesorToUpdate),
+      });
+
+      if (response.ok) {
           fetchProfesores(); // Recargar la lista de profesores
-          setModalUpdateVisible(false); // Cerrar el modal de actualización
-          setProfesorToUpdate({}); // Limpiar el objeto profesorToUpdate
+          setModalUpdateVisible(false); // Cerrar el modal
+          setProfesorToUpdate({}); // Limpiar el formulario
 
           swal.fire({
-            icon: 'success',
-            title: '¡Éxito!',
-            text: 'El profesor se ha actualizado correctamente',
+              icon: 'success',
+              title: '¡Éxito!',
+              text: 'El profesor se ha actualizado correctamente',
           });
-        } else {
+      } else {
           console.error('Error al actualizar el profesor:', response.statusText);
           swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo actualizar el profesor. Intente nuevamente.', // Mensaje de error
+              icon: 'error',
+              title: 'Error',
+              text: 'No se pudo actualizar el profesor. Intente nuevamente.',
           });
-        }
-      } catch (error) {
-        console.error('Error al actualizar el profesor:', error);
-
-        // Manejar errores de conexión al servidor
-        swal.fire({
+      }
+  } catch (error) {
+      console.error('Error al actualizar el profesor:', error);
+      swal.fire({
           icon: 'error',
           title: 'Error',
-          text: 'Hubo un error en la conexión al servidor.', // Mensaje de error de conexión
-        });
-      }
-    };
+          text: 'Hubo un error en la conexión al servidor.',
+      });
+  }
+};
+
 
 
   const handleDeleteProfesor = async () => {

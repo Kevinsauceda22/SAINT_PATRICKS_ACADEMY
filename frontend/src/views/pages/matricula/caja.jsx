@@ -40,6 +40,7 @@ const CajasMatriculas = () => {
   const [modalNuevaCajaVisible, setModalNuevaCajaVisible] = useState(false);
   const [valorMatricula, setValorMatricula] = useState(null); // Estado para almacenar el valor
   const [descuentos, setDescuentos] = useState([]); // Estado para almacenar los descuentos
+  const [descripcionMatricula, setDescripcionMatricula] = useState(''); // Estado para la descripción
   const [pagoActual, setPagoActual] = useState({
     cod_caja: '',
     monto: '',
@@ -172,17 +173,22 @@ const preventCopyPaste = (e) => {
   const registrarPago = async (e) => {
     e.preventDefault();
   
-    try {
-      // Validar campos obligatorios
-      if (!pagoActual.descripcion || !pagoActual.descripcion.trim()) {
-        MySwal.fire({
-          icon: 'warning',
-          title: 'Campo obligatorio',
-          text: 'La descripción no puede estar vacía.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
+   
+  try {
+    // Usar descripción ingresada o la obtenida de la API
+    const descripcionFinal = pagoActual.descripcion || descripcionMatricula;
+
+    // Validar que exista una descripción válida
+    if (!descripcionFinal || !descripcionFinal.trim()) {
+      MySwal.fire({
+        icon: 'warning',
+        title: 'Campo obligatorio',
+        text: 'La descripción no puede estar vacía.',
+        confirmButtonText: 'Entendido',
+      });
+      return;
+    }
+
   
       const monto = parseFloat(pagoActual.monto || valorMatricula || 0);
   
@@ -280,7 +286,8 @@ const preventCopyPaste = (e) => {
       const datosPago = {
         cod_caja: pagoActual.cod_caja,
         monto: montoFinal, // Monto ajustado con descuento aplicado
-        descripcion: pagoActual.descripcion,
+        descripcion: descripcionFinal, // Usar la descripción final
+
         cod_concepto: pagoActual.cod_concepto,
         cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
       };
@@ -364,7 +371,7 @@ const preventCopyPaste = (e) => {
           }));
         }
       } catch (error) {
-        console.error('Error al obtener el concepto "Matricula":', error);
+        console.error('Error al obtener el concepto "Pago de matricula":', error);
       }
     };
   
@@ -396,7 +403,6 @@ const preventCopyPaste = (e) => {
 
     // Validación de campos obligatorios
     if (!nuevaCaja.descripcion || !nuevaCaja.monto || !nuevaCaja.cod_concepto || !nuevaCaja.dni_padre) {
-        console.log("Validación fallida");
         await MySwal.fire({
             icon: 'error',
             title: 'Error',
@@ -445,55 +451,44 @@ const preventCopyPaste = (e) => {
     }
 
     // Validación de descuento (si aplica)
-    if (nuevaCaja.aplicar_descuento) {
-        if (nuevaCaja.valor_descuento > nuevaCaja.monto) {
+    let descuentoAplicado = 0;
+
+    if (nuevaCaja.aplicar_descuento && nuevaCaja.valor_descuento) {
+        const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
+
+        if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
             await MySwal.fire({
                 icon: 'error',
                 title: 'Error en el descuento',
-                text: 'El valor del descuento no puede ser mayor al monto total.',
+                text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
             });
             return;
         }
 
-        if (nuevaCaja.descripcion_descuento && nuevaCaja.descripcion_descuento.length > 25) {
-            await MySwal.fire({
-                icon: 'error',
-                title: 'Error en la descripción del descuento',
-                text: 'La descripción del descuento no puede exceder los 25 caracteres.',
-            });
-            return;
-        }
+        descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
+    }
 
-        if (/([A-Z])\1\1/.test(nuevaCaja.descripcion_descuento)) {
-            await MySwal.fire({
-                icon: 'error',
-                title: 'Error en la descripción del descuento',
-                text: 'La descripción del descuento no puede contener tres letras iguales consecutivas.',
-            });
-            return;
-        }
+    const montoFinal = nuevaCaja.monto - descuentoAplicado;
 
-        if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion_descuento)) {
-            await MySwal.fire({
-                icon: 'error',
-                title: 'Error en la descripción del descuento',
-                text: 'La descripción del descuento no puede contener símbolos o caracteres especiales.',
-            });
-            return;
-        }
+    if (montoFinal < 0) {
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en el monto',
+            text: 'El monto final no puede ser negativo.',
+        });
+        return;
     }
 
     try {
         // Preparar los datos para enviar al servidor
         const datosCaja = {
             descripcion: nuevaCaja.descripcion,
-            monto: parseFloat(nuevaCaja.monto),
+            monto: montoFinal, // Monto ajustado con descuento aplicado
             cod_concepto: nuevaCaja.cod_concepto,
             dni_padre: nuevaCaja.dni_padre,
             estado_pago: 'Pendiente',
             aplicar_descuento: nuevaCaja.aplicar_descuento || false,
-            valor_descuento: nuevaCaja.aplicar_descuento ? parseFloat(nuevaCaja.valor_descuento) : null,
-            descripcion_descuento: nuevaCaja.aplicar_descuento ? nuevaCaja.descripcion_descuento : null,
+            cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
         };
 
         console.log("Datos enviados al servidor:", datosCaja);
@@ -503,6 +498,19 @@ const preventCopyPaste = (e) => {
 
         if (response.status === 201 || response.status === 200) {
             console.log("Caja creada exitosamente");
+
+            // Construir datos para el PDF
+            const cajaConDatos = {
+                Cod_caja: response.data.cod_caja || 'No disponible',
+                Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
+                Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
+                Descripcion: nuevaCaja.descripcion,
+                Monto: montoFinal,
+                Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
+                Estado_pago: 'Pendiente',
+                Fecha_pago: new Date(),
+                Hora_registro: new Date(),
+            };
 
             // Mostrar la alerta de éxito
             await MySwal.fire({
@@ -516,13 +524,13 @@ const preventCopyPaste = (e) => {
                 title: '¿Desea imprimir el recibo?',
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Sí',
+                confirmButtonText: 'Sí, generar',
                 cancelButtonText: 'No',
             });
 
             if (imprimir.isConfirmed) {
                 // Llamar a la función para generar el PDF
-                generarReporteIndividual(datosCaja, nuevaCaja.monto, 0); // Ajustar si es necesario
+                generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
             }
 
             // Reiniciar el modal y recargar datos
@@ -550,6 +558,7 @@ const preventCopyPaste = (e) => {
         });
     }
 };
+
 
   
 
@@ -841,21 +850,43 @@ const buscarCajasPorDni = async (dni) => {
     };
   };
   
-   // Cargar valor de "Matricula"
-   useEffect(() => {
+  useEffect(() => {
     const cargarValorMatricula = async () => {
       try {
         const response = await axios.get('http://localhost:4000/api/caja/parametro/Matricula');
         if (response.status === 200) {
-          setValorMatricula(response.data.valor);
+          const { valor, parametro } = response.data;
+          setValorMatricula(valor); // Guarda el valor de la matrícula
+          setDescripcionMatricula(parametro); // Guarda la descripción de la matrícula
+          console.log('Descripción Matricula cargada:', parametro); // Depuración
         }
       } catch (error) {
-        console.error('Error al obtener el valor de Matricula:', error);
+        console.error('Error al obtener la descripción de Matricula:', error);
       }
     };
     cargarValorMatricula();
   }, []);
+  
+  useEffect(() => {
+    if (descripcionMatricula) {
+      setPagoActual((prev) => ({
+        ...prev,
+        descripcion: prev.descripcion || descripcionMatricula, // Si no hay descripción manual, usa descripcionMatricula
+      }));
+    }
+  }, [descripcionMatricula]);
+  
 
+// Actualizar el estado "pagoActual" con "valorMatricula" y "descripcionMatricula"
+useEffect(() => {
+  if (valorMatricula && descripcionMatricula) {
+    setPagoActual((prev) => ({
+      ...prev,
+      monto: valorMatricula, // Establece el monto
+      descripcion: descripcionMatricula, // Establece la descripción
+    }));
+  }
+}, [valorMatricula, descripcionMatricula]);
   // Actualizar el monto con el valor de "Matricula"
   useEffect(() => {
     if (valorMatricula) {
@@ -1138,34 +1169,18 @@ const buscarCajasPorDni = async (dni) => {
     <CForm onSubmit={registrarPago}>
       {/* Campo de descripción */}
       <CInputGroup className="mb-3">
-        <CInputGroupText className="bg-white border-0">
-          <CIcon icon={cilDescription} className="text-muted" />
-        </CInputGroupText>
-        <CFormInput
-          type="text"
-          name="descripcion"
-          placeholder="Descripción"
-          value={pagoActual.descripcion}
-          maxLength={25}
-          onChange={(e) => {
-            const value = e.target.value.toUpperCase();
-            if (/[^A-Z0-9 ]/.test(value)) {
-              setErrors({ descripcion: 'No se permiten símbolos en la descripción.' });
-            } else if (/([A-Z])\1\1/.test(value)) {
-              setErrors({ descripcion: 'No se permiten tres letras iguales consecutivas.' });
-            } else {
-              setErrors({ descripcion: '' });
-            }
-            setPagoActual({ ...pagoActual, descripcion: value });
-          }}
-          onPaste={(e) => e.preventDefault()} // Bloquea pegar
-          onCopy={(e) => e.preventDefault()} // Bloquea copiar
-          className={`form-control border-0 shadow-sm ${errors.descripcion ? 'is-invalid' : ''}`}
-          required
-        />
-      </CInputGroup>
-      {errors.descripcion && <small className="text-danger">{errors.descripcion}</small>}
-
+  <CInputGroupText className="bg-white border-0">
+    <CIcon icon={cilDescription} className="text-muted" />
+  </CInputGroupText>
+  <CFormInput
+    type="text"
+    name="descripcion"
+    placeholder="Descripción"
+    value={descripcionMatricula || pagoActual.descripcion || ''} // Prioriza descripcionMatricula
+    readOnly // Si no deseas que sea editable
+    className="form-control border-0 shadow-sm"
+  />
+</CInputGroup>
 {/* Campo de monto */}
 <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
@@ -1230,7 +1245,7 @@ const buscarCajasPorDni = async (dni) => {
     required
   >
     {/* Muestra "Matricula" como única opción */}
-    <option value={pagoActual.cod_concepto}>Matricula</option>
+    <option value={pagoActual.cod_concepto}>Pago de matricula</option>
   </CFormSelect>
 </CInputGroup>
 

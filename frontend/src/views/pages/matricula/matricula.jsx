@@ -412,41 +412,11 @@ const handleSubmit = async (e) => {
     if (response.status === 201) {
       const message = response.data.message;
 
-      // Preparar los datos para el PDF
-      const matriculaDataForPDF = {
-        codificacion_matricula: response.data?.codificacion_matricula || 'N/A',
-        Nombre_Hijo: matriculaData.primer_nombre_hijo || 'N/A', // Ajuste para tomar el valor desde matriculaData
-        Segundo_nombre_Hijo: matriculaData.segundo_nombre_hijo || 'N/A',
-        Apellido_Hijo: matriculaData.primer_apellido_hijo || 'N/A',
-        Segundo_apellido_Hijo: matriculaData.segundo_apellido_hijo || 'N/A',
-        fecha_nacimiento_hijo: matriculaData.fecha_nacimiento_hijo || 'N/A',
-        Nombre_Padre: nombrePadre || 'N/A',
-        Apellido_Padre: apellidoPadre || 'N/A',
-        Nombre_grado: opciones?.grados?.find((g) => g.Cod_grado === selectedGrado)?.Nombre_grado || 'N/A',
-        Nombre_seccion: opciones?.secciones?.find((s) => s.Cod_secciones === selectedSeccion)?.Nombre_seccion || 'N/A',
-        estado: opciones?.estados_matricula?.find(
-          (estado) => estado.Cod_estado_matricula === matriculaData.cod_estado_matricula
-        )?.Tipo || 'N/A',
-        periodo: opciones?.periodos_matricula?.find(
-          (periodo) => periodo.Cod_periodo_matricula === matriculaData.cod_periodo_matricula
-        )?.Anio_academico || 'N/A',
-        tipo: opciones?.tipos_matricula?.find(
-          (tipo) => tipo.Cod_tipo_matricula === matriculaData.cod_tipo_matricula
-        )?.Tipo || 'N/A',
-      };
-
-      // Mostrar alerta con opción de generar el PDF
+      // Mostrar alerta de éxito simple
       Swal.fire({
         title: 'Éxito',
-        text: `${message}. ¿Deseas imprimir la ficha técnica del estudiante?`,
+        text: message,
         icon: 'success',
-        showCancelButton: true,
-        confirmButtonText: 'Imprimir',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          handleViewPDF(matriculaDataForPDF);
-        }
       });
 
       // Reiniciar el modal y los estados del formulario
@@ -480,6 +450,7 @@ const handleSubmit = async (e) => {
     Swal.fire('Error', errorMessage, 'error');
   }
 };
+
 
 
 

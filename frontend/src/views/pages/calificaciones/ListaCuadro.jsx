@@ -10,7 +10,8 @@ import logo from 'src/assets/brand/logo_saint_patrick.png'
 
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
-
+import 'jspdf-autotable';
+import * as XLSX from "xlsx";
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
@@ -85,13 +86,16 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       if (!response.ok) throw new Error('Error al obtener el cuadro de notas.');
   
       const data = await response.json();
-      setCuadroNotas(data);
-      setCurrentView('cuadroNotas'); // Cambiar la vista actual al cuadro de notas
+      setCuadroNotas(data); // Configurar los datos del cuadro de notas
     } catch (error) {
       console.error('Error al obtener el cuadro de notas:', error);
-      Swal.fire('Error', 'No se pudieron cargar los datos del cuadro de notas', 'error');
+      Swal.fire('Sin datos disponibles', 'Actualmente no hay notas registradas para generar el cuadro de notas', 'info');
+      setCuadroNotas([]); // Configurar un arreglo vacío en caso de error
+    } finally {
+      setCurrentView('cuadroNotas'); // Siempre cambiar a la vista del cuadro de notas
     }
   };
+  
   
 
   
@@ -274,6 +278,192 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
   XLSX.writeFile(libroDeTrabajo, nombreArchivo);
 };
 
+
+const generarReportealumnoPDF = () => {
+  // Validar que haya datos en la tabla
+ if (!estudiantes || estudiantes.length === 0) {
+   Swal.fire({
+     icon: 'info',
+     title: 'Tabla vacía',
+     text: 'No hay datos disponibles para generar el reporte.',
+     confirmButtonText: 'Entendido',
+   });
+   return; // Salir de la función si no hay datos
+ }
+ const doc = new jsPDF();
+ const img = new Image();
+ img.src = logo;
+
+ img.onload = () => {
+   // Agregar logo
+   doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+   let yPosition = 20; // Posición inicial en el eje Y
+
+   // Título principal
+   doc.setFontSize(18);
+   doc.setTextColor(0, 102, 51); // Verde
+   doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+   yPosition += 12; // Espaciado más amplio para resaltar el título
+
+   // Subtítulo
+   doc.setFontSize(16);
+   doc.text('Reporte de Estudiantes', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+   yPosition += 10; // Espaciado entre subtítulo y detalles
+
+    // Detalles de la sección, asignatura y año
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+    if (nombreSeccionSeleccionada && gradoSeleccionado && anioSeccionSeleccionada ) {
+      doc.text(
+        `Sección: ${nombreSeccionSeleccionada}  | Grado: ${gradoSeleccionado} | Año: ${anioSeccionSeleccionada}`,
+        doc.internal.pageSize.width / 2,
+        yPosition,
+        { align: 'center' }
+      );
+    } else if (nombreSeccionSeleccionada && gradoSeleccionado) {
+      doc.text(
+        `Sección: ${nombreSeccionSeleccionada} | Grado: ${gradoSeleccionado}`,
+        doc.internal.pageSize.width / 2,
+        yPosition,
+        { align: 'center' }
+      );
+    }
+
+  yPosition += 8; // Espaciado entre líneas de detalle 
+
+   // Información adicional
+   doc.setFontSize(10);
+   doc.setTextColor(100); // Gris para texto secundario
+   doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+   yPosition += 4;
+
+   doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+   yPosition += 4;
+
+   doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+   yPosition += 6; // Espaciado antes de la línea divisoria
+
+   // Línea divisoria
+   doc.setLineWidth(0.5);
+   doc.setDrawColor(0, 102, 51); // Verde
+   doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+
+   // Configuración para la tabla
+   const pageHeight = doc.internal.pageSize.height; // Altura de la página
+   let pageNumber = 1; // Página inicial
+
+   // Agregar tabla con auto-paginación
+   doc.autoTable({
+     startY: yPosition + 4,
+     head: [['#', 'Nombre Estudiante']],
+     body: estudiantes.map((estudiante, index) => [
+       index + 1,
+       `${estudiante.Nombre_Completo}`.trim(),
+     ]),
+     headStyles: {
+       fillColor: [0, 102, 51],
+       textColor: [255, 255, 255],
+       fontSize: 10,
+     },
+     styles: {
+       fontSize: 10,
+       cellPadding: 3,
+       halign: 'center', // Centrado del texto en las celdas
+     },
+     columnStyles: {
+       0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+       1: { cellWidth: 'auto' }, // Columna 'estudiante' se ajusta automáticamente
+     },
+     alternateRowStyles: { fillColor: [240, 248, 255] },
+     didDrawPage: (data) => {
+       // Pie de página
+       const currentDate = new Date();
+       const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+       doc.setFontSize(10);
+       doc.setTextColor(100);
+       doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+       const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+       doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+       pageNumber += 1; // Incrementar el número de página
+     },
+   });
+
+   // Abrir el PDF en lugar de descargarlo automáticamente
+   window.open(doc.output('bloburl'), '_blank');
+ };
+
+ img.onerror = () => {
+   console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+   // Abrir el PDF sin el logo
+   window.open(doc.output('bloburl'), '_blank');
+ };
+};
+
+const generarReportealumnoExcel = () => {
+  if (!estudiantes || estudiantes.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Tabla vacía',
+      text: 'No hay datos disponibles para generar el reporte excel.',
+      confirmButtonText: 'Entendido',
+    });
+    return; // Salir de la función si no hay datos
+  }
+
+  // Detalles de la sección, asignatura y año
+  const detalles = [];
+  if (nombreSeccionSeleccionada  && gradoSeleccionado && anioSeccionSeleccionada) {
+    detalles.push([`Sección: ${nombreSeccionSeleccionada}  | Grado: ${gradoSeleccionado} | Año: ${anioSeccionSeleccionada}`]);
+  } else if (nombreSeccionSeleccionada && gradoSeleccionado) {
+    detalles.push([`Sección: ${nombreSeccionSeleccionada} | Grado: ${gradoSeleccionado}`]);
+  }
+
+  const encabezados = [
+    ["Saint Patrick Academy"],
+    ["Reporte de Estudiantes"],
+    [], // Espacio en blanco
+    ...detalles, // Agregar los detalles dinámicos
+    [], // Espacio adicional después de los detalles
+    ["#", "Nombre Estudiante"],
+  ];
+
+  // Crear filas con asignaturas
+  const filas = estudiantes.map((estudiante, index) => [
+    index + 1,
+    estudiante.Nombre_Completo || "N/A"
+  ]);
+
+  // Combinar encabezados y filas
+  const datos = [...encabezados, ...filas];
+
+  // Crear una hoja de trabajo
+  const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+
+  // Ajustar el ancho de columnas automáticamente
+  const ajusteColumnas = [
+    { wpx: 40 }, // # (Número)
+    { wpx: 300 }, // estudiante
+  ];
+
+  hojaDeTrabajo["!cols"] = ajusteColumnas;
+
+  // Crear el libro de trabajo
+  const libroDeTrabajo = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Estudiantes");
+
+  // Nombre del archivo con extensión correcta
+  const nombreArchivo = "Reporte_de_Estudiantes.xlsx";
+
+  // Descargar el archivo
+  XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+};
+
 const disableCopyPaste = (e) => {
   e.preventDefault();
   Swal.fire({
@@ -282,6 +472,7 @@ const disableCopyPaste = (e) => {
     text: 'Copiar y pegar no está permitido.',
   });
 };
+
 //-------------------paginacion, buscador vista actual : secciones-----------------------------
 const handleSearch2 = (event) => {
   const input = event.target;
@@ -438,100 +629,52 @@ const handleBackToSecciones = () => {
 };
 //------------------------------------------------------------------------------------------------------
 
-const exportarContenido = () => {
-  const contenidoExportado = document.createElement('div');
+const exportarContenido = async () => {
+  const input = document.getElementById("cuadroNotasRender");
 
-  // Clonamos el encabezado del reporte
-  const reportHeader = document.querySelector('.report-header');
-  contenidoExportado.appendChild(reportHeader ? reportHeader.cloneNode(true) : null); // Si existe el encabezado
+  // Forzar un tamaño fijo en el render
+  const originalWidth = input.style.width;
+  const originalHeight = input.style.height;
 
-  // Información del estudiante con espaciado de letras
-  const infoEstudiante = document.createElement('div');
-  infoEstudiante.innerHTML = `
-    <div style="display: flex; justify-content: space-between; margin: 0 30px; font-size: 1.1rem; font-family: 'Arial Narrow', sans-serif; color: #000000; letter-spacing: 0.5px;">
-      <span style="display: flex; align-items: center;">
-        <strong style="font-weight: bold;">Student Name:</strong>
-        <span style="border-bottom: 1px solid black; padding-bottom: 2px; display: inline-block; flex: 1; margin-left: 5px; letter-spacing: 0.5px;">
-          ${nombreEstudiante}
-        </span>
-      </span>
-      <span style="display: flex; align-items: center;">
-        <strong style="font-weight: bold;">Student ID:</strong> _____________________
-      </span>
-    </div>
-    <div style="display: flex; justify-content: space-between; margin: 20px 30px; font-size: 1.1rem; font-family: 'Arial Narrow', sans-serif; color: #000000; letter-spacing: 0.5px;">
-      <span style="margin-left: 40px;">
-        <strong style="font-weight: bold;">Grade:</strong>
-        <span style="padding-bottom: 2px; display: inline-block; letter-spacing: 0.5px;">${gradoSeleccionado}</span>
-      </span>
-      <span style="margin-left: 10px;">
-        <strong style="font-weight: bold;">Section:</strong> ${nombreSeccionSeleccionada}
-      </span>
-      <span style="margin-right: 40px;">
-        <strong style="font-weight: bold;">School year:</strong> 2024-2025
-      </span>
-    </div>
-  `;
-  contenidoExportado.appendChild(infoEstudiante);
+  // Asegúrate de que el tamaño sea fijo (en píxeles) durante la captura
+  input.style.width = "794px"; // Ancho A4 en píxeles a 96 DPI
+  input.style.height = "1123px"; // Altura A4 en píxeles a 96 DPI
 
-  // Clonamos la tabla de notas
-  const tablaNotas = document.querySelector('.table-bordered');
-  contenidoExportado.appendChild(tablaNotas.cloneNode(true));
+   // Ocultar los bordes temporalmente
+   const originalBorder = input.style.border;
+   input.style.border = "none";
 
-  // Ajustamos los márgenes y el diseño del contenedor
-  contenidoExportado.style.padding = '20px';
-  contenidoExportado.style.fontFamily = 'Arial Narrow, sans-serif';
+  const pdf = new jsPDF("p", "mm", "a4");
+  const margin = 10; // Márgenes en mm
 
-  // Limpiar bordes o líneas no deseadas en celdas y texto
-  contenidoExportado.querySelectorAll('th, td').forEach((elemento) => {
-    elemento.style.border = 'none'; // Eliminamos bordes
-    elemento.style.textDecoration = 'none'; // Aseguramos que no tenga subrayado
-  });
-
-  // Aseguramos que los estilos sean consistentes y sin líneas cruzadas
-  contenidoExportado.querySelectorAll('*').forEach((elemento) => {
-    elemento.style.textDecoration = 'none'; // Elimina cualquier subrayado no deseado
-  });
-
-  // Agregamos bordes consistentes a la tabla
-  contenidoExportado.querySelectorAll('table, th, td').forEach((elemento) => {
-    elemento.style.borderCollapse = 'collapse';
-    elemento.style.border = '1px solid black'; // Borde consistente en la tabla
-  });
-
-  // Agregamos el contenedor temporal al body (será oculto)
-  document.body.appendChild(contenidoExportado);
-
-  // Usamos html2canvas para capturar el contenido con alta resolución
-  setTimeout(() => {
-    requestAnimationFrame(() => {
-      html2canvas(contenidoExportado, {
-        scale: 3, // Escala alta para HD
-        useCORS: true,
-        backgroundColor: null,
-      })
-        .then((canvas) => {
-          const imgData = canvas.toDataURL('image/png');
-          const pdf = new jsPDF('p', 'mm', 'a4');
-          const pdfWidth = pdf.internal.pageSize.getWidth() - 5;
-          const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-          // Agregar la imagen generada al PDF
-          pdf.addImage(imgData, 'PNG', 5, 5, pdfWidth, pdfHeight);
-
-          // Generar la URL del PDF y abrirla en una nueva ventana
-          const pdfOutput = pdf.output('blob');
-          const link = document.createElement('a');
-          link.href = URL.createObjectURL(pdfOutput);
-          link.download = 'reporte.pdf';
-          link.click();
-        })
-        .finally(() => {
-          // Limpiamos el contenedor temporal
-          document.body.removeChild(contenidoExportado);
-        });
+  try {
+    const canvas = await html2canvas(input, {
+      scale: 4, // Aumenta la calidad
+      useCORS: true, // Maneja imágenes externas
     });
-  }, 500); // Espera 500ms antes de iniciar el proceso de captura
+
+    const imgData = canvas.toDataURL("image/png");
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth() - margin * 2;
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    pdf.addImage(imgData, "PNG", margin, margin, pdfWidth, pdfHeight);
+
+    // Descarga el archivo PDF
+    pdf.save("cuadro_notas.pdf");
+  } catch (error) {
+    console.error("Error al generar el PDF:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: "Hubo un problema al generar el PDF. Inténtalo nuevamente.",
+    });
+  } finally {
+    // Restaurar tamaño original
+    input.style.width = originalWidth;
+    input.style.height = originalHeight;
+    input.style.border = originalBorder;
+  }
 };
 
 
@@ -732,9 +875,16 @@ return (
             onClick={handleBackToSecciones}>
             <CIcon icon={cilArrowLeft} /> Volver a Secciones
           </CButton>    
-            <div className="d-flex justify-content-center align-items-center flex-grow-1">
-              <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",}}> Estudiantes: Seccion {nombreSeccionSeleccionada || "Selecciona una sección"}- {anioSeccionSeleccionada || "Selecciona una sección"}</h4>
+          <div className="d-flex flex-column justify-content-center align-items-center flex-grow-1">
+            <h3 className="text-center pb-2 mb-0" style={{borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem"}}>
+              Estudiantes
+            </h3>
+            <div className="d-flex justify-content-center align-items-center mt-2">
+              <div className="me-3" style={{fontSize: "1rem"}}>Grado: {gradoSeleccionado}</div>
+              <div className="me-3" style={{fontSize: "1rem"}}>Sección: {nombreSeccionSeleccionada}</div>
+              <div className="me-3" style={{fontSize: "1rem"}}>Año: {anioSeccionSeleccionada}</div>
             </div>
+          </div>
             <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
                 <CDropdownToggle
                   style={{backgroundColor: '#6C8E58',color: 'white',fontSize: '0.85rem',cursor: 'pointer',transition: 'all 0.3s ease', }}
@@ -744,13 +894,13 @@ return (
                 </CDropdownToggle>
                 <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
                   <CDropdownItem
-                    //onClick={generarReporteasignaturasPDF}
+                    onClick={generarReportealumnoPDF}
                     style={{cursor: "pointer",outline: "none",backgroundColor: "transparent",padding: "0.5rem 1rem",fontSize: "0.85rem",color: "#333",borderBottom: "1px solid #eaeaea",transition: "background-color 0.3s",}}
                     onMouseOver={(e) =>(e.target.style.backgroundColor = "#f5f5f5")} onMouseOut={(e) =>(e.target.style.backgroundColor = "transparent")}>
                     <CIcon icon={cilFile} size="sm" /> Abrir en PDF
                   </CDropdownItem>
                   <CDropdownItem
-                    //onClick={generarReporteasignaturasExcel}
+                    onClick={generarReportealumnoExcel}
                     style={{cursor: "pointer",outline: "none",backgroundColor: "transparent",padding: "0.5rem 1rem",fontSize: "0.85rem",color: "#333",transition: "background-color 0.3s",}}
                     onMouseOver={(e) =>(e.target.style.backgroundColor = "#f5f5f5")}
                     onMouseOut={(e) =>(e.target.style.backgroundColor = "transparent")}>
@@ -941,18 +1091,30 @@ return (
 
 </CCol>
 
+<div
+  id="cuadroNotasRender"
+  style={{
+    width: "816px", // Carta width in pixels at 96 DPI
+    height: "1056px", // Carta height in pixels at 96 DPI
+    backgroundColor: "white", // Fondo blanco para un diseño limpio
+    padding: "20px", // Opcional, para dar espacio interno
+    boxSizing: "border-box", // Incluye el padding en el tamaño total
+    justifyContent: "center",
+  }}
+  
+>
+
     {/* Encabezado del reporte */}
     <div 
-  className="report-header mt-4" 
   style={{ 
     display: 'flex',  // Usamos flexbox para alinear los elementos en línea
     alignItems: 'center',  // Alineamos los elementos verticalmente al centro
     justifyContent: 'center',  // Alineamos todo el contenido a la izquierda
     textAlign: 'left',  // Alineamos el texto a la izquierda
-    marginBottom: '30px', 
+    marginBottom: '10px', 
     flex: 1, 
     marginLeft: '-70px',
-    padding: '20px',
+    padding: '5px',
     borderRadius: '8px',
     fontFamily: 'Arial Narrow, sans-serif', // Establecer fuente general
     fontSize: '1rem',
@@ -966,17 +1128,19 @@ return (
     style={{
       width: '200px', 
       height: '200px', 
+      position: 'relative',  // Usamos posición relativa para moverlo
+      left: '-80px',  // Desplazamos el logo hacia la izquierda
     }} 
   />
   
   {/* Contenedor de texto a la izquierda */}
-  <div style={{ textAlign: 'center' }}>
+  <div style={{ textAlign: 'center', marginTop: '-70px',transform: 'translateX(-10px)'   }}>
     {/* Título con Monotype Corsiva */}
     <h1 style={{
       fontSize: '2.333rem', 
-      marginBottom: '5px',
+      marginBottom: '10px',
+      marginTop: '0', 
       fontFamily: 'Monotype Corsiva, cursive', 
-      letterSpacing: '2px',  // Espaciado entre letras para darle un toque elegante
       fontWeight: 'bold',
       color: '#000000',
     }}>
@@ -988,8 +1152,8 @@ return (
       fontSize: '2.17rem', 
       marginBottom: '5px', 
       fontFamily: 'Monotype Corsiva, cursive',
-      letterSpacing: '1px',  // Espaciado de letras para la claridad 
       color: '#000000',
+      marginTop: '0', 
       fontWeight: 'bold'
     }}>
       Report Card
@@ -998,7 +1162,7 @@ return (
 </div>
 
 
-    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000', marginTop:'30px' }}>
       <span style={{ display: 'flex', alignItems: 'center'}}>
         <strong style={{ fontWeight: 'bold' }}>Student Name:</strong>
         <span style={{ borderBottom: '1px solid black', paddingBottom: '2px', display: 'inline-block', flex: '1', marginLeft: '5px', letterSpacing: '0.5px' }}>
@@ -1010,10 +1174,10 @@ return (
       </span>
     </div>
 
-    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000' , marginTop:'30px' }}>
       <span style={{ marginLeft: '40px' }}>
-        <strong style={{ fontWeight: 'bold' }}>Grade:</strong>
-        <span style={{ paddingBottom: '2px', display: 'inline-block', letterSpacing: '0.5px' }}>{gradoSeleccionado}</span>
+        <strong style={{ fontWeight: 'bold' }}>Grade: </strong>
+        <span style={{ paddingBottom: '2px', display: 'inline-block', letterSpacing: '0.5px' }}> {gradoSeleccionado}</span>
       </span>
       <span style={{ marginLeft: '10px' }}><strong style={{ fontWeight: 'bold' }}>Section: </strong> {nombreSeccionSeleccionada}</span>
       <span style={{ marginRight: '40px' }}><strong style={{ fontWeight: 'bold' }}>School year: </strong> 2024-2025</span>
@@ -1021,24 +1185,29 @@ return (
 
 
           
-      <CTable className="table-bordered" style={{ border: '2px solid #000000', marginTop: '50px' }}>
+      <CTable className="table-bordered" style={{ border: '1px solid #000000', marginTop: '50px', fontSize: '0.8rem', lineHeight: '1', }}>
       <CTableHead>
   <CTableRow>
     <CTableHeaderCell 
       rowSpan={2} 
       className="text-center align-middle" 
-      style={{ backgroundColor: '#BFBFBF' }}  // Color de fondo agregado
+      style={{ backgroundColor: '#BFBFBF'}}  // Color de fondo agregado
     >
       <div className="d-flex flex-column align-items-center justify-content-center">
-        <span>Áreas Curriculares/</span>
-        <span style={{ marginTop: '9px' }}>Campos del Conocimiento</span>
+        <span  style={{ marginBottom: '12px' }}>Áreas Curriculares/</span>
+        <span style={{ marginTop: '5px' }}>Campos del Conocimiento</span>
       </div>
     </CTableHeaderCell>
 
-    <CTableHeaderCell 
-      colSpan={cuadroNotas.length > 0 ? cuadroNotas[0].NotasParciales.length : 0} 
-      className="text-center align-middle" 
-      style={{ backgroundColor: '#BFBFBF', borderBottom: '1px solid #000000', }}  // Color de fondo agregado
+    <CTableHeaderCell
+      rowSpan={1} // Esta celda solo ocupa la primera fila
+      colSpan={cuadroNotas.length > 0 ? cuadroNotas[0].NotasParciales.length : 0} // Define el número de columnas
+      className="text-center align-middle"
+      style={{
+        backgroundColor: '#BFBFBF',
+        borderBottom: '1px solid #000000',
+        padding: '10px',
+      }}
     >
       Parciales
     </CTableHeaderCell>
@@ -1049,8 +1218,8 @@ return (
       style={{ backgroundColor: '#BFBFBF' }}  // Color de fondo agregado
     >
       <div className="d-flex flex-column align-items-center justify-content-center">
-        <span>Nota</span>
-        <span style={{ marginTop: '9px' }}>Prom. Final (%)</span>
+        <span style={{ marginBottom: '12px' }}>Nota</span>
+        <span style={{ marginTop: '5px' }}>Prom. Final (%)</span>
       </div>
     </CTableHeaderCell>
   </CTableRow>
@@ -1071,11 +1240,12 @@ return (
 </CTableHead>
 
 
-        <CTableBody>
-          {cuadroNotas.map((nota, index) => (
+        <CTableBody >
+          {cuadroNotas.length > 0 ? (
+          cuadroNotas.map((nota, index) => (
             <CTableRow key={index}>
               {/* Celda combinada para el índice y la asignatura */}
-              <CTableDataCell className="text-center bg-transparent" style={{ fontSize: '14px', width: '350px' }}>
+              <CTableDataCell className="text-center bg-transparent" style={{ fontSize: '0.8rem', width: '350px' }}>
               <div className="d-flex justify-content-start">
                 <span style={{ marginRight: '20px', marginLeft: '60px' }}>{index + 1}.</span> {/* Índice */}
                 <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nota.Asignatura}</span> {/* Asignatura */}
@@ -1084,20 +1254,23 @@ return (
 
             {/* Notas en columnas según los parciales */}
             {nota.NotasParciales.map((parcial, i) => (
-              <CTableDataCell key={i} className="text-center bg-transparent">{parcial.Nota}</CTableDataCell>
+              <CTableDataCell key={i} className="text-center bg-transparent" >{parcial.Nota}</CTableDataCell>
             ))}
 
             {/* Columna Promedio Final */}
             <CTableDataCell className="text-center bg-transparent">{nota.PromedioFinal}</CTableDataCell>
           </CTableRow>
-        ))}
+        ))
+      ) : (
+        <CTableRow>
+          <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
+        </CTableRow>
+      )}
       </CTableBody>
     </CTable>
+    </div>
   </>
 )}
-
-
-
  </CContainer>
 );
 };

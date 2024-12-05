@@ -89,6 +89,18 @@ export const crearPersona = async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
+        // Verificar si el DNI ya existe en la base de datos
+        const [result] = await connection.query(
+            "SELECT COUNT(*) AS count FROM tbl_personas WHERE dni_persona = ?", 
+            [dni_persona]
+        );
+
+        if (result[0].count > 0) {
+            return res.status(400).json({
+                mensaje: 'El DNI ingresado ya está registrado en el sistema.',
+            });
+        }
+
         // Crear la nueva persona con el procedimiento almacenado
         await connection.query(
             "CALL P_Post_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
@@ -121,6 +133,7 @@ export const crearPersona = async (req, res) => {
     }
 };
 
+
 //CONTROLADOR PARA ACTUALIZAR UNA PERSONA
 export const actualizarPersona = async (req, res) => {
     const { cod_persona } = req.params; // Código de persona desde la URL
@@ -143,6 +156,19 @@ export const actualizarPersona = async (req, res) => {
     } = req.body;
 
     try {
+
+                // Verificar si el DNI ya existe en la base de datos
+                const [result] = await connection.query(
+                    "SELECT COUNT(*) AS count FROM tbl_personas WHERE dni_persona = ?", 
+                    [dni_persona]
+                );
+        
+                if (result[0].count > 0) {
+                    return res.status(400).json({
+                        mensaje: 'El DNI ingresado ya está registrado en el sistema.',
+                    });
+                }
+                
         // Llamada al procedimiento almacenado para actualizar
         await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             cod_persona,
@@ -179,7 +205,6 @@ export const eliminarPersona = async (req, res) => {
     const connection = await pool.getConnection();
 
     try {
-        // Llamar al procedimiento almacenado para borrar la persona
         await connection.query('CALL P_Delete_Personas(?)', [cod_persona]);
 
         res.status(200).json({ mensaje: 'Persona eliminada exitosamente' });

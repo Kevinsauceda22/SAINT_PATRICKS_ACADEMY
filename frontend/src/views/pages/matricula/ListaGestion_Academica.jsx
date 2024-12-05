@@ -1,38 +1,23 @@
 // Importaciones de librerías y componentes necesarios
 import React, { useEffect, useState } from 'react';
 import {
-  CButton,
-  CCard,
-  CCardBody,
-  CCol,
-  CContainer,
-  CModal,
-  CModalBody,
-  CModalFooter,
-  CModalHeader,
-  CModalTitle,
-  CRow,
-  CTable,
-  CTableBody,
-  CTableDataCell,
-  CTableHead,
-  CTableHeaderCell,
-  CTableRow,
-  CInputGroup,
-  CInputGroupText,
-  CFormInput,
-  CFormSelect,
+  CButton,CCard,CCardBody,CCol,CContainer,CModal,CModalBody,CModalFooter,CModalHeader,CModalTitle,CRow,CTable,CTableBody,CTableDataCell,CTableHead,CTableHeaderCell,CTableRow,CInputGroup,CInputGroupText,CFormInput,CFormSelect,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
-import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch } from '@coreui/icons';
+import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch, cilDescription } from '@coreui/icons';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import "jspdf-autotable";
 import { useNavigate } from 'react-router-dom';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import AccessDenied from "../AccessDenied/AccessDenied"
+import usePermission from '../../../../context/usePermission';
+
 
 const ListaGestion_Academica = () => {
   // Definición de estados
+  // Seguridad de botones
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('gestion_academica');
   const [agrupadores, setAgrupadores] = useState([]);
   const [periodos, setPeriodos] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -60,27 +45,6 @@ const ListaGestion_Academica = () => {
       Swal.fire('Error', 'No se pudieron obtener los agrupadores.', 'error');
     }
   };
-
-  useEffect(() => {
-    const fetchPeriodoActivo = async () => {
-      try {
-        const response = await fetch("http://localhost:4000/api/secciones_asignaturas/periodo_activo");
-        const data = await response.json();
-  
-        if (response.ok) {
-          setIsPeriodoActivo(data.activo); // Configura el estado basado en la respuesta de la API
-        } else {
-          setIsPeriodoActivo(false); // Si no hay período activo
-        }
-      } catch (error) {
-        console.error("Error al verificar el período activo:", error);
-        setIsPeriodoActivo(false); // Si ocurre un error, asume que no está activo
-      }
-    };
-  
-    fetchPeriodoActivo();
-  }, []);
-  
   
   // Función para obtener periodos desde la API
   const fetchPeriodos = async () => {
@@ -92,13 +56,6 @@ const ListaGestion_Academica = () => {
     } catch (error) {
       Swal.fire('Error', 'No se pudieron obtener los periodos.', 'error');
     }
-  };
-
-  // Función para obtener el año académico a partir del código de periodo de matrícula
-  const getAnioAcademico = (Cod_periodo_matricula) => {
-    if (periodos.length === 0) return 'Desconocido';
-    const periodo = periodos.find((p) => p.Cod_periodo_matricula === Cod_periodo_matricula);
-    return periodo ? periodo.Anio_academico : 'Desconocido';
   };
 
   // Función para navegar a la lista de secciones para gestionar
@@ -153,7 +110,7 @@ const ListaGestion_Academica = () => {
         doc.line(10, 55, pageWidth - 10, 55);
 
         // Tabla de datos
-        const tableColumn = ["#", "Sección", "Aula", "Grado", "Profesor"];
+        const tableColumn = ["#", "Sección", "Aula", "Grado", "Maestro guía"];
         const tableRows = data.map((seccion, index) => [
           { content: (index + 1).toString(), styles: { halign: "center" } },
           { content: seccion.Nombre_seccion?.toUpperCase() || "SIN NOMBRE", styles: { halign: "center" } },
@@ -269,6 +226,7 @@ const ListaGestion_Academica = () => {
     const doc = new jsPDF();
     const img = new Image();
     img.src = logo; // Ruta al logo que estás utilizando
+    
     img.onload = () => {
       const pageWidth = doc.internal.pageSize.width;
   
@@ -276,7 +234,7 @@ const ListaGestion_Academica = () => {
       doc.addImage(img, 'PNG', 10, 10, 45, 45);
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51);
-      doc.text('SAINT PATRICK\'S ACADEMY', pageWidth / 2, 24, { align: 'center' });
+      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
   
       doc.setFontSize(10);
       doc.setTextColor(100);
@@ -351,26 +309,15 @@ const ListaGestion_Academica = () => {
         },
       });
   
-      // Mostrar el PDF en una nueva ventana
+      // Convertir PDF en Blob y mostrar en una nueva ventana
       const pdfBlob = doc.output('blob');
       const pdfURL = URL.createObjectURL(pdfBlob);
-      const newWindow = window.open('', '_blank');
-      newWindow.document.write(`
-        <html>
-          <head>
-            <title>Reporte de Gestión Académica</title>
-          </head>
-          <body style="margin:0;">
-            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-            <div style="position:fixed;top:10px;right:200px;">
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Gestion_Academica.pdf'; a.click();">
-                Descargar PDF
-              </button>
-            </div>
-          </body>
-        </html>
-      `);
+  
+      // Abrir el visor de PDF predeterminado del navegador
+      const newWindow = window.open(pdfURL, '_blank');
+      if (newWindow) {
+        newWindow.document.title = 'Reporte de Gestión Académica';
+      }
     };
   
     img.onerror = () => {
@@ -378,7 +325,6 @@ const ListaGestion_Academica = () => {
     };
   };
   
-
   // Función para alternar la visibilidad del modal
   const toggleModal = () => setShowModal(!showModal);
 
@@ -416,31 +362,26 @@ const ListaGestion_Academica = () => {
       setCurrentPage(pageNumber);
     }
   };
-
-  const normalizeString = (str) => {
-    if (!str) return '';
-    return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-  };
   
+  // Función para normalizar texto eliminando tildes y convirtiendo a minúsculas
+  const normalizeString = (str) =>
+    str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Elimina tildes
+      .toLowerCase();
+
+  // Filtrar agrupadores en función del término de búsqueda
   const filteredAgrupadores = agrupadores.filter((agrupador) => {
     const normalizedSearchTerm = normalizeString(searchTerm);
-  
-    if (!searchTerm) return true; // Si no hay término de búsqueda, devolver todo.
-  
-    if (searchField === 'Total_secciones') {
-      return agrupador.Total_secciones.toString().includes(normalizedSearchTerm);
-    } else if (searchField === 'Anio_academico') {
-      return agrupador.Anio_academico.toString().includes(normalizedSearchTerm);
-    }
-  
-    return false;
+    const normalizedField = normalizeString(
+      agrupador[searchField]?.toString() || ''
+    );
+    return normalizedField.includes(normalizedSearchTerm);
   });
-  
 
   const indexOfLastRecord = currentPage * recordsPerPage; // Último índice de registro
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage; // Primer índice de registro
   const currentRecords = filteredAgrupadores.slice(indexOfFirstRecord, indexOfLastRecord); // Registros actuales
-
 
   // Función para guardar un nuevo agrupador
   const handleGuardarAgrupador = async () => {
@@ -464,11 +405,17 @@ const ListaGestion_Academica = () => {
       Swal.fire('Error', 'Ocurrió un error al intentar crear el agrupador.', 'error');
     }
   };
+
+    // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
   
   return (
     <CContainer style={{ marginTop: '40px', maxWidth: '900px' }}>
   {/* Título centrado en negritas */}
-  <CRow className="align-items-center justify-content-center mb-5">
+  <CRow className="align-items-center justify-content-center mb-3">
+    {/* Ajuste del margen inferior (antes era `mb-5`, ahora `mb-3`) */}
     <CCol xs="12" className="text-center">
       <h1 className="fw-bold" style={{ color: '#333' }}>
         <CIcon icon={cilBook} className="me-2" />
@@ -477,35 +424,124 @@ const ListaGestion_Academica = () => {
     </CCol>
   </CRow>
 
-  {/* Barra de búsqueda y selector de registros */}
+  {/* Botones "Nuevo" y "Reporte" arriba */}
+  <CRow className="align-items-center mb-4" style={{ marginTop: '-10px' }}>
+    {/* Ajuste del margen superior para acercar los botones al título */}
+    <CCol xs="12" className="d-flex justify-content-between">
+      {/* Botón "Nuevo" */}
+      {canInsert && (
+      <CButton
+        className="d-flex align-items-center gap-1 rounded shadow"
+        style={{
+          backgroundColor: '#4B6251',
+          color: 'white',
+          padding: '10px 16px',
+          fontSize: '0.9rem',
+        }}
+        onClick={() => setShowModal(true)}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+      )}
+
+      {/* Botón "Generar PDF" */}
+      <CButton
+        className="d-flex align-items-center rounded shadow"
+        style={{
+          backgroundColor: "#6C8E58",
+          color: "white",
+          padding: "10px 16px",
+          fontSize: "0.9rem",
+        }}
+        onClick={handleGenerarPDFVista}
+      >
+        <CIcon icon={cilDescription} /> Reporte
+      </CButton>
+    </CCol>
+  </CRow>
+
+  {/* Barra de búsqueda y selector de registros abajo */}
   <CRow className="align-items-center mb-4">
-    <CCol xs="12" md="8">
+    {/* Botón Limpiar en el borde izquierdo */}
+    <CCol xs="12" md="2" className="text-start">
+      <CButton
+        color="light"
+        onClick={() => {
+          setSearchTerm('');
+        }}
+        style={{
+          padding: "6px 12px",
+          fontSize: "0.9rem",
+          backgroundColor: "#E0E0E0", // Gris claro
+          color: "#000",
+          border: "1px solid #CCC",
+        }}
+      >
+        Limpiar
+      </CButton>
+    </CCol>
+
+    {/* Campo de búsqueda y selector */}
+    <CCol xs="12" md="6" className="d-flex align-items-center gap-2">
       <CInputGroup>
         <CInputGroupText>
           <CIcon icon={cilSearch} />
         </CInputGroupText>
         <CFormInput
           placeholder="Buscar Agrupador..."
-          onChange={(e) => setSearchTerm(e.target.value)}
           value={searchTerm}
+          onChange={(e) => {
+            // Validar entrada
+            let value = e.target.value;
+
+            // Convertir a mayúsculas
+            value = value.toUpperCase();
+
+            // Eliminar caracteres no permitidos (solo letras, números y espacios)
+            value = value.replace(/[^A-Z0-9 ]/g, '');
+
+            // Reemplazar caracteres con tildes por sus equivalentes sin tildes
+            value = value
+              .normalize('NFD')
+              .replace(/[\u0300-\u036f]/g, ''); // Normaliza y elimina tildes
+
+            // Limitar repetición de letras/números a tres consecutivos
+            value = value.replace(/(.)\1{3,}/g, '$1$1$1');
+
+            // Eliminar espacios consecutivos
+            value = value.replace(/\s{2,}/g, ' ');
+
+            // Actualizar el estado
+            setSearchTerm(value);
+          }}
+          style={{
+            padding: "6px",
+            fontSize: "0.9rem",
+          }}
         />
         <CFormSelect
           aria-label="Buscar por"
           onChange={(e) => setSearchField(e.target.value)}
-          style={{ marginLeft: '10px' }}
+          style={{ marginLeft: "10px", fontSize: "0.9rem" }}
         >
-          <option value="Total_secciones">Total Secciones</option>
+          <option value="Total_secciones">Total de secciones</option>
           <option value="Anio_academico">Año Académico</option>
         </CFormSelect>
       </CInputGroup>
     </CCol>
 
+    {/* Selector de Número de Registros */}
     <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
-      <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
+      <CInputGroup style={{ width: "auto", display: "inline-block" }}>
         <div className="d-inline-flex align-items-center">
           <span>Mostrar&nbsp;</span>
           <CFormSelect
-            style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+            style={{
+              width: "80px",
+              display: "inline-block",
+              textAlign: "center",
+              fontSize: "0.9rem",
+            }}
             onChange={(e) => {
               const value = Number(e.target.value);
               setRecordsPerPage(value);
@@ -522,39 +558,6 @@ const ListaGestion_Academica = () => {
       </CInputGroup>
     </CCol>
   </CRow>
-
-  {/* Botón "Nuevo" alineado a la derecha */}
-  <CRow className="align-items-center mb-4">
-  <CCol xs="12" className="d-flex justify-content-between">
-    {/* Botón "Nuevo" */}
-    <CButton
-      className="d-flex align-items-center gap-1 rounded shadow"
-      style={{
-        backgroundColor: '#4B6251',
-        color: 'white',
-        padding: '10px 16px',
-        fontSize: '0.9rem',
-      }}
-      onClick={() => setShowModal(true)}
-    >
-      <CIcon icon={cilPlus} /> Nuevo
-    </CButton>
-
-    {/* Botón "Generar PDF" */}
-    <CButton
-      className="d-flex align-items-center gap-1 rounded shadow"
-      style={{
-        backgroundColor: '#4B6251',
-        color: 'white',
-        padding: '10px 16px',
-        fontSize: '0.9rem',
-      }}
-      onClick={handleGenerarPDFVista}
-    >
-      <CIcon icon={cilArrowCircleBottom} className="me-1" /> Generar PDF
-    </CButton>
-  </CCol>
-</CRow>
 
 
   {/* Tabla de agrupadores */}
@@ -619,17 +622,17 @@ const ListaGestion_Academica = () => {
           </CTableRow>
         ))
       ) : (
-        <CTableRow>
-          <CTableDataCell colSpan="6" className="text-center">
-            No hay agrupadores disponibles.
-          </CTableDataCell>
-        </CTableRow>
-      )}
-    </CTableBody>
-  </CTable>
-      </div>
-    </CCardBody>
-  </CCard>
+          <CTableRow>
+            <CTableDataCell colSpan="6" className="text-center">
+              No hay agrupadores disponibles.
+            </CTableDataCell>
+          </CTableRow>
+        )}
+      </CTableBody>
+    </CTable>
+  </div>
+</CCardBody>
+</CCard>
 
   {/* Paginación */}
   <div

@@ -36,6 +36,13 @@ const _nav = [
   },
   {
     component: CNavItem,
+    name: 'Gestión Académica',
+    to: '/gestion_academica',
+    icon: cilFolderOpen,
+    nameobject: 'Solicitud_admin',
+  },
+  {
+    component: CNavItem,
     name: 'Matrícula',
     to: '/matricula', // La ruta que deseas para la matrícula
     nameobject: 'Matricula',
@@ -43,32 +50,6 @@ const _nav = [
     icon: cilSchool,
   },
   {
-    component: CNavGroup,
-    name: 'Gestion Academica',
-    icon: cilFolderOpen,
-    nameobject: 'ListaAsignaturas',
-    items: [
-      {
-        component: CNavItem,
-        name: 'Gestión Académica',
-        to: '/gestion_academica',
-        nameobject: 'Solicitud_admin',
-      },
-      {
-        component: CNavItem,
-        name: 'Listado de Secciones', 
-        to: '/lista-secciones',
-        nameobject: 'Solicitud_admin',
-      },
-      {
-        component: CNavItem,
-        name: 'Secciones asignaturas',
-        to: '/lista-secciones_asignatura',
-        nameobject: 'ListaSecciones_Asignatura',
-      }, 
-    ],
-  },
-   {
     component: CNavItem,
     name: 'Grados Asignaturas',
     to: '/ListaGradosAsignaturas',
@@ -117,7 +98,6 @@ const _nav = [
     icon: cilTask,
     nameobject: 'ListaActividadesProfesor',
   },
-  
   {
     component: CNavItem,
     name: 'Extracurriculares',
@@ -131,20 +111,6 @@ const _nav = [
     to: '/ListaNotasProfesor',
     icon: cilFile,
     nameobject: 'ListaNotasProfesor',
-  },
-  {
-    component: CNavItem,
-    name: 'Mis Cuadros',
-    to: '/ListaCuadroProfesor',
-    icon: cilFile,
-    nameobject: 'ListaCuadroProfesor',
-  },
-  {
-    component: CNavItem,
-    name: 'Cuadros',
-    to: '/ListaCuadro',
-    icon: cilFile,
-    nameobject: 'ListaCuadro',
   },
   {
     component: CNavItem,
@@ -176,11 +142,6 @@ const _nav = [
     nameobject: 'ListaAsignaturas',
     icon: cilListRich,
     items: [
-      {
-        component: CNavItem,
-        name: 'Parametro',
-        to: '/ListaParametro',
-      },
       {
         component: CNavItem,
         name: 'Asignaturas',

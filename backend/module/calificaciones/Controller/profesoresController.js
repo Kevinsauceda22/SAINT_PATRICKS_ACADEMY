@@ -91,27 +91,40 @@ export const actualizarProfesor = async (req, res) => {
 
 
 
+
+
+
+
+
+
 // Función para cambiar el estado de un profesor
 export const actualizarEstadoProfesor = async (req, res) => {
     const { cod_profesor, estado } = req.body;
-  
+
+    // Validar parámetros
     if (!cod_profesor || estado === undefined) {
         return res.status(400).json({ mensaje: 'Faltan parámetros' });
     }
-  
+
     try {
         // Llamar al procedimiento almacenado
         const [results] = await pool.query('CALL actualizar_estado_profesor(?, ?)', [cod_profesor, estado]);
-        
-        const mensaje = results[0][0].mensaje;  // Obtener el mensaje devuelto por el procedimiento
-        
-        // Enviar la respuesta
-        res.json({ mensaje });
+
+        // Obtener el mensaje devuelto por el procedimiento
+        const mensaje = results[0][0].mensaje;
+
+        console.log(`Estado actualizado: ${estado}`); // Debug en consola
+        res.json({ mensaje, cod_profesor, estado }); // Respuesta al frontend
     } catch (error) {
         console.error('Error al ejecutar el procedimiento almacenado:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 };
+
+
+
+
+
 
 
 // Ruta para eliminar un profesor por su código

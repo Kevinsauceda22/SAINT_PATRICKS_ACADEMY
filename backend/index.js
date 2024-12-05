@@ -23,7 +23,6 @@ import historialAcademicoRoutes from './module/calificaciones/Routes/historialAc
 import InstitutosRoutes from './module/calificaciones/Routes/InstitutosRoutes.js';
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 import bitacoraRoutes from './module/auth/bitacora_routes.js';
-import parametroRoutes from './module/calificaciones/Routes/parametroRoutes.js';
 import dashboard from './module/dashboard/dashboardRoutes.js';
 
 
@@ -105,11 +104,6 @@ app.use('/api/roles', PermisosRoutes);
 // Registrar las rutas
 app.use('/api/usuarios', cuentasRouter);
 
-
-//Personas
-app.use('/api/tipoRelacion', tipoRelacionRoutes);
-app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
-
 // Calificaciones
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/auth/', usuariosRoutes); 
@@ -160,7 +154,7 @@ app.use('/api/ponderacionCiclo',Ponderaciones_CiclosRoutes);
 app.use('/api/actividadesAcademicas', actividadesRoutes);
 //Ruta para asignar asignaturas a un grado
 app.use('/api/gradoAsignatura',gradoAsignaturaRoutes);
-app.use('/api/parametro',parametroRoutes);
+
 
 // Matrícula
 app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula

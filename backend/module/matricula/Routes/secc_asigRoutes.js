@@ -1,6 +1,18 @@
 import express from 'express';
-import { obtenerDetalleSeccionAsignatura, obtenerSecciones, obtenerDias, obtenerGradosAsignaturas,crearHorarioSeccionAsignatura, actualizarSeccionAsignatura, obtenerAsignaturasyHorarios,obtenerAsignaturasPorSeccionYGrado,obtenerSeccionesPorGrado,obtenerAsignaturasPorProfesor,
-    obtenerAsignaturasPorSeccion,getDetalleSeccionAsignatura} from '../Controllers/secc_asigController.js';
+import { obtenerDetalleSeccionAsignatura, 
+         obtenerSecciones, 
+         obtenerDias, 
+         obtenerGradosAsignaturas,
+         crearHorarioSeccionAsignatura, 
+         actualizarSeccionAsignatura, 
+         obtenerAsignaturasyHorarios,
+         obtenerAsignaturasPorSeccionYGrado,
+         obtenerSeccionesPorGrado,
+         obtenerAsignaturasPorProfesor,
+         obtenerAsignaturasPorSeccion,
+         getDetalleSeccionAsignatura, 
+         obtenerAsignaturasPorGradoYSeccion
+} from '../Controllers/secc_asigController.js';
 
 const router = express.Router();
 
@@ -31,13 +43,16 @@ router.get('/asignaturasgrados/:Cod_secciones', obtenerAsignaturasPorSeccionYGra
 // Ruta para obtener secciones
 router.get('/gradosasig/:Cod_grado', obtenerSeccionesPorGrado);
 
-router.get('/detalle/:Cod_seccion_asignatura', getDetalleSeccionAsignatura);
-
 // Ruta para obtener las asignaturas por codSeccion y profesor
 router.get('/verseccionesasignaturas/:codSeccion', obtenerAsignaturasPorProfesor);
 
 // Definir la ruta para obtener asignaturas por sección
 router.get('/porseccion/:codSeccion', obtenerAsignaturasPorSeccion);
 
+// Detalles
+router.get('/detalle/:Cod_seccion_asignatura', getDetalleSeccionAsignatura);
+
+// Ruta 
+router.get('/asignaturas/:Cod_seccion?', obtenerAsignaturasPorGradoYSeccion);
 
 export default router;

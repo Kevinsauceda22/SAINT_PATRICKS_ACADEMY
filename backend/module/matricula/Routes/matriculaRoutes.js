@@ -8,7 +8,8 @@ import {
   obtenerAlumnosMatriculadosPorGradoYAno,
   obtenerMatriculasConPeriodo, 
   obtenerAlumnosPorSeccion,
-  obtenerHorarioPorSeccion,// Importar el nuevo controlador
+  obtenerHorarioPorSeccion,
+  obtenerSeccionesConDetalles,// Importar el nuevo controlador
 } from '../Controllers/matriculaController.js';
 
 const router = express.Router();
@@ -36,6 +37,9 @@ router.get('/alumnos/seccion/:cod_seccion', obtenerAlumnosPorSeccion);
 
 // Ruta para obtener el horario por sección
 router.get('/horario/:cod_seccion', obtenerHorarioPorSeccion);
+
+router.get('/detalles/:cod_grado', obtenerSeccionesConDetalles);
+
 
 
 
