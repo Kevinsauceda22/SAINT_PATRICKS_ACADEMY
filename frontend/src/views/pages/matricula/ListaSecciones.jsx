@@ -692,11 +692,18 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       
   return (
     <CContainer>
-  <div className="container mt-5"> {/* Contenedor general con margen superior */}
-  {/* Título, botón y dropdown */}
-  <CRow className="align-items-center mb-4">
+  <div className="container mt-3"> {/* Contenedor general con margen superior */}
+  {/* Fila del título */}
+  <CRow className="align-items-center mb-3">
+    <CCol xs="12" className="text-center">
+      <h2 className="fw-bold">Gestión de Secciones</h2>
+    </CCol>
+  </CRow>
+
+  {/* Fila de los botones */}
+  <CRow className="align-items-center mb-3">
     {/* Botón "Gestión Académica" alineado a la izquierda */}
-    <CCol xs="4" md="3" className="text-start">
+    <CCol xs="12" md="4" className="text-start mb-2 mb-md-0">
       <CButton
         className="d-flex align-items-center gap-1 rounded shadow"
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")}
@@ -716,32 +723,27 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       </CButton>
     </CCol>
 
-    {/* Título centrado en negritas */}
-    <CCol xs="4" md="6" className="text-center">
-      <h1 className="mb-4 fw-bold">Gestión de Secciones</h1> {/* Ajusté el margen inferior */}
-    </CCol>
-
     {/* Botón "Nuevo" y dropdown "Reporte" alineados a la derecha */}
     <CCol
-      xs="4"
-      md="3"
+      xs="12"
+      md="8"
       className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2"
     >
       {/* Botón "Nuevo" */}
       {canInsert && (
-      <CButton
-      className="d-flex align-items-center gap-1 rounded shadow"
-      style={{
-        backgroundColor: esPeriodoActivo ? '#4B6251' : '#C0C0C0',
-        color: 'white',
-        padding: '10px 16px',
-        fontSize: '0.9rem',
-      }}
-      onClick={esPeriodoActivo ? openCreateModal : null}
-      disabled={!esPeriodoActivo}
-    >
-      <CIcon icon={cilPlus} /> Nuevo
-    </CButton>
+        <CButton
+          className="d-flex align-items-center gap-1 rounded shadow"
+          style={{
+            backgroundColor: esPeriodoActivo ? '#4B6251' : '#C0C0C0',
+            color: 'white',
+            padding: '10px 16px',
+            fontSize: '0.9rem',
+          }}
+          onClick={esPeriodoActivo ? openCreateModal : null}
+          disabled={!esPeriodoActivo}
+        >
+          <CIcon icon={cilPlus} /> Nuevo
+        </CButton>
       )}
 
       {/* Botón de Reporte */}

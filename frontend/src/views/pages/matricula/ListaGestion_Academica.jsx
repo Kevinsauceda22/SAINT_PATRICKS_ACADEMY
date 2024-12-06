@@ -412,15 +412,15 @@ const ListaGestion_Academica = () => {
   }
   
   return (
-    <CContainer style={{ marginTop: '40px', maxWidth: '900px' }}>
+    <CContainer style={{ marginTop: '10px', maxWidth: '900px' }}>
   {/* Título centrado en negritas */}
-  <CRow className="align-items-center justify-content-center mb-3">
-    {/* Ajuste del margen inferior (antes era `mb-5`, ahora `mb-3`) */}
+  <CRow className="align-items-center justify-content-center mb-2">
+    {/* Ajuste del margen inferior (antes era `mb-5`, ahora `mb-2`) */}
     <CCol xs="12" className="text-center">
-      <h1 className="fw-bold" style={{ color: '#333' }}>
-        <CIcon icon={cilBook} className="me-2" />
+      <h2 className="fw-bold" style={{ color: '#333' }}>
+        <CIcon icon={cilBook} className="me-1" />
         Gestión Académica
-      </h1>
+      </h2>
     </CCol>
   </CRow>
 
