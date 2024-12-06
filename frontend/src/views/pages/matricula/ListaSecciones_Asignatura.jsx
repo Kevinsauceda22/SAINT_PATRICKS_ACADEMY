@@ -698,7 +698,6 @@ const ListaSecciones_Asignaturas = () => {
   </CRow>
 </div>
 
-
   {/* Contenedor de búsqueda */}
 <div className="filter-container mb-4">
   <CRow className="align-items-center">

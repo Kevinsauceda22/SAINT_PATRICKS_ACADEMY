@@ -2,7 +2,7 @@ import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
 
-// Controlador para obtener todos los agrupadores
+// Integra los datos en la vista de gestión académica.
 export const obtenerAgrupadores = async (req, res) => {
     try {
         // Ejecutar el procedimiento almacenado
@@ -22,7 +22,7 @@ export const obtenerAgrupadores = async (req, res) => {
     }
 };
 
-// Controlador para obtener todos los periodos de matrícula
+// Controlador para obtener todos los períodos de matrícula desde la base de datos.
 export const obtenerPeriodos = async (req, res) => {
     try {
         // Consulta para obtener todos los períodos de matrícula
@@ -43,7 +43,7 @@ export const obtenerPeriodos = async (req, res) => {
     }
 };
 
-// Controlador para insertar agrupadores en tbl_historial_secciones
+// Controlador para insertar un nuevo agrupador en la base de datos mediante un procedimiento almacenado.
 export const insertarAgrupador = async (req, res) => {
     try {
         // Llamada al procedimiento almacenado
@@ -69,7 +69,7 @@ export const insertarAgrupador = async (req, res) => {
     }
 };
 
-// Obtener detalle del periodo
+// Se utiliza principalmente para generar reportes detallados en la vista.
 export const getDetallePorPeriodo = async (req, res) => {
     const { Cod_periodo_matricula } = req.params;
     console.log('Parámetro recibido:', Cod_periodo_matricula); // Log para verificar el parámetro
@@ -93,7 +93,7 @@ export const getDetallePorPeriodo = async (req, res) => {
     }
 };
 
-// Obtener todas las agrupaciones con su estado
+// Proporciona los datos principales de la tabla en la vista de gestión académica.
 export const getTodasAgrupaciones = async (req, res) => {
     try {
         // Llamada al procedimiento almacenado
@@ -114,7 +114,7 @@ export const getTodasAgrupaciones = async (req, res) => {
     }
 };
 
-// Controlador para obtener secciones por periodo de matrícula
+// Es utilizado para generar reportes PDF detallados de secciones por período.
 export const obtenerSeccionesPorPeriodo = async (req, res) => {
     const { Cod_periodo_matricula } = req.params; // Extraemos el parámetro de la URL
     console.log('Parámetro recibido:', Cod_periodo_matricula); // Log para depuración
@@ -167,7 +167,7 @@ export const obtenerSecciones = async (req, res) => {
     }
 };
 
-// Controlador para obtener el periodo de matrícula activo
+// Es clave para habilitar o deshabilitar ciertas acciones en la vista.
 export const obtenerPeriodoMatriculaActivo = async (req, res) => {
     try {
         const [rows] = await pool.query(`
