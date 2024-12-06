@@ -697,7 +697,7 @@ const handleActualizarActividad = async () => {
     Swal.fire({
       icon: "error",
       title: "Fechas inválidas",
-      text: 'La "fecha inicio" no puede ser mayor que la "fecha fin".',
+      text: 'La "Fecha y hora inicio" no puede ser mayor que la "Fecha y hora inicio".',
     });
     return;
   }
@@ -2476,42 +2476,166 @@ const generarReporteActividadesPDF = () => {
           onChange={(e) => handleInputChange(e, (value) =>setNuevaActividad({...nuevaActividad, Descripcion: e.target.value, }))}
         />
         </CInputGroup>
-         {/* Fecha y hora inicio */}
-     <CInputGroup className="mb-3">
-      <CInputGroupText>Fecha y hora inicio</CInputGroupText> 
-      <CFormInput
-          type="datetime-local"
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          value={nuevaActividad.Fechayhora_Inicio}
-          onChange={(e) =>
-            setNuevaActividad({
-              ...nuevaActividad,
-              Fechayhora_Inicio: e.target.value,
-            })
-          }
-        />
-        </CInputGroup>
+       {/* Fecha y hora inicio */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Fecha y hora inicio</CInputGroupText>
+  <CFormInput
+    type="date"
+    onPaste={disableCopyPaste}
+    onCopy={disableCopyPaste}
+    value={nuevaActividad.FechaInicio || ''}
+    onChange={(e) => {
+      const selectedDate = e.target.value;
+      if (!selectedDate) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Fecha requerida',
+          text: 'Debe seleccionar una fecha antes de configurar la hora.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+      setNuevaActividad({
+        ...nuevaActividad,
+        FechaInicio: selectedDate,
+        Fechayhora_Inicio: '', // Reset datetime input
+      });
+    }}
+  />
+  <CFormInput
+    type="time"
+    disabled={!nuevaActividad.FechaInicio}
+    value={
+      nuevaActividad.Fechayhora_Inicio
+        ? nuevaActividad.Fechayhora_Inicio.split('T')[1]
+        : ''
+    }
+    onChange={(e) => {
+      const selectedTime = e.target.value;
+      const [hour] = selectedTime.split(':').map(Number);
+      if (hour < 7 || hour >= 15) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Hora no válida',
+          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
 
+      // Validación si la fecha es la misma y hora fin ya está definida
+      if (
+        nuevaActividad.FechaInicio === nuevaActividad.FechaFin &&
+        nuevaActividad.Fechayhora_Fin
+      ) {
+        const [endHour, endMinute] = nuevaActividad.Fechayhora_Fin.split('T')[1]
+          ?.split(':')
+          .map(Number);
+        const [startHour, startMinute] = selectedTime.split(':').map(Number);
 
-        {/* fecha y hora fin*/}
-     <CInputGroup className="mb-3">
-      <CInputGroupText>Fecha y hora fin</CInputGroupText> 
-      <CFormInput
-          type="datetime-local"
-          value={nuevaActividad.Fechayhora_Fin}
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          onChange={(e) =>
-            setNuevaActividad({
-              ...nuevaActividad,
-              Fechayhora_Fin: e.target.value,
-            })
-          }
-        />
-         </CInputGroup>
+        if (
+          startHour > endHour ||
+          (startHour === endHour && startMinute > endMinute)
+        ) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Hora inicio inválida',
+            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
+      }
 
-         
+      setNuevaActividad({
+        ...nuevaActividad,
+        Fechayhora_Inicio: `${nuevaActividad.FechaInicio}T${selectedTime}`,
+      });
+    }}
+  />
+</CInputGroup>
+
+{/* Fecha y hora fin */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Fecha y hora fin</CInputGroupText>
+  <CFormInput
+    type="date"
+    onPaste={disableCopyPaste}
+    onCopy={disableCopyPaste}
+    value={nuevaActividad.FechaFin || ''}
+    onChange={(e) => {
+      const selectedDate = e.target.value;
+      if (!selectedDate) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Fecha requerida',
+          text: 'Debe seleccionar una fecha antes de configurar la hora.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+      setNuevaActividad({
+        ...nuevaActividad,
+        FechaFin: selectedDate,
+        Fechayhora_Fin: '', // Reset datetime input
+      });
+    }}
+  />
+  <CFormInput
+    type="time"
+    disabled={!nuevaActividad.FechaFin}
+    value={
+      nuevaActividad.Fechayhora_Fin
+        ? nuevaActividad.Fechayhora_Fin.split('T')[1]
+        : ''
+    }
+    onChange={(e) => {
+      const selectedTime = e.target.value;
+      const [hour] = selectedTime.split(':').map(Number);
+      if (hour < 7 || hour >= 15) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Hora no válida',
+          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+
+      // Validación si la fecha es la misma y hora inicio ya está definida
+      if (
+        nuevaActividad.FechaInicio === nuevaActividad.FechaFin &&
+        nuevaActividad.Fechayhora_Inicio
+      ) {
+        const [startHour, startMinute] = nuevaActividad.Fechayhora_Inicio.split(
+          'T'
+        )[1]
+          ?.split(':')
+          .map(Number);
+        const [endHour, endMinute] = selectedTime.split(':').map(Number);
+
+        if (
+          startHour > endHour ||
+          (startHour === endHour && startMinute > endMinute)
+        ) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Hora fin inválida',
+            text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
+      }
+
+      setNuevaActividad({
+        ...nuevaActividad,
+        Fechayhora_Fin: `${nuevaActividad.FechaFin}T${selectedTime}`,
+      });
+    }}
+  />
+</CInputGroup>
+
      {/* Ponderacion */}
      <CInputGroup className="mb-3">
      <CInputGroupText>Ponderación</CInputGroupText>
@@ -2636,26 +2760,158 @@ backdrop="static" >
                 onChange={(e) => handleInputChange(e, (value) => setActividadToUpdate({...actividadToUpdate, Descripcion: e.target.value, }))}
             />
             </CInputGroup>
+{/* Fecha y hora inicio */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Fecha y hora inicio</CInputGroupText>
+  <CFormInput
+    type="date"
+    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Inicio)?.split("T")[0]}
+    onChange={(e) => {
+      const selectedDate = e.target.value;
+      setActividadToUpdate({
+        ...actividadToUpdate,
+        Fechayhora_Inicio: `${selectedDate}T${actividadToUpdate?.Fechayhora_Inicio?.split("T")[1]}`, // Mantener la misma hora
+      });
+    }}
+    style={{ width: "120px" }}  // Ajustar tamaño de la fecha
+  />
+  <CFormInput
+    type="time"
+    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Inicio)?.split("T")[1]}
+    onChange={(e) => {
+      const selectedTime = e.target.value;
+      const selectedDate = actividadToUpdate?.Fechayhora_Inicio?.split("T")[0];
+      const selectedHour = parseInt(selectedTime.split(":")[0]);
+      const selectedMinute = parseInt(selectedTime.split(":")[1]);
+
+      // Validación: hora debe estar entre las 7 AM y las 3 PM
+      if (selectedHour < 7 || selectedHour >= 15) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Hora no válida',
+          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+
+      // Validación: la hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma
+      const endDate = actividadToUpdate?.Fechayhora_Fin?.split("T")[0];
+      const endTime = actividadToUpdate?.Fechayhora_Fin?.split("T")[1];
+      const [endHour, endMinute] = endTime ? endTime.split(":").map(Number) : [null, null];
+
+      if (selectedDate === endDate && endHour !== null && endMinute !== null) {
+        if (
+          selectedHour > endHour ||
+          (selectedHour === endHour && selectedMinute >= endMinute)
+        ) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Hora de inicio no válida',
+            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
+      }
+
+      // Validación si la fecha es la misma y hora fin ya está definida
+      if (selectedDate === endDate && actividadToUpdate?.Fechayhora_Fin) {
+        const [endHour, endMinute] = actividadToUpdate?.Fechayhora_Fin.split('T')[1]
+          ?.split(':')
+          .map(Number);
+        const [startHour, startMinute] = selectedTime.split(':').map(Number);
+
+        if (
+          startHour > endHour ||
+          (startHour === endHour && startMinute > endMinute)
+        ) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Hora inicio inválida',
+            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
+      }
+
+      // Actualizar el estado si la hora es válida
+      setActividadToUpdate({
+        ...actividadToUpdate,
+        Fechayhora_Inicio: `${selectedDate}T${selectedTime}`,
+      });
+    }}
+    style={{ width: "80px" }}  // Ajustar tamaño de la hora
+  />
+</CInputGroup>
 
 
-             {/* Fecha y hora inicio */}
-             <CInputGroup className="mb-3">
-            <CInputGroupText>Fecha y hora inicio</CInputGroupText>
-            <CFormInput
-             type="datetime-local"
-             value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Inicio)}
-             onChange={(e) => setActividadToUpdate({...actividadToUpdate, Fechayhora_Inicio: e.target.value,})}
-           />
-           </CInputGroup>
-           {/* Fecha y hora FIN */}
-           <CInputGroup className="mb-3">
-           <CInputGroupText>Fecha y hora fin</CInputGroupText>
-           <CFormInput
-           type="datetime-local"
-           value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Fin)}
-            onChange={(e) => setActividadToUpdate({...actividadToUpdate, Fechayhora_Fin: e.target.value,})}
-            />
-           </CInputGroup>
+{/* Fecha y hora fin */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Fecha y hora fin</CInputGroupText>
+  <CFormInput
+    type="date"
+    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Fin)?.split("T")[0]}
+    onChange={(e) => {
+      const selectedDate = e.target.value;
+      setActividadToUpdate({
+        ...actividadToUpdate,
+        Fechayhora_Fin: `${selectedDate}T${actividadToUpdate?.Fechayhora_Fin?.split("T")[1]}`, // Mantener la misma hora
+      });
+    }}
+    style={{ width: "120px" }}  // Ajustar tamaño de la fecha
+  />
+  <CFormInput
+    type="time"
+    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Fin)?.split("T")[1]}
+    onChange={(e) => {
+      const selectedTime = e.target.value;
+      const selectedDate = actividadToUpdate?.Fechayhora_Fin?.split("T")[0];
+      const [selectedHour, selectedMinute] = selectedTime.split(":").map(Number);
+
+      // Validación: hora debe estar entre las 7 AM y las 3 PM
+      if (selectedHour < 7 || selectedHour >= 15) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Hora no válida',
+          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+
+      // Validación si la fecha es la misma y la hora de inicio ya está definida
+      const startDate = actividadToUpdate?.Fechayhora_Inicio?.split("T")[0];
+      const [startHour, startMinute] = actividadToUpdate?.Fechayhora_Inicio?.split("T")[1]?.split(":").map(Number);
+
+      if (selectedDate === startDate && actividadToUpdate?.Fechayhora_Inicio) {
+        if (
+          startHour > selectedHour ||
+          (startHour === selectedHour && startMinute > selectedMinute)
+        ) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Hora fin inválida',
+            text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
+      }
+
+      // Actualizar el estado si la hora es válida
+      setActividadToUpdate({
+        ...actividadToUpdate,
+        Fechayhora_Fin: `${selectedDate}T${selectedTime}`,
+      });
+    }}
+    style={{ width: "80px" }}  // Ajustar tamaño de la hora
+  />
+</CInputGroup>
+
+
+
           {/* Ponderación */}
 <CInputGroup className="mb-3">
   <CInputGroupText>Ponderación</CInputGroupText>
