@@ -786,7 +786,6 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         color="light"
         onClick={() => {
           setSearchTerm('');
-          setSearchField('Nombre_seccion');
         }}
         style={{
           padding: "6px 12px",
