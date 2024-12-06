@@ -1,27 +1,6 @@
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 
-
-// Integra los datos en la vista de gestión académica.
-export const obtenerAgrupadores = async (req, res) => {
-    try {
-        // Ejecutar el procedimiento almacenado
-        const [rows] = await pool.query('CALL sp_obtener_TotalSeccionesAgrupadores()');
-
-        // Verificar si hay resultados
-        if (!rows || rows[0].length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontraron agrupadores.' });
-        }
-
-        // Devolver los resultados
-        res.status(200).json(rows[0]);
-    } catch (error) {
-        // Manejar errores
-        console.error('Error al obtener los agrupadores:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
-    }
-};
-
 // Controlador para obtener todos los períodos de matrícula desde la base de datos.
 export const obtenerPeriodos = async (req, res) => {
     try {
@@ -140,48 +119,5 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
     } catch (error) {
         console.error('Error al obtener las secciones:', error);
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
-    }
-};
-
-
-//CONTROLADORES DE SECCIONES:
-
-// Controlador para obtener secciones
-export const obtenerSecciones = async (req, res) => {
-    const { Cod_secciones } = req.params; // Extraemos el parámetro de la URL
-
-    try {
-        let query = 'CALL sp_obtener_secciones(?)';
-        let params = [Cod_secciones ? Cod_secciones : 0]; // Si no se especifica, pasa 0 para obtener todas las secciones
-
-        const [rows] = await pool.query(query, params);
-
-        if (!rows || rows[0].length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontraron secciones.' });
-        }
-
-        res.status(200).json(rows[0]); // Devolver todas las columnas, incluyendo Cod_Profesor y Cod_periodo_matricula
-    } catch (error) {
-        console.error('Error al obtener las secciones:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
-    }
-};
-
-// Es clave para habilitar o deshabilitar ciertas acciones en la vista.
-export const obtenerPeriodoMatriculaActivo = async (req, res) => {
-    try {
-        const [rows] = await pool.query(`
-            SELECT Cod_periodo_matricula, Anio_academico 
-            FROM tbl_periodo_matricula
-        `);
-        
-        if (rows.length > 0) {
-            res.json(rows[0]);
-        } else {
-            res.status(404).json({ mensaje: 'No se encontró un periodo de matrícula activo' });
-        }
-    } catch (error) {
-        console.error('Error al obtener el periodo de matrícula activo:', error);
-        res.status(500).json({ mensaje: 'Error al obtener el periodo de matrícula activo' });
     }
 };
