@@ -42,8 +42,12 @@ const ListaGestion_Academica = () => {
       const data = await response.json();
       setAgrupadores(data); // Guardar los datos en el estado
     } catch (error) {
-      Swal.fire('Error', 'No se pudieron obtener los agrupadores.', 'error');
-    }
+      console.error('Error en fetchAgrupadores:', error); // Registro detallado
+      const errorMessage = error.message.includes('Failed to fetch')
+          ? 'No se pudo conectar al servidor. Verifica tu conexión a Internet.'
+          : 'Hubo un problema al obtener los agrupadores. Por favor, inténtalo más tarde.';
+      Swal.fire('Error', errorMessage, 'error');
+  }  
   };
   
   // Función para obtener periodos desde la API
@@ -54,8 +58,12 @@ const ListaGestion_Academica = () => {
       const data = await response.json();
       setPeriodos(data);
     } catch (error) {
-      Swal.fire('Error', 'No se pudieron obtener los periodos.', 'error');
-    }
+      console.error('Error en fetchPeriodos:', error); // Registro detallado
+      const errorMessage = error.message.includes('Failed to fetch')
+          ? 'No se pudo conectar al servidor para obtener los periodos. Verifica tu conexión.'
+          : 'Hubo un problema al cargar los periodos. Inténtalo nuevamente más tarde.';
+      Swal.fire('Error', errorMessage, 'error');
+  }  
   };
 
   // Función para navegar a la lista de secciones para gestionar
@@ -213,12 +221,15 @@ const ListaGestion_Academica = () => {
       };
 
       img.onerror = () => {
-        Swal.fire("Error", "No se pudo cargar el logo.", "error");
+        Swal.fire('Error', 'No se pudo cargar el logo del encabezado. Verifica la ruta o la conexión.', 'error');
       };
     } catch (error) {
-      console.error("Error al generar el PDF:", error);
-      Swal.fire("Error", "No se pudo generar el PDF.", "error");
-    }
+      console.error('Error en handleDescargarPDF:', error); // Registro detallado
+      const errorMessage = error.message.includes('Error al obtener datos del período')
+          ? 'No se pudo obtener la información del período académico. Verifica los datos.'
+          : 'No se pudieron cargar las secciones para generar el PDF. Inténtalo nuevamente.';
+      Swal.fire('Error', errorMessage, 'error');
+  }  
   };
 
   // Función para descargar el PDF de la vista agrupadora
@@ -362,22 +373,18 @@ const ListaGestion_Academica = () => {
       setCurrentPage(pageNumber);
     }
   };
-  
   // Función para normalizar texto eliminando tildes y convirtiendo a minúsculas
   const normalizeString = (str) =>
-    str
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Elimina tildes
-      .toLowerCase();
+    str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
   // Filtrar agrupadores en función del término de búsqueda
   const filteredAgrupadores = agrupadores.filter((agrupador) => {
     const normalizedSearchTerm = normalizeString(searchTerm);
     const normalizedField = normalizeString(
-      agrupador[searchField]?.toString() || ''
+        agrupador[searchField]?.toString() || ''
     );
     return normalizedField.includes(normalizedSearchTerm);
-  });
+});
 
   const indexOfLastRecord = currentPage * recordsPerPage; // Último índice de registro
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage; // Primer índice de registro
@@ -401,9 +408,12 @@ const ListaGestion_Academica = () => {
       fetchAgrupadores(); // Recargar los datos
       toggleModal(); // Cerrar el modal
     } catch (error) {
-      console.error('Error al crear agrupador:', error);
-      Swal.fire('Error', 'Ocurrió un error al intentar crear el agrupador.', 'error');
-    }
+      console.error('Error al crear agrupador:', error); // Registro detallado
+      const errorMessage = error.message.includes('Failed to fetch')
+          ? 'No se pudo conectar al servidor para guardar el agrupador. Verifica tu conexión.'
+          : 'Hubo un problema al crear el agrupador. Por favor, inténtalo nuevamente.';
+      Swal.fire('Error', errorMessage, 'error');
+  } 
   };
 
     // Verificar permisos
@@ -577,48 +587,48 @@ const ListaGestion_Academica = () => {
     </CTableHead>
     <CTableBody>
       {agrupadores.length > 0 ? (
-        agrupadores.map((agrupador, index) => (
+        currentRecords.map((agrupador, index) => (
           <CTableRow
-            key={agrupador.Cod_agrupadora}
-            style={{
-              backgroundColor: agrupador.Estado === 'Activo' ? '#eaffea' : 'inherit', // Fondo verde si está activo
-              fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal', // Negritas si está activo
-            }}
+              key={agrupador.Cod_agrupadora}
+              style={{
+                  backgroundColor: agrupador.Estado === 'Activo' ? '#eaffea' : 'inherit', // Fondo verde si está activo
+                  fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal', // Negritas si está activo
+              }}
           >
-            <CTableDataCell className="text-center">{index + 1}</CTableDataCell>
-            <CTableDataCell className="text-center">{agrupador.Total_secciones}</CTableDataCell>
-            <CTableDataCell className="text-center">{agrupador.Anio_academico}</CTableDataCell>
-            <CTableDataCell className="text-center">
-              {new Date(agrupador.Fecha_agrupacion).toLocaleDateString()}
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              <span
-                style={{
-                  color: agrupador.Estado === 'Activo' ? 'green' : 'red',
-                  fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal',
-                }}
-              >
-                {agrupador.Estado}
-              </span>
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              <div className="d-flex justify-content-center gap-2">
-                <CButton
-                  color="info"
-                  onClick={() => handleGestionarClick(agrupador.Cod_periodo_matricula)}
-                  className="d-flex align-items-center"
-                >
-                  <CIcon icon={cilSettings} />
-                </CButton>
-                <CButton
-                  color="warning"
-                  onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
-                  className="d-flex align-items-center"
-                >
-                  <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
-                </CButton>
-              </div>
-            </CTableDataCell>
+              <CTableDataCell className="text-center">{index + 1}</CTableDataCell>
+              <CTableDataCell className="text-center">{agrupador.Total_secciones}</CTableDataCell>
+              <CTableDataCell className="text-center">{agrupador.Anio_academico}</CTableDataCell>
+              <CTableDataCell className="text-center">
+                  {new Date(agrupador.Fecha_agrupacion).toLocaleDateString()}
+              </CTableDataCell>
+              <CTableDataCell className="text-center">
+                  <span
+                      style={{
+                          color: agrupador.Estado === 'Activo' ? 'green' : 'red',
+                          fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal',
+                      }}
+                  >
+                      {agrupador.Estado}
+                  </span>
+              </CTableDataCell>
+              <CTableDataCell className="text-center">
+                  <div className="d-flex justify-content-center gap-2">
+                      <CButton
+                          color="info"
+                          onClick={() => handleGestionarClick(agrupador.Cod_periodo_matricula)}
+                          className="d-flex align-items-center"
+                      >
+                          <CIcon icon={cilSettings} />
+                      </CButton>
+                      <CButton
+                          color="warning"
+                          onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
+                          className="d-flex align-items-center"
+                      >
+                          <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
+                      </CButton>
+                  </div>
+              </CTableDataCell>
           </CTableRow>
         ))
       ) : (
