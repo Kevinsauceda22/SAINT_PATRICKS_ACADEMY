@@ -2559,6 +2559,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
         <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
           <CTableRow>
             <CTableHeaderCell>#</CTableHeaderCell>
+             <CTableHeaderCell>IDENTIDAD</CTableHeaderCell>
             <CTableHeaderCell>NOMBRE DEL ESTUDIANTE</CTableHeaderCell>
             <CTableHeaderCell>NOTA TOTAL</CTableHeaderCell>
             <CTableHeaderCell>ESTADO</CTableHeaderCell>
@@ -2568,6 +2569,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
           {NotasFiltradas.map((estudiante, index) => (
             <CTableRow key={estudiante.CodPersona}>
               <CTableDataCell>{index + 1}</CTableDataCell>
+              <CTableDataCell>{estudiante.Identidad}</CTableDataCell>
               <CTableDataCell>{estudiante.NombreCompleto}</CTableDataCell>
               <CTableDataCell>{`${estudiante.NotaTotal} %`}</CTableDataCell>
               <CTableDataCell>{estudiante.EstadoNota}</CTableDataCell>
