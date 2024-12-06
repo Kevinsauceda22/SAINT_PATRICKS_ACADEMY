@@ -2,7 +2,7 @@ import conectarDB from '../../../config/db.js';
 import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
 
-// Obtener secciones por id
+// Utilizado para cargar información detallada para edición del reistro o visualización.
 export const obtenerSeccionPorId = async (req, res) => {
     const { Cod_secciones } = req.params;
 
@@ -20,7 +20,7 @@ export const obtenerSeccionPorId = async (req, res) => {
     }
 };
 
-// Obtener el período académico activo
+// Clave para habilitar o deshabilitar acciones en la vista de gestión de secciones.
 export const obtenerPeriodoActivo = async (req, res) => {
     try {
         // Consulta para obtener el período activo
@@ -47,7 +47,7 @@ export const obtenerPeriodoActivo = async (req, res) => {
     }
 };
 
-// Obtener secciones por periodo
+// Controlador para obtener todas las secciones asociadas a un período de matrícula específico.
 export const obtenerSeccionesPorPeriodo = async (req, res) => {
     const { Cod_periodo_matricula } = req.params;
 
@@ -90,7 +90,7 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
     }
 };
 
-// Controlador para obtener todos los edificios
+// Proporciona opciones para seleccionar edificios en formularios de gestión de secciones.
 export const obtenerEdificios = async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT Cod_edificio, Nombre_edificios FROM tbl_edificio'); // Cambia aquí la consulta
@@ -101,7 +101,7 @@ export const obtenerEdificios = async (req, res) => {
     }
 };
 
-// Controlador para obtener aulas por edificio
+// Controlador para obtener todas las aulas asociadas a un edificio específico.
 export const obtenerAulasPorEdificio = async (req, res) => {
     const { Cod_edificio } = req.params;
 
@@ -138,7 +138,6 @@ export const obtenerEdificioPorId = async (req, res) => {
     }
 };
 
-// Controlador para obtener todas las aulas
 export const obtenerAulas = async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT Cod_aula, Numero_aula FROM tbl_aula');
@@ -149,7 +148,7 @@ export const obtenerAulas = async (req, res) => {
     }
 };
 
-// Controlador para obtener todos los grados
+// Proporciona opciones para seleccionar grados en la gestión de secciones.
 export const obtenerGrados = async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT Cod_grado, Nombre_grado FROM tbl_grados');
@@ -160,7 +159,7 @@ export const obtenerGrados = async (req, res) => {
     }
 };
 
-// Controlador para obtener las secciones por grado y período académico
+// Utilizado para filtros o reportes detallados.
 export const obtenerSeccionesPorGrado = async (req, res) => {
     const { Cod_grado, Cod_periodo_matricula } = req.params;
 
@@ -176,7 +175,7 @@ export const obtenerSeccionesPorGrado = async (req, res) => {
     }
 };
 
-//Actualizar los nombres automaticos
+// Controlador para generar automáticamente un nombre de sección basado en el grado y período.
 export const generarNombreSeccion = async (req, res) => {
     const { codGrado, anioAcademico } = req.params;
 
@@ -205,7 +204,7 @@ export const generarNombreSeccion = async (req, res) => {
     }
 };
 
-// Controlador para obtener todos los profesores
+// Controlador para obtener todos los profesores registrados, incluyendo detalles personales.
 export const obtenerProfesores = async (req, res) => {
     try {
         const [rows] = await pool.query(`
@@ -250,7 +249,7 @@ export const obtenerPeriodos = async (req, res) => {
     }
 };
 
-// Controlador para crear una nueva sección
+// Controlador para crear una nueva sección con aulas y asignaturas vinculadas.
 export const crearSeccion = async (req, res) => {
     const { p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
 
@@ -325,7 +324,7 @@ export const crearSeccion = async (req, res) => {
     }
 };
 
-// Controlador para actualizar una sección
+// Controlador para actualizar los datos de una sección existente.
 export const actualizarSeccion = async (req, res) => {
     const { p_Cod_secciones, p_Nombre_seccion, p_Numero_aula, p_Nombre_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
 
@@ -379,12 +378,6 @@ export const eliminarSeccion = async (req, res) => {
 };
 
 //------------------------------------------------------------------------------- Parte Ariel--------------------------------------------------------------------------
-
-
-
-
-
-
 
 
 
@@ -455,8 +448,6 @@ export const obtenerSeccionesPorProfesor = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener las secciones' });
     }
 };
-
-
 
 
 
