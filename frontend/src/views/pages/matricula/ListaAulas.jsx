@@ -814,19 +814,7 @@ const ListaAulas = () => {
         {/* Campo Numero de Aula */}
         <CInputGroup className="mb-3">
         <CInputGroupText>Numero de Aula</CInputGroupText>
-        <CFormInput
-          value={aulaToUpdate.Numero_aula}
-          maxLength={11}
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          onChange={(e) => {
-            const valor = e.target.value;
-            // Validar caracteres permitidos y letras repetidas
-            if (!permitirCaracteresValidos(valor)) {
-              swal.fire({icon: 'warning',title: 'Caracteres no permitidos', text: 'Solo se permiten números positivos',});
-              return;
-            }setAulaToUpdate({ ...aulaToUpdate, Numero_aula: valor })}}
-        />
+        <CFormInput value={aulaToUpdate.Numero_aula || ''} readOnly   />
       </CInputGroup>
 
       {/* Campo Capacidad */}
