@@ -117,37 +117,6 @@ export const obtenerAulasPorEdificio = async (req, res) => {
     }
 };
 
-// Controlador para obtener un edificio específico por Cod_edificio
-export const obtenerEdificioPorId = async (req, res) => {
-    const { Cod_edificio } = req.params;
-
-    try {
-        const [rows] = await pool.query(
-            'SELECT Cod_edificio, Nombre_edificios, Numero_pisos, Aulas_disponibles FROM tbl_edificio WHERE Cod_edificio = ?', 
-            [Cod_edificio]
-        );
-        
-        if (rows.length === 0) {
-            return res.status(404).json({ mensaje: 'No se encontró el edificio especificado' });
-        }
-        
-        res.json(rows[0]); // Devolver el primer (y único) resultado
-    } catch (error) {
-        console.error('Error al obtener el edificio por ID:', error);
-        res.status(500).json({ mensaje: 'Error al obtener el edificio', error: error.message });
-    }
-};
-
-export const obtenerAulas = async (req, res) => {
-    try {
-        const [rows] = await pool.query('SELECT Cod_aula, Numero_aula FROM tbl_aula');
-        res.json(rows);
-    } catch (error) {
-        console.error('Error al obtener aulas:', error);
-        res.status(500).json({ mensaje: 'Error al obtener aulas' });
-    }
-};
-
 // Proporciona opciones para seleccionar grados en la gestión de secciones.
 export const obtenerGrados = async (req, res) => {
     try {
@@ -156,22 +125,6 @@ export const obtenerGrados = async (req, res) => {
     } catch (error) {
         console.error('Error al obtener grados:', error);
         res.status(500).json({ mensaje: 'Error al obtener grados' });
-    }
-};
-
-// Utilizado para filtros o reportes detallados.
-export const obtenerSeccionesPorGrado = async (req, res) => {
-    const { Cod_grado, Cod_periodo_matricula } = req.params;
-
-    try {
-        const [rows] = await pool.query(
-            'SELECT Nombre_seccion FROM tbl_secciones WHERE Cod_grado = ? AND Cod_periodo_matricula = ? ORDER BY Nombre_seccion ASC',
-            [Cod_grado, Cod_periodo_matricula]
-        );
-        res.json(rows);
-    } catch (error) {
-        console.error('Error al obtener secciones por grado y período académico:', error);
-        res.status(500).json({ mensaje: 'Error al obtener secciones por grado y período académico' });
     }
 };
 
@@ -379,10 +332,7 @@ export const eliminarSeccion = async (req, res) => {
 
 //------------------------------------------------------------------------------- Parte Ariel--------------------------------------------------------------------------
 
-
-
 // Controlador para obtener las secciones filtradas por el profesor
-
 export const obtenerSeccionesPorProfesor = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -424,9 +374,6 @@ export const obtenerSeccionesPorProfesor = async (req, res) => {
                 
             );
 
-
-
-            
             // Consulta para obtener el nombre del período
             const [periodoResult] = await pool.query(
                 'SELECT Anio_academico FROM tbl_periodo_matricula WHERE Cod_periodo_matricula = ?',
@@ -449,11 +396,7 @@ export const obtenerSeccionesPorProfesor = async (req, res) => {
     }
 };
 
-
-
 // Nueva función para obtener todas las secciones y profesores para el administrador
-
-
 export const obtenerTodasLasSeccionesYProfesoresAdmin = async (req, res) => {
     try {
       const { codProfesor } = req.params; // Obtener `Cod_Profesor` desde los parámetros de la URL
@@ -472,4 +415,3 @@ export const obtenerTodasLasSeccionesYProfesoresAdmin = async (req, res) => {
       res.status(500).json({ mensaje: 'Error al obtener las secciones del profesor' });
     }
   };
-  

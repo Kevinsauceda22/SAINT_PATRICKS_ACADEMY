@@ -57,6 +57,7 @@ const fetchPeriodoAcademico = async () => {
       console.warn('No se encontró el año académico activo.');
     }
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
     console.error('Error al obtener el período académico activo:', error);
   }
 };
@@ -76,6 +77,7 @@ const fetchSeccionesPeriodo = async (periodo) => {
       swal.fire('Atención', `No se encontraron secciones en este periodo académico`, 'info');
     }
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
     console.error('Error al cargar secciones:', error);
     swal.fire('Error', 'Hubo un problema al cargar las secciones.', 'error');
   }
@@ -98,7 +100,7 @@ useEffect(() => {
 
 useEffect(() => {
   fetchSecciones();
-  fetchAulas();
+
   fetchGrados();
   fetchProfesores();
   fetchPeriodosAcademicos();
@@ -183,6 +185,7 @@ const fetchPeriodoEstado = async (periodo) => {
       setEsPeriodoActivo(false); // Por defecto, inactivo si no se encuentra
     }
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
     console.error('Error al obtener el estado del período:', error);
     setEsPeriodoActivo(false); // Asume inactivo en caso de error
   }
@@ -199,15 +202,9 @@ const fetchSecciones = async (Cod_secciones) => {
     }));
     setSecciones(dataWithIndex);
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
     console.error('Error al obtener las secciones:', error);
   }
-};
-
-// Función para obtener las aulas
-const fetchAulas = async () => {
-  const response = await fetch('http://localhost:4000/api/secciones/aulas');
-  const data = await response.json();
-  setAulasFiltradas(data);
 };
 
 // Función para obtener los grados
@@ -238,6 +235,7 @@ const fetchPeriodosAcademicos = async () => {
           setPeriodoAcademico([]); // Asegura que no quede data previa en caso de no haber resultados
       }
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
       console.error('Error al obtener los períodos académicos:', error);
   }
 };
@@ -252,6 +250,7 @@ const fetchEdificios = async () => {
     const data = await response.json();
     setEdificios(data);
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
     console.error('Error al obtener los edificios:', error);
   }
 };
@@ -270,6 +269,7 @@ const fetchAulasPorEdificio = async (Cod_edificio) => {
       setAulasFiltradas([]); // Limpia el estado si no hay aulas
     }
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
     console.error('Error al obtener las aulas del edificio:', error);
   }
 };
@@ -520,10 +520,11 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         console.error('Error en la API:', data.mensaje);
       }
     } catch (error) {
-      console.error('Error al generar el nombre:', error);
-    } finally {
-      setLoadingNombre(false); // Desactivar mensaje de carga
-    }
+      console.error('Error capturado en este bloque:', error); // Detalle del error
+        console.error('Error al generar el nombre:', error);
+      } finally {
+        setLoadingNombre(false); // Desactivar mensaje de carga
+      }
   };
   
   // Función para crear una nueva sección
@@ -557,6 +558,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       swal.fire('Error', data.mensaje || 'No se pudo crear la sección.', 'error');
     }
   } catch (error) {
+    console.error('Error capturado en este bloque:', error); // Detalle del error
     console.error('Error al crear la sección:', error);
     swal.fire('Error', 'Error de conexión o en el servidor.', 'error');
   }
@@ -589,9 +591,10 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
             swal.fire('Error', data.mensaje || 'No se pudo obtener la sección.', 'error');
         }
     } catch (error) {
-        console.error('Error al obtener los datos de la sección:', error);
-        swal.fire('Error', 'Hubo un problema al cargar los datos de la sección.', 'error');
-    }
+      console.error('Error capturado en este bloque:', error); // Detalle del error
+          console.error('Error al obtener los datos de la sección:', error);
+          swal.fire('Error', 'Hubo un problema al cargar los datos de la sección.', 'error');
+      }
 };
 
 
