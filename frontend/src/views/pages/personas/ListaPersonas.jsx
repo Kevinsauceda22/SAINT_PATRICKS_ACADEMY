@@ -477,8 +477,8 @@ const handleBuscarMunicipio = (e) => {
   setErrorMessages(erroresTemp);
 
   const filtrados = municipio.filter((municipio) =>
-    (municipio.nombre_municipio && municipio.nombre_municipio.toUpperCase().includes(filtro)) ||
-    (municipio.nombre_departamento && municipio.nombre_departamento.toUpperCase().includes(filtro))
+    (municipio.Nombre_municipio && municipio.Nombre_municipio.toUpperCase().includes(filtro)) ||
+    (municipio.Nombre_departamento && municipio.Nombre_departamento.toUpperCase().includes(filtro))
   );
 
   setMunicipiosFiltrados(filtrados);
@@ -486,9 +486,9 @@ const handleBuscarMunicipio = (e) => {
 };
 
 const handleSeleccionarMunicipio = (municipio) => {
-  setBuscadorMunicipio(`${municipio.nombre_municipio.toUpperCase()} - ${municipio.nombre_departamento.toUpperCase()}`);
-  setSelectedMunicipio(municipio.cod_municipio);
-  setNuevaPersona(prev => ({ ...prev, cod_municipio: municipio.cod_municipio }));
+  setBuscadorMunicipio(`${municipio.Nombre_municipio.toUpperCase()} - ${municipio.Nombre_departamento.toUpperCase()}`);
+  setSelectedMunicipio(municipio.Cod_municipio);
+  setNuevaPersona(prev => ({ ...prev, cod_municipio: municipio.Cod_municipio }));
   setIsDropdownOpenMunicipio(false);
   console.log('Municipio seleccionado:', municipio);
 };
@@ -528,17 +528,25 @@ const handleSeleccionarMunicipio = (municipio) => {
     }
   }
 
-  const fetchMunicipio = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/municipio/verMunicipios')
-      const data = await response.json()
-      console.log('Datos recibidos de municipios:', data)
-      setMunicipio(data)
-    } catch (error) {
-      console.error('Error al obtener los municipios:', error)
-    }
-  }
+const fetchMunicipio = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/persona/verMunicipios');
+    const data = await response.json();
+    console.log('Datos recibidos de la API:', data);
 
+    if (Array.isArray(data) && Array.isArray(data[0])) {
+      setMunicipio(data[0]); // Usar solo el primer elemento del resultado
+    } else {
+      console.error('Formato de datos inesperado:', data);
+      setMunicipio([]); // Evitar errores en caso de formato incorrecto
+    }
+  } catch (error) {
+    console.error('Error al obtener los municipios:', error);
+  }
+};
+
+
+  
 
   const fetchDepartamentos = async () => {
     try {
@@ -1301,7 +1309,6 @@ return (
       {/* Verifica el contenido de currentRecords */}
       {currentRecords.length > 0 ? (
         currentRecords.map((persona) => {
-          console.log('Datos actuales de la persona:', persona) // Ver cada persona
           return (
             <CTableRow key={persona.cod_persona}>
               <CTableDataCell>{persona.originalIndex}</CTableDataCell>
@@ -1323,7 +1330,7 @@ return (
           </CTableDataCell>
               <CTableDataCell>{nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
-              <CTableDataCell>{municipio.find((municipio) => municipio.cod_municipio === persona.cod_municipio)?.nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
+              <CTableDataCell>{municipio.find((municipio) => municipio.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
               <CTableDataCell className="text-center">
@@ -2141,19 +2148,19 @@ return (
               <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: '0', width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
                 {municipiosFiltrados.map((municipio) => (
                   <div
-                    key={municipio.cod_municipio}
+                    key={municipio.Cod_municipio}
                     className="dropdown-item"
                     style={{ cursor: 'pointer' }}
                     onClick={() => handleSeleccionarMunicipio(municipio)}
                   >
-                    {municipio.nombre_municipio.toUpperCase()} - {municipio.nombre_departamento.toUpperCase()}
+                    {municipio.Nombre_municipio.toUpperCase()} - {municipio.Nombre_departamento.toUpperCase()}
                   </div>
                 ))}
               </div>
             </div>
           )}
         <style jsx>{`
-        .error-message {
+          .error-message {
           color: red;
           font-size: 0.850rem; /* Tamaño de texto más pequeño */
           margin-top: 4px; /* Menor distancia entre el input y el mensaje de error */
@@ -2941,12 +2948,12 @@ return (
                         handleSeleccionarMunicipio(municipio);
                         setPersonaToUpdate({
                           ...personaToUpdate,
-                          cod_municipio: municipio.cod_municipio,
-                          nombre_municipio: municipio.nombre_municipio,
+                          cod_municipio: municipio.Cod_municipio,
+                          Nombre_municipio: municipio.Nombre_municipio,
                         });
                       }}
                     >
-                      {municipio.nombre_municipio.toUpperCase()} - {municipio.nombre_departamento.toUpperCase()}
+                      {municipio.Nombre_municipio.toUpperCase()} - {municipio.Nombre_departamento.toUpperCase()}
                     </div>
                   ))}
                 </div>

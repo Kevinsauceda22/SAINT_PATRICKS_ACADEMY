@@ -72,16 +72,11 @@ const ListaEstructura = () => {
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [codPersonaEstudiante, setCodPersonaEstudiante] = useState('');
   const [codPersonaPadre, setCodPersonaPadre] = useState('');
-  const [buscadorRelacionEstudiante, setBuscadorRelacionEstudiante] = useState('');
-  const [buscadorRelacionPadre, setBuscadorRelacionPadre] = useState('');
-  const [personasFiltradasEstudiante, setPersonasFiltradasEstudiante] = useState([]);
-  const [personasFiltradasPadre, setPersonasFiltradasPadre] = useState([]);
-  const [isDropdownOpenEstudiante, setIsDropdownOpenEstudiante] = useState(false);
-  const [isDropdownOpenPadre, setIsDropdownOpenPadre] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [estructurasFamiliares, setEstructurasFamiliares] = useState([]);
-  const [isUpdating, setIsUpdating] = useState(false); // Cambia según el flujo
   const [codPersonaSeleccionada, setCodPersonaSeleccionada] = useState('');
+  const [filterEstructuraFamiliar, setFilterEstructuraFamiliar] = useState([]);
+
 
 
 
@@ -92,6 +87,11 @@ const ListaEstructura = () => {
 
   
   // Navegación y ubicación
+
+  const volverAListaPersonas = () => {
+    navigate('/ListaPersonas');
+  };
+
   const location = useLocation();
   const navigate = useNavigate();
   const { personaSeleccionada } = location?.state || {};
@@ -184,20 +184,6 @@ const handleSeleccionarPersona = (persona) => {
   setIsDropdownOpen(false);
 };
 
-const handleSubmit = () => {
-  if (!codPersonaSeleccionada) {
-    alert('Por favor seleccione una persona.');
-    return;
-  }
-
-  const nuevaEstructuraFinal = {
-    ...nuevaEstructura,
-    [rolActual === 'ESTUDIANTE' ? 'cod_persona_estudiante' : 'cod_persona_padre']: codPersonaSeleccionada,
-  };
-
-  console.log("Estructura familiar final:", nuevaEstructuraFinal);
-  handleCreateEstructura(nuevaEstructuraFinal);
-};
 
 
 {/* ----------------------------------------------------------------------------------------------------------------------------------------*/}
@@ -266,110 +252,7 @@ const handleSubmit = () => {
   }
 
   {/* ------------------------------------------------------------------------------------------------------------------------------------------------ */}
-  const handleChange = (event) => {
-    // Convertimos el valor a mayúsculas y lo guardamos en el estado
-    setDescripcion(event.target.value.toUpperCase());
-  };
-  
-  const validateDescripcion = (descripcion) => {
-    const regex = /^[a-zA-Z\s.,áéíóúÁÉÍÓÚñÑ]*$/; // Solo letras, espacios, puntos, comas y acentos
-    if (!regex.test(descripcion));
-    const noMultipleSpaces = !/\s{2,}/.test(descripcion); // No permite más de un espacio consecutivo
-    const trimmedDescripcion = descripcion.trim().replace(/\s+/g, ' ');
-  
-    if (!regex.test(trimmedDescripcion)) {
-      swal.fire({
-        icon: 'warning',
-        title: 'Descripción inválida',
-        text: 'La descripción solo puede contener letras, comas, puntos y espacios.',
-      });
-      return false;
-    }
-  
-    if (!noMultipleSpaces) {
-      swal.fire({
-        icon: 'warning',
-        title: 'Espacios múltiples',
-        text: 'No se permite más de un espacio entre palabras.',
-      });
-      return false;
-    }
-
-      // Validar que ninguna letra se repita más de 4 veces seguidas
-    const words = trimmedDescripcion.split(' ');
-    for (let word of words) {
-      const letterCounts = {};
-      for (let letter of word) {
-        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-        if (letterCounts[letter] > 5) {
-          swal.fire({
-            icon: 'warning',
-            title: 'Repetición de letras',
-            text: `La letra "${letter}" se repite más de 5 veces en la palabra "${word}".`,
-          });
-          return false; // Retornar falso si se encuentra una letra repetida más de 4 veces
-        }
-      }
-    }
-  
-    return true; // Retornar verdadero si la descripción es válida
-  };
-  
-    // Capitalizar la primera letra de cada palabra
-    const capitalizeWords = (str) => {
-      return str.replace(/\b\w/g, (char) => char.toUpperCase());
-    };
-
-    const validateEmptyFields = () => {
-      const { descripcion, cod_persona_padre, cod_persona_estudiante, cod_tipo_relacion } = nuevaEstructura;
-      if (!descripcion || !cod_persona_padre || !cod_persona_estudiante || !cod_tipo_relacion) {
-        swal.fire({
-          icon: 'warning',
-          title: 'Campos vacíos',
-          text: 'Todos los campos deben estar llenos para poder crear una nueva estructura',
-        });
-        return false;
-      }
-      return true;
-    };
-
-      // Función para controlar la entrada de texto en los campos de nombre del edificio
-  const handleDescripcionInputChange = (e, setFunction) => {
-    let value = e.target.value;
-
-    const upperCaseValue = e.target.value.toUpperCase();
-    setDescripcion(upperCaseValue);
-
-    // No permitir más de un espacio consecutivo
-    value = value.replace(/\s{2,}/g, ' ');
-    
-
-    // No permitir que una letra se repita más de 4 veces consecutivamente
-    const wordArray = value.split(' ');
-    const isValid = wordArray.every(word => !/(.)\1{4,}/.test(word));
-
-    if (!isValid) {
-      swal.fire({
-        icon: 'warning',
-        title: 'Repetición de letras',
-        text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
-      });
-      return;
-    }
-
-    if (value.length <= 3) {
-      setDescripcionError('La descripción debe tener menos de 3 letras.');
-    } else {
-      setDescripcionError(''); // No hay error
-    }
-    
-    setFunction((prevState) => ({
-      ...prevState,
-      descripcion: value,
-    }));
-    setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
-  };
-
+ 
 
 {/* ----------------------------------------------------------------------------------------------------------------------------------------- */}
 
@@ -454,29 +337,7 @@ const handleSubmit = () => {
 
 {/* Función para actualizar estructura */}
 const handleUpdateEstructura = async () => {
-  const descripcionCapitalizado = capitalizeWords(estructuraToUpdate.descripcion.trim().replace(/\s+/g, ' '));
 
-  if (!estructuraToUpdate.descripcion.trim()) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Campo obligatorio',
-      text: 'La descripción no puede estar vacía.',
-    });
-    return;
-  }
-
-  if (!validateDescripcion(descripcionCapitalizado)) {
-    return;
-  }
-
-  if (!estructuraToUpdate.cod_persona_padre || !estructuraToUpdate.cod_persona_estudiante) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Faltan datos',
-      text: 'Debes seleccionar un estudiante y un padre/tutor antes de actualizar.',
-    });
-    return;
-  }
 
   try {
     const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
@@ -566,6 +427,7 @@ const handleUpdateEstructura = async () => {
 
 {/* ------------------------------------------------------------------------------------------------------------------------------- */}
 
+{/******************************************MANEJO DE CIERRE Y APERTURA DE MODAL********************************************************/}
 
 const handleCloseModal = (closeFunction, resetFields) => {
   if (hasUnsavedChanges) {
@@ -590,10 +452,6 @@ const handleCloseModal = (closeFunction, resetFields) => {
 };
 
 
-
-
-
-
 const handleOpenUpdateModal = (estructura) => {
   // Configurar la estructura a actualizar
   setEstructuraToUpdate({
@@ -606,14 +464,6 @@ const handleOpenUpdateModal = (estructura) => {
     nombreEstudiante: personas.find(persona => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName || '',
     nombrePadre: personas.find(persona => persona.cod_persona === estructura.cod_persona_padre)?.fullName || '',
   });
-
-  // Configurar los valores iniciales de los buscadores
-  setBuscadorRelacionEstudiante(
-    personas.find(persona => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName || ''
-  );
-  setBuscadorRelacionPadre(
-    personas.find(persona => persona.cod_persona === estructura.cod_persona_padre)?.fullName || ''
-  );
 
   // Mostrar el modal de actualización
   setModalUpdateVisible(true);
@@ -644,56 +494,45 @@ const disableCopyPaste = (e) => {
     setModalVisible(false);
   };
 
-  const volverAListaPersonas = () => {
-    navigate('/ListaPersonas');
+
+
+{/*******************************************FUNCIONES DE FILTRADO, BUSQUEDA Y REPORTERIA************************************************/}
+  // Función de búsqueda
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    setCurrentPage(1); // Volver a la primera página cuando se cambia el término de búsqueda
   };
 
+  // Filtrado de estructura familiar
+  const searchEstructuraFamiliar = (searchTerm) => {
+    return estructuraFamiliar.filter((estructura) => {
+      const tipoRelacionTexto = tipoRelacion.find((tipo) => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion.toUpperCase() || 'N/D';
+      const padreTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || 'N/D';
+      const estudianteTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || 'N/D';
+      const descripcionTexto = estructura.descripcion?.toUpperCase() || 'N/D';
 
-
-  
-  // Función de filtrado
-  const filterEstructuraFamiliar = (estructuraFamiliar, searchTerm, personas, tipoRelacion) => {
-    const searchTermLower = searchTerm.toLowerCase();
-  
-    return estructuraFamiliar
-      .map((estructura, index) => ({
-        ...estructura,
-        originalIndex: index + 1, // Agregar índice original para ordenar
-        estudianteNombre: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
-        padreNombre: personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
-        tipoRelacionNombre: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
-        descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
-      }))
-      .filter(estructura => {
-        return (
-          (estructura.estudianteNombre && estructura.estudianteNombre.toLowerCase().includes(searchTermLower)) ||
-          (estructura.padreNombre && estructura.padreNombre.toLowerCase().includes(searchTermLower)) ||
-          (estructura.tipoRelacionNombre && estructura.tipoRelacionNombre.toLowerCase().includes(searchTermLower)) ||
-          (estructura.descripcion && estructura.descripcion.toLowerCase().includes(searchTermLower))
-        );
-      });
+      return (
+        padreTexto.includes(searchTerm.toUpperCase()) ||
+        estudianteTexto.includes(searchTerm.toUpperCase()) ||
+        tipoRelacionTexto.includes(searchTerm.toUpperCase()) ||
+        descripcionTexto.includes(searchTerm.toUpperCase())
+      );
+    });
   };
-  
-  
-  // Uso de la función ajustada
-  const filteredEstructuraFamiliar = filterEstructuraFamiliar(estructuraFamiliar, searchTerm, personas, tipoRelacion);
+
+  const filteredEstructuraFamiliar = searchEstructuraFamiliar(searchTerm);
+
+  // Paginación
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord);
-  
 
-  
-   // Uso dentro del componente React
-   const handleSearch = (e) => {
-    const term = e.target.value; // Obtener el valor del input de búsqueda
-    setSearchTerm(term); // Actualiza el término de búsqueda
-  
-    // Filtrar la estructura familiar con el nuevo término de búsqueda
-    const filteredData = filterEstructuraFamiliar(estructuraFamiliar, term, personas, tipoRelacion);
-    setFilterEstructuraFamiliar(filteredData); // Usar setState para almacenar los resultados filtrados
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstructuraFamiliar.length / recordsPerPage)) {
+      setCurrentPage(pageNumber);
+    }
   };
-  
-  
+
   // Función para generar reporte PDF
   const ReporteEstructuraPDF = (estructuraFamiliar, personas, tipoRelacion) => {
     const doc = new jsPDF()
@@ -745,7 +584,7 @@ const disableCopyPaste = (e) => {
   const handleGenerateExcel = () => {
     generateExcel(filteredEstructuraFamiliar, personas, tipoRelacion)
   }
-  
+{/******************************************************************************************************************************************/}  
 
 {/* -------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -753,7 +592,7 @@ const disableCopyPaste = (e) => {
     if (!canSelect) {
       return <AccessDenied />;
     }
-    
+{/*------------------------------------------------------------------------------------------------------------------------------------*/}
 
 return (
     <CContainer>
@@ -798,67 +637,47 @@ return (
 </CCol>
 
       </CRow>
-
-      {/* Contenedor de la barra de búsqueda y el selector dinámico */}
-      <CRow className="align-items-center mt-4 mb-2">
-        {/* Barra de búsqueda  */}
-        <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
-          <CInputGroup className="me-3" style={{ width: '450px' }}>
-            <CInputGroupText>
-              <CIcon icon={cilSearch} />
-            </CInputGroupText>
-            <CFormInput placeholder="Buscar estructura..." 
+      {/* Filtro de búsqueda y selección de registros */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <CInputGroup style={{ maxWidth: '400px' }}>
+          <CInputGroupText>Buscar</CInputGroupText>
+          <CFormInput
+            placeholder="Buscar"
+            onChange={handleSearch}
             value={searchTerm}
-            onChange={handleSearch} />
-            <CButton
-              style={{
-                border: '1px solid #ccc',
-                transition: 'all 0.01s ease-in-out', // Duración de la transición
-                backgroundColor: '#F3F4F7', // Color por defecto
-                color: '#343a40', // Color de texto por defecto
-              }}
-              onClick={() => {
-                setSearchTerm('')
-                setCurrentPage(1)
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#E0E0E0' // Color cuando el mouse sobre el boton "limpiar"
-                e.currentTarget.style.color = 'black' // Color del texto cuando el mouse sobre el boton "limpiar"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#F3F4F7' // Color cuando el mouse no está sobre el boton "limpiar"
-                e.currentTarget.style.color = '#343a40' // Color de texto cuando el mouse no está sobre el boton "limpiar"
-              }}
-            >
-              <CIcon icon={cilBrushAlt} /> Limpiar
-            </CButton>
-          </CInputGroup>
-        </CCol>
-
-        {/* Selector dinámico a la par de la barra de búsqueda */}
-        <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
-          <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
-            <div className="d-inline-flex align-items-center">
-              <span>Mostrar&nbsp;</span>
-              <CFormSelect
-                style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
-                onChange={(e) => {
-                  const value = Number(e.target.value)
-                  setRecordsPerPage(value)
-                  setCurrentPage(1) // Reiniciar a la primera página cuando se cambia el número de registros
-                }}
-                value={recordsPerPage}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-              </CFormSelect>
-              <span>&nbsp;registros</span>
-            </div>
-          </CInputGroup>
-        </CCol>
-      </CRow>
-
+          />
+          <CButton
+            style={{ backgroundColor: '#cccccc', color: 'black' }}
+            onClick={() => {
+              setSearchTerm('')
+              setCurrentPage(1)
+            }}
+          >
+            Limpiar
+          </CButton>
+        </CInputGroup>
+        <div className="d-flex align-items-center">
+          <label htmlFor="recordsPerPageSelect" className="mr-2">
+            Mostrar
+          </label>
+          <select
+            id="recordsPerPageSelect"
+            value={recordsPerPage}
+            onChange={(e) => {
+              setRecordsPerPage(Number(e.target.value))
+              setCurrentPage(1)
+            }}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={15}>15</option>
+            <option value={20}>20</option>
+          </select>
+          <span style={{ marginLeft: '10px' }}>registros</span>
+        </div>
+      </div>
+      
+      <div className="table-container">
       <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
   <CTable striped>
     <CTableHead>
@@ -951,6 +770,38 @@ return (
     </CTableBody>
   </CTable>
 </div>
+</div>
+
+{/****************************************************PAGINACION*****************************************************************/}
+
+<div
+  className="pagination-container"
+  style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}
+>
+  <CPagination aria-label="Page navigation">
+    <CButton
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === 1} // Desactiva si es la primera página
+      onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(estructurasFamiliares.length / recordsPerPage)} // Desactiva si es la última página
+      onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  <span style={{ marginLeft: '10px' }}>
+    Página {currentPage} de {Math.ceil(estructurasFamiliares.length / recordsPerPage)}
+  </span>
+</div>
+
+{/*********************************************************************************************************************************/}
+
+
 
 {/* Modal para agregar estructura familiar */}
 <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
@@ -1112,6 +963,117 @@ return (
 
 {/********************************* MODAL PARA ACTUALIZAR ESTRUCTURA ***************************************************/}
 
+{/* Modal para actualizar estructura familiar */}
+<CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
+  <CModalHeader closeButton>
+    <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    {/* Mostrar el nombre de la persona seleccionada */}
+    <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
+      <strong>PERSONA:</strong> {personaSeleccionada 
+        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+        : 'Información no disponible'}
+    </div>
+    <CForm>
+      {/* Campo oculto para cod_persona */}
+      <input type="hidden" name="cod_persona" value={personaSeleccionada?.cod_persona} />
+
+      {/* Campo de búsqueda para persona */}
+      <div className="mb-3">
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Buscar Persona</CInputGroupText>
+          <CFormInput
+            type="text"
+            value={buscadorRelacion} // Asegura que use este estado
+            onChange={(e) => setBuscadorRelacion(e.target.value)}
+            placeholder="Buscar por DNI o nombre"
+          />
+          <CButton type="button">
+            <CIcon icon={cilSearch} />
+          </CButton>
+        </CInputGroup>
+
+        {/* Dropdown con resultados */}
+        {isDropdownOpen && personasFiltradas.length > 0 && (
+          <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+            {personasFiltradas.map(persona => (
+              <div
+                key={persona.cod_persona}
+                className="dropdown-item"
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  const nombreCompleto = [
+                    persona.Nombre,
+                    persona.Segundo_nombre,
+                    persona.Primer_apellido,
+                    persona.Segundo_apellido,
+                  ].filter(Boolean).join(' '); // Combina nombre completo
+
+                  // Actualiza el estado basado en el rol
+                  if (rolActual === 'ESTUDIANTE') {
+                    setEstructuraToUpdate(prev => ({
+                      ...prev,
+                      cod_persona_padre: persona.cod_persona, // Actualiza solo el campo cod_persona_padre
+                    }));
+                  } else {
+                    setEstructuraToUpdate(prev => ({
+                      ...prev,
+                      cod_persona_estudiante: persona.cod_persona, // Actualiza solo el campo cod_persona_estudiante
+                    }));
+                  }
+
+                  // Actualiza el valor del buscador sin que se limpie
+                  setBuscadorRelacion(nombreCompleto);
+                  setIsDropdownOpen(false);
+                }}
+              >
+                {persona.dni_persona} - {persona.fullName}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Resto del formulario */}
+      <CInputGroup className="mt-3">
+        <CInputGroupText>Tipo Relación</CInputGroupText>
+        <CFormSelect
+          value={estructuraToUpdate.cod_tipo_relacion}
+          onChange={e => setEstructuraToUpdate(prev => ({
+            ...prev,
+            cod_tipo_relacion: e.target.value,
+          }))}
+        >
+          <option value="">Tipo de Relación</option>
+          {tipoRelacion.map(tipo => (
+            <option key={tipo.Cod_tipo_relacion} value={tipo.Cod_tipo_relacion}>
+              {tipo.tipo_relacion.toUpperCase()}
+            </option>
+          ))}
+        </CFormSelect>
+      </CInputGroup>
+
+      <CInputGroup className="mt-3">
+        <CInputGroupText>Descripción</CInputGroupText>
+        <CFormInput
+          type="text"
+          value={estructuraToUpdate.descripcion}
+          onChange={e => setEstructuraToUpdate(prev => ({
+            ...prev,
+            descripcion: e.target.value.toUpperCase(),
+          }))}
+          placeholder="Descripción de la relación"
+          required
+        />
+      </CInputGroup>
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>Cerrar</CButton>
+    <CButton color="primary" onClick={handleUpdateEstructura}>Guardar</CButton>
+  </CModalFooter>
+</CModal>
 
 {/****************************************FIN DEL MODAL DE ACTUALIZAR********************************************************/}
 

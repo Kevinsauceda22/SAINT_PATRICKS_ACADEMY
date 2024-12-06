@@ -64,10 +64,10 @@ export const obtenerTipoPersona = async (req, res) => {
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
         } else {
-            res.status(404).json({ message: 'No se encontraron departamentos' });
+            res.status(404).json({ message: 'No se encontraron' });
         }
     } catch (error) {
-        console.error('Error al obtener las departamentos:', error);
+        console.error('Error al obtener las :', error);
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
 };
@@ -151,7 +151,7 @@ export const crearPersona = async (req, res) => {
         }
     } finally {
         connection.release();
-    }
+    }   
 };
 
 
@@ -166,7 +166,7 @@ export const actualizarPersona = async (req, res) => {
         Primer_apellido,
         Segundo_apellido,
         direccion_persona,
-        fecha_nacimiento,
+        fecha_nacimiento,   
         Estado_Persona,
         principal,
         cod_tipo_persona,
@@ -176,11 +176,23 @@ export const actualizarPersona = async (req, res) => {
         cod_municipio
     } = req.body;
 
-    try {
+    const connection = await pool.getConnection();
 
-                
+    try {
+        // Verificar si el DNI ya existe en la base de datos, excluyendo la persona actual
+        const [result] = await connection.query(
+            "SELECT COUNT(*) AS count FROM tbl_personas WHERE dni_persona = ? AND cod_persona != ?", 
+            [dni_persona, cod_persona]
+        );
+
+        if (result[0].count > 0) {
+            return res.status(400).json({
+                mensaje: 'El DNI ingresado ya está registrado en el sistema para otra persona.',
+            });
+        }
+
         // Llamada al procedimiento almacenado para actualizar
-        await pool.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        await connection.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             cod_persona,
             dni_persona,
             Nombre,
@@ -203,8 +215,11 @@ export const actualizarPersona = async (req, res) => {
     } catch (error) {
         console.error('Error al actualizar la persona:', error);
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    } finally {
+        connection.release();
     }
 };
+
 
 
 

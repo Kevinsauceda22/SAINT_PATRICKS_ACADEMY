@@ -139,11 +139,30 @@ export const crearEstructuraFamiliar = async (req, res) => {
     } = req.body;
 
     try {
+        // Convertir a mayúsculas el valor de cod_tipo_relacion para la validación
+        const tipoRelacion = cod_tipo_relacion.toUpperCase(); // Asegurarse de que esté en mayúsculas
+
+        // Solo validar para "PADRE" o "MADRE"
+        if (tipoRelacion === "PADRE" || tipoRelacion === "MADRE") {
+            // Verificar si ya existe un registro con el mismo tipo de relación para el mismo estudiante
+            const [resultado] = await pool.query(
+                'SELECT COUNT(*) AS total FROM tbl_estructura_familiar WHERE cod_persona_estudiante = ? AND cod_tipo_relacion = ?',
+                [cod_persona_estudiante, tipoRelacion]
+            );
+
+            if (resultado[0].total > 0) {
+                return res.status(400).json({
+                    mensaje: `El estudiante ya tiene registrado como ${tipoRelacion}. No se puede agregar otro.`,
+                });
+            }
+        }
+
+        // Si no hay conflicto, continuar con la inserción
         await pool.query('CALL P_Post_EstructuraFamiliar(?, ?, ?, ?)', [
             cod_persona_estudiante,
             cod_persona_padre,
             cod_tipo_relacion,
-            descripcion
+            descripcion,
         ]);
 
         res.status(201).json({ mensaje: 'Estructura Familiar creada exitosamente' });
@@ -154,8 +173,9 @@ export const crearEstructuraFamiliar = async (req, res) => {
 };
 
 
+
 export const actualizarEstructuraFamiliar = async (req, res) => {
-    const { Cod_genealogia } = req.params; // Obtiene el código del aula desde la URL
+    const { Cod_genealogia } = req.params;
 
     const {
         cod_persona_estudiante,
@@ -165,20 +185,37 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
     } = req.body;
 
     try {
+        // Verificar si el tipo de relación es "Padre" o "Madre"
+        if (cod_tipo_relacion === 'Padre' || cod_tipo_relacion === 'Madre') {
+            // Validar si ya existe ese tipo de relación para el estudiante, excluyendo el registro actual
+            const [resultado] = await pool.query(
+                'SELECT * FROM tbl_estructura_familiar WHERE cod_persona_estudiante = ? AND cod_tipo_relacion = ? AND Cod_genealogia != ?',
+                [cod_persona_estudiante, cod_tipo_relacion, Cod_genealogia]
+            );
+
+            if (resultado.length > 0) {
+                return res.status(400).json({
+                    mensaje: `El estudiante ya tiene registrado un ${cod_tipo_relacion}.`,
+                });
+            }
+        }
+
+        // Proceder con la actualización
         await pool.query('CALL P_Put_EstructuraFamiliar(?, ?, ?, ?, ?)', [
             Cod_genealogia,
             cod_persona_estudiante,
             cod_persona_padre,
             cod_tipo_relacion,
-            descripcion
+            descripcion,
         ]);
 
-        res.status(200).json({ mensaje: ' actualizada exitosamente' });
+        res.status(200).json({ mensaje: 'Estructura Familiar actualizada exitosamente' });
     } catch (error) {
         console.error('Error al actualizar:', error);
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
 
 
 
