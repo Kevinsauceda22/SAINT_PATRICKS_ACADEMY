@@ -2695,7 +2695,7 @@ const generarReporteActividadesPDF = () => {
       // Validar que los números enteros no superen 2 dígitos
       if (value.includes(".")) {
         const [entero, decimal] = value.split(".");
-        if (entero.length > 2) {
+        if (entero.length > 3) {
           Swal.fire("Advertencia", "Solo se permiten dos dígitos enteros.", "warning");
           value = `${entero.substring(0, 2)}.${decimal}`; // Recortar a 2 dígitos enteros
         }
@@ -2703,7 +2703,7 @@ const generarReporteActividadesPDF = () => {
           Swal.fire("Advertencia", "Solo se permiten dos dígitos después del punto.", "warning");
           value = `${entero}.${decimal.substring(0, 2)}`; // Recortar a 2 decimales
         }
-      } else if (value.length > 2) {
+      } else if (value.length > 3) {
         // Si no hay decimales, limitar los enteros a 2 dígitos
         Swal.fire("Advertencia", "Solo se permiten dos dígitos enteros.", "warning");
         value = value.substring(0, 2); // Recortar a 2 dígitos enteros
@@ -2968,7 +2968,7 @@ backdrop="static" >
       }
 
       // Validar que los números enteros no superen 2 dígitos
-      if (value.split(".")[0].length > 2) {
+      if (value.split(".")[0].length > 3) {
         Swal.fire("Advertencia", "El valor no puede tener más de dos dígitos enteros.", "warning");
         return; // Bloquear valores con más de 2 dígitos enteros
       }
