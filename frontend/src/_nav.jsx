@@ -121,6 +121,13 @@ const _nav = [
   },
    {
     component: CNavItem,
+    name: 'Mis Cuadros',
+    to: '/ListaCuadroProfesor',
+    icon: cilFile,
+    nameobject: 'ListaCuadroProfesor',
+  },
+   {
+    component: CNavItem,
     name: 'Cuadros',
     to: '/ListaCuadro',
     icon: cilFile,
