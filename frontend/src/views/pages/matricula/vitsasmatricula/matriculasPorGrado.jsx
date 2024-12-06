@@ -78,76 +78,113 @@ const MatriculasPorGrado = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
+
     if (alumnos.length === 0) {
-      console.warn('No hay datos de alumnos para exportar.');
-      return;
+        console.warn('No hay datos de alumnos para exportar.');
+        return;
     }
 
     const img = new Image();
     img.src = logo;
 
     img.onload = () => {
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, 20, { align: 'center' });
-      doc.setFontSize(14);
-      doc.text('Reporte de Alumnos Matriculados', doc.internal.pageSize.width / 2, 30, { align: 'center' });
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+        // Encabezado
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51);
+        doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, 20, { align: 'center' });
+        doc.setFontSize(14);
+        doc.text('Reporte de Alumnos Matriculados', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+        doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+        doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51);
+        doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
 
-      const grado = grados.find(grado => String(grado.Cod_grado) === String(selectedGrado));
-      const nombreGrado = grado ? grado.Nombre_grado : 'N/A';
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text(`Grado: ${nombreGrado}`, 10, 65);
-      doc.text(`Año Académico: ${anioReciente || 'N/A'}`, 10, 70);
+        // Información general
+        const grado = grados.find(grado => String(grado.Cod_grado) === String(selectedGrado));
+        const nombreGrado = grado ? grado.Nombre_grado : 'N/A';
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Grado: ${nombreGrado}`, 10, 65);
+        doc.text(`Año Académico: ${anioReciente || 'N/A'}`, 10, 70);
 
-      doc.autoTable({
-        startY: 80,
-        head: [['#', 'Nombre del Alumno', 'Fecha de Nacimiento', 'Grado', 'Sección']],
-        body: alumnos.map((alumno, index) => [
-          index + 1,
-          `${alumno.Nombre || ''} ${alumno.Segundo_nombre || ''} ${alumno.Primer_apellido || ''} ${alumno.Segundo_apellido || ''}`.trim(),
-          alumno.fecha_nacimiento ? new Date(alumno.fecha_nacimiento).toLocaleDateString('es-ES') : 'No disponible',
-          alumno.Nombre_grado || 'No disponible',
-          alumno.Nombre_seccion || 'No disponible',
-        ]),
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 10,
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] },
-      });
+        // Tabla de alumnos
+        doc.autoTable({
+            startY: 80,
+            head: [['#', 'Nombre del Alumno', 'Fecha de Nacimiento', 'Grado', 'Sección']],
+            body: alumnos.map((alumno, index) => [
+                index + 1,
+                `${alumno.Nombre || ''} ${alumno.Segundo_nombre || ''} ${alumno.Primer_apellido || ''} ${alumno.Segundo_apellido || ''}`.trim(),
+                alumno.fecha_nacimiento ? new Date(alumno.fecha_nacimiento).toLocaleDateString('es-ES') : 'No disponible',
+                alumno.Nombre_grado || 'No disponible',
+                alumno.Nombre_seccion || 'No disponible',
+            ]),
+            headStyles: {
+                fillColor: [0, 102, 51],
+                textColor: [255, 255, 255],
+                fontSize: 10,
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 3,
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] },
+        });
 
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      const date = new Date().toLocaleDateString();
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+        // Pie de página con fecha, hora y número de página
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
 
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
+            const creationDateTime = new Date().toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
 
-      const reportTitle = `Reporte de Alumnos Matriculados`;
-      const newWindow = window.open(pdfURL, '_blank');
-      if (newWindow) {
-        newWindow.document.title = reportTitle;
-      } else {
-        console.warn('No se pudo abrir el reporte en una nueva pestaña.');
-      }
+            // Fecha y hora alineada a la izquierda
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(
+                `Fecha y Hora de Generación: ${creationDateTime}`,
+                10,
+                doc.internal.pageSize.height - 10
+            );
+
+            // Número de página alineado a la derecha
+            doc.text(
+                `Página ${i} de ${pageCount}`,
+                doc.internal.pageSize.width - 30,
+                doc.internal.pageSize.height - 10,
+                { align: 'right' }
+            );
+        }
+
+        // Abrir el PDF en una nueva pestaña
+        const pdfBlob = doc.output('blob');
+        const pdfURL = URL.createObjectURL(pdfBlob);
+
+        const reportTitle = `Reporte de Alumnos Matriculados`;
+        const newWindow = window.open(pdfURL, '_blank');
+        if (newWindow) {
+            newWindow.document.title = reportTitle;
+        } else {
+            console.warn('No se pudo abrir el reporte en una nueva pestaña.');
+        }
     };
-  };
+
+    img.onerror = () => {
+        console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+    };
+};
+
 
   const exportToXLSX = () => {
     const worksheet = XLSX.utils.json_to_sheet(

@@ -64,88 +64,115 @@ const MatriculaForm = () => {
     const matriculasFiltradas = obtenerMatriculasFiltradas();
 
     if (matriculasFiltradas.length === 0) {
-      Swal.fire('Advertencia', 'No hay datos de matrículas para exportar.', 'warning');
-      return;
+        Swal.fire('Advertencia', 'No hay datos de matrículas para exportar.', 'warning');
+        return;
     }
 
     const img = new Image();
     img.src = logo;
     img.onload = () => {
-      // Encabezado
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, 20, { align: 'center' });
+        // Encabezado
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51);
+        doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, 20, { align: 'center' });
 
-      // Título
-      doc.setFontSize(14);
-      const reportTitle = `Reporte de Matrículas ${selectedAnio ? ` - ${selectedAnio}` : ''}`;
-      doc.text(reportTitle, doc.internal.pageSize.width / 2, 30, { align: 'center' });
+        // Título
+        doc.setFontSize(14);
+        const reportTitle = `Reporte de Matrículas ${selectedAnio ? ` - ${selectedAnio}` : ''}`;
+        doc.text(reportTitle, doc.internal.pageSize.width / 2, 30, { align: 'center' });
 
-      // Detalles de la institución
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+        // Detalles de la institución
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+        doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+        doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
 
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51);
+        doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
 
-      // Año Académico
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text(`Año Académico: ${selectedAnio || 'N/A'}`, 10, 65);
+        // Año Académico
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text(`Año Académico: ${selectedAnio || 'N/A'}`, 10, 65);
 
-      // Datos de la tabla
-      doc.autoTable({
-        startY: 75,
-        head: [['#', 'Código de Matrícula', 'Nombre del Estudiante', 'Fecha de Nacimiento', 'Grado', 'Sección']],
-        body: matriculasFiltradas.map((matricula, index) => [
-          index + 1,
-          matricula.codificacion_matricula,
-          `${matricula.Nombre} ${matricula.Segundo_nombre || ''} ${matricula.Primer_apellido || ''} ${matricula.Segundo_apellido || ''}`.trim(),
-          matricula.fecha_nacimiento ? new Date(matricula.fecha_nacimiento).toLocaleDateString('es-ES') : 'No disponible',
-          matricula.Nombre_grado || 'No disponible',
-          matricula.Nombre_seccion || 'No disponible',
-        ]),
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 10,
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] },
-      });
+        // Datos de la tabla
+        doc.autoTable({
+            startY: 75,
+            head: [['#', 'Código de Matrícula', 'Nombre del Estudiante', 'Fecha de Nacimiento', 'Grado', 'Sección']],
+            body: matriculasFiltradas.map((matricula, index) => [
+                index + 1,
+                matricula.codificacion_matricula,
+                `${matricula.Nombre} ${matricula.Segundo_nombre || ''} ${matricula.Primer_apellido || ''} ${matricula.Segundo_apellido || ''}`.trim(),
+                matricula.fecha_nacimiento ? new Date(matricula.fecha_nacimiento).toLocaleDateString('es-ES') : 'No disponible',
+                matricula.Nombre_grado || 'No disponible',
+                matricula.Nombre_seccion || 'No disponible',
+            ]),
+            headStyles: {
+                fillColor: [0, 102, 51],
+                textColor: [255, 255, 255],
+                fontSize: 10,
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 3,
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] },
+        });
 
-      // Pie de página
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      const date = new Date().toLocaleDateString();
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
+        // Pie de página con fecha, hora y número de página
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
 
-      // Crear Blob del PDF
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
+            const creationDateTime = new Date().toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
 
-      // Abrir el PDF en una nueva pestaña con título y nombre sugerido
-      const newWindow = window.open(pdfURL, '_blank');
-      if (newWindow) {
-        newWindow.document.title = `${reportTitle} (PDF)`; // Título dinámico en la pestaña
-      } else {
-        Swal.fire('Error', 'No se pudo abrir el reporte en una nueva pestaña.', 'error');
-      }
+            // Fecha y hora alineada a la izquierda
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(
+                `Fecha y Hora de Generación: ${creationDateTime}`,
+                10,
+                doc.internal.pageSize.height - 10
+            );
+
+            // Número de página alineado a la derecha
+            doc.text(
+                `Página ${i} de ${pageCount}`,
+                doc.internal.pageSize.width - 30,
+                doc.internal.pageSize.height - 10,
+                { align: 'right' }
+            );
+        }
+
+        // Crear Blob del PDF
+        const pdfBlob = doc.output('blob');
+        const pdfURL = URL.createObjectURL(pdfBlob);
+
+        // Abrir el PDF en una nueva pestaña con título y nombre sugerido
+        const newWindow = window.open(pdfURL, '_blank');
+        if (newWindow) {
+            newWindow.document.title = `${reportTitle} (PDF)`; // Título dinámico en la pestaña
+        } else {
+            Swal.fire('Error', 'No se pudo abrir el reporte en una nueva pestaña.', 'error');
+        }
     };
 
     img.onerror = () => {
-      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
     };
-  };
+};
+
 
   const exportToXLSX = () => {
     const worksheet = XLSX.utils.json_to_sheet(
