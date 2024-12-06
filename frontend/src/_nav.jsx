@@ -243,8 +243,8 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Aulas',
-        to: '/pages/matricula/ListaAulas',
-        nameobject: 'ListaAulas',
+        to: '/aulas',
+        nameobject: 'aulas',
       },
       {
         component: CNavItem,
