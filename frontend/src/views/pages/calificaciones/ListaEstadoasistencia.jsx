@@ -751,7 +751,7 @@ const ListaEstadoasistencia = () => {
     <CRow className="align-items-center mb-5">
   <CCol xs="12" md="9">
     {/* Título de la página */}
-    <h1 className="mb-0">Mantenimiento Estado asistencia</h1>
+    <h1 className="mb-0">Mantenimiento Estado Asistencia</h1>
   </CCol>
   
   <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center mt-3 mt-md-0">
