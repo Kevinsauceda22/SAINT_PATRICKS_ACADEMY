@@ -486,6 +486,20 @@ const handleObservacionChangeActualizar = (index, value) => {
   
   const handleActualizarAsistencias = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // Decodificar el token para obtener el nombre del usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+        console.error('No se pudo obtener el código o el nombre de usuario del token');
+        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+      }
+      
       // Prepara los datos de asistencia para la actualización
       const asistenciasParaActualizar = asistenciasActualizar.map((asistencia) => ({
         Cod_asistencias: asistencia.Cod_asistencias,
@@ -499,12 +513,40 @@ const handleObservacionChangeActualizar = (index, value) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(asistenciasParaActualizar),
       });
   
       if (response.ok) {
         const data = await response.json();
+         // Generar un listado de los códigos de asistencia actualizados
+         const codigosActualizados = asistenciasParaActualizar.map((asistencia) => asistencia.Cod_asistencias).join(', ');
+
+         // Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado las asistencias con los códigos: ${codigosActualizados}`;
+         
+          // Enviar a la bitácora
+          const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+            },
+            body: JSON.stringify({
+              cod_usuario: decodedToken.cod_usuario, // Código del usuario
+              cod_objeto: 47, // Código del objeto para la acción
+              accion: 'UPDATE', // Acción realizada
+              descripcion: descripcion, // Descripción de la acción
+            }),
+          });
+    
+          if (bitacoraResponse.ok) {
+            console.log('Registro en bitácora exitoso');
+          } else {
+            Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+          }
+        
         Swal.fire({
           title: 'Asistencias actualizadas correctamente',
           icon: 'success',
@@ -652,7 +694,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         icon: 'info',
         title: 'Tabla vacía',
         text: 'No hay datos disponibles para generar el reporte excel.',
-        confirmButtonText: 'Entendido',
+        confirmButtonText: 'Aceptar',
       });
       return; // Salir de la función si no hay datos
     }
@@ -743,7 +785,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -887,7 +929,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -955,7 +997,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
