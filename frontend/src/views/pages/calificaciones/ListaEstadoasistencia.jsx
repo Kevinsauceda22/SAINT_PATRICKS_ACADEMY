@@ -275,6 +275,7 @@ const ListaEstadoasistencia = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'El estado asistencia se ha creado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         swal.fire({
@@ -389,6 +390,7 @@ const ListaEstadoasistencia = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'El estado asistencia se ha actualizado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         swal.fire({
@@ -472,6 +474,7 @@ const ListaEstadoasistencia = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'El estado asistencia se ha eliminado correctamente.',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         // Si hubo un error, mostrar el mensaje devuelto por el servidor
@@ -583,7 +586,7 @@ const ListaEstadoasistencia = () => {
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
@@ -689,7 +692,7 @@ const ListaEstadoasistencia = () => {
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte excel.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
