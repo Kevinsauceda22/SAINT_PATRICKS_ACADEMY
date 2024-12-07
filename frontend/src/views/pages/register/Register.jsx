@@ -29,6 +29,7 @@ const ParentProfileForm = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [departamentos, setDepartamentos] = useState([]);
+  const [nacionalidades, setNacionalidades] = useState([]);
   const [municipios, setMunicipios] = useState([]);
   const [isMunicipioDisabled, setIsMunicipioDisabled] = useState(true);
 
@@ -76,6 +77,24 @@ const ParentProfileForm = () => {
     }));
   };
 
+  const handleNacionalidadChange = (event) => {
+  const nacionalidadId = event.target.value;
+  
+  setFormData(prevState => ({
+    ...prevState,
+    Nacionalidad: nacionalidadId,
+    cod_departamento: '',
+    cod_municipio: ''
+  }));
+
+  // Si es hondureño (ID 69), habilitar departamentos
+  setIsMunicipioDisabled(true);
+  if (nacionalidadId === '69') {
+    setMunicipios([]);
+  }
+};
+
+
   // Cargar datos iniciales
   useEffect(() => {
     const cargarDatosIniciales = async () => {
@@ -86,7 +105,7 @@ const ParentProfileForm = () => {
           setLoading(false);
           return;
         }
-
+  
         const decoded = jwtDecode(token);
         const cod_usuario = decoded.cod_usuario;
         const config = {
@@ -94,13 +113,13 @@ const ParentProfileForm = () => {
             Authorization: `Bearer ${token}`,
           },
         };
-
+  
         // Cargar datos pre-registrados
         const datosResponse = await axios.get(
           `http://localhost:4000/api/usuarios/padre/datos-preregistro/${cod_usuario}`,
           config
         );
-
+  
         if (datosResponse.data.success) {
           const preloadedData = {
             Nombre: datosResponse.data.datos.nombre,
@@ -112,13 +131,27 @@ const ParentProfileForm = () => {
             ...preloadedData,
           }));
         }
-
+  
+        // Cargar nacionalidades
+        const nacResponse = await axios.get(
+          'http://localhost:4000/api/nacionalidad/vernacionalidades',
+          config
+        );
+        
+        if (nacResponse.data) {
+          setNacionalidades(
+            nacResponse.data.sort((a, b) =>
+              a.pais_nacionalidad.localeCompare(b.pais_nacionalidad)
+            )
+          );
+        }
+  
         // Cargar departamentos
         const departamentosResponse = await axios.get(
           'http://localhost:4000/api/departamento/departamentos',
           config
         );
-
+  
         if (departamentosResponse.data) {
           const departamentosUnicos = departamentosResponse.data.reduce((acc, current) => {
             const x = acc.find(item => item.cod_departamento === current.cod_departamento);
@@ -127,12 +160,12 @@ const ParentProfileForm = () => {
             }
             return acc;
           }, []);
-
+  
           setDepartamentos(departamentosUnicos.sort((a, b) => 
             a.nombre_departamento.localeCompare(b.nombre_departamento)
           ));
         }
-
+  
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
         setErrorMessage(
@@ -143,7 +176,7 @@ const ParentProfileForm = () => {
         setLoading(false);
       }
     };
-
+  
     cargarDatosIniciales();
   }, []);
 
@@ -204,15 +237,17 @@ const handleSubmit = async (e) => {
   e.preventDefault();
   setErrorMessage('');
 
-  const camposRequeridos = [
+  let camposRequeridos = [
     'dni_persona',
     'Nacionalidad',
     'direccion_persona',
     'fecha_nacimiento',
-    'cod_departamento',
-    'cod_genero',
-    'cod_municipio'
+    'cod_genero'
   ];
+
+  if (formData.Nacionalidad === '69') {
+    camposRequeridos = [...camposRequeridos, 'cod_departamento', 'cod_municipio'];
+  }
 
   const camposFaltantes = camposRequeridos.filter(campo => !formData[campo]);
   if (camposFaltantes.length > 0) {
@@ -233,9 +268,27 @@ const handleSubmit = async (e) => {
     const decoded = jwtDecode(token);
     const cod_usuario = decoded.cod_usuario;
 
+    // Restructure the data to match exactly what the backend expects
+    const dataToSend = {
+      dni_persona: formData.dni_persona,
+      nombre: formData.Nombre,
+      segundo_nombre: formData.Segundo_nombre || null,
+      primer_apellido: formData.Primer_apellido,
+      segundo_apellido: formData.Segundo_apellido || null,
+      cod_nacionalidad: parseInt(formData.Nacionalidad),
+      direccion_persona: formData.direccion_persona,
+      fecha_nacimiento: formData.fecha_nacimiento,
+      cod_tipo_persona: 'P',
+      cod_departamento: formData.Nacionalidad === '69' ? parseInt(formData.cod_departamento) : null,
+      cod_municipio: formData.Nacionalidad === '69' ? parseInt(formData.cod_municipio) : null,
+      cod_genero: parseInt(formData.cod_genero)
+    };
+
+    console.log('Data being sent to server:', dataToSend);
+
     const response = await axios.put(
       `http://localhost:4000/api/usuarios/padre/completar-perfil/${cod_usuario}`,
-      formData,
+      dataToSend,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -252,10 +305,15 @@ const handleSubmit = async (e) => {
     }).then(() => {
       navigate('/dashboard');
     });
-    
 
   } catch (error) {
-    console.error('Error al enviar datos:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      data: error.response?.data
+    });
+
     setErrorMessage(
       error.response?.data?.mensaje || 
       'Error al actualizar el perfil. Por favor, intente nuevamente.'
@@ -264,7 +322,6 @@ const handleSubmit = async (e) => {
     setLoading(false);
   }
 };
-
 if (loading) {
   return <div className="loading-spinner">Cargando...</div>;
 }
@@ -344,16 +401,25 @@ return (
           </div>
 
           <div className="form-group">
-            <label className="form-label required-field" htmlFor="nacionalidad">Nacionalidad</label>
-            <input
-              className="form-input"
-              id="nacionalidad"
-              name="Nacionalidad"
-              value={formData.Nacionalidad}
-              onChange={handleInputChange}
-              placeholder="Ingrese su nacionalidad"
-            />
-          </div>
+  <label className="form-label required-field" htmlFor="nacionalidad">Nacionalidad</label>
+  <select
+    className="form-input"
+    id="nacionalidad"
+    name="Nacionalidad"
+    value={formData.Nacionalidad}
+    onChange={handleNacionalidadChange}
+  >
+    <option value="">Seleccione una nacionalidad</option>
+    {nacionalidades.map(nac => (
+      <option 
+        key={`nac-${nac.Cod_nacionalidad}`} 
+        value={nac.Cod_nacionalidad}
+      >
+        {nac.pais_nacionalidad.toUpperCase()}
+      </option>
+    ))}
+  </select>
+</div>
         </div>
       </div>
 
