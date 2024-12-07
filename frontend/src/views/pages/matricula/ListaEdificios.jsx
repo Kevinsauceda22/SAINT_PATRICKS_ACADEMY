@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';       // Para generar archivos PDF
 import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
 import * as XLSX from 'xlsx';        // Para generar archivos Excel
 import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
+import logo from 'src/assets/brand/logo_saint_patrick.png'; // Ruta al logo de la academia
 import {
   CButton,
   CContainer,
@@ -367,24 +368,123 @@ const ListaEdificios = () => {
     saveAs(blob, 'reporte_edificios.xlsx'); // Descarga el archivo Excel
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF(); // Crea un nuevo documento PDF
-
-    // Añade un título al documento PDF
-    doc.text('Reporte de Edificios', 20, 10);
-
-    // Genera la tabla en el PDF con los datos de los edificios
-    doc.autoTable({
-      head: [['#', 'Nombre del Edificio', 'Número de Pisos', 'Aulas Integradas']], // Cabecera de la tabla
-      body: edificios.map((edificio, index) => [
-        index + 1,
-        edificio.Nombre_edificios.toUpperCase(), // Datos en mayúsculas
-        edificio.Numero_pisos,
-        edificio.Aulas_disponibles,
-      ]), // Datos que se mostrarán en la tabla
+  const generatePDFForEdificios = () => {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4',
     });
-    // Descarga el archivo PDF
-    doc.save('reporte_edificios.pdf');
+  
+    const img = new Image();
+    img.src = logo; // Ruta válida del logo
+  
+    img.onload = () => {
+      const pageWidth = doc.internal.pageSize.width;
+      const pageHeight = doc.internal.pageSize.height;
+  
+      // Logo
+      doc.addImage(img, 'PNG', 10, 10, 45, 45);
+  
+      // Encabezado principal
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51); // Verde
+      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+  
+      // Información de contacto
+      doc.setFontSize(10);
+      doc.setTextColor(100); // Gris
+      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+  
+      // Título del reporte
+      doc.setFontSize(14);
+      doc.setTextColor(0, 102, 51); // Verde
+      doc.text('Reporte General de Edificios', pageWidth / 2, 50, { align: 'center' });
+  
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51); // Verde
+      doc.line(10, 55, pageWidth - 10, 55);
+  
+      // Tabla de datos
+      const tableColumn = [
+        '#',
+        'Nombre del Edificio',
+        'Número de Pisos',
+        'Aulas Disponibles',
+      ];
+  
+      const tableRows = edificios.map((edificio, index) => [
+        { content: (index + 1).toString(), styles: { halign: 'center' } }, // Centrado
+        { content: edificio.Nombre_edificios.toUpperCase(), styles: { halign: 'left' } }, // Alineado a la izquierda
+        { content: edificio.Numero_pisos.toString(), styles: { halign: 'center' } }, // Centrado
+        { content: edificio.Aulas_disponibles.toString(), styles: { halign: 'center' } }, // Centrado
+      ]);
+  
+      doc.autoTable({
+        startY: 65,
+        head: [tableColumn],
+        body: tableRows,
+        headStyles: {
+          fillColor: [0, 102, 51], // Verde
+          textColor: [255, 255, 255], // Blanco
+          fontSize: 10,
+          halign: 'center',
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        alternateRowStyles: {
+          fillColor: [240, 248, 255], // Azul claro
+        },
+        margin: { top: 10, bottom: 30 },
+        didDrawPage: function (data) {
+          const pageCount = doc.internal.getNumberOfPages();
+          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+  
+          // Pie de página
+          doc.setFontSize(10);
+          doc.setTextColor(0, 102, 51); // Verde
+          doc.text(
+            `Página ${pageCurrent} de ${pageCount}`,
+            pageWidth - 10,
+            pageHeight - 10,
+            { align: 'right' }
+          );
+  
+          const now = new Date();
+          const dateString = now.toLocaleDateString('es-HN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+          const timeString = now.toLocaleTimeString('es-HN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
+        },
+      });
+  
+      // Crear una nueva ventana con visor personalizado sin botón de descarga ni subtítulo
+      const pdfBlob = doc.output('blob');
+      const pdfURL = URL.createObjectURL(pdfBlob);
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(`
+        <html>
+          <head><title>Reporte de Edificios</title></head>
+          <body style="margin: 0; overflow: hidden;">
+            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0" style="border: none;"></iframe>
+          </body>
+        </html>`);
+    };
+  
+    img.onerror = () => {
+      swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    };
   };
 
   // Abre el modal de actualización con los datos del edificio seleccionado
@@ -444,16 +544,32 @@ const ListaEdificios = () => {
         </CButton>
         {/* Botón Reportes con dropdown */}
         <CDropdown>
-          <CDropdownToggle
-            style={{ backgroundColor: '#6C8E58', color: 'white' }}
-          >
-            Reporte
-          </CDropdownToggle>
-          <CDropdownMenu>
-            <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
+  <CDropdownToggle
+    style={{ backgroundColor: '#6C8E58', color: 'white' }}
+  >
+    Reporte
+  </CDropdownToggle>
+  <CDropdownMenu>
+    <CDropdownItem
+      onClick={exportToExcel} // Si ya tienes exportación a Excel
+      style={{
+        color: '#6C8E58',
+        fontWeight: 'bold',
+      }}
+    >
+      Descargar en Excel
+    </CDropdownItem>
+    <CDropdownItem
+      onClick={generatePDFForEdificios} // Aquí se llama la función del PDF
+      style={{
+        color: '#6C8E58',
+        fontWeight: 'bold',
+      }}
+    >
+      Ver Reporte en PDF
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
       </div>
 
       {/* Filtro de búsqueda y selección de registros */}
