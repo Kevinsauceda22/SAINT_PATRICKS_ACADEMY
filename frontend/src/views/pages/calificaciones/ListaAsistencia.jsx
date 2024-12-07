@@ -3,6 +3,8 @@ import { cilCheckCircle,cilArrowLeft,cilBrushAlt,cilDescription, cilSearch, cilS
 import CIcon from '@coreui/icons-react';
 import Swal from 'sweetalert2';
 
+import * as jwt_decode from 'jwt-decode';
+
 import {CContainer,CRow,CCol,CInputGroup,CCardBody,CFormSelect,CInputGroupText,CSpinner,CTable,CTableHead,CTableHeaderCell,CTableBody,CTableRow,CTableDataCell,
   CButton,CFormInput,CModal,CModalHeader,CModalBody,CModalFooter,CPopover,CPagination,CDropdownItem,CDropdown,CDropdownToggle,CDropdownMenu
 } from '@coreui/react';
@@ -79,6 +81,18 @@ const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea
 useEffect(() => {
   // Fetch secciones y estados de asistencia al cargar el componente
   fetchSecciones();
+  const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+      console.log('Token decodificado:', decodedToken);
+
+      // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+    }
+  }
   fetchEstadosAsistencia();
   
   // Si hay una sección seleccionada, fetch de alumnos y recuento
@@ -343,6 +357,19 @@ const handleObservacionChangeActualizar = (index, value) => {
 
   const handleGuardarAsistencias = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
       // Verificar si todos los estudiantes tienen un estado de asistencia seleccionado
       const estudiantesSinEstado = asistencias.some(asistencia => !asistencia.Cod_estado_asistencia);
       if (estudiantesSinEstado) {
@@ -399,11 +426,37 @@ const handleObservacionChangeActualizar = (index, value) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(asistenciasParaInsertar),
       });
   
       if (response.ok) {
+
+        // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva asistencia para la fecha: ${fechaConHoraFormateada} `;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 47, // Código del objeto para la acción
+            accion: 'INSERT', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+        
         Swal.fire({
           title: 'Asistencias registradas correctamente',
           icon: 'success',
@@ -1821,12 +1874,9 @@ const handleObservacionChangeActualizar = (index, value) => {
                         trigger="click"
                         style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
                       >
-                        
-                        {canUpdate && (
                         <CButton color="link">
                           <CIcon icon={cilPencil} style={{ color: 'black' }} />
                         </CButton>
-                        )}
 
                       </CPopover>
                       </CTableDataCell>
