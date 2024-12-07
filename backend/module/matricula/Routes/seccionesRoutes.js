@@ -4,11 +4,8 @@ import { obtenerSeccionPorId,
          obtenerSeccionesPorPeriodo,
          obtenerPeriodoActivo,
          obtenerEdificios, 
-         obtenerEdificioPorId, 
          obtenerAulasPorEdificio, 
-         obtenerAulas, 
-         obtenerGrados,
-         obtenerSeccionesPorGrado,  
+         obtenerGrados,  
          obtenerProfesores, 
          obtenerPeriodos, 
          generarNombreSeccion, 
@@ -33,20 +30,11 @@ router.get('/periodo_academico/activo', obtenerPeriodoActivo);
 // Ruta para obtener todos los edificios
 router.get('/edificios', obtenerEdificios);
 
-// Ruta para obtener un edificio específico por Cod_edificio
-router.get('/edificios/:Cod_edificio', obtenerEdificioPorId); 
-
 // Ruta para obtener aulas filtradas por edificio
 router.get('/aulas/por_edificio/:Cod_edificio', obtenerAulasPorEdificio);
 
 // Ruta para obtener grados
-router.get('/aulas', obtenerAulas);
-
-// Ruta para obtener grados
 router.get('/grados', obtenerGrados);
-
-// Ruta para obtener las secciones por grado y período académico
-router.get('/obtener_secciones_por_grado/:Cod_grado/:Cod_periodo_matricula', obtenerSeccionesPorGrado);
 
 // Ruta para obtener profesores
 router.get('/profesores', obtenerProfesores);
@@ -65,7 +53,6 @@ router.put('/actualizar_seccion', actualizarSeccion);
 
 // Ruta para eliminar una sección
 router.delete('/eliminar_seccion/:Cod_seccion', eliminarSeccion);
-
 
 
 //------------------------------------------------------------------------- Parte ariel-------------------------------------------------------------

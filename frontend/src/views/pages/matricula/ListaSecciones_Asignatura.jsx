@@ -101,9 +101,10 @@ const ListaSecciones_Asignaturas = () => {
         swal.fire('Atención', 'No se encontraron asignaturas para esta sección.', 'info');
       }
     } catch (error) {
-      console.error('Error al cargar las asignaturas:', error);
-      swal.fire('Error', 'Hubo un problema al cargar las asignaturas.', 'error');
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error('Error al cargar las asignaturas:', error);
+        swal.fire('Error', 'Hubo un problema al cargar las asignaturas.', 'error');
+      }
   };
 
   // Función para obtener las secciones basadas en el grado y el período de matrícula
@@ -120,9 +121,10 @@ const ListaSecciones_Asignaturas = () => {
       const data = await response.json();
       setSecciones(data);
     } catch (error) {
-      console.error('Error al cargar secciones:', error);
-      setSecciones([]); // Limpia el estado si ocurre un error
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error('Error al cargar secciones:', error);
+        setSecciones([]); // Limpia el estado si ocurre un error
+      }
   };
 
   // Función para obtener secciones según el grado seleccionado
@@ -147,9 +149,10 @@ const ListaSecciones_Asignaturas = () => {
       const data = await response.json();
       setSecciones(data); // Actualiza el estado con las secciones filtradas
     } catch (error) {
-      console.error('Error al obtener secciones:', error);
-      setSecciones([]); // Limpia el estado si ocurre un error
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error('Error al obtener secciones:', error);
+        setSecciones([]); // Limpia el estado si ocurre un error
+      }
   };
 
   // Funcion periodo activo
@@ -167,9 +170,10 @@ const ListaSecciones_Asignaturas = () => {
         setEsPeriodoActivo(false); // Inactivo si no se encuentra
       }
     } catch (error) {
-      console.error('Error al obtener el estado del período:', error);
-      setEsPeriodoActivo(false); // Asume inactivo en caso de error
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error('Error al obtener el estado del período:', error);
+        setEsPeriodoActivo(false); // Asume inactivo en caso de error
+      }
   };  
 
   // Función para obtener los días disponibles
@@ -179,8 +183,9 @@ const ListaSecciones_Asignaturas = () => {
       const data = await response.json();
       setDias(data);
     } catch (error) {
-      console.error('Error al cargar días:', error);
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error('Error al cargar días:', error);
+      }
   };
 
   // Función para obtener los grados y asignaturas disponibles
@@ -191,8 +196,9 @@ const ListaSecciones_Asignaturas = () => {
       setGradosAsignaturas(data);
       console.log('Datos cargados en grados_asignaturas:', data); // <-- Aquí imprimimos los datos obtenidos
     } catch (error) {
-      console.error('Error al cargar los grados y asignaturas:', error);
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error('Error al cargar los grados y asignaturas:', error);
+      }
   };
 
   // Función para volver a la lista de secciones
@@ -242,9 +248,10 @@ const ListaSecciones_Asignaturas = () => {
 
       setModalUpdateVisible(true); // Mostrar el modal de actualización
     } catch (error) {
-      console.error("Error al abrir el modal de actualización:", error);
-      swal.fire("Error", "Hubo un problema al abrir el modal de actualización.", "error");
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error("Error al abrir el modal de actualización:", error);
+        swal.fire("Error", "Hubo un problema al abrir el modal de actualización.", "error");
+      }
   };
   
 
@@ -291,9 +298,10 @@ const ListaSecciones_Asignaturas = () => {
         swal.fire("Error", errorData.mensaje || "Error al actualizar la sección asignatura.", "error");
       }
     } catch (error) {
-      console.error("Error al actualizar la sección asignatura:", error);
-      swal.fire("Error", "Error en el servidor.", "error");
-    }
+      console.error('Error capturado en este bloque:', error); // Registro detallado
+        console.error("Error al actualizar la sección asignatura:", error);
+        swal.fire("Error", "Error en el servidor.", "error");
+      }
   };
   
 
@@ -586,9 +594,10 @@ const ListaSecciones_Asignaturas = () => {
               swal.fire("Error", "No se pudo cargar el logo.", "error");
           };
       } catch (error) {
-          console.error("Error al generar el PDF:", error);
-          swal.fire("Error", "No se pudo generar el PDF.", "error");
-      }
+        console.error('Error capturado en este bloque:', error); // Registro detallado
+              console.error("Error al generar el PDF:", error);
+              swal.fire("Error", "No se pudo generar el PDF.", "error");
+          }
   };
 
   // Función para manejar la paginación
@@ -627,11 +636,20 @@ const ListaSecciones_Asignaturas = () => {
 
   return(
   <CContainer>
-     <div className="container mt-5"> {/* Contenedor general con margen superior */}
+     <div className="container mt-3"> {/* Contenedor general con margen superior */}
   {/* Título, botón y dropdown */}
-  <CRow className="align-items-center mb-4">
-    {/* Botón "Gestión Académica" alineado a la izquierda */}
-    <CCol xs="4" md="3" className="text-start">
+  <div className="container mt-3"> {/* Contenedor general */}
+  {/* Fila del título */}
+  <CRow className="align-items-center mb-3">
+    <CCol xs="12" className="text-center">
+      <h2 className="fw-bold">Gestión de Asignaturas y Horarios</h2>
+    </CCol>
+  </CRow>
+
+  {/* Fila de los botones */}
+  <CRow className="align-items-center mb-3">
+    {/* Botón "Volver a Secciones" alineado a la izquierda */}
+    <CCol xs="12" md="4" className="text-start mb-2 mb-md-0">
       <CButton
         className="d-flex align-items-center gap-1 rounded shadow"
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")}
@@ -651,19 +669,17 @@ const ListaSecciones_Asignaturas = () => {
       </CButton>
     </CCol>
 
-    {/* Título centrado */}
-    <CCol xs="4" md="6" className="text-center">
-      <h1 className="mb-4 fw-bold">Gestión de Asignaturas y Horarios</h1>
-    </CCol>
+    {/* Espaciado entre elementos (opcional en caso de diseño flexible) */}
+    <CCol xs="12" md="4" className="text-center mb-2 mb-md-0" />
 
     {/* Botón "Nuevo" y dropdown "Reporte" alineados a la derecha */}
     <CCol
-      xs="4"
-      md="3"
+      xs="12"
+      md="4"
       className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2"
     >
-     {/* Botón de Reporte */}
-     <CDropdown>
+      {/* Botón de Reporte */}
+      <CDropdown>
         <CDropdownToggle
           style={{
             backgroundColor: "#6C8E58",
@@ -689,6 +705,7 @@ const ListaSecciones_Asignaturas = () => {
       </CDropdown>
     </CCol>
   </CRow>
+</div>
 
   {/* Contenedor de búsqueda */}
 <div className="filter-container mb-4">

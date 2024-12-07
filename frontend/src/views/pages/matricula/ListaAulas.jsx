@@ -4,6 +4,7 @@ import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription} fro
 import swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import logo from 'src/assets/brand/logo_saint_patrick.png'
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import {
@@ -101,6 +102,159 @@ const ListaAulas = () => {
       });
     };
 
+
+    const generatePDFForAulas = () => {
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+       if (!filteredAulas || filteredAulas.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+    
+      const img = new Image();
+      img.src = logo; // Ruta válida del logo
+    
+      img.onload = () => {
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+    
+        // Logo
+        doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    
+        // Encabezado principal
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51); // Verde
+        doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+    
+        // Información de contacto
+        doc.setFontSize(10);
+        doc.setTextColor(100); // Gris
+        doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+        doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+        doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+    
+        // Título del reporte
+        doc.setFontSize(14);
+        doc.setTextColor(0, 102, 51); // Verde
+        doc.text('Reporte General de Aulas', pageWidth / 2, 50, { align: 'center' });
+    
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51); // Verde
+        doc.line(10, 55, pageWidth - 10, 55);
+    
+        // Subtítulo
+        doc.setFontSize(12);
+        doc.setTextColor(0);
+        doc.text('Listado Detallado de Aulas', pageWidth / 2, 65, { align: 'center' });
+    
+        // Tabla de datos
+        const tableColumn = [
+          '#',
+          'Número de Aula',
+          'Capacidad',
+          'Cupos',
+          'División',
+          'Secciones Disponibles',
+          'Secciones Ocupadas',
+          'Edificio',
+        ];
+    
+        const tableRows = filteredAulas.map((aula, index) => {
+          const edificio = edificios.find((e) => e.Nombre_edificios === aula.Nombre_edificios); // Buscar edificio
+          return [
+            { content: (index + 1).toString(), styles: { halign: 'center' } }, // Centrado
+            { content: aula.Numero_aula.toString(), styles: { halign: 'center' } }, // Centrado
+            { content: aula.Capacidad.toString(), styles: { halign: 'center' } }, // Centrado
+            { content: aula.Cupos_aula, styles: { halign: 'center' } }, // Centrado
+            { content: aula.Division, styles: { halign: 'center' } }, // Centrado
+            { content: (edificio ? edificio.Nombre_edificios : 'Sin edificio').toUpperCase(), styles: { halign: 'left' } }, // Izquierda
+            { content: aula.Secciones_disponibles, styles: { halign: 'center' } }, // Centrado
+            { content: aula.Secciones_ocupadas, styles: { halign: 'center' } }, // Centrado
+           
+          ];
+        });
+    
+        doc.autoTable({
+          startY: 75,
+          head: [tableColumn],
+          body: tableRows,
+          headStyles: {
+            fillColor: [0, 102, 51], // Verde
+            textColor: [255, 255, 255], // Blanco
+            fontSize: 10,
+            halign: 'center', // Centrado por defecto
+          },
+          styles: {
+            fontSize: 10,
+            cellPadding: 3,
+          },
+          alternateRowStyles: {
+            fillColor: [240, 248, 255], // Azul claro
+          },
+          columnStyles: {
+            7: { halign: 'left' }, // Nombre del edificio alineado a la izquierda
+          },
+          margin: { top: 10, bottom: 30 },
+          didDrawPage: function (data) {
+            const pageCount = doc.internal.getNumberOfPages();
+            const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+    
+            // Pie de página
+            doc.setFontSize(10);
+            doc.setTextColor(0, 102, 51); // Verde
+            doc.text(
+              `Página ${pageCurrent} de ${pageCount}`,
+              pageWidth - 10,
+              pageHeight - 10,
+              { align: 'right' }
+            );
+    
+            const now = new Date();
+            const dateString = now.toLocaleDateString('es-HN', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            });
+            const timeString = now.toLocaleTimeString('es-HN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            });
+            doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
+          },
+        });
+    
+        // Convertir PDF en Blob
+        const pdfBlob = doc.output('blob');
+        const pdfURL = URL.createObjectURL(pdfBlob);
+    
+        // Crear una nueva ventana con visor personalizado
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(`
+          <html>
+            <head><title>Reporte de Aulas</title></head>
+            <body style="margin:0;">
+              <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+              <div style="position:fixed;top:10px;right:200px;">
+                <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+                  onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_de_Aulas.pdf'; a.click();">
+                  Descargar PDF
+                </button>
+              </div>
+            </body>
+          </html>`);
+      };
+    
+      img.onerror = () => {
+        swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+      };
+    };
+    
   const handleCreateAula = async () => {
 
     const data = {
@@ -314,34 +468,7 @@ const ListaAulas = () => {
       }
     }); 
   };
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(aulas);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Aulas');
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, 'reporte_aulas.xlsx');
-  };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.text('Reporte de Aulas', 20, 10);
-    doc.autoTable({
-      head: [['#', 'Número de Aula', 'Capacidad','Cupos' , 'Edificio','División', 'Secciones_disponibles','Secciones_ocupadas',]],
-      body: aulas.map((aula, index) => [
-        index + 1,
-        aula.Numero_aula,
-        aula.Capacidad,
-        aula.Cupos_aula,
-        aula.Nombre_edificios,
-        aula.Division,
-        aula.Secciones_disponibles,
-        aula.Secciones_ocupadas,
-      ]),
-    });
-    doc.save('reporte_aulas.pdf');
-  };
-   
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
     setCurrentPage(1);
@@ -381,16 +508,23 @@ const ListaAulas = () => {
               <CIcon icon={cilPlus}/> Nuevo
             </CButton>
 
-            {/* Botón de Reporte */}
-            <CDropdown>
-              <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-                Reportes
-              </CDropdownToggle>
-              <CDropdownMenu>
-                <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-                <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
-              </CDropdownMenu>
-            </CDropdown>
+            {/* Botón de Reporte con opciones para Excel y PDF */}
+          <CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
+        <CIcon icon={cilDescription} /> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem
+           onClick={() => generatePDFForAulas(filteredAulas)}
+          style={{
+            color: '#6C8E58', // Color verde para armonizar con el botón
+            fontWeight: 'bold',
+          }}
+        >
+          Ver Reporte en PDF
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
           </CCol>
         </CRow>
         {/* Contenedor de la barra de búsqueda y el selector dinámico */}
@@ -658,19 +792,7 @@ const ListaAulas = () => {
         {/* Campo Numero de Aula */}
         <CInputGroup className="mb-3">
         <CInputGroupText>Numero de Aula</CInputGroupText>
-        <CFormInput
-          value={aulaToUpdate.Numero_aula}
-          maxLength={11}
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          onChange={(e) => {
-            const valor = e.target.value;
-            // Validar caracteres permitidos y letras repetidas
-            if (!permitirCaracteresValidos(valor)) {
-              swal.fire({icon: 'warning',title: 'Caracteres no permitidos', text: 'Solo se permiten números positivos',});
-              return;
-            }setAulaToUpdate({ ...aulaToUpdate, Numero_aula: valor })}}
-        />
+        <CFormInput value={aulaToUpdate.Numero_aula || ''} readOnly   />
       </CInputGroup>
 
       {/* Campo Capacidad */}

@@ -588,9 +588,9 @@ const ListaNacionalidad = () => {
     <CModalBody>
   {/* Campo Id Nacionalidad */}
   <CInputGroup className="mb-3">
-    <CInputGroupText>Id Nacionalidad</CInputGroupText>
+    <CInputGroupText>Prefijo Nacionalidad</CInputGroupText>
     <CFormInput
-      placeholder="Ingrese ID Nacionalidad"
+      placeholder="Ingrese Prefijo Nacionalidad"
       value={nuevaNacionalidad.Id_nacionalidad}
       onChange={(e) => {
         let value = e.target.value
@@ -628,7 +628,7 @@ const ListaNacionalidad = () => {
       value={nuevaNacionalidad.pais_nacionalidad}
       onChange={(e) => {
         let value = e.target.value
-          .replace(/[^A-Za-zÁÉÍÓÚÜÑ ]/gi, '') // Permitir solo letras y espacios
+          .replace(/[^A-Za-zÁÉÍÓÚÜÑ ()]/gi, '') // Permitir solo letras y espacios
           .replace(/^\s+/, '') // Eliminar espacios al inicio
           .replace(/\s{2,}/g, ' ') // Reemplazar múltiples espacios por uno
           .toUpperCase();

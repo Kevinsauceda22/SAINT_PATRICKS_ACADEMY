@@ -46,8 +46,6 @@ const Permisos = React.lazy(() => import ("./views/pages/Permissions/Permissions
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
 const ListaNotasProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaNotasProfesor'));
 const ListaNotas = React.lazy(() => import('./views/pages/calificaciones/ListaNotas'));
-const ListaCuadroProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaCuadroProfesor'));
-const ListaCuadro = React.lazy(() => import('./views/pages/calificaciones/ListaCuadro'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
 const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
 const ListaGradosAsignaturas = React.lazy(() => import('./views/pages/calificaciones/ListaGradosAsignaturas'))
@@ -59,7 +57,6 @@ const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDia
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
 const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
 const Auditoria = React.lazy(() => import('./views/pages/Auditoria/Auditoria'));
-const ListaParametro = React.lazy(() => import('./views/pages/calificaciones/ListaParametro'));
 
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
 
@@ -78,7 +75,7 @@ const ListaSecciones = React.lazy(() => import('./views/pages/matricula/ListaSec
 const ListaSecciones_Asignatura = React.lazy(() => import('./views/pages/matricula/ListaSecciones_Asignatura'));
 const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/ListaGestion_Academica'));
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
-const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
+const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliares')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
 const ListaProcedenciaPersona = React.lazy(() => import('./views/pages/personas/ListaProcedenciaPersona')); 
@@ -180,8 +177,6 @@ const App = () => {
                 <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />
                 <Route path="/ListaNotasProfesor" element={<ListaNotasProfesor />} />
                 <Route path="/ListaNotas" element={<ListaNotas />} />
-                <Route path="/ListaCuadroProfesor" element={<ListaCuadroProfesor />} />
-                <Route path="/ListaCuadro" element={<ListaCuadro />} />
                 <Route path="/ListaGradoAcademico" element={<ListaGradoAcademico />} />
                 <Route path="/ListaGrados" element={<ListaGrado />} />
                 <Route path="/ListaGradosAsignaturas" element={<ListaGradosAsignaturas />} />
@@ -190,7 +185,6 @@ const App = () => {
                 <Route path="/ListaPonderacionesCiclos" element={<ListaPonderacionesCiclos />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
                 <Route path="/VistaListaProfesor" element={<VistaListaProfesor />} />
-                <Route path="/ListaParametro" element={<ListaParametro />} />
 
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
                

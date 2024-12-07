@@ -119,27 +119,6 @@ const _nav = [
     icon: cilFile,
     nameobject: 'ListaNotas',
   },
-   {
-    component: CNavItem,
-    name: 'Mis Cuadros',
-    to: '/ListaCuadroProfesor',
-    icon: cilFile,
-    nameobject: 'ListaCuadroProfesor',
-  },
-   {
-    component: CNavItem,
-    name: 'Cuadros',
-    to: '/ListaCuadro',
-    icon: cilFile,
-    nameobject: 'ListaCuadro',
-  },
-  {
-    component: CNavItem,
-    name: 'Notas',
-    to: '/ListaNotas',
-    icon: cilFile,
-    nameobject: 'ListaNotas',
-  },
   
     {
       component: CNavItem,
@@ -163,11 +142,6 @@ const _nav = [
     nameobject: 'ListaAsignaturas',
     icon: cilListRich,
     items: [
-      {
-        component: CNavItem,
-        name: 'Parametro',
-        to: '/ListaParametro',
-      },
       {
         component: CNavItem,
         name: 'Asignaturas',
@@ -269,8 +243,8 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Aulas',
-        to: '/pages/matricula/ListaAulas',
-        nameobject: 'ListaAulas',
+        to: '/aulas',
+        nameobject: 'aulas',
       },
       {
         component: CNavItem,

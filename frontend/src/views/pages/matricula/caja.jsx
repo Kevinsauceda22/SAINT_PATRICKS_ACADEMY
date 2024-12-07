@@ -633,222 +633,272 @@ const buscarCajasPorDni = async (dni) => {
   
   const exportToPDF = (allData) => {
     if (!Array.isArray(allData) || allData.length === 0) {
-      Swal.fire('Error', 'No hay datos para generar el reporte.', 'error');
-      return;
+        Swal.fire('Error', 'No hay datos para generar el reporte.', 'error');
+        return;
     }
-  
+
     const doc = new jsPDF();
-  
+
     // Configurar la imagen del logo
     const img = new Image();
     img.src = logo;
-  
+
     img.onload = () => {
-      // Configuración del encabezado
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text(
-        "SAINT PATRICK'S ACADEMY",
-        doc.internal.pageSize.width / 2,
-        20,
-        { align: 'center' }
-      );
-      doc.setFontSize(14);
-      doc.text(
-        'Reporte General de Cajas (Todos los registros)',
-        doc.internal.pageSize.width / 2,
-        30,
-        { align: 'center' }
-      );
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(
-        'Casa Club del periodista, Colonia del Periodista',
-        doc.internal.pageSize.width / 2,
-        40,
-        { align: 'center' }
-      );
-      doc.text(
-        'Teléfono: (504) 2234-8871',
-        doc.internal.pageSize.width / 2,
-        45,
-        { align: 'center' }
-      );
-      doc.text(
-        'Correo: info@saintpatrickacademy.edu',
-        doc.internal.pageSize.width / 2,
-        50,
-        { align: 'center' }
-      );
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-      doc.setFontSize(12);
-      doc.setTextColor(0, 51, 102);
-      doc.text(
-        'Detalles de Cajas (Todos los Registros)',
-        doc.internal.pageSize.width / 2,
-        65,
-        { align: 'center' }
-      );
-  
-      // Añadir tabla con los datos
-      doc.autoTable({
-        startY: 75,
-        head: [['#', 'Nombre Padre', 'Descripción', 'Monto', 'Estado', 'Fecha de Registro']],
-        body: allData.map((caja, index) => [
-          index + 1,
-          `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}`,
-          caja.Descripcion || 'N/A',
-          `L ${parseFloat(caja.Monto || 0).toFixed(2)}`,
-          caja.Estado_pago || 'Pendiente',
-          caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A',
-        ]),
-        styles: {
-          fontSize: 10,
-          textColor: [34, 34, 34], // Gris oscuro para texto
-          cellPadding: 4,
-          valign: 'middle',
-          overflow: 'linebreak',
-        },
-        headStyles: {
-          fillColor: [0, 102, 51], // Verde oscuro para encabezados
-          textColor: [255, 255, 255],
-          fontSize: 10,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
-        margin: { left: 10, right: 10 },
-      });
-  
-      // Pie de página
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      const date = new Date().toLocaleDateString();
-      doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-  
-      // Generar el blob y abrir en una nueva pestaña
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
-      window.open(pdfURL); // Abrir el archivo en una nueva pestaña
-    };
-  
-    img.onerror = () => {
-      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-    };
-  };
-  
-  
-  const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
-    const doc = new jsPDF();
-  
-    // Configuración del logo
-    const img = new Image();
-    const defaultLogo = './src/assets/brand/logo_saint_patrick.png';
-    img.src = logo || defaultLogo;
-  
-    img.onload = () => {
-      try {
-        // Encabezado
+        // Configuración del encabezado
         doc.addImage(img, 'PNG', 10, 10, 30, 30);
         doc.setFontSize(18);
         doc.setTextColor(0, 102, 51);
-        doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, {
-          align: 'center',
-        });
+        doc.text(
+            "SAINT PATRICK'S ACADEMY",
+            doc.internal.pageSize.width / 2,
+            20,
+            { align: 'center' }
+        );
         doc.setFontSize(14);
-        doc.text('Recibo de Caja', doc.internal.pageSize.width / 2, 30, {
-          align: 'center',
-        });
+        doc.text(
+            'Reporte General de Cajas (Todos los registros)',
+            doc.internal.pageSize.width / 2,
+            30,
+            { align: 'center' }
+        );
         doc.setFontSize(10);
         doc.setTextColor(100);
         doc.text(
-          'Casa Club del periodista, Colonia del Periodista',
-          doc.internal.pageSize.width / 2,
-          40,
-          { align: 'center' }
+            'Casa Club del periodista, Colonia del Periodista',
+            doc.internal.pageSize.width / 2,
+            40,
+            { align: 'center' }
         );
         doc.text(
-          'Teléfono: (504) 2234-8871',
-          doc.internal.pageSize.width / 2,
-          45,
-          { align: 'center' }
+            'Teléfono: (504) 2234-8871',
+            doc.internal.pageSize.width / 2,
+            45,
+            { align: 'center' }
         );
         doc.text(
-          'Correo: info@saintpatrickacademy.edu',
-          doc.internal.pageSize.width / 2,
-          50,
-          { align: 'center' }
+            'Correo: info@saintpatrickacademy.edu',
+            doc.internal.pageSize.width / 2,
+            50,
+            { align: 'center' }
         );
         doc.setLineWidth(0.5);
         doc.setDrawColor(0, 102, 51);
         doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-  
-        // Detalles individuales en tabla
         doc.setFontSize(12);
         doc.setTextColor(0, 51, 102);
-        doc.text('Detalles del Recibo', doc.internal.pageSize.width / 2, 65, {
-          align: 'center',
-        });
-  
+        doc.text(
+            'Detalles de Cajas (Todos los Registros)',
+            doc.internal.pageSize.width / 2,
+            65,
+            { align: 'center' }
+        );
+
+        // Añadir tabla con los datos
         doc.autoTable({
-          startY: 75,
-          head: [['Campo', 'Valor']],
-          body: [
-            ['Nombre del Padre', `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}`],
-            ['Descripción', caja.Descripcion || 'N/A'],
-            ['Monto', `L ${parseFloat(caja.Monto || 0).toFixed(2)}`],
-            ['Estado de Pago', caja.Estado_pago || 'Pendiente'],
-            [
-              'Fecha de Registro',
-              caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A',
-            ],
-            [
-              'Hora de Registro',
-              caja.Hora_registro ? new Date(caja.Hora_registro).toLocaleTimeString() : 'N/A',
-            ],
-            
-          ],
-          styles: {
-            fontSize: 10,
-            textColor: [34, 34, 34],
-            cellPadding: 4,
-            valign: 'middle',
-            overflow: 'linebreak',
-          },
-          headStyles: {
-            fillColor: [0, 102, 51], // Verde oscuro para encabezados
-            textColor: [255, 255, 255],
-            fontSize: 10,
-          },
-          alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
-          margin: { left: 10, right: 10 },
+            startY: 75,
+            head: [['#', 'Nombre Padre', 'Descripción', 'Monto', 'Estado', 'Fecha de Registro']],
+            body: allData.map((caja, index) => [
+                index + 1,
+                `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}`,
+                caja.Descripcion || 'N/A',
+                `L ${parseFloat(caja.Monto || 0).toFixed(2)}`,
+                caja.Estado_pago || 'Pendiente',
+                caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A',
+            ]),
+            styles: {
+                fontSize: 10,
+                textColor: [34, 34, 34], // Gris oscuro para texto
+                cellPadding: 4,
+                valign: 'middle',
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: [0, 102, 51], // Verde oscuro para encabezados
+                textColor: [255, 255, 255],
+                fontSize: 10,
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
+            margin: { left: 10, right: 10 },
         });
-  
-        // Pie de página
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const date = new Date().toLocaleDateString();
-        doc.text(`Fecha de generación: ${date}`, 10, doc.internal.pageSize.height - 10);
-  
-        // Generar y abrir PDF
+
+        // Pie de página con fecha, hora y número de página
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            const creationDateTime = new Date().toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+
+            // Fecha y hora alineada a la izquierda
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(
+                `Fecha y Hora de Generación: ${creationDateTime}`,
+                10,
+                doc.internal.pageSize.height - 10
+            );
+
+            // Número de página alineado a la derecha
+            doc.text(
+                `Página ${i} de ${pageCount}`,
+                doc.internal.pageSize.width - 30,
+                doc.internal.pageSize.height - 10,
+                { align: 'right' }
+            );
+        }
+
+        // Generar el blob y abrir en una nueva pestaña
         const pdfBlob = doc.output('blob');
         const pdfURL = URL.createObjectURL(pdfBlob);
-        window.open(pdfURL);
-      } catch (error) {
-        console.error('Error al generar el PDF:', error);
-        Swal.fire('Error', 'Hubo un problema al generar el PDF.', 'error');
-      }
+        window.open(pdfURL); // Abrir el archivo en una nueva pestaña
     };
-  
+
     img.onerror = () => {
-      Swal.fire(
-        'Error',
-        'No se pudo cargar el logo. Verifique la ruta o formato.',
-        'error'
-      );
+        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
     };
+};
+
+  
+const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
+  const doc = new jsPDF();
+
+  // Configuración del logo
+  const img = new Image();
+  const defaultLogo = './src/assets/brand/logo_saint_patrick.png';
+  img.src = logo || defaultLogo;
+
+  img.onload = () => {
+      try {
+          // Encabezado
+          doc.addImage(img, 'PNG', 10, 10, 30, 30);
+          doc.setFontSize(18);
+          doc.setTextColor(0, 102, 51);
+          doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, {
+              align: 'center',
+          });
+          doc.setFontSize(14);
+          doc.text('Recibo de Caja', doc.internal.pageSize.width / 2, 30, {
+              align: 'center',
+          });
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          doc.text(
+              'Casa Club del periodista, Colonia del Periodista',
+              doc.internal.pageSize.width / 2,
+              40,
+              { align: 'center' }
+          );
+          doc.text(
+              'Teléfono: (504) 2234-8871',
+              doc.internal.pageSize.width / 2,
+              45,
+              { align: 'center' }
+          );
+          doc.text(
+              'Correo: info@saintpatrickacademy.edu',
+              doc.internal.pageSize.width / 2,
+              50,
+              { align: 'center' }
+          );
+          doc.setLineWidth(0.5);
+          doc.setDrawColor(0, 102, 51);
+          doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+
+          // Detalles individuales en tabla
+          doc.setFontSize(12);
+          doc.setTextColor(0, 51, 102);
+          doc.text('Detalles del Recibo', doc.internal.pageSize.width / 2, 65, {
+              align: 'center',
+          });
+
+          doc.autoTable({
+              startY: 75,
+              head: [['Campo', 'Valor']],
+              body: [
+                  ['Nombre del Padre', `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}`],
+                  ['Descripción', caja.Descripcion || 'N/A'],
+                  ['Monto', `L ${parseFloat(caja.Monto || 0).toFixed(2)}`],
+                  ['Estado de Pago', caja.Estado_pago || 'Pendiente'],
+                  [
+                      'Fecha de Registro',
+                      caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A',
+                  ],
+                  [
+                      'Hora de Registro',
+                      caja.Hora_registro ? new Date(caja.Hora_registro).toLocaleTimeString() : 'N/A',
+                  ],
+              ],
+              styles: {
+                  fontSize: 10,
+                  textColor: [34, 34, 34],
+                  cellPadding: 4,
+                  valign: 'middle',
+                  overflow: 'linebreak',
+              },
+              headStyles: {
+                  fillColor: [0, 102, 51], // Verde oscuro para encabezados
+                  textColor: [255, 255, 255],
+                  fontSize: 10,
+              },
+              alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
+              margin: { left: 10, right: 10 },
+          });
+
+          // Pie de página con fecha, hora y número de página
+          const pageCount = doc.internal.getNumberOfPages();
+          for (let i = 1; i <= pageCount; i++) {
+              doc.setPage(i);
+              const creationDateTime = new Date().toLocaleString('es-ES', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit',
+              });
+
+              // Fecha y hora alineada a la izquierda
+              doc.setFontSize(10);
+              doc.setTextColor(100);
+              doc.text(
+                  `Fecha y Hora de Generación: ${creationDateTime}`,
+                  10,
+                  doc.internal.pageSize.height - 10
+              );
+
+              // Número de página alineado a la derecha
+              doc.text(
+                  `Página ${i} de ${pageCount}`,
+                  doc.internal.pageSize.width - 30,
+                  doc.internal.pageSize.height - 10,
+                  { align: 'right' }
+              );
+          }
+
+          // Generar y abrir PDF
+          const pdfBlob = doc.output('blob');
+          const pdfURL = URL.createObjectURL(pdfBlob);
+          window.open(pdfURL);
+      } catch (error) {
+          console.error('Error al generar el PDF:', error);
+          Swal.fire('Error', 'Hubo un problema al generar el PDF.', 'error');
+      }
   };
+
+  img.onerror = () => {
+      Swal.fire(
+          'Error',
+          'No se pudo cargar el logo. Verifique la ruta o formato.',
+          'error'
+      );
+  };
+};
+
   
   useEffect(() => {
     const cargarValorMatricula = async () => {

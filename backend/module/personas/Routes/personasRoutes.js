@@ -2,6 +2,7 @@ import express from 'express';
 import {
         obtenerPersonas,
         obtenerDepartamentos,
+        obtenerMunicipiosConDepartamento,
         obtenerTipoPersona,
         obtenerGeneros,
         crearPersona,
@@ -17,6 +18,10 @@ router.get('/verPersonas', obtenerPersonas);
 
 //Ruta para obtener todos los departamentos
 router.get('/verDepartamentos', obtenerDepartamentos);
+
+
+//Ruta para obtener todos los departamentos
+router.get('/verMunicipios', obtenerMunicipiosConDepartamento);
 
 //Ruta para obtener todos los tipos de personas
 router.get('/verTipoPersona', obtenerTipoPersona);

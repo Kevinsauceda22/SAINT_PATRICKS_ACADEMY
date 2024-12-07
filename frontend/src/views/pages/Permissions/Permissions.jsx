@@ -41,9 +41,6 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '90', name: 'Solicitudes Administrador', description: 'Solicitud_admin' },
     { id: '91', name: 'Solicitudes Padre', description: 'Solicitudes_Padre' },
     { id: '93', name: 'ListaSecciones Asignatura', description: 'ListaSecciones' },
-    { id: '95', name: 'Lista Parametro', description: 'ListaParametro' },
-    { id: '98', name: 'Cuadro Profesor', description: 'ListaCuadroProfesor' },
-    { id: '99', name: 'Cuadro', description: 'ListaCuadro' },
     { id: '96', name: 'Gestion Academica', description: 'GestionAca' },
     { id: '97', name: 'Secciones', description: 'GestionAca' }
 

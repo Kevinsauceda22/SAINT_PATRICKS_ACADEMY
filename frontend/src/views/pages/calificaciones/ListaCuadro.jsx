@@ -27,7 +27,6 @@ const ListaCuadro = () => {
   const [selectedCodSeccion, setSelectedCodSeccion] = useState(null);
   const [gradoSeleccionado, setGradoSeleccionado] = useState('');
   const [nombreEstudiante, setNombreEstudiante] = useState("");  // Estado para almacenar el nombre del estudiante
-  const [identidadEstudiante, setIdentidadEstudiante] = useState("");
   //para paginacion y busqueda de la vista secciones
 const [recordsPerPage2, setRecordsPerPage2] = useState(5);
 const [searchTerm2, setSearchTerm2] = useState('');
@@ -68,14 +67,14 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       setEstudiantes(data);
     } catch (error) {
       console.error('Error:', error);
+      Swal.fire('Error', 'Hubo un problema al obtener los estudiantes', 'error');
     }
   };
   
 
-  const fetchCuadroNotas = async (Cod_seccion_matricula, nombreEstudiante , identidad) => {
+  const fetchCuadroNotas = async (Cod_seccion_matricula, nombreEstudiante) => {
     try {
       setNombreEstudiante(nombreEstudiante);
-      setIdentidadEstudiante(identidad);
       const response = await fetch(`http://localhost:4000/api/notas/notasypromedio/${Cod_seccion_matricula}`, {
         method: 'GET',
         headers: {
@@ -979,7 +978,6 @@ return (
             <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
             <CTableRow>
               <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>IDENTIDAD</CTableHeaderCell>
               <CTableHeaderCell>ALUMNO</CTableHeaderCell>
               <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
               </CTableRow>
@@ -989,7 +987,6 @@ return (
               currentRecords3.map((estudiante, index) => (
               <CTableRow key={estudiante.Cod_seccion_matricula}>
                 <CTableDataCell>{index + 1}</CTableDataCell>
-                <CTableDataCell>{estudiante.Identidad}</CTableDataCell>
                 <CTableDataCell>{estudiante.Nombre_Completo}</CTableDataCell>
                 <CTableDataCell>
                   <CButton
@@ -1004,7 +1001,7 @@ return (
                     size="sm"
                     onMouseEnter={(e) => (e.target.style.backgroundColor = "#dce3dc")}
                     onMouseLeave={(e) => (e.target.style.backgroundColor = "#F0F4F3")}
-                    onClick={() => fetchCuadroNotas(estudiante.Cod_seccion_matricula,estudiante.Nombre_Completo, estudiante.Identidad)}
+                    onClick={() => fetchCuadroNotas(estudiante.Cod_seccion_matricula,estudiante.Nombre_Completo)}
                   >
                     Cuadro Notas
                   </CButton>
@@ -1088,7 +1085,7 @@ return (
   onClick={exportarContenido} // Aquí está en la posición correcta
 >
   <CIcon icon={cilDescription} />
-  Guardar PDF
+  Abrir en PDF
 </CButton>
 
 </CCol>
@@ -1172,10 +1169,7 @@ return (
         </span>
       </span>
       <span style={{ display: 'flex', alignItems: 'center' }}>
-        <strong style={{ fontWeight: 'bold' }}>Student ID:</strong>
-        <span style={{ borderBottom: '1px solid black', paddingBottom: '2px', display: 'inline-block', flex: '1', marginLeft: '5px', letterSpacing: '0.5px' }}>
-          {identidadEstudiante}
-        </span>
+        <strong style={{ fontWeight: 'bold' }}>Student ID:</strong> _____________________
       </span>
     </div>
 
@@ -1185,37 +1179,28 @@ return (
         <span style={{ paddingBottom: '2px', display: 'inline-block', letterSpacing: '0.5px' }}> {gradoSeleccionado}</span>
       </span>
       <span style={{ marginLeft: '10px' }}><strong style={{ fontWeight: 'bold' }}>Section: </strong> {nombreSeccionSeleccionada}</span>
-      <span style={{ marginRight: '40px' }}>
-      <strong style={{ fontWeight: 'bold' }}>School year: </strong> {new Date().getFullYear()}-{new Date().getFullYear() + 1}</span>
-
+      <span style={{ marginRight: '40px' }}><strong style={{ fontWeight: 'bold' }}>School year: </strong> 2024-2025</span>
     </div>
 
 
           
-    <CTable 
-  className="table-bordered" 
-  style={{ border: '1px solid #000000', marginTop: '50px', fontSize: '0.75rem', lineHeight: '1' }}
->
-<CTableHead>
+      <CTable className="table-bordered" style={{ border: '1px solid #000000', marginTop: '50px', fontSize: '0.8rem', lineHeight: '1', }}>
+      <CTableHead>
   <CTableRow>
     <CTableHeaderCell 
       rowSpan={2} 
       className="text-center align-middle" 
-      style={{ backgroundColor: '#BFBFBF' }}
+      style={{ backgroundColor: '#BFBFBF'}}  // Color de fondo agregado
     >
       <div className="d-flex flex-column align-items-center justify-content-center">
-        <span style={{ marginBottom: '12px' }}>ÁREAS CURRICULARES/</span>
-        <span style={{ marginTop: '5px' }}>CAMPOS DEL CONOCIMIENTO</span>
+        <span  style={{ marginBottom: '12px' }}>Áreas Curriculares/</span>
+        <span style={{ marginTop: '5px' }}>Campos del Conocimiento</span>
       </div>
     </CTableHeaderCell>
 
     <CTableHeaderCell
-      rowSpan={1}
-      colSpan={
-        cuadroNotas.length > 0 
-        ? cuadroNotas[0].NotasParciales.filter(p => !p.Parcial.match(/recu/i)).length 
-        : 0
-      }
+      rowSpan={1} // Esta celda solo ocupa la primera fila
+      colSpan={cuadroNotas.length > 0 ? cuadroNotas[0].NotasParciales.length : 0} // Define el número de columnas
       className="text-center align-middle"
       style={{
         backgroundColor: '#BFBFBF',
@@ -1223,43 +1208,29 @@ return (
         padding: '10px',
       }}
     >
-      PARCIALES
+      Parciales
     </CTableHeaderCell>
-
-    {/* Aquí se muestra dinámicamente el nombre del parcial de recuperación si existe */}
-    {cuadroNotas.length > 0 && cuadroNotas[0].NotasParciales.some(p => p.Parcial.match(/recu/i)) && (
-      cuadroNotas[0].NotasParciales.filter(p => p.Parcial.match(/recu/i)).map((parcial, index) => (
-        <CTableHeaderCell 
-          key={index}
-          rowSpan={2}
-          className="text-center align-middle"
-          style={{ backgroundColor: '#BFBFBF', padding: '10px' }}
-        >
-          {parcial.Parcial} {/* Nombre dinámico del parcial de recuperación */}
-        </CTableHeaderCell>
-      ))
-    )}
 
     <CTableHeaderCell 
       rowSpan={2} 
       className="text-center align-middle" 
-      style={{ backgroundColor: '#BFBFBF' }}
+      style={{ backgroundColor: '#BFBFBF' }}  // Color de fondo agregado
     >
       <div className="d-flex flex-column align-items-center justify-content-center">
-        <span style={{ marginBottom: '12px' }}>NOTA</span>
-        <span style={{ marginTop: '5px' }}>PROM.FINAL (%)</span>
+        <span style={{ marginBottom: '12px' }}>Nota</span>
+        <span style={{ marginTop: '5px' }}>Prom. Final (%)</span>
       </div>
     </CTableHeaderCell>
   </CTableRow>
 
   <CTableRow>
-    {/* Encabezados dinámicos para los parciales, excluyendo "Recuperación" */}
+    {/* Encabezados dinámicos para los parciales */}
     {cuadroNotas.length > 0 &&
-      cuadroNotas[0].NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, index) => (
+      cuadroNotas[0].NotasParciales.map((parcial, index) => (
         <CTableHeaderCell 
           key={index} 
           className="text-center" 
-          style={{ backgroundColor: '#BFBFBF' }}
+          style={{ backgroundColor: '#BFBFBF' }}  // Color de fondo agregado
         >
           {parcial.Parcial}
         </CTableHeaderCell>
@@ -1268,49 +1239,34 @@ return (
 </CTableHead>
 
 
-  <CTableBody>
-    {cuadroNotas.length > 0 ? (
-      cuadroNotas.map((nota, index) => (
-        <CTableRow key={index}>
-          {/* Celda para el índice y la asignatura */}
-          <CTableDataCell className="text-center bg-transparent" style={{ fontSize: '0.8rem', width: '350px' }}>
-            <div className="d-flex justify-content-start">
-              <span style={{ marginRight: '20px', marginLeft: '60px' }}>{index + 1}.</span>
-              <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {nota.Asignatura}
-              </span>
-            </div>
-          </CTableDataCell>
+        <CTableBody >
+          {cuadroNotas.length > 0 ? (
+          cuadroNotas.map((nota, index) => (
+            <CTableRow key={index}>
+              {/* Celda combinada para el índice y la asignatura */}
+              <CTableDataCell className="text-center bg-transparent" style={{ fontSize: '0.8rem', width: '350px' }}>
+              <div className="d-flex justify-content-start">
+                <span style={{ marginRight: '20px', marginLeft: '60px' }}>{index + 1}.</span> {/* Índice */}
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{nota.Asignatura}</span> {/* Asignatura */}
+              </div>
+            </CTableDataCell>
 
-          {/* Notas de parciales (sin "Recuperación" o palabras que contengan "recu") */}
-        {nota.NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, i) => (
-          <CTableDataCell key={i} className="text-center bg-transparent">
-            {parcial.Nota}
-          </CTableDataCell>
-        ))}
+            {/* Notas en columnas según los parciales */}
+            {nota.NotasParciales.map((parcial, i) => (
+              <CTableDataCell key={i} className="text-center bg-transparent" >{parcial.Nota}</CTableDataCell>
+            ))}
 
-         
-
-           {/* Columna de Recuperación */}
-        <CTableDataCell className="text-center bg-transparent">
-          {
-            nota.NotasParciales.find(p => p.Parcial.match(/recu/i))?.Nota || "-"
-          }
-        </CTableDataCell>
-           {/* Columna Promedio Final */}
-           <CTableDataCell className="text-center bg-transparent">
-            {nota.PromedioFinal}
-          </CTableDataCell>
+            {/* Columna Promedio Final */}
+            <CTableDataCell className="text-center bg-transparent">{nota.PromedioFinal}</CTableDataCell>
+          </CTableRow>
+        ))
+      ) : (
+        <CTableRow>
+          <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
         </CTableRow>
-      ))
-    ) : (
-      <CTableRow>
-        <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
-      </CTableRow>
-    )}
-  </CTableBody>
-</CTable>
-
+      )}
+      </CTableBody>
+    </CTable>
     </div>
   </>
 )}

@@ -145,7 +145,7 @@ export const insertarSolicitud = async (req, res) => {
   
   
   
-  export const actualizarSolicitud= async (req, res) => {
+  export const actualizarSolicitud = async (req, res) => {
     const { Cod_solicitud } = req.params;
     const {
         Cod_persona,
@@ -269,12 +269,25 @@ export const insertarSolicitud = async (req, res) => {
             return res.status(404).json({ message: 'Solicitud no encontrada o sin cambios.' });
         }
 
+        // Preparar detalles de la cita actual para la notificación
+        const citaActual = {
+            Nombre_solicitud: Nombre_solicitud || 'Sin especificar',
+            Fecha_solicitud: Fecha_solicitud || 'Sin especificar',
+            Hora_Inicio: Hora_Inicio || 'N/A',
+            Hora_Fin: Hora_Fin || 'N/A',
+            Asunto: Asunto || 'Sin especificar',
+        };
+
         // Enviar notificaciones
-        if (updatedState === 'Cancelada') {
-            await enviarNotificacionCancelacionCitaPadres(Persona_Correo, Persona_Nombre, Nombre_solicitud, motivoCancelacion);
+        if (estadoActualizado === 'Cancelada') {
+            await enviarNotificacionCancelacionCitaPadres(
+                Persona_Correo,
+                Persona_Nombre,
+                Nombre_solicitud,
+                motivoCancelacion || 'No especificado'
+            );
         } else {
-            const citaActual = { Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto };
-            await enviarNotificacionCambioCitaPadres(Persona_Correo, Persona_Nombre, {}, citaActual);
+            await enviarNotificacionCambioCitaPadres(Persona_Correo, Persona_Nombre, citaActual);
         }
 
         res.status(200).json({
