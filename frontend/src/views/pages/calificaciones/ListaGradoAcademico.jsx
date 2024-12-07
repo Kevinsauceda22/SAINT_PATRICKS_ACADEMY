@@ -2,11 +2,19 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription,cilFile,cilSpreadsheet } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable'; // Importa el plugin para tablas
+import * as XLSX from 'xlsx';
+import logo from 'src/assets/brand/logo_saint_patrick.png'
 import { left } from '@popperjs/core';
 import {
   CButton,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
   CContainer,
   CForm,
   CFormInput,
@@ -353,6 +361,180 @@ const paginate = (pageNumber) => {
    if (!canSelect) {
     return <AccessDenied />;
   }
+//--------------------------------------------- REPORTE PDF Y EXCEL -----------------------
+const generarReporteGradosAcademicosPDF = () => {
+  // Validar que haya datos en la tabla
+  if (!currentRecords || currentRecords.length === 0) {
+    swal.fire({
+      icon: 'info',
+      title: 'Tabla vacía',
+      text: 'No hay datos disponibles para generar el reporte.',
+      confirmButtonText: 'Entendido',
+    });
+    return; // Salir de la función si no hay datos
+  }
+
+  const doc = new jsPDF();
+  const img = new Image();
+  img.src = logo; // Reemplaza con la URL o ruta de tu logo.
+
+  img.onload = () => {
+    // Agregar logo
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+    let yPosition = 20; // Posición inicial en el eje Y
+
+    // Título principal
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 12; // Espaciado más amplio para resaltar el título
+
+    // Subtítulo
+    doc.setFontSize(16);
+    doc.text('Reporte de Grados Académicos', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 10; // Espaciado entre subtítulo y detalles
+
+    // Información adicional
+    doc.setFontSize(10);
+    doc.setTextColor(100); // Gris para texto secundario
+    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 4;
+
+    doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 4;
+
+    doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 6; // Espaciado antes de la línea divisoria
+
+    // Línea divisoria
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51); // Verde
+    doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+
+    // Configuración para la tabla
+    const pageHeight = doc.internal.pageSize.height; // Altura de la página
+    let pageNumber = 1; // Página inicial
+
+    // Agregar tabla con auto-paginación
+    doc.autoTable({
+      startY: yPosition + 4,
+      head: [['#', 'Grado Académico']],
+      body: currentRecords.map((gradoAcademico, index) => [
+        gradoAcademico.originalIndex, // Usar el índice original en lugar del índice basado en la paginación
+        `${gradoAcademico.Descripcion || ''}`.trim(),
+      ]),
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 10,
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+        halign: 'center', // Centrado del texto en las celdas
+      },
+      columnStyles: {
+        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+        1: { cellWidth: 'auto' }, // Columna 'Grado Académico' se ajusta automáticamente
+      },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      didDrawPage: (data) => {
+        // Pie de página
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+        pageNumber += 1; // Incrementar el número de página
+      },
+    });
+
+    // Abrir el PDF en lugar de descargarlo automáticamente
+    window.open(doc.output('bloburl'), '_blank');
+  };
+
+  img.onerror = () => {
+    console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+    // Abrir el PDF sin el logo
+    window.open(doc.output('bloburl'), '_blank');
+  };
+};
+//----EXCEL
+const generarReporteExcel = () => {
+  // Validar que haya datos en la tabla
+  if (!currentRecords || currentRecords.length === 0) {
+    swal.fire({
+      icon: 'info',
+      title: 'Tabla vacía',
+      text: 'No hay datos disponibles para generar el reporte Excel.',
+      confirmButtonText: 'Entendido',
+    });
+    return; // Salir de la función si no hay datos
+  }
+
+  // Encabezados del reporte
+  const encabezados = [
+    ["Saint Patrick Academy"],
+    ["Reporte de Grados Académicos"],
+    [], // Espacio en blanco
+    ["#", "Descripción del Grado Académico"]
+  ];
+
+  // Crear filas con los grados académicos (usando currentRecords)
+  const filas = currentRecords.map((grado, index) => [
+    index + 1, // Índice basado en la posición de los datos filtrados
+    grado.Descripcion || "" // Descripción del grado académico
+  ]);
+
+  // Combinar encabezados y filas
+  const datos = [...encabezados, ...filas];
+
+  // Crear la hoja de trabajo
+  const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+
+  // Estilos personalizados para los encabezados
+  const rangoEncabezado = XLSX.utils.decode_range(hojaDeTrabajo['!ref']);
+  for (let row = 0; row <= 3; row++) { // Aplicamos estilo a las primeras 3 filas (encabezado)
+    for (let col = rangoEncabezado.s.c; col <= rangoEncabezado.e.c; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      if (hojaDeTrabajo[cellAddress]) {
+        hojaDeTrabajo[cellAddress].s = {
+          font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "15401D" } }, // Color verde oscuro
+          alignment: { horizontal: "center" }
+        };
+      }
+    }
+  }
+
+  // Ajustar el ancho de las columnas automáticamente
+  const ajusteColumnas = [
+    { wpx: 50 },  // Ajustar el ancho de la columna del índice
+    { wpx: 200 }  // Ajustar el ancho de la columna de la descripción
+  ];
+
+  hojaDeTrabajo['!cols'] = ajusteColumnas;
+
+  // Crear el libro de trabajo
+  const libroDeTrabajo = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Grados Académicos");
+
+  // Nombre del archivo Excel
+  const nombreArchivo = `Reporte_Grados_Academicos.xlsx`;
+
+  // Guardar el archivo Excel
+  XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+};
+
+
 
 
 
@@ -370,9 +552,30 @@ const paginate = (pageNumber) => {
 
       {canInsert && (
       <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
         className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
-        onClick={() => {setModalVisible(true); 
+        style={{
+          backgroundColor: '#4B6251',
+          color: 'white',
+          transition: 'all 0.3s ease',
+          height: '40px', // Altura fija del botón
+          width: 'auto', // El botón se ajusta automáticamente al contenido
+          minWidth: '100px', // Establece un ancho mínimo para evitar que el botón sea demasiado pequeño
+          padding: '0 16px', // Padding consistente
+          fontSize: '16px', // Tamaño de texto consistente
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center', // Centra el contenido
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#3C4B43";
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#4B6251";
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        onClick={() => {
+          setModalVisible(true); 
           setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
         }}
       >
@@ -381,14 +584,81 @@ const paginate = (pageNumber) => {
          Nuevo
         </CButton>
       )}
- {/*Boton reporte */}
-<CButton
-style={{backgroundColor:'#6C8E58', color: 'white'}}
->
-  <CIcon icon={cilDescription} /> Reporte       
-  </CButton>
-     </CCol>
-      </CRow>
+       {/* Dropdown para reporte */}
+       <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+        <CDropdownToggle
+          style={{
+            backgroundColor: "#6C8E58",
+            color: "white",
+            fontSize: "0.85rem",
+            cursor: "pointer",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#5A784C";
+            e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#6C8E58";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
+          <CIcon icon={cilDescription}/>Reporte
+        </CDropdownToggle>
+        <CDropdownMenu
+          style={{
+            position: "absolute",
+            zIndex: 1050,
+            backgroundColor: "#fff",
+            boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+            borderRadius: "4px",
+            overflow: "hidden",
+          }}
+        >
+          {/* Opción para PDF */}
+          <CDropdownItem
+            onClick={generarReporteGradosAcademicosPDF}
+            style={{
+              cursor: "pointer",
+              outline: "none",
+              backgroundColor: "transparent",
+              padding: "0.5rem 1rem",
+              fontSize: "0.85rem",
+              color: "#333",
+              borderBottom: "1px solid #eaeaea",
+              transition: "background-color 0.1s",
+            }}
+            onMouseOver={(e) =>
+              (e.target.style.backgroundColor = "#f5f5f5")
+            }
+            onMouseOut={(e) =>
+              (e.target.style.backgroundColor = "transparent")
+            }
+          >
+            <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+          </CDropdownItem>
+          <CDropdownItem
+        onClick={generarReporteExcel}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+        </CDropdownItem>
+      </CDropdownMenu>
+     </CDropdown>
+   </CCol>
+  </CRow>
+
+  
        {/* Contenedor de la barra de búsqueda y el botón "Nuevo" */}
        <CRow className='align-items-center mt-4 mb-2'>
       
