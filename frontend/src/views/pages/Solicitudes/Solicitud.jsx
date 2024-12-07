@@ -436,16 +436,16 @@ allowOutsideClick: false,
     setFormValues({
       title: '',
       description: '',
-      personaRequerida: 'ADMINISTRADOR', // Valor predeterminado
+      personaRequerida: '',
       fecha: '',
       horaInicio: '',
       horaFin: '',
-      cod_persona: '',
+      Cod_persona: '',
     });
     setSelectedCita(null);
     setFormModalVisible(true);
   };
-  
+
   const handleEditarCita = () => {
     if (selectedCita.estado === 'Finalizada') {
       Swal.fire({
@@ -536,7 +536,7 @@ allowOutsideClick: false,
     const { title, description, personaRequerida, fecha, horaInicio, horaFin, estado } = formValues;
   
     // Validar los campos obligatorios
-    if (!title?.trim() || !description?.trim() || !personaRequerida?.trim() || !fecha || !horaInicio) {
+    if (!title || !description || !personaRequerida || !fecha || !horaInicio) {
       Swal.fire({
         icon: 'warning',
         title: 'Advertencia',
@@ -557,9 +557,10 @@ allowOutsideClick: false,
           text: 'La hora de fin debe ser mayor que la hora de inicio.',
           confirmButtonColor: '#6C8E58',
           timer: 3000,
-          timerProgressBar: true,
-          showConfirmButton: false,
-          allowOutsideClick: false,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
         });
         return;
       }
@@ -573,20 +574,17 @@ allowOutsideClick: false,
         throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
       }
   
+      // Construir datos de solicitud para el envío
       const requestData = {
-        Cod_persona: auth?.cod_persona || null,
-        Nombre_solicitud: title?.trim() || 'SIN TÍTULO',
+        Cod_persona: auth.cod_persona, // Persona asociada a la cita
+        Nombre_solicitud: title || 'SIN TÍTULO',
         Fecha_solicitud: fecha,
-        Hora_Inicio: horaInicio?.trim(),
-        Hora_Fin: horaFin?.trim() || null,
-        Asunto: description?.trim() || 'SIN ASUNTO',
-        Persona_requerida: personaRequerida?.trim() || 'DESCONOCIDO',
-        estado: estado?.trim() || 'Pendiente',
-        motivoCancelacion: formValues.estado === 'Cancelada' ? formValues.motivoCancelacion : null, // Solo si está cancelada
-    };
-    
-  
-      console.log('Enviando datos al servidor:', requestData);
+        Hora_Inicio: horaInicio,
+        Hora_Fin: horaFin || null,
+        Asunto: description || 'SIN ASUNTO',
+        Persona_requerida: personaRequerida || 'DESCONOCIDO',
+        estado: estado, // Enviar el estado actualizado
+      };
   
       const response = await fetch(
         selectedCita
@@ -615,15 +613,15 @@ allowOutsideClick: false,
           : 'La cita fue creada correctamente.',
         confirmButtonColor: '#4B6251',
         timer: 3000,
-        timerProgressBar: true,
-        showConfirmButton: false,
-        allowOutsideClick: false,
+timerProgressBar: true,
+showConfirmButton: false,
+allowOutsideClick: false,
+
       });
   
       setFormModalVisible(false);
       await fetchSolicitudes(); // Recargar las citas después de guardar
     } catch (error) {
-      console.error('Error en el manejo de la solicitud:', error.message);
       Swal.fire({
         icon: 'error',
         title: 'Error',
@@ -635,6 +633,7 @@ allowOutsideClick: false,
     }
   };
   
+
 
 
   const handleVerTodasCitas = () => {
@@ -1037,82 +1036,45 @@ allowOutsideClick: false,
             />
           </CCol>
         </CRow>
-{/* Estado */}
-<CRow className="mb-4">
-    <CCol md={12}>
-        <CFormLabel>Estado</CFormLabel>
-        <div
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                backgroundColor: formValues.estado === 'Cancelada' ? '#FFE5E5' : '#E5FFE5',
-                padding: '0.5rem 1rem',
-                borderRadius: '0.5rem',
-                border: '1px solid',
-                borderColor: formValues.estado === 'Cancelada' ? 'red' : 'green',
-                transition: 'all 0.3s ease',
-            }}
-        >
-            <span
-                style={{
-                    fontWeight: 'bold',
-                    color: formValues.estado === 'Cancelada' ? 'red' : 'green',
-                    fontSize: '1.2rem',
-                }}
-            >
-                {formValues.estado === 'Cancelada' ? 'CANCELADA' : 'ACTIVO'}
-            </span>
-            <div className="form-check form-switch">
-                <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="estadoSwitch"
-                    checked={formValues.estado === 'Cancelada'}
-                    onChange={() =>
-                        setFormValues((prevValues) => ({
-                            ...prevValues,
-                            estado: prevValues.estado === 'Cancelada' ? 'Pendiente' : 'Cancelada',
-                            motivoCancelacion: prevValues.estado === 'Cancelada' ? '' : prevValues.motivoCancelacion, // Limpiar motivo si no está en cancelada
-                        }))
-                    }
-                    style={{
-                        width: '2.5rem',
-                        height: '1.5rem',
-                        backgroundColor: formValues.estado === 'Cancelada' ? 'red' : '#4B6251',
-                        border: formValues.estado === 'Cancelada' ? '1px solid red' : '1px solid #4B6251',
-                        transition: 'background-color 0.3s ease',
-                    }}
-                />
-            </div>
-        </div>
-    </CCol>
+        {selectedCita && (
+  <CRow className="mb-3">
+  <CCol md={12}>
+      <CFormLabel>Estado</CFormLabel>
+      <div className="form-check form-switch">
+          <input
+              className="form-check-input"
+              type="checkbox"
+              id="estadoSwitch"
+              checked={formValues.estado === "Cancelada"}
+              onChange={() =>
+                  setFormValues((prevValues) => ({
+                      ...prevValues,
+                      estado: prevValues.estado === "Cancelada" ? "Pendiente" : "Cancelada",
+                  }))
+              }
+              style={{
+                  width: "3rem",
+                  height: "1.5rem",
+                  backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
+                  border: formValues.estado === "Cancelada" ? "1px solid red" : "",
+              }}
+          />
+          <label
+              className="form-check-label"
+              htmlFor="estadoSwitch"
+              style={{
+                  fontSize: "1.25rem",
+                  color: formValues.estado === "Cancelada" ? "red" : "green",
+                  fontWeight: "bold",
+              }}
+          >
+              {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
+          </label>
+      </div>
+  </CCol>
 </CRow>
 
-{/* Motivo de Cancelación */}
-{formValues.estado === 'Cancelada' && (
-    <CRow className="mb-4">
-        <CCol md={12}>
-            <CFormLabel>Motivo de Cancelación</CFormLabel>
-            <textarea
-                className="form-control"
-                placeholder="Escribe el motivo de cancelación aquí..."
-                value={formValues.motivoCancelacion}
-                name="motivoCancelacion" // Añadido para compatibilidad con handleValidatedInputChange
-                onChange={handleValidatedInputChange} // Validación incluida
-                required={formValues.estado === 'Cancelada'} // Campo obligatorio si el estado es cancelada
-                style={{
-                    borderColor: '#4B6251',
-                    backgroundColor: '#FFF8F8',
-                    borderRadius: '0.5rem',
-                    padding: '0.5rem',
-                }}
-            />
-        </CCol>
-    </CRow>
 )}
-
-
         
        <CModalFooter>
           <CButton
