@@ -1944,13 +1944,9 @@ const handleObservacionChangeActualizar = (index, value) => {
                         trigger="click"
                         style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
                       >
-                        
-                        {canUpdate && (
                         <CButton color="link">
                           <CIcon icon={cilPencil} style={{ color: 'black' }} />
                         </CButton>
-                        )}
-
                       </CPopover>
                       </CTableDataCell>
                     </CTableRow>
