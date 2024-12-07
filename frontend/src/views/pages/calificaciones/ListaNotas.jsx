@@ -306,7 +306,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         }
          Swal.fire({
           title: 'Éxito',
-          text: 'Las notas se actualizaron correctamente.',
+          text: 'Las notas actualizadas correctamente.',
           icon: 'success',
           confirmButtonText: 'Aceptar', 
         });
@@ -392,7 +392,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         
          Swal.fire({
           title: 'Éxito',
-          text: 'Las notas se guardaron correctamente.',
+          text: 'Las notas registradas correctamente.',
           icon: 'success',
           confirmButtonText: 'Aceptar', // Cambia "OK" por "Aceptar" u otro texto
         });
