@@ -109,6 +109,11 @@ const ListaAulas = () => {
         unit: 'mm',
         format: 'a4',
       });
+
+       if (!filteredAulas || filteredAulas.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
     
       const img = new Image();
       img.src = logo; // Ruta válida del logo
@@ -159,7 +164,7 @@ const ListaAulas = () => {
           'Edificio',
         ];
     
-        const tableRows = aulas.map((aula, index) => {
+        const tableRows = filteredAulas.map((aula, index) => {
           const edificio = edificios.find((e) => e.Nombre_edificios === aula.Nombre_edificios); // Buscar edificio
           return [
             { content: (index + 1).toString(), styles: { halign: 'center' } }, // Centrado
@@ -537,7 +542,7 @@ const ListaAulas = () => {
       </CDropdownToggle>
       <CDropdownMenu>
         <CDropdownItem
-          onClick={generatePDFForAulas}
+           onClick={() => generatePDFForAulas(filteredAulas)}
           style={{
             color: '#6C8E58', // Color verde para armonizar con el botón
             fontWeight: 'bold',
