@@ -496,16 +496,26 @@ const toggleEstado = async (profesor) => {
 
   
 //----------------------------------------------------------------------------------------------------------  
-// Filtrado de profesores basándonos en `nombreCompleto`
 const filteredProfesores = listaPersonas.length > 0 
   ? profesores.filter(profesor => {
       const persona = listaPersonas.find(p => String(p.cod_persona).trim() === String(profesor.cod_persona).trim());
-      const nombreCompleto = persona?.nombreCompleto?.toUpperCase().trim() || '';
+      const dni = persona?.dni_persona?.toUpperCase().trim() || '';
+      const nombreCompleto = `${persona?.nombreCompleto || ''}`.toUpperCase().trim();
 
-      
-      return nombreCompleto.includes(searchTerm.trim().toUpperCase());
+      // Obtener tipo de contrato y grado académico
+      const tipoContrato = listaTiposContrato.find(tipo => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato)?.Descripcion.toUpperCase().trim() || '';
+      const gradoAcademico = listaGradosAcademicos.find(grado => grado.Cod_grado_academico === profesor.Cod_grado_academico)?.Descripcion.toUpperCase().trim() || '';
+
+      // Filtrar por coincidencias con nombre completo, DNI, tipo de contrato o grado académico
+      return (
+        nombreCompleto.includes(searchTerm.trim().toUpperCase()) || // Coincide con nombre completo
+        dni.includes(searchTerm.trim().toUpperCase()) ||           // Coincide con DNI
+        tipoContrato.includes(searchTerm.trim().toUpperCase()) ||  // Coincide con tipo de contrato
+        gradoAcademico.includes(searchTerm.trim().toUpperCase())   // Coincide con grado académico
+      );
     })
   : [];
+
 
 // Lógica de paginación
 const indexOfLastRecord = currentPage * recordsPerPage;
@@ -667,7 +677,7 @@ const openUpdateModal = (profesor) => {
   
 //-------------------------------------------------------------------------------------------
 const handleSearch = (event) => {
-  const input = event.target.value.toUpperCase().trim(); // Convertir a mayúsculas y eliminar espacios adicionales
+  const input = event.target.value.toUpperCase(); // Convertir a mayúsculas y eliminar espacios adicionales
 
   // Validación de caracteres permitidos (letras, números y espacios)
   const regexValidCharacters = /^[A-ZÑ0-9\s]*$/;
@@ -737,24 +747,37 @@ const filteredRecords = searchTerm
 //=========================================================== pdf y excel================================================
 const generarReportePDF = () => {
   // Filtrar registros si hay búsqueda activa
-  const registrosParaReporte = searchTerm
-    ? profesores.filter((profesor) => {
-        const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
-        const nombreCompleto = persona
-          ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`.toUpperCase()
-          : '';
-        return nombreCompleto.includes(searchTerm.trim().toUpperCase());
-      })
-    : profesores;  // Si no hay filtro, usar todos los profesores
+  const registrosParaReporte = profesores.filter((profesor) => {
+    const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
+    const nombreCompleto = persona
+      ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`.toUpperCase()
+      : '';
 
-  // Validar si hay registros para mostrar
+    // Obtener tipo de contrato y grado académico
+    const tipoContrato = listaTiposContrato.find(
+      (tipo) => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato
+    )?.Descripcion.toUpperCase() || '';
+    const gradoAcademico = listaGradosAcademicos.find(
+      (grado) => grado.Cod_grado_academico === profesor.Cod_grado_academico
+    )?.Descripcion.toUpperCase() || '';
+
+    // Filtrar por coincidencias con nombre completo, DNI, tipo de contrato o grado académico
+    return (
+      nombreCompleto.includes(searchTerm.trim().toUpperCase()) ||
+      (persona?.dni_persona || '').toUpperCase().includes(searchTerm.trim().toUpperCase()) ||
+      tipoContrato.includes(searchTerm.trim().toUpperCase()) ||
+      gradoAcademico.includes(searchTerm.trim().toUpperCase())
+    );
+  });
+
+  // Validar si hay registros para generar el reporte
   if (registrosParaReporte.length === 0) {
     swal.fire({
       icon: 'warning',
       title: 'Sin datos para el reporte',
-      text: 'No hay registros disponibles para generar el reporte.',
+      text: 'No hay registros disponibles en la tabla para generar el reporte.',
     });
-    return; // No continuar si no hay datos
+    return; // Detener la ejecución
   }
 
   const doc = new jsPDF();
@@ -806,7 +829,7 @@ const generarReportePDF = () => {
 
     yPosition += 4;
 
-    // Generar tabla con registros filtrados o completos
+    // Generar tabla con registros filtrados
     doc.autoTable({
       startY: yPosition,
       head: [['#', 'Nombre', 'Grado Académico', 'Tipo de Contrato', 'Hora Entrada', 'Hora Salida', 'Fecha Ingreso', 'Fecha Fin Contrato', 'Años de Experiencia']],
@@ -831,9 +854,9 @@ const generarReportePDF = () => {
           )?.Descripcion || 'N/A',
           profesor.Hora_entrada,
           profesor.Hora_salida,
-          fechaIngreso, // Mostrar fecha de ingreso
-          fechaFinContrato, // Mostrar fecha de fin de contrato
-          `${añosExperiencia} años`, // Mostrar años de experiencia
+          fechaIngreso,
+          fechaFinContrato,
+          `${añosExperiencia} años`,
         ];
       }),
       headStyles: {
@@ -842,21 +865,17 @@ const generarReportePDF = () => {
         fontSize: 9,
       },
       styles: {
-        fontSize: 8, // Reducir el tamaño de la fuente
-        cellPadding: 2, // Aumentar el padding para mejorar la visibilidad
-        overflow: 'linebreak', // Asegurar que el texto no se desborde
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
       },
       alternateRowStyles: { fillColor: [240, 248, 255] }, // Fondo alternativo
       didDrawPage: (data) => {
-        // Pie de página
         const pageCount = doc.internal.getNumberOfPages();
         const pageHeight = doc.internal.pageSize.height;
 
-        // Fecha y hora en el lado izquierdo
         doc.setFontSize(10);
         doc.text(`Fecha y hora de generación: ${fechaHoraGeneracion}`, 10, pageHeight - 10);
-
-        // Número de página en el lado derecho
         doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width - 50, pageHeight - 10);
       },
     });
@@ -866,7 +885,11 @@ const generarReportePDF = () => {
   };
 
   img.onerror = () => {
-    console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+    swal.fire({
+      icon: 'error',
+      title: 'Error al cargar el logo',
+      text: 'El reporte se generará sin el logo.',
+    });
     window.open(doc.output('bloburl'), '_blank');
   };
 };
@@ -917,6 +940,7 @@ const generarReporteExcel = () => {
   return (
     <CContainer>
 {/* Contenedor del título y botones */}
+<div>
 <CRow className="align-items-center mb-5">
   <CCol
     xs="12"
@@ -939,23 +963,7 @@ const generarReporteExcel = () => {
       </h1>
     </div>
 
-    {/* Botón "Nuevo" */}
     <div className="d-flex gap-2">
-      <CButton
-        className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
-        onClick={() => {
-          setModalVisible(true);
-          setHasUnsavedChanges(false);
-        }}
-        style={{
-          backgroundColor: "#4B6251",
-          color: "#FFFFFF",
-          padding: "5px 10px",
-          fontSize: "0.9rem",
-        }}
-      >
-        <CIcon icon={cilPlus} /> Nuevo
-      </CButton>
 
       {/* Dropdown para reporte */}
       <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
@@ -1054,7 +1062,6 @@ const generarReporteExcel = () => {
     onChange={handleSearch}
     style={{ fontSize: '0.9rem' }}
     />
-
          {/* Botón para limpiar la búsqueda */}
       <CButton
             style={{border: '1px solid #ccc',
@@ -1077,10 +1084,30 @@ const generarReporteExcel = () => {
           >
             <CIcon icon={cilBrushAlt} /> Limpiar
           </CButton>
-        
       </CInputGroup>
-      </CCol>
-
+    </CCol>
+ {/* Selector dinámico a la par de la barra de búsqueda */}
+    <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+        <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
+          <div className="d-inline-flex align-items-center">
+            <span style={{ fontSize: '0.85rem' }}>Mostrar&nbsp;</span>
+              <CFormSelect
+                style={{ width: '80px',height:'35px', display: 'inline-block', textAlign: 'center' }}
+                onChange={(e) => {
+                const value = Number(e.target.value);
+                setRecordsPerPage(value);
+                setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+              }}
+                value={recordsPerPage}
+              >
+                <option value="5">5</option>
+                <option value="10">10</option>
+                <option value="20">20</option>
+              </CFormSelect>
+            <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
+          </div>       
+       </CInputGroup>
+     </CCol>
     </CRow>
 {/* Tabla para mostrar Profesores*/}  
 <div className="table-responsive" style={{ boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
@@ -1097,7 +1124,7 @@ const generarReporteExcel = () => {
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      {filteredRecords.map((profesor, index) => {
+      {currentRecords.map((profesor, index) => {
         const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
         const nombreCompleto = persona
           ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
@@ -1159,6 +1186,30 @@ const generarReporteExcel = () => {
     </CTableBody>
   </CTable>
 </div>
+        {/* Paginación Fija */}
+        <div style={{ display: 'flex',  justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
+      <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
+        <CButton
+          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+          disabled={currentPage === 1} // Deshabilitar si estás en la primera página
+          onClick={() => paginate(currentPage - 1)}>
+          Anterior
+        </CButton>
+        <CButton
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
+          disabled={currentPage === Math.ceil(filteredProfesores.length / recordsPerPage)} // Deshabilitar si estás en la última página
+          onClick={() => paginate(currentPage + 1)}>
+          Siguiente
+       </CButton>
+     </CPagination>
+      {/* Mostrar total de páginas */}
+      <span style={{ marginLeft: '10px' }}>
+        Página {currentPage} de {Math.ceil(filteredProfesores.length / recordsPerPage)}
+      </span>
+   </div>
+   </div>
+   
+
 
 
 
@@ -1201,13 +1252,6 @@ const generarReporteExcel = () => {
   </CModalHeader>
   <CModalBody>
     <CForm>
-
-      {/* Aquí se usa el componente BuscadorDinamico */}
-          <BuscadorDinamico
-            listaPersonas={listaPersonas} // Pasa la lista de personas
-            nuevoProfesor={nuevoProfesor} // Pasa el estado actual de nuevoProfesor
-            setNuevoProfesor={setNuevoProfesor} // Pasa la función para actualizar nuevoProfesor
-          />
 
 
       {/* Select para Tipo de Contrato */}
@@ -1377,13 +1421,16 @@ const generarReporteExcel = () => {
   </CModalHeader> 
   <CModalBody>
     <CForm>
-       
-      {/* Formulario de Actualización */}
-  <BuscadorDinamico
-    listaPersonas={listaPersonas} // Pasa la lista de personas
-    nuevoProfesor={profesorToUpdate} // Cambia 'nuevoProfesor' a 'profesorToUpdate'
-    setNuevoProfesor={setProfesorToUpdate} // Cambia 'setNuevoProfesor' a 'setProfesorToUpdate'
-  />
+      {/* Nombre de la actividad */}
+      <CInputGroup className="mb-3">
+      <CInputGroupText>Nombre</CInputGroupText> 
+      <CFormInput
+          value={profesorToUpdate.Cod_profesor}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          onChange={(e) => handleInputChange(e, (value) => setNuevaActividad({...nuevoProfesor,cod_profesor: e.target.value,}))}
+        />
+        </CInputGroup>
      
       {/* Select para Grado Académico */}
       <CInputGroup className="mb-3">

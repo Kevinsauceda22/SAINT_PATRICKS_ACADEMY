@@ -2,29 +2,25 @@ import conectarDB from '../../../config/db.js';
 import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
 
-// Controlador para obtener las secciones
-export const obtenerSecciones = async (req, res) => {
+// Obtener secciones por id
+export const obtenerSeccionPorId = async (req, res) => {
+    const { Cod_secciones } = req.params;
+
     try {
-        // Obtenemos el parámetro 'Cod_secciones' de la solicitud
-        const { Cod_secciones } = req.params;
+        const [rows] = await pool.query('CALL sp_obtener_seccion_por_id(?)', [Cod_secciones]);
 
-        // Llamamos al procedimiento almacenado con el parámetro
-        const [rows] = await pool.query('CALL sp_obtener_secciones(?)', [Cod_secciones]);
-
-        // Verificamos si se encontraron resultados
-        if (rows[0].length > 0) {
-            res.status(200).json(rows[0]);
-        } else {
-            res.status(404).json({ message: 'No se encontraron secciones' });
+        if (rows[0].length === 0) {
+            return res.status(404).json({ mensaje: 'Sección no encontrada.' });
         }
+
+        res.status(200).json(rows[0][0]); // Enviar los datos al frontend
     } catch (error) {
-        console.error('Error al obtener las secciones:', error);
-        res.status(500).json({ message: 'Error en el servidor', error: error.message });
+        console.error('Error al obtener la sección por ID:', error);
+        res.status(500).json({ mensaje: 'Error al obtener la sección.', error: error.message });
     }
 };
 
-
-// NUEVO Controlador para obtener el período académico activo
+// Obtener el período académico activo
 export const obtenerPeriodoActivo = async (req, res) => {
     try {
         // Consulta para obtener el período activo
@@ -51,7 +47,7 @@ export const obtenerPeriodoActivo = async (req, res) => {
     }
 };
 
-
+// Obtener secciones por periodo
 export const obtenerSeccionesPorPeriodo = async (req, res) => {
     const { Cod_periodo_matricula } = req.params;
 
@@ -94,7 +90,6 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
     }
 };
 
-
 // Controlador para obtener todos los edificios
 export const obtenerEdificios = async (req, res) => {
     try {
@@ -105,7 +100,6 @@ export const obtenerEdificios = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener edificios', error: error.message });
     }
 };
-
 
 // Controlador para obtener aulas por edificio
 export const obtenerAulasPorEdificio = async (req, res) => {
@@ -122,7 +116,6 @@ export const obtenerAulasPorEdificio = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener aulas por edificio', error: error.message });
     }
 };
-
 
 // Controlador para obtener un edificio específico por Cod_edificio
 export const obtenerEdificioPorId = async (req, res) => {
@@ -145,7 +138,6 @@ export const obtenerEdificioPorId = async (req, res) => {
     }
 };
 
-
 // Controlador para obtener todas las aulas
 export const obtenerAulas = async (req, res) => {
     try {
@@ -156,7 +148,6 @@ export const obtenerAulas = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener aulas' });
     }
 };
-
 
 // Controlador para obtener todos los grados
 export const obtenerGrados = async (req, res) => {
@@ -169,22 +160,74 @@ export const obtenerGrados = async (req, res) => {
     }
 };
 
+// Controlador para obtener las secciones por grado y período académico
+export const obtenerSeccionesPorGrado = async (req, res) => {
+    const { Cod_grado, Cod_periodo_matricula } = req.params;
+
+    try {
+        const [rows] = await pool.query(
+            'SELECT Nombre_seccion FROM tbl_secciones WHERE Cod_grado = ? AND Cod_periodo_matricula = ? ORDER BY Nombre_seccion ASC',
+            [Cod_grado, Cod_periodo_matricula]
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Error al obtener secciones por grado y período académico:', error);
+        res.status(500).json({ mensaje: 'Error al obtener secciones por grado y período académico' });
+    }
+};
+
+//Actualizar los nombres automaticos
+export const generarNombreSeccion = async (req, res) => {
+    const { codGrado, anioAcademico } = req.params;
+
+    try {
+        // Consulta para obtener el último número de sección generado
+        const query = `
+            SELECT MAX(CAST(SUBSTRING(Nombre_seccion, 2) AS UNSIGNED)) AS UltimoNumero
+            FROM tbl_secciones
+            WHERE Cod_grado = ? AND Cod_periodo_matricula = ?;
+        `;
+
+
+        const [rows] = await pool.query(query, [codGrado, anioAcademico]);
+
+        // Obtener el último número y calcular el siguiente
+        const ultimoNumero = rows[0]?.UltimoNumero || 0; // Si no hay registros, empieza desde 0
+        const nuevoNumero = ultimoNumero + 1;
+
+        // Generar el nuevo nombre de la sección
+        const nuevoNombre = `A${nuevoNumero}`;
+
+        res.json({ Nombre_seccion: nuevoNombre });
+    } catch (error) {
+        console.error('Error al generar el nombre de la sección:', error);
+        res.status(500).json({ mensaje: 'Hubo un problema al generar el nombre de la sección.' });
+    }
+};
 
 // Controlador para obtener todos los profesores
 export const obtenerProfesores = async (req, res) => {
     try {
         const [rows] = await pool.query(`
-            SELECT p.Cod_profesor, per.Nombre AS Nombre_profesor
+            SELECT 
+                p.Cod_profesor,
+                CONCAT(
+                    per.Nombre, ' ',
+                    IFNULL(per.Segundo_nombre, ''), ' ',
+                    per.Primer_apellido, ' ',
+                    IFNULL(per.Segundo_apellido, '')
+                ) AS Nombre_completo,
+                per.dni_persona AS Numero_identidad
             FROM tbl_profesores p
             JOIN tbl_personas per ON p.Cod_persona = per.Cod_persona
         `);
+
         res.json(rows);
     } catch (error) {
         console.error('Error al obtener profesores:', error);
         res.status(500).json({ mensaje: 'Error al obtener profesores' });
     }
 };
-
 
 // Controlador para obtener todos los periodos de matrícula
 export const obtenerPeriodos = async (req, res) => {
@@ -207,48 +250,80 @@ export const obtenerPeriodos = async (req, res) => {
     }
 };
 
-
 // Controlador para crear una nueva sección
 export const crearSeccion = async (req, res) => {
-    const { p_Nombre_seccion, p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Anio_academico } = req.body;
+    const { p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
+
+    // Validar los datos obligatorios
+    if (!p_Cod_aula || !p_Cod_grado || !p_Cod_Profesor || !p_Cod_periodo_matricula) {
+        return res.status(400).json({ mensaje: 'Todos los campos son requeridos.' });
+    }
+
+    const connection = await pool.getConnection();
 
     try {
-        // Validación de campos requeridos
-        if (!p_Nombre_seccion || !p_Cod_aula || !p_Cod_grado || !p_Cod_Profesor || !p_Anio_academico) {
-            return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
-        }
+        await connection.beginTransaction();
 
-        // Buscar el Cod_periodo_matricula correspondiente al Anio_academico
-        const [periodo] = await pool.query(
-            'SELECT Cod_periodo_matricula FROM tbl_periodo_matricula WHERE Anio_academico = ? AND estado = "activo"',
-            [p_Anio_academico]
+        // Paso 1: Llamar al procedimiento almacenado para insertar en tbl_secciones
+        const [result] = await connection.query(
+            'CALL sp_insertar_secciones(?, ?, ?, ?)',
+            [p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula]
+        );
+        
+        console.log('Resultado del procedimiento almacenado:', result);
+        
+        // Verifica cómo se estructura el resultado
+        const Cod_secciones = result[0]?.[0]?.Cod_secciones;
+        if (!Cod_secciones) {
+            throw new Error('No se pudo obtener el ID de la sección creada. Verifica el procedimiento almacenado.');
+        }
+        
+
+        console.log('ID de la sección creada:', Cod_secciones);
+
+        // Paso 2: Consultar las asignaturas del grado en tbl_grados_asignaturas
+        const [asignaturas] = await connection.query(
+            'SELECT Cod_grados_asignaturas FROM tbl_grados_asignaturas WHERE Cod_grado = ?',
+            [p_Cod_grado]
         );
 
-        // Validar que el período académico activo exista
-        if (!periodo.length) {
-            return res.status(404).json({
-                mensaje: `No se encontró un período activo para el año académico ${p_Anio_academico}.`,
-            });
+        if (!asignaturas.length) {
+            throw new Error('No se encontraron asignaturas asociadas al grado.');
         }
 
-        const p_Cod_periodo_matricula = periodo[0].Cod_periodo_matricula;
+        // Paso 3: Insertar en tbl_secciones_asignaturas
+        const seccionesAsignaturasValues = asignaturas.map(asignatura => [
+            Cod_secciones,
+            null, // Hora_inicio
+            null, // Hora_fin
+            asignatura.Cod_grados_asignaturas,
+            null, // Dias_nombres
+        ]);
 
-        // Llamada al procedimiento almacenado
-        const [result] = await pool.query(
-            'CALL sp_insertar_secciones(?, ?, ?, ?, ?)',
-            [p_Nombre_seccion, p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula]
+        console.log('Valores para insertar en secciones_asignaturas:', seccionesAsignaturasValues);
+
+        await connection.query(
+            'INSERT INTO tbl_secciones_asignaturas (Cod_secciones, Hora_inicio, Hora_fin, Cod_grados_asignaturas, Dias_nombres) VALUES ?',
+            [seccionesAsignaturasValues]
         );
 
-        return res.status(201).json({ mensaje: "Sección insertada con éxito", data: result });
+        await connection.commit();
+
+        res.status(201).json({
+            mensaje: 'Sección creada correctamente con asignaturas vinculadas.',
+            Cod_secciones,
+        });
     } catch (error) {
-        console.error('Error al insertar la sección:', error);
-        if (error.sqlState === '45000') {
-            return res.status(400).json({ mensaje: error.message });
-        }
-        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+        await connection.rollback();
+        console.error('Error al crear la sección y vincular asignaturas:', error);
+        res.status(500).json({
+            mensaje: 'Error en el servidor',
+            error: error.sqlMessage || error.message,
+        });
+    } finally {
+        connection.release();
     }
 };
-
 
 // Controlador para actualizar una sección
 export const actualizarSeccion = async (req, res) => {
@@ -282,7 +357,6 @@ export const actualizarSeccion = async (req, res) => {
     }
 };
 
-
 // Controlador para eliminar una sección
 export const eliminarSeccion = async (req, res) => {
     const { Cod_seccion } = req.params;
@@ -303,9 +377,6 @@ export const eliminarSeccion = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
-
-
-
 
 //------------------------------------------------------------------------------- Parte Ariel--------------------------------------------------------------------------
 

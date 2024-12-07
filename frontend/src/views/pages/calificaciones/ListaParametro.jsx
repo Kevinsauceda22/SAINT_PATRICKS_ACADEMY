@@ -253,7 +253,19 @@ const ListaParametro = () => {
       }
     };
 
-// Function to handle parameter update
+// Función para formatear la fecha en el formato 'YYYY-MM-DD HH:mm:ss'
+const formatFechaMySQL = (fecha) => {
+  const date = new Date(fecha);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+// Función para manejar la actualización del parámetro
 const handleUpdateParametro = async () => {
   const { Cod_parametro, Parametro, Valor } = parametroToUpdate;
 
@@ -263,10 +275,12 @@ const handleUpdateParametro = async () => {
   }
 
   try {
+    const fechaModificacion = formatFechaMySQL(new Date()); // Formatear la fecha
+
     const response = await fetch('http://localhost:4000/api/parametro/actualizarparametro', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Cod_parametro, Parametro, Valor, Fecha_Modificacion: new Date().toISOString() }),
+      body: JSON.stringify({ Cod_parametro, Parametro, Valor, Fecha_Modificacion: fechaModificacion }),
     });
 
     if (response.ok) {
@@ -281,6 +295,7 @@ const handleUpdateParametro = async () => {
     swal.fire({ icon: 'error', title: 'Error', text: 'Intenta nuevamente más tarde.' });
   }
 };
+
 
 const openUpdateModal = (parametro) => {
   setParametroToUpdate(parametro);

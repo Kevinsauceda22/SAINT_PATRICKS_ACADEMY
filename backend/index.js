@@ -23,9 +23,8 @@ import historialAcademicoRoutes from './module/calificaciones/Routes/historialAc
 import InstitutosRoutes from './module/calificaciones/Routes/InstitutosRoutes.js';
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 import bitacoraRoutes from './module/auth/bitacora_routes.js';
-import parametroRoutes from './module/calificaciones/Routes/parametroRoutes.js';
 import dashboard from './module/dashboard/dashboardRoutes.js';
-
+import parametroRoutes from './module/calificaciones/Routes/parametroRoutes.js';
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
 
@@ -104,11 +103,6 @@ app.use('/api/usuarios', usuariosRoutes);
 app.use('/api/roles', PermisosRoutes); 
 // Registrar las rutas
 app.use('/api/usuarios', cuentasRouter);
-
-
-//Personas
-app.use('/api/tipoRelacion', tipoRelacionRoutes);
-app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 
 // Calificaciones
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario

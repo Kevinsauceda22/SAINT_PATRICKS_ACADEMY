@@ -14,6 +14,7 @@ import {
   obtenerConceptoMatricula,
   obtenerDescuentos,
   buscarCajasPorDni,
+  obtenerValorMensualidad,
 } from '../Controllers/cajaController.js';
 
 const router = express.Router();
@@ -59,5 +60,8 @@ router.get('/descuentos', obtenerDescuentos);
 
 // Ruta para buscar cajas por DNI
 router.get('/buscar-por-dni', buscarCajasPorDni);
+// Endpoint para obtener el valor de la mensualidad
+router.get('/valor-mensualidad', obtenerValorMensualidad);
+
 
 export default router;

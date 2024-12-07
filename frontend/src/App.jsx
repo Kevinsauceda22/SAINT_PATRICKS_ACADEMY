@@ -60,6 +60,7 @@ const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/List
 const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
 const Auditoria = React.lazy(() => import('./views/pages/Auditoria/Auditoria'));
 const ListaParametro = React.lazy(() => import('./views/pages/calificaciones/ListaParametro'));
+
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
 
 const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
@@ -77,11 +78,11 @@ const ListaSecciones = React.lazy(() => import('./views/pages/matricula/ListaSec
 const ListaSecciones_Asignatura = React.lazy(() => import('./views/pages/matricula/ListaSecciones_Asignatura'));
 const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/ListaGestion_Academica'));
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
-const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/Personas/ListaEstructuraFamiliar')); 
+const ListaEstructuraFamiliar = React.lazy(() => import('./views/pages/personas/ListaEstructuraFamiliar')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
 const ListaProcedenciaPersona = React.lazy(() => import('./views/pages/personas/ListaProcedenciaPersona')); 
-const Tipopersona = React.lazy(() => import('./views/pages/personas/tipopersona'));
+const Tipopersona = React.lazy(() => import('./views/pages/personas/Tipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
@@ -171,7 +172,7 @@ const App = () => {
                 <Route path="/ListaAsistenciaProfesor" element={<ListaAsistenciaProfesor />} />
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
-                <Route path="/historico" element={<ListaHistoricoProc />} />
+                <Route path="/ListaHistoricoProc" element={<ListaHistoricoProc />} />
                 <Route path="/ListaHistoriales" element={<ListaHistoriales />} />
 
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
@@ -179,6 +180,8 @@ const App = () => {
                 <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />
                 <Route path="/ListaNotasProfesor" element={<ListaNotasProfesor />} />
                 <Route path="/ListaNotas" element={<ListaNotas />} />
+                <Route path="/ListaCuadroProfesor" element={<ListaCuadroProfesor />} />
+                <Route path="/ListaCuadro" element={<ListaCuadro />} />
                 <Route path="/ListaGradoAcademico" element={<ListaGradoAcademico />} />
                 <Route path="/ListaGrados" element={<ListaGrado />} />
                 <Route path="/ListaGradosAsignaturas" element={<ListaGradosAsignaturas />} />
@@ -188,9 +191,9 @@ const App = () => {
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
                 <Route path="/VistaListaProfesor" element={<VistaListaProfesor />} />
                 <Route path="/ListaParametro" element={<ListaParametro />} />
+
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
-                <Route path="/ListaCuadroProfesor" element={<ListaCuadroProfesor />} />
-                <Route path="/ListaCuadro" element={<ListaCuadro />} />
+               
                 <Route path="/tipomatricula" element={<Tipomatricula />} />
                 <Route path="/periodomatricula" element={<Periodomatricula />} />
                 <Route path="/departamento" element={<Departamento />} />
@@ -209,7 +212,7 @@ const App = () => {
                  <Route path="/dias"  element={<ListaDias />} />
                 
                 <Route path="/ListaEstructuraFamiliar" element={<ListaEstructuraFamiliar />} />
-                 <Route path="/tipopersona" element={<Tipopersona />} />
+                 <Route path="/Tipopersona" element={<Tipopersona />} />
                  <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />

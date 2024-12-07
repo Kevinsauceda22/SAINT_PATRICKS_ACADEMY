@@ -432,3 +432,41 @@ export const obtenerHorarioPorSeccion = async (req, res) => {
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
+// Controlador para obtener secciones por grado con información adicional, incluyendo el nombre del edificio y número del aula
+export const obtenerSeccionesConDetalles = async (req, res) => {
+  const { cod_grado } = req.params;
+
+  try {
+    const [secciones] = await pool.query(
+      `SELECT 
+        s.Cod_secciones, 
+        s.Nombre_seccion, 
+        a.Numero_aula,                  -- Número del aula de TBL_AULA
+        e.Nombre_edificios,             -- Nombre del edificio de TBL_EDIFICIOS
+        p.Nombre AS Nombre_profesor,    -- Nombre del profesor de TBL_PERSONAS
+        p.Primer_apellido AS Apellido_profesor -- Apellido del profesor de TBL_PERSONAS
+      FROM 
+        tbl_secciones AS s
+      LEFT JOIN 
+        tbl_aula AS a ON s.Cod_aula = a.Cod_aula
+      LEFT JOIN 
+        tbl_edificio AS e ON a.Cod_edificio = e.Cod_edificio
+      LEFT JOIN 
+        tbl_profesores AS pr ON s.Cod_profesor = pr.Cod_profesor
+      LEFT JOIN 
+        tbl_personas AS p ON pr.Cod_persona = p.Cod_persona
+      WHERE 
+        s.Cod_grado = ?`, [cod_grado]
+    );
+
+    if (secciones.length === 0) {
+      return res.status(200).json({ data: [] }); // Devolver array vacío si no hay secciones
+    }
+
+    // Devolver las secciones con la información adicional
+    res.status(200).json({ data: secciones });
+  } catch (error) {
+    console.error('Error al obtener secciones por grado:', error);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};

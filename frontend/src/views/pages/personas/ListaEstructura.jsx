@@ -646,6 +646,8 @@ const handleCloseModal = (closeFunction, resetFields) => {
 
 
 
+
+
 const handleOpenUpdateModal = (estructura) => {
   // Configurar la estructura a actualizar
   setEstructuraToUpdate({
@@ -678,10 +680,6 @@ const openDeleteModal = (estructura) => {
   setModalDeleteVisible(true);
 }
 
-const handleSearch = (event) => {
-  setSearchTerm(event.target.value);
-  setCurrentPage(1);
-};
 const disableCopyPaste = (e) => {
   e.preventDefault();
   swal.fire({
@@ -705,17 +703,99 @@ const disableCopyPaste = (e) => {
   };
 
 
-  const filteredEstructuraFamiliar = estructuraFamiliar.filter(
-    (estructura) =>
-      estructura.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      estructura.cod_persona_estudiante?.toString().includes(searchTerm) || // Assuming cod_persona_estudiante is a number
-      estructura.cod_persona_padre?.toString().includes(searchTerm) ||
-      estructura.cod_tipo_relacion?.toString().includes(searchTerm),
-  )
 
-  const indexOfLastRecord = currentPage * recordsPerPage
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage
-  const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord)
+  
+  // Función de filtrado
+  const filterEstructuraFamiliar = (estructuraFamiliar, searchTerm, personas, tipoRelacion) => {
+    const searchTermLower = searchTerm.toLowerCase();
+  
+    return estructuraFamiliar.map((estructura, index) => ({
+      ...estructura,
+      originalIndex: index + 1, // Agregar índice original para ordenar
+      estudianteNombre: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+      padreNombre: personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+      tipoRelacionNombre: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+      descripcion: estructura.descripcion?.toUpperCase() || 'N/D'
+    })).filter((estructura) => {
+      return (
+        (estructura.estudianteNombre && estructura.estudianteNombre.toLowerCase().includes(searchTermLower)) ||
+        (estructura.padreNombre && estructura.padreNombre.toLowerCase().includes(searchTermLower)) ||
+        (estructura.tipoRelacionNombre && estructura.tipoRelacionNombre.toLowerCase().includes(searchTermLower)) ||
+        (estructura.descripcion && estructura.descripcion.toLowerCase().includes(searchTermLower))
+      );
+    });
+  };
+  
+  // Uso de la función ajustada
+  const filteredEstructuraFamiliar = filterEstructuraFamiliar(estructuraFamiliar, searchTerm, personas, tipoRelacion);
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord);
+  
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstructuraFamiliar.length / recordsPerPage)) {
+      setCurrentPage(pageNumber);
+    }
+  };
+  
+  
+  // Función para generar reporte PDF
+  const ReporteEstructuraPDF = (estructuraFamiliar, personas, tipoRelacion) => {
+    const doc = new jsPDF()
+    const tableData = estructuraFamiliar.map((estructura) => {
+      const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName || 'N/A'
+      const padre = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName || 'N/A'
+      const tipoRel = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion || 'N/A'
+      return [
+        estudiante,
+        padre,
+        tipoRel,
+        estructura.descripcion,
+      ]
+    })
+  
+    doc.autoTable({
+      head: [['Estudiante', 'Padre/Tutor', 'Tipo de Relación', 'Descripción']],
+      body: tableData,
+    })
+  
+    doc.save('estructura_familiar.pdf')
+  }
+  
+  // Función para generar reporte Excel
+  const ReporteEstructuraExcel = (estructuraFamiliar, personas, tipoRelacion) => {
+    const tableData = estructuraFamiliar.map((estructura) => {
+      const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName || 'N/A'
+      const padre = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName || 'N/A'
+      const tipoRel = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion || 'N/A'
+      return {
+        Estudiante: estudiante,
+        'Padre/Tutor': padre,
+        'Tipo de Relación': tipoRel,
+        Descripción: estructura.descripcion,
+      }
+    })
+  
+    const worksheet = XLSX.utils.json_to_sheet(tableData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Estructura Familiar")
+    XLSX.writeFile(workbook, 'estructura_familiar.xlsx')
+  }
+  
+  // Uso dentro del componente React
+  const handleSearch = (searchTerm) => {
+    const filteredData = filterEstructuraFamiliar(estructuraFamiliar, searchTerm, personas, tipoRelacion)
+    setFilteredEstructuraFamiliar(filteredData) // Usando setState
+  }
+  
+  const handleGeneratePDF = () => {
+    generatePDF(filteredEstructuraFamiliar, personas, tipoRelacion)
+  }
+  
+  const handleGenerateExcel = () => {
+    generateExcel(filteredEstructuraFamiliar, personas, tipoRelacion)
+  }
+  
 
 {/* -------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -744,12 +824,15 @@ return (
       >
         <CIcon icon={cilPlus} /> Nuevo
       </CButton>
-  <CDropdown>
-    <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px' }}>
-      Reportes
-    </CDropdownToggle>
-    <CDropdownMenu></CDropdownMenu>
-  </CDropdown>
+        <CDropdown>
+          <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
+            Reporte
+          </CDropdownToggle>
+          <CDropdownMenu>
+            <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
+            <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
+          </CDropdownMenu>
+        </CDropdown>
 </CCol>
 
       </CRow>
@@ -1004,27 +1087,20 @@ return (
         </CFormSelect>
       </CInputGroup>
 
-      {/* Campo de Descripción */}
-      <CInputGroup className="mt-3">
-  {errorMessages.descripcion && (
-    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-      {errorMessages.descripcion}
-    </div>
-  )}
-
-  
+{/* Campo de Descripción */}
+<CInputGroup className="mt-3">
   <CInputGroupText>Descripción</CInputGroupText>
   <CFormInput
     type="text"
     value={nuevaEstructura.descripcion}
-    onChange={e => {
-      const value = e.target.value;
+    onChange={(e) => {
+      const value = e.target.value.toUpperCase(); // Convertir a mayúsculas
 
       // Bloquear secuencias de más de tres letras repetidas
       if (/(.)\1{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.'
+          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
         }));
         return;
       }
@@ -1033,7 +1109,7 @@ return (
       if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.'
+          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
         }));
         return;
       }
@@ -1042,12 +1118,12 @@ return (
       if (/\s{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de un espacio consecutivo.'
+          descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
         }));
         return;
       }
 
-      // Verifica si el campo está vacío
+      // Validar longitud mínima y campo vacío
       const erroresTemp = { ...errorMessages };
       if (!value.trim()) {
         erroresTemp.descripcion = 'La descripción no puede estar vacía.';
@@ -1057,7 +1133,8 @@ return (
         erroresTemp.descripcion = '';
       }
 
-      setNuevaEstructuraFamiliar(prev => ({
+      // Actualizar estado con el valor en mayúsculas
+      setNuevaEstructuraFamiliar((prev) => ({
         ...prev,
         descripcion: value,
       }));
@@ -1067,8 +1144,11 @@ return (
     required
   />
 </CInputGroup>
-
-{/* Estilos dentro del componente */}
+{errorMessages.descripcion && (
+  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+    {errorMessages.descripcion}
+  </div>
+)}
 <style jsx>{`
   .error-message {
     color: red;
@@ -1078,6 +1158,8 @@ return (
     margin-left: 12px;  /* Para alinearlo con el texto del input */
   }
 `}</style>
+
+
 
     </CForm>
   </CModalBody>
@@ -1091,7 +1173,7 @@ return (
 
 
 
-{/********************************* Modal para actualizar estructura familiar***************************************************/}
+{/********************************* MODAL PARA ACTUALIZAR ESTRUCTURA ***************************************************/}
 <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
@@ -1207,11 +1289,9 @@ return (
   </CModalFooter>
 </CModal>
 
+{/****************************************FIN DEL MODAL DE ACTUALIZAR********************************************************/}
 
-{/* Fin del modal actualizar */}
-
-
-      {/* Modal para eliminar una estructura */}
+{/******************************************MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
       <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
@@ -1229,7 +1309,7 @@ return (
           </CButton>
         </CModalFooter>
       </CModal>
-      {/* Fin de eliminar  */}
+{/******************************************FIN MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
 
 
     </CContainer>

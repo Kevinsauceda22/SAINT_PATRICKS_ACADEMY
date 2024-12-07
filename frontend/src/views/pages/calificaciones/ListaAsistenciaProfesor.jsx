@@ -45,6 +45,8 @@ const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea
   const [tipoFiltro, setTipoFiltro] = useState('dia');
   const [currentView, setCurrentView] = useState('secciones');
   const [nombreSeccionSeleccionada, setNombreSeccionSeleccionada] = useState('');
+  const [gradoSeleccionado, setGradoSeleccionado] = useState('');
+  const [anioSeccionSeleccionada, setAnioSeccionSeleccionada] = useState('');
   //para paginacion y busqueda de la vista secciones
   const [recordsPerPage2, setRecordsPerPage2] = useState(5);
   const [searchTerm2, setSearchTerm2] = useState('');
@@ -434,6 +436,7 @@ const handleObservacionChangeActualizar = (index, value) => {
   
         // Llamar a la función para actualizar los datos del recuento de asistencias
         fetchRecuentoAsistencias();
+        handleCerrarModalNuevo();
       } else {
         throw new Error('Error al insertar asistencias');
       }
@@ -481,6 +484,7 @@ const handleObservacionChangeActualizar = (index, value) => {
   
         // Refresca el recuento de asistencias o realiza alguna acción adicional si es necesario
         fetchRecuentoAsistencias();
+        setMostrarModalActualizar(false);
       } else {
         throw new Error('Error al actualizar las asistencias');
       }
@@ -1023,9 +1027,11 @@ const handleObservacionChangeActualizar = (index, value) => {
     };
   };
   
-    const handleViewAsistencia = async (Cod_secciones, nombreSeccion) => {
+    const handleViewAsistencia = async (Cod_secciones, nombreSeccion,grado,anio) => {
       setCodSeccionSeleccionada(Cod_secciones); // Asegúrate de actualizar la sección seleccionada
       setNombreSeccionSeleccionada(nombreSeccion); // Establecer el nombre de la sección seleccionada
+      setGradoSeleccionado(grado);
+      setAnioSeccionSeleccionada(anio);
       fetchRecuentoAsistencias(); // Cargar los datos de asistencia
       setCurrentView('asistencias'); // Cambiar a la vista de asistencias
 
@@ -1050,8 +1056,16 @@ const handleObservacionChangeActualizar = (index, value) => {
     };
 
     const handleBackToSecciones = () => {
-      setCurrentView('secciones');
+      setCurrentView('secciones'); // Cambiar a la vista de secciones
+      setRecuentoAsistencias([]); // Limpiar los datos de recuento de asistencias
+      setCodSeccionSeleccionada(null); // Limpiar la sección seleccionada
+      setNombreSeccionSeleccionada(''); // Limpiar el nombre de la sección
+      setGradoSeleccionado('');
+      setAnioSeccionSeleccionada('');
+      setProfesorSeleccionado('');
+      setNomenclaturaSeleccionada(''); // Limpiar la nomenclatura
     };
+    
 
     // Verificar permisos
     if (!canSelect) {
@@ -1265,7 +1279,7 @@ const handleObservacionChangeActualizar = (index, value) => {
                         }}
                         onMouseEnter={(e) => (e.target.style.backgroundColor = "#dce3dc")}
                         onMouseLeave={(e) => (e.target.style.backgroundColor = "#F0F4F3")}
-                        onClick={() => handleViewAsistencia(seccion.Cod_secciones, seccion.Seccion)}
+                        onClick={() => handleViewAsistencia(seccion.Cod_secciones, seccion.Seccion,seccion.Grado,seccion.Anio_Academico)}
                       >
                         Ver Asistencia
                       </CButton>
@@ -1314,8 +1328,15 @@ const handleObservacionChangeActualizar = (index, value) => {
                 onClick={handleBackToSecciones}>
                 <CIcon icon={cilArrowLeft} /> Volver a Secciones
               </CButton>
-              <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",}}> Asistencias de Sección: {nombreSeccionSeleccionada || "Selecciona una sección"}</h4>
+              <div className="d-flex flex-column justify-content-center align-items-center flex-grow-1">
+                <h3 className="text-center pb-2 mb-0" style={{borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem"}}>
+                  Asistencia
+                </h3>
+                <div className="d-flex justify-content-center align-items-center mt-2">
+                  <div className="me-3" style={{fontSize: "1rem"}}>Grado: {gradoSeleccionado}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Sección: {nombreSeccionSeleccionada}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Año: {anioSeccionSeleccionada}</div>
+                </div>
               </div>
               {/* Botón "Nuevo" a la derecha */}
               {canInsert && (

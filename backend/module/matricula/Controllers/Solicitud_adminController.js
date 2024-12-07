@@ -1,5 +1,7 @@
 // CONTROLLER
 import conectarDB from '../../../config/db.js';
+
+import { enviarNotificacionCambioCitaPadres,enviarNotificacionCancelacionCitaPadres } from '../../../helpers/emailHelper.js';
 const pool = await conectarDB();
 
 // Obtener todas las solicitudes o una solicitud por Cod_solicitud
@@ -143,7 +145,7 @@ export const insertarSolicitud = async (req, res) => {
   
   
   
-  export const actualizarSolicitud = async (req, res) => {
+  export const actualizarSolicitud= async (req, res) => {
     const { Cod_solicitud } = req.params;
     const {
         Cod_persona,
@@ -153,62 +155,86 @@ export const insertarSolicitud = async (req, res) => {
         Hora_Fin,
         Asunto,
         Persona_requerida,
-        estado, // Nuevo parámetro para el estado
+        estado,
+        motivoCancelacion,
     } = req.body;
 
-    if (isNaN(Cod_solicitud)) {
-        return res.status(400).json({ message: 'Cod_solicitud debe ser un número válido.' });
-    }
+    try {
+        // Validar Cod_solicitud
+        if (isNaN(Cod_solicitud)) {
+            return res.status(400).json({ message: 'Cod_solicitud debe ser un número válido.' });
+        }
 
-    if (!Cod_persona || !Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Asunto || !Persona_requerida) {
-        return res.status(400).json({
-            message: 'Todos los campos son obligatorios, excepto Hora_Fin.',
-        });
-    }
-
-    const now = new Date();
-    const citaDate = new Date(`${Fecha_solicitud}T${Hora_Inicio}`);
-    const horaInicioVal = parseInt(Hora_Inicio.split(':')[0], 10);
-    const horaFinVal = Hora_Fin ? parseInt(Hora_Fin.split(':')[0], 10) : null;
-
-    // Validar que la fecha/hora no sean pasadas
-    if (citaDate < now) {
-        return res.status(400).json({
-            message: 'No se puede actualizar una cita en una fecha u hora pasada.',
-        });
-    }
-
-    // Validar que las horas estén dentro del rango permitido (8:00 a.m. - 4:00 p.m.)
-    if (
-        horaInicioVal < 8 ||
-        horaInicioVal >= 16 ||
-        (horaFinVal !== null && (horaFinVal < 8 || horaFinVal > 16))
-    ) {
-        return res.status(400).json({
-            message: 'Las citas solo se pueden programar entre las 8:00 a.m. y las 4:00 p.m.',
-        });
-    }
-
-    // Validar coherencia de horas
-    if (Hora_Fin) {
-        const [horaInicioHoras, minutoInicio] = Hora_Inicio.split(':').map(Number);
-        const [horaFinHoras, minutoFin] = Hora_Fin.split(':').map(Number);
-
-        if (
-            horaFinHoras < horaInicioHoras ||
-            (horaFinHoras === horaInicioHoras && minutoFin <= minutoInicio)
-        ) {
+        // Validar campos obligatorios
+        if (!Cod_persona || !Nombre_solicitud || !Fecha_solicitud || !Hora_Inicio || !Asunto || !Persona_requerida) {
             return res.status(400).json({
-                message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
+                message: 'Todos los campos son obligatorios, excepto Hora_Fin.',
             });
         }
-    }
 
-    try {
+        // Validaciones de tiempo y rango horario
+        const now = new Date();
+        const citaDate = new Date(`${Fecha_solicitud}T${Hora_Inicio}`);
+        const horaInicioVal = parseInt(Hora_Inicio.split(':')[0], 10);
+        const horaFinVal = Hora_Fin ? parseInt(Hora_Fin.split(':')[0], 10) : null;
+
+        // Validar que la fecha/hora no sean pasadas
+        if (citaDate < now) {
+            return res.status(400).json({
+                message: 'No se puede actualizar una cita en una fecha u hora pasada.',
+            });
+        }
+
+        // Validar que las horas estén dentro del rango permitido (8:00 a.m. - 4:00 p.m.)
+        if (
+            horaInicioVal < 8 ||
+            horaInicioVal >= 16 ||
+            (horaFinVal !== null && (horaFinVal < 8 || horaFinVal > 16))
+        ) {
+            return res.status(400).json({
+                message: 'Las citas solo se pueden programar entre las 8:00 a.m. y las 4:00 p.m.',
+            });
+        }
+
+        // Validar coherencia de horas
+        if (Hora_Fin) {
+            const [horaInicioHoras, minutoInicio] = Hora_Inicio.split(':').map(Number);
+            const [horaFinHoras, minutoFin] = Hora_Fin.split(':').map(Number);
+
+            if (
+                horaFinHoras < horaInicioHoras ||
+                (horaFinHoras === horaInicioHoras && minutoFin <= minutoInicio)
+            ) {
+                return res.status(400).json({
+                    message: 'Hora_Fin debe ser mayor que Hora_Inicio.',
+                });
+            }
+        }
+
+        // Obtener información del usuario relacionado con la solicitud
+        const [personaData] = await pool.query(`
+            SELECT 
+                p.Nombre AS Persona_Nombre,
+                u.correo_usuario AS Persona_Correo
+            FROM 
+                tbl_personas p
+            INNER JOIN 
+                tbl_usuarios u
+            ON 
+                p.Cod_persona = u.cod_persona
+            WHERE 
+                p.Cod_persona = ?;
+        `, [Cod_persona]);
+
+        if (personaData.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron datos asociados a la persona.' });
+        }
+
+        const { Persona_Nombre, Persona_Correo } = personaData[0];
+
         // Determinar estado actualizado
-        let estadoActualizado = estado || 'Pendiente'; // Estado predeterminado: Pendiente
+        let estadoActualizado = estado || 'Pendiente';
 
-        // Cambiar el estado solo si se indica "Activo" manualmente
         if (estado === 'Activo') {
             estadoActualizado = 'Activo';
         } else if (estado !== 'Cancelada') {
@@ -216,49 +242,54 @@ export const insertarSolicitud = async (req, res) => {
             const citaDateTimeEnd = new Date(`${Fecha_solicitud}T${Hora_Fin || Hora_Inicio}`);
 
             if (citaDateTimeEnd <= currentDateTime) {
-                estadoActualizado = 'Finalizada'; // Finalizar automáticamente si el tiempo ya pasó
+                estadoActualizado = 'Finalizada';
             }
         }
 
-        // Llamar al procedimiento almacenado
-        const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        // Actualizar la solicitud en la base de datos
+        const query = 'CALL actualizar_solicitud(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
         const params = [
             parseInt(Cod_solicitud, 10),
             Cod_persona,
             Nombre_solicitud,
             Fecha_solicitud,
             Hora_Inicio,
-            Hora_Fin || null, // Permitir que Hora_Fin sea null
+            Hora_Fin || null,
             Asunto,
             Persona_requerida,
-            estadoActualizado, // Pasar el estado actualizado
+            estadoActualizado,
+            motivoCancelacion || null,
         ];
 
-        const [results] = await pool.query(query, params);
+        const [result] = await pool.query(query, params);
 
-        const affectedRows = results[0]?.[0]?.affectedRows;
+        const { affectedRows, updatedState } = result[0][0];
 
-        if (!affectedRows) {
-            return res.status(404).json({
-                message: 'Solicitud no encontrada o sin cambios.',
-            });
+        if (affectedRows === 0) {
+            return res.status(404).json({ message: 'Solicitud no encontrada o sin cambios.' });
         }
 
-        // Respuesta exitosa con el nuevo estado
+        // Enviar notificaciones
+        if (updatedState === 'Cancelada') {
+            await enviarNotificacionCancelacionCitaPadres(Persona_Correo, Persona_Nombre, Nombre_solicitud, motivoCancelacion);
+        } else {
+            const citaActual = { Nombre_solicitud, Fecha_solicitud, Hora_Inicio, Hora_Fin, Asunto };
+            await enviarNotificacionCambioCitaPadres(Persona_Correo, Persona_Nombre, {}, citaActual);
+        }
+
         res.status(200).json({
-            message: 'Solicitud actualizada correctamente.',
-            estado: estadoActualizado, // Confirmar el nuevo estado en la respuesta
+            message: 'Solicitud actualizada y notificaciones enviadas correctamente.',
+            estado: estadoActualizado,
         });
     } catch (error) {
-        console.error('Error al actualizar la solicitud:', error);
+        console.error('Error al actualizar la solicitud o enviar notificaciones:', error.message);
         res.status(500).json({
-            message: 'Error al actualizar la solicitud.',
+            message: 'Error al actualizar la solicitud o enviar notificaciones.',
             error: error.message,
         });
     }
 };
 
-  
 
 export const actualizarEstadoCitas = async (req, res) => {
     try {

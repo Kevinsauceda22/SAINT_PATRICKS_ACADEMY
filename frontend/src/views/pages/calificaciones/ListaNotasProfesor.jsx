@@ -1643,6 +1643,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
               Asignaturas
             </h3>
             <div className="d-flex justify-content-center align-items-center mt-2">
+             <div className="me-3" style={{fontSize: "1rem"}}>Grado: {gradoSeleccionado}</div>
               <div className="me-3" style={{fontSize: "1rem"}}>Sección: {nombreSeccionSeleccionada}</div>
               <div className="me-3" style={{fontSize: "1rem"}}>Año: {anioSeccionSeleccionada}</div>
             </div>
@@ -1825,6 +1826,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
               Promedios - Asignatura
             </h4>
             <div className="d-flex flex-wrap justify-content-center align-items-center mt-2">
+              <div className="me-3" style={{fontSize: "1rem"}}>Grado: {gradoSeleccionado}</div>
               <div className="me-3" style={{fontSize: "1rem"}}>Sección: {nombreSeccionSeleccionada}</div>
               <div className="me-3" style={{fontSize: "1rem"}}>Año: {anioSeccionSeleccionada}</div>
               <div style={{fontSize: "1rem"}}>Asignatura: {nombreasignaturaSeleccionada}</div>
@@ -2165,46 +2167,54 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
           <CTableDataCell>{estudiante.Nombre_Completo}</CTableDataCell>
           <CTableDataCell>
           <input
-            type="number"
-            min="0"
-            max={actividadSeleccionada?.Valor}
-            step="0.01"
-            className="form-control"
-            placeholder={`Máx: ${actividadSeleccionada?.Valor}`}
-            value={estudiante.nota || ''}
-            onChange={(e) => {
-              const nuevaNota = parseFloat(e.target.value);
-              
-              // Validar si la nota es negativa
-              if (nuevaNota < 0) {
-                Swal.fire(
-                  'Nota inválida',
-                  'La nota no puede ser negativa.',
-                  'info'
-                );
-                return;
-              }
-              
-              // Validar si la nota excede el valor máximo permitido
-              if (nuevaNota > actividadSeleccionada?.Valor) {
-                Swal.fire(
-                  'Nota inválida',
-                  `La nota no puede ser mayor a ${actividadSeleccionada?.Valor}.`,
-                  'info'
-                );
-                return;
-              }
+              type="number"
+              className="form-control"
+              placeholder={`Máx: ${actividadSeleccionada?.Valor}`}
+              value={estudiante.nota !== undefined && estudiante.nota !== null ? estudiante.nota : ''}
+              onChange={(e) => {
+                const valorIngresado = e.target.value;
 
-              // Actualizar la nota si pasa las validaciones
-              const estudiantesActualizados = estudiantes.map((est) =>
-                est.cod_persona === estudiante.cod_persona
-                  ? { ...est, nota: nuevaNota }
-                  : est
-              );
-              setEstudiantes(estudiantesActualizados);
-            }}
-          />
-        </CTableDataCell>
+                // Si el valor está vacío, lo dejamos vacío
+                if (valorIngresado === '') {
+                  const estudiantesActualizados = estudiantes.map((est) =>
+                    est.cod_persona === estudiante.cod_persona ? { ...est, nota: '' } : est
+                  );
+                  setEstudiantes(estudiantesActualizados);
+                  return;
+                }
+
+                // Convertir a número solo si el valor es completamente válido
+                const nuevaNota = parseFloat(valorIngresado);
+
+                // Validaciones adicionales
+                if (isNaN(nuevaNota)) {
+                  return; // Si no es un número, no hacer nada
+                }
+
+                if (nuevaNota < 0) {
+                  Swal.fire('Nota inválida', 'La nota no puede ser negativa.', 'info');
+                  return;
+                }
+
+                if (nuevaNota > actividadSeleccionada?.Valor) {
+                  Swal.fire(
+                    'Nota inválida',
+                    `La nota no puede ser mayor a ${actividadSeleccionada?.Valor}.`,
+                    'info'
+                  );
+                  return;
+                }
+
+                // Actualizar la nota del estudiante
+                const estudiantesActualizados = estudiantes.map((est) =>
+                  est.cod_persona === estudiante.cod_persona ? { ...est, nota: nuevaNota } : est
+                );
+                setEstudiantes(estudiantesActualizados);
+              }}
+              min="0" // Permite el valor cero
+              step="0.01" // Permite decimales con hasta dos decimales
+            />
+          </CTableDataCell>
         <CTableDataCell>
         <textarea
           className="form-control"
@@ -2385,16 +2395,18 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
           <CTableDataCell>{index + 1}</CTableDataCell>
           <CTableDataCell>{nota.Nombre_Completo}</CTableDataCell>
           <CTableDataCell>
-            <input
-              type="number"
-              min="0"
-              max={actividadSeleccionada?.Valor}
-              step="0.01"
-              className="form-control"
-              placeholder={`Máx: ${actividadSeleccionada?.Valor}`}
-              value={nota.Nota || ""}
-              onChange={(e) => {
-                const nuevaNota = parseFloat(e.target.value);
+          <input
+            type="number"
+            className="form-control"
+            placeholder={`Máx: ${actividadSeleccionada?.Valor}`}
+            value={nota.Nota !== undefined && nota.Nota !== null ? nota.Nota : ''}
+            onChange={(e) => {
+              const valorIngresado = e.target.value;
+
+              // Permitir solo números y decimales
+              if (valorIngresado === '' || !isNaN(valorIngresado)) {
+                // Convertir el valor a número decimal
+                const nuevaNota = parseFloat(valorIngresado);
 
                 // Validar si la nota es negativa
                 if (nuevaNota < 0) {
@@ -2417,9 +2429,13 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                   est.Cod_nota === nota.Cod_nota ? { ...est, Nota: nuevaNota } : est
                 );
                 setNotas(notasActualizadas);
-              }}
-            />
+              }
+            }}
+            step="0.01"  // Permite valores decimales
+            min="0"  // Permite ceros
+          />
           </CTableDataCell>
+
           <CTableDataCell>
             <textarea
               className="form-control"
@@ -2538,6 +2554,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
         <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
           <CTableRow>
             <CTableHeaderCell>#</CTableHeaderCell>
+             <CTableHeaderCell>IDENTIDAD</CTableHeaderCell>
             <CTableHeaderCell>NOMBRE DEL ESTUDIANTE</CTableHeaderCell>
             <CTableHeaderCell>NOTA TOTAL</CTableHeaderCell>
             <CTableHeaderCell>ESTADO</CTableHeaderCell>
@@ -2547,6 +2564,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
           {NotasFiltradas.map((estudiante, index) => (
             <CTableRow key={estudiante.CodPersona}>
               <CTableDataCell>{index + 1}</CTableDataCell>
+              <CTableDataCell>{estudiante.Identidad}</CTableDataCell>
               <CTableDataCell>{estudiante.NombreCompleto}</CTableDataCell>
               <CTableDataCell>{`${estudiante.NotaTotal} %`} </CTableDataCell>
               <CTableDataCell>{estudiante.EstadoNota}</CTableDataCell>

@@ -50,13 +50,13 @@ const GradosYSecciones = () => {
     }
   };
 
-  const obtenerSeccionesPorGrado = async (cod_grado) => {
+  const obtenerSeccionesConDetalles = async (cod_grado) => {
     if (!cod_grado) return;
     setLoading(true);
     setSecciones([]);
     setSelectedSeccion('');
     try {
-      const response = await axios.get(`http://localhost:4000/api/matricula/secciones/${cod_grado}`);
+      const response = await axios.get(`http://localhost:4000/api/matricula/detalles/${cod_grado}`);
       setSecciones(response.data.data || []);
     } catch (error) {
       console.error('Error al obtener las secciones por grado:', error);
@@ -166,7 +166,7 @@ const GradosYSecciones = () => {
 
   useEffect(() => {
     if (selectedGrado) {
-      obtenerSeccionesPorGrado(selectedGrado);
+      obtenerSeccionesConDetalles(selectedGrado);
     }
   }, [selectedGrado]);
 
