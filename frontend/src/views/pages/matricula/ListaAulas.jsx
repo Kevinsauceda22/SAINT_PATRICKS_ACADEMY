@@ -468,34 +468,7 @@ const ListaAulas = () => {
       }
     }); 
   };
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(aulas);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Aulas');
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, 'reporte_aulas.xlsx');
-  };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.text('Reporte de Aulas', 20, 10);
-    doc.autoTable({
-      head: [['#', 'Número de Aula', 'Capacidad','Cupos' , 'Edificio','División', 'Secciones_disponibles','Secciones_ocupadas',]],
-      body: aulas.map((aula, index) => [
-        index + 1,
-        aula.Numero_aula,
-        aula.Capacidad,
-        aula.Cupos_aula,
-        aula.Nombre_edificios,
-        aula.Division,
-        aula.Secciones_disponibles,
-        aula.Secciones_ocupadas,
-      ]),
-    });
-    doc.save('reporte_aulas.pdf');
-  };
-   
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
     setCurrentPage(1);
