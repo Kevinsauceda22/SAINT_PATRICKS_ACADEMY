@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { cilArrowLeft,cilPen,cilSearch,cilPlus,cilBookmark,cilCalendar,cilBook, cilSpreadsheet,cilInfo,cilDescription,  cilFile,cilSave, cilBrushAlt } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import Swal from 'sweetalert2';
+
+import * as jwt_decode from 'jwt-decode';
+
 import {
   CContainer, CRow, CCol, CCard, CTable, CTableHeaderCell, CTableBody, CTableRow, CTableDataCell, CButton, CSpinner, CCardBody, CDropdown,CDropdownToggle,
   CDropdownMenu, CDropdownItem,CTableHead,CModal,CModalHeader,CModalTitle,CModalBody,CModalFooter,CInputGroup,CInputGroupText,CFormInput,CFormSelect,CPagination
@@ -61,6 +64,18 @@ const [currentPage4, setCurrentPage4] = useState(1);
 const [nombreBusqueda, setNombreBusqueda] = useState('');
   useEffect(() => {
     fetchSecciones();
+    const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+      console.log('Token decodificado:', decodedToken);
+
+      // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+    }
+  }
   }, []);
 
   const fetchSecciones = async () => {
@@ -208,6 +223,26 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   
   const actualizarNotas = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // Decodificar el token para obtener el nombre del usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+        console.error('No se pudo obtener el código o el nombre de usuario del token');
+        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+      }
+
+      // Verifica si hay estudiantes con datos para actualizar
+      if (!notas || notas.length === 0) {
+        Swal.fire('Advertencia', 'No hay datos para actualizar.', 'info');
+        return;
+      }
+      
       // Verifica si hay estudiantes con datos para actualizar
       if (!notas || notas.length === 0) {
         Swal.fire('Advertencia', 'No hay datos para actualizar.', 'info');
@@ -226,6 +261,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(datosActualizados),
       });
@@ -233,6 +269,33 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       const resultado = await response.json();
   
       if (response.ok) {
+        // Generar un listado de los códigos de asistencia actualizados
+         const codigosActualizados = datosActualizados.map((nota) => nota.Cod_nota).join(', ');
+
+         // Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado las notas con los códigos: ${codigosActualizados}`;
+         
+          // Enviar a la bitácora
+          const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+            },
+            body: JSON.stringify({
+              cod_usuario: decodedToken.cod_usuario, // Código del usuario
+              cod_objeto: 87, // Código del objeto para la acción
+              accion: 'UPDATE', // Acción realizada
+              descripcion: descripcion, // Descripción de la acción
+            }),
+          });
+    
+          if (bitacoraResponse.ok) {
+            console.log('Registro en bitácora exitoso');
+          } else {
+            Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+          }
+        
         // Refrescar las vistas de asignaturas y promedios
         if (selectedCodSeccionAsignatura) {
           await fetchPromedio(selectedCodSeccionAsignatura);
@@ -241,7 +304,12 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         if (selectedCodSeccion) {
           await fetchAsignaturas(selectedCodSeccion);
         }
-        Swal.fire('Éxito', 'Las notas se actualizaron correctamente.', 'success');
+         Swal.fire({
+          title: 'Éxito',
+          text: 'Las notas se actualizaron correctamente.',
+          icon: 'success',
+          confirmButtonText: 'Aceptar', 
+        });
         // Aquí puedes agregar lógica para refrescar los datos o cerrar el modal
         await fetchNotas(
           selectedCodSeccion,
@@ -262,6 +330,20 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   
   const guardarNotas = async () => {
     try {
+        // Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // Decodificar el token para obtener el nombre del usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+        console.error('No se pudo obtener el código o el nombre de usuario del token');
+        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+      }
+      
       // Construir el array de notas para enviar
       const datosNotas = estudiantes.map((estudiante) => ({
         Nota: estudiante.nota,
@@ -276,6 +358,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(datosNotas),
       });
@@ -283,7 +366,36 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       const resultado = await response.json();
   
       if (response.ok) {
-        Swal.fire('Éxito', 'Las notas se guardaron correctamente.', 'success');
+         // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva nota `;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 87, // Código del objeto para la acción
+            accion: 'INSERT', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+        
+         Swal.fire({
+          title: 'Éxito',
+          text: 'Las notas se guardaron correctamente.',
+          icon: 'success',
+          confirmButtonText: 'Aceptar', // Cambia "OK" por "Aceptar" u otro texto
+        });
   
         // Refrescar las vistas de asignaturas y promedios
         if (selectedCodSeccionAsignatura) {
@@ -485,7 +597,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte excel.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
@@ -554,7 +666,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte excel.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
@@ -618,7 +730,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte excel.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
@@ -686,7 +798,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
@@ -825,7 +937,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
@@ -955,7 +1067,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'info',
           title: 'Tabla vacía',
           text: 'No hay datos disponibles para generar el reporte.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
       }
@@ -1066,7 +1178,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
          icon: 'info',
          title: 'Tabla vacía',
          text: 'No hay datos disponibles para generar el reporte.',
-         confirmButtonText: 'Entendido',
+         confirmButtonText: 'Aceptar',
        });
        return; // Salir de la función si no hay datos
      }
@@ -1967,6 +2079,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
               flexWrap: 'wrap', // Permite que los botones se apilen en pantallas pequeñas
             }}
           >
+             {canUpdate && (
             <CButton
             onClick={() => fetchActividadcalificadas(selectedCodSeccionAsignatura, promedio.CodParcial, promedio.NombreParcial)}
             onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
@@ -1974,6 +2087,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
             style={{backgroundColor: '#F9B64E',color: '#5C4044',border: 'none', transition: 'all 0.2s ease',padding: '5px 10px',height: '38px',width: '45px',}}>
             <CIcon icon={cilPen} />
           </CButton>
+             )}
             <CButton
             onClick={() =>
               handleAbrirModalEstudiantes(
