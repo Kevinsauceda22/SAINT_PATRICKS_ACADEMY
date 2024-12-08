@@ -315,7 +315,15 @@ const handleClick = () => {
     }
   };
 
- 
+  const fetchlistaActividades = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
+      const data = await response.json();
+      setponderaciones(data);
+    } catch (error) {
+      console.error('Error al obtener las ponderaciones:', error);
+    }
+  };
   const fetchlistaponderacion = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
@@ -328,30 +336,11 @@ const handleClick = () => {
 
   const fetchListaParcial = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/parciales/verParciales`, {
-      
-        method: 'GET',
-      });
-      
-      // Registrar toda la respuesta para depuración
-      const responseData = await response.json();
-      console.log('Respuesta completa:', responseData);
-  
-      if (!response.ok) {
-        console.error('Error en la respuesta de la API:', responseData);
-        
-        throw new Error(responseData.mensaje || 'Error desconocido en la API.');
-        
-      }
-     
-     
-      // Aquí podrías manejar la respuesta si necesitas usarla más adelante
-      console.log('Parciales obtenidos:', responseData)
-  
-      setParciales(responseData);
+      const response = await fetch('http://localhost:4000/api/parciales/verParciales');
+      const data = await response.json();
+      setparcial(data);
     } catch (error) {
       console.error('Error al obtener los parciales:', error);
-      Swal.fire('Error', `Error al obtener los parciales: ${error.message}`, 'error');
     }
   };
 
@@ -451,221 +440,221 @@ const handleClick = () => {
       text: 'Copiar y pegar no esta permitido'
     });
   };
-  ///////////////// PDF ///////////
-  const generarReportePDF = () => {
-    // Validar que haya datos filtrados
-    if (!actividadesFiltradas || actividadesFiltradas.length === 0) {
-      Swal.fire({
-        icon: 'info',
-        title: 'Sin datos',
-        text: 'No hay datos disponibles para generar el reporte.',
-        confirmButtonText: 'Entendido',
-      });
-      return; // Salir de la función si no hay datos
+ ///////////////// PDF ///////////
+ const generarReportePDF = () => {
+  // Validar que haya datos filtrados
+  if (!actividadesFiltradas || actividadesFiltradas.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Sin datos',
+      text: 'No hay datos disponibles para generar el reporte.',
+      confirmButtonText: 'Entendido',
+    });
+    return; // Salir de la función si no hay datos
+  }
+
+  // Crear el PDF en orientación horizontal
+  const doc = new jsPDF('landscape');
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    // Agregar logo
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+    let yPosition = 20; // Posición inicial en el eje Y
+
+    // Título principal
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 10;
+
+    // Información adicional
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 4;
+    doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 4;
+    doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 10;
+
+    // Subtítulo
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.setFontSize(16);
+    doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 10;
+
+    // Detalles dinámicos sobre la sección, asignatura, parcial y año
+    doc.setFontSize(12);
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.setFont('helvetica', 'bold'); // Negrita
+    if (selectedSeccion?.Nombre_seccion && selectedAsignatura?.Nombre_asignatura && selectedParcial?.Nombre_parcial) {
+      doc.text(
+        `Profesor: ${getNombreCompleto(selectedProfesor.cod_persona)} 
+        Sección: ${selectedSeccion.Nombre_seccion} | Asignatura: ${selectedAsignatura.Nombre_asignatura} | Parcial: ${selectedParcial.Nombre_parcial}`,
+        doc.internal.pageSize.width / 2,
+        yPosition,
+        { align: 'center' }
+      );
+    } else if (selectedSeccion?.Nombre_seccion && anioSeccionSeleccionada) {
+      doc.text(
+        `Sección: ${selectedSeccion.Nombre_seccion} | Año: ${anioSeccionSeleccionada}`,
+        doc.internal.pageSize.width / 2,
+        yPosition,
+        { align: 'center' }
+      );
+    } else if (selectedAsignatura?.Nombre_asignatura) {
+      doc.text(
+        `Asignatura: ${selectedAsignatura.Nombre_asignatura}`,
+        doc.internal.pageSize.width / 2,
+        yPosition,
+        { align: 'center' }
+      );
     }
-  
-    // Crear el PDF en orientación horizontal
-    const doc = new jsPDF('landscape');
-    const img = new Image();
-    img.src = logo;
-  
-    img.onload = () => {
-      // Agregar logo
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-  
-      let yPosition = 20; // Posición inicial en el eje Y
-  
-      // Título principal
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
-      yPosition += 10;
-  
-      // Información adicional
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
-      yPosition += 4;
-      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
-      yPosition += 4;
-      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
-      yPosition += 10;
-  
-      // Subtítulo
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.setFontSize(16);
-      doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
-      yPosition += 10;
-  
-      // Detalles dinámicos sobre la sección, asignatura, parcial y año
-      doc.setFontSize(12);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.setFont('helvetica', 'bold'); // Negrita
-      if (selectedSeccion?.Nombre_seccion && selectedAsignatura?.Nombre_asignatura && selectedParcial?.Nombre_parcial) {
-        doc.text(
-          `Profesor: ${getNombreCompleto(selectedProfesor.cod_persona)} 
-          Sección: ${selectedSeccion.Nombre_seccion} | Asignatura: ${selectedAsignatura.Nombre_asignatura} | Parcial: ${selectedParcial.Nombre_parcial}`,
-          doc.internal.pageSize.width / 2,
-          yPosition,
-          { align: 'center' }
-        );
-      } else if (selectedSeccion?.Nombre_seccion && anioSeccionSeleccionada) {
-        doc.text(
-          `Sección: ${selectedSeccion.Nombre_seccion} | Año: ${anioSeccionSeleccionada}`,
-          doc.internal.pageSize.width / 2,
-          yPosition,
-          { align: 'center' }
-        );
-      } else if (selectedAsignatura?.Nombre_asignatura) {
-        doc.text(
-          `Asignatura: ${selectedAsignatura.Nombre_asignatura}`,
-          doc.internal.pageSize.width / 2,
-          yPosition,
-          { align: 'center' }
-        );
-      }
-  
-      yPosition += 10;
-  
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
-  
-      yPosition += 6; // Espaciado antes de la tabla
-  
-      // Configuración para la tabla
-      const pageHeight = doc.internal.pageSize.height; // Altura de la página
-      let pageNumber = 1; // Página inicial
-  
-      doc.autoTable({
-        startY: yPosition,
-        head: [['#', 'Nombre Actividad', 'Descripción', 'Inicio', 'Fin', 'Valor']],
-        body: actividadesFiltradas.map((actividad, index) => [
-          index + 1,
-          actividad.Nombre_actividad_academica || '',
-          actividad.Descripcion || '',
-          actividad.Fechayhora_Inicio
-            ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : 'N/A',
-          actividad.Fechayhora_Fin
-            ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            : 'N/A',
-          actividad.Valor,
-        ]),
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 9,
-        },
-        styles: {
-          fontSize: 8,
-          cellPadding: 2,
-          overflow: 'linebreak',
-          valign: 'middle',
-        },
-        columnStyles: {
-          0: { cellWidth: 'auto' }, // Columna '#'
-          1: { cellWidth: 'auto' }, // 'Nombre Actividad'
-          2: { cellWidth: 'auto' }, // 'Descripción'
-          3: { cellWidth: 'auto' }, // 'Ponderación'
-          4: { cellWidth: 'auto' }, // 'Inicio'
-          5: { cellWidth: 'auto' }, // 'Fin'
-          6: { cellWidth: 'auto' }, // 'Valor'
-        },
-        tableWidth: 'auto', // Ajustar tabla automáticamente al ancho disponible
-        margin: { left: 10, right: 10 },
-        didDrawPage: (data) => {
-          const currentDate = new Date();
-          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-          doc.setFontSize(10);
-          doc.setTextColor(100);
-          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          const totalPages = doc.internal.getNumberOfPages();
-          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-          pageNumber += 1;
-        },
-      });
-  
-      // Abrir el PDF
-      window.open(doc.output('bloburl'), '_blank');
-    };
-  
-    img.onerror = () => {
-      Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se pudo cargar el logo para el reporte.',
-      });
-    };
+
+    yPosition += 10;
+
+    // Línea divisoria
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+
+    yPosition += 6; // Espaciado antes de la tabla
+
+    // Configuración para la tabla
+    const pageHeight = doc.internal.pageSize.height; // Altura de la página
+    let pageNumber = 1; // Página inicial
+
+    doc.autoTable({
+      startY: yPosition,
+      head: [['#', 'Nombre Actividad', 'Descripción', 'Fecha y hora Inicio', 'Fecha y hora Fin', 'Valor']],
+      body: actividadesFiltradas.map((actividad, index) => [
+        index + 1,
+        actividad.Nombre_actividad_academica || '',
+        actividad.Descripcion || '',
+        actividad.Fechayhora_Inicio
+          ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'N/A',
+        actividad.Fechayhora_Fin
+          ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'N/A',
+        actividad.Valor,
+      ]),
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+      },
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        valign: 'middle',
+      },
+      columnStyles: {
+        0: { cellWidth: 'auto' }, // Columna '#'
+        1: { cellWidth: 'auto' }, // 'Nombre Actividad'
+        2: { cellWidth: 'auto' }, // 'Descripción'
+        3: { cellWidth: 'auto' }, // 'Ponderación'
+        4: { cellWidth: 'auto' }, // 'Inicio'
+        5: { cellWidth: 'auto' }, // 'Fin'
+        6: { cellWidth: 'auto' }, // 'Valor'
+      },
+      tableWidth: 'auto', // Ajustar tabla automáticamente al ancho disponible
+      margin: { left: 10, right: 10 },
+      didDrawPage: (data) => {
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        const totalPages = doc.internal.getNumberOfPages();
+        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+        pageNumber += 1;
+      },
+    });
+
+    // Abrir el PDF
+    window.open(doc.output('bloburl'), '_blank');
   };
-  
-  /////////////////////7 EXCEL ///////////////////////////77
-  const generarReporteExcel = () => {
-    const encabezados = [
-      ['Saint Patrick Academy'],
-      ['Reporte de Actividades Académicas'],
-      ['Fecha de generación: ' + new Date().toLocaleDateString()],
-      [], // Espacio en blanco
-      ['Nombre de la Actividad', 'Descripción', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor'],
-    ];
 
-    // Crear filas con actividades filtradas
-    const filas = actividadesFiltradas.map((actividad) => [
-      actividad.Nombre_actividad_academica,
-      actividad.Descripcion,
-      new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }),
-      new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }),
-      actividad.Valor,
-    ]);
-
-    // Combinar encabezados y filas
-    const datos = [...encabezados, ...filas];
-
-    // Crear una hoja de trabajo
-    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
-
-    // Ajustar el ancho de columnas automáticamente
-    hojaDeTrabajo['!cols'] = [
-      { wpx: 200 }, // Nombre de la Actividad
-      { wpx: 300 }, // Descripción
-      { wpx: 150 }, // Fecha y Hora Inicio
-      { wpx: 150 }, // Fecha y Hora Fin
-      { wpx: 100 }, // Valor
-    ];
-
-    // Crear el libro de trabajo
-    const libroDeTrabajo = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Actividades Académicas');
-
-    // Guardar el archivo Excel con un nombre personalizado
-    const nombreArchivo = `Reporte_Actividades_${new Date().toLocaleDateString()}.xlsx`;
-
-    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  img.onerror = () => {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo cargar el logo para el reporte.',
+    });
   };
+};
+
+/////////////////////7 EXCEL ///////////////////////////77
+const generarReporteExcel = () => {
+  const encabezados = [
+    ['Saint Patrick Academy'],
+    ['Reporte de Actividades Académicas'],
+    ['Fecha de generación: ' + new Date().toLocaleDateString()],
+    [], // Espacio en blanco
+    ['Nombre de la Actividad', 'Descripción', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor'],
+  ];
+
+  // Crear filas con actividades filtradas
+  const filas = actividadesFiltradas.map((actividad) => [
+    actividad.Nombre_actividad_academica,
+    actividad.Descripcion,
+    new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }),
+    new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }),
+    actividad.Valor,
+  ]);
+
+  // Combinar encabezados y filas
+  const datos = [...encabezados, ...filas];
+
+  // Crear una hoja de trabajo
+  const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+
+  // Ajustar el ancho de columnas automáticamente
+  hojaDeTrabajo['!cols'] = [
+    { wpx: 200 }, // Nombre de la Actividad
+    { wpx: 300 }, // Descripción
+    { wpx: 150 }, // Fecha y Hora Inicio
+    { wpx: 150 }, // Fecha y Hora Fin
+    { wpx: 100 }, // Valor
+  ];
+
+  // Crear el libro de trabajo
+  const libroDeTrabajo = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Actividades Académicas');
+
+  // Guardar el archivo Excel con un nombre personalizado
+  const nombreArchivo = `Reporte_Actividades_${new Date().toLocaleDateString()}.xlsx`;
+
+  XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+};
 
 
 
@@ -711,6 +700,20 @@ const handleClick = () => {
     }
   };
 
+  const handleSeleccionarAsignatura = (asignatura) => {
+    console.log("Asignatura seleccionada:", asignatura); // Para depuración
+    setAsignaturaSeleccionada(asignatura); // Almacena la asignatura seleccionada
+    obtenerParciales(asignatura.Cod_seccion_asignatura); // Obtiene los parciales de la asignatura
+    setParciales([]); // Limpia los parciales previos
+    setActividades([]); // Limpia las actividades previas
+  };
+
+
+  const handleVerParciales1 = (asignatura) => {
+    console.log('Asignatura seleccionada:', asignatura); // Log de depuración
+    setSelectedAsignatura(asignatura);
+    obtenerParciales(asignatura.Cod_seccion_asignatura); // Llamada al backend
+  };
 
 
 
@@ -746,8 +749,6 @@ const handleClick = () => {
     setUpdateModalVisible(true);
   };
 
-
-  
   // Asegúrate de que `abrirModalCrearActividad` se llama correctamente
   const abrirModalCrearActividad = () => {
     setNuevaActividad({
@@ -1883,22 +1884,32 @@ const calcularTotalValor = () => {
           </div>
         </>
       )}
-      
-      {/* Modal Detalle */}
+
+
+
+
+
       <CModal visible={modalDetalleVisible} onClose={() => setModalDetalleVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Detalles de la Actividad</CModalTitle>
         </CModalHeader>
         <CModalBody>
-       <h5>INFORMACIÓN</h5>
-       {/* Nombre de la actividad */}<p><strong>Nombre de la Actividad:</strong> {actividadToView?.Nombre_actividad_academica || 'N/A'} </p>
-       {/* Descripción */}<p><strong>Descripción:</strong> {actividadToView?.Descripcion || 'N/A'}</p>
-       {/* Fecha y Hora Inicio */}<p><strong>Fecha y Hora Inicio:</strong>{' '}{actividadToView?.Fechayhora_Inicio ? new Date(actividadToView.Fechayhora_Inicio).toLocaleString('es-ES', {dateStyle: 'short',timeStyle: 'short',}) : 'N/A'}</p>
-       {/* Fecha y Hora Fin */}<p><strong>Fecha y Hora Fin:</strong>{' '}{actividadToView?.Fechayhora_Fin ? new Date(actividadToView.Fechayhora_Fin).toLocaleString('es-ES', {dateStyle: 'short',timeStyle: 'short',}) : 'N/A'}</p>
-        {/* Ponderación */}<p><strong>Ponderación:</strong> {listaponderaciones.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividadToView?.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || 'N/A'}</p>
-       {/* Valor */}<p><strong>Valor:</strong> {actividadToView?.Valor || 'N/A'}</p>
-      
-       </CModalBody>
+          <h5>INFORMACIÓN</h5>
+
+          <p><strong>Nombre de la Actividad:</strong> {actividadToView?.Nombre_actividad_academica || 'N/A'} </p>
+          <p><strong>Descripción:</strong> {actividadToView?.Descripcion || 'N/A'}</p>
+          <p><strong>Fecha y Hora Inicio:</strong>{' '}{actividadToView?.Fechayhora_Inicio ? new Date(actividadToView.Fechayhora_Inicio).toLocaleString('es-ES', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+          }) : 'N/A'}</p>
+          <p><strong>Fecha y Hora Fin:</strong>{' '}{actividadToView?.Fechayhora_Fin ? new Date(actividadToView.Fechayhora_Fin).toLocaleString('es-ES', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+          }) : 'N/A'}</p>
+          <p><strong>Valor:</strong> {actividadToView?.Valor || 'N/A'}</p>
+
+
+        </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setModalDetalleVisible(false)}>
             Cerrar
@@ -1963,164 +1974,28 @@ const calcularTotalValor = () => {
       </CInputGroup>
 
       {/* Fecha y hora inicio */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha y hora inicio</CInputGroupText>
-  <CFormInput
-    type="date"
-    onPaste={disableCopyPaste}
-    onCopy={disableCopyPaste}
-    value={nuevaActividad.FechaInicio || ''}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      if (!selectedDate) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Fecha requerida',
-          text: 'Debe seleccionar una fecha antes de configurar la hora.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
-      setNuevaActividad({
-        ...nuevaActividad,
-        FechaInicio: selectedDate,
-        Fechayhora_Inicio: '', // Reset datetime input
-      });
-    }}
-  />
-  <CFormInput
-    type="time"
-    disabled={!nuevaActividad.FechaInicio}
-    value={
-      nuevaActividad.Fechayhora_Inicio
-        ? nuevaActividad.Fechayhora_Inicio.split('T')[1]
-        : ''
-    }
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const [hour] = selectedTime.split(':').map(Number);
-      if (hour < 7 || hour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Fecha y hora inicio</CInputGroupText>
+        <CFormInput
+          type="datetime-local"
+          value={nuevaActividad.Fechayhora_Inicio}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          onChange={(e) => setNuevaActividad({...nuevaActividad, Fechayhora_Inicio: e.target.value})}
+        />
+      </CInputGroup>
 
-      // Validación si la fecha es la misma y hora fin ya está definida
-      if (
-        nuevaActividad.FechaInicio === nuevaActividad.FechaFin &&
-        nuevaActividad.Fechayhora_Fin
-      ) {
-        const [endHour, endMinute] = nuevaActividad.Fechayhora_Fin.split('T')[1]
-          ?.split(':')
-          .map(Number);
-        const [startHour, startMinute] = selectedTime.split(':').map(Number);
-
-        if (
-          startHour > endHour ||
-          (startHour === endHour && startMinute > endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora inicio inválida',
-            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
-          });
-          return;
-        }
-      }
-
-      setNuevaActividad({
-        ...nuevaActividad,
-        Fechayhora_Inicio: `${nuevaActividad.FechaInicio}T${selectedTime}`,
-      });
-    }}
-  />
-</CInputGroup>
-
-{/* Fecha y hora fin */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha y hora fin</CInputGroupText>
-  <CFormInput
-    type="date"
-    onPaste={disableCopyPaste}
-    onCopy={disableCopyPaste}
-    value={nuevaActividad.FechaFin || ''}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      if (!selectedDate) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Fecha requerida',
-          text: 'Debe seleccionar una fecha antes de configurar la hora.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
-      setNuevaActividad({
-        ...nuevaActividad,
-        FechaFin: selectedDate,
-        Fechayhora_Fin: '', // Reset datetime input
-      });
-    }}
-  />
-  <CFormInput
-    type="time"
-    disabled={!nuevaActividad.FechaFin}
-    value={
-      nuevaActividad.Fechayhora_Fin
-        ? nuevaActividad.Fechayhora_Fin.split('T')[1]
-        : ''
-    }
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const [hour] = selectedTime.split(':').map(Number);
-      if (hour < 7 || hour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
-
-      // Validación si la fecha es la misma y hora inicio ya está definida
-      if (
-        nuevaActividad.FechaInicio === nuevaActividad.FechaFin &&
-        nuevaActividad.Fechayhora_Inicio
-      ) {
-        const [startHour, startMinute] = nuevaActividad.Fechayhora_Inicio.split(
-          'T'
-        )[1]
-          ?.split(':')
-          .map(Number);
-        const [endHour, endMinute] = selectedTime.split(':').map(Number);
-
-        if (
-          startHour > endHour ||
-          (startHour === endHour && startMinute > endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora fin inválida',
-            text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
-          });
-          return;
-        }
-      }
-
-      setNuevaActividad({
-        ...nuevaActividad,
-        Fechayhora_Fin: `${nuevaActividad.FechaFin}T${selectedTime}`,
-      });
-    }}
-  />
-</CInputGroup>
+      {/* Fecha y hora fin */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Fecha y hora fin</CInputGroupText>
+        <CFormInput
+          type="datetime-local"
+          value={nuevaActividad.Fechayhora_Fin}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          onChange={(e) => setNuevaActividad({...nuevaActividad, Fechayhora_Fin: e.target.value})}
+        />
+      </CInputGroup>
 
       {/* Ponderación */}
       <CInputGroup className="mb-3">
@@ -2274,175 +2149,44 @@ const calcularTotalValor = () => {
           onChange={(e) => handleInputChange(e, (value) => setActividadToUpdate({ ...actividadToUpdate, Descripcion: e.target.value }))}
         />
       </CInputGroup>
-      {/* Fecha y hora inicio */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha y hora inicio</CInputGroupText>
-  <CFormInput
-    type="date"
-    value={formatDateTime(actividadToUpdate?.Fechayhora_Inicio)?.split("T")[0]}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Inicio: `${selectedDate}T${actividadToUpdate?.Fechayhora_Inicio?.split("T")[1]}`, // Mantener la misma hora
-      });
-    }}
-    style={{ width: "120px" }}  // Ajustar tamaño de la fecha
-  />
-  <CFormInput
-    type="time"
-    value={formatDateTime(actividadToUpdate?.Fechayhora_Inicio)?.split("T")[1]}
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const selectedDate = actividadToUpdate?.Fechayhora_Inicio?.split("T")[0];
-      const selectedHour = parseInt(selectedTime.split(":")[0]);
-      const selectedMinute = parseInt(selectedTime.split(":")[1]);
 
-      // Validación: hora debe estar entre las 7 AM y las 3 PM
-      if (selectedHour < 7 || selectedHour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
+      {/* Fecha y hora de inicio */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Fecha y hora inicio</CInputGroupText>
+        <CFormInput
+          type="datetime-local"
+          value={actividadToUpdate?.Fechayhora_Inicio || ''}
+          onChange={(e) => setActividadToUpdate({ ...actividadToUpdate, Fechayhora_Inicio: e.target.value })}
+        />
+      </CInputGroup>
 
-      // Validación: la hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma
-      const endDate = actividadToUpdate?.Fechayhora_Fin?.split("T")[0];
-      const endTime = actividadToUpdate?.Fechayhora_Fin?.split("T")[1];
-      const [endHour, endMinute] = endTime ? endTime.split(":").map(Number) : [null, null];
+      {/* Fecha y Hora de Fin */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Fecha y hora fin</CInputGroupText>
+        <CFormInput
+          type="datetime-local"
+          value={actividadToUpdate?.Fechayhora_Fin || ''}
+          onChange={(e) => setActividadToUpdate({ ...actividadToUpdate, Fechayhora_Fin: e.target.value })}
+        />
+      </CInputGroup>
 
-      if (selectedDate === endDate && endHour !== null && endMinute !== null) {
-        if (
-          selectedHour > endHour ||
-          (selectedHour === endHour && selectedMinute >= endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora de inicio no válida',
-            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
-          });
-          return;
-        }
-      }
-
-      // Validación si la fecha es la misma y hora fin ya está definida
-      if (selectedDate === endDate && actividadToUpdate?.Fechayhora_Fin) {
-        const [endHour, endMinute] = actividadToUpdate?.Fechayhora_Fin.split('T')[1]
-          ?.split(':')
-          .map(Number);
-        const [startHour, startMinute] = selectedTime.split(':').map(Number);
-
-        if (
-          startHour > endHour ||
-          (startHour === endHour && startMinute > endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora inicio inválida',
-            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
-          });
-          return;
-        }
-      }
-
-      // Actualizar el estado si la hora es válida
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Inicio: `${selectedDate}T${selectedTime}`,
-      });
-    }}
-    style={{ width: "80px" }}  // Ajustar tamaño de la hora
-  />
-</CInputGroup>
-{/* Fecha y hora fin */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha fin</CInputGroupText>
-  <CFormInput
-    type="date"
-    value={formatDateTime(actividadToUpdate?.Fechayhora_Fin)?.split("T")[0] || ''}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Fin: `${selectedDate}T${actividadToUpdate?.Fechayhora_Fin?.split("T")[1]}`, // Mantener la misma hora
-      });
-    }}
-    style={{ width: "120px" }}
-  />
-  <CFormInput
-    type="time"
-    value={formatDateTime(actividadToUpdate?.Fechayhora_Fin)?.split("T")[1] || ''}
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const selectedDate = actividadToUpdate?.Fechayhora_Fin?.split("T")[0];
-      const [selectedHour, selectedMinute] = selectedTime.split(":").map(Number);
-
-      // Validación: hora debe estar entre las 7 AM y las 3 PM
-      if (selectedHour < 7 || selectedHour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
-
-      // Validación si la fecha es la misma y hora de inicio ya está definida
-      const startDate = actividadToUpdate?.Fechayhora_Inicio?.split("T")[0];
-      const [startHour, startMinute] = actividadToUpdate?.Fechayhora_Inicio?.split("T")[1]?.split(":").map(Number);
-
-      if (selectedDate === startDate && actividadToUpdate?.Fechayhora_Inicio) {
-        if (
-          startHour > selectedHour ||
-          (startHour === selectedHour && startMinute > selectedMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora fin inválida',
-            text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
-          });
-          return;
-        }
-      }
-
-      // Actualizar el estado si la hora es válida
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Fin: `${selectedDate}T${selectedTime}`,
-      });
-    }}
-    style={{ width: "80px" }}
-  />
-</CInputGroup>
-
-
-          {/* Ponderación */}
-          <CInputGroup className="mb-3">
-  <CInputGroupText>Ponderación</CInputGroupText>
-  <CFormInput
-    type="text"
-    value={
-      listaponderaciones.find(
-        (ponderacion) =>
-          ponderacion.Cod_ponderacion_ciclo ===
-          actividadToUpdate?.Cod_ponderacion_ciclo
-      )?.Descripcion_ponderacion || "N/A"
-    }
-    readOnly
-    style={{
-      backgroundColor: "#f1f1f1", // Sombreado gris claro
-      color: "#6c757d", // Texto en gris oscuro
-      cursor: "not-allowed", // Cursor de no permitido para mayor claridad
-    }}
-  />
-</CInputGroup>
+      {/* Ponderación */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Ponderación</CInputGroupText>
+        <CFormSelect
+          value={actividadToUpdate?.Cod_ponderacion_ciclo || ''}
+          onChange={(e) =>
+            setActividadToUpdate({ ...actividadToUpdate, Cod_ponderacion_ciclo: e.target.value })
+          }
+        >
+          <option value="">Seleccione una ponderación</option>
+          {listaponderaciones.map((ponderacion) => (
+            <option key={ponderacion.Cod_ponderacion} value={ponderacion.Cod_ponderacion}>
+              {ponderacion.Descripcion_ponderacion}
+            </option>
+          ))}
+        </CFormSelect>
+      </CInputGroup>
 
       
 
@@ -2536,7 +2280,7 @@ const calcularTotalValor = () => {
                 <CIcon icon={cilArrowLeft} />Regresar a parciales
               </CButton>
               <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h1 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem", }}> Profesor: {getNombreCompleto(selectedProfesor.cod_persona) } /  Sección: {selectedSeccion.Nombre_seccion} / Parciales  {selectedAsignatura.Nombre_asignatura} </h1>
+                <h1 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem", }}> Profesor: {getNombreCompleto(selectedProfesor.cod_persona) } /  Sección: {selectedSeccion.Nombre_seccion} / Parciales  {selectedParcial.Nombre_parcial} </h1>
               </div>
               {/* Botón "Nuevo" a la derecha */}
               <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
@@ -2709,6 +2453,7 @@ const calcularTotalValor = () => {
                   <CTableHeaderCell>#</CTableHeaderCell>
                   <CTableHeaderCell>NOMBRE DE LA ACTIVIDAD</CTableHeaderCell>
                   <CTableHeaderCell>DESCRIPCIÓN</CTableHeaderCell>
+                  <CTableHeaderCell>PONDERACIÓN</CTableHeaderCell>
                   <CTableHeaderCell>FECHA Y HORA INICIO</CTableHeaderCell>
                   <CTableHeaderCell>FECHA Y HORA FIN</CTableHeaderCell>
                   <CTableHeaderCell>VALOR</CTableHeaderCell>
@@ -2722,6 +2467,7 @@ const calcularTotalValor = () => {
                       <CTableDataCell>{index + 1}</CTableDataCell>
                       <CTableDataCell>{actividad.Nombre_actividad_academica}</CTableDataCell>
                       <CTableDataCell>{actividad.Descripcion}</CTableDataCell>
+                      <CTableDataCell>{listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad?.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A"}</CTableDataCell>
                       <CTableDataCell>
                         {new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
                           dateStyle: 'short',
