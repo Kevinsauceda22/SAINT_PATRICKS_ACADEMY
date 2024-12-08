@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch,cilInfo, cilBrushAlt, cilPen, cilTrash, cilPlus,cilFile,cilSpreadsheet, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
+
+import * as jwt_decode from 'jwt-decode';
+
 import { left } from '@popperjs/core';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importa el plugin para tablas
@@ -74,6 +77,18 @@ const ListaProfesores = () => {
   const [filteredRecords, setFilteredRecords] = useState(profesores); // Inicializa con todos los profesores
   const [loading, setLoading] = useState(false);
   useEffect(() => {
+     const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
     fetchProfesores();
     fetchListaPersonas();
     fetchListaTiposContrato();
@@ -328,6 +343,7 @@ if (duplicada) {
         icon: 'success',
         title: '¡Éxito!',
         text: 'El Profesor se ha creado correctamente',
+        confirmButtonText: 'Aceptar',
       });
     } else {
       console.error('Hubo un problema al crear el profesor:', response.statusText);
@@ -398,16 +414,54 @@ const handleUpdateProfesor = async () => {
   }
 
   try {
+     // Verificar si obtenemos el token correctamente
+     const token = localStorage.getItem('token');
+     if (!token) {
+       swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+       return;
+     }
+ 
+     // Decodificar el token para obtener el nombre del usuario
+     const decodedToken = jwt_decode.jwtDecode(token);
+     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+       console.error('No se pudo obtener el código o el nombre de usuario del token');
+       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+     }
+    
     // Enviar la solicitud para actualizar el profesor
     const response = await fetch('http://localhost:4000/api/profesores/actualizarprofesor', {
       method: 'PUT', // Método HTTP para actualización
       headers: {
         'Content-Type': 'application/json', // Tipo de contenido
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(profesorToUpdate), // Convertir el objeto profesorToUpdate a JSON
     });
     
         if (response.ok) {
+           // 2. Registrar la acción en la bitácora
+           const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado al profesor con código: ${profesorToUpdate.Cod_profesor} y persona asociada: ${profesorToUpdate.cod_persona}.`;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 48, // Código del objeto para la acción
+            accion: 'UPDATE', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
           fetchProfesores(); // Recargar la lista de profesores
           setModalUpdateVisible(false); // Cerrar el modal de actualización
           setProfesorToUpdate({}); // Limpiar el objeto profesorToUpdate
@@ -416,6 +470,7 @@ const handleUpdateProfesor = async () => {
             icon: 'success',
             title: '¡Éxito!',
             text: 'El profesor se ha actualizado correctamente',
+            confirmButtonText: 'Aceptar',
           });
         } else {
           console.error('Error al actualizar el profesor:', response.statusText);
