@@ -38,6 +38,7 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react'
+import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
@@ -497,93 +498,198 @@ const disableCopyPaste = (e) => {
 
 
 {/*******************************************FUNCIONES DE FILTRADO, BUSQUEDA Y REPORTERIA************************************************/}
-  // Función de búsqueda
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1); // Volver a la primera página cuando se cambia el término de búsqueda
-  };
 
-  // Filtrado de estructura familiar
-  const searchEstructuraFamiliar = (searchTerm) => {
-    return estructuraFamiliar.filter((estructura) => {
-      const tipoRelacionTexto = tipoRelacion.find((tipo) => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion.toUpperCase() || 'N/D';
-      const padreTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || 'N/D';
-      const estudianteTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || 'N/D';
-      const descripcionTexto = estructura.descripcion?.toUpperCase() || 'N/D';
+{/*******************************FUNCION DE BUSQUEDA*************************************/}
 
-      return (
-        padreTexto.includes(searchTerm.toUpperCase()) ||
-        estudianteTexto.includes(searchTerm.toUpperCase()) ||
-        tipoRelacionTexto.includes(searchTerm.toUpperCase()) ||
-        descripcionTexto.includes(searchTerm.toUpperCase())
-      );
-    });
-  };
+  const filteredRecords = estructurasFamiliares.filter(estructura => {
+    const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A';
+    const padreTutor = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A';
+    const tipoRelacionTexto = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/A';
+    const descripcion = estructura.descripcion?.toUpperCase() || 'N/A';
 
-  const filteredEstructuraFamiliar = searchEstructuraFamiliar(searchTerm);
+    const searchText = searchTerm.toUpperCase(); // Convertir la búsqueda a mayúsculas para hacerla insensible a mayúsculas/minúsculas
 
-  // Paginación
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord);
+    // Verifica si el término de búsqueda se encuentra en alguno de los campos
+    return estudiante.includes(searchText) 
+      || padreTutor.includes(searchText) 
+      || tipoRelacionTexto.includes(searchText) 
+      || descripcion.includes(searchText);
+  });
 
-  const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstructuraFamiliar.length / recordsPerPage)) {
-      setCurrentPage(pageNumber);
-    }
-  };
+  // Paginación de los registros filtrados
+const currentRecords = filteredRecords.slice(
+  (currentPage - 1) * recordsPerPage,
+  currentPage * recordsPerPage
+);
 
-  // Función para generar reporte PDF
-  const ReporteEstructuraPDF = (estructuraFamiliar, personas, tipoRelacion) => {
-    const doc = new jsPDF()
-    const tableData = estructuraFamiliar.map((estructura) => {
-      const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName || 'N/A'
-      const padre = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName || 'N/A'
-      const tipoRel = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion || 'N/A'
-      return [
-        estudiante,
-        padre,
-        tipoRel,
-        estructura.descripcion,
-      ]
-    })
-  
-    doc.autoTable({
-      head: [['Estudiante', 'Padre/Tutor', 'Tipo de Relación', 'Descripción']],
-      body: tableData,
-    })
-  
-    doc.save('estructura_familiar.pdf')
+const handleSearch = (e) => {
+  const term = e.target.value; // Obtener el valor del input de búsqueda
+  setSearchTerm(term); // Actualiza el término de búsqueda
+}
+
+/*******************************FUNCION DE REPORTERIA*************************************/
+// Función para generar reporte PDF
+const ReporteEstructuraPDF = () => {
+  const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
+
+  if (!filteredRecords || filteredRecords.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
   }
+
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Estructura Familiar', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
+
+    // Tabla de datos
+    const tableRows = filteredRecords.map((estructura, index) => ({
+      index: (index + 1).toString(),
+      estudiante: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+      padre: personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+      tipo_relacion: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+      descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
+    }));
+
+    doc.autoTable({
+      startY: 65,
+      margin: { left: 10, right: 10 }, // Centrado de la tabla
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Estudiante', dataKey: 'estudiante' },
+        { header: 'Padre/Tutor', dataKey: 'padre' },
+        { header: 'Tipo de Relación', dataKey: 'tipo_relacion' },
+        { header: 'Descripción', dataKey: 'descripcion' },
+      ],
+      body: tableRows,
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9, // Aumentado el tamaño de la fuente
+        halign: 'center',
+      },
+      styles: {
+        fontSize: 7, // Aumentado el tamaño de la fuente
+        cellPadding: 4, // Aumentado el relleno de las celdas
+      },
+      columnStyles: {
+        index: { cellWidth: 10 },
+        estudiante: { cellWidth: 75 },
+        padre: { cellWidth: 75 },
+        tipo_relacion: { cellWidth: 40 },
+        descripcion: { cellWidth: 60 },
+      },
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        // Pie de página
+        const footerY = doc.internal.pageSize.height - 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      },
+    });
+
+    // Convertir PDF en Blob
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    // Crear ventana con visor
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Estructura Familiar</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:20px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Estructura_Familiar.pdf'; a.click();">
+              Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
+  };
+
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
+};
+
+  
   
   // Función para generar reporte Excel
-  const ReporteEstructuraExcel = (estructuraFamiliar, personas, tipoRelacion) => {
-    const tableData = estructuraFamiliar.map((estructura) => {
-      const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName || 'N/A'
-      const padre = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName || 'N/A'
-      const tipoRel = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion || 'N/A'
-      return {
-        Estudiante: estudiante,
-        'Padre/Tutor': padre,
-        'Tipo de Relación': tipoRel,
-        Descripción: estructura.descripcion,
-      }
-    })
+  const ReporteEstructuraExcel = () => {
+    if (!filteredRecords || filteredRecords.length === 0) {
+      alert('No hay datos para exportar.');
+      return;
+    }
   
-    const worksheet = XLSX.utils.json_to_sheet(tableData)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Estructura Familiar")
-    XLSX.writeFile(workbook, 'estructura_familiar.xlsx')
-  }
+    // Crear los datos para la tabla
+    const tableRows = filteredRecords.map((estructura, index) => ({
+      '#': (index + 1).toString(),
+      Estudiante: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+      'Padre/Tutor': personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+      'Tipo de Relación': tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+      Descripción: estructura.descripcion?.toUpperCase() || 'N/D',
+    }));
   
+    // Crear un libro de trabajo (workbook)
+    const ws = XLSX.utils.json_to_sheet(tableRows);
   
-  const handleGeneratePDF = () => {
-    generatePDF(filteredEstructuraFamiliar, personas, tipoRelacion)
-  }
+    // Crear el libro (workbook) y agregarle la hoja (worksheet)
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Reporte Estructura Familiar');
   
-  const handleGenerateExcel = () => {
-    generateExcel(filteredEstructuraFamiliar, personas, tipoRelacion)
-  }
+    // Generar el archivo Excel y descargarlo
+    XLSX.writeFile(wb, 'Reporte_Estructura_Familiar.xlsx');
+  };
+  
+
 {/******************************************************************************************************************************************/}  
 
 {/* -------------------------------------------------------------------------------------------------------------------------------- */}
@@ -630,8 +736,8 @@ return (
             Reporte
           </CDropdownToggle>
           <CDropdownMenu>
-            <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
+          <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
+          <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
           </CDropdownMenu>
         </CDropdown>
 </CCol>
@@ -678,99 +784,95 @@ return (
       </div>
       
       <div className="table-container">
-      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
-  <CTable striped>
-    <CTableHead>
-      <CTableRow>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
-        {rolActual === 'ESTUDIANTE' ? (
-          <>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
-          </>
-        ) : (
-          <>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
-          </>
-        )}
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo Relación</CTableHeaderCell>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-    <CTableBody>
-      {estructurasFamiliares.length > 0 ? (
-        estructurasFamiliares.map((estructura, index) => (
-          <CTableRow key={estructura.cod_estructura}>
-            <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{index + 1}</CTableDataCell>
-            {rolActual === 'ESTUDIANTE' ? (
-              <>
-                {/* Estudiante */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {`${personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}`}
-                </CTableDataCell>
-                {/* Padre/Tutor */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
-                </CTableDataCell>
-              </>
-            ) : (
-              <>
-                {/* Padre/Tutor */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
-                </CTableDataCell>
-                {/* Estudiante */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {`${personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}`}
-                </CTableDataCell>
-              </>
-            )}
-            {/* Tipo de Relación */}
-            <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-              {tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/A'}
-            </CTableDataCell>
-            {/* Descripción */}
-            <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-              {estructura.descripcion.toUpperCase()}
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              <div className="d-flex justify-content-center">
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
+          <CTable striped>
+            <CTableHead>
+              <CTableRow>
+                <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
+                {rolActual === 'ESTUDIANTE' ? (
+                  <>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
+                  </>
+                ) : (
+                  <>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
+                  </>
+                )}
+                <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo Relación</CTableHeaderCell>
+                <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
+                <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
 
+            <CTableBody>
+              {currentRecords.length > 0 ? (
+                currentRecords.map((estructura, index) => (
+                  <CTableRow key={estructura.cod_estructura}>
+                    <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                      {(currentPage - 1) * recordsPerPage + index + 1}
+                    </CTableDataCell>
 
-              {canUpdate && (
-                <CButton
-                  color="warning"
-                  onClick={() => handleOpenUpdateModal(estructura)}
-                  style={{ marginRight: '10px' }}
-                >
-                  <CIcon icon={cilPen} />
-                </CButton>
+                    {rolActual === 'ESTUDIANTE' ? (
+                      <>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                      </>
+                    ) : (
+                      <>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                      </>
+                    )}
 
+                    <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                      {tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/A'}
+                    </CTableDataCell>
+
+                    <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                      {estructura.descripcion.toUpperCase()}
+                    </CTableDataCell>
+
+                    <CTableDataCell className="text-center">
+                      <div className="d-flex justify-content-center">
+                        {canUpdate && (
+                          <CButton
+                            color="warning"
+                            onClick={() => handleOpenUpdateModal(estructura)}
+                            style={{ marginRight: '10px' }}
+                          >
+                            <CIcon icon={cilPen} />
+                          </CButton>
+                        )}
+                        {canDelete && (
+                          <CButton color="danger" onClick={() => openDeleteModal(estructura)}>
+                            <CIcon icon={cilTrash} />
+                          </CButton>
+                        )}
+                      </div>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))
+              ) : (
+                <CTableRow>
+                  <CTableDataCell colSpan="6" className="text-center">
+                    No hay estructuras familiares para esta persona.
+                  </CTableDataCell>
+                </CTableRow>
               )}
-
-              
-{canDelete && (
-                <CButton color="danger" onClick={() => openDeleteModal(estructura)}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
-        )}
-
-
-              </div>
-            </CTableDataCell>
-          </CTableRow>
-        ))
-      ) : (
-        <CTableRow>
-          <CTableDataCell colSpan="6" className="text-center">No hay estructuras familiares para esta persona.</CTableDataCell>
-        </CTableRow>
-      )}
-    </CTableBody>
-  </CTable>
-</div>
-</div>
+            </CTableBody>
+          </CTable>
+        </div>
+      </div>
 
 {/****************************************************PAGINACION*****************************************************************/}
 

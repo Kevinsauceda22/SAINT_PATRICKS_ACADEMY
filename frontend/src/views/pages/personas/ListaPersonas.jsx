@@ -1235,8 +1235,8 @@ return (
             Reporte
           </CDropdownToggle>
           <CDropdownMenu>
-            <CDropdownItem onClick={ReportePersonasExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={ReportePersonasPDF}>Descargar en PDF</CDropdownItem>
+          <CDropdownItem onClick={ReportePersonasPDF}>Descargar en PDF</CDropdownItem>
+          <CDropdownItem onClick={ReportePersonasExcel}>Descargar en Excel</CDropdownItem>
           </CDropdownMenu>
         </CDropdown>
       </div>

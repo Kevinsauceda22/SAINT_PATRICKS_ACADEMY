@@ -31,6 +31,7 @@ import {
   CDropdownItem,
   CFormSelect,
 } from '@coreui/react';
+import logo from 'src/assets/brand/logo_saint_patrick.png';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -157,158 +158,7 @@ const fetchTiposContacto = async () => {
 };
 
 
-  const exportToExcel = () => {
-    if (!filteredContacto.length) return swal.fire({ icon: 'warning', title: 'Sin Datos', text: 'No hay datos para exportar.' });
-
-    const fileName = prompt("Ingrese el nombre del archivo para el reporte Excel:", searchTerm ? `Reporte_Contactos_Filtrados_${searchTerm}` : "Reporte_Contactos");
-    if (!fileName) return;
-
-    const worksheet = XLSX.utils.json_to_sheet(filteredContacto.map((item, index) => ({
-      "#": index + 1,
-      "Código Persona": item.cod_persona,
-      "Tipo de Contacto": item.tipo_contacto,
-      "Valor": item.Valor,
-    })));
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Contactos');
-    const blob = new Blob([XLSX.write(workbook, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `${fileName}.xlsx`);
-  };
-
-  const exportToPDF = () => {
-    const fileName = prompt("Ingrese el nombre del archivo para el reporte PDF:", searchTerm ? `Reporte_Contactos_Filtrados_${searchTerm}` : "Reporte_Contactos");
-    if (!fileName) return;
-
-    const doc = new jsPDF();
-    doc.text('Reporte de Contactos', 20, 10);
-    doc.autoTable({
-      head: [['#', 'Código Persona', 'Tipo de Contacto', 'Valor']],
-      body: filteredContacto.map((item, index) => [index + 1, item.cod_persona, item.tipo_contacto, item.Valor]),
-    });
-    doc.save(`${fileName}.pdf`);
-  };
-
-  const handlePrintGeneral = () => {
-    const printWindow = window.open('', '', 'width=800,height=600');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Imprimir Reporte General</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-            }
-            th, td {
-              border: 1px solid #000;
-              padding: 8px;
-              text-align: left;
-            }
-            th {
-              background-color: #f2f2f2;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Reporte de Contactos</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Código Persona</th>
-                <th>Tipo de Contacto</th>
-                <th>Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${filteredContacto.map((item, index) => `
-                <tr>
-                  <td>${index + 1}</td>
-                  <td>${item.cod_persona}</td>
-                  <td>${item.tipo_contacto}</td>
-                  <td>${item.Valor}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
-  const exportIndividualToExcel = (item, index) => {
-    const fileName = prompt("Ingrese el nombre del archivo Excel:", `Reporte_Contacto_${item.cod_persona}_${index + 1}`);
-    if (!fileName) return;
-
-    const worksheet = XLSX.utils.json_to_sheet([{
-      "Número": index + 1,
-      "Código Persona": item.cod_persona,
-      "Tipo de Contacto": item.tipo_contacto,
-      "Valor": item.Valor,
-    }]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Reporte_Contacto');
-
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, `${fileName}.xlsx`);
-  };
-
-  const exportIndividualToPDF = (item, index) => {
-    const fileName = prompt("Ingrese el nombre del archivo PDF:", `Reporte_Contacto_${item.cod_persona}_${index + 1}`);
-    if (!fileName) return;
-
-    const doc = new jsPDF();
-    doc.text('Reporte de Contacto', 20, 10);
-    doc.text(`Número: ${index + 1}`, 20, 20);
-    doc.text(`Código Persona: ${item.cod_persona}`, 20, 30);
-    doc.text(`Tipo de Contacto: ${item.tipo_contacto}`, 20, 40);
-    doc.text(`Valor: ${item.Valor}`, 20, 50);
-    doc.save(`${fileName}.pdf`);
-  };
-
-  const handlePrintIndividual = (item, index) => {
-    const printWindow = window.open('', '', 'width=800,height=600');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Imprimir Contacto</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              margin: 20px;
-            }
-            h1 {
-              text-align: center;
-            }
-            .record {
-              border: 1px solid #000;
-              padding: 10px;
-              margin-top: 20px;
-            }
-          </style>
-        </head>
-        <body>
-          <h1>Reporte de Contacto</h1>
-          <div class="record">
-            <p><strong>Número:</strong> ${index + 1}</p>
-            <p><strong>Código Persona:</strong> ${item.cod_persona}</p>
-            <p><strong>Tipo de Contacto:</strong> ${item.tipo_contacto}</p>
-            <p><strong>Valor:</strong> ${item.Valor}</p>
-          </div>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.print();
-  };
-
+{/*******************************************************FUNCION PARA CREAR Y ACTUALIZAR**************************************************/}
   const handleCreateOrUpdate = async () => {
     if (isSubmitting) return;
   
@@ -425,7 +275,7 @@ const fetchTiposContacto = async () => {
     }
   };
   
-   
+{/*************************************************FUNCION PARA BORRAR****************************************************************/}
   
   
   const handleDeleteContacto = async (cod_contacto, descripcionContacto) => {
@@ -474,7 +324,9 @@ const fetchTiposContacto = async () => {
     }
   };  
 
-  const handleRecordsPerPageChange = (e) => {
+
+   {/***********************************************************FUNCIONES DE BUSQUEDA Y FILTRADO ******************************************/}
+   const handleRecordsPerPageChange = (e) => {
     setRecordsPerPage(Number(e.target.value));
     setCurrentPage(1);
   };
@@ -482,175 +334,334 @@ const fetchTiposContacto = async () => {
   const handleSearch = (e) => setSearchTerm(e.target.value);
 
   const filteredContacto = contacto.filter((item) =>
-    (item.cod_persona || '').toString().includes(searchTerm) || (item.Valor || '').toLowerCase().includes(searchTerm.toLowerCase())
+    personaSeleccionada && 
+    item.cod_persona === personaSeleccionada.cod_persona &&  // Solo muestra los contactos de la persona seleccionada
+    (
+      (item.Valor || '').toLowerCase().includes(searchTerm.toLowerCase()) || // Filtrado por el valor
+      tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toLowerCase().includes(searchTerm.toLowerCase()) // Filtrado por el tipo de contacto
+    )
   );
+  
 
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = filteredContacto.slice(indexOfFirstRecord, indexOfLastRecord);
   const totalPages = Math.max(1, Math.ceil(filteredContacto.length / recordsPerPage));
-
+  
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  {/**************************************************REPORTERIA DE CONTACTOS PERSONA****************************************************/}
+
+
+  const ReporteContactoPDF = () => {
+    const doc = new jsPDF('p', 'mm', 'letter'); // Formato horizontal
+  
+    // Verificar si hay datos para exportar
+    if (!filteredContacto || filteredContacto.length === 0) {
+      alert('No hay datos para exportar.');
+      return;
+    }
+  
+    // Cargar logo
+    const img = new Image();
+    img.src = logo;
+  
+    img.onload = () => {
+      const pageWidth = doc.internal.pageSize.width;
+  
+      // Encabezado
+      doc.addImage(img, 'PNG', 10, 10, 45, 45);
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51);
+      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+  
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+  
+      // Subtítulo
+      doc.setFontSize(14);
+      doc.setTextColor(0, 102, 51);
+      doc.text('Reporte de Contactos', pageWidth / 2, 50, { align: 'center' });
+  
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51);
+      doc.line(10, 60, pageWidth - 10, 60);
+  
+      // Tabla de datos
+      const tableRows = filteredContacto.map((contacto, index) => ({
+        index: (index + 1).toString(),
+        nombre_persona: personaSeleccionada && personaSeleccionada.cod_persona === contacto.cod_persona
+          ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}`
+          : 'Información no disponible',
+        tipo_contacto: tiposContacto.find(tc => tc.cod_tipo_contacto === contacto.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido',
+        valor: contacto.Valor || 'N/D',
+      }));
+      
+      
+  
+      doc.autoTable({
+        startY: 65,
+        margin: { left: 10, right: 10 }, // Centrado de la tabla
+        columns: [
+          { header: '#', dataKey: 'index' },
+          { header: 'NOMBRE', dataKey: 'nombre_persona' },
+          { header: 'TIPO', dataKey: 'tipo_contacto' },
+          { header: 'VALOR', dataKey: 'valor' },
+        ],
+        body: tableRows,
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10, // Tamaño de la fuente
+          halign: 'center',
+        },
+        styles: {
+          fontSize: 9, // Tamaño de la fuente
+          cellPadding: 4, // Relleno de las celdas
+        },
+        columnStyles: {
+          index: { cellWidth: 15 },
+          codigo_persona: { cellWidth: 45 },
+          tipo_contacto: { cellWidth: 40 },
+          valor: { cellWidth: 60 },
+        },
+        alternateRowStyles: {
+          fillColor: [240, 248, 255],
+        },
+  
+        didDrawPage: (data) => {
+          const pageCount = doc.internal.getNumberOfPages();
+          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+  
+          // Pie de página
+          const footerY = doc.internal.pageSize.height - 10;
+          doc.setFontSize(10);
+          doc.setTextColor(0, 102, 51);
+          doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+  
+          const now = new Date();
+          const dateString = now.toLocaleDateString('es-HN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+          const timeString = now.toLocaleTimeString('es-HN', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+          });
+          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+        },
+      });
+  
+      // Convertir PDF en Blob
+      const pdfBlob = doc.output('blob');
+      const pdfURL = URL.createObjectURL(pdfBlob);
+  
+      // Crear ventana con visor
+      const newWindow = window.open('', '_blank');
+      newWindow.document.write(`
+        <html>
+          <head><title>Reporte de Contactos</title></head>
+          <body style="margin:0;">
+            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+            <div style="position:fixed;top:10px;right:20px;">
+              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Contactos.pdf'; a.click();">
+                Descargar PDF
+              </button>
+              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+                onclick="window.print();">
+                Imprimir PDF
+              </button>
+            </div>
+          </body>
+        </html>`);
+    };
+  
+    img.onerror = () => {
+      alert('No se pudo cargar el logo.');
+    };
+  };
+  
+
+  const ReporteContactoExcel = () => {
+    if (!filteredContacto || filteredContacto.length === 0) {
+      alert('No hay datos para exportar.');
+      return;
+    }
+  
+    // Crear los datos de la tabla en formato de objeto
+    const tableRows = filteredContacto.map((contacto, index) => ({
+      '#': (index + 1).toString(),
+      'NOMBRE': personaSeleccionada && personaSeleccionada.cod_persona === contacto.cod_persona
+        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}`
+        : 'Información no disponible',
+      'TIPO DE CONTACTO': tiposContacto.find(tc => tc.cod_tipo_contacto === contacto.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido',
+      'VALOR': contacto.Valor || 'N/D',
+    }));
+  
+    // Crear un libro de trabajo (workbook)
+    const wb = XLSX.utils.book_new();
+  
+    // Convertir los datos en una hoja de trabajo (worksheet)
+    const ws = XLSX.utils.json_to_sheet(tableRows);
+  
+    // Agregar la hoja de trabajo al libro
+    XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Contactos');
+  
+    // Exportar el archivo Excel
+    XLSX.writeFile(wb, 'Reporte_Contactos.xlsx');
+  };
+  
 
   return (
     <CContainer>
-<CRow className="align-items-center mb-5">
-  {/* Título */}
-  <CCol xs="12">
-    <h1>Contactos</h1>
-    {/* Nombre de la persona seleccionada */}
-    {personaSeleccionada ? (
-      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
-        <strong>CONTACTOS DE:</strong> {personaSeleccionada 
-          ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
-          : 'Información no disponible'}
-      </div>
-    ) : (
-      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
-        <strong>Persona Seleccionada:</strong> Información no disponible
-      </div>
-    )}
-  </CCol>
+       <CRow className="align-items-center mb-5">
+      {/* Título */}
+      <CCol xs="12">
+        <h1>Contactos</h1>
+        {/* Nombre de la persona seleccionada */}
+        {personaSeleccionada ? (
+          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+            <strong>CONTACTOS DE:</strong> {personaSeleccionada 
+              ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+              : 'Información no disponible'}
+          </div>
+        ) : (
+          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+            <strong>Persona Seleccionada:</strong> Información no disponible
+          </div>
+        )}
+      </CCol>
 
-  {/* Selector de registros */}
-  <CCol xs="12" className="d-flex justify-content-end align-items-center mb-3">
-    <span>Mostrar </span>
-    <CFormSelect
-      value={recordsPerPage}
-      onChange={handleRecordsPerPageChange}
-      style={{
-        maxWidth: '100px',
-        display: 'inline-block',
-        margin: '0 5px',
-        textAlign: 'right',
-      }}
-    >
-      <option value={5}>5</option>
-      <option value={10}>10</option>
-      <option value={20}>20</option>
-    </CFormSelect>
-    <span> registros</span>
-  </CCol>
-
-  {/* Botones */}
-  <CCol xs="12" md="12" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2">
-    {/* Botón Personas */}
-    <CButton
-      color="secondary"
-      onClick={volverAListaPersonas}
-      style={{
-        minWidth: '120px', // Asegura un ancho mínimo consistente
-      }}
-    >
-      <CIcon icon={cilArrowLeft} /> Personas
-    </CButton>
-
-    {/* Botón Nuevo */}
-    <CButton
-      style={{
-        backgroundColor: '#4B6251', // Color personalizado
-        color: 'white',
-        minWidth: '120px', // Asegura un ancho consistente
-        borderRadius: '5px', // Bordes redondeados para apariencia moderna
-      }}
-      onClick={() => {
-        setModalVisible(true);
-        setContactoToUpdate(null);
-      }}
-    >
-      <CIcon icon={cilPlus} /> Nuevo
-    </CButton>
-
-    {/* Dropdown Reporte */}
-    <CDropdown>
-      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-        <CIcon icon={cilDescription} /> Reporte
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={exportToExcel}>
-          <i className="fa fa-file-excel-o" style={{ marginRight: '5px' }}></i> Descargar en Excel
-        </CDropdownItem>
-        <CDropdownItem onClick={exportToPDF}>
-          <i className="fa fa-file-pdf-o" style={{ marginRight: '5px' }}></i> Descargar en PDF
-        </CDropdownItem>
-        <CDropdownItem onClick={handlePrintGeneral}>
-          <CIcon icon={cilPrint} /> Imprimir
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
-  </CCol>
-</CRow>
-
-
-      <CInputGroup className="mb-3" style={{ maxWidth: '400px' }}>
-        <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
-        <CFormInput placeholder="Buscar por Cod Persona o Valor" onChange={handleSearch} value={searchTerm} />
-        <CButton
-          onClick={() => setSearchTerm('')}
+      {/* Selector de registros */}
+      <CCol xs="12" className="d-flex justify-content-end align-items-center mb-3">
+        <span>Mostrar </span>
+        <CFormSelect
+          value={recordsPerPage}
+          onChange={handleRecordsPerPageChange}
           style={{
-            border: '2px solid #d3d3d3',
-            color: '#4B6251',
-            backgroundColor: '#f0f0f0',
+            maxWidth: '100px',
+            display: 'inline-block',
+            margin: '0 5px',
+            textAlign: 'right',
           }}
         >
-          <i className="fa fa-broom" style={{ marginRight: '5px' }}></i> Limpiar
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+        </CFormSelect>
+        <span> registros</span>
+      </CCol>
+
+      {/* Botones */}
+      <CCol xs="12" md="12" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2">
+        {/* Botón Personas */}
+        <CButton
+          color="secondary"
+          onClick={volverAListaPersonas}
+          style={{
+            minWidth: '120px', // Asegura un ancho mínimo consistente
+          }}
+        >
+          <CIcon icon={cilArrowLeft} /> Personas
         </CButton>
-      </CInputGroup>
 
-      <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-        <CTable striped bordered hover>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>Nombre</CTableHeaderCell>
-              <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
-              <CTableHeaderCell>Valor</CTableHeaderCell>
-              <CTableHeaderCell>Acciones</CTableHeaderCell>
+        {/* Botón Nuevo */}
+        <CButton
+          style={{
+            backgroundColor: '#4B6251', // Color personalizado
+            color: 'white',
+            minWidth: '120px', // Asegura un ancho consistente
+            borderRadius: '5px', // Bordes redondeados para apariencia moderna
+          }}
+          onClick={() => {
+            setModalVisible(true);
+            setContactoToUpdate(null);
+          }}
+        >
+          <CIcon icon={cilPlus} /> Nuevo
+        </CButton>
+
+        {/* Dropdown Reporte */}
+        <CDropdown>
+          <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
+            <CIcon icon={cilDescription} /> Reporte
+          </CDropdownToggle>
+          <CDropdownMenu>
+          <CDropdownItem onClick={ReporteContactoPDF}>
+              <i className="fa fa-file-pdf-o" style={{ marginRight: '5px' }}></i> Descargar en PDF
+            </CDropdownItem>
+            <CDropdownItem onClick={ReporteContactoExcel}>
+              <i className="fa fa-file-excel-o" style={{ marginRight: '5px' }}></i> Descargar en Excel
+            </CDropdownItem>
+          </CDropdownMenu>
+        </CDropdown>
+      </CCol>
+    </CRow>
+
+    {/* Input de búsqueda */}
+
+<CInputGroup className="mb-3" style={{ maxWidth: '400px', marginTop: '-70px' }}>
+  <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
+  <CFormInput placeholder="Buscar" onChange={handleSearch} value={searchTerm} />
+  <CButton
+    onClick={() => setSearchTerm('')}
+    style={{
+      border: '2px solid #d3d3d3',
+      color: '#4B6251',
+      backgroundColor: '#f0f0f0',
+    }}
+  >
+    <i className="fa fa-broom" style={{ marginRight: '5px' }}></i> Limpiar
+  </CButton>
+</CInputGroup>
+
+
+    {/* Tabla de datos filtrados */}
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+      <CTable striped bordered hover>
+        <CTableHead>
+          <CTableRow>
+            <CTableHeaderCell>#</CTableHeaderCell>
+            <CTableHeaderCell>Nombre</CTableHeaderCell>
+            <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
+            <CTableHeaderCell>Valor</CTableHeaderCell>
+            <CTableHeaderCell>Acciones</CTableHeaderCell>
+          </CTableRow>
+        </CTableHead>
+        <CTableBody>
+          {currentRecords.map((item, index) => (
+            <CTableRow key={item.cod_contacto}>
+              <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
+              <CTableDataCell>
+                {personaSeleccionada
+                  ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
+                  : 'Información no disponible'}
+              </CTableDataCell>
+              <CTableDataCell>
+                {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
+              </CTableDataCell>
+              <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
+              <CTableDataCell>
+                <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
+                  <CIcon icon={cilPen} />
+                </CButton>
+                <CButton color="danger" onClick={() => handleDeleteContacto(item.cod_contacto, item.Valor)} className="ms-2">
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              </CTableDataCell>
             </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {contactosFiltrados.map((item, index) => (
-              <CTableRow key={item.cod_contacto}>
-                <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-                <CTableDataCell>
-                  {personaSeleccionada
-                    ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
-                    : 'Información no disponible'}
-                </CTableDataCell>
-                <CTableDataCell>
-                  {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
-                </CTableDataCell>
-                <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
-                <CTableDataCell>
-                  <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
-                    <CIcon icon={cilPen} />
-                  </CButton>
-                  <CButton color="danger" onClick={() => handleDeleteContacto(item.cod_contacto, item.Valor)} className="ms-2">
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                  <CDropdown className="ms-2">
-                    <CDropdownToggle color="info">
-                      <CIcon icon={cilDescription} />
-                    </CDropdownToggle>
-                    <CDropdownMenu>
-                      <CDropdownItem onClick={() => exportIndividualToExcel(item, index)}>
-                        <i className="fa fa-file-excel-o" style={{ marginRight: '5px' }}></i> Descargar en Excel
-                      </CDropdownItem>
-                      <CDropdownItem onClick={() => exportIndividualToPDF(item, index)}>
-                        <i className="fa fa-file-pdf-o" style={{ marginRight: '5px' }}></i> Descargar en PDF
-                      </CDropdownItem>
-                      <CDropdownItem onClick={() => handlePrintIndividual(item, index)}>
-                        <CIcon icon={cilPrint} /> Imprimir
-                      </CDropdownItem>
-                    </CDropdownMenu>
-                  </CDropdown>
-                </CTableDataCell>
-              </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
-      </div>
+          ))}
+        </CTableBody>
+      </CTable>
+    </div>
 
+{/***********************************************************PAGINACION*******************************************************************/}
       <CPagination align="center" className="my-3">
         <CButton
           style={{
@@ -680,6 +691,7 @@ const fetchTiposContacto = async () => {
         )}
       </CPagination>
 
+{/********************************************MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
       <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
   <CModalHeader>
     <CModalTitle>{contactoToUpdate ? 'Actualizar Contacto' : 'Crear Nuevo Contacto'}</CModalTitle>
