@@ -1039,7 +1039,7 @@ const generarReporteExcel = () => {
             e.currentTarget.style.boxShadow = "none";
           }}
         >
-          Reporte
+         <CIcon icon={cilDescription}/> Reporte
         </CDropdownToggle>
         <CDropdownMenu
           style={{
