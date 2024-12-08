@@ -1422,15 +1422,7 @@ const generarReporteExcel = () => {
   <CModalBody>
     <CForm>
       {/* Nombre de la actividad */}
-      <CInputGroup className="mb-3">
-      <CInputGroupText>Nombre</CInputGroupText> 
-      <CFormInput
-          value={profesorToUpdate.Cod_profesor}
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          onChange={(e) => handleInputChange(e, (value) => setNuevaActividad({...nuevoProfesor,cod_profesor: e.target.value,}))}
-        />
-        </CInputGroup>
+ 
      
       {/* Select para Grado Académico */}
       <CInputGroup className="mb-3">

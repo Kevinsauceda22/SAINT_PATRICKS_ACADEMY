@@ -133,13 +133,7 @@ const _nav = [
     icon: cilFile,
     nameobject: 'ListaCuadro',
   },
-  {
-    component: CNavItem,
-    name: 'Notas',
-    to: '/ListaNotas',
-    icon: cilFile,
-    nameobject: 'ListaNotas',
-  },
+
   
     {
       component: CNavItem,
