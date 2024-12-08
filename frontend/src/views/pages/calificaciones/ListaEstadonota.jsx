@@ -642,7 +642,7 @@ const paginate = (pageNumber) => {
       // Agregar tabla con auto-paginación
       doc.autoTable({
         startY: yPosition + 4,
-        head: [['#', 'Decripción']],
+        head: [['#', 'Descripción']],
         body: estadonota.map((estado, index) => [
           index + 1,
           `${estado.Descripcion || ''}`.trim(),
