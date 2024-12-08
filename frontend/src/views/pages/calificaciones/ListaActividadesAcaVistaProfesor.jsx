@@ -20,7 +20,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ActividadesAcademicasProfesor = () => {
-  const { canSelect, canInsert, canUpdate } = usePermission('ListaActividadesProfesor');
+  const { canSelect, canInsert, canUpdate,canDelete } = usePermission('ListaActividadesProfesor');
   const [secciones, setSecciones] = useState([]);
   const [asignaturas, setAsignaturas] = useState([]);
   const [parciales, setParciales] = useState([]);
@@ -2487,7 +2487,7 @@ const generarReporteActividadesPDF = () => {
           </CButton>
             )}
 
-            
+            {canDelete && ( 
           <CButton
           style={{
             backgroundColor: '#E57368', // Mismo color que el primer botón
@@ -2512,7 +2512,7 @@ const generarReporteActividadesPDF = () => {
           >
            <CIcon icon={cilTrash} />
           </CButton>
-          
+          )}
          
         </CTableDataCell>
         
