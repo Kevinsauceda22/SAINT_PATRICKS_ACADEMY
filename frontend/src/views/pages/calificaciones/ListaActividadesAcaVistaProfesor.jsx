@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch,cilInfo,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilFile,cilSpreadsheet,cilDescription,cilArrowLeft } from '@coreui/icons'; // Importar iconos específicos
 import Swal from 'sweetalert2';
+
+import * as jwt_decode from 'jwt-decode';
+
 import {CButton,CContainer, CTable,CTableHead,CTableRow, CTableHeaderCell,
   CTableBody,CTableDataCell,CCol,CRow, CModal,CModalHeader, CModalBody, CModalFooter,  CForm, 
   CFormInput,CFormSelect, CInputGroup,CFormTextarea,CInputGroupText, CPagination, CDropdown,CDropdownToggle,
@@ -67,6 +70,21 @@ const ActividadesAcademicasProfesor = () => {
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
 
+   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
+  }, []); 
+  
   // Fetch del código del profesor al cargar el componente
   const fetchCodProfesor = async () => {
     try {
@@ -515,6 +533,19 @@ const handleGestionarActividades = (parcial) => {
   
   const handleCrearActividad = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
       console.log("Valores actuales de nuevaActividad:", nuevaActividad);
   
       // Validación de campos requeridos
@@ -566,6 +597,7 @@ const handleGestionarActividades = (parcial) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(actividadData),
       });
@@ -573,10 +605,34 @@ const handleGestionarActividades = (parcial) => {
       const responseData = await response.json();
   
       if (response.ok) {
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva actividad académica: ${nuevaActividad.Nombre_actividad_academica} `;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 83, // Código del objeto para la acción
+             accion: 'INSERT', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
         Swal.fire({
           icon: "success",
           title: "¡Éxito!",
           text: "La actividad se ha creado correctamente.",
+          confirmButtonText: 'Aceptar',
         });
   
         // Refrescar actividades sin cambiar a vista inicial
@@ -675,6 +731,7 @@ const handleGestionarActividades = (parcial) => {
 
 
 
+  
 // Manejar actualización de actividad
 const handleActualizarActividad = async () => {
   const { Nombre_actividad_academica, Descripcion, Fechayhora_Inicio, Fechayhora_Fin, Valor, Cod_actividad_academica } = actividadToUpdate;
@@ -703,6 +760,19 @@ const handleActualizarActividad = async () => {
   }
 
   try {
+     // Verificar si obtenemos el token correctamente
+     const token = localStorage.getItem('token');
+     if (!token) {
+       Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+       return;
+     }
+ 
+     // Decodificar el token para obtener el nombre del usuario
+     const decodedToken = jwt_decode.jwtDecode(token);
+     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+       console.error('No se pudo obtener el código o el nombre de usuario del token');
+       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+     }
     // Validar espacio restante en el backend
     const response = await fetch("http://localhost:4000/api/actividadesacademicas/validar-valoractua", {
       method: "POST",
@@ -732,6 +802,7 @@ const handleActualizarActividad = async () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           Nombre_actividad_academica,
@@ -747,10 +818,35 @@ const handleActualizarActividad = async () => {
       throw new Error("Error en la actualización.");
     }
 
+     // Registrar la acción en la bitácora
+     const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la actividad academica: ${Nombre_actividad_academica}, con valor ${Valor}`;
+         
+     // Enviar a la bitácora
+     const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+       },
+       body: JSON.stringify({
+         cod_usuario: decodedToken.cod_usuario, // Código del usuario
+         cod_objeto: 83, // Código del objeto para la acción
+         accion: 'UPDATE', // Acción realizada
+         descripcion: descripcion, // Descripción de la acción
+       }),
+     });
+
+     if (bitacoraResponse.ok) {
+       console.log('Registro en bitácora exitoso');
+     } else {
+       Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+     }
+    
     Swal.fire({
       icon: "success",
       title: "¡Éxito!",
       text: "La actividad se ha actualizado correctamente.",
+      confirmButtonText: 'Aceptar',
     });
 
     // Refrescar actividades
@@ -801,8 +897,21 @@ const forceModalOpen = (actividad) => {
 };
 
 
-const handleEliminarActividad = async (id) => {
+const handleEliminarActividad = async (id,nombre) => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
         const confirm = await Swal.fire({
             title: "¿Estás seguro?",
             text: "Esta acción eliminará la actividad de forma permanente.",
@@ -819,6 +928,7 @@ const handleEliminarActividad = async (id) => {
                     method: "DELETE",
                     headers: {
                         "Content-Type": "application/json",
+                        'Authorization': `Bearer ${token}`,
                     },
                 }
             );
@@ -826,10 +936,34 @@ const handleEliminarActividad = async (id) => {
             const responseData = await response.json();
 
             if (response.ok) {
+               // 2. Registrar la acción en la bitácora
+              const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado la actividad: ${nombre} con codigo ${id}`;
+              
+              // Enviar a la bitácora
+              const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+                },
+                body: JSON.stringify({
+                  cod_usuario: decodedToken.cod_usuario, // Código del usuario
+                  cod_objeto: 83, // Código del objeto para la acción
+                  accion: 'DELETE', // Acción realizada
+                  descripcion: descripcion, // Descripción de la acción
+                }),
+              });
+        
+              if (bitacoraResponse.ok) {
+                console.log('Registro en bitácora exitoso');
+              } else {
+                Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+              }
                 Swal.fire({
                     icon: "success",
                     title: "¡Éxito!",
                     text: responseData.mensaje,
+                    confirmButtonText: 'Aceptar',
                 });
 
                 // Refrescar actividades después de eliminar
@@ -1052,7 +1186,7 @@ const generarReporteExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1119,7 +1253,7 @@ const generarReportePDF = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1232,7 +1366,7 @@ const generarReporteParcialExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1297,7 +1431,7 @@ const generarReporteParcialPDF = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1417,7 +1551,7 @@ const generarReporteActividadesExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1499,7 +1633,7 @@ const generarReporteActividadesPDF = () => {
       icon: 'info',
       title: 'Sin datos',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -2374,7 +2508,7 @@ const generarReporteActividadesPDF = () => {
             e.currentTarget.style.boxShadow = 'none';
             e.currentTarget.style.color = '#5C4044';
           }}
-            onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica)}
+            onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica,actividad.Nombre_actividad_academica)}
           >
            <CIcon icon={cilTrash} />
           </CButton>
@@ -2491,7 +2625,7 @@ const generarReporteActividadesPDF = () => {
           icon: 'warning',
           title: 'Fecha requerida',
           text: 'Debe seleccionar una fecha antes de configurar la hora.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -2518,7 +2652,7 @@ const generarReporteActividadesPDF = () => {
           icon: 'warning',
           title: 'Hora no válida',
           text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -2541,7 +2675,7 @@ const generarReporteActividadesPDF = () => {
             icon: 'error',
             title: 'Hora inicio inválida',
             text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -2570,7 +2704,7 @@ const generarReporteActividadesPDF = () => {
           icon: 'warning',
           title: 'Fecha requerida',
           text: 'Debe seleccionar una fecha antes de configurar la hora.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -2597,7 +2731,7 @@ const generarReporteActividadesPDF = () => {
           icon: 'warning',
           title: 'Hora no válida',
           text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -2622,7 +2756,7 @@ const generarReporteActividadesPDF = () => {
             icon: 'error',
             title: 'Hora fin inválida',
             text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -2790,7 +2924,7 @@ backdrop="static" >
           icon: 'warning',
           title: 'Hora no válida',
           text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -2809,7 +2943,7 @@ backdrop="static" >
             icon: 'error',
             title: 'Hora de inicio no válida',
             text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -2830,7 +2964,7 @@ backdrop="static" >
             icon: 'error',
             title: 'Hora inicio inválida',
             text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -2876,7 +3010,7 @@ backdrop="static" >
           icon: 'warning',
           title: 'Hora no válida',
           text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -2894,7 +3028,7 @@ backdrop="static" >
             icon: 'error',
             title: 'Hora fin inválida',
             text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
