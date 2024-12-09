@@ -1833,7 +1833,10 @@ const handleObservacionChangeActualizar = (index, value) => {
           )}
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setMostrarModal(false)}>
+          <CButton color="secondary" onClick={() => {
+          setMostrarModal(false); // Cierra el modal
+          setNombreBusqueda("");  // Limpia la barra de búsqueda
+        }}>
             Cerrar
           </CButton>
         </CModalFooter>
