@@ -101,11 +101,21 @@ const ListaAsignaturas = () => {
 
     // Comprobación de vacío
     if (!nombreasignatura || nombreasignatura.trim() === '') {
-      Swal.fire('Error', 'El campo "Nombre de la Asignatura" no puede estar vacío', 'error');
+       Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Nombre de la Asignatura" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
     if (!descripcionasignatura || descripcionasignatura.trim() === '') {
-      Swal.fire('Error', 'El campo "Descripción de la Asignatura" no puede estar vacío', 'error');
+       Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Descripción de la Asignatura" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -119,11 +129,21 @@ const ListaAsignaturas = () => {
     
 
     if (asignaturaexiste) {
-      Swal.fire('Error', `La asignatura "${nombreasignatura}" ya existe `, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `La asignatura "${nombreasignatura}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
     if (descripcionexiste) {
-      Swal.fire('Error', `La descipción "${descripcionasignatura}" ya existe `, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `La descipción "${descripcionasignatura}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
     return true;
@@ -132,11 +152,21 @@ const ListaAsignaturas = () => {
   // Validación de actualización de asignatura
   const validarAsignaturaUpdate = () => {
     if (!asignaturaToUpdate.Nombre_asignatura) {
-      Swal.fire('Error', 'El campo "Nombre de la Asignatura" no puede estar vacío', 'error');
+       Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Nombre de la Asignatura" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
     if (!asignaturaToUpdate.Descripcion_asignatura) {
-      Swal.fire('Error', 'El campo "Descripción de la Asignatura" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Descripción de la Asignatura" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -148,7 +178,12 @@ const ListaAsignaturas = () => {
     );
 
     if (asignaturaExistente) {
-      Swal.fire('Error', `La asignatura "${asignaturaToUpdate.Nombre_asignatura}" ya existe `, 'error');
+       Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `La asignatura "${asignaturaToUpdate.Nombre_asignatura}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -172,6 +207,7 @@ const ListaAsignaturas = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar'
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -182,6 +218,7 @@ const ListaAsignaturas = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras y espacios.',
+        confirmButtonText: 'Aceptar'
       });
       return;
     }
@@ -197,6 +234,7 @@ const ListaAsignaturas = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar'
           });
           return;
         }
@@ -225,6 +263,7 @@ const ListaAsignaturas = () => {
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
+      confirmButtonText: 'Aceptar'
     });
   };
 
@@ -483,6 +522,7 @@ const ListaAsignaturas = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar'
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -493,6 +533,7 @@ const ListaAsignaturas = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar'
       });
       return;
     }
@@ -508,6 +549,7 @@ const ListaAsignaturas = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar'
           });
           return;
         }
@@ -542,7 +584,7 @@ const paginate = (pageNumber) => {
 
     const generarReportePDF = () => {
       // Validar que haya datos en la tabla
-      if (!Asignaturas || Asignaturas.length === 0) {
+      if (!currentRecords || currentRecords.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -602,7 +644,7 @@ const paginate = (pageNumber) => {
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Nombre', 'Descripción']],
-          body: Asignaturas.map((asignatura, index) => [
+          body: currentRecords.map((asignatura, index) => [
             index + 1,
             `${asignatura.Nombre_asignatura|| ''}`.trim(),
             asignatura.Descripcion_asignatura
@@ -650,7 +692,7 @@ const paginate = (pageNumber) => {
 
     const generarReporteExcel = () => {
       // Validar que haya datos en la tabla
-      if (!Asignaturas || Asignaturas.length === 0) {
+      if (!currentRecords || currentRecords.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -667,7 +709,7 @@ const paginate = (pageNumber) => {
       ];
     
       // Crear filas con asistencias filtradas
-      const filas = Asignaturas.map((asignatura, index) => [
+      const filas = currentRecords.map((asignatura, index) => [
         index + 1,
         asignatura.Nombre_asignatura,
         asignatura.Descripcion_asignatura
