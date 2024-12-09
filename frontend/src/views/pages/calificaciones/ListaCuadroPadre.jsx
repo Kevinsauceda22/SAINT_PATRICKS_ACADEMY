@@ -206,7 +206,7 @@ return (
                   </CInputGroupText>
                   <CFormInput
                   style={{ width: '80px',height:'35px', display: 'inline-block',fontSize: '0.8rem'}}
-                    placeholder="Buscar estudiante"
+                    placeholder="Buscar estudiante..."
                     onChange={handleSearch2}
                     value={searchTerm2}
                     onPaste={disableCopyPaste}
