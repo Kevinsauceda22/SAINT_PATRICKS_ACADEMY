@@ -468,6 +468,12 @@ const handleClick = () => {
     return; // Salir de la función si no hay datos
   }
 
+  // Calcular el total de valores
+  const totalValor = actividadesFiltradas.reduce(
+    (total, actividad) => total + parseFloat(actividad?.Valor || 0),
+    0
+  ).toFixed(2); // Redondear a dos decimales
+
   // Crear el PDF en orientación horizontal
   const doc = new jsPDF('landscape');
   const img = new Image();
@@ -574,8 +580,9 @@ const handleClick = () => {
           : 'N/A',
         actividad.Valor,
       ]),
+      foot: [['', '', '', '', 'Total:', totalValor]], // Añadir fila total al pie de la tabla
       headStyles: {
-        fillColor: [0, 102, 51],
+        fillColor: [0, 102, 51], // Verde para el encabezado
         textColor: [255, 255, 255],
         fontSize: 9,
       },
@@ -585,16 +592,20 @@ const handleClick = () => {
         overflow: 'linebreak',
         valign: 'middle',
       },
-      columnStyles: {
-        0: { cellWidth: 'auto' }, // Columna '#'
-        1: { cellWidth: 'auto' }, // 'Nombre Actividad'
-        2: { cellWidth: 'auto' }, // 'Descripción'
-        3: { cellWidth: 'auto' }, // 'Ponderación'
-        4: { cellWidth: 'auto' }, // 'Inicio'
-        5: { cellWidth: 'auto' }, // 'Fin'
-        6: { cellWidth: 'auto' }, // 'Valor'
+      footStyles: {
+        fillColor: [0, 102, 51], // Verde para la fila del pie
+        textColor: [255, 255, 255], // Texto en blanco para contraste
+        fontSize: 10,
       },
-      tableWidth: 'auto', // Ajustar tabla automáticamente al ancho disponible
+      columnStyles: {
+        0: { cellWidth: 'auto' },
+        1: { cellWidth: 'auto' },
+        2: { cellWidth: 'auto' },
+        3: { cellWidth: 'auto' },
+        4: { cellWidth: 'auto' },
+        5: { cellWidth: 'auto' },
+      },
+      tableWidth: 'auto',
       margin: { left: 10, right: 10 },
       didDrawPage: (data) => {
         const currentDate = new Date();
@@ -620,6 +631,7 @@ const handleClick = () => {
     });
   };
 };
+
 
 /////////////////////7 EXCEL ///////////////////////////77
 const generarReporteExcel = () => {

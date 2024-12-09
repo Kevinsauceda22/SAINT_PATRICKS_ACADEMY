@@ -1625,7 +1625,6 @@ const generarReporteActividadesExcel = () => {
   XLSX.writeFile(libroDeTrabajo, nombreArchivo);
 };
 
-
 const generarReporteActividadesPDF = () => {
   // Validar que haya datos filtrados
   if (!filteredActividades || filteredActividades.length === 0) {
@@ -1637,6 +1636,9 @@ const generarReporteActividadesPDF = () => {
     });
     return; // Salir de la función si no hay datos
   }
+
+  // Calcular el total de los valores
+  const totalValor = filteredActividades.reduce((total, actividad) => total + parseFloat(actividad.Valor || 0), 0).toFixed(2);
 
   // Crear el PDF en orientación horizontal
   const doc = new jsPDF('landscape');
@@ -1687,20 +1689,6 @@ const generarReporteActividadesPDF = () => {
         yPosition,
         { align: 'center' }
       );
-    } else if (selectedSeccion?.Nombre_seccion && anioSeccionSeleccionada) {
-      doc.text(
-        `Sección: ${selectedSeccion.Nombre_seccion} | Año: ${anioSeccionSeleccionada}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
-    } else if (selectedAsignatura?.Nombre_asignatura) {
-      doc.text(
-        `Asignatura: ${selectedAsignatura.Nombre_asignatura}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
     }
 
     yPosition += 10;
@@ -1716,34 +1704,40 @@ const generarReporteActividadesPDF = () => {
     const pageHeight = doc.internal.pageSize.height; // Altura de la página
     let pageNumber = 1; // Página inicial
 
+    // Crear el cuerpo de la tabla
+    const body = filteredActividades.map((actividad, index) => [
+      index + 1,
+      actividad.Nombre_actividad_academica || '',
+      actividad.Descripcion || '',
+      listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A",
+      actividad.Fechayhora_Inicio
+        ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'N/A',
+      actividad.Fechayhora_Fin
+        ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+          })
+        : 'N/A',
+      actividad.Valor,
+    ]);
+
+ 
+
+    // Generar la tabla
     doc.autoTable({
       startY: yPosition,
       head: [['#', 'Nombre Actividad', 'Descripción', 'Ponderación', 'Inicio', 'Fin', 'Valor']],
-      body: filteredActividades.map((actividad, index) => [
-        index + 1,
-        actividad.Nombre_actividad_academica || '',
-        actividad.Descripcion || '',
-        listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A",
-        actividad.Fechayhora_Inicio
-          ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : 'N/A',
-        actividad.Fechayhora_Fin
-          ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : 'N/A',
-        actividad.Valor,
-      ]),
+      body: body,
       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
@@ -1754,6 +1748,26 @@ const generarReporteActividadesPDF = () => {
         cellPadding: 2,
         overflow: 'linebreak',
         valign: 'middle',
+      },
+
+
+
+      foot: [['', '', '', '', '', 'Total:', totalValor]], // Añadir fila total al pie de la tabla
+      headStyles: {
+        fillColor: [0, 102, 51], // Verde para el encabezado
+        textColor: [255, 255, 255],
+        fontSize: 9,
+      },
+      styles: {
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        valign: 'middle',
+      },
+      footStyles: {
+        fillColor: [0, 102, 51], // Verde para la fila del pie
+        textColor: [255, 255, 255], // Texto en blanco para contraste
+        fontSize: 10,
       },
       columnStyles: {
         0: { cellWidth: 10 }, // Columna '#'
@@ -1790,6 +1804,7 @@ const generarReporteActividadesPDF = () => {
     });
   };
 };
+
 
 
 
