@@ -4,6 +4,9 @@ import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription,cilFile,cilSpreadsheet } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
+
+import * as jwt_decode from 'jwt-decode';
+
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importa el plugin para tablas
 import * as XLSX from 'xlsx';
@@ -59,6 +62,18 @@ const ListaGradoAcademico = () => {
 
   useEffect(() => {
     fetchGradosAcademicos();
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
   }, []);
 
 
@@ -79,6 +94,7 @@ const ListaGradoAcademico = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -89,6 +105,7 @@ const ListaGradoAcademico = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -104,6 +121,7 @@ const ListaGradoAcademico = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -131,7 +149,8 @@ const ListaGradoAcademico = () => {
     swal.fire({
       icon: 'warning',
       title: 'Accion bloquear',
-      text:'Copiar y pegar no esta permitido'
+      text:'Copiar y pegar no esta permitido',
+      confirmButtonText: 'Aceptar',
     });
   };
   
@@ -188,13 +207,14 @@ const handleCreateGrado = async () => {
       icon: 'error',
       title: 'Error',
       text: 'El campo "Grado académico" no puede estar vacío',
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
 
   // Verificar si ya existe una especialidad con la misma descripción
   const especialidadDuplicada = gradosAcademicos.some(
-    (grado) => grado.Descripcion.toLowerCase() === nuevoGrado.Descripcion.toLowerCase()
+    (grado) => grado.Descripcion.trim().toLowerCase() === nuevoGrado.Descripcion.trim().toLowerCase()
   );
 
   if (especialidadDuplicada) {
@@ -203,20 +223,59 @@ const handleCreateGrado = async () => {
       icon: 'error',
       title: 'Error',
       text: `El grado academico "${nuevoGrado.Descripcion}" ya existe`,
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
 
   try {
+     // Verificar si obtenemos el token correctamente
+     const token = localStorage.getItem('token');
+     if (!token) {
+       swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+       return;
+     }
+ 
+     // Decodificar el token para obtener el nombre del usuario
+     const decodedToken = jwt_decode.jwtDecode(token);
+     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+       console.error('No se pudo obtener el código o el nombre de usuario del token');
+       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+     }
     const response = await fetch('http://localhost:4000/api/gradosAcademicos/crearGradoAcademico', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(nuevoGrado),
     });
 
     if (response.ok) {
+       // 2. Registrar la acción en la bitácora
+       const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo grado académico: ${nuevoGrado.Descripcion} `;
+        
+       // Enviar a la bitácora
+       const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+         },
+         body: JSON.stringify({
+           cod_usuario: decodedToken.cod_usuario, // Código del usuario
+           cod_objeto: 56, // Código del objeto para la acción
+           accion: 'INSERT', // Acción realizada
+           descripcion: descripcion, // Descripción de la acción
+         }),
+       });
+ 
+       if (bitacoraResponse.ok) {
+         console.log('Registro en bitácora exitoso');
+       } else {
+         swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+       }
+
       fetchGradosAcademicos();
       setModalVisible(false);
       resetNuevoGrado();
@@ -228,6 +287,7 @@ const handleCreateGrado = async () => {
         icon: 'success',
         title: '¡Éxito!',
         text: 'El grado académico se ha creado correctamente',
+        confirmButtonText: 'Aceptar',
       });
     } else {
       console.error('Hubo un problema al crear el grado académico:', response.statusText);
@@ -244,6 +304,7 @@ const handleUpdateGrado = async () => {
       icon: 'error',
       title: 'Error',
       text: 'El campo "Grado académico" no puede estar vacío',
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
@@ -251,7 +312,7 @@ const handleUpdateGrado = async () => {
   // Verificar si ya existe una especialidad con la misma descripción
   const especialidadDuplicada = gradosAcademicos.some(
     (grado) => 
-      grado.Descripcion.toLowerCase() === gradoToUpdate.Descripcion.toLowerCase() &&
+      grado.Descripcion.trim().toLowerCase() === gradoToUpdate.Descripcion.trim().toLowerCase() &&
       grado.Cod_grado_academico !== gradoToUpdate.Cod_grado_academico
   );
 
@@ -261,20 +322,58 @@ const handleUpdateGrado = async () => {
       icon: 'error',
       title: 'Error',
       text: `El grado academico "${gradoToUpdate.Descripcion}" ya existe`,
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
 
   try {
+     // Verificar si obtenemos el token correctamente
+     const token = localStorage.getItem('token');
+     if (!token) {
+       swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+       return;
+     }
+ 
+     // Decodificar el token para obtener el nombre del usuario
+     const decodedToken = jwt_decode.jwtDecode(token);
+     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+       console.error('No se pudo obtener el código o el nombre de usuario del token');
+       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+     }
     const response = await fetch('http://localhost:4000/api/gradosAcademicos/actualizarGradoAcademico', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(gradoToUpdate),
     });
 
     if (response.ok) {
+       // 2. Registrar la acción en la bitácora
+       const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el grado académico a: ${gradoToUpdate.Descripcion} con código ${gradoToUpdate.Cod_grado_academico} `;
+        
+       // Enviar a la bitácora
+       const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+           'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+         },
+         body: JSON.stringify({
+           cod_usuario: decodedToken.cod_usuario, // Código del usuario
+           cod_objeto: 56, // Código del objeto para la acción
+           accion: 'UPDATE', // Acción realizada
+           descripcion: descripcion, // Descripción de la acción
+         }),
+       });
+ 
+       if (bitacoraResponse.ok) {
+         console.log('Registro en bitácora exitoso');
+       } else {
+         swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+       }
       fetchGradosAcademicos();
       setModalUpdateVisible(false);
       setGradoToUpdate();
@@ -286,6 +385,7 @@ const handleUpdateGrado = async () => {
         icon: 'success',
         title: '¡Éxito!',
         text: 'El grado académico se ha actualizado correctamente',
+        confirmButtonText: 'Aceptar',
       });
     } else {
       console.error('Hubo un problema al actualizar el grado académico:', response.statusText);
@@ -297,15 +397,53 @@ const handleUpdateGrado = async () => {
 
   const handleDeleteGrado = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
       const response = await fetch('http://localhost:4000/api/gradosAcademicos/eliminarGradoAcademico', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ Cod_grado_academico: gradoToDelete.Cod_grado_academico }),
       });
 
       if (response.ok) {
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el grado académico: ${gradoToDelete.Descripcion} con código ${gradoToDelete.Cod_grado_academico} `;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 56, // Código del objeto para la acción
+             accion: 'DELETE', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+             confirmButtonText: 'Aceptar',
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
         fetchGradosAcademicos();
         setModalDeleteVisible(false);
         setGradoToDelete({});
@@ -313,6 +451,7 @@ const handleUpdateGrado = async () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'El grado académico se ha eliminado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         console.error('Hubo un problema al eliminar el grado académico', response.statusText);
@@ -342,18 +481,53 @@ const paginate = (pageNumber) => {
 // Cambia el estado de la página actual después de aplicar el filtro
   // Validar el buscador
   const handleSearch = (event) => {
-    const input = event.target.value.toUpperCase();
-    const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
-    
-    if (!regex.test(input)) {
+    const input = event.target;
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
+  
+    const regex = /^[A-Z-Ñ\s]*$/; // Solo letras, números, acentos, ñ, espacios y comas
+  
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+  
+    // Validar caracteres permitidos
+    if (!regex.test(value)) {
       swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
-    setSearchTerm(input);
+  
+    // Validación para letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
+          });
+          return;
+        }
+      }
+    }
+    setSearchTerm(value);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
@@ -369,7 +543,7 @@ const generarReporteGradosAcademicosPDF = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -475,7 +649,7 @@ const generarReporteExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte Excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -542,12 +716,12 @@ const generarReporteExcel = () => {
     <CContainer>
        {/*Contenedor del hi y boton "nuevo" */}
 <CRow className='align-items-center mb-5'>
-<CCol xs="8" md="9"> 
+<CCol xs="12" md="9"> 
     {/* Titulo de la pagina */}
       <h1 className="mb-0">Mantenimiento Grados Académicos</h1>
       </CCol>
 
-      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+      <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
 
       {canInsert && (
@@ -590,7 +764,6 @@ const generarReporteExcel = () => {
           style={{
             backgroundColor: "#6C8E58",
             color: "white",
-            fontSize: "0.85rem",
             cursor: "pointer",
             transition: "all 0.3s ease",
           }}
@@ -603,7 +776,7 @@ const generarReporteExcel = () => {
             e.currentTarget.style.boxShadow = "none";
           }}
         >
-          <CIcon icon={cilDescription}/>Reporte
+          <CIcon icon={cilDescription}/> Reporte
         </CDropdownToggle>
         <CDropdownMenu
           style={{

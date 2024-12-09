@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription,cilFile,cilSpreadsheet } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
+
+import * as jwt_decode from 'jwt-decode';
+
 import { left } from '@popperjs/core';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importa el plugin para tablas
@@ -57,6 +60,18 @@ const ListaTipoContratos = () => {
 
   useEffect(() => {
     fetchTipoContratos();
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
   }, []);
 
   const fetchTipoContratos = async () => {
@@ -91,6 +106,7 @@ const ListaTipoContratos = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -101,6 +117,7 @@ const ListaTipoContratos = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -116,6 +133,7 @@ const ListaTipoContratos = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -143,7 +161,8 @@ const disableCopyPaste =(e) => {
   swal.fire({
     icon: 'warning',
     title: 'Accion bloquear',
-    text:'Copiar y pegar no esta permitido'
+    text:'Copiar y pegar no esta permitido',
+    confirmButtonText: 'Aceptar',
   });
 };
 
@@ -181,13 +200,14 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
         icon: 'error',
         title: 'Error',
         text: 'El campo "Tipo Contrato" no puede estar vacío',
+        confirmButtonText: 'Aceptar',
       });
       return; // Detener la ejecución si el campo está vacío
     }
   
     // Verificar si ya existe una especialidad con la misma descripción
   const Duplicada = tiposContratos.some(
-    (contrato) => contrato.Descripcion.toLowerCase() === nuevoContrato.Descripcion.toLowerCase()
+    (contrato) => contrato.Descripcion.trim().toLowerCase() === nuevoContrato.Descripcion.trim().toLowerCase()
   );
 
     // Verificar si el tipo de contrato ya existe
@@ -196,20 +216,59 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
         icon: 'error',
         title: 'Error',
         text: `El tipo de contrato "${nuevoContrato.Descripcion}" ya existe`,
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
   
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
       const response = await fetch('http://localhost:4000/api/contratos/creartiposContrato', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(nuevoContrato),
       });
   
       if (response.ok) {
+
+        // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo tipo de contrato: ${nuevoContrato.Descripcion} `;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 59, // Código del objeto para la acción
+            accion: 'INSERT', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
         fetchTipoContratos();
         setModalVisible(false);
         resetNuevoContrato();
@@ -220,6 +279,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
           icon: 'success',
           title: '¡Éxito!',
           text: 'El tipo de contrato se ha creado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         console.error('Hubo un problema al crear el tipo de contrato:', response.statusText);
@@ -236,6 +296,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
         icon: 'error',
         title: 'Error',
         text: 'El campo "Tipo Contrato" no puede estar vacío',
+        confirmButtonText: 'Aceptar',
       });
       return; // Detener la ejecución si el campo está vacío
     }
@@ -243,7 +304,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
     // Verificar si ya existe una especialidad con la misma descripción
   const Duplicada = tiposContratos.some(
     (contrato) => 
-      contrato.Descripcion.toLowerCase() === contratoToUpdate.Descripcion.toLowerCase() &&
+      contrato.Descripcion.trim().toLowerCase() === contratoToUpdate.Descripcion.trim().toLowerCase() &&
       contrato.Cod_tipo_contrato !== contratoToUpdate.Cod_tipo_contrato
   );
 
@@ -253,20 +314,60 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
         icon: 'error',
         title: 'Error',
         text: `El tipo de contrato "${contratoToUpdate.Descripcion}" ya existe`,
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
   
     try {
+      // Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      if (!token) {
+        swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // Decodificar el token para obtener el nombre del usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+        console.error('No se pudo obtener el código o el nombre de usuario del token');
+        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+      }
+  
       const response = await fetch('http://localhost:4000/api/contratos/actualizartiposContrato', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(contratoToUpdate),
       });
   
       if (response.ok) {
+
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el tipo de contrato a: ${contratoToUpdate.Descripcion} con código ${contratoToUpdate.Cod_tipo_contrato} `;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 59, // Código del objeto para la acción
+             accion: 'UPDATE', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
         fetchTipoContratos();
         setModalUpdateVisible(false);
         resetContratoToUpdate();
@@ -277,6 +378,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
           icon: 'success',
           title: '¡Éxito!',
           text: 'El tipo de contrato se ha actualizado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         console.error('Hubo un problema alactualizar el tipo de contrato:', response.statusText);
@@ -292,20 +394,60 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
         icon: 'error',
         title: 'Error',
         text: 'No se pudo encontrar el contrato a eliminar.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
 
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
       const response = await fetch('http://localhost:4000/api/contratos/eliminartiposcontrato', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ Cod_tipo_contrato: contratoToDelete.Cod_tipo_contrato }),
       });
 
       if (response.ok) {
+
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el tipo de contrato: ${contratoToDelete.Descripcion} con código ${contratoToDelete.Cod_tipo_contrato} `;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 59, // Código del objeto para la acción
+             accion: 'DELETE', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+             confirmButtonText: 'Aceptar',
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
         fetchTipoContratos();
         setModalDeleteVisible(false);
         setContratoToDelete({});
@@ -313,6 +455,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
           icon: 'success',
           title: '¡Éxito!',
           text: 'El tipo de contrato se ha eliminado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         console.error('Hubo un problema al eliminar el tipo de contrato', response.statusText);
@@ -340,10 +483,52 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
 
 // Validar el buscador
  const handleSearchInputChange = (e) => {
-  const value = e.target.value
-  .toUpperCase() // Convertir a mayúsculas
-  .trimStart() // Evitar espacios al inicio
-  .replace(/[^a-zA-Z0-9\s]/g, ' '); // Elimina cualquier símbolo, permitiendo solo letras, números y espacios
+  const input = event.target;
+  let value = input.value
+    .toUpperCase() // Convertir a mayúsculas
+    .trimStart(); // Evitar espacios al inicio
+
+  const regex = /^[A-Z-Ñ\s]*$/; // Solo letras, números, acentos, ñ, espacios y comas
+
+  // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+  if (/\s{2,}/.test(value)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Espacios múltiples',
+      text: 'No se permite más de un espacio entre palabras.',
+      confirmButtonText: 'Aceptar',
+    });
+    value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+  }
+
+  // Validar caracteres permitidos
+  if (!regex.test(value)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Caracteres no permitidos',
+      text: 'Solo se permiten letras, números y espacios.',
+      confirmButtonText: 'Aceptar',
+    });
+    return;
+  }
+
+  // Validación para letras repetidas más de 4 veces seguidas
+  const words = value.split(' ');
+  for (let word of words) {
+    const letterCounts = {};
+    for (let letter of word) {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+      if (letterCounts[letter] > 4) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Repetición de letras',
+          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          confirmButtonText: 'Aceptar',
+        });
+        return;
+      }
+    }
+  }
   setSearchTerm(value); // Actualiza el estado searchTerm con el valor validado
 };
 
@@ -366,7 +551,7 @@ const generarReporteTiposContratosPDF = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -473,7 +658,7 @@ const generarReporteExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte Excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -542,18 +727,38 @@ const generarReporteExcel = () => {
     <CContainer>
       {/*Contenedor del hi y boton "nuevo" */}
 <CRow className='align-items-center mb-5'>
-<CCol xs="8" md="9"> 
+<CCol xs="12" md="9"> 
   {/* Titulo de la pagina */}
       <h1 className="mb-0">Mantenimiento Tipos de Contrato</h1>
       </CCol>
 
-      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+      <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
       {/* Botón "Nuevo" alineado a la derecha */}
 
       {canInsert && (
       <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white' }} // Ajusta la altura para alinearlo con la barra de búsqueda
-        className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+      className="mb-3 mb-md-0 me-md-3 gap-1 rounded shadow"
+      style={{
+        backgroundColor: '#4B6251',
+        color: 'white',
+        transition: 'all 0.3s ease',
+        height: '40px', // Altura fija del botón
+        width: 'auto', // El botón se ajusta automáticamente al contenido
+        minWidth: '100px', // Establece un ancho mínimo para evitar que el botón sea demasiado pequeño
+        padding: '0 16px', // Padding consistente
+        fontSize: '16px', // Tamaño de texto consistente
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center', // Centra el contenido
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = "#3C4B43";
+        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = "#4B6251";
+        e.currentTarget.style.boxShadow = 'none';
+      }}
         onClick={() => {setModalVisible(true);
           setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
         }}
@@ -567,58 +772,52 @@ const generarReporteExcel = () => {
       )}
             {/* Dropdown para reporte */}
             <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-        <CDropdownToggle
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#6C8E58',
+          color: 'white',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#5A784C';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#6C8E58';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu
+        style={{
+          position: "absolute",
+          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+          backgroundColor: "#fff",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+          borderRadius: "4px",
+          overflow: "hidden",
+        }}
+      >
+        <CDropdownItem
+          onClick={generarReporteTiposContratosPDF}
           style={{
-            backgroundColor: "#6C8E58",
-            color: "white",
-            fontSize: "0.85rem",
             cursor: "pointer",
-            transition: "all 0.3s ease",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            borderBottom: "1px solid #eaeaea",
+            transition: "background-color 0.1s",
           }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#5A784C";
-            e.currentTarget.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#6C8E58";
-            e.currentTarget.style.boxShadow = "none";
-          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
         >
-          Reporte
-        </CDropdownToggle>
-        <CDropdownMenu
-          style={{
-            position: "absolute",
-            zIndex: 1050,
-            backgroundColor: "#fff",
-            boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
-            borderRadius: "4px",
-            overflow: "hidden",
-          }}
-        >
-          {/* Opción para PDF */}
-          <CDropdownItem
-            onClick={generarReporteTiposContratosPDF}
-            style={{
-              cursor: "pointer",
-              outline: "none",
-              backgroundColor: "transparent",
-              padding: "0.5rem 1rem",
-              fontSize: "0.85rem",
-              color: "#333",
-              borderBottom: "1px solid #eaeaea",
-              transition: "background-color 0.3s",
-            }}
-            onMouseOver={(e) =>
-              (e.target.style.backgroundColor = "#f5f5f5")
-            }
-            onMouseOut={(e) =>
-              (e.target.style.backgroundColor = "transparent")
-            }
-          >
-            <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-          </CDropdownItem>
-          <CDropdownItem
+          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+        </CDropdownItem>
+        <CDropdownItem
         onClick={generarReporteExcel}
           style={{
             cursor: "pointer",
