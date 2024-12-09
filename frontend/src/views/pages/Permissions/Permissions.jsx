@@ -43,7 +43,8 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '93', name: 'ListaSecciones Asignatura', description: 'ListaSecciones' },
     { id: '94', name: 'Lista Parametro', description: 'ListaParametro' },
     { id: '95', name: 'Cuadro Profesor', description: 'ListaCuadroProfesor' },
-    { id: '95', name: 'Cuadro', description: 'ListaCuadro' }
+    { id: '95', name: 'Cuadro', description: 'ListaCuadro' },
+    { id: '103', name: 'CuadroPadre', description: 'ListaCuadroPadre' }
 
   ];
 
