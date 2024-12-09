@@ -1766,7 +1766,10 @@ const handleObservacionChangeActualizar = (index, value) => {
       <CModal visible={mostrarModal} onClose={() => setMostrarModal(false)} size="xl" backdrop="static" centered>
         <CModalHeader closeButton={false}>
           <h5 className="modal-title">Asistencias de la Sección </h5>
-          <CButton type="button" className="btn-close" onClick={() => setMostrarModal(false)} />
+          <CButton type="button" className="btn-close" onClick={() => {
+      setMostrarModal(false); // Cierra el modal
+      setNombreBusqueda("");  // Limpia la barra de búsqueda
+    }} />
         </CModalHeader>
         <CModalBody style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'auto', padding: '1.5rem' }}>
           {/* Filtro por nombre */}
