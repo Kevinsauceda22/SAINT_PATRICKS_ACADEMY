@@ -692,9 +692,10 @@ const ListaGestion_Academica = () => {
   </div>
 
   {/* Modal para crear un nuevo agrupador */}
-  <CModal visible={showModal} onClose={handleCloseModal}>
+  <CModal visible={showModal} onClose={handleCloseModal}  backdrop="static">
     <CModalHeader onClose={handleCloseModal}>
       <CModalTitle>Crear Nuevo Agrupador</CModalTitle>
+      
     </CModalHeader>
     <CModalBody>
       <p>
