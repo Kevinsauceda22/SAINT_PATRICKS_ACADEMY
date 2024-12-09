@@ -589,12 +589,21 @@ const ListaGrados = () => {
         doc.text('Reporte de Grados', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
         yPosition += 10;
 
-        doc.setFontSize(12);
-        doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-        const currentDate = new Date().toLocaleDateString();
-        doc.text(`Fecha de generación: ${currentDate}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-        yPosition += 6; // Espaciado antes de la línea divisoria
-
+      // Información adicional
+      doc.setFontSize(10);
+      doc.setTextColor(100); // Gris para texto secundario
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 6; // Espaciado antes de la línea divisoria
+  
         // Línea divisoria
         doc.setLineWidth(0.5);
         doc.setDrawColor(0, 102, 51);
@@ -623,6 +632,10 @@ const ListaGrados = () => {
                 fontSize: 10,
                 cellPadding: 3,
                 halign: 'center',
+            },
+            columnStyles: {
+              0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+              1: { cellWidth: 'auto' }, // Columna 'Descripción' se ajusta automáticamente
             },
             alternateRowStyles: { fillColor: [240, 248, 255] },
             didDrawPage: (data) => {
