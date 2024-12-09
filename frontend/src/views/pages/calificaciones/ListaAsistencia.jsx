@@ -270,6 +270,7 @@ useEffect(() => {
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
+      confirmButtonText: 'Aceptar',
     });
   };
 
@@ -289,6 +290,7 @@ useEffect(() => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -299,6 +301,7 @@ useEffect(() => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -314,6 +317,7 @@ useEffect(() => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -924,7 +928,7 @@ const handleObservacionChangeActualizar = (index, value) => {
   
   const generarReporteseccionesExcel = () => {
      // Validar que haya datos en la tabla
-  if (!secciones || secciones.length === 0) {
+  if (!currentRecords2 || currentRecords2.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
@@ -941,7 +945,7 @@ const handleObservacionChangeActualizar = (index, value) => {
     ];
   
     // Crear filas con asistencias filtradas
-    const filas = secciones.map((seccion, index) => [
+    const filas = currentRecords2.map((seccion, index) => [
       index + 1,
       seccion.Seccion,
       seccion.Grado,
@@ -992,7 +996,7 @@ const handleObservacionChangeActualizar = (index, value) => {
   
   const generarReporteseccionesPDF = () => {
      // Validar que haya datos en la tabla
-   if (!secciones || secciones.length === 0) {
+   if (!currentRecords2 || currentRecords2.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
@@ -1052,7 +1056,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       doc.autoTable({
         startY: yPosition + 4,
         head: [['#', 'Sección', 'Grado', 'Año Académico','Profesor']],
-        body: secciones.map((seccion, index) => [
+        body: currentRecords2.map((seccion, index) => [
           index + 1,
           `${seccion.Seccion || ''}`.trim(),
           seccion.Grado,
@@ -1162,6 +1166,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -1172,6 +1177,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -1187,6 +1193,7 @@ const handleObservacionChangeActualizar = (index, value) => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
