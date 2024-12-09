@@ -1,30 +1,45 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription, } from '@coreui/icons'; // Importar iconos específicos
 import Swal from 'sweetalert2';
+import logo from 'src/assets/brand/logo_saint_patrick.png'
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+
+//necesarios abajo
+import axios from 'axios';
+import * as jwt_decode from 'jwt-decode';
+
+
 import {
-  CButton,
-  CContainer,
-  CForm,
-  CFormInput,
+   CTable,
+   CForm,
+   CContainer,
+  CTableHead,
+  CTableRow,
+  CTableHeaderCell,
+  CCol,
+  CRow,
   CInputGroup,
   CInputGroupText,
+  CTableBody,
+  CFormInput,
+  CDropdown,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
+  CTableDataCell,
   CModal,
   CModalHeader,
   CModalTitle,
   CModalBody,
   CModalFooter,
-  CPagination,
-  CTable,
-  CTableHead,
-  CTableRow,
-  CTableHeaderCell,
-  CTableBody,
-  CTableDataCell,
+  CButton,
   CFormSelect,
-  CRow,
-  CCol,
+  CSpinner,
+  CPagination
 } from '@coreui/react';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
@@ -48,7 +63,19 @@ const ListaPonderaciones = () => {
 
   useEffect(() => {
     fetchPonderacion();
-  }, []);
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
+  });
 
   const fetchPonderacion = async () => {
     try {
@@ -109,6 +136,98 @@ const ListaPonderaciones = () => {
     return true;
   };
 
+  const handleReportePdfClick = () => {
+    // Validar que haya datos en la tabla
+    if (!currentRecords || currentRecords.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Tabla vacía',
+            text: 'No hay datos disponibles para generar el reporte.',
+            confirmButtonText: 'Entendido',
+        });
+        return; // Salir de la función si no hay datos
+    }
+
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = logo; // Asegúrate de importar el logo correctamente
+
+    img.onload = () => {
+        // Agregar logo
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+        let yPosition = 20;
+
+        // Título principal
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51);
+        doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+        yPosition += 12;
+
+        // Subtítulo
+        doc.setFontSize(16);
+        doc.text('Reporte de Ponderaciones', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+        yPosition += 10;
+
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+        const currentDate = new Date().toLocaleDateString();
+        doc.text(`Fecha de generación: ${currentDate}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+        yPosition += 6; // Espaciado antes de la línea divisoria
+
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51);
+        doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+
+        // Configuración para la tabla
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
+        let pageNumber = 1; // Página inicial
+
+        // Configuración de tabla
+        doc.autoTable({
+            startY: yPosition + 4,
+            head: [['#', 'Descripción de Ponderación']],
+            body: currentRecords.map((ponderacion, index) => [
+                ponderacion.originalIndex || index + 1, // Índice original o basado en el índice actual
+                ponderacion.Descripcion_ponderacion, // Descripción de la ponderación
+            ]),
+            headStyles: {
+                fillColor: [0, 102, 51],
+                textColor: [255, 255, 255],
+                fontSize: 10,
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 3,
+                halign: 'center',
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] },
+            didDrawPage: (data) => {
+                // Pie de página
+                const currentDate = new Date();
+                const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+                const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+                doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+                pageNumber += 1; // Incrementar el número de página
+            },
+        });
+
+        // Abrir el PDF
+        window.open(doc.output('bloburl'), '_blank');
+    };
+
+    img.onerror = () => {
+        console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+        window.open(doc.output('bloburl'), '_blank');
+    };
+};
+
+
   // Función para manejar cambios en el input
   const handleInputChange = (e, setFunction) => {
     const input = e.target;
@@ -117,7 +236,7 @@ const ListaPonderaciones = () => {
       .toUpperCase() // Convertir a mayúsculas
       .trimStart(); // Evitar espacios al inicio
 
-    const regex = /^[A-ZÑ\s]*$/; // Solo letras y espacios
+      const regex = /^[A-Za-z0-9Ññ\s]*$/;  // Solo letras, números y espacios
 
     // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
     if (/\s{2,}/.test(value)) {
@@ -211,84 +330,245 @@ const ListaPonderaciones = () => {
 
 
 
-
   const handleCreatePonderacion = async () => {
     if (!validarPonderacion()) return;
+  
     try {
+      // 1. Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      console.log('Token obtenido:', token);  // Depuración
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // 2. Realizar la solicitud para crear la ponderación
       const response = await fetch('http://localhost:4000/api/ponderaciones/crearPonderacion', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
         },
-        body: JSON.stringify({Descripcion_ponderacion : nuevaPonderacion}),
+        body: JSON.stringify({
+          Descripcion_ponderacion: nuevaPonderacion,  // El dato que quieres enviar
+        }),
       });
-
+  
+      // 3. Verificar si la respuesta fue exitosa
       if (response.ok) {
-        fetchPonderacion();
-        setModalVisible(false);
-        resetNuevaPonderacion();
-        setHasUnsavedChanges(false);
-        
-        Swal.fire('¡Éxito!', 'La ponderacion se ha creado correctamente', 'success');
+        // 4. Decodificar el token para obtener el código de usuario
+        const decodedToken = jwt_decode.jwtDecode(token);
+        console.log('Token decodificado:', decodedToken);  // Depuración
+  
+        // Verificar si el código de usuario está presente en el token
+        if (!decodedToken.cod_usuario) {
+          console.error('No se pudo obtener el código de usuario del token');
+          throw new Error('No se pudo obtener el código de usuario del token');
+        }
+  
+        // 5. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado una nueva ponderación`;
+  
+        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+          {
+            cod_usuario: decodedToken.cod_usuario,
+            cod_objeto: 58,  // Código de objeto para la acción de crear ponderación
+            accion: 'INSERT',
+            descripcion: descripcion,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+  
+        console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
+  
+        if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+          console.log('Registro en bitácora exitoso');
+          Swal.fire('¡Éxito!', 'La ponderación se ha creado correctamente', 'success');
+  
+          // 6. Realizar las acciones posteriores después de la creación exitosa
+          fetchPonderacion(); // Refrescar la lista de ponderaciones
+          setModalVisible(false); // Cerrar el modal
+          resetNuevaPonderacion(); // Resetear el estado de la nueva ponderación
+          setHasUnsavedChanges(false); // Restablecer el estado de cambios no guardados
+  
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
       } else {
-        Swal.fire('Error', 'Hubo un problema al crear la ponderacion', 'error');
+        Swal.fire('Error', 'Hubo un problema al crear la ponderación', 'error');
       }
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al crear la ponderacion', 'error');
+      console.error('Error al crear la ponderación:', error);
+      Swal.fire('Error', 'Hubo un problema al crear la ponderación', 'error');
     }
   };
-
+  
   const handleUpdatePonderacion = async () => {
     if (!validarPonderacionUpdate()) return;
+  
     try {
+      // 1. Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      console.log('Token obtenido:', token);  // Depuración
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // 2. Realizar la solicitud para actualizar la ponderación
       const response = await fetch('http://localhost:4000/api/ponderaciones/actualizarPonderacion', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
         },
-        body: JSON.stringify({ Cod_ponderacion: ponderacionToUpdate.Cod_ponderacion, Descripcion_ponderacion: ponderacionToUpdate.Descripcion_ponderacion }), // Envío del nombre actualizado y Cod_ponderacion en el cuerpo
+        body: JSON.stringify({
+          Cod_ponderacion: ponderacionToUpdate.Cod_ponderacion,
+          Descripcion_ponderacion: ponderacionToUpdate.Descripcion_ponderacion,
+        }),
       });
-
+  
+      // 3. Verificar si la respuesta fue exitosa
       if (response.ok) {
-        fetchPonderacion(); // Refrescar la lista de ponderaciones después de la actualización
-        setModalUpdateVisible(false); // Cerrar el modal de actualización
-        resetPonderaciontoUpdate();
-        setHasUnsavedChanges(false);
-        Swal.fire('¡Éxito!', 'La ponderacion se ha actualizado correctamente', 'success');
+        // 4. Decodificar el token para obtener el código de usuario
+        const decodedToken = jwt_decode.jwtDecode(token);
+        console.log('Token decodificado:', decodedToken);  // Depuración
+  
+        // Verificar si el código de usuario está presente en el token
+        if (!decodedToken.cod_usuario) {
+          console.error('No se pudo obtener el código de usuario del token');
+          throw new Error('No se pudo obtener el código de usuario del token');
+        }
+  
+        // 5. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la ponderación: ${ponderacionToUpdate.Descripcion_ponderacion}; `;
+  
+        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+          {
+            cod_usuario: decodedToken.cod_usuario,
+            cod_objeto: 58,  // Código de objeto para la acción de actualizar ponderación
+            accion: 'UPDATE',
+            descripcion: descripcion,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+  
+        console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
+  
+        if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+          console.log('Registro en bitácora exitoso');
+          Swal.fire('¡Éxito!', 'La ponderación se ha actualizado correctamente', 'success');
+  
+          // 6. Realizar las acciones posteriores después de la actualización exitosa
+          fetchPonderacion(); // Refrescar la lista de ponderaciones
+          setModalUpdateVisible(false); // Cerrar el modal
+          resetPonderaciontoUpdate(); // Resetear el estado de la ponderación a actualizar
+          setHasUnsavedChanges(false); // Restablecer el estado de cambios no guardados
+  
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
       } else {
-        Swal.fire('Error', 'Hubo un problema al actualizar la ponderacion', 'error');
+        Swal.fire('Error', 'Hubo un problema al actualizar la ponderación', 'error');
       }
-    /*  if (!ponderacionToUpdate.Descripcion_ponderacion) {
-        Swal.fire('Error', 'La Descripcion de la ponderacion es obligatorio', 'error');
-        return false;
-      }*/
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al actualizar la ponderacion', 'error');
+      console.error('Error al actualizar la ponderación:', error);
+      Swal.fire('Error', 'Hubo un problema al actualizar la ponderación', 'error');
     }
   };
-
+  
   const handleDeletePonderacion = async () => {
     try {
+      // 1. Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      console.log('Token obtenido:', token);  // Depuración
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // 2. Realizar la solicitud para eliminar la ponderación
       const response = await fetch('http://localhost:4000/api/ponderaciones/eliminarPonderacion', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
         },
-        body: JSON.stringify({ Cod_ponderacion: ponderacionToDelete.Cod_ponderacion }), // Enviar Cod_ponderacion en el cuerpo
+        body: JSON.stringify({
+          Cod_ponderacion: ponderacionToDelete.Cod_ponderacion,
+        }),
       });
-
+  
+      // 3. Verificar si la respuesta fue exitosa
       if (response.ok) {
-        fetchPonderacion();
-        setModalDeleteVisible(false); // Cerrar el modal de confirmación
-        setPonderacionToDelete({}); // Resetear la ponderacion a eliminar
-        Swal.fire('¡Éxito!', 'La ponderacion se ha eliminado correctamente', 'success');
+        // 4. Decodificar el token para obtener el código de usuario
+        const decodedToken = jwt_decode.jwtDecode(token);
+        console.log('Token decodificado:', decodedToken);  // Depuración
+  
+        // Verificar si el código de usuario está presente en el token
+        if (!decodedToken.cod_usuario) {
+          console.error('No se pudo obtener el código de usuario del token');
+          throw new Error('No se pudo obtener el código de usuario del token');
+        }
+  
+        // 5. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado la ponderación: ${ponderacionToDelete.Descripcion_ponderacion}`;
+  
+        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+          {
+            cod_usuario: decodedToken.cod_usuario,
+            cod_objeto: 58,  // Código de objeto para la acción de eliminar ponderación
+            accion: 'DELETE',
+            descripcion: descripcion,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+  
+        console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
+  
+        if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+          console.log('Registro en bitácora exitoso');
+          Swal.fire('¡Éxito!', 'La ponderación se ha eliminado correctamente', 'success');
+  
+          // 6. Realizar las acciones posteriores después de la eliminación exitosa
+          fetchPonderacion(); // Refrescar la lista de ponderaciones
+          setModalDeleteVisible(false); // Cerrar el modal de confirmación
+          setPonderacionToDelete({}); // Resetear el estado de la ponderación a eliminar
+  
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
       } else {
-        Swal.fire('Error', 'La ponderacion ya pertenece a un grado', 'error');
+        // Si la respuesta no es ok, verificar si la ponderación está siendo utilizada
+        const responseData = await response.json();
+        if (responseData.error === 'La ponderación ya pertenece a un grado') {
+          Swal.fire('Error', 'La ponderación ya pertenece a un grado', 'error');
+        } else {
+          Swal.fire('Error', 'Hubo un problema al eliminar la ponderación', 'error');
+        }
       }
+  
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al eliminar la ponderacion', 'error');
+      console.error('Error al eliminar la ponderación:', error);
+      Swal.fire('Error', 'Hubo un problema al eliminar la ponderación', 'error');
     }
   };
+  
 
   const openUpdateModal = (ponderacion) => {
     setPonderacionToUpdate(ponderacion); // Cargar los datos de la ponderacion a actualizar
@@ -368,6 +648,7 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
         {/* Botón de Reporte */}
         <CButton 
           style={{ backgroundColor: '#6C8E58', color: 'white' }}
+          onClick={() => {handleReportePdfClick();}}
         >
           <CIcon icon={cilDescription} /> Reporte
         </CButton>

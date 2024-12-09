@@ -1,30 +1,46 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription, } from '@coreui/icons'; // Importar iconos específicos
 import Swal from 'sweetalert2';
+import logo from 'src/assets/brand/logo_saint_patrick.png'
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+
+//necesarios abajo
+import axios from 'axios';
+import * as jwt_decode from 'jwt-decode';
+
+
+
 import {
-  CButton,
-  CContainer,
-  CForm,
-  CFormInput,
+  CTable,
+  CTableHead,
+  CTableRow,
+  CTableHeaderCell,
+  CCol,
+  CRow,
   CInputGroup,
   CInputGroupText,
+  CTableBody,
+  CFormInput,
+  CDropdown,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
+  CTableDataCell,
   CModal,
   CModalHeader,
   CModalTitle,
   CModalBody,
   CModalFooter,
-  CPagination,
-  CTable,
-  CTableHead,
-  CTableRow,
-  CTableHeaderCell,
-  CTableBody,
-  CTableDataCell,
+  CButton,
   CFormSelect,
-  CRow,
-  CCol,
+  CSpinner,
+  CPagination,
+  CContainer,
+  CForm
 } from '@coreui/react';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
@@ -55,7 +71,19 @@ const ListaGrados = () => {
   useEffect(() => {
     fetchGrados();
     fetchCiclos(); // Llama a la función para obtener ciclos
-  }, []);
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
+  });
 
   const fetchCiclos = async () => { // Asegúrate de que esta función esté definida
     try {
@@ -184,7 +212,7 @@ const ListaGrados = () => {
       .toUpperCase() // Convertir a mayúsculas
       .trimStart(); // Evitar espacios al inicio
 
-    const regex = /^[A-ZÑ\s]*$/; // Solo letras y espacios
+      const regex = /^[A-Za-z0-9Ññ\s]*$/;  // Solo letras, números y espacios
 
     // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
     if (/\s{2,}/.test(value)) {
@@ -273,91 +301,353 @@ const ListaGrados = () => {
     }
   };
 
-
-
   const handleCreateGrado = async () => {
-    if (!validarCiclo() || !validarGrado()) return;
+    if (!validarCiclo() || !validarGrado()) return;  // Verificar si el ciclo y grado son válidos antes de continuar
+  
     try {
-      const response = await fetch('http://localhost:4000/api/grados/crearGrado', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          Cod_ciclo: nuevoCiclo, // O ajusta según lo que necesites enviar
+      // 1. Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      console.log('Token obtenido:', token);  // Depuración
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // 3. Realizar la solicitud para crear el grado
+      const response = await axios.post(
+        'http://localhost:4000/api/grados/crearGrado',
+        {
+          Cod_ciclo: nuevoCiclo,
           Nombre_grado: nuevoGrado,
           Prefijo: nuevoprefijo,
-        }),
-      });
-
-      if (response.ok) {
-        fetchGrados(); // Refrescar la lista de grados después de crear uno nuevo
-        setModalVisible(false); // Cerrar el modal
-        setNuevoCiclo('');  // Restablecer estado de ciclo
-        resetNuevoGrado();
-        setHasUnsavedChanges(false);
-        Swal.fire('¡Éxito!', 'El grado se ha creado correctamente', 'success');
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
+          },
+        }
+      );
+  
+      console.log('Respuesta de crear grado:', response);  // Depuración
+  
+      // Verificar que la respuesta sea exitosa
+      if (response.status >= 200 && response.status < 300) {
+        // 4. Decodificar el token para obtener el código de usuario
+        const decodedToken = jwt_decode.jwtDecode(token);
+        console.log('Token decodificado:', decodedToken);  // Depuración
+  
+        // Verificar si el código de usuario está presente en el token
+        if (!decodedToken.cod_usuario) {
+          console.error('No se pudo obtener el código de usuario del token');
+          throw new Error('No se pudo obtener el código de usuario del token');
+        }
+  
+        // 5. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado un nuevo grado`;
+  
+        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+          {
+            cod_usuario: decodedToken.cod_usuario,
+            cod_objeto: 55,  // Código de objeto para la acción de crear grado
+            accion: 'INSERT',
+            descripcion: descripcion,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+  
+        console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
+  
+        if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+          console.log('Registro en bitácora exitoso');
+          Swal.fire('¡Éxito!', 'El grado se ha creado correctamente', 'success');
+  
+          // 6. Realizar las acciones posteriores después de la creación exitosa
+          fetchGrados();  // Refrescar la lista de grados
+          setModalVisible(false);  // Cerrar el modal
+          setNuevoCiclo('');  // Restablecer estado de ciclo
+          resetNuevoGrado();  // Restablecer estado del grado
+          setHasUnsavedChanges(false);  // Restablecer el estado de cambios no guardados
+  
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
       } else {
-        Swal.fire('Error', 'Hubo un problema al crear el grado', 'error');
+        Swal.fire('Error', 'No se pudo crear el grado', 'error');
       }
+  
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al crear el grado', 'error');
+      console.error('Error al crear el grado:', error);
+      Swal.fire('Error', `Hubo un problema al crear el grado: ${error.message}`, 'error');
     }
   };
-
-
+  
   const handleUpdateGrado = async () => {
     if (!gradoToUpdate.Cod_ciclo) {
       Swal.fire('Error', 'Debe seleccionar un ciclo de la lista', 'error');
       return false;
     }
-    if (!validarGradoUpdate()) return;
+    if (!validarGradoUpdate()) return;  // Verificar si el grado a actualizar es válido
+  
     try {
-      const response = await fetch('http://localhost:4000/api/grados/actualizarGrado', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ Cod_grado: gradoToUpdate.Cod_grado, Cod_ciclo: gradoToUpdate.Cod_ciclo, Nombre_grado: gradoToUpdate.Nombre_grado, Prefijo: gradoToUpdate.Prefijo }), // Envío del nombre actualizado y Cod_grado en el cuerpo
-      });
-
-      if (response.ok) {
-        fetchGrados(); // Refrescar la lista de grados después de la actualización
-        setModalUpdateVisible(false); // Cerrar el modal de actualización
-        resetGradotoUpdate(); // Resetear el ciclo a actualizar
-        setHasUnsavedChanges(false);
-        Swal.fire('¡Éxito!', 'El grado se ha actualizado correctamente', 'success');
-      } else {
-        Swal.fire('Error', 'Hubo un problema al actualizar el grado', 'error');
+      // 1. Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      console.log('Token obtenido:', token);  // Depuración
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
       }
+  
+      // 2. Realizar la solicitud para actualizar el grado
+      const response = await axios.put(
+        'http://localhost:4000/api/grados/actualizarGrado',
+        {
+          Cod_grado: gradoToUpdate.Cod_grado,
+          Cod_ciclo: gradoToUpdate.Cod_ciclo,
+          Nombre_grado: gradoToUpdate.Nombre_grado,
+          Prefijo: gradoToUpdate.Prefijo,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
+          },
+        }
+      );
+  
+      console.log('Respuesta de actualizar grado:', response);  // Depuración
+  
+      // Verificar que la respuesta sea exitosa
+      if (response.status >= 200 && response.status < 300) {
+        // 3. Decodificar el token para obtener el código de usuario
+        const decodedToken = jwt_decode.jwtDecode(token);  // Decodificar el token
+        console.log('Token decodificado:', decodedToken);  // Depuración
+  
+        // Verificar si el código de usuario está presente en el token
+        if (!decodedToken.cod_usuario) {
+          console.error('No se pudo obtener el código de usuario del token');
+          throw new Error('No se pudo obtener el código de usuario del token');
+        }
+  
+        // 4. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el grado a: ${gradoToUpdate.Nombre_grado}`;
+  
+        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro',
+          {
+            cod_usuario: decodedToken.cod_usuario,
+            cod_objeto: 55,  // Código de objeto para la acción de actualizar grado
+            accion: 'UPDATE',
+            descripcion: descripcion,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+  
+        console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
+  
+        if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+          console.log('Registro en bitácora exitoso');
+          Swal.fire('¡Éxito!', 'El grado se ha actualizado correctamente', 'success');
+  
+          // 5. Realizar las acciones posteriores después de la actualización exitosa
+          fetchGrados();  // Refrescar la lista de grados
+          setModalUpdateVisible(false);  // Cerrar el modal de actualización
+          resetGradotoUpdate();  // Resetear el ciclo a actualizar
+          setHasUnsavedChanges(false);  // Restablecer el estado de cambios no guardados
+  
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
+      } else {
+        Swal.fire('Error', 'No se pudo actualizar el grado', 'error');
+      }
+  
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al actualizar el grado', 'error');
+      console.error('Error al actualizar el grado:', error);
+      Swal.fire('Error', `Hubo un problema al actualizar el grado: ${error.message}`, 'error');
     }
   };
+  
 
 
   const handleDeleteGrado = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/grados/eliminarGrado', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ Cod_grado: gradoToDelete.Cod_grado }), // Enviar Cod_grado en el cuerpo
-      });
-
-      if (response.ok) {
-        fetchGrados(); // Refrescar la lista de grados después de la eliminación
-        setModalDeleteVisible(false); // Cerrar el modal de confirmación
-        setGradoToDelete({}); // Resetear el grado a eliminar
-        Swal.fire('¡Éxito!', 'El grado se ha eliminado correctamente', 'success');
-      } else {
-        Swal.fire('Error', 'Hubo un problema al eliminar el grado', 'error');
+      // 1. Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      console.log('Token obtenido:', token);  // Depuración
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
       }
+  
+      // 2. Decodificar el token para obtener el código de usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      console.log('Token decodificado:', decodedToken);  // Depuración
+  
+      // Verificar si el código de usuario está presente en el token
+      if (!decodedToken.cod_usuario) {
+        console.error('No se pudo obtener el código de usuario del token');
+        throw new Error('No se pudo obtener el código de usuario del token');
+      }
+  
+      // 3. Realizar la solicitud para eliminar el grado
+      const response = await axios.delete(
+        'http://localhost:4000/api/grados/eliminarGrado',
+        {
+          data: { Cod_grado: gradoToDelete.Cod_grado }, // Enviar Cod_grado en el cuerpo
+          headers: {
+            'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
+          },
+        }
+      );
+  
+      console.log('Respuesta de eliminar grado:', response);  // Depuración
+  
+      // Verificar que la respuesta sea exitosa
+      if (response.status >= 200 && response.status < 300) {
+        // 4. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el grado: ${gradoToDelete.Nombre_grado}`;
+  
+        const bitacoraResponse = await axios.post(
+          'http://localhost:4000/api/bitacora/registro',
+          {
+            cod_usuario: decodedToken.cod_usuario,
+            cod_objeto: 55,  // Código de objeto para la acción de eliminar grado
+            accion: 'DELETE',
+            descripcion: descripcion,
+          },
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+  
+        console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
+  
+        if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+          console.log('Registro en bitácora exitoso');
+          Swal.fire('¡Éxito!', 'El grado se ha eliminado correctamente', 'success');
+  
+          // 5. Realizar las acciones posteriores después de la eliminación exitosa
+          fetchGrados();  // Refrescar la lista de grados
+          setModalDeleteVisible(false);  // Cerrar el modal de confirmación
+          setGradoToDelete({});  // Resetear el grado a eliminar
+  
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
+      } else {
+        Swal.fire('Error', 'No se pudo eliminar el grado', 'error');
+      }
+  
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al eliminar el grado', 'error');
+      console.error('Error al eliminar el grado:', error);
+      Swal.fire('Error', `Hubo un problema al eliminar el grado: ${error.message}`, 'error');
     }
   };
+  
+  const handleReporteGradosPdfClick = () => {
+    // Validar que haya datos en la tabla
+    if (!currentRecords || currentRecords.length === 0) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Tabla vacía',
+            text: 'No hay datos disponibles para generar el reporte.',
+            confirmButtonText: 'Entendido',
+        });
+        return; // Salir de la función si no hay datos
+    }
+
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = logo; // Asegúrate de importar el logo correctamente
+
+    img.onload = () => {
+        // Agregar logo
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+        let yPosition = 20;
+
+        // Título principal
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51);
+        doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+        yPosition += 12;
+
+        // Subtítulo
+        doc.setFontSize(16);
+        doc.text('Reporte de Grados', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+        yPosition += 10;
+
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+        const currentDate = new Date().toLocaleDateString();
+        doc.text(`Fecha de generación: ${currentDate}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+        yPosition += 6; // Espaciado antes de la línea divisoria
+
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51);
+        doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+
+        // Configuración para la tabla
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
+        let pageNumber = 1; // Página inicial
+
+        // Configuración de tabla
+        doc.autoTable({
+            startY: yPosition + 4,
+            head: [['#', 'Nombre del Grado', 'Nombre del Ciclo', 'Prefijo']],
+            body: currentRecords.map((grado, index) => [
+                grado.originalIndex || index + 1, // Índice original o basado en el índice actual
+                grado.Nombre_grado, // Nombre del grado
+                getCicloName(grado.Cod_ciclo), // Nombre del ciclo asociado
+                grado.Prefijo, // Prefijo
+            ]),
+            headStyles: {
+                fillColor: [0, 102, 51],
+                textColor: [255, 255, 255],
+                fontSize: 10,
+            },
+            styles: {
+                fontSize: 10,
+                cellPadding: 3,
+                halign: 'center',
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] },
+            didDrawPage: (data) => {
+                // Pie de página
+                const currentDate = new Date();
+                const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+                const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+                doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+                pageNumber += 1; // Incrementar el número de página
+            },
+        });
+
+        // Abrir el PDF
+        window.open(doc.output('bloburl'), '_blank');
+    };
+
+    img.onerror = () => {
+        console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+        window.open(doc.output('bloburl'), '_blank');
+    };
+};
+
 
   const openUpdateModal = (grado) => {
     setGradoToUpdate(grado); // Cargar los datos del grado a actualizar
@@ -436,6 +726,9 @@ const ListaGrados = () => {
           {/* Botón de Reporte */}
           <CButton
             style={{ backgroundColor: '#6C8E58', color: 'white' }}
+            onClick={() => {
+              handleReporteGradosPdfClick();
+            }}
           >
             <CIcon icon={cilDescription} /> Reporte
           </CButton>
