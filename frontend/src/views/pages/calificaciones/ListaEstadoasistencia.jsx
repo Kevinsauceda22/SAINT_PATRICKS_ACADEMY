@@ -699,7 +699,7 @@ const ListaEstadoasistencia = () => {
 
     const generarReporteExcel = () => {
       // Validar que haya datos en la tabla
-      if (!estadoasistencia || estadoasistencia.length === 0) {
+      if (!currentRecords || currentRecords.length === 0) {
         swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -716,7 +716,7 @@ const ListaEstadoasistencia = () => {
       ];
     
       // Crear filas con asistencias filtradas
-      const filas = estadoasistencia.map((estado, index) => [
+      const filas = currentRecords.map((estado, index) => [
         index + 1,
         estado.Descripcion_asistencia
       ]);
