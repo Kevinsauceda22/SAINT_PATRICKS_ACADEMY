@@ -105,6 +105,7 @@ const ListaEstadonota = () => {
           icon: 'warning',
           title: 'Espacios múltiples',
           text: 'No se permite más de un espacio entre palabras.',
+          confirmButtonText: 'Aceptar',
         });
         value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
       }
@@ -115,6 +116,7 @@ const ListaEstadonota = () => {
           icon: 'warning',
           title: 'Caracteres no permitidos',
           text: 'Solo se permiten letras y espacios.',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -130,6 +132,7 @@ const ListaEstadonota = () => {
               icon: 'warning',
               title: 'Repetición de letras',
               text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+              confirmButtonText: 'Aceptar',
             });
             return;
           }
@@ -158,6 +161,7 @@ const ListaEstadonota = () => {
         icon: 'warning',
         title: 'Acción bloqueada',
         text: 'Copiar y pegar no está permitido.',
+        confirmButtonText: 'Aceptar',
       });
     };
   
@@ -197,6 +201,7 @@ const ListaEstadonota = () => {
         icon: 'error',
         title: 'Error',
         text: 'El campo "Descripción" no puede estar vacío',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -213,6 +218,7 @@ const ListaEstadonota = () => {
         icon: 'error',
         title: 'Error',
         text: `El estado nota "${nuevoEstadonota}" ya existe`,
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -303,6 +309,7 @@ const ListaEstadonota = () => {
         icon: 'error',
         title: 'Error',
         text: 'El campo "Descripción" no puede estar vacío',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -321,6 +328,7 @@ const ListaEstadonota = () => {
         icon: 'error',
         title: 'Error',
         text: `El estado nota "${estadonotaToUpdate.Descripcion}" ya existe`,
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -522,6 +530,7 @@ const ListaEstadonota = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -532,6 +541,7 @@ const ListaEstadonota = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -547,6 +557,7 @@ const ListaEstadonota = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -583,7 +594,7 @@ const paginate = (pageNumber) => {
 
   const generarReportePDF = () => {
     // Validar que haya datos en la tabla
-    if (!estadonota || estadonota.length === 0) {
+    if (!currentRecords || currentRecords.length === 0) {
       swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
@@ -643,7 +654,7 @@ const paginate = (pageNumber) => {
       doc.autoTable({
         startY: yPosition + 4,
         head: [['#', 'Descripción']],
-        body: estadonota.map((estado, index) => [
+        body: currentRecords.map((estado, index) => [
           index + 1,
           `${estado.Descripcion || ''}`.trim(),
         ]),
@@ -688,7 +699,7 @@ const paginate = (pageNumber) => {
 
   const generarReporteExcel = () => {
     // Validar que haya datos en la tabla
-    if (!estadonota || estadonota.length === 0) {
+    if (!currentRecords || currentRecords.length === 0) {
       swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
@@ -705,7 +716,7 @@ const paginate = (pageNumber) => {
     ];
   
     // Crear filas con asistencias filtradas
-    const filas = estadonota.map((estado, index) => [
+    const filas = currentRecords.map((estado, index) => [
       index + 1,
       estado.Descripcion
     ]);
