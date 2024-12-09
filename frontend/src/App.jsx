@@ -48,6 +48,7 @@ const ListaNotasProfesor = React.lazy(() => import('./views/pages/calificaciones
 const ListaNotas = React.lazy(() => import('./views/pages/calificaciones/ListaNotas'));
 const ListaCuadroProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaCuadroProfesor'));
 const ListaCuadro = React.lazy(() => import('./views/pages/calificaciones/ListaCuadro'));
+const ListaCuadroPadre = React.lazy(() => import('./views/pages/calificaciones/ListaCuadroPadre'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
 const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
 const ListaGradosAsignaturas = React.lazy(() => import('./views/pages/calificaciones/ListaGradosAsignaturas'))
@@ -186,6 +187,7 @@ const App = () => {
                 <Route path="/ListaNotasProfesor" element={<ListaNotasProfesor />} />
                 <Route path="/ListaNotas" element={<ListaNotas />} />
                 <Route path="/ListaCuadroProfesor" element={<ListaCuadroProfesor />} />
+                <Route path="/ListaCuadroPadre" element={<ListaCuadroPadre />} />
                 <Route path="/ListaCuadro" element={<ListaCuadro />} />
                 <Route path="/ListaGradoAcademico" element={<ListaGradoAcademico />} />
                 <Route path="/ListaGrados" element={<ListaGrado />} />
