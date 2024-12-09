@@ -174,24 +174,35 @@ const ListaCiclos = () => {
         align: 'center',
       });
       yPosition += 10;
-  
-      // Información adicional
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      const currentDate1 = new Date().toLocaleDateString();
-      doc.text(`Fecha de generación: ${currentDate1}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-      yPosition += 10;
-  
+
+         // Información adicional
+         doc.setFontSize(10);
+         doc.setTextColor(100); // Gris para texto secundario
+         doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+     
+         yPosition += 4;
+     
+         doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+     
+         yPosition += 4;
+     
+         doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+     
+        
+         yPosition += 6; // Espaciado antes de la línea divisoria
+
       // Línea divisoria
       doc.setLineWidth(0.5);
       doc.setDrawColor(0, 102, 51);
       doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
-  
-      // Configuración para la tabla
-      yPosition += 4;
+
+            // Configuración para la tabla
+      const pageHeight = doc.internal.pageSize.height; // Altura de la página
+      let pageNumber = 1; // Página inicial
+
   
       doc.autoTable({
-        startY: yPosition,
+        startY: yPosition + 4,
         head: [['#', 'Nombre del Ciclo']],
         body: currentRecords.map((ciclo, index) => [
           ciclo.originalIndex || index + 1, // Mostrar índice original o calcularlo
@@ -207,20 +218,24 @@ const ListaCiclos = () => {
           cellPadding: 3,
           halign: 'center',
         },
+        columnStyles: {
+          0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+          1: { cellWidth: 'auto' }, // Columna 'Descripción' se ajusta automáticamente
+        },
         alternateRowStyles: { fillColor: [240, 248, 255] },
+        didDrawPage: (data) => {
+          // Pie de página
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          pageNumber += 1; // Incrementar el número de página
+        },
       });
   
-      // Pie de página
-      const pageHeight = doc.internal.pageSize.height;
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(
-        `Fecha y hora de generación: ${formattedDate}`,
-        10,
-        pageHeight - 10
-      );
   
       // Abrir el PDF
       window.open(doc.output('bloburl'), '_blank');
