@@ -34,7 +34,7 @@ import {
   CDropdownMenu,
   CDropdownItem
 } from '@coreui/react';
-
+import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
@@ -426,7 +426,7 @@ const handleChange = (event) => {
   };
   
 
-  const ReporteTipoRelaciones = () => {
+  const ReporteRelacionesPDF = () => {
     const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -545,7 +545,7 @@ const handleChange = (event) => {
           </CDropdownToggle>
           <CDropdownMenu>
             <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
+            <CDropdownItem onClick={ReporteRelacionesPDF}>Descargar en PDF</CDropdownItem>
           </CDropdownMenu>
         </CDropdown>
       </CCol>

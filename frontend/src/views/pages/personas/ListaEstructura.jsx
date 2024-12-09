@@ -129,6 +129,18 @@ const ListaEstructura = () => {
       cargarEstructurasFamiliares();
     }
   }, [modalVisible, personaSeleccionada]);
+
+  useEffect(() => {
+    if (modalUpdateVisible === false && personaSeleccionada) {
+      const cargarEstructurasFamiliares = async () => {
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const datos = await respuesta.json();
+        setEstructurasFamiliares(datos);
+      };
+      cargarEstructurasFamiliares();
+    }
+  }, [modalUpdateVisible, personaSeleccionada]);
+  
   
 {/* -------------------------------------------------------------------------------------------------------------------------------------------- */}
 
@@ -336,7 +348,7 @@ const handleSeleccionarPersona = (persona) => {
   
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------- */}
 
-{/* Función para actualizar estructura */}
+{/*************************************************Función para actualizar estructura*******************************************************/}
 const handleUpdateEstructura = async () => {
 
 
@@ -347,7 +359,7 @@ const handleUpdateEstructura = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        descripcion: descripcionCapitalizado,
+        descripcion: estructuraToUpdate.descripcion,
         cod_persona_padre: estructuraToUpdate.cod_persona_padre,
         cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante,
         cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion,
@@ -384,6 +396,10 @@ const handleUpdateEstructura = async () => {
 
 
   {/* Fin de la función para actualizar estructura */}
+
+  useEffect(() => {
+    fetchEstructuraFamiliar();
+  }, []);
 
   const resetEstructuraToUpdate = () => {
     setEstructuraToUpdate({ descripcion: '', cod_persona_padre: '', cod_persona_estudiante: '', cod_tipo_relacion: ''  });
@@ -1185,8 +1201,7 @@ return (
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          ¿Estás seguro de que deseas eliminar la estructura familiar con el código{' '}
-          {estructuraToDelete.Cod_genealogia}?
+          ¿Estás seguro de que deseas eliminar la estructura familiar?
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
