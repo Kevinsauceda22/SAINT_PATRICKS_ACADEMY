@@ -3,9 +3,6 @@ import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch,cilInfo, cilBrushAlt, cilPen, cilTrash, cilPlus,cilFile,cilSpreadsheet, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
-
-import * as jwt_decode from 'jwt-decode';
-
 import { left } from '@popperjs/core';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importa el plugin para tablas
@@ -77,18 +74,6 @@ const ListaProfesores = () => {
   const [filteredRecords, setFilteredRecords] = useState(profesores); // Inicializa con todos los profesores
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-     const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
-        console.log('Token decodificado:', decodedToken);
-
-        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
-
-      } catch (error) {
-        console.error('Error al decodificar el token:', error);
-      }
-    }
     fetchProfesores();
     fetchListaPersonas();
     fetchListaTiposContrato();
@@ -343,7 +328,6 @@ if (duplicada) {
         icon: 'success',
         title: '¡Éxito!',
         text: 'El Profesor se ha creado correctamente',
-        confirmButtonText: 'Aceptar',
       });
     } else {
       console.error('Hubo un problema al crear el profesor:', response.statusText);
@@ -414,54 +398,16 @@ const handleUpdateProfesor = async () => {
   }
 
   try {
-     // Verificar si obtenemos el token correctamente
-     const token = localStorage.getItem('token');
-     if (!token) {
-       swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-       return;
-     }
- 
-     // Decodificar el token para obtener el nombre del usuario
-     const decodedToken = jwt_decode.jwtDecode(token);
-     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-       console.error('No se pudo obtener el código o el nombre de usuario del token');
-       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-     }
-    
     // Enviar la solicitud para actualizar el profesor
     const response = await fetch('http://localhost:4000/api/profesores/actualizarprofesor', {
       method: 'PUT', // Método HTTP para actualización
       headers: {
         'Content-Type': 'application/json', // Tipo de contenido
-        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify(profesorToUpdate), // Convertir el objeto profesorToUpdate a JSON
     });
     
         if (response.ok) {
-           // 2. Registrar la acción en la bitácora
-           const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado al profesor con código: ${profesorToUpdate.Cod_profesor} y persona asociada: ${profesorToUpdate.cod_persona}.`;
-        
-        // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-          },
-          body: JSON.stringify({
-            cod_usuario: decodedToken.cod_usuario, // Código del usuario
-            cod_objeto: 48, // Código del objeto para la acción
-            accion: 'UPDATE', // Acción realizada
-            descripcion: descripcion, // Descripción de la acción
-          }),
-        });
-  
-        if (bitacoraResponse.ok) {
-          console.log('Registro en bitácora exitoso');
-        } else {
-          swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-        }
           fetchProfesores(); // Recargar la lista de profesores
           setModalUpdateVisible(false); // Cerrar el modal de actualización
           setProfesorToUpdate({}); // Limpiar el objeto profesorToUpdate
@@ -470,7 +416,6 @@ const handleUpdateProfesor = async () => {
             icon: 'success',
             title: '¡Éxito!',
             text: 'El profesor se ha actualizado correctamente',
-            confirmButtonText: 'Aceptar',
           });
         } else {
           console.error('Error al actualizar el profesor:', response.statusText);
@@ -802,27 +747,32 @@ const filteredRecords = searchTerm
 //=========================================================== pdf y excel================================================
 const generarReportePDF = () => {
   // Filtrar registros si hay búsqueda activa
-  const registrosParaReporte = profesores.filter((profesor) => {
+  const registrosParaReporte = profesores.map((profesor, index) => {
     const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
     const nombreCompleto = persona
       ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`.toUpperCase()
-      : '';
+      : 'DESCONOCIDO';
 
     // Obtener tipo de contrato y grado académico
     const tipoContrato = listaTiposContrato.find(
       (tipo) => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato
-    )?.Descripcion.toUpperCase() || '';
+    )?.Descripcion.toUpperCase() || 'N/A';
     const gradoAcademico = listaGradosAcademicos.find(
       (grado) => grado.Cod_grado_academico === profesor.Cod_grado_academico
-    )?.Descripcion.toUpperCase() || '';
+    )?.Descripcion.toUpperCase() || 'N/A';
 
-    // Filtrar por coincidencias con nombre completo, DNI, tipo de contrato o grado académico
-    return (
-      nombreCompleto.includes(searchTerm.trim().toUpperCase()) ||
-      (persona?.dni_persona || '').toUpperCase().includes(searchTerm.trim().toUpperCase()) ||
-      tipoContrato.includes(searchTerm.trim().toUpperCase()) ||
-      gradoAcademico.includes(searchTerm.trim().toUpperCase())
-    );
+    // Determinar el estado (Activo o Inactivo)
+    const estado = profesor.Estado ? 'Activo' : 'Inactivo';
+
+    return {
+      index: index + 1,
+      nombreCompleto,
+      gradoAcademico,
+      tipoContrato,
+      horaEntrada: profesor.Hora_entrada || 'N/A',
+      horaSalida: profesor.Hora_salida || 'N/A',
+      estado, // Agregar el estado aquí
+    };
   });
 
   // Validar si hay registros para generar el reporte
@@ -882,38 +832,21 @@ const generarReportePDF = () => {
     doc.setDrawColor(0, 102, 51); // Verde
     doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-    yPosition += 4;
+    yPosition += 6;
 
-    // Generar tabla con registros filtrados
+    // Generar tabla
     doc.autoTable({
       startY: yPosition,
-      head: [['#', 'Nombre', 'Grado Académico', 'Tipo de Contrato', 'Hora Entrada', 'Hora Salida', 'Fecha Ingreso', 'Fecha Fin Contrato', 'Años de Experiencia']],
-      body: registrosParaReporte.map((profesor, index) => {
-        const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
-        const nombreCompleto = persona
-          ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
-          : 'Desconocido';
-
-        const fechaIngreso = new Date(profesor.Fecha_ingreso).toLocaleDateString('es-ES');
-        const fechaFinContrato = new Date(profesor.Fecha_fin_contrato).toLocaleDateString('es-ES');
-        const añosExperiencia = profesor.Años_experiencia;
-
-        return [
-          index + 1,
-          nombreCompleto,
-          listaGradosAcademicos.find(
-            (grado) => grado.Cod_grado_academico === profesor.Cod_grado_academico
-          )?.Descripcion || 'N/A',
-          listaTiposContrato.find(
-            (tipo) => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato
-          )?.Descripcion || 'N/A',
-          profesor.Hora_entrada,
-          profesor.Hora_salida,
-          fechaIngreso,
-          fechaFinContrato,
-          `${añosExperiencia} años`,
-        ];
-      }),
+      head: [['#', 'DNI-Nombre', 'Grado Académico', 'Tipo de Contrato', 'Hora Entrada', 'Hora Salida', 'Estado']],
+      body: registrosParaReporte.map((registro) => [
+        registro.index,
+        registro.nombreCompleto,
+        registro.gradoAcademico,
+        registro.tipoContrato,
+        registro.horaEntrada,
+        registro.horaSalida,
+        registro.estado, // Mostrar el estado en la tabla
+      ]),
       headStyles: {
         fillColor: [0, 102, 51], // Verde oscuro para encabezado
         textColor: [255, 255, 255], // Texto blanco
@@ -1039,7 +972,7 @@ const generarReporteExcel = () => {
             e.currentTarget.style.boxShadow = "none";
           }}
         >
-         <CIcon icon={cilDescription}/> Reporte
+          Reporte
         </CDropdownToggle>
         <CDropdownMenu
           style={{
@@ -1476,8 +1409,7 @@ const generarReporteExcel = () => {
   </CModalHeader> 
   <CModalBody>
     <CForm>
-      {/* Nombre de la actividad */}
- 
+    
      
       {/* Select para Grado Académico */}
       <CInputGroup className="mb-3">
