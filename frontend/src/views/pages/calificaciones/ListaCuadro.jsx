@@ -101,12 +101,12 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
   
   const generarReportePDF = () => {
     // Validar que haya datos en la tabla
-    if (!secciones || secciones.length === 0) {
+    if (!currentRecords2 || currentRecords2.length === 0) {
      Swal.fire({
        icon: 'info',
        title: 'Tabla vacía',
        text: 'No hay datos disponibles para generar el reporte.',
-       confirmButtonText: 'Entendido',
+       confirmButtonText: 'Aceptar',
      });
      return; // Salir de la función si no hay datos
    }
@@ -160,13 +160,14 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
      // Agregar tabla con auto-paginación
      doc.autoTable({
        startY: yPosition + 4,
-       head: [['#', 'Sección', 'Grado', 'Total Alumnos','Año Académico']],
-       body: secciones.map((seccion, index) => [
+       head: [['#', 'Sección', 'Grado', 'Total Alumnos','Año Académico','Profesor']],
+       body: currentRecords2.map((seccion, index) => [
          index + 1,
          `${seccion.Seccion || ''}`.trim(),
          seccion.Grado,
          seccion.Total_Alumnos,
          seccion.Anio_Academico,
+         seccion.Nombre_Profesor,
        ]),
        headStyles: {
          fillColor: [0, 102, 51],
@@ -184,6 +185,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
          2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
          3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
          4: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
+         5: { cellWidth: 'auto' }, // Columna 'Profesor' se ajusta automáticamente
        },
        alternateRowStyles: { fillColor: [240, 248, 255] },
        didDrawPage: (data) => {
@@ -212,12 +214,12 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
  const generarReporteExcel = () => {
   // Validar que haya datos en la tabla
-  if (!secciones || secciones.length === 0) {
+  if (!currentRecords2 || currentRecords2.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -225,16 +227,17 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
     ["Saint Patrick Academy"],
     ["Reporte de Secciones"],
     [], // Espacio en blanco
-    ["#","Sección", "Grado", "Total Alumnos", "Año Académico"]
+    ["#","Sección", "Grado", "Total Alumnos", "Año Académico","Profesor"]
   ];
 
   // Crear filas con asistencias filtradas
-  const filas = secciones.map((seccion, index) => [
+  const filas = currentRecords2.map((seccion, index) => [
     index + 1,
     seccion.Seccion,
     seccion.Grado,
     seccion.Total_Alumnos,
-    seccion.Anio_Academico
+    seccion.Anio_Academico,
+    seccion.Nombre_Profesor
   ]);
 
   // Combinar encabezados y filas
@@ -260,11 +263,12 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
   // Ajustar el ancho de columnas automáticamente
   const ajusteColumnas = [
-    { wpx: 100 }, 
+    { wpx: 40 }, 
     { wpx: 100 }, 
     { wpx: 100 }, 
     { wpx: 100 } ,
-    { wpx: 100 }  
+    { wpx: 100 },
+    { wpx: 280 } 
   ];
 
   hojaDeTrabajo['!cols'] = ajusteColumnas;
@@ -281,12 +285,12 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
 const generarReportealumnoPDF = () => {
   // Validar que haya datos en la tabla
- if (!estudiantes || estudiantes.length === 0) {
+ if (!currentRecords3 || currentRecords3.length === 0) {
    Swal.fire({
      icon: 'info',
      title: 'Tabla vacía',
      text: 'No hay datos disponibles para generar el reporte.',
-     confirmButtonText: 'Entendido',
+     confirmButtonText: 'Aceptar',
    });
    return; // Salir de la función si no hay datos
  }
@@ -316,16 +320,16 @@ const generarReportealumnoPDF = () => {
     // Detalles de la sección, asignatura y año
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-    if (nombreSeccionSeleccionada && gradoSeleccionado && anioSeccionSeleccionada ) {
+    if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada ) {
       doc.text(
-        `Sección: ${nombreSeccionSeleccionada}  | Grado: ${gradoSeleccionado} | Año: ${anioSeccionSeleccionada}`,
+        `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`,
         doc.internal.pageSize.width / 2,
         yPosition,
         { align: 'center' }
       );
-    } else if (nombreSeccionSeleccionada && gradoSeleccionado) {
+    } else if (gradoSeleccionado && nombreSeccionSeleccionada) {
       doc.text(
-        `Sección: ${nombreSeccionSeleccionada} | Grado: ${gradoSeleccionado}`,
+        `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada}`,
         doc.internal.pageSize.width / 2,
         yPosition,
         { align: 'center' }
@@ -361,10 +365,11 @@ const generarReportealumnoPDF = () => {
    // Agregar tabla con auto-paginación
    doc.autoTable({
      startY: yPosition + 4,
-     head: [['#', 'Nombre Estudiante']],
-     body: estudiantes.map((estudiante, index) => [
+     head: [['#','Identidad', 'Nombre Estudiante']],
+     body: currentRecords3.map((estudiante, index) => [
        index + 1,
-       `${estudiante.Nombre_Completo}`.trim(),
+       `${estudiante.Identidad}`.trim(),
+          estudiante.Nombre_Completo,
      ]),
      headStyles: {
        fillColor: [0, 102, 51],
@@ -378,7 +383,8 @@ const generarReportealumnoPDF = () => {
      },
      columnStyles: {
        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-       1: { cellWidth: 'auto' }, // Columna 'estudiante' se ajusta automáticamente
+       1: { cellWidth: 'auto' }, // Columna 'identidad' se ajusta automáticamente
+       2: { cellWidth: 'auto' }, // Columna 'estudiante' se ajusta automáticamente
      },
      alternateRowStyles: { fillColor: [240, 248, 255] },
      didDrawPage: (data) => {
@@ -406,22 +412,22 @@ const generarReportealumnoPDF = () => {
 };
 
 const generarReportealumnoExcel = () => {
-  if (!estudiantes || estudiantes.length === 0) {
+  if (!currentRecords3 || currentRecords3.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
 
   // Detalles de la sección, asignatura y año
   const detalles = [];
-  if (nombreSeccionSeleccionada  && gradoSeleccionado && anioSeccionSeleccionada) {
-    detalles.push([`Sección: ${nombreSeccionSeleccionada}  | Grado: ${gradoSeleccionado} | Año: ${anioSeccionSeleccionada}`]);
+  if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+    detalles.push([`Grado: ${gradoSeleccionado}  | Sección: ${nombreSeccionSeleccionada}  | Año: ${anioSeccionSeleccionada}`]);
   } else if (nombreSeccionSeleccionada && gradoSeleccionado) {
-    detalles.push([`Sección: ${nombreSeccionSeleccionada} | Grado: ${gradoSeleccionado}`]);
+    detalles.push([`Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada}`]);
   }
 
   const encabezados = [
@@ -430,12 +436,13 @@ const generarReportealumnoExcel = () => {
     [], // Espacio en blanco
     ...detalles, // Agregar los detalles dinámicos
     [], // Espacio adicional después de los detalles
-    ["#", "Nombre Estudiante"],
+    ["#","Identidad", "Nombre Estudiante"],
   ];
 
   // Crear filas con asignaturas
-  const filas = estudiantes.map((estudiante, index) => [
+  const filas = currentRecords3.map((estudiante, index) => [
     index + 1,
+    estudiante.Identidad || "N/A",
     estudiante.Nombre_Completo || "N/A"
   ]);
 
@@ -448,6 +455,7 @@ const generarReportealumnoExcel = () => {
   // Ajustar el ancho de columnas automáticamente
   const ajusteColumnas = [
     { wpx: 40 }, // # (Número)
+    { wpx: 150 }, // Identidad
     { wpx: 300 }, // estudiante
   ];
 
@@ -470,6 +478,7 @@ const disableCopyPaste = (e) => {
     icon: 'warning',
     title: 'Acción bloqueada',
     text: 'Copiar y pegar no está permitido.',
+    confirmButtonText: 'Aceptar', 
   });
 };
 
@@ -488,6 +497,7 @@ const handleSearch2 = (event) => {
       icon: 'warning',
       title: 'Espacios múltiples',
       text: 'No se permite más de un espacio entre palabras.',
+      confirmButtonText: 'Aceptar', 
     });
     value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
   }
@@ -498,6 +508,7 @@ const handleSearch2 = (event) => {
       icon: 'warning',
       title: 'Caracteres no permitidos',
       text: 'Solo se permiten letras, números y espacios.',
+      confirmButtonText: 'Aceptar', 
     });
     return;
   }
@@ -513,6 +524,7 @@ const handleSearch2 = (event) => {
           icon: 'warning',
           title: 'Repetición de letras',
           text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          confirmButtonText: 'Aceptar', 
         });
         return;
       }
@@ -554,7 +566,7 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
   setCurrentView('estudiantes');
 };
 
- //-------------------paginacion, buscador vista actual : asignaturas-----------------------------
+ //-------------------paginacion, buscador vista actual : estudiantes-----------------------------
  const handleSearch3 = (event) => {
   const input = event.target;
   let value = input.value
@@ -569,6 +581,7 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
       icon: 'warning',
       title: 'Espacios múltiples',
       text: 'No se permite más de un espacio entre palabras.',
+      confirmButtonText: 'Aceptar', 
     });
     value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
   }
@@ -579,6 +592,7 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
       icon: 'warning',
       title: 'Caracteres no permitidos',
       text: 'Solo se permiten letras, números y espacios.',
+      confirmButtonText: 'Aceptar', 
     });
     return;
   }
@@ -594,6 +608,7 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
           icon: 'warning',
           title: 'Repetición de letras',
           text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          confirmButtonText: 'Aceptar', 
         });
         return;
       }
@@ -608,7 +623,8 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
 
 // Filtro de búsqueda
 const filteredEstudiantes = estudiantes.filter((estudiante) => 
-  estudiante.Nombre_Completo && estudiante.Nombre_Completo.toLowerCase().includes(searchTerm3.toLowerCase())
+  (estudiante.Nombre_Completo && estudiante.Nombre_Completo.toLowerCase().includes(searchTerm3.toLowerCase())) ||
+  (estudiante.Identidad && estudiante.Identidad.toLowerCase().includes(searchTerm3.toLowerCase()))
 );
 
 
@@ -668,6 +684,7 @@ const exportarContenido = async () => {
       icon: "error",
       title: "Error",
       text: "Hubo un problema al generar el PDF. Inténtalo nuevamente.",
+      confirmButtonText: 'Aceptar', 
     });
   } finally {
     // Restaurar tamaño original
