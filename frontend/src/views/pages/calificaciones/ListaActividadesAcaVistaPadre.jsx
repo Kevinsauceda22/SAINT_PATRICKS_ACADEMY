@@ -657,8 +657,22 @@ const ListaActividadesAcaVistaPadre = () => {
           ) : vistaActual === 'hijos' ? (
             <>
               {/* Vista de Hijos */}
-              <h3 className="text-center mb-4 fw-bold">Lista de Hijos</h3>
-    <div className="table-responsive">
+              <CRow className="align-items-center mb-5">
+            <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+              <div className="flex-grow-1 text-center">
+              <h3 
+               className="text-center fw-semibold pb-2 mb-0"
+               style={{ display: 'inline-block', borderBottom: '2px solid #4CAF50' }}
+             >
+              Lista de Hijos
+              </h3>
+              </div>
+            </CCol>
+          </CRow>
+
+          
+              
+    <div className="table-responsive" style={{ maxHeight: '400px', margin: '0 auto', overflowX: 'auto', overflowY: 'auto', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)', }}>
       <CTable striped bordered hover responsive>
         <CTableHead>
           <CTableRow>
@@ -674,8 +688,17 @@ const ListaActividadesAcaVistaPadre = () => {
       <CTableDataCell>{hijo.nombre}</CTableDataCell>
       <CTableDataCell>
         <CButton
-          className="btn btn-primary"
           size="sm"
+          style={{
+            backgroundColor: '#F0F4F3',
+            color: '#153E21',
+            border: '1px solid #A2B8A9',
+            borderRadius: '6px',
+            padding: '5px 12px',
+            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+          }}
+          onMouseEnter={(e) => (e.target.style.backgroundColor = '#dce3dc')}
+          onMouseLeave={(e) => (e.target.style.backgroundColor = '#F0F4F3')}
           onClick={() => seleccionarHijo(hijo)}
         >
                   Ver Asignaturas
@@ -690,13 +713,25 @@ const ListaActividadesAcaVistaPadre = () => {
           ) : vistaActual === 'asignaturas' ? (
             <>
               {/* Vista de Asignaturas */}
-              <h3 className="text-center mb-4 fw-bold">Asignaturas de {hijoSeleccionado.nombre}</h3>
-              <CButton className="btn-volver mb-3" onClick={volverAVistaHijos}>
-                Volver a Hijos
+              <CRow className="align-items-center mb-5">
+              <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+              <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
+                style={{ backgroundColor: "#656565", color: "#FFFFFF", padding: "6px 12px", fontSize: "0.9rem", transition: "background-color 0.2s ease, box-shadow 0.3s ease", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", }}
+              onClick={volverAVistaHijos}>
+              <CIcon icon={cilArrowLeft} />Regresar a Hijos
               </CButton>
-              <div className="table-responsive">
+
+              <div className="d-flex justify-content-center align-items-center flex-grow-1">
+              <h3 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem" }}>Asignaturas de {hijoSeleccionado.nombre}</h3>
+              </div>
+
+              </CCol>
+              </CRow>
+
+              <div className="table-responsive" style={{maxHeight: '400px', overflowX: 'auto', overflowY: 'auto', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',}}>
                 <CTable striped bordered hover responsive>
-                  <CTableHead>
+                  <CTableHead className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
                     <CTableRow>
                       <CTableHeaderCell>#</CTableHeaderCell>
                       <CTableHeaderCell>Asignatura</CTableHeaderCell>
@@ -710,8 +745,17 @@ const ListaActividadesAcaVistaPadre = () => {
                         <CTableDataCell>{asignatura}</CTableDataCell>
                         <CTableDataCell>
                           <CButton
-                            className="btn btn-primary"
-                            size="sm"
+                          size="sm"
+                          style={{
+                            backgroundColor: '#F0F4F3',
+                            color: '#153E21',
+                            border: '1px solid #A2B8A9',
+                            borderRadius: '6px',
+                            padding: '5px 12px',
+                            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+                          }}
+                          onMouseEnter={(e) => (e.target.style.backgroundColor = '#dce3dc')}
+                          onMouseLeave={(e) => (e.target.style.backgroundColor = '#F0F4F3')}
                             onClick={() => seleccionarAsignatura(asignatura)}
                           >
                             Ver Parciales
@@ -726,13 +770,24 @@ const ListaActividadesAcaVistaPadre = () => {
           ) : vistaActual === 'parciales' ? (
             <>
               {/* Vista de Parciales */}
-              <h3 className="text-center mb-4 fw-bold">Parciales de {asignaturaSeleccionada}</h3>
-              <CButton className="btn-volver mb-3" onClick={volverAVistaAsignaturas}>
-                Volver a Asignaturas
+              <CRow className="align-items-center mb-5">
+              <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+              <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
+                style={{ backgroundColor: "#656565", color: "#FFFFFF", padding: "6px 12px", fontSize: "0.9rem", transition: "background-color 0.2s ease, box-shadow 0.3s ease", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", }}
+              onClick={volverAVistaAsignaturas}>
+              <CIcon icon={cilArrowLeft} />Volver a Asignaturas
               </CButton>
-              <div className="table-responsive">
+              <div className="d-flex justify-content-center align-items-center flex-grow-1">
+              <h3 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem" }}>Parciales de {asignaturaSeleccionada}</h3>
+              </div>
+              </CCol>
+              </CRow>
+
+
+              <div className="table-responsive" style={{maxHeight: '400px', overflowX: 'auto', overflowY: 'auto', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',}}>
                 <CTable striped bordered hover responsive>
-                  <CTableHead>
+                  <CTableHead className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
                     <CTableRow>
                       <CTableHeaderCell>#</CTableHeaderCell>
                       <CTableHeaderCell>Parcial</CTableHeaderCell>
@@ -746,8 +801,17 @@ const ListaActividadesAcaVistaPadre = () => {
                         <CTableDataCell>{parcial}</CTableDataCell>
                         <CTableDataCell>
                           <CButton
-                            className="btn btn-primary"
-                            size="sm"
+                          size="sm"
+                          style={{
+                            backgroundColor: '#F0F4F3',
+                            color: '#153E21',
+                            border: '1px solid #A2B8A9',
+                            borderRadius: '6px',
+                            padding: '5px 12px',
+                            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+                          }}
+                          onMouseEnter={(e) => (e.target.style.backgroundColor = '#dce3dc')}
+                          onMouseLeave={(e) => (e.target.style.backgroundColor = '#F0F4F3')}
                             onClick={() => seleccionarParcial(parcial)}
                           >
                             Ver Actividades
@@ -762,15 +826,24 @@ const ListaActividadesAcaVistaPadre = () => {
           ) : (
             <>
               {/* Vista de Actividades */}
-  <h3 className="text-center mb-4 fw-bold">
-    Actividades del {parcialSeleccionado} - {asignaturaSeleccionada}
-  </h3>
-  <CButton className="btn-volver mb-3" onClick={volverAVistaParciales}>
-    Volver a Parciales
-  </CButton>
-  <div className="table-responsive">
+              <CRow className="align-items-center mb-5">
+            <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">            
+           <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
+                style={{ backgroundColor: "#656565", color: "#FFFFFF", padding: "6px 12px", fontSize: "0.9rem", transition: "background-color 0.2s ease, box-shadow 0.3s ease", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", }}
+                onClick={volverAVistaParciales}>
+                 Volver a Parciales
+          </CButton>
+          <div className="d-flex justify-content-center align-items-center flex-grow-1">
+         <h3 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem" }}>Actividades del {parcialSeleccionado} - {asignaturaSeleccionada}</h3>
+         </div>
+         </CCol>
+          </CRow>
+
+
+  <div className="table-responsive" style={{maxHeight: '400px', overflowX: 'auto', overflowY: 'auto', boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)', }}>
     <CTable striped bordered hover responsive>
-      <CTableHead>
+      <CTableHead  className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
         <CTableRow>
           <CTableHeaderCell>#</CTableHeaderCell>
           <CTableHeaderCell>Actividad</CTableHeaderCell>
