@@ -333,17 +333,45 @@ const handleCloseModal = (setModalVisible, resetData, formData = {}) => {
 
 
 const openUpdateModal = (persona) => {
+
+
+  console.log('Cod_nacionalidad de persona:', persona.cod_nacionalidad);
+
+  
   // Asegúrate de que la fecha esté en el formato yyyy-MM-dd para el campo de fecha
   const fechaFormateada = persona.fecha_nacimiento ? formatearFecha(persona.fecha_nacimiento) : '';
   const nacionalidadSeleccionada = nacionalidad.find(nac => nac.Cod_nacionalidad === persona.cod_nacionalidad);
+  console.log('Nacionalidad seleccionada:', nacionalidadSeleccionada);
   setPersonaToUpdate({
       ...persona,
       fecha_nacimiento: fechaFormateada,
       buscadorNacionalidad: nacionalidadSeleccionada ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}` : '',
-  });
+  
+  
+    });
+
+    setPersonaToUpdate({
+      ...personas,
+      fecha_nacimiento: fechaFormateada,
+      buscadorNacionalidad: nacionalidadSeleccionada 
+        ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}`
+        : '', // Asegúrate de que se asigne correctamente
+    });
+    
   setModalUpdateVisible(true);
 };
 
+useEffect(() => {
+  console.log('buscadorNacionalidad:', buscadorNacionalidad);
+}, [buscadorNacionalidad]);
+
+setPersonaToUpdate({
+  ...personas,
+  fecha_nacimiento: fechaFormateada,
+  buscadorNacionalidad: nacionalidadSeleccionada 
+    ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}`
+    : '', // Asegúrate de que se asigne correctamente
+});
 
 const closeUpdateModal = () => {
   handleCloseModal(setModalUpdateVisible, resetPersonaToUpdate, personaToUpdate);
@@ -360,11 +388,6 @@ const closeAddModal = () => {
 const openDeleteModal = (persona) => {
   setPersonaToDelete(persona);
   setModalDeleteVisible(true);
-};
-
-const openDetailModal = (persona) => {
-  setSelectedPersona(persona);
-  setShowDetailModal(true);
 };
 
 const closeDetailModal = () => {

@@ -131,6 +131,16 @@ const handleSeleccionarCodPersona = (persona) => {
     fetchTiposContacto(); // Llamar a la función para cargar los tipos de contacto al montar el componente
   }, []);
 
+  useEffect(() => {
+    if (!modalVisible) { // Cuando el modal se cierra (modalVisible = false)
+      const cargarContactosYTipos = async () => {
+        await fetchContactos();
+        await fetchTiposContacto();
+      };
+      cargarContactosYTipos();
+    }
+  }, [modalVisible]); // Se ejecuta cada vez que cambia el estado de modalVisible
+  
   const fetchContactos = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/contacto/obtenerContacto');
@@ -138,27 +148,25 @@ const handleSeleccionarCodPersona = (persona) => {
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verifica la respuesta de la API
       setContacto(data);
-      console.log('Estado de contacto después de setContacto:', contacto); // Verifica el estado
+      console.log('Estado de contacto después de setContacto:', data); // Verifica el estado actualizado
     } catch (error) {
+      console.error('Error fetching contactos:', error);
     }
   };
-
-
   
+  const fetchTiposContacto = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
+      if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
+      const data = await response.json();
+      
+      // Guardar toda la lista de tipos de contacto
+      setTiposContacto(data); // data ya contiene objetos con Cod_tipo_contacto y tipo_contacto
+    } catch (error) {
+      console.error('Error fetching tipos de contacto:', error);
+    }
+  };
   
-const fetchTiposContacto = async () => {
-  try {
-    const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
-    if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
-    const data = await response.json();
-    
-    // Guardar toda la lista de tipos de contacto
-    setTiposContacto(data); // data ya contiene objetos con Cod_tipo_contacto y tipo_contacto
-  } catch (error) {
-    console.error('Error fetching tipos de contacto:', error);
-  }
-};
-
 
 {/*******************************************************FUNCION PARA CREAR Y ACTUALIZAR**************************************************/}
   const handleCreateOrUpdate = async () => {
