@@ -3,6 +3,8 @@ import { cilCheckCircle,cilArrowLeft,cilBrushAlt,cilDescription, cilSearch, cilS
 import CIcon from '@coreui/icons-react';
 import Swal from 'sweetalert2';
 
+import * as jwt_decode from 'jwt-decode';
+
 import {CContainer,CRow,CCol,CInputGroup,CCardBody,CFormSelect,CSpinner,CTable,CTableHead,CTableHeaderCell,CTableBody,CTableRow,CTableDataCell,
   CButton,CFormInput,CModal,CModalHeader,CModalBody,CModalFooter,CPopover,CPagination,CDropdownItem,CDropdown,CDropdownToggle,CDropdownMenu,CInputGroupText
 } from '@coreui/react';
@@ -78,6 +80,18 @@ const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea
 useEffect(() => {
   // Fetch secciones y estados de asistencia al cargar el componente
   fetchSecciones();
+  const token = localStorage.getItem('token');
+  if (token) {
+    try {
+      const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+      console.log('Token decodificado:', decodedToken);
+
+      // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+    } catch (error) {
+      console.error('Error al decodificar el token:', error);
+    }
+  }
   fetchEstadosAsistencia();
   
   // Si hay una sección seleccionada, fetch de alumnos y recuento
@@ -280,6 +294,7 @@ useEffect(() => {
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
+      confirmButtonText: 'Aceptar',
     });
   };
 
@@ -299,6 +314,7 @@ useEffect(() => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -309,6 +325,7 @@ useEffect(() => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -324,6 +341,7 @@ useEffect(() => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -367,6 +385,20 @@ const handleObservacionChangeActualizar = (index, value) => {
 
   const handleGuardarAsistencias = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+      
       // Verificar si todos los estudiantes tienen un estado de asistencia seleccionado
       const estudiantesSinEstado = asistencias.some(asistencia => !asistencia.Cod_estado_asistencia);
       if (estudiantesSinEstado) {
@@ -423,11 +455,36 @@ const handleObservacionChangeActualizar = (index, value) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(asistenciasParaInsertar),
       });
   
       if (response.ok) {
+         // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva asistencia para la fecha: ${fechaConHoraFormateada} `;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 84, // Código del objeto para la acción
+            accion: 'INSERT', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+        
         Swal.fire({
           title: 'Asistencias registradas correctamente',
           icon: 'success',
@@ -457,6 +514,20 @@ const handleObservacionChangeActualizar = (index, value) => {
   
   const handleActualizarAsistencias = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+      
       // Prepara los datos de asistencia para la actualización
       const asistenciasParaActualizar = asistenciasActualizar.map((asistencia) => ({
         Cod_asistencias: asistencia.Cod_asistencias,
@@ -470,12 +541,40 @@ const handleObservacionChangeActualizar = (index, value) => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(asistenciasParaActualizar),
       });
   
       if (response.ok) {
         const data = await response.json();
+         // Generar un listado de los códigos de asistencia actualizados
+        const codigosActualizados = asistenciasParaActualizar.map((asistencia) => asistencia.Cod_asistencias).join(', ');
+
+        // Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado las asistencias con los códigos: ${codigosActualizados}`;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 84, // Código del objeto para la acción
+             accion: 'UPDATE', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
+        
         Swal.fire({
           title: 'Asistencias actualizadas correctamente',
           icon: 'success',
@@ -623,7 +722,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         icon: 'info',
         title: 'Tabla vacía',
         text: 'No hay datos disponibles para generar el reporte excel.',
-        confirmButtonText: 'Entendido',
+        confirmButtonText: 'Aceptar',
       });
       return; // Salir de la función si no hay datos
     }
@@ -715,7 +814,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -854,12 +953,12 @@ const handleObservacionChangeActualizar = (index, value) => {
   
   const generarReporteseccionesExcel = () => {
      // Validar que haya datos en la tabla
-  if (!secciones || secciones.length === 0) {
+  if (!currentRecords2 || currentRecords2.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -871,7 +970,7 @@ const handleObservacionChangeActualizar = (index, value) => {
     ];
   
     // Crear filas con asistencias filtradas
-    const filas = secciones.map((seccion, index) => [
+    const filas = currentRecords2.map((seccion, index) => [
       index + 1,
       seccion.Seccion,
       seccion.Grado,
@@ -920,12 +1019,12 @@ const handleObservacionChangeActualizar = (index, value) => {
     
   const generarReporteseccionesPDF = () => {
     // Validar que haya datos en la tabla
-   if (!secciones || secciones.length === 0) {
+   if (!currentRecords2 ||currentRecords2.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -980,7 +1079,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       doc.autoTable({
         startY: yPosition + 4,
         head: [['#', 'Sección', 'Grado', 'Año Académico']],
-        body: secciones.map((seccion, index) => [
+        body: currentRecords2.map((seccion, index) => [
           index + 1,
           `${seccion.Seccion || ''}`.trim(),
           seccion.Grado,
@@ -1087,6 +1186,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -1097,6 +1197,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -1112,6 +1213,7 @@ const handleObservacionChangeActualizar = (index, value) => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -1664,7 +1766,10 @@ const handleObservacionChangeActualizar = (index, value) => {
       <CModal visible={mostrarModal} onClose={() => setMostrarModal(false)} size="xl" backdrop="static" centered>
         <CModalHeader closeButton={false}>
           <h5 className="modal-title">Asistencias de la Sección </h5>
-          <CButton type="button" className="btn-close" onClick={() => setMostrarModal(false)} />
+          <CButton type="button" className="btn-close" onClick={() => {
+      setMostrarModal(false); // Cierra el modal
+      setNombreBusqueda("");  // Limpia la barra de búsqueda
+    }} />
         </CModalHeader>
         <CModalBody style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'auto', padding: '1.5rem' }}>
           {/* Filtro por nombre */}
@@ -1731,7 +1836,10 @@ const handleObservacionChangeActualizar = (index, value) => {
           )}
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setMostrarModal(false)}>
+          <CButton color="secondary" onClick={() => {
+          setMostrarModal(false); // Cierra el modal
+          setNombreBusqueda("");  // Limpia la barra de búsqueda
+        }}>
             Cerrar
           </CButton>
         </CModalFooter>
@@ -1849,13 +1957,9 @@ const handleObservacionChangeActualizar = (index, value) => {
                         trigger="click"
                         style={{ maxWidth: '320px' }} // Ajustar el ancho del CPopover
                       >
-                        
-                        {canUpdate && (
                         <CButton color="link">
                           <CIcon icon={cilPencil} style={{ color: 'black' }} />
                         </CButton>
-                        )}
-
                       </CPopover>
                       </CTableDataCell>
                     </CTableRow>

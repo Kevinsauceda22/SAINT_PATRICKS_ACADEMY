@@ -1090,7 +1090,7 @@ allowOutsideClick: false,
 
       
 
-<CModal visible={formModalVisible} onClose={handleModalClose} backdrop="static">
+      <CModal visible={formModalVisible} onClose={handleModalClose} backdrop="static">
   <CModalHeader closeButton style={{ backgroundColor: '#4B6251', color: 'white' }}>
     <CModalTitle>{selectedCita ? 'Editar Cita' : 'Crear Nueva Cita'}</CModalTitle>
   </CModalHeader>
@@ -1175,90 +1175,47 @@ allowOutsideClick: false,
             />
           </CCol>
         </CRow>
+        
 
-        {/* Mostrar cancelar solo en el modo de edición */}
         {selectedCita && (
-          <>
-            {/* Estado */}
-            <CRow className="mb-4">
-              <CCol md={12}>
-                <CFormLabel>Estado</CFormLabel>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor:
-                      formValues.estado === 'Cancelada' ? '#FFE5E5' : '#E5FFE5',
-                    padding: '0.5rem 1rem',
-                    borderRadius: '0.5rem',
-                    border: '1px solid',
-                    borderColor: formValues.estado === 'Cancelada' ? 'red' : 'green',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontWeight: 'bold',
-                      color: formValues.estado === 'Cancelada' ? 'red' : 'green',
-                      fontSize: '1.2rem',
-                    }}
-                  >
-                    {formValues.estado === 'Cancelada' ? 'CANCELADA' : 'ACTIVO'}
-                  </span>
-                  <div className="form-check form-switch">
-                    <input
-                      className="form-check-input"
-                      type="checkbox"
-                      id="estadoSwitch"
-                      checked={formValues.estado === 'Cancelada'}
-                      onChange={() =>
-                        setFormValues((prevValues) => ({
-                          ...prevValues,
-                          estado: prevValues.estado === 'Cancelada' ? 'Pendiente' : 'Cancelada',
-                          motivoCancelacion: prevValues.estado === 'Cancelada' ? '' : prevValues.motivoCancelacion,
-                        }))
-                      }
-                      style={{
-                        width: '2.5rem',
-                        height: '1.5rem',
-                        backgroundColor: formValues.estado === 'Cancelada' ? 'red' : '#4B6251',
-                        border: formValues.estado === 'Cancelada'
-                          ? '1px solid red'
-                          : '1px solid #4B6251',
-                        transition: 'background-color 0.3s ease',
-                      }}
-                    />
-                  </div>
-                </div>
-              </CCol>
-            </CRow>
+  <CRow className="mb-3">
+  <CCol md={12}>
+      <CFormLabel>Estado</CFormLabel>
+      <div className="form-check form-switch">
+          <input
+              className="form-check-input"
+              type="checkbox"
+              id="estadoSwitch"
+              checked={formValues.estado === "Cancelada"}
+              onChange={() =>
+                  setFormValues((prevValues) => ({
+                      ...prevValues,
+                      estado: prevValues.estado === "Cancelada" ? "Pendiente" : "Cancelada",
+                  }))
+              }
+              style={{
+                  width: "3rem",
+                  height: "1.5rem",
+                  backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
+                  border: formValues.estado === "Cancelada" ? "1px solid red" : "",
+              }}
+          />
+          <label
+              className="form-check-label"
+              htmlFor="estadoSwitch"
+              style={{
+                  fontSize: "1.25rem",
+                  color: formValues.estado === "Cancelada" ? "red" : "green",
+                  fontWeight: "bold",
+              }}
+          >
+              {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
+          </label>
+      </div>
+  </CCol>
+</CRow>
 
-            {/* Motivo de Cancelación */}
-            {formValues.estado === 'Cancelada' && (
-              <CRow className="mb-4">
-                <CCol md={12}>
-                  <CFormLabel>Motivo de Cancelación</CFormLabel>
-                  <textarea
-                    className="form-control"
-                    placeholder="Escribe el motivo de cancelación aquí..."
-                    value={formValues.motivoCancelacion}
-                    name="motivoCancelacion"
-                    onChange={handleValidatedInputChange}
-                    required={formValues.estado === 'Cancelada'}
-                    style={{
-                      borderColor: '#4B6251',
-                      backgroundColor: '#FFF8F8',
-                      borderRadius: '0.5rem',
-                      padding: '0.5rem',
-                    }}
-                  />
-                </CCol>
-              </CRow>
-            )}
-          </>
-        )}
-
+)}
         <CModalFooter>
           <CButton
             type="submit"

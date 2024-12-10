@@ -2,6 +2,95 @@ import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
 import jwt from 'jsonwebtoken';
 
+
+export const obtenerHijosPorToken = async (req, res) => {
+    try {
+        // Obtiene el token del encabezado de autorización
+        const token = req.headers.authorization?.split(' ')[1];
+
+        // Validar si el token está presente
+        if (!token) {
+            return res.status(401).json({ mensaje: 'Token no proporcionado' });
+        }
+
+        // Decodifica el token para extraer el cod_usuario
+        let codUsuario;
+        try {
+            const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+            codUsuario = decodedToken.cod_usuario; // Extrae el cod_usuario del token
+        } catch (err) {
+            console.error('Error al decodificar el token:', err.message);
+            return res.status(401).json({ mensaje: 'Token inválido o expirado.' });
+        }
+
+        // Validar si cod_usuario existe
+        if (!codUsuario) {
+            return res.status(400).json({ mensaje: 'El token no contiene un cod_usuario válido.' });
+        }
+
+        // Consulta para obtener cod_persona y cod_rol del usuario
+        const [usuarioData] = await pool.query(
+            `SELECT cod_persona, cod_rol 
+             FROM tbl_usuarios 
+             WHERE cod_usuario = ?`,
+            [codUsuario]
+        );
+
+        // Validar si se encontró el usuario
+        if (usuarioData.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontró un usuario con el cod_usuario proporcionado.' });
+        }
+
+        const { cod_persona, cod_rol } = usuarioData[0];
+
+        // Validar que el rol sea el de un padre (cod_rol = 1)
+        if (cod_rol !== 1) {
+            return res.status(403).json({ mensaje: 'Acceso denegado: El usuario no tiene el rol de padre.' });
+        }
+
+        // Consulta para obtener los hijos matriculados con datos de sección, grado y dni
+        const [result] = await pool.query(
+            `SELECT 
+                p.cod_persona,
+                p.Nombre,
+                p.Segundo_nombre,
+                p.Primer_apellido,
+                p.Segundo_apellido,
+                p.dni_persona, 
+                p.fecha_nacimiento,
+                sm.cod_seccion_matricula,
+                s.Nombre_seccion AS nombre_seccion,
+                g.Nombre_grado AS nombre_grado
+             FROM tbl_personas AS p
+             INNER JOIN tbl_estructura_familiar AS ef ON ef.cod_persona_estudiante = p.cod_persona
+             INNER JOIN tbl_secciones_matricula AS sm ON sm.cod_persona = p.cod_persona
+             INNER JOIN tbl_secciones AS s ON sm.cod_seccion = s.cod_secciones
+             INNER JOIN tbl_grados AS g ON s.cod_grado = g.cod_grado
+             WHERE ef.cod_persona_padre = ? 
+               AND p.cod_tipo_persona = 1`,
+            [cod_persona]
+        );
+
+        // Validar si se encontraron hijos matriculados
+        if (result.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron hijos matriculados para este padre.' });
+        }
+
+        // Crear un nuevo array con los datos de los hijos, incluyendo el campo Nombre_Completo y dni
+        const hijosConNombreCompletoYdni = result.map(hijo => ({
+            ...hijo,
+            Nombre_Completo: `${hijo.Nombre} ${hijo.Segundo_nombre} ${hijo.Primer_apellido} ${hijo.Segundo_apellido}`,
+            DNI: hijo.dni_persona  // Agregando el DNI
+        }));
+
+        // Enviar respuesta con la lista de hijos, el nombre completo y el DNI
+        res.status(200).json({ hijos: hijosConNombreCompletoYdni });
+    } catch (error) {
+        console.error('Error al obtener los hijos del padre:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
 // Obtener todas las notas
 export const obtenerSeccion = async (req, res) => {
     try {

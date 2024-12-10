@@ -451,6 +451,8 @@ const handleCloseModal = (closeFunction, resetFields) => {
 };
 
 
+
+
 const handleOpenUpdateModal = (estructura) => {
   // Configurar la estructura a actualizar
   setEstructuraToUpdate({
@@ -503,86 +505,32 @@ const disableCopyPaste = (e) => {
   };
 
   // Filtrado de estructura familiar
-  const searchEstructuraFamiliar = (searchTerm) => {
-    return estructuraFamiliar.filter((estructura) => {
-      const tipoRelacionTexto = tipoRelacion.find((tipo) => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion.toUpperCase() || 'N/D';
-      const padreTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || 'N/D';
-      const estudianteTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || 'N/D';
-      const descripcionTexto = estructura.descripcion?.toUpperCase() || 'N/D';
+const searchEstructuraFamiliar = (searchTerm) => {
+  return estructuraFamiliar.filter((estructura) => {
+    const tipoRelacionTexto = tipoRelacion.find((tipo) => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion.toUpperCase() || 'N/D';
+    const padreTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || 'N/D';
+    const estudianteTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || 'N/D';
+    const descripcionTexto = estructura.descripcion?.toUpperCase() || 'N/D';
 
-      return (
-        padreTexto.includes(searchTerm.toUpperCase()) ||
-        estudianteTexto.includes(searchTerm.toUpperCase()) ||
-        tipoRelacionTexto.includes(searchTerm.toUpperCase()) ||
-        descripcionTexto.includes(searchTerm.toUpperCase())
-      );
-    });
-  };
+    // Aquí falta el return de la condición del filtro
+    return tipoRelacionTexto.includes(searchTerm.toUpperCase()) ||
+           padreTexto.includes(searchTerm.toUpperCase()) ||
+           estudianteTexto.includes(searchTerm.toUpperCase()) ||
+           descripcionTexto.includes(searchTerm.toUpperCase());
+  });
+};
 
-  const filteredEstructuraFamiliar = searchEstructuraFamiliar(searchTerm);
+  const filteredEstructuraFamiliar = estructuraFamiliar.filter(
+    (estructura) =>
+      estructura.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      estructura.cod_persona_estudiante?.toString().includes(searchTerm) || // Assuming cod_persona_estudiante is a number
+      estructura.cod_persona_padre?.toString().includes(searchTerm) ||
+      estructura.cod_tipo_relacion?.toString().includes(searchTerm),
+  )
 
-  // Paginación
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord);
-
-  const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstructuraFamiliar.length / recordsPerPage)) {
-      setCurrentPage(pageNumber);
-    }
-  };
-  // Función para generar reporte PDF
-  const ReporteEstructuraPDF = (estructuraFamiliar, personas, tipoRelacion) => {
-    const doc = new jsPDF()
-    const tableData = estructuraFamiliar.map((estructura) => {
-      const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName || 'N/A'
-      const padre = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName || 'N/A'
-      const tipoRel = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion || 'N/A'
-      return [
-        estudiante,
-        padre,
-        tipoRel,
-        estructura.descripcion,
-      ]
-    })
-  
-    doc.autoTable({
-      head: [['Estudiante', 'Padre/Tutor', 'Tipo de Relación', 'Descripción']],
-      body: tableData,
-    })
-  
-    doc.save('estructura_familiar.pdf')
-  }
-  
-  // Función para generar reporte Excel
-  const ReporteEstructuraExcel = (estructuraFamiliar, personas, tipoRelacion) => {
-    const tableData = estructuraFamiliar.map((estructura) => {
-      const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName || 'N/A'
-      const padre = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName || 'N/A'
-      const tipoRel = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion || 'N/A'
-      return {
-        Estudiante: estudiante,
-        'Padre/Tutor': padre,
-        'Tipo de Relación': tipoRel,
-        Descripción: estructura.descripcion,
-      }
-    })
-  
-    const worksheet = XLSX.utils.json_to_sheet(tableData)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Estructura Familiar")
-    XLSX.writeFile(workbook, 'estructura_familiar.xlsx')
-  }
-  
-  
-  const handleGeneratePDF = () => {
-    generatePDF(filteredEstructuraFamiliar, personas, tipoRelacion)
-  }
-  
-  const handleGenerateExcel = () => {
-    generateExcel(filteredEstructuraFamiliar, personas, tipoRelacion)
-  }
-{/******************************************************************************************************************************************/}  
+  const indexOfLastRecord = currentPage * recordsPerPage
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage
+  const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord)
 
 {/* -------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -623,15 +571,12 @@ return (
       >
         <CIcon icon={cilPlus} /> Nuevo
       </CButton>
-        <CDropdown>
-          <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-            Reporte
-          </CDropdownToggle>
-          <CDropdownMenu>
-            <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
+  <CDropdown>
+    <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px' }}>
+      Reportes
+    </CDropdownToggle>
+    <CDropdownMenu></CDropdownMenu>
+  </CDropdown>
 </CCol>
 
       </CRow>
@@ -873,20 +818,27 @@ return (
         </CFormSelect>
       </CInputGroup>
 
-{/* Campo de Descripción */}
-<CInputGroup className="mt-3">
+      {/* Campo de Descripción */}
+      <CInputGroup className="mt-3">
+  {errorMessages.descripcion && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.descripcion}
+    </div>
+  )}
+
+  
   <CInputGroupText>Descripción</CInputGroupText>
   <CFormInput
     type="text"
     value={nuevaEstructura.descripcion}
-    onChange={(e) => {
-      const value = e.target.value.toUpperCase(); // Convertir a mayúsculas
+    onChange={e => {
+      const value = e.target.value;
 
       // Bloquear secuencias de más de tres letras repetidas
       if (/(.)\1{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
+          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.'
         }));
         return;
       }
@@ -895,7 +847,7 @@ return (
       if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
+          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.'
         }));
         return;
       }
@@ -904,12 +856,12 @@ return (
       if (/\s{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
+          descripcion: 'La descripción no puede contener más de un espacio consecutivo.'
         }));
         return;
       }
 
-      // Validar longitud mínima y campo vacío
+      // Verifica si el campo está vacío
       const erroresTemp = { ...errorMessages };
       if (!value.trim()) {
         erroresTemp.descripcion = 'La descripción no puede estar vacía.';
@@ -919,8 +871,7 @@ return (
         erroresTemp.descripcion = '';
       }
 
-      // Actualizar estado con el valor en mayúsculas
-      setNuevaEstructuraFamiliar((prev) => ({
+      setNuevaEstructuraFamiliar(prev => ({
         ...prev,
         descripcion: value,
       }));
@@ -930,11 +881,8 @@ return (
     required
   />
 </CInputGroup>
-{errorMessages.descripcion && (
-  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-    {errorMessages.descripcion}
-  </div>
-)}
+
+{/* Estilos dentro del componente */}
 <style jsx>{`
   .error-message {
     color: red;
@@ -944,8 +892,6 @@ return (
     margin-left: 12px;  /* Para alinearlo con el texto del input */
   }
 `}</style>
-
-
 
     </CForm>
   </CModalBody>
@@ -959,9 +905,7 @@ return (
 
 
 
-{/********************************* MODAL PARA ACTUALIZAR ESTRUCTURA ***************************************************/}
-
-{/* Modal para actualizar estructura familiar */}
+{/********************************* Modal para actualizar estructura familiar***************************************************/}
 <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
@@ -1073,9 +1017,11 @@ return (
   </CModalFooter>
 </CModal>
 
-{/****************************************FIN DEL MODAL DE ACTUALIZAR********************************************************/}
 
-{/******************************************MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
+{/* Fin del modal actualizar */}
+
+
+      {/* Modal para eliminar una estructura */}
       <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
@@ -1093,10 +1039,11 @@ return (
           </CButton>
         </CModalFooter>
       </CModal>
-{/******************************************FIN MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
+      {/* Fin de eliminar  */}
 
 
     </CContainer>
   )
 }
+  
 export default ListaEstructura

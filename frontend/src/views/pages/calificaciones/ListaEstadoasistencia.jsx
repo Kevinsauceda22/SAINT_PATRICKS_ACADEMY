@@ -80,6 +80,7 @@ const ListaEstadoasistencia = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -90,6 +91,7 @@ const ListaEstadoasistencia = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -105,6 +107,7 @@ const ListaEstadoasistencia = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -133,6 +136,7 @@ const ListaEstadoasistencia = () => {
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
+      confirmButtonText: 'Aceptar',
     });
   };
 
@@ -170,6 +174,7 @@ const ListaEstadoasistencia = () => {
         icon: 'error',
         title: 'Error',
         text: 'El campo "Descripción" no puede estar vacío',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -186,6 +191,7 @@ const ListaEstadoasistencia = () => {
         icon: 'error',
         title: 'Error',
         text: `El estado asistencia "${nuevoEstadoasistencia}" ya existe`,
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -210,6 +216,7 @@ const ListaEstadoasistencia = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'El estado asistencia se ha creado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         swal.fire({
@@ -236,6 +243,7 @@ const ListaEstadoasistencia = () => {
         icon: 'error',
         title: 'Error',
         text: 'El campo "Descripción" no puede estar vacío',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -254,6 +262,7 @@ const ListaEstadoasistencia = () => {
         icon: 'error',
         title: 'Error',
         text: `El estado asistencia "${estadoasistenciaToUpdate.Descripcion_asistencia}" ya existe`,
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -282,6 +291,7 @@ const ListaEstadoasistencia = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'El estado asistencia se ha actualizado correctamente',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         swal.fire({
@@ -325,6 +335,7 @@ const ListaEstadoasistencia = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'El estado asistencia se ha eliminado correctamente.',
+          confirmButtonText: 'Aceptar',
         });
       } else {
         // Si hubo un error, mostrar el mensaje devuelto por el servidor
@@ -360,18 +371,55 @@ const ListaEstadoasistencia = () => {
   // Cambia el estado de la página actual después de aplicar el filtro
   // Validar el buscador
   const handleSearch = (event) => {
-    const input = event.target.value.toUpperCase();
-    const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
-    
-    if (!regex.test(input)) {
+    const input = event.target;
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
+
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras, números, acentos, ñ, espacios y comas
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
+        
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar caracteres permitidos
+    if (!regex.test(value)) {
       swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
-    setSearchTerm(input);
+
+    // Validación para letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
+          });
+          return;
+        }
+      }
+    }
+
+    setSearchTerm(value);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
@@ -396,6 +444,174 @@ const ListaEstadoasistencia = () => {
       return <AccessDenied />;
     }
   
+    const generarReportePDF = () => {
+      // Validar que haya datos en la tabla
+      if (!currentRecords || currentRecords.length === 0) {
+        swal.fire({
+          icon: 'info',
+          title: 'Tabla vacía',
+          text: 'No hay datos disponibles para generar el reporte.',
+          confirmButtonText: 'Aceptar',
+        });
+        return; // Salir de la función si no hay datos
+      }
+      const doc = new jsPDF();
+      const img = new Image();
+      img.src = logo;
+    
+      img.onload = () => {
+        // Agregar logo
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+    
+        let yPosition = 20; // Posición inicial en el eje Y
+    
+        // Título principal
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51); // Verde
+        doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    
+        yPosition += 12; // Espaciado más amplio para resaltar el título
+    
+        // Subtítulo
+        doc.setFontSize(16);
+        doc.text('Reporte de Estados Asistencia', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    
+        yPosition += 10; // Espaciado entre subtítulo y detalles
+
+        // Información adicional
+        doc.setFontSize(10);
+        doc.setTextColor(100); // Gris para texto secundario
+        doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    
+        yPosition += 4;
+    
+        doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    
+        yPosition += 4;
+    
+        doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    
+        yPosition += 6; // Espaciado antes de la línea divisoria
+    
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51); // Verde
+        doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+    
+        // Configuración para la tabla
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
+        let pageNumber = 1; // Página inicial
+    
+        // Agregar tabla con auto-paginación
+        doc.autoTable({
+          startY: yPosition + 4,
+          head: [['#', 'Descripción']],
+          body: currentRecords.map((estado, index) => [
+            index + 1,
+            `${estado.Descripcion_asistencia || ''}`.trim(),
+          ]),
+          headStyles: {
+            fillColor: [0, 102, 51],
+            textColor: [255, 255, 255],
+            fontSize: 10,
+          },
+          styles: {
+            fontSize: 10,
+            cellPadding: 3,
+            halign: 'center', // Centrado del texto en las celdas
+          },
+          columnStyles: {
+            0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+            1: { cellWidth: 'auto' }, // Columna 'Descripción' se ajusta automáticamente
+          },
+          alternateRowStyles: { fillColor: [240, 248, 255] },
+          didDrawPage: (data) => {
+            // Pie de página
+            const currentDate = new Date();
+            const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+            const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+            doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+            pageNumber += 1; // Incrementar el número de página
+          },
+        });
+    
+        // Abrir el PDF en lugar de descargarlo automáticamente
+        window.open(doc.output('bloburl'), '_blank');
+      };
+    
+      img.onerror = () => {
+        console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+        // Abrir el PDF sin el logo
+        window.open(doc.output('bloburl'), '_blank');
+      };
+    };
+
+
+    const generarReporteExcel = () => {
+      // Validar que haya datos en la tabla
+      if (!currentRecords || currentRecords.length === 0) {
+        swal.fire({
+          icon: 'info',
+          title: 'Tabla vacía',
+          text: 'No hay datos disponibles para generar el reporte excel.',
+          confirmButtonText: 'Aceptar',
+        });
+        return; // Salir de la función si no hay datos
+      }
+      const encabezados = [
+        ["Saint Patrick Academy"],
+        ["Reporte de Secciones"],
+        [], // Espacio en blanco
+        ["#","Descripción"]
+      ];
+    
+      // Crear filas con asistencias filtradas
+      const filas = currentRecords.map((estado, index) => [
+        index + 1,
+        estado.Descripcion_asistencia
+      ]);
+    
+      // Combinar encabezados y filas
+      const datos = [...encabezados, ...filas];
+    
+      // Crear una hoja de trabajo
+      const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+    
+      // Estilos personalizados para encabezados
+      const rangoEncabezado = XLSX.utils.decode_range(hojaDeTrabajo['!ref']);
+      for (let row = 0; row <= 3; row++) {
+        for (let col = rangoEncabezado.s.c; col <= rangoEncabezado.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+          if (hojaDeTrabajo[cellAddress]) {
+            hojaDeTrabajo[cellAddress].s = {
+              font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+              fill: { fgColor: { rgb: "15401D" } },
+              alignment: { horizontal: "center" }
+            };
+          }
+        }
+      }
+    
+      // Ajustar el ancho de columnas automáticamente
+      const ajusteColumnas = [
+        { wpx: 100 }, 
+        { wpx: 100 }
+      ];
+    
+      hojaDeTrabajo['!cols'] = ajusteColumnas;
+    
+      // Crear el libro de trabajo
+      const libroDeTrabajo = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Estados Asistencia");
+      // Guardar el archivo Excel con un nombre fijo
+      const nombreArchivo = `Reporte_Estados Asistencia.xlsx`;
+
+      XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+    };
+
 
  return (
   <CContainer>

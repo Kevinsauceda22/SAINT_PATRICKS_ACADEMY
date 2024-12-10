@@ -98,6 +98,15 @@ const _nav = [
     icon: cilTask,
     nameobject: 'ListaActividadesProfesor',
   },
+
+  {
+    component: CNavItem,
+    name: 'Mis Actividades ',
+    to: '/ListaActividadesAcaVistaPadre',
+    icon: cilTask,
+    nameobject: 'ListaActividadesAcaVistaPadre',
+    
+  },
   {
     component: CNavItem,
     name: 'Extracurriculares',
@@ -119,6 +128,28 @@ const _nav = [
     icon: cilFile,
     nameobject: 'ListaNotas',
   },
+   {
+    component: CNavItem,
+    name: 'Mis Cuadros',
+    to: '/ListaCuadroProfesor',
+    icon: cilFile,
+    nameobject: 'ListaCuadroProfesor',
+  },
+   {
+    component: CNavItem,
+    name: 'Cuadros',
+    to: '/ListaCuadroPadre',
+    icon: cilFile,
+    nameobject: 'ListaCuadroPadre',
+  },
+   {
+    component: CNavItem,
+    name: 'Cuadros',
+    to: '/ListaCuadro',
+    icon: cilFile,
+    nameobject: 'ListaCuadro',
+  },
+
   
     {
       component: CNavItem,
@@ -209,6 +240,12 @@ const _nav = [
         name: 'Historial Academico',
         to: '/ListaHistoriales',
         nameobject: 'ListaHistorial',
+      },
+      {
+        componente: CNavItem,
+        name: 'Institutos',
+        to: '/ListaInstitutos',
+        nameobject: 'ListaInstitutos',
       },
       {
         component: CNavItem,

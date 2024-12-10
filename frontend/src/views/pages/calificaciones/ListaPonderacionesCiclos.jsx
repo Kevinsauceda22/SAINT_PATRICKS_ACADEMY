@@ -6,6 +6,11 @@ import logo from 'src/assets/brand/logo_saint_patrick.png'
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+
+//necesarios abajo
+import axios from 'axios';
+import * as jwt_decode from 'jwt-decode';
+
 import {
     CTable,
     CTableHead,
@@ -58,7 +63,21 @@ const ListaPonderacionesCiclos = () => {
         fetchCiclos();
         fetchPonderaciones();
         fetchGrados();
-    }, []);
+        const token = localStorage.getItem('token');
+        
+        if (token) {
+          try {
+            const decodedToken = jwt_decode(token); // Decodificamos el token
+            console.log('Token decodificado:', decodedToken);
+            
+            // Realiza las acciones adicionales que necesites, como verificar permisos o roles
+          } catch (error) {
+            console.error('Error al decodificar el token:', error);
+          }
+        }
+      }, []); // Arreglo de dependencias vacío, solo se ejecuta al montar el componente
+    
+    
 
     const fetchCiclos = async () => {
         try {
@@ -144,65 +163,130 @@ const ListaPonderacionesCiclos = () => {
 
     const asignarPonderacion = async () => {
         if (!nuevaponderaciones || nuevaponderaciones === "") {
-            Swal.fire('Error', 'Por favor seleccione una ponderación', 'error');
-            return false;
+          Swal.fire('Error', 'Por favor seleccione una ponderación', 'error');
+          return false;
         }
-
-        // Aquí podrías también verificar si el valor es un número y no una cadena vacía
+      
+        // Verificar si el valor es un número y no una cadena vacía
         if (isNaN(nuevaponderaciones) || nuevaponderaciones <= 0) {
-            Swal.fire('Error', 'La ponderación seleccionada no es válida.', 'error');
-            return false;
+          Swal.fire('Error', 'La ponderación seleccionada no es válida.', 'error');
+          return false;
         }
-
+      
         if (isNaN(nuevaponderacionesciclos) || nuevaponderacionesciclos <= 0.5 || nuevaponderacionesciclos > 100) {
-            Swal.fire('Error', 'El puntaje debe ser un número entre 0.1 y 100', 'error');
-            return false;
+          Swal.fire('Error', 'El puntaje debe ser un número entre 0.1 y 100', 'error');
+          return false;
         }
-
+      
         try {
-            const response = await fetch('http://localhost:4000/api/ponderacionCiclo/crearPonderacionesCiclos', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    Cod_ponderacion: nuevaponderaciones,
-                    Cod_ciclo: cicloParaAsignar.Cod_ciclo,
-                    Valor: nuevaponderacionesciclos
-                }),
-            });
-
-            if (response.ok) {
-                Swal.fire('¡Éxito!', 'Ponderación asignada correctamente', 'success');
-                setAssignModalVisible(false);
-                setnuevaPonderaciones('');
-                setnuevaPonderacionesCiclos('');
-                // Recargar las ponderaciones para el ciclo seleccionado
-                await fetchPonderacionCiclo(cicloParaAsignar.Cod_ciclo);
-
-                // Abrir el modal de información con datos actualizados
-                setModalVisible(true);
-
-                Swal.fire('¡Éxito!', 'Se ha asignado la ponderación correctamente', 'success');
-            } else {
-                const errorData = await response.json();
-                console.error('Error al asignar ponderación:', errorData);
-                // Aquí ya no necesitas comprobar errorData.sqlMessage porque ahora solo envía Mensaje genérico
-                if (errorData.Mensaje) {
-                    Swal.fire('Error', errorData.Mensaje, 'error'); // Esto mostrará el mensaje genérico
-                } else {
-                    Swal.fire('Error', 'Hubo un problema al asignar la ponderación', 'error');
-                }
+          // 1. Verificar si obtenemos el token correctamente
+          const token = localStorage.getItem('token');
+          console.log('Token obtenido:', token);  // Depuración
+          if (!token) {
+            Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+            return;
+          }
+      
+          // 2. Realizar la solicitud para asignar la ponderación
+          const response = await fetch('http://localhost:4000/api/ponderacionCiclo/crearPonderacionesCiclos', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
+            },
+            body: JSON.stringify({
+              Cod_ponderacion: nuevaponderaciones,
+              Cod_ciclo: cicloParaAsignar.Cod_ciclo,
+              Valor: nuevaponderacionesciclos
+            }),
+          });
+      
+          if (response.ok) {
+            // 3. Decodificar el token para obtener el código de usuario
+            const decodedToken = jwt_decode.jwtDecode(token);
+            console.log('Token decodificado:', decodedToken);  // Depuración
+      
+            // Verificar si el código de usuario está presente en el token
+            if (!decodedToken.cod_usuario) {
+              console.error('No se pudo obtener el código de usuario del token');
+              throw new Error('No se pudo obtener el código de usuario del token');
             }
+      
+            // 4. Registrar la acción en la bitácora
+            const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha asignado una ponderación al ciclo: ${cicloParaAsignar.Nombre_ciclo}`;
+      
+            const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+              {
+                cod_usuario: decodedToken.cod_usuario,
+                cod_objeto: 89 ,  // Código de objeto para la acción de asignar ponderación a un ciclo
+                accion: 'INSERT',
+                descripcion: descripcion,
+              },
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                },
+              }
+            );
+      
+            console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
+      
+            if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+              // 5. Acciones posteriores si la asignación es exitosa
+              Swal.fire('¡Éxito!', 'Ponderación asignada correctamente', 'success');
+              setAssignModalVisible(false);
+              setnuevaPonderaciones('');
+              setnuevaPonderacionesCiclos('');
+      
+              // Recargar las ponderaciones para el ciclo seleccionado
+              await fetchPonderacionCiclo(cicloParaAsignar.Cod_ciclo);
+      
+              // Abrir el modal de información con datos actualizados
+              setModalVisible(true);
+              
+            } else {
+              Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+            }
+          } else {
+            const errorData = await response.json();
+            console.error('Error al asignar ponderación:', errorData);
+      
+            if (errorData.Mensaje) {
+              Swal.fire('Error', errorData.Mensaje, 'error');
+            } else {
+              Swal.fire('Error', 'Hubo un problema al asignar la ponderación', 'error');
+            }
+          }
         } catch (error) {
-            console.error('Error en la solicitud:', error);
-            Swal.fire('Error', 'Hubo un problema al conectar con el servidor', 'error');
+          console.error('Error en la solicitud:', error);
+          Swal.fire('Error', 'Hubo un problema al conectar con el servidor', 'error');
         }
-    };
+      };
 
-    const handleSaveUpdate = async (ponderacionCiclo) => {
+
+      const handleSaveUpdate = async (ponderacionCiclo) => {
         try {
+            // Obtener el token del almacenamiento local
+            const token = localStorage.getItem('token');
+            if (!token) {
+                Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+                return;
+            }
+    
+            // Decodificar el token para obtener el código de usuario
+            const decodedToken = jwt_decode.jwtDecode(token);
+            if (!decodedToken.cod_usuario) {
+                console.error('No se pudo obtener el código de usuario del token');
+                throw new Error('No se pudo obtener el código de usuario del token');
+            }
+    
+            // Realizar la actualización de la ponderación
             const response = await fetch('http://localhost:4000/api/ponderacionCiclo/actualizarPonderacionesCiclos', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`, // Pasar el token en los encabezados
+                },
                 body: JSON.stringify({
                     Cod_ponderacion_ciclo: ponderacionCiclo.Cod_ponderacion_ciclo,
                     Cod_ponderacion: editedData.Cod_ponderacion || ponderacionCiclo.Cod_ponderacion,
@@ -210,19 +294,51 @@ const ListaPonderacionesCiclos = () => {
                     Valor: editedData.Valor || ponderacionCiclo.Valor,
                 }),
             });
-
+    
             if (response.ok) {
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Actualización exitosa',
-                    text: 'Datos actualizados correctamente',
-                });
-                setEditIndex(null); // Salir del modo de edición
-                setModalVisible(false); // Ocultar el modal
-                setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
-                reseteditdata(); // Resetear los datos editados
-                // Aquí puedes volver a cargar las ponderaciones si es necesario
+                // Registrar la acción en la bitácora
+                const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la ponderación al ciclo: ${getCicloName(ponderacionCiclo.Cod_ciclo)}`;
+    
+                const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+                    {
+                        cod_usuario: decodedToken.cod_usuario,
+                        cod_objeto: 89,  // Código de objeto para la acción de actualizar ponderación ciclo
+                        accion: 'UPDATE',
+                        descripcion: descripcion,
+                    },
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                        },
+                    }
+                );
+    
+                console.log('Respuesta de registro en bitácora:', bitacoraResponse);
+    
+                // Si la acción en la bitácora fue exitosa
+                if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
+                    // Mostrar mensaje de éxito
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Actualización exitosa',
+                        text: 'Datos actualizados correctamente',
+                    });
+    
+                    // Resetear el estado después de la actualización
+                    setEditIndex(null); // Salir del modo de edición
+                    setModalVisible(false); // Ocultar el modal
+                    setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+                    reseteditdata(); // Resetear los datos editados
+                } else {
+                    // Mostrar error si no se pudo registrar la acción en la bitácora
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'No se pudo registrar la acción en la bitácora',
+                    });
+                }
             } else {
+                // Si hubo error al actualizar la ponderación
                 await Swal.fire({
                     icon: 'error',
                     title: 'Error',
@@ -238,6 +354,7 @@ const ListaPonderacionesCiclos = () => {
             });
         }
     };
+    
 
     const generarReporteCiclosPDF = () => {
          // Validar que haya datos en la tabla
@@ -246,7 +363,7 @@ const ListaPonderacionesCiclos = () => {
             icon: 'info',
             title: 'Tabla vacía',
             text: 'No hay datos disponibles para generar el reporte.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
             });
             return; // Salir de la función si no hay datos
         }
@@ -352,7 +469,7 @@ const ListaPonderacionesCiclos = () => {
             icon: 'info',
             title: 'Tabla vacía',
             text: 'No hay datos disponibles para generar el reporte.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
             });
             return; // Salir de la función si no hay datos
         }
@@ -528,7 +645,7 @@ const ListaPonderacionesCiclos = () => {
         icon: 'info',
         title: 'Tabla vacía',
         text: 'No hay datos disponibles para generar el reporte excel.',
-        confirmButtonText: 'Entendido',
+        confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
     }
