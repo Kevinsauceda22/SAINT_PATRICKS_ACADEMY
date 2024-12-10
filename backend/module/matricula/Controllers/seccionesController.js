@@ -353,24 +353,31 @@ export const actualizarSeccion = async (req, res) => {
 
 // Controlador para eliminar una sección
 export const eliminarSeccion = async (req, res) => {
-    const { Cod_seccion } = req.params;
-
+    const { Cod_secciones } = req.params;
+    console.log('Cod_secciones recibido en el backend:', Cod_secciones); // Verifica el valor recibido
+  
     try {
-        const [result] = await pool.query('CALL sp_eliminar_secciones(?)', [Cod_seccion]);
-
-        if (result.affectedRows > 0) {
-            return res.status(200).json({ mensaje: 'Sección eliminada correctamente.' });
-        } else {
-            return res.status(404).json({ mensaje: 'No se encontró la sección especificada.' });
-        }
+      if (!Cod_secciones || isNaN(Cod_secciones)) {
+        return res.status(400).json({ mensaje: 'El parámetro Cod_secciones es inválido.' });
+      }
+  
+      const [result] = await pool.query('CALL sp_eliminar_secciones(?)', [Cod_secciones]);
+  
+      if (result.affectedRows > 0) {
+        return res.status(200).json({ mensaje: 'Sección eliminada correctamente.' });
+      } else {
+        return res.status(404).json({ mensaje: 'No se encontró la sección especificada.' });
+      }
     } catch (error) {
-        console.error('Error al eliminar la sección:', error);
-        if (error.sqlState === '45000') {
-            return res.status(400).json({ mensaje: error.message });
-        }
-        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+      console.error('Error al eliminar la sección:', error);
+  
+      if (error.sqlState === '45000') {
+        return res.status(400).json({ mensaje: error.message });
+      }
+  
+      return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
-};
+};  
 
 // Controlador para obtener el aula en el modal de actualizar
 export const obtenerAulaPorNumero = async (req, res) => {

@@ -71,15 +71,18 @@ const fetchSeccionesPeriodo = async (periodo) => {
     const data = await response.json();
 
     if (response.ok) {
-      setSecciones(data.map((seccion, index) => ({ ...seccion, originalIndex: index + 1 })));
+      const seccionesConIndex = data.map((seccion, index) => ({ 
+        ...seccion, 
+        originalIndex: index + 1 
+      }));
+      setSecciones(seccionesConIndex);
+      console.log('Secciones cargadas:', seccionesConIndex); // Verifica que Cod_secciones esté presente
     } else {
       setSecciones([]);
-      swal.fire('Atención', `No se encontraron secciones en este periodo académico`, 'info');
+      console.log('No se encontraron secciones para el período proporcionado.');
     }
   } catch (error) {
-    console.error('Error capturado en este bloque:', error); // Detalle del error
-    console.error('Error al cargar secciones:', error);
-    swal.fire('Error', 'Hubo un problema al cargar las secciones.', 'error');
+    console.error('Error capturado al cargar secciones:', error);
   }
 };
 
@@ -440,7 +443,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         { content: seccion.Nombre_seccion?.toUpperCase() || 'SIN NOMBRE', styles: { halign: 'center' } },
         seccion.Numero_aula?.toString() || 'SIN AULA',
         seccion.Nombre_grado?.toUpperCase() || 'SIN GRADO',
-        { content: getProfesorFullName(seccion.Cod_Profesor) || 'SIN PROFESOR', styles: { halign: 'center' } },
+        { content: getProfesorFullName(seccion.Cod_Profesor) || 'SIN PROFESOR', styles: { halign: 'left' } },
       ]);
 
       doc.autoTable({
@@ -696,12 +699,20 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
 
   // Función para abrir el modal de eliminación de una sección
   const openDeleteModal = (seccion) => {
-    setSeccionToDelete(seccion);
+    console.log('Sección seleccionada para eliminar:', seccion); // Verifica que `Cod_secciones` esté presente
+    setSeccionToDelete(seccion); // Asegúrate de que `seccion` contiene el campo Cod_secciones
     setModalDeleteVisible(true);
-  };
-
+  };  
+  
   // Función para manejar la eliminación de una sección
   const handleDeleteSeccion = async () => {
+    console.log('Sección a eliminar:', seccionToDelete); // Verifica el objeto completo
+  
+    if (!seccionToDelete.Cod_secciones) {
+      swal.fire('Error', 'No se ha seleccionado una sección válida para eliminar.', 'error');
+      return;
+    }
+  
     try {
       const response = await fetch(
         `http://localhost:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`,
@@ -712,12 +723,12 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         swal.fire('Eliminación exitosa', 'La sección ha sido eliminada correctamente.', 'success');
         setModalDeleteVisible(false);
   
-        // Recarga solo las secciones del período actual
         if (periodoSeleccionado) {
-          fetchSeccionesPeriodo(periodoSeleccionado);
+          fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones
         }
       } else {
-        swal.fire('Error', 'No se pudo eliminar la sección.', 'error');
+        const errorData = await response.json();
+        swal.fire('Error', errorData.mensaje || 'No se pudo eliminar la sección.', 'error');
       }
     } catch (error) {
       console.error('Error al eliminar la sección:', error);
@@ -725,6 +736,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     }
   };
   
+   
   // Función para manejar el cierre del modal y restablecer los estados
   const handleCloseModal = () => {
     swal.fire({

@@ -214,95 +214,117 @@ const ListaSecciones_Asignaturas = () => {
     return profesor ? profesor.Nombre_completo : 'Profesor no disponible';
   };
   
-
   // Función para abrir el modal de actualización de una sección-asignatura
   const openUpdateModal = async (seccionAsignatura) => {
     console.log("Datos de seccionAsignatura recibidos:", seccionAsignatura);
+  
     try {
+      // Convertir Dias_nombres a un array de Cod_dias
+      const codDiasArray = seccionAsignatura.Dias_nombres
+        ? seccionAsignatura.Dias_nombres.split(",").map((dia) => {
+            // Busca el código correspondiente al prefijo del día
+            const diaEncontrado = dias.find(
+              (d) => d.prefijo_dia.toUpperCase() === dia.trim().toUpperCase()
+            );
+            return diaEncontrado ? diaEncontrado.Cod_dias : null;
+          }).filter(Boolean) // Filtra valores nulos
+        : [];
+  
       // Setear datos iniciales para el modal
       setSeccionesAsignaturasToUpdate({
         p_Cod_seccion_asignatura: seccionAsignatura.Cod_seccion_asignatura || '',
         p_Cod_grados_asignaturas: seccionAsignatura.Cod_grados_asignaturas || '',
         p_Cod_secciones: seccionAsignatura.Cod_secciones || '',
-        p_Cod_dias: seccionAsignatura.Cod_dias || '',
-        p_dias: seccionAsignatura.dias || '',
+        p_Cod_dias: codDiasArray, // Asignar los códigos de los días seleccionados
         p_Hora_inicio: seccionAsignatura.Hora_inicio || '',
         p_Hora_fin: seccionAsignatura.Hora_fin || '',
-        p_Cod_grado: seccionAsignatura.Nombre_grado || '',  // Predefinir el grado asociado
-        p_Nombre_seccion: seccionAsignatura.Nombre_seccion || '', // Predefinir el nombre de la sección// Nombre del grado asociado
+        p_Cod_grado: seccionAsignatura.Nombre_grado || '',
+        p_Nombre_seccion: seccionAsignatura.Nombre_seccion || '',
       });
-
-      // Realizar el fetch para obtener las asignaturas del grado asociado
+  
+      // Fetch de asignaturas (como antes)
       const response = await fetch(
         `http://localhost:4000/api/secciones_asignaturas/asignaturasgrados/${seccionSeleccionada}`
       );
-      console.log("Cod_secciones enviado:", seccionAsignatura.Cod_secciones);
       const data = await response.json();
-      console.log('Datos de dentro', data);
+  
       if (response.ok) {
         setGradosAsignaturas(data); // Actualizar las asignaturas del grado específico
       } else {
         console.error("Error al cargar las asignaturas:", data.mensaje);
         swal.fire("Error", "No se pudieron cargar las asignaturas.", "error");
       }
-
-      setModalUpdateVisible(true); // Mostrar el modal de actualización
-    } catch (error) {
-      console.error('Error capturado en este bloque:', error); // Registro detallado
-        console.error("Error al abrir el modal de actualización:", error);
-        swal.fire("Error", "Hubo un problema al abrir el modal de actualización.", "error");
-      }
-  };
   
-
-  // Función para manejar la actualización de una sección asignatura
-  const handleUpdateSeccionAsignatura = async () => {
-    if (
-      !seccionAsignaturaToUpdate.p_Cod_seccion_asignatura ||
-      !seccionAsignaturaToUpdate.p_Cod_secciones ||
-      !seccionAsignaturaToUpdate.p_Hora_inicio ||
-      !seccionAsignaturaToUpdate.p_Hora_fin ||
-      !seccionAsignaturaToUpdate.p_Cod_grados_asignaturas ||
-      !seccionAsignaturaToUpdate.p_Cod_dias
-    ) {
-      swal.fire("Error", "Todos los campos son requeridos.", "error");
-      return;
+      setModalUpdateVisible(true); // Mostrar el modal
+    } catch (error) {
+      console.error("Error al abrir el modal de actualización:", error);
+      swal.fire("Error", "Hubo un problema al abrir el modal de actualización.", "error");
     }
-  
-    try {
-      // Obtener nombres de los días seleccionados
-      const nombresDias = dias
-        .filter((dia) => seccionAsignaturaToUpdate.p_Cod_dias.includes(dia.Cod_dias))
-        .map((dia) => dia.prefijo_dia.toUpperCase())
-        .join(", ");
-  
-      const response = await fetch(
-        "http://localhost:4000/api/secciones_asignaturas/actualizar_seccion_asig",
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...seccionAsignaturaToUpdate,
-            p_Cod_dias: seccionAsignaturaToUpdate.p_Cod_dias.join(","),
-            p_Dias_nombres: nombresDias, // Enviar los nombres de los días
-          }),
-        }
-      );
-  
-      if (response.ok) {
-        swal.fire("Éxito", "Sección asignatura actualizada correctamente.", "success");
-        setModalUpdateVisible(false);
-        fetchSeccionesAsigyHora(); // Recargar los datos
-      } else {
-        const errorData = await response.json();
-        swal.fire("Error", errorData.mensaje || "Error al actualizar la sección asignatura.", "error");
-      }
-    } catch (error) {
-      console.error('Error capturado en este bloque:', error); // Registro detallado
-        console.error("Error al actualizar la sección asignatura:", error);
-        swal.fire("Error", "Error en el servidor.", "error");
-      }
   };
+  
+  
+
+const handleUpdateSeccionAsignatura = async () => {
+  // Validar que los datos requeridos estén presentes y sean válidos
+  if (
+    !seccionAsignaturaToUpdate ||
+    !seccionAsignaturaToUpdate.p_Cod_seccion_asignatura ||
+    !seccionAsignaturaToUpdate.p_Cod_secciones ||
+    !seccionAsignaturaToUpdate.p_Hora_inicio ||
+    !seccionAsignaturaToUpdate.p_Hora_fin ||
+    !seccionAsignaturaToUpdate.p_Cod_grados_asignaturas ||
+    !seccionAsignaturaToUpdate.p_Cod_dias
+  ) {
+    swal.fire("Error", "Todos los campos son requeridos y deben estar completos.", "error");
+    return;
+  }
+
+  try {
+    // Verificar que `p_Cod_dias` sea un array, y convertirlo si es necesario
+    const codDiasArray = Array.isArray(seccionAsignaturaToUpdate.p_Cod_dias)
+      ? seccionAsignaturaToUpdate.p_Cod_dias
+      : seccionAsignaturaToUpdate.p_Cod_dias.split(",").map((dia) => dia.trim());
+
+    // Obtener nombres de los días seleccionados
+    const nombresDias = dias
+      .filter((dia) => codDiasArray.includes(dia.Cod_dias))
+      .map((dia) => dia.prefijo_dia.toUpperCase())
+      .join(", ");
+
+    // Preparar los datos para la solicitud
+    const payload = {
+      ...seccionAsignaturaToUpdate,
+      p_Cod_dias: codDiasArray.join(","), // Convertir el array a cadena separada por comas
+      p_Dias_nombres: nombresDias, // Asignar los nombres de los días seleccionados
+    };
+
+    console.log("Payload para la actualización:", payload);
+
+    // Enviar la solicitud PUT al backend
+    const response = await fetch(
+      "http://localhost:4000/api/secciones_asignaturas/actualizar_seccion_asig",
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    // Manejar la respuesta del servidor
+    if (response.ok) {
+      swal.fire("Éxito", "Sección asignatura actualizada correctamente.", "success");
+      setModalUpdateVisible(false); // Cerrar el modal
+      fetchSeccionesAsigyHora(); // Recargar los datos
+    } else {
+      const errorData = await response.json();
+      swal.fire("Error", errorData.mensaje || "Error al actualizar la sección asignatura.", "error");
+    }
+  } catch (error) {
+    console.error("Error al actualizar la sección asignatura:", error);
+    swal.fire("Error", "Error en el servidor. Por favor, inténtalo más tarde.", "error");
+  }
+};
+
   
 
   // Función para manejar el cierre del modal y restablecer los estados
@@ -986,57 +1008,53 @@ const ListaSecciones_Asignaturas = () => {
 
                   {/* Código de los días */}
                   <CInputGroup className="mb-3">
-                    <CInputGroupText>Días</CInputGroupText>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
-                        marginLeft: "35px",
-                      }}
-                    >
-                      {dias
-                        .sort((a, b) => {
-                          const order = ['LU', 'MAR', 'MIE', 'JUE', 'VIE', 'SAB', 'DOM']; // Orden deseado
-                          return (
-                            order.indexOf(a.prefijo_dia.toUpperCase()) -
-                            order.indexOf(b.prefijo_dia.toUpperCase())
-                          );
-                        })
-                        .map((dia) => (
-                          <CFormCheck
-                            key={dia.Cod_dias}
-                            label={dia.dias.toUpperCase()} // Muestra el nombre del día en mayúsculas
-                            value={dia.Cod_dias}
-                            checked={
-                              Array.isArray(seccionAsignaturaToUpdate.p_Cod_dias)
-                                ? seccionAsignaturaToUpdate.p_Cod_dias.includes(dia.Cod_dias)
-                                : seccionAsignaturaToUpdate.p_Cod_dias
-                                    ?.split(",") // Si p_Cod_dias es un string, lo convierte en un array
-                                    .includes(dia.Cod_dias)
-                            }
-                            onChange={(e) => {
-                              const selectedDias = Array.isArray(
-                                seccionAsignaturaToUpdate.p_Cod_dias
-                              )
-                                ? [...seccionAsignaturaToUpdate.p_Cod_dias]
-                                : seccionAsignaturaToUpdate.p_Cod_dias
-                                ? seccionAsignaturaToUpdate.p_Cod_dias.split(",")
-                                : [];
+  <CInputGroupText>Días</CInputGroupText>
+  <div
+    style={{
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "space-between",
+      marginLeft: "35px",
+    }}
+  >
+    {dias
+      .sort((a, b) => {
+        const order = ["LU", "MAR", "MIE", "JUE", "VIE", "SAB", "DOM"]; // Orden deseado
+        return (
+          order.indexOf(a.prefijo_dia.toUpperCase()) -
+          order.indexOf(b.prefijo_dia.toUpperCase())
+        );
+      })
+      .map((dia) => (
+        <CFormCheck
+          key={dia.Cod_dias}
+          label={dia.dias.toUpperCase()} // Muestra el nombre del día en mayúsculas
+          value={dia.Cod_dias}
+          checked={
+            Array.isArray(seccionAsignaturaToUpdate.p_Cod_dias)
+              ? seccionAsignaturaToUpdate.p_Cod_dias.includes(dia.Cod_dias)
+              : false
+          }
+          onChange={(e) => {
+            const selectedDias = [...(seccionAsignaturaToUpdate.p_Cod_dias || [])];
 
-                              const newDias = e.target.checked
-                                ? [...selectedDias, dia.Cod_dias] // Agrega el día seleccionado
-                                : selectedDias.filter((codDia) => codDia !== dia.Cod_dias); // Elimina el día deseleccionado
+            if (e.target.checked) {
+              selectedDias.push(dia.Cod_dias); // Agregar día seleccionado
+            } else {
+              const index = selectedDias.indexOf(dia.Cod_dias);
+              if (index > -1) selectedDias.splice(index, 1); // Eliminar día deseleccionado
+            }
 
-                              setSeccionesAsignaturasToUpdate({
-                                ...seccionAsignaturaToUpdate,
-                                p_Cod_dias: newDias,
-                              });
-                            }}
-                          />
-                        ))}
-                    </div>
-                  </CInputGroup>
+            setSeccionesAsignaturasToUpdate({
+              ...seccionAsignaturaToUpdate,
+              p_Cod_dias: selectedDias,
+            });
+          }}
+        />
+      ))}
+  </div>
+</CInputGroup>
+
 
           {/* Hora de inicio */}
           <CInputGroup className="mb-3">
