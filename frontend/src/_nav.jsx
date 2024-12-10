@@ -247,6 +247,12 @@ const _nav = [
         nameobject: 'ListaHistorial',
       },
       {
+        componente: CNavItem,
+        name: 'Institutos',
+        to: '/ListaInstitutos',
+        nameobject: 'ListaInstitutos',
+      },
+      {
         component: CNavItem,
         name: 'Tipo matricula',
         to: '/tipomatricula',
