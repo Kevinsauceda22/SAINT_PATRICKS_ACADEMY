@@ -4,17 +4,14 @@ const pool = await conectarDB();
 
 // Controlador para crear un estado de matrícula
 export const crearEstadoMatricula = async (req, res) => {
-    const { p_tipo } = req.body; // Obtenemos el tipo desde el cuerpo de la solicitud
-
-    // Solo se permiten los tipos válidos
-    const tiposValidos = ['Activa', 'Cancelada', 'Pendiente', 'Inactiva'];
-    if (!tiposValidos.includes(p_tipo)) {
-        return res.status(400).json({ Mensaje: 'Tipo inválido. Los tipos permitidos son: ' + tiposValidos.join(', ') });
-    }
+    const { p_tipo } = req.body;
 
     try {
         // Verificar si el tipo ya existe
-        const [existingEstado] = await pool.query('SELECT * FROM tbl_estado_matricula WHERE Tipo = ?', [p_tipo]);
+        const [existingEstado] = await pool.query(
+            'SELECT * FROM tbl_estado_matricula WHERE LOWER(Tipo) = LOWER(?)',
+            [p_tipo]
+        );
         if (existingEstado.length > 0) {
             return res.status(400).json({ Mensaje: 'El estado de matrícula ya existe' });
         }
@@ -29,15 +26,10 @@ export const crearEstadoMatricula = async (req, res) => {
     }
 };
 
+
 // Controlador para actualizar un estado de matrícula
 export const actualizarEstado = async (req, res) => {
     const { p_cod_estado_matricula, p_tipo } = req.body; // Obtenemos el código y tipo desde el cuerpo de la solicitud
-
-    // Solo se permiten los tipos válidos
-    const tiposValidos = ['Activa', 'Cancelada', 'Pendiente', 'Inactiva'];
-    if (!tiposValidos.includes(p_tipo)) {
-        return res.status(400).json({ Mensaje: 'Tipo inválido. Los tipos permitidos son: ' + tiposValidos.join(', ') });
-    }
 
     try {
         // Verificar si el tipo ya existe (si no es el mismo)

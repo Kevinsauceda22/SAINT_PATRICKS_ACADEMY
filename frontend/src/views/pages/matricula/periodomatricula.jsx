@@ -565,13 +565,14 @@ const PeriodosMatricula = () => {
         <CTableDataCell>{periodo.Fecha_fin}</CTableDataCell>
         <CTableDataCell>{periodo.Anio_academico}</CTableDataCell>
         <CTableDataCell>
-          <CButton
-            color={periodo.estado === 'activo' ? 'danger' : 'success'}
-            onClick={() => toggleEstado(periodo)} // Llamada a la función toggleEstado
-            style={{ opacity: 0.9 }}
-          >
-            {periodo.estado === 'activo' ? 'Desactivar' : 'Activar'}
-          </CButton>
+        <CButton
+  color={periodo.estado === 'activo' ? 'success' : 'danger'} // Cambiar colores
+  onClick={() => toggleEstado(periodo)} // Llamada a la función toggleEstado
+  style={{ opacity: 0.9 }}
+>
+  {periodo.estado === 'activo' ? 'Desactivar' : 'Activar'}
+</CButton>
+
         </CTableDataCell>
         <CTableDataCell className="text-end">
           {canUpdate && (
