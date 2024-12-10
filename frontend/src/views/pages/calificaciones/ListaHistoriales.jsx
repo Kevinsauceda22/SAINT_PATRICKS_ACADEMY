@@ -92,15 +92,12 @@ const ListaHistoriales = () => {
     try {
       const response = await fetch('http://localhost:4000/api/grados/vergrados');
       const data = await response.json();
-      const gradosOrdenados = data.sort((a, b) => {
-        const orden = ['Primero', 'Segundo', 'Tercero', 'Cuarto', 'Quinto', 'Sexto', 'Séptimo', 'Octavo', 'Noveno', 'Décimo', 'Undécimo', 'Duodécimo'];
-        return orden.indexOf(a.Nombre_grado) - orden.indexOf(b.Nombre_grado);
-      });
-      setGrados(gradosOrdenados);
+      console.log(data); // Verifica la respuesta en la consola
+      setGrados(data); 
     } catch (error) {
       console.error('Error al obtener los grados:', error);
     }
-  };  
+  };
 
   const fetchGradosMatricula = async () => {
     try {
@@ -186,20 +183,15 @@ const ListaHistoriales = () => {
 
   const resetForm = () => {
     setNuevoHistorial({
-      Cod_persona: 'Seleccione un estudiante',
-      Cod_grado: 'Seleccione un grado',
-      Año_Academico: 'Seleccione un año',
+      Cod_persona: '',
+      Cod_grado: '',
+      Año_Academico: '',
       Promedio_Anual: '',
-      Cod_Instituto: 'Seleccione un instituto',
+      Cod_Instituto: '',
       Observacion: ''
     });
     setError('');
   };
-
-  useEffect(() => {
-  const sortedGrados = [...Grados].sort((a, b) => a.orden - b.orden); // Suponiendo que los grados tienen una propiedad "orden"
-  setGrados(sortedGrados);
-  }, [Grados]);
 
   const handleEditHistorial = (historial) => {
     setHistorialAEditar(historial); // Establece el historial a editar
@@ -488,109 +480,80 @@ const ListaHistoriales = () => {
     return anios;
   };
 
-  const generarReportePDF = (tipoReporte) => {
-    let registrosParaReporte = [];
-    let titulo = '';
-    let subtitulo = '';
-    let encabezadoTabla = [];
-    let cuerpoTabla = [];
-  
-    // Filtrar registros según el tipo de reporte
-    switch (tipoReporte) {
-      case 'grados':
-        registrosParaReporte = listaGradosAcademicos;
-        titulo = 'Reporte de Grados Académicos';
-        subtitulo = 'Lista de Grados';
-        encabezadoTabla = [['#', 'Grado Académico']];
-        cuerpoTabla = registrosParaReporte.map((grado, index) => [index + 1, grado.Descripcion]);
-        break;
-  
-      case 'estudiantesPorGrado':
-        registrosParaReporte = listaGradosAcademicos;
-        titulo = 'Reporte de Estudiantes por Grado';
-        subtitulo = 'Lista de Estudiantes por Grado';
-        encabezadoTabla = [['#', 'Grado Académico', 'Nombre Estudiante']];
-        cuerpoTabla = registrosParaReporte.map((grado, index) => {
-          const estudiantesPorGrado = listaEstudiantes.filter((estudiante) => estudiante.Cod_grado_academico === grado.Cod_grado_academico);
-          return estudiantesPorGrado.map((estudiante, idx) => [
-            `${index + 1}.${idx + 1}`,
-            grado.Descripcion,
-            `${estudiante.Nombre} ${estudiante.Primer_apellido}`,
-          ]);
-        }).flat();
-        break;
-  
-      case 'historialesEstudiantes':
-        registrosParaReporte = listaHistoriales;
-        titulo = 'Reporte de Historiales Académicos';
-        subtitulo = 'Historiales Académicos de los Estudiantes';
-        encabezadoTabla = [['#', 'Nombre Estudiante', 'Grado', 'Año Académico', 'Promedio Anual']];
-        cuerpoTabla = registrosParaReporte.map((historial, index) => {
-          const estudiante = listaEstudiantes.find((e) => e.cod_persona === historial.Cod_persona);
-          const grado = listaGradosAcademicos.find((g) => g.Cod_grado_academico === historial.Cod_grado);
-          return [
-            index + 1,
-            `${estudiante.Nombre} ${estudiante.Primer_apellido}`,
-            grado ? grado.Descripcion : 'N/A',
-            historial.Año_Academico,
-            historial.Promedio_Anual,
-          ];
-        });
-        break;
-  
-      default:
-        console.error('Tipo de reporte no válido');
-        return;
-    }
-  
-    // Validar si hay registros para mostrar
-    if (registrosParaReporte.length === 0) {
-      swal.fire({
-        icon: 'warning',
-        title: 'Sin datos para el reporte',
-        text: 'No hay registros disponibles para generar el reporte.',
+  const ordenGrados = [
+    'PRIMER GRADO',
+    'SEGUNDO GRADO',
+    'TERCER GRADO',
+    'CUARTO GRADO',
+    'QUINTO GRADO',
+    'SEXTO GRADO',
+    'SÉPTIMO GRADO',
+    'OCTAVO GRADO',
+    'NOVENO GRADO',
+    'DÉCIMO',
+    'UNDÉCIMO',
+    'DUODÉCIMO',
+  ];
+
+    // Ordenar grados antes de renderizar
+    const gradosOrdenados = [...currentRecords2].sort((a, b) => {
+      return ordenGrados.indexOf(a.Nombre_grado) - ordenGrados.indexOf(b.Nombre_grado);
+    });
+
+  const generarReporteGradosPDF = () => {
+    // Validar que haya datos en la lista de grados académicos
+    if (!listaGradosAcademicos || listaGradosAcademicos.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Lista vacía',
+        text: 'No hay grados académicos disponibles para generar el reporte.',
+        confirmButtonText: 'Entendido',
       });
-      return; // No continuar si no hay datos
+      return; // Salir de la función si no hay datos
     }
   
     const doc = new jsPDF();
     const img = new Image();
-    img.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHzpgnN2tsd3WbBpt4g86O5iWFLJGBi4b1dw&s';  // Ruta correcta de la imagen
+    img.src = logo;
   
-    // Obtener fecha y hora de generación
-    const now = new Date();
-    const fechaHoraGeneracion = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+    // Obtener la fecha del primer grado académico (opcional)
+    const fechaRegistro = listaGradosAcademicos.length > 0 ? 'Fecha del primer grado académico: ' + new Date().toLocaleDateString() : 'sin_fecha';
   
     img.onload = () => {
       // Agregar logo
       doc.addImage(img, 'PNG', 10, 10, 30, 30);
   
-      let yPosition = 20;
+      let yPosition = 20; // Posición inicial en el eje Y
   
       // Título principal
       doc.setFontSize(18);
       doc.setTextColor(0, 102, 51); // Verde
       doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
   
-      yPosition += 12;
+      yPosition += 12; // Espaciado más amplio para resaltar el título
   
       // Subtítulo
       doc.setFontSize(16);
-      doc.text(titulo, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      doc.text('Reporte de Grados Académicos', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
   
-      yPosition += 10;
+      yPosition += 10; // Espaciado entre subtítulo y detalles
   
       // Información adicional
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+      doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 8; // Espaciado entre detalles y tabla
+  
+      // Información de contacto
       doc.setFontSize(10);
       doc.setTextColor(100); // Gris para texto secundario
       doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
   
       yPosition += 4;
-  
       doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
   
       yPosition += 4;
-  
       doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
   
       yPosition += 6; // Espaciado antes de la línea divisoria
@@ -600,118 +563,375 @@ const ListaHistoriales = () => {
       doc.setDrawColor(0, 102, 51); // Verde
       doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
   
-      yPosition += 4;
+      yPosition += 6; // Espaciado después de la línea divisoria
   
-      // Generar tabla con registros
+      // Configuración para la tabla
+      const pageHeight = doc.internal.pageSize.height; // Altura de la página
+      let pageNumber = 1; // Página inicial
+  
+      // Agregar tabla con auto-paginación
       doc.autoTable({
-        startY: yPosition,
-        head: encabezadoTabla,
-        body: cuerpoTabla,
+        startY: yPosition + 4,
+        head: [['#', 'Grado Académico']],
+        body: listaGradosAcademicos.map((grado, index) => [
+          index + 1,
+          grado.Nombre_grado,
+        ]),
         headStyles: {
-          fillColor: [0, 102, 51], // Verde oscuro para encabezado
-          textColor: [255, 255, 255], // Texto blanco
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
           fontSize: 10,
         },
         styles: {
           fontSize: 10,
           cellPadding: 3,
+          halign: 'center',
         },
-        alternateRowStyles: { fillColor: [240, 248, 255] }, // Fondo alternativo
+        columnStyles: {
+          0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+          1: { cellWidth: 'auto' }, // Columna 'Grado Académico' se ajusta automáticamente
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
           // Pie de página
-          const pageCount = doc.internal.getNumberOfPages();
-          const pageHeight = doc.internal.pageSize.height;
-  
-          // Fecha y hora en el lado izquierdo
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
           doc.setFontSize(10);
-          doc.text(`Fecha y hora de generación: ${fechaHoraGeneracion}`, 10, pageHeight - 10);
-  
-          // Número de página en el lado derecho
-          doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width - 50, pageHeight - 10);
+          doc.setTextColor(100);
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          pageNumber += 1; // Incrementar el número de página
         },
       });
   
-      // Guardar el PDF
-      doc.save(`Reporte_${tipoReporte}_${new Date().toLocaleDateString()}.pdf`);
+      // Abrir el PDF en lugar de descargarlo automáticamente
+      window.open(doc.output('bloburl'), '_blank');
     };
   
     img.onerror = () => {
       console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
-      doc.save(`Reporte_${tipoReporte}_${new Date().toLocaleDateString()}.pdf`);
+      // Abrir el PDF sin el logo
+      window.open(doc.output('bloburl'), '_blank');
     };
-  };    
+  };
 
-  const generarReporteExcel = (tipoReporte) => {
-    let encabezados = [];
-    let datos = [];
+  const generarReporteEstudiantesPDF = () => {
+    //Validar que haya datos en la lista de Estdiantes
+    if (!listaEstudiantes || listaEstudiantes.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Lista vacía',
+        text: 'No hay estudiantes disponibles para generar el reporte.',
+        confirmButtonText: 'Entendido',
+      });
+      return; // Salir de la función si no hay datos
+    }
 
+    const doc = new jsPDF();
     const img = new Image();
-    img.src = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSHzpgnN2tsd3WbBpt4g86O5iWFLJGBi4b1dw&s';  // Ruta correcta de la imagen
+    img.src = logo;
+
+    img.onload = () => {
+      // Agregar logo
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
   
-    // Definir los encabezados y los datos según el tipo de reporte
-    switch (tipoReporte) {
-      case 'grados':
-        encabezados = [
-          ["Saint Patrick's Academy"],
-          ["Reporte de Grados Académicos"],
-          [], // Espacio en blanco
-          ['#', 'Código de Grado', 'Nombre del Grado'],
-        ];
-        datos = listaGradosAcademicos.map((grado, index) => [
-          index + 1,
-          grado.Cod_grado_academico,
-          grado.Descripcion,
-        ]);
-      break;
+      let yPosition = 20; // Posición inicial en el eje Y
   
-      case 'estudiantesPorGrado':
-        encabezados = [
-          ["Saint Patrick's Academy"],
-          ["Reporte de Estudiantes por Grado"],
-          [], // Espacio en blanco
-          ['#', 'Nombre Estudiante', 'Grado', 'Año Académico'],
-        ];
-        datos = listaEstudiantes.map((estudiante, index) => [
-          index + 1,
-          `${estudiante.Nombre} ${estudiante.Primer_apellido} ${estudiante.Segundo_apellido}`.trim(),
-          listaGradosAcademicos.find((grado) => grado.Cod_grado_academico === estudiante.Cod_grado_academico)?.Descripcion || 'N/A',
-          estudiante.Año_Academico,
-        ]);
-      break;
+      // Título principal
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51); // Verde
+      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
   
-      case 'historialesEstudiantes':
-        encabezados = [
-          ["Saint Patrick's Academy"],
-          ["Reporte de Historiales Académicos de Estudiantes"],
-          [], // Espacio en blanco
-          ['#', 'Estudiante', 'Grado', 'Promedio Anual', 'Instituto', 'Observaciones'],
-        ];
-        datos = listaHistoriales.map((historial, index) => [
-          index + 1,
-          `${historial.Nombre} ${historial.Primer_apellido} ${historial.Segundo_apellido}`.trim(),
-          listaGradosAcademicos.find((grado) => grado.Cod_grado_academico === historial.Cod_grado_academico)?.Descripcion || 'N/A',
-          historial.Promedio_Anual,
-          listaInstitutos.find((instituto) => instituto.Cod_Instituto === historial.Cod_Instituto)?.Nom_Instituto || 'N/A',
-          historial.Observacion || 'Sin Observaciones',
-        ]);
-      break;
+      yPosition += 12; // Espaciado más amplio para resaltar el título
   
-      default:
-        console.error('Tipo de reporte no válido');
-        return;
+      // Subtítulo
+      doc.setFontSize(16);
+      doc.text('Reporte de Estudiantes por grado', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 10; // Espaciado entre subtítulo y detalles
+  
+      // Información adicional
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+      doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 8; // Espaciado entre detalles y tabla
+  
+      // Información de contacto
+      doc.setFontSize(10);
+      doc.setTextColor(100); // Gris para texto secundario
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 6; // Espaciado antes de la línea divisoria
+  
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51); // Verde
+      doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+  
+      yPosition += 6; // Espaciado después de la línea divisoria
+  
+      // Configuración para la tabla
+      const pageHeight = doc.internal.pageSize.height; // Altura de la página
+      let pageNumber = 1; // Página inicial
+
+          // Agregar tabla con auto-paginación
+      doc.autoTable({
+      startY: yPosition + 4,
+      head: [['#', 'Estudiante']],
+      body: listaEstudiantes.map((estudiante, index) => [
+        index + 1,
+        estudiante.NombreCompletoEstudiante,
+      ]),
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 10,
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+        halign: 'center',
+      },
+      columnStyles: {
+        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+        1: { cellWidth: 'auto' }, // Columna 'Grado Académico' se ajusta automáticamente
+      },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      didDrawPage: (data) => {
+        // Pie de página
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+        pageNumber += 1; // Incrementar el número de página
+      },
+    });
+      // Abrir el PDF en lugar de descargarlo automáticamente
+      window.open(doc.output('bloburl'), '_blank');
+    };
+
+    img.onerror = () => {
+      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+      // Abrir el PDF sin el logo
+      window.open(doc.output('bloburl'), '_blank');
+    };
+  };
+
+  const generarReporteHistorialesPDF = () => {
+    //Validar que haya datos en la lista de Historiales
+    if (!listaHistoriales || listaHistoriales.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Lista vacía',
+        text: 'No hay historiales disponibles para generar el reporte.',
+        confirmButtonText: 'Entendido',
+      });
+      return; // Salir de la función si no hay datos
+    }
+
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = logo;
+
+    img.onload = () => {
+    // Agregar logo
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+    let yPosition = 20; // Posición inicial en el eje Y
+
+    // Título principal
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 12; // Espaciado más amplio para resaltar el título
+
+    // Subtítulo
+    doc.setFontSize(16);
+    doc.text('Reporte de Historiales Académicos', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 10; // Espaciado entre subtítulo y detalles
+
+    // Información adicional
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+    doc.text(`Fecha de generación: ${new Date().toLocaleDateString()}`, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 8; // Espaciado entre detalles y tabla
+
+    // Información de contacto
+    doc.setFontSize(10);
+    doc.setTextColor(100); // Gris para texto secundario
+    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 4;
+    doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 4;
+    doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+
+    yPosition += 6; // Espaciado antes de la línea divisoria
+
+    // Línea divisoria
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51); // Verde
+    doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+
+    yPosition += 6; // Espaciado después de la línea divisoria
+
+    // Configuración para la tabla
+    const pageHeight = doc.internal.pageSize.height; // Altura de la página
+    let pageNumber = 1; // Página inicial
+
+    // Agregar tabla con auto-paginación
+    doc.autoTable({
+      startY: yPosition + 4,
+      head: [['#', 'Estado', 'Estudiante', 'Grado', 'Año Académico', 'Promedio Anual', 'Fecha De Registro', 'Instituto', 'Observaciones']],
+      body: listaHistoriales.map((historial, index) => [
+        index + 1,
+        historial.Cod_historial_academico,
+        historial.Cod_estado,
+        historial.Estudiante,
+        historial.Grado,
+        historial.Año_Academico,
+        historial.Promedio_Anual,
+        new Date(historial.Fecha_Registro).toLocaleDateString('es-ES'),
+        historial.Instituto,
+        historial.Observacion
+      ]),
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 10,
+      },
+      styles: {
+        fontSize: 10,
+        cellPadding: 3,
+        halign: 'center',
+      },
+      columnStyles: {
+        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+        1: { cellWidth: 'auto' }, // Columna 'Grado Académico' se ajusta automáticamente
+      },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      didDrawPage: (data) => {
+        // Pie de página
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+        pageNumber += 1; // Incrementar el número de página
+      },
+    });
+
+    // Abrir el PDF en lugar de descargarlo automáticamente
+    window.open(doc.output('bloburl'), '_blank');
+  };
+
+    img.onerror = () => {
+      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+      // Abrir el PDF sin el logo
+      window.open(doc.output('bloburl'), '_blank');
+    };
+  };
+
+  const generarReporteGradosExcel = () => {
+    // Validar que haya datos en la tabla
+    if (!listaGradosAcademicos || listaGradosAcademicos.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte excel.',
+        confirmButtonText: 'Entendido',
+      });
+      return; // Salir de la función si no hay datos
     }
   
-    // Crear el libro y la hoja de Excel
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet([...encabezados, ...datos]);
+    // Crear los encabezados con la sección y la fecha de generación
+    const encabezados = [
+      ["Saint Patrick's Academy"],  // Mejorado el nombre con apóstrofe correcto
+      ["Reporte de Grados Académicos"],    // Título claro
+      [
+        `Grado: ${Nombre_grado || 'No especificada'}`,  // Asegurarse de que siempre haya un valor
+        `Fecha de generación: ${new Date().toLocaleDateString()}`,    // Fecha en formato amigable
+        `Fecha de registro: ${fechaLimpia || 'Sin fecha'}`            // Mostrar la fecha limpia o 'Sin fecha'
+      ],
+      [], // Espacio en blanco
+      ["#", "Grado"] // Encabezado de la tabla de datos
+    ];
   
-    // Agregar la hoja al libro y guardar el archivo
-    XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
-    XLSX.writeFile(wb, `Reporte_${tipoReporte}_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`);
-  };      
+    // Crear filas con asistencias filtradas
+    const filas = listaGradosAcademicos.map((grado, index) => [
+      index + 1,
+      grado.Nombre_grado  
+    ]);
+  
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+  
+    // Crear una hoja de trabajo
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+  
+    // Estilos personalizados para encabezados
+    const rangoEncabezado = XLSX.utils.decode_range(hojaDeTrabajo['!ref']);
+    for (let row = 0; row <= 3; row++) {
+      for (let col = rangoEncabezado.s.c; col <= rangoEncabezado.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        if (hojaDeTrabajo[cellAddress]) {
+          hojaDeTrabajo[cellAddress].s = {
+            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "15401D" } },
+            alignment: { horizontal: "center" }
+          };
+        }
+      }
+    }
+  
+    // Estilo de los encabezados de la tabla
+    for (let col = 0; col < 4; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 4, c: col }); // Encabezados de la tabla en la fila 5
+      if (hojaDeTrabajo[cellAddress]) {
+        hojaDeTrabajo[cellAddress].s = {
+          font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2D6A4F" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+    }
+  
+    // Ajustar el ancho de columnas automáticamente
+    const ajusteColumnas = [
+      { wpx: 250 },  // Número de fila
+      { wpx: 250 }, // Grado
+    ];
+  
+    hojaDeTrabajo['!cols'] = ajusteColumnas;
+  
+    // Crear el libro de trabajo
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Grados Académicos");
+  
+    // Guardar el archivo Excel con un nombre personalizado
+    const nombreArchivo = `${Reporte_Grados || 'No_especificada'}_${fechaLimpia || 'sin_fecha'}.xlsx`;
+    
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  };
 
   const renderGradosView = () => {
-  
     // Función para paginar los grados
     const indexOfLastRecord2 = currentPage2 * recordsPerPage2;
     const indexOfFirstRecord2 = indexOfLastRecord2 - recordsPerPage2;
@@ -752,7 +972,7 @@ const ListaHistoriales = () => {
           >
             {/* Opción para PDF */}
             <CDropdownItem
-              onClick={() => generarReportePDF('grados')}
+              onClick={() => generarReporteGradosPDF}
               style={{
                 cursor: "pointer",
                 outline: "none",
@@ -775,7 +995,7 @@ const ListaHistoriales = () => {
 
             {/* Opción para Excel */}
             <CDropdownItem
-              onClick={() => generarReporteExcel('grados')}
+              onClick={() => generarReporteGradosExcel}
               style={{
                 cursor: "pointer",
                 outline: "none",
@@ -876,7 +1096,7 @@ const ListaHistoriales = () => {
               </CTableRow>
             </CTableHead>
             <CTableBody>
-              {currentRecords2.map((gradoM, index) => (
+            {gradosOrdenados.map((gradoM, index) => (
                 <CTableRow key={gradoM.Cod_grado}>
                   <CTableDataCell>{index + 1 + (currentPage2 - 1) * recordsPerPage2}</CTableDataCell>
                   <CTableDataCell>{gradoM.Nombre_grado}</CTableDataCell>
@@ -976,7 +1196,7 @@ const ListaHistoriales = () => {
             >
               {/* Opción para PDF */}
               <CDropdownItem
-                onClick={() => generarReportePDF('estudiantes')}
+                onClick={() => generarReporteEstudiantesPDF}
                 style={{
                   cursor: "pointer",
                   outline: "none",
@@ -999,7 +1219,7 @@ const ListaHistoriales = () => {
 
               {/* Opción para Excel */}
               <CDropdownItem
-                onClick={() => generarReporteExcel('estudiantesPorGrado')}
+                onClick={() => generarReporteExcel()}
                 style={{
                   cursor: "pointer",
                   outline: "none",
@@ -1220,7 +1440,7 @@ const ListaHistoriales = () => {
         >
           {/* Opción para PDF */}
           <CDropdownItem
-            onClick={() => generarReportePDF('historiales')}
+            onClick={() => generarReporteHistorialesPDF()}
             style={{
               cursor: "pointer",
               outline: "none",
@@ -1433,7 +1653,7 @@ const ListaHistoriales = () => {
           {/* Campo de Grado */}
           <CFormSelect
             label="Grado"
-            value={nuevoHistorial.Cod_grado}
+            value={nuevoHistorial.cod_grado}
             onChange={(e) => handleInputChange(e, 'Cod_grado')}
           >
             <option value="">Seleccione una opción</option>
