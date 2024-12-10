@@ -150,7 +150,7 @@ const ListaAulas = () => {
         // Subtítulo
         doc.setFontSize(12);
         doc.setTextColor(0);
-        doc.text('Listado Detallado de Aulas', pageWidth / 2, 65, { align: 'center' });
+        doc.text('Listado de Aulas', pageWidth / 2, 65, { align: 'center' });
     
         // Tabla de datos
         const tableColumn = [
@@ -159,9 +159,10 @@ const ListaAulas = () => {
           'Capacidad',
           'Cupos',
           'División',
+           'Edificio',
           'Secciones Disponibles',
           'Secciones Ocupadas',
-          'Edificio',
+        
         ];
     
         const tableRows = filteredAulas.map((aula, index) => {
@@ -667,9 +668,9 @@ const ListaAulas = () => {
         <CModalBody>
             <CForm>
             {/* Campo de Número de Aula */}
+            <CInputGroup className="mb-3">
+            <CInputGroupText>Numero del aula</CInputGroupText>
             <CFormInput
-                label="Número de Aula"
-             
                 value={nuevaAula.Numero_aula}
                 maxLength={11}
                 onPaste={disableCopyPaste}
@@ -682,9 +683,11 @@ const ListaAulas = () => {
                     return;
                   }
                   setNuevaAula({ ...nuevaAula, Numero_aula: valor })}}/>
+                  </CInputGroup>
             {/* Campo de Capacidad */}
+            <CInputGroup className="mb-3">
+            <CInputGroupText>Capacidad del aula</CInputGroupText>
             <CFormInput
-                label="Capacidad"
                 value={nuevaAula.Capacidad}
                 maxLength={11}
                 onPaste={disableCopyPaste}
@@ -696,9 +699,11 @@ const ListaAulas = () => {
                     return;
                   }
                   setNuevaAula({ ...nuevaAula, Capacidad: valor })}} />
+                  </CInputGroup>
             {/* Campo de Cupos Aula */}
+            <CInputGroup className="mb-3">
+            <CInputGroupText>Cupos del aula</CInputGroupText>
             <CFormInput
-                label="Cupos Aula"
                 value={nuevaAula.Cupos_aula}
                 maxLength={11}
                 onPaste={disableCopyPaste}
@@ -710,8 +715,10 @@ const ListaAulas = () => {
                     });
                     return;
                   }setNuevaAula({ ...nuevaAula, Cupos_aula: valor })}}/>
+                   </CInputGroup>
+            <CInputGroup className="mb-3">
+            <CInputGroupText>Edificio</CInputGroupText>      
             <CFormSelect 
-                label="Nombre de Edificios"
                 className="form-select"
                 key={nuevaAula.Cod_edificio}
                 value={nuevaAula.Cod_edificio}
@@ -730,9 +737,11 @@ const ListaAulas = () => {
                     <option disabled>No hay edificios disponibles</option>
                 )}
             </CFormSelect>
+            </CInputGroup>
+            <CInputGroup className="mb-3">
+            <CInputGroupText>División</CInputGroupText>   
             {/* Campo de División */}
             <CFormInput
-                label="División"
                 value={nuevaAula.Division}
                 maxLength={11}
                 onPaste={disableCopyPaste}
@@ -744,9 +753,11 @@ const ListaAulas = () => {
                     });
                     return;
                   }setNuevaAula({ ...nuevaAula, Division: valor })}} />
+                   </CInputGroup>
+           <CInputGroup className="mb-3">
+           <CInputGroupText>Secciones Disponibles</CInputGroupText>   
             {/* Campo de Secciones Disponibles */}
             <CFormInput
-                label="Secciones Disponibles"
                 value={nuevaAula.Secciones_disponibles}
                 maxLength={11}
                 onPaste={disableCopyPaste}
@@ -757,9 +768,11 @@ const ListaAulas = () => {
                     swal.fire({icon: 'warning',title: 'Caracteres no permitidos',text: 'Solo se permiten números positivos',});
                     return;
                   } setNuevaAula({ ...nuevaAula, Secciones_disponibles: valor })}}/>
+                     </CInputGroup>
             {/* Campo de Secciones Ocupadas */}
+            <CInputGroup className="mb-3">
+            <CInputGroupText>Secciones Ocupadas</CInputGroupText>  
             <CFormInput
-                label="Secciones Ocupadas"
                 value={nuevaAula.Secciones_ocupadas}
                 maxLength={11}
                 onPaste={disableCopyPaste}
@@ -770,13 +783,14 @@ const ListaAulas = () => {
                     swal.fire({icon: 'warning', title: 'Caracteres no permitidos', text: 'Solo se permiten números positivos', });
                     return;
                   } setNuevaAula({ ...nuevaAula, Secciones_ocupadas: valor })}}/>
+                   </CInputGroup>
             </CForm>
           </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={handleCloseModal}>
             Cerrar
           </CButton>
-          <CButton color="primary" onClick={handleCreateAula}>
+          <CButton color="success" onClick={handleCreateAula}>
             Guardar
           </CButton>
         </CModalFooter>
@@ -883,7 +897,7 @@ const ListaAulas = () => {
           <CButton color="secondary" onClick={handleCloseModal}>
             Cancelar
           </CButton>
-          <CButton color="primary" onClick={handleUpdateAula}>
+          <CButton color="success" onClick={handleUpdateAula}>
             Guardar Cambios
           </CButton>
         </CModalFooter>

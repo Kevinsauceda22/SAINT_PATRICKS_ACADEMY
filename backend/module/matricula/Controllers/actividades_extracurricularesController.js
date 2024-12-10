@@ -34,6 +34,7 @@ export const obtenerActividadesExtra = async (req, res) => {
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
 export const crearActividadesExtra = async (req, res) => {
     const { p_Nombre, p_Descripcion, p_Hora_inicio, p_Hora_final, Cod_secciones, p_Fecha } = req.body;
 
@@ -119,125 +120,121 @@ export const crearActividadesExtra = async (req, res) => {
     }
 };
 
-
-// Controlador para actualizar una actividad extracurricular
 export const actualizarActividadesExtra = async (req, res) => {
     const {
-        p_Cod_actividad,
-        p_Nombre,
-        p_Descripcion,
-        p_Hora_inicio,
-        p_Hora_final,
-        p_Nombre_seccion,
-        p_Fecha,
+      p_Cod_actividad,
+      p_Nombre,
+      p_Descripcion,
+      p_Hora_inicio,
+      p_Hora_final,
+      p_Cod_secciones, // Ahora usamos Cod_secciones en lugar de Nombre_seccion
+      p_Fecha,
     } = req.body;
-
+  
+    // Verificar los datos recibidos
+    console.log('Datos recibidos en el controlador:', req.body);
+  
     try {
-        // Verifica que se proporcionen todos los parámetros requeridos
-        if (
-            !p_Cod_actividad ||
-            !p_Nombre ||
-            !p_Descripcion ||
-            !p_Hora_inicio ||
-            !p_Hora_final ||
-            !p_Nombre_seccion ||
-            !p_Fecha
-        ) {
-            return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
-        }
-
-        // Convertir el nombre y la descripción a mayúsculas
-        const nombreMayusculas = p_Nombre.toUpperCase();
-        const descripcionMayusculas = p_Descripcion.toUpperCase();
-
-        // Llamar al procedimiento almacenado para actualizar la actividad
-        const [result] = await pool.query(
-            "CALL sp_actualizar_actividad_extracurricular(?, ?, ?, ?, ?, ?, ?)",
-            [
-                p_Cod_actividad,
-                nombreMayusculas,
-                descripcionMayusculas,
-                p_Hora_inicio,
-                p_Hora_final,
-                p_Nombre_seccion,
-                p_Fecha,
-            ]
-        );
-
-        // Verificar si la actualización afectó alguna fila
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                mensaje: "No se pudo actualizar la actividad. Verifique los datos enviados.",
-            });
-        }
-
-        console.log("Actividad extracurricular actualizada con éxito:", result);
-
-        // Obtener el código de la sección asociada al `p_Nombre_seccion`
-        const [codSeccionResult] = await pool.query(
-            "SELECT s.Cod_secciones, g.Nombre_grado FROM tbl_secciones s JOIN tbl_grados g ON s.Cod_grado = g.Cod_grado WHERE s.Nombre_seccion = ? LIMIT 1",
-            [p_Nombre_seccion]
-        );
-
-        if (codSeccionResult.length === 0) {
-            return res
-                .status(404)
-                .json({ mensaje: "La sección especificada no existe." });
-        }
-
-        const { Cod_secciones: codSeccion, Nombre_grado: nombreGrado } = codSeccionResult[0];
-
-        const actividadActual = {
-            nombre: nombreMayusculas,
-            descripcion: descripcionMayusculas,
-            fecha: p_Fecha,
-            hora: `${p_Hora_inicio} - ${p_Hora_final}`,
-            seccion: p_Nombre_seccion,
-            grado: nombreGrado,
-        };
-
-        // Obtener la lista de padres relacionados con la sección
-        console.log(`Obteniendo padres para la sección ${codSeccion}...`);
-        const padresYSecciones = await obtenerPadresYGradosSecciones(codSeccion);
-
-        if (padresYSecciones.length === 0) {
-            return res
-                .status(404)
-                .json({ mensaje: "No se encontraron padres relacionados con esta sección." });
-        }
-
+      // Verifica que se proporcionen todos los parámetros requeridos
+      if (
+        !p_Cod_actividad ||
+        !p_Nombre ||
+        !p_Descripcion ||
+        !p_Hora_inicio ||
+        !p_Hora_final ||
+        !p_Cod_secciones || // Validar que Cod_secciones esté presente
+        !p_Fecha
+      ) {
+        return res.status(400).json({ mensaje: 'Todos los campos son requeridos.' });
+      }
+  
+      // Convertir el nombre y la descripción a mayúsculas
+      const nombreMayusculas = p_Nombre.toUpperCase();
+      const descripcionMayusculas = p_Descripcion.toUpperCase();
+  
+      // Llamar al procedimiento almacenado para actualizar la actividad
+      const [result] = await pool.query(
+        'CALL sp_actualizar_actividad_extracurricular(?, ?, ?, ?, ?, ?, ?)',
+        [
+          p_Cod_actividad,
+          nombreMayusculas,
+          descripcionMayusculas,
+          p_Hora_inicio,
+          p_Hora_final,
+          p_Cod_secciones, // Usamos Cod_secciones directamente
+          p_Fecha,
+        ]
+      );
+  
+      // Verificar si la actualización afectó alguna fila
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          mensaje: 'No se pudo actualizar la actividad. Verifique los datos enviados.',
+        });
+      }
+  
+      console.log('Actividad extracurricular actualizada con éxito:', result);
+  
+      // Obtener la información de la sección y grado asociados a Cod_secciones
+      const [codSeccionResult] = await pool.query(
+        'SELECT s.Cod_secciones, s.Nombre_seccion, g.Nombre_grado FROM tbl_secciones s JOIN tbl_grados g ON s.Cod_grado = g.Cod_grado WHERE s.Cod_secciones = ? LIMIT 1',
+        [p_Cod_secciones]
+      );
+  
+      if (codSeccionResult.length === 0) {
+        return res.status(404).json({ mensaje: 'La sección especificada no existe.' });
+      }
+  
+      const { Cod_secciones: codSeccion, Nombre_seccion, Nombre_grado: nombreGrado } = codSeccionResult[0];
+  
+      // Preparar los datos de la actividad actualizada
+      const actividadActual = {
+        nombre: nombreMayusculas,
+        descripcion: descripcionMayusculas,
+        fecha: p_Fecha,
+        hora: `${p_Hora_inicio} - ${p_Hora_final}`,
+        seccion: Nombre_seccion,
+        grado: nombreGrado,
+      };
+  
+      // Obtener la lista de padres relacionados con la sección
+      console.log(`Obteniendo padres para la sección ${codSeccion}...`);
+      const padresYSecciones = await obtenerPadresYGradosSecciones(codSeccion);
+  
+      if (padresYSecciones.length === 0) {
+        console.warn('No se encontraron padres relacionados con esta sección.');
+      } else {
         // Enviar notificaciones de actualización a los padres
-        console.log("Enviando correos a los padres sobre la actualización...");
+        console.log('Enviando correos a los padres sobre la actualización...');
         for (const padre of padresYSecciones) {
-            await enviarNotificacionCambioActividad(
-                padre.correo_usuario,
-                padre.nombre_completo_padre,
-                actividadActual
-            );
+          await enviarNotificacionCambioActividad(
+            padre.correo_usuario,
+            padre.nombre_completo_padre,
+            actividadActual
+          );
         }
-
-        // Responder con éxito
-        return res.status(200).json({
-            mensaje: "Actividad actualizada y notificaciones enviadas correctamente.",
-        });
+      }
+  
+      // Responder con éxito
+      return res.status(200).json({
+        mensaje: 'Actividad actualizada y notificaciones enviadas correctamente.',
+      });
     } catch (error) {
-        console.error(
-            "Error al actualizar la actividad extracurricular y enviar notificaciones:",
-            error
-        );
-
-        // Manejo de errores personalizados del procedimiento almacenado
-        if (error.sqlState === "45000") {
-            return res.status(400).json({ mensaje: error.message });
-        }
-
-        // Otros errores de servidor
-        return res.status(500).json({
-            mensaje: "Error al actualizar la actividad extracurricular o enviar notificaciones.",
-            error: error.message,
-        });
+      console.error('Error al actualizar la actividad extracurricular y enviar notificaciones:', error);
+  
+      // Manejo de errores personalizados del procedimiento almacenado
+      if (error.sqlState === '45000') {
+        return res.status(400).json({ mensaje: error.message });
+      }
+  
+      // Otros errores de servidor
+      return res.status(500).json({
+        mensaje: 'Error al actualizar la actividad extracurricular o enviar notificaciones.',
+        error: error.message,
+      });
     }
-};
+  };
+  
 export const cambiarEstadoActividad = async (req, res) => {
     let { p_Cod_actividades_extracurriculares, p_Estado, p_Motivo } = req.body; // Agregar p_Motivo
 
@@ -246,15 +243,16 @@ export const cambiarEstadoActividad = async (req, res) => {
         p_Estado = p_Estado ? p_Estado.toUpperCase() : null;
         p_Motivo = p_Motivo ? p_Motivo.toUpperCase() : null;
 
-        // Validar parámetros
         if (!p_Cod_actividades_extracurriculares || !p_Estado) {
-            return res.status(400).json({ mensaje: 'Todos los campos son requeridos.' });
+            console.error('Faltan campos requeridos:', { p_Cod_actividades_extracurriculares, p_Estado });
+            return res.status(400).json({ mensaje: 'El código de la actividad y el estado son requeridos.' });
         }
-
-        // Si el estado es 'Cancelada', se valida que se haya proporcionado el motivo
-        if (p_Estado === 'CANCELADA' && !p_Motivo) {
+        
+        if (p_Estado === 'CANCELADA' && (!p_Motivo || p_Motivo.trim() === '')) {
+            console.error('El motivo es requerido para cancelar:', { p_Estado, p_Motivo });
             return res.status(400).json({ mensaje: 'El motivo de la cancelación es requerido.' });
         }
+        
 
         // Llamar al procedimiento para cambiar el estado
         const query = 'CALL sp_cambiar_estado_actividad(?, ?, ?, @mensaje)'; // Ahora incluimos el motivo
@@ -338,34 +336,6 @@ export const cambiarEstadoActividad = async (req, res) => {
     }
 };
 
-
-
-
-// Controlador para eliminar una actividad extracurricular
-export const eliminarActividadExtracurricular = async (req, res) => {
-    const { Cod_actividad } = req.params; // Asegúrate de que el nombre del parámetro coincide con lo que envías en la ruta
-
-    try {
-        // Procedimiento almacenado llamado con el código de la actividad extracurricular
-        const [result] = await pool.query('CALL sp_eliminar_actividad_extracurricular(?)', [Cod_actividad]);
-
-        // Verificar si se eliminó alguna actividad
-        if (result.affectedRows > 0) {
-            return res.status(200).json({ mensaje: 'Actividad extracurricular eliminada correctamente.' });
-        } else {
-            return res.status(404).json({ mensaje: 'No se encontró la actividad extracurricular especificada.' });
-        }
-    } catch (error) {
-        console.error('Error al eliminar la actividad extracurricular:', error);
-        // Si el error es personalizado (proveniente del procedimiento almacenado)
-        if (error.sqlState === '45000') {
-            return res.status(400).json({ mensaje: error.message });
-        }
-        // Para otros errores de servidor
-        return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
-    }
-};
-
 export const obtenerSecciones = async (req, res) => {
     try {
         // Obtén el parámetro 'Cod_secciones' de la solicitud, con un valor predeterminado de 0 si no está definido
@@ -385,9 +355,6 @@ export const obtenerSecciones = async (req, res) => {
         res.status(500).json({ message: 'Error en el servidor', error: error.message });
     }
 };
-
-
-
 
 export const obtenerPadresYGradosSecciones = async (codSeccion) => {
     try {
@@ -461,5 +428,21 @@ export const obtenerPadresYGradosSecciones = async (codSeccion) => {
     }
 };
 
-
-
+// Controlador para obtener secciones del periodo activo
+export const obtenerSeccionesPeriodoActivo = async (req, res) => {
+    try {
+      // Llama al procedimiento almacenado
+      const [rows] = await pool.query('CALL sp_obtener_secciones_periodo_activo()');
+  
+      // Verifica si el procedimiento devolvió un mensaje o datos
+      if (rows[0].length === 0 || rows[0][0].Mensaje === 'No hay un periodo activo') {
+        return res.status(404).json({ message: 'No hay un periodo activo o no hay secciones disponibles.' });
+      }
+  
+      // Devuelve las secciones del periodo activo
+      res.status(200).json(rows[0]);
+    } catch (error) {
+      console.error('Error al obtener las secciones del periodo activo:', error);
+      res.status(500).json({ message: 'Error al obtener las secciones.', error: error.message });
+    }
+  };

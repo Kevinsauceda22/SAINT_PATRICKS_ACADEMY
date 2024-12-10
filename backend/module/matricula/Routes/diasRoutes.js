@@ -22,5 +22,4 @@ router.put('/actualizar_dia', actualizarDia);
 // Ruta para eliminar un día por el codigo
 router.delete('/:cod_dias', eliminarDia);
 
-
 export default router;
