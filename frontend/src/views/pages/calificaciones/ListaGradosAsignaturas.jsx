@@ -212,7 +212,7 @@ const ListaGradosAsignaturas = () => {
                     icon: 'info',
                     title: 'Sin datos',
                     text: 'No hay información disponible para generar el reporte.',
-                    confirmButtonText: 'Entendido',
+                    confirmButtonText: 'Aceptar',
                 });
                 return;
             }
@@ -469,7 +469,7 @@ const ListaGradosAsignaturas = () => {
                 icon: 'warning',
                 title: 'Asignatura duplicada',
                 text: 'La asignatura seleccionada ya está asignada a este grado. Por favor, elige otra.',
-                confirmButtonText: 'Entendido',
+                confirmButtonText: 'Aceptar',
             });
             return; // Detener la ejecución si hay duplicados
         }
@@ -508,7 +508,7 @@ const ListaGradosAsignaturas = () => {
                     icon: 'info',
                     title: 'Asignatura duplicada',
                     text: errorData.Mensaje || 'La asignatura seleccionada ya está asignada a este grado.',
-                    confirmButtonText: 'Entendido',
+                    confirmButtonText: 'Aceptar',
                 });
             } else {
                 Swal.fire({

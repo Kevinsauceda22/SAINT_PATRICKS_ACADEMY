@@ -144,7 +144,7 @@ const ListaCiclos = () => {
         icon: 'info',
         title: 'Tabla vacía',
         text: 'No hay datos disponibles para generar el reporte.',
-        confirmButtonText: 'Entendido',
+        confirmButtonText: 'Aceptar',
       });
       return; // Salir de la función si no hay datos
     }

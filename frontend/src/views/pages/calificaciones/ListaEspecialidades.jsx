@@ -373,7 +373,7 @@ const valdiarEspecialidad = () => {
         icon: 'info',
         title: 'Tabla vacía',
         text: 'No hay datos disponibles para generar el reporte.',
-        confirmButtonText: 'Entendido',
+        confirmButtonText: 'Aceptar',
       });
       return; // Salir de la función si no hay datos
     }
@@ -479,7 +479,7 @@ const valdiarEspecialidad = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte Excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
