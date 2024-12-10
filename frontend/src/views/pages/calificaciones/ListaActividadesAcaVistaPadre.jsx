@@ -18,47 +18,98 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaActividadesAcaVistaPadre = () => {
   const { canSelect, canInsert, canUpdate,canDelete } = usePermission('ListaActividadesAcaVistaPadre');
+  const [hijos, setHijos] = useState([]);
+  const [hijoSeleccionado, setHijoSeleccionado] = useState(null);
   const [calificaciones, setCalificaciones] = useState([]);
-  const [cargando, setCargando] = useState(true); // Estado de carga
-  const [vistaActual, setVistaActual] = useState('asignaturas');
+
   const [asignaturaSeleccionada, setAsignaturaSeleccionada] = useState(null);
   const [parcialSeleccionado, setParcialSeleccionado] = useState(null);
+  const [cargando, setCargando] = useState(true);
+  const [vistaActual, setVistaActual] = useState('hijos');
 
   const token = localStorage.getItem('token');
 
   useEffect(() => {
     const obtenerDatos = async () => {
-      const url = 'http://localhost:4000/api/actividades/actividadesAcademicasPadre/codPersona';
-      if (!token) {
-        Swal.fire('Error', 'No se encontró el token de autenticación', 'error');
-        setCargando(false); // Asegúrate de detener la carga
-        return;
-      }
+      setCargando(true);
       try {
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: { 'Authorization': `Bearer ${token}` },
+        const response = await fetch('http://localhost:4000/api/actividades/actividadesAcademicasPadre/codPersona', {
+          headers: { Authorization: `Bearer ${token}` }
         });
-        if (!response.ok) {
-          throw new Error('Error al obtener los datos');
-        }
+        if (!response.ok) throw new Error('Error al obtener los datos');
         const data = await response.json();
-
-        console.log('Datos recibidos:', data);
-
-        if (Array.isArray(data.calificaciones)) {
-          setCalificaciones(data.calificaciones);
-        }
+  
+        // Agrupar datos por hijos
+        const agrupado = data.calificaciones.reduce((acc, actividad) => {
+          const { cod_persona_estudiante, nombre_hijo, Nombre_asignatura, Nombre_parcial } = actividad;
+  
+          // Inicializar el hijo si no existe
+          if (!acc[cod_persona_estudiante]) {
+            acc[cod_persona_estudiante] = {
+              id: cod_persona_estudiante,
+              nombre: nombre_hijo,
+              asignaturas: {}
+            };
+          }
+  
+          // Inicializar la asignatura si no existe
+          if (!acc[cod_persona_estudiante].asignaturas[Nombre_asignatura]) {
+            acc[cod_persona_estudiante].asignaturas[Nombre_asignatura] = {};
+          }
+  
+          // Inicializar el parcial si no existe
+          if (!acc[cod_persona_estudiante].asignaturas[Nombre_asignatura][Nombre_parcial]) {
+            acc[cod_persona_estudiante].asignaturas[Nombre_asignatura][Nombre_parcial] = [];
+          }
+  
+          // Añadir la actividad al parcial
+          acc[cod_persona_estudiante].asignaturas[Nombre_asignatura][Nombre_parcial].push(actividad);
+  
+          return acc;
+        }, {});
+  
+        // Convertir el objeto a un array para facilitar el renderizado
+        setHijos(Object.values(agrupado));
       } catch (error) {
-        console.error('Error al obtener los datos:', error);
-        Swal.fire('Error', 'No se pudieron cargar los datos', 'error');
+        console.error('Error al cargar los datos:', error);
       } finally {
-        setCargando(false); // Detener la carga
+        setCargando(false);
       }
     };
-
+  
     obtenerDatos();
   }, [token]);
+
+  const seleccionarHijo = (hijo) => {
+    setHijoSeleccionado(hijo);
+    setVistaActual('asignaturas');
+  };
+
+  const seleccionarAsignatura = (asignatura) => {
+    setAsignaturaSeleccionada(asignatura);
+    setVistaActual('parciales');
+  };
+
+  const seleccionarParcial = (parcial) => {
+    setParcialSeleccionado(parcial);
+    setVistaActual('actividades');
+  };
+
+  const volverAVistaHijos = () => {
+    setHijoSeleccionado(null);
+    setVistaActual('hijos');
+  };
+
+  const volverAVistaAsignaturas = () => {
+    setAsignaturaSeleccionada(null);
+    setVistaActual('asignaturas');
+  };
+
+  const volverAVistaParciales = () => {
+    setParcialSeleccionado(null);
+    setVistaActual('parciales');
+  };
+
 
   // Organizar calificaciones por asignatura
   const calificacionesPorAsignatura = calificaciones.reduce((resultado, calificacion) => {
@@ -533,34 +584,19 @@ const ListaActividadesAcaVistaPadre = () => {
     }, 0);
   };
 
-  const seleccionarAsignatura = (asignatura) => {
-    setAsignaturaSeleccionada(asignatura);
-    setVistaActual('parciales'); // Cambiar a la vista de parciales
-  };
-
-  const seleccionarParcial = (parcial) => {
-    setParcialSeleccionado(parcial);
-    setVistaActual('actividades'); // Cambiar a la vista de actividades
-  };
-
-  const volverAVistaAsignaturas = () => {
-    setAsignaturaSeleccionada(null);
-    setVistaActual('asignaturas'); // Regresar a la vista de asignaturas
-  };
-
-  const volverAVistaParciales = () => {
-    setParcialSeleccionado(null);
-    setVistaActual('parciales'); // Regresar a la vista de parciales
-  };
-
 
 
 
 
   const calcularTotalValor = () => {
-    const actividades = actividadesPorParcial(asignaturaSeleccionada)[parcialSeleccionado] || [];
-    return actividades.reduce((total, actividad) => total + parseFloat(actividad?.Valor || 0), 0).toFixed(2);
+    const actividades =
+      hijoSeleccionado?.asignaturas[asignaturaSeleccionada]?.[parcialSeleccionado] || [];
+    return actividades
+      .reduce((total, actividad) => total + parseFloat(actividad?.Valor || 0), 0)
+      .toFixed(2);
   };
+  
+  
 
 
   if (!canSelect) {
@@ -609,57 +645,64 @@ const ListaActividadesAcaVistaPadre = () => {
             <div className="d-flex justify-content-center align-items-center py-5">
               <CSpinner color="primary" />
             </div>
+          ) : vistaActual === 'hijos' ? (
+            <>
+              {/* Vista de Hijos */}
+              <h3 className="text-center mb-4 fw-bold">Lista de Hijos</h3>
+              <div className="table-responsive">
+                <CTable striped bordered hover responsive>
+                  <CTableHead>
+                    <CTableRow>
+                      <CTableHeaderCell>#</CTableHeaderCell>
+                      <CTableHeaderCell>Nombre del Hijo</CTableHeaderCell>
+                      <CTableHeaderCell>Acción</CTableHeaderCell>
+                    </CTableRow>
+                  </CTableHead>
+                  <CTableBody>
+                    {hijos.map((hijo, index) => (
+                      <CTableRow key={hijo.id}>
+                        <CTableDataCell>{index + 1}</CTableDataCell>
+                        <CTableDataCell>{hijo.nombre}</CTableDataCell>
+                        <CTableDataCell>
+                          <CButton
+                            className="btn btn-primary"
+                            size="sm"
+                            onClick={() => seleccionarHijo(hijo)}
+                          >
+                            Ver Asignaturas
+                          </CButton>
+                        </CTableDataCell>
+                      </CTableRow>
+                    ))}
+                  </CTableBody>
+                </CTable>
+              </div>
+            </>
           ) : vistaActual === 'asignaturas' ? (
             <>
-              <CRow className="align-items-center mb-5">
-                <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-                  <div className="flex-grow-1 text-center">
-                    <h3 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50" }}>MI LISTA DE ASIGNATURAS</h3>
-                  </div>
-                  <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-                    <CDropdownToggle
-                      style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s ease', }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
-                      Reporte
-                    </CDropdownToggle>
-                    <CDropdownMenu style={{ position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff", boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)", borderRadius: "4px", overflow: "hidden", }}>
-                      <CDropdownItem
-                        onClick={generarReporteAsignaturasPDF}
-                        style={{ cursor: "pointer", outline: "none", backgroundColor: "transparent", padding: "0.5rem 1rem", fontSize: "0.85rem", color: "#333", borderBottom: "1px solid #eaeaea", transition: "background-color 0.3s", }}
-                        onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")} onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}>
-                        <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-                      </CDropdownItem>
-                      <CDropdownItem
-                        onClick={generarReporteAsignaturasExcel}
-                        style={{ cursor: "pointer", outline: "none", backgroundColor: "transparent", padding: "0.5rem 1rem", fontSize: "0.85rem", color: "#333", transition: "background-color 0.3s", }}
-                        onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")}
-                        onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}>
-                        <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-                      </CDropdownItem>
-                    </CDropdownMenu>
-                  </CDropdown>
-                </CCol>
-              </CRow>
-
-              <div className="table-responsive" style={{ maxHeight: '400px', overflowX: 'auto', overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
-                <CTable striped bordered hover responsive ><CTableHead>
-                  <tr>
-                    <CTableHeaderCell>#</CTableHeaderCell>
-                    <CTableHeaderCell>ASIGNATURA</CTableHeaderCell>
-                    <CTableHeaderCell>DESCRIPCIÓN</CTableHeaderCell>
-                    <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
-                  </tr>
-                </CTableHead>
-                  <CTableBody className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
-                    {Object.keys(calificacionesPorAsignatura).map((asignatura, index) => (
+              {/* Vista de Asignaturas */}
+              <h3 className="text-center mb-4 fw-bold">Asignaturas de {hijoSeleccionado.nombre}</h3>
+              <CButton className="btn-volver mb-3" onClick={volverAVistaHijos}>
+                Volver a Hijos
+              </CButton>
+              <div className="table-responsive">
+                <CTable striped bordered hover responsive>
+                  <CTableHead>
+                    <CTableRow>
+                      <CTableHeaderCell>#</CTableHeaderCell>
+                      <CTableHeaderCell>Asignatura</CTableHeaderCell>
+                      <CTableHeaderCell>Acción</CTableHeaderCell>
+                    </CTableRow>
+                  </CTableHead>
+                  <CTableBody>
+                    {Object.keys(hijoSeleccionado.asignaturas).map((asignatura, index) => (
                       <CTableRow key={index}>
                         <CTableDataCell>{index + 1}</CTableDataCell>
                         <CTableDataCell>{asignatura}</CTableDataCell>
-                        <CTableDataCell>{calificacionesPorAsignatura[asignatura][0].Descripcion_asignatura}</CTableDataCell>
                         <CTableDataCell>
-                          <CButton size="sm" style={{ backgroundColor: "#F0F4F3", color: "#153E21", border: "1px solid #A2B8A9", borderRadius: "6px", padding: "5px 12px", boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)", }}
-                            onMouseEnter={(e) => (e.target.style.backgroundColor = "#dce3dc")} onMouseLeave={(e) => (e.target.style.backgroundColor = "#F0F4F3")}
+                          <CButton
+                            className="btn btn-primary"
+                            size="sm"
                             onClick={() => seleccionarAsignatura(asignatura)}
                           >
                             Ver Parciales
@@ -673,71 +716,29 @@ const ListaActividadesAcaVistaPadre = () => {
             </>
           ) : vistaActual === 'parciales' ? (
             <>
-              <CRow className="align-items-center mb-5">
-                <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-                  <CButton
-                    className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
-                    style={{ backgroundColor: "#656565", color: "#FFFFFF", padding: "6px 12px", fontSize: "0.9rem", transition: "background-color 0.2s ease, box-shadow 0.3s ease", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", }} onClick={volverAVistaAsignaturas}
-                  >
-                    <CIcon icon={cilArrowLeft} /> Volver a Asignaturas
-                  </CButton>
-                  <div className="flex-grow-1 text-center">
-                    <h3 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50" }}>PARCIALES DE {asignaturaSeleccionada}</h3>
-                  </div>                {/* Botón "Volver a Secciones" a la izquierda */}
-
-                  <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-                    <CDropdownToggle
-                      style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s ease', }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
-                      Reporte
-                    </CDropdownToggle>
-                    <CDropdownMenu style={{ position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff", boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)", borderRadius: "4px", overflow: "hidden", }}>
-                      <CDropdownItem
-                        onClick={generarReporteParcialesPDF}
-                        style={{ cursor: "pointer", outline: "none", backgroundColor: "transparent", padding: "0.5rem 1rem", fontSize: "0.85rem", color: "#333", borderBottom: "1px solid #eaeaea", transition: "background-color 0.3s", }}
-                        onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")} onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}>
-                        <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-                      </CDropdownItem>
-                      <CDropdownItem
-                        onClick={generarReporteParcialesExcel}
-                        style={{ cursor: "pointer", outline: "none", backgroundColor: "transparent", padding: "0.5rem 1rem", fontSize: "0.85rem", color: "#333", transition: "background-color 0.3s", }}
-                        onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")}
-                        onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}>
-                        <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-                      </CDropdownItem>
-                    </CDropdownMenu>
-                  </CDropdown>
-                </CCol>
-              </CRow>
-
-              <div className="table-responsive" style={{ maxHeight: '400px', overflowX: 'auto', overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
-                <CTable striped bordered hover responsive ><CTableHead>
-                  <tr>
-                    <CTableHeaderCell>#</CTableHeaderCell>
-                    <CTableHeaderCell>PARCIAL</CTableHeaderCell>
-                    <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
-                  </tr>
-                </CTableHead>
-                  <CTableBody className="text-center" style={{ fontSize: '0.85rem' }}>
-                    {ordenarParciales(actividadesPorParcial(asignaturaSeleccionada)).map(([parcial, actividades], index) => (
+              {/* Vista de Parciales */}
+              <h3 className="text-center mb-4 fw-bold">Parciales de {asignaturaSeleccionada}</h3>
+              <CButton className="btn-volver mb-3" onClick={volverAVistaAsignaturas}>
+                Volver a Asignaturas
+              </CButton>
+              <div className="table-responsive">
+                <CTable striped bordered hover responsive>
+                  <CTableHead>
+                    <CTableRow>
+                      <CTableHeaderCell>#</CTableHeaderCell>
+                      <CTableHeaderCell>Parcial</CTableHeaderCell>
+                      <CTableHeaderCell>Acción</CTableHeaderCell>
+                    </CTableRow>
+                  </CTableHead>
+                  <CTableBody>
+                    {Object.keys(hijoSeleccionado.asignaturas[asignaturaSeleccionada]).map((parcial, index) => (
                       <CTableRow key={index}>
                         <CTableDataCell>{index + 1}</CTableDataCell>
-                        <CTableDataCell>{parcial}</CTableDataCell> {/* Aquí ya no necesitas ordenar */}
+                        <CTableDataCell>{parcial}</CTableDataCell>
                         <CTableDataCell>
                           <CButton
+                            className="btn btn-primary"
                             size="sm"
-                            style={{
-                              backgroundColor: "#F0F4F3",
-                              color: "#153E21",
-                              border: "1px solid #A2B8A9",
-                              borderRadius: "6px",
-                              padding: "5px 12px",
-                              boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.1)",
-                            }}
-                            onMouseEnter={(e) => (e.target.style.backgroundColor = "#dce3dc")}
-                            onMouseLeave={(e) => (e.target.style.backgroundColor = "#F0F4F3")}
                             onClick={() => seleccionarParcial(parcial)}
                           >
                             Ver Actividades
@@ -745,94 +746,65 @@ const ListaActividadesAcaVistaPadre = () => {
                         </CTableDataCell>
                       </CTableRow>
                     ))}
-
-                    
                   </CTableBody>
                 </CTable>
               </div>
             </>
           ) : (
             <>
-              <CRow className="align-items-center mb-5">
-                <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-                  <CButton
-                    className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
-                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
-                    style={{ backgroundColor: "#656565", color: "#FFFFFF", padding: "6px 12px", fontSize: "0.9rem", transition: "background-color 0.2s ease, box-shadow 0.3s ease", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", }} onClick={volverAVistaParciales}
-                  >
-                    <CIcon icon={cilArrowLeft} /> Volver a Parciales
-                  </CButton>
-
-                  <div className="flex-grow-1 text-center">
-                    <h3 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50" }}>ACTIVIDADES DEL {parcialSeleccionado}</h3>
-                  </div>
-
-                  <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-                    <CDropdownToggle
-                      style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s ease', }}
-                      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
-                      Reporte
-                    </CDropdownToggle>
-                    <CDropdownMenu style={{ position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff", boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)", borderRadius: "4px", overflow: "hidden", }}>
-                      <CDropdownItem
-                        onClick={generarReporteNotasPDF}
-                        style={{ cursor: "pointer", outline: "none", backgroundColor: "transparent", padding: "0.5rem 1rem", fontSize: "0.85rem", color: "#333", borderBottom: "1px solid #eaeaea", transition: "background-color 0.3s", }}
-                        onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")} onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}>
-                        <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-                      </CDropdownItem>
-                      <CDropdownItem
-                        onClick={generarReporteNotasExcel}
-                        style={{ cursor: "pointer", outline: "none", backgroundColor: "transparent", padding: "0.5rem 1rem", fontSize: "0.85rem", color: "#333", transition: "background-color 0.3s", }}
-                        onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")}
-                        onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}>
-                        <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-                      </CDropdownItem>
-                    </CDropdownMenu>
-                  </CDropdown>
-
-                </CCol>
-              </CRow>
-              <div className="table-responsive" style={{ maxHeight: '400px', overflowX: 'auto', overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
-                <CTable striped bordered hover responsive ><CTableHead>
-                  <tr>
-                    <CTableHeaderCell>#</CTableHeaderCell>
-                    <CTableHeaderCell>ACTIVIDAD</CTableHeaderCell>
-                    <CTableHeaderCell>DESCRIPCIÓN</CTableHeaderCell>
-                    <CTableHeaderCell>PONDERACION</CTableHeaderCell>
-                    <CTableHeaderCell>INICIO</CTableHeaderCell>
-                    <CTableHeaderCell>FINALIZO</CTableHeaderCell>
-                    <CTableHeaderCell>VALOR</CTableHeaderCell>
-                  </tr>
-                </CTableHead>
-                  <CTableBody className="text-center" style={{ fontSize: '0.85rem', }}>
-                    {actividadesPorParcial(asignaturaSeleccionada)[parcialSeleccionado].map((actividad, idx) => (
-                      <CTableRow key={idx}>
-                        <CTableDataCell>{idx + 1}</CTableDataCell>
-                        <CTableDataCell>{actividad.Nombre_actividad_academica}</CTableDataCell>
-                        <CTableDataCell>{actividad.Descripcion}</CTableDataCell>
-                        <CTableDataCell>{actividad.Descripcion_ponderacion}</CTableDataCell>
-                        <CTableDataCell>{formatearFecha(actividad.Fechayhora_Inicio)}</CTableDataCell>
-                        <CTableDataCell>{formatearFecha(actividad.Fechayhora_Fin)}</CTableDataCell>
-                        <CTableDataCell>{actividad.Valor}</CTableDataCell>
-
-                      </CTableRow>
-                    ))}
- <CTableRow>
-    <CTableDataCell colSpan="6" className="text-end fw-bold">Total:</CTableDataCell>
-    <CTableDataCell className="fw-bold">{calcularTotalValor()}</CTableDataCell>
-    <CTableDataCell></CTableDataCell>
-  </CTableRow>
-                  </CTableBody>
-                </CTable>
-              </div>
-            </>
+              {/* Vista de Actividades */}
+  <h3 className="text-center mb-4 fw-bold">
+    Actividades del {parcialSeleccionado} - {asignaturaSeleccionada}
+  </h3>
+  <CButton className="btn-volver mb-3" onClick={volverAVistaParciales}>
+    Volver a Parciales
+  </CButton>
+  <div className="table-responsive">
+    <CTable striped bordered hover responsive>
+      <CTableHead>
+        <CTableRow>
+          <CTableHeaderCell>#</CTableHeaderCell>
+          <CTableHeaderCell>Actividad</CTableHeaderCell>
+          <CTableHeaderCell>Descripción</CTableHeaderCell>
+          <CTableHeaderCell>Inicio</CTableHeaderCell>
+          <CTableHeaderCell>Fin</CTableHeaderCell>
+          <CTableHeaderCell>Valor</CTableHeaderCell> {/* Nueva columna para el valor */}
+        </CTableRow>
+      </CTableHead>
+      <CTableBody>
+        {hijoSeleccionado.asignaturas[asignaturaSeleccionada][parcialSeleccionado].map(
+          (actividad, index) => (
+            <CTableRow key={index}>
+              <CTableDataCell>{index + 1}</CTableDataCell>
+              <CTableDataCell>{actividad.Nombre_actividad_academica}</CTableDataCell>
+              <CTableDataCell>{actividad.Descripcion}</CTableDataCell>
+              <CTableDataCell>{formatearFecha(actividad.Fechayhora_Inicio)}</CTableDataCell>
+              <CTableDataCell>{formatearFecha(actividad.Fechayhora_Fin)}</CTableDataCell>
+              <CTableDataCell>{actividad.Valor}</CTableDataCell> {/* Mostrar el valor */}
+            </CTableRow>
           )
-          }
+        )}
+         {/* Fila para mostrar el total */}
+  <CTableRow>
+    <CTableDataCell colSpan="5" className="text-end fw-bold">
+      Total:
+    </CTableDataCell>
+    <CTableDataCell className="fw-bold">
+      {calcularTotalValor()} {/* Mostrar el total */}
+    </CTableDataCell>
+  </CTableRow>
+      </CTableBody>
+    </CTable>
+  </div>
+</>
+          )}
         </CCol>
       </CRow>
     </CContainer>
   );
+  
+  
+  
 };
 
 export default ListaActividadesAcaVistaPadre;
