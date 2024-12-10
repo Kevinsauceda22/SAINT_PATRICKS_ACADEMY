@@ -361,11 +361,6 @@ const _nav = [
         name: 'Historial Procedencia',
         to: '/ListaHistoricoProc',
         nameobject: 'ListaHistoricoProc',
-      },{
-        component: CNavItem,
-        name: 'Procedencia Persona',
-        to: '/ListaProcedenciaPersona',
-        nameobject: 'ListaProcedenciaPersona',
       },
       {
         component: CNavItem,
