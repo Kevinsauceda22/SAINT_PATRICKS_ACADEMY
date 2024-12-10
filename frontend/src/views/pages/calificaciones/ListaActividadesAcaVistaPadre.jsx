@@ -36,39 +36,47 @@ const ListaActividadesAcaVistaPadre = () => {
         const response = await fetch('http://localhost:4000/api/actividades/actividadesAcademicasPadre/codPersona', {
           headers: { Authorization: `Bearer ${token}` }
         });
+  
         if (!response.ok) throw new Error('Error al obtener los datos');
         const data = await response.json();
   
+        console.log("Datos obtenidos de la API:", data);
+  
         // Agrupar datos por hijos
         const agrupado = data.calificaciones.reduce((acc, actividad) => {
-          const { cod_persona_estudiante, nombre_hijo, Nombre_asignatura, Nombre_parcial } = actividad;
+          const { cod_hijo, nombre_hijo, Nombre_asignatura, Nombre_parcial, Nombre_actividad_academica } = actividad;
   
-          // Inicializar el hijo si no existe
-          if (!acc[cod_persona_estudiante]) {
-            acc[cod_persona_estudiante] = {
-              id: cod_persona_estudiante,
+          // Inicializar datos del hijo si no existen
+          if (!acc[cod_hijo]) {
+            acc[cod_hijo] = {
+              id: cod_hijo,
               nombre: nombre_hijo,
               asignaturas: {}
             };
           }
   
-          // Inicializar la asignatura si no existe
-          if (!acc[cod_persona_estudiante].asignaturas[Nombre_asignatura]) {
-            acc[cod_persona_estudiante].asignaturas[Nombre_asignatura] = {};
+          // Inicializar datos de la asignatura si no existen
+          if (!acc[cod_hijo].asignaturas[Nombre_asignatura]) {
+            acc[cod_hijo].asignaturas[Nombre_asignatura] = {};
           }
   
-          // Inicializar el parcial si no existe
-          if (!acc[cod_persona_estudiante].asignaturas[Nombre_asignatura][Nombre_parcial]) {
-            acc[cod_persona_estudiante].asignaturas[Nombre_asignatura][Nombre_parcial] = [];
+          // Inicializar datos del parcial si no existen
+          if (!acc[cod_hijo].asignaturas[Nombre_asignatura][Nombre_parcial]) {
+            acc[cod_hijo].asignaturas[Nombre_asignatura][Nombre_parcial] = [];
           }
   
           // Añadir la actividad al parcial
-          acc[cod_persona_estudiante].asignaturas[Nombre_asignatura][Nombre_parcial].push(actividad);
+          acc[cod_hijo].asignaturas[Nombre_asignatura][Nombre_parcial].push({
+            nombreActividad: Nombre_actividad_academica,
+            ...actividad
+          });
   
           return acc;
         }, {});
   
-        // Convertir el objeto a un array para facilitar el renderizado
+        console.log("Datos agrupados por hijo:", agrupado);
+  
+        // Convertir el objeto agrupado a un array para renderizado
         setHijos(Object.values(agrupado));
       } catch (error) {
         console.error('Error al cargar los datos:', error);
@@ -79,6 +87,7 @@ const ListaActividadesAcaVistaPadre = () => {
   
     obtenerDatos();
   }, [token]);
+  
 
   const seleccionarHijo = (hijo) => {
     setHijoSeleccionado(hijo);
@@ -649,35 +658,35 @@ const ListaActividadesAcaVistaPadre = () => {
             <>
               {/* Vista de Hijos */}
               <h3 className="text-center mb-4 fw-bold">Lista de Hijos</h3>
-              <div className="table-responsive">
-                <CTable striped bordered hover responsive>
-                  <CTableHead>
-                    <CTableRow>
-                      <CTableHeaderCell>#</CTableHeaderCell>
-                      <CTableHeaderCell>Nombre del Hijo</CTableHeaderCell>
-                      <CTableHeaderCell>Acción</CTableHeaderCell>
-                    </CTableRow>
-                  </CTableHead>
-                  <CTableBody>
-                    {hijos.map((hijo, index) => (
-                      <CTableRow key={hijo.id}>
-                        <CTableDataCell>{index + 1}</CTableDataCell>
-                        <CTableDataCell>{hijo.nombre}</CTableDataCell>
-                        <CTableDataCell>
-                          <CButton
-                            className="btn btn-primary"
-                            size="sm"
-                            onClick={() => seleccionarHijo(hijo)}
-                          >
-                            Ver Asignaturas
-                          </CButton>
-                        </CTableDataCell>
-                      </CTableRow>
-                    ))}
-                  </CTableBody>
-                </CTable>
-              </div>
-            </>
+    <div className="table-responsive">
+      <CTable striped bordered hover responsive>
+        <CTableHead>
+          <CTableRow>
+            <CTableHeaderCell>#</CTableHeaderCell>
+            <CTableHeaderCell>Nombre del Hijo</CTableHeaderCell>
+            <CTableHeaderCell>Acción</CTableHeaderCell>
+          </CTableRow>
+        </CTableHead>
+        <CTableBody>
+        {hijos.map((hijo, index) => (
+    <CTableRow key={hijo.id}>
+      <CTableDataCell>{index + 1}</CTableDataCell>
+      <CTableDataCell>{hijo.nombre}</CTableDataCell>
+      <CTableDataCell>
+        <CButton
+          className="btn btn-primary"
+          size="sm"
+          onClick={() => seleccionarHijo(hijo)}
+        >
+                  Ver Asignaturas
+                </CButton>
+              </CTableDataCell>
+            </CTableRow>
+          ))}
+        </CTableBody>
+      </CTable>
+    </div>
+  </>
           ) : vistaActual === 'asignaturas' ? (
             <>
               {/* Vista de Asignaturas */}
