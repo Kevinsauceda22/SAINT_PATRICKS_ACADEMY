@@ -12,6 +12,7 @@ import { obtenerSeccionPorId,
          crearSeccion, 
          actualizarSeccion, 
          eliminarSeccion,
+         obtenerAulaPorNumero,
          obtenerSeccionesPorProfesor,
          obtenerTodasLasSeccionesYProfesoresAdmin
 } from '../Controllers/seccionesController.js';
@@ -54,6 +55,8 @@ router.put('/actualizar_seccion', actualizarSeccion);
 // Ruta para eliminar una sección
 router.delete('/eliminar_seccion/:Cod_seccion', eliminarSeccion);
 
+// Endpoint para obtener un aula por su número
+router.get('/:numero_aula', obtenerAulaPorNumero);
 
 //------------------------------------------------------------------------- Parte ariel-------------------------------------------------------------
 
