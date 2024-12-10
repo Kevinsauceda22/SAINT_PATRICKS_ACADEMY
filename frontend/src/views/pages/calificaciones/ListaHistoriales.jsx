@@ -931,6 +931,170 @@ const ListaHistoriales = () => {
     XLSX.writeFile(libroDeTrabajo, nombreArchivo);
   };
 
+  const generarReporteEstudiantesExcel = () => {
+    // Validar que haya datos en la tabla
+    if (!listaEstudiantes || listaEstudiantes.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte excel.',
+        confirmButtonText: 'Entendido',
+      });
+      return; // Salir de la función si no hay datos
+    }
+  
+    // Crear los encabezados con la sección y la fecha de generación
+    const encabezados = [
+      ["Saint Patrick's Academy"],  // Mejorado el nombre con apóstrofe correcto
+      ["Reporte de Estudiantes"],    // Título claro
+      [
+        `Estudiante: ${NombreCompletoEstudiante || 'No especificada'}`,
+        `Fecha de generación: ${new Date().toLocaleDateString()}`,    // Fecha en formato amigable
+        `Fecha de registro: ${fechaLimpia || 'Sin fecha'}`            // Mostrar la fecha limpia o 'Sin fecha'
+      ],
+      [], // Espacio en blanco
+      ["#", "Estudiante"] // Encabezado de la tabla de datos
+    ];
+  
+    // Crear filas con asistencias filtradas
+    const filas = listaEstudiantes.map((grado, index) => [
+      index + 1,
+      grado.NombreCompletoEstudiante  
+    ]);
+  
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+  
+    // Crear una hoja de trabajo
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+  
+    // Estilos personalizados para encabezados
+    const rangoEncabezado = XLSX.utils.decode_range(hojaDeTrabajo['!ref']);
+    for (let row = 0; row <= 3; row++) {
+      for (let col = rangoEncabezado.s.c; col <= rangoEncabezado.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        if (hojaDeTrabajo[cellAddress]) {
+          hojaDeTrabajo[cellAddress].s = {
+            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "15401D" } },
+            alignment: { horizontal: "center" }
+          };
+        }
+      }
+    }
+  
+    // Estilo de los encabezados de la tabla
+    for (let col = 0; col < 4; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 4, c: col }); // Encabezados de la tabla en la fila 5
+      if (hojaDeTrabajo[cellAddress]) {
+        hojaDeTrabajo[cellAddress].s = {
+          font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2D6A4F" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+    }
+  
+    // Ajustar el ancho de columnas automáticamente
+    const ajusteColumnas = [
+      { wpx: 250 },  // Número de fila
+      { wpx: 250 }, // Estudiante
+    ];
+  
+    hojaDeTrabajo['!cols'] = ajusteColumnas;
+  
+    // Crear el libro de trabajo
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Estudiantes");
+  
+    // Guardar el archivo Excel con un nombre personalizado
+    const nombreArchivo = `${Reporte_Estudiantes || 'No_especificada'}_${fechaLimpia || 'sin_fecha'}.xlsx`;
+    
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  };
+
+  const generarReporteHistorialesExcel = () => {
+    // Validar que haya datos en la tabla
+    if (!listaHistoriales || listaHistoriales.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte excel.',
+        confirmButtonText: 'Entendido',
+      });
+      return; // Salir de la función si no hay datos
+    }
+  
+    // Crear los encabezados con la sección y la fecha de generación
+    const encabezados = [
+      ["Saint Patrick's Academy"],  // Mejorado el nombre con apóstrofe correcto
+      ["Reporte de Historiales Académicos"],    // Título claro
+      [
+        `Historial: ${Cod_historial_academico || 'No especificada'}`,  // Asegurarse de que siempre haya un valor
+        `Fecha de generación: ${new Date().toLocaleDateString()}`,    // Fecha en formato amigable
+        `Fecha de registro: ${fechaLimpia || 'Sin fecha'}`            // Mostrar la fecha limpia o 'Sin fecha'
+      ],
+      [], // Espacio en blanco
+      ["#", "Estado", "Estudiante", "Grado", "Año Académico", "Promedio Anual", "Fecha de Registro", "Instituto", "Observaciones"] // Encabezado de la tabla de datos
+    ];
+  
+    // Crear filas con asistencias filtradas
+    const filas = listaGradosAcademicos.map((grado, index) => [
+      index + 1,
+      grado.Nombre_grado  
+    ]);
+  
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+  
+    // Crear una hoja de trabajo
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+  
+    // Estilos personalizados para encabezados
+    const rangoEncabezado = XLSX.utils.decode_range(hojaDeTrabajo['!ref']);
+    for (let row = 0; row <= 3; row++) {
+      for (let col = rangoEncabezado.s.c; col <= rangoEncabezado.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        if (hojaDeTrabajo[cellAddress]) {
+          hojaDeTrabajo[cellAddress].s = {
+            font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
+            fill: { fgColor: { rgb: "15401D" } },
+            alignment: { horizontal: "center" }
+          };
+        }
+      }
+    }
+  
+    // Estilo de los encabezados de la tabla
+    for (let col = 0; col < 4; col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: 4, c: col }); // Encabezados de la tabla en la fila 5
+      if (hojaDeTrabajo[cellAddress]) {
+        hojaDeTrabajo[cellAddress].s = {
+          font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2D6A4F" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+    }
+  
+    // Ajustar el ancho de columnas automáticamente
+    const ajusteColumnas = [
+      { wpx: 250 },  // Número de fila
+      { wpx: 250 }, // Grado
+    ];
+  
+    hojaDeTrabajo['!cols'] = ajusteColumnas;
+  
+    // Crear el libro de trabajo
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Grados Académicos");
+  
+    // Guardar el archivo Excel con un nombre personalizado
+    const nombreArchivo = `${Reporte_Grados || 'No_especificada'}_${fechaLimpia || 'sin_fecha'}.xlsx`;
+    
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  };
+
   const renderGradosView = () => {
     // Función para paginar los grados
     const indexOfLastRecord2 = currentPage2 * recordsPerPage2;
@@ -1575,7 +1739,7 @@ const ListaHistoriales = () => {
             <CTableHeaderCell>Grado</CTableHeaderCell>
             <CTableHeaderCell>Año Académico</CTableHeaderCell>
             <CTableHeaderCell>Promedio Anual</CTableHeaderCell>
-            <CTableHeaderCell>Fecha Registro</CTableHeaderCell>
+            <CTableHeaderCell>Fecha de Registro</CTableHeaderCell>
             <CTableHeaderCell>Instituto</CTableHeaderCell>
             <CTableHeaderCell>Observaciones</CTableHeaderCell>
             <CTableHeaderCell>Acciones</CTableHeaderCell>
