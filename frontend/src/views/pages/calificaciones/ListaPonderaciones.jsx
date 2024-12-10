@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription, } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription,cilFile } from '@coreui/icons'; // Importar iconos específicos
 import Swal from 'sweetalert2';
 import logo from 'src/assets/brand/logo_saint_patrick.png'
 import jsPDF from "jspdf";
@@ -75,7 +75,7 @@ const ListaPonderaciones = () => {
         console.error('Error al decodificar el token:', error);
       }
     }
-  });
+  }, []);
 
   const fetchPonderacion = async () => {
     try {
@@ -98,17 +98,27 @@ const ListaPonderaciones = () => {
   
     // Comprobación de vacío
     if (!nombrePonderacion || nombrePonderacion.trim() === '') {
-      Swal.fire('Error', 'El campo "Descripción de la Ponderación" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Descripción de la Ponderación no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
   
     // Verificar si el nombre del ciclo ya existe
     const ponderacionExistente = Ponderaciones.some(
-      (ponderacion) => ponderacion.Descripcion_ponderacion.toLowerCase() === nombrePonderacion.toLowerCase()
+      (ponderacion) => ponderacion.Descripcion_ponderacion.trim().toLowerCase() === nombrePonderacion.trim().toLowerCase()
     );
   
     if (ponderacionExistente) {
-      Swal.fire('Error', `La ponderación "${nombrePonderacion}" ya existe`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `La ponderación "${nombrePonderacion}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
   
@@ -118,18 +128,28 @@ const ListaPonderaciones = () => {
 
   const validarPonderacionUpdate = () => {
     if (!ponderacionToUpdate.Descripcion_ponderacion) {
-      Swal.fire('Error',  'El campo "Descripción de la Ponderación" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Descripción de la Ponderación" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
     // Verificar si el nombre del ciclo ya existe (excluyendo el ciclo actual que se está editando)
     const ponderacionExistente = Ponderaciones.some(
       (ponderacion) =>
-        ponderacion.Descripcion_ponderacion.toLowerCase() === ponderacionToUpdate.Descripcion_ponderacion.toLowerCase() &&
+        ponderacion.Descripcion_ponderacion.trim().toLowerCase() === ponderacionToUpdate.Descripcion_ponderacion.trim().toLowerCase() &&
         ponderacion.Cod_ponderacion !== ponderacionToUpdate.Cod_ponderacion
     );
 
     if (ponderacionExistente) {
-      Swal.fire('Error', `La ponderación "${ponderacionToUpdate.Descripcion_ponderacion}" ya existe`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `La ponderación "${ponderacionToUpdate.Descripcion_ponderacion}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -218,17 +238,16 @@ const ListaPonderaciones = () => {
             },
             alternateRowStyles: { fillColor: [240, 248, 255] },
             didDrawPage: (data) => {
-                // Pie de página
-                const currentDate = new Date();
-                const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                doc.setFontSize(10);
-                doc.setTextColor(100);
-                doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-                doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-                pageNumber += 1; // Incrementar el número de página
-            },
-        });
+              const currentPage = doc.internal.getCurrentPageInfo().pageNumber; // Página actual
+              const totalPages = doc.internal.getNumberOfPages(); // Total de páginas
+              const currentDate = new Date();
+              const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+              doc.setFontSize(10);
+              doc.setTextColor(100);
+              doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+              doc.text(`Página ${currentPage} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          },
+          });
 
         // Abrir el PDF
         window.open(doc.output('bloburl'), '_blank');
@@ -239,6 +258,48 @@ const ListaPonderaciones = () => {
         window.open(doc.output('bloburl'), '_blank');
     };
 };
+
+  const handleReporteExcelClick = () => {
+    // Encabezados iniciales del reporte
+    const encabezados = [
+      ["Saint Patrick Academy"],
+      ["Reporte de Ponderaciones"],
+      [`Fecha de generación: ${new Date().toLocaleDateString()}`],
+      [], // Espacio en blanco
+    ];
+
+    // Encabezados de la tabla
+    encabezados.push(["#", "Descripción de Ponderación"]);
+
+    // Crear filas de la tabla con los datos de los ciclos
+    const filas = currentRecords.map((ponderacion, index) => [
+      ponderacion.originalIndex || index + 1, // Mostrar índice original o generar índice
+      ponderacion.Descripcion_ponderacion, // Descripción de la ponderación
+    ]);
+
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+
+    // Crear una hoja de trabajo con los datos
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+
+    // Ajustar el ancho de columnas automáticamente
+    const ajusteColumnas = [
+      { wpx: 50 }, // Número
+      { wpx: 280 }, // Nombre del Ciclo
+    ];
+    hojaDeTrabajo['!cols'] = ajusteColumnas;
+
+    // Crear un libro de trabajo y añadir la hoja
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Ponderaciones");
+
+    // Guardar el archivo Excel
+    const nombreArchivo = `reporte_ponderaciones_${new Date()
+      .toLocaleDateString()
+      .replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  };
 
 
   // Función para manejar cambios en el input
@@ -257,6 +318,7 @@ const ListaPonderaciones = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -267,6 +329,7 @@ const ListaPonderaciones = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -282,6 +345,7 @@ const ListaPonderaciones = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -310,6 +374,7 @@ const ListaPonderaciones = () => {
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
+      confirmButtonText: 'Aceptar',
     });
   };
 
@@ -380,7 +445,7 @@ const ListaPonderaciones = () => {
         }
   
         // 5. Registrar la acción en la bitácora
-        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado una nueva ponderación`;
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado una nueva ponderación: ${nuevaPonderacion}`;
   
         const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
           {
@@ -400,7 +465,12 @@ const ListaPonderaciones = () => {
   
         if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
           console.log('Registro en bitácora exitoso');
-          Swal.fire('¡Éxito!', 'La ponderación se ha creado correctamente', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'La ponderación se ha creado correctamente',
+            confirmButtonText: 'Aceptar',
+          });
   
           // 6. Realizar las acciones posteriores después de la creación exitosa
           fetchPonderacion(); // Refrescar la lista de ponderaciones
@@ -413,11 +483,21 @@ const ListaPonderaciones = () => {
         }
   
       } else {
-        Swal.fire('Error', 'Hubo un problema al crear la ponderación', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Hubo un problema al crear la ponderación',
+          confirmButtonText: 'Aceptar'
+        });
       }
     } catch (error) {
       console.error('Error al crear la ponderación:', error);
-      Swal.fire('Error', 'Hubo un problema al crear la ponderación', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un problema al crear la ponderación',
+        confirmButtonText: 'Aceptar'
+      });
     }
   };
   
@@ -459,7 +539,7 @@ const ListaPonderaciones = () => {
         }
   
         // 5. Registrar la acción en la bitácora
-        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la ponderación: ${ponderacionToUpdate.Descripcion_ponderacion}; `;
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la ponderación: ${ponderacionToUpdate.Descripcion_ponderacion} `;
   
         const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
           {
@@ -479,7 +559,12 @@ const ListaPonderaciones = () => {
   
         if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
           console.log('Registro en bitácora exitoso');
-          Swal.fire('¡Éxito!', 'La ponderación se ha actualizado correctamente', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'La ponderación se ha actualizado correctamente',
+            confirmButtonText: 'Aceptar',
+          });
   
           // 6. Realizar las acciones posteriores después de la actualización exitosa
           fetchPonderacion(); // Refrescar la lista de ponderaciones
@@ -492,11 +577,21 @@ const ListaPonderaciones = () => {
         }
   
       } else {
-        Swal.fire('Error', 'Hubo un problema al actualizar la ponderación', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Hubo un problema al actualizar la ponderación',
+          confirmButtonText: 'Aceptar' 
+        });
       }
     } catch (error) {
       console.error('Error al actualizar la ponderación:', error);
-      Swal.fire('Error', 'Hubo un problema al actualizar la ponderación', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un problema al actualizar la ponderación',
+        confirmButtonText: 'Aceptar' 
+      });
     }
   };
   
@@ -555,7 +650,12 @@ const ListaPonderaciones = () => {
   
         if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
           console.log('Registro en bitácora exitoso');
-          Swal.fire('¡Éxito!', 'La ponderación se ha eliminado correctamente', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'La ponderación se ha eliminado correctamente',
+            confirmButtonText: 'Aceptar',
+          });
   
           // 6. Realizar las acciones posteriores después de la eliminación exitosa
           fetchPonderacion(); // Refrescar la lista de ponderaciones
@@ -570,15 +670,30 @@ const ListaPonderaciones = () => {
         // Si la respuesta no es ok, verificar si la ponderación está siendo utilizada
         const responseData = await response.json();
         if (responseData.error === 'La ponderación ya pertenece a un grado') {
-          Swal.fire('Error', 'La ponderación ya pertenece a un grado', 'error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'La ponderación ya pertenece a un grado',
+            confirmButtonText: 'Aceptar' 
+          });
         } else {
-          Swal.fire('Error', 'Hubo un problema al eliminar la ponderación', 'error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Hubo un problema al eliminar la ponderación',
+            confirmButtonText: 'Aceptar' 
+          });
         }
       }
   
     } catch (error) {
       console.error('Error al eliminar la ponderación:', error);
-      Swal.fire('Error', 'Hubo un problema al eliminar la ponderación', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un problema al eliminar la ponderación',
+        confirmButtonText: 'Aceptar' 
+      });
     }
   };
   
@@ -597,18 +712,54 @@ const ListaPonderaciones = () => {
  // Cambia el estado de la página actual después de aplicar el filtro
   // Validar el buscador
   const handleSearch = (event) => {
-    const input = event.target.value.toUpperCase();
-    const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
-    
-    if (!regex.test(input)) {
+    const input = event.target;
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
+
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras, números, acentos, ñ, espacios y comas
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar'
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar caracteres permitidos
+    if (!regex.test(value)) {
       Swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar'
       });
       return;
     }
-    setSearchTerm(input);
+
+    // Validación para letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar'
+          });
+          return;
+        }
+      }
+    }
+
+    setSearchTerm(value);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
@@ -639,17 +790,37 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
   return (
     <CContainer>
   <CRow className="align-items-center mb-5">
-      <CCol xs="8" md="9">
+      <CCol xs="12" md="9">
         {/* Título de la página */}
         <h1 className="mb-0">Mantenimiento Ponderaciones</h1>
       </CCol>
-      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+      <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
         {/* Botón Nuevo para abrir el modal */}
 
         {canInsert && (
         <CButton 
-          style={{ backgroundColor: '#4B6251', color: 'white' }} 
-          className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+        className="mb-3 mb-md-0 me-md-3 gap-1 rounded shadow"
+        style={{
+          backgroundColor: '#4B6251',
+          color: 'white',
+          transition: 'all 0.3s ease',
+          height: '40px', // Altura fija del botón
+          width: 'auto', // El botón se ajusta automáticamente al contenido
+          minWidth: '100px', // Establece un ancho mínimo para evitar que el botón sea demasiado pequeño
+          padding: '0 16px', // Padding consistente
+          fontSize: '16px', // Tamaño de texto consistente
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center', // Centra el contenido
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#3C4B43";
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#4B6251";
+          e.currentTarget.style.boxShadow = 'none';
+        }}
           onClick={() => {setModalVisible(true);
             setHasUnsavedChanges(false);}}
         >
@@ -657,14 +828,71 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
         </CButton>
 
           )}
-
-        {/* Botón de Reporte */}
-        <CButton 
-          style={{ backgroundColor: '#6C8E58', color: 'white' }}
-          onClick={() => {handleReportePdfClick();}}
+        <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#6C8E58',
+          color: 'white',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#5A784C';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#6C8E58';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu
+        style={{
+          position: "absolute",
+          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+          backgroundColor: "#fff",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+          borderRadius: "4px",
+          overflow: "hidden",
+        }}
+      >
+        <CDropdownItem
+          onClick={handleReportePdfClick}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            borderBottom: "1px solid #eaeaea",
+            transition: "background-color 0.1s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
         >
-          <CIcon icon={cilDescription} /> Reporte
-        </CButton>
+          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+        </CDropdownItem>
+        <CDropdownItem
+        onClick={handleReporteExcelClick}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+       
       </CCol>
     </CRow>
 
@@ -677,7 +905,7 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
             <CIcon icon={cilSearch} />
           </CInputGroupText>
           <CFormInput
-            placeholder="Buscar Ponderacion..."
+            placeholder="Buscar ponderacion..."
             onChange={handleSearch}
             value={searchTerm}
           />
@@ -820,7 +1048,8 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPonderaciones.length / rec
         <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevaPonderacion)}>
             Cancelar
           </CButton>
-          <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreatePonderacion}>
+          <CButton style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreatePonderacion}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")}>
           <CIcon icon={cilSave} style={{ marginRight: '5px' }} />Guardar
           </CButton>
         </CModalFooter>
