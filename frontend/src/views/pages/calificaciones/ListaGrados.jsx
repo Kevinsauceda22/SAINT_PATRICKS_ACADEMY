@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription, } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription,cilFile } from '@coreui/icons'; // Importar iconos específicos
 import Swal from 'sweetalert2';
 import logo from 'src/assets/brand/logo_saint_patrick.png'
 import jsPDF from "jspdf";
@@ -47,7 +47,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaGrados = () => {
-  const { canSelect, loading, error } = usePermission('ListaGrados');
+  const { canSelect, loading, error,canDelete, canInsert, canUpdate } = usePermission('ListaGrados');
 
   const [grados, setGrados] = useState([]);
   const [ciclos, setCiclos] = useState([]); // Estado para almacenar los ciclos
@@ -83,7 +83,7 @@ const ListaGrados = () => {
         console.error('Error al decodificar el token:', error);
       }
     }
-  });
+  }, []);
 
   const fetchCiclos = async () => { // Asegúrate de que esta función esté definida
     try {
@@ -122,7 +122,12 @@ const ListaGrados = () => {
 
   const validarCiclo = () => {
     if (!nuevoCiclo || nuevoCiclo === "") {
-      Swal.fire('Error', 'Debe seleccionar un ciclo de la lista', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Debe seleccionar un ciclo de la lista',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
     return true;
@@ -132,32 +137,52 @@ const ListaGrados = () => {
   const validarGrado = () => {
     const nombreGrado = typeof nuevoGrado === 'string' ? nuevoGrado : nuevoGrado.Nombre_grado;
     if (!nombreGrado || nombreGrado.trim() === '') {
-      Swal.fire('Error', 'El campo "Nombre Grado" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Nombre Grado" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
     const nombrePrefijo = typeof nuevoprefijo === 'string' ? nuevoprefijo : nuevoprefijo.Prefijo;
     if (!nombrePrefijo || nombrePrefijo.trim() === '') {
-      Swal.fire('Error', 'El campo "Prefijo" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Prefijo" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
 
     // Verificar si el nombre del ciclo ya existe
     const Gradoexistente = grados.some(
-      (grado) => grado.Nombre_grado.toLowerCase() === nombreGrado.toLowerCase()
+      (grado) => grado.Nombre_grado.trim().toLowerCase() === nombreGrado.trim().toLowerCase()
     );
 
     if (Gradoexistente) {
-      Swal.fire('Error', `El grado "${nombreGrado}" ya existe`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El grado "${nombreGrado}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
     // Verificar si el nombre del ciclo ya existe
     const Prefijoexistente = grados.some(
-      (grado) => grado.Prefijo.toLowerCase() === nombrePrefijo.toLowerCase()
+      (grado) => grado.Prefijo.trim().toLowerCase() === nombrePrefijo.trim().toLowerCase()
     );
 
     if (Prefijoexistente) {
-      Swal.fire('Error', `El Prefijo "${nombrePrefijo}" ya existe`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El Prefijo "${nombrePrefijo}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -168,7 +193,12 @@ const ListaGrados = () => {
 
   const validarGradoUpdate = () => {
     if (!gradoToUpdate.Nombre_grado) {
-      Swal.fire('Error', 'El campo "Nombre Grado" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Nombre Grado" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
     if (!gradoToUpdate.Prefijo) {
@@ -178,23 +208,33 @@ const ListaGrados = () => {
     // Verificar si el nombre del ciclo ya existe (excluyendo el ciclo actual que se está editando)
     const Gradoexistente = grados.some(
       (grado) =>
-        grado.Nombre_grado.toLowerCase() === gradoToUpdate.Nombre_grado.toLowerCase() &&
+        grado.Nombre_grado.trim().toLowerCase() === gradoToUpdate.Nombre_grado.trim().toLowerCase() &&
         grado.Cod_grado !== gradoToUpdate.Cod_grado
     );
 
     if (Gradoexistente) {
-      Swal.fire('Error', `El grado "${gradoToUpdate.Nombre_grado}" ya existe`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El grado "${gradoToUpdate.Nombre_grado}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
     // Verificar si el nombre del ciclo ya existe (excluyendo el ciclo actual que se está editando)
     const PrefijoExistente = grados.some(
       (grado) =>
-        grado.Prefijo.toLowerCase() === gradoToUpdate.Prefijo.toLowerCase() &&
+        grado.Prefijo.trim().toLowerCase() === gradoToUpdate.Prefijo.trim().toLowerCase() &&
         grado.Cod_grado !== gradoToUpdate.Cod_grado
     );
 
     if (PrefijoExistente) {
-      Swal.fire('Error', `El Prefijo "${gradoToUpdate.Prefijo}" ya existe`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El Prefijo "${gradoToUpdate.Prefijo}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -220,6 +260,7 @@ const ListaGrados = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -230,6 +271,7 @@ const ListaGrados = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -245,6 +287,7 @@ const ListaGrados = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -273,6 +316,7 @@ const ListaGrados = () => {
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
+      confirmButtonText: 'Aceptar',
     });
   };
 
@@ -343,7 +387,7 @@ const ListaGrados = () => {
         }
   
         // 5. Registrar la acción en la bitácora
-        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado un nuevo grado`;
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado un nuevo grado ${nuevoGrado}`;
   
         const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
           {
@@ -363,7 +407,12 @@ const ListaGrados = () => {
   
         if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
           console.log('Registro en bitácora exitoso');
-          Swal.fire('¡Éxito!', 'El grado se ha creado correctamente', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'El grado se ha creado correctamente',
+            confirmButtonText: 'Aceptar',
+          });
   
           // 6. Realizar las acciones posteriores después de la creación exitosa
           fetchGrados();  // Refrescar la lista de grados
@@ -377,29 +426,51 @@ const ListaGrados = () => {
         }
   
       } else {
-        Swal.fire('Error', 'No se pudo crear el grado', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo crear el grado',
+          confirmButtonText: 'Aceptar'
+        });
       }
   
     } catch (error) {
       console.error('Error al crear el grado:', error);
-      Swal.fire('Error', `Hubo un problema al crear el grado: ${error.message}`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Hubo un problema al crear el grado: ${error.message}`,
+        confirmButtonText: 'Aceptar'
+      });
+
     }
   };
   
   const handleUpdateGrado = async () => {
     if (!gradoToUpdate.Cod_ciclo) {
-      Swal.fire('Error', 'Debe seleccionar un ciclo de la lista', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Debe seleccionar un ciclo de la lista',
+        confirmButtonText: 'Aceptar'
+      });
       return false;
     }
     if (!validarGradoUpdate()) return;  // Verificar si el grado a actualizar es válido
   
     try {
-      // 1. Verificar si obtenemos el token correctamente
+      // Verificar si obtenemos el token correctamente
       const token = localStorage.getItem('token');
-      console.log('Token obtenido:', token);  // Depuración
       if (!token) {
         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
         return;
+      }
+  
+      // Decodificar el token para obtener el nombre del usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+        console.error('No se pudo obtener el código o el nombre de usuario del token');
+        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
       }
   
       // 2. Realizar la solicitud para actualizar el grado
@@ -453,7 +524,12 @@ const ListaGrados = () => {
   
         if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
           console.log('Registro en bitácora exitoso');
-          Swal.fire('¡Éxito!', 'El grado se ha actualizado correctamente', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'El grado se ha actualizado correctamente',
+            confirmButtonText: 'Aceptar',
+          });
   
           // 5. Realizar las acciones posteriores después de la actualización exitosa
           fetchGrados();  // Refrescar la lista de grados
@@ -466,12 +542,22 @@ const ListaGrados = () => {
         }
   
       } else {
-        Swal.fire('Error', 'No se pudo actualizar el grado', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar el grado',
+          confirmButtonText: 'Aceptar' 
+        });
       }
   
     } catch (error) {
       console.error('Error al actualizar el grado:', error);
-      Swal.fire('Error', `Hubo un problema al actualizar el grado: ${error.message}`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Hubo un problema al actualizar el grado: ${error.message}`,
+        confirmButtonText: 'Aceptar'
+      });
     }
   };
   
@@ -534,7 +620,12 @@ const ListaGrados = () => {
   
         if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
           console.log('Registro en bitácora exitoso');
-          Swal.fire('¡Éxito!', 'El grado se ha eliminado correctamente', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'El grado se ha eliminado correctamente',
+            confirmButtonText: 'Aceptar',
+          });
   
           // 5. Realizar las acciones posteriores después de la eliminación exitosa
           fetchGrados();  // Refrescar la lista de grados
@@ -546,12 +637,22 @@ const ListaGrados = () => {
         }
   
       } else {
-        Swal.fire('Error', 'No se pudo eliminar el grado', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo eliminar el grado',
+          confirmButtonText: 'Aceptar' 
+        });
       }
   
     } catch (error) {
       console.error('Error al eliminar el grado:', error);
-      Swal.fire('Error', `Hubo un problema al eliminar el grado: ${error.message}`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Hubo un problema al eliminar el grado: ${error.message}`,
+        confirmButtonText: 'Aceptar'
+      });
     }
   };
   
@@ -639,16 +740,15 @@ const ListaGrados = () => {
             },
             alternateRowStyles: { fillColor: [240, 248, 255] },
             didDrawPage: (data) => {
-                // Pie de página
-                const currentDate = new Date();
-                const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                doc.setFontSize(10);
-                doc.setTextColor(100);
-                doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-                doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-                pageNumber += 1; // Incrementar el número de página
-            },
+              const currentPage = doc.internal.getCurrentPageInfo().pageNumber; // Página actual
+              const totalPages = doc.internal.getNumberOfPages(); // Total de páginas
+              const currentDate = new Date();
+              const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+              doc.setFontSize(10);
+              doc.setTextColor(100);
+              doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+              doc.text(`Página ${currentPage} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+          },
         });
 
         // Abrir el PDF
@@ -661,42 +761,130 @@ const ListaGrados = () => {
     };
 };
 
+  const handleReporteExcelClick = () => {
+    // Encabezados iniciales del reporte
+    const encabezados = [
+      ["Saint Patrick Academy"],
+      ["Reporte de Grados"],
+      [`Fecha de generación: ${new Date().toLocaleDateString()}`],
+      [], // Espacio en blanco
+    ];
 
-  const openUpdateModal = (grado) => {
-    setGradoToUpdate(grado); // Cargar los datos del grado a actualizar
-    setModalUpdateVisible(true); // Abrir el modal de actualización
-    setHasUnsavedChanges(false);
+    // Encabezados de la tabla
+    encabezados.push(["#", "Nombre del Grado","Nombre del Ciclo", "Prefijo"]);
 
+    // Crear filas de la tabla con los datos de los ciclos
+    const filas = currentRecords.map((grado, index) => [
+      grado.originalIndex || index + 1, // Mostrar índice original o generar índice
+      grado.Nombre_grado, // Nombre del grado
+      getCicloName(grado.Cod_ciclo), // Nombre del ciclo asociado
+      grado.Prefijo, // Prefijo
+    ]);
+
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+
+    // Crear una hoja de trabajo con los datos
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+
+    // Ajustar el ancho de columnas automáticamente
+    const ajusteColumnas = [
+      { wpx: 50 }, // Número
+      { wpx: 150 }, // Nombre del grado
+      { wpx: 150 }, // Nombre del Ciclo
+      { wpx: 80 }, // prefijo
+    ];
+    hojaDeTrabajo['!cols'] = ajusteColumnas;
+
+    // Crear un libro de trabajo y añadir la hoja
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Grados");
+
+    // Guardar el archivo Excel
+    const nombreArchivo = `reporte_grados_${new Date()
+      .toLocaleDateString()
+      .replace(/\//g, '-')}.xlsx`;
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
   };
 
-  const openDeleteModal = (grado) => {
-    setGradoToDelete(grado); // Guardar el grado que se desea eliminar
-    setModalDeleteVisible(true); // Abrir el modal de confirmación
+    const openUpdateModal = (grado) => {
+      setGradoToUpdate(grado); // Cargar los datos del grado a actualizar
+      setModalUpdateVisible(true); // Abrir el modal de actualización
+      setHasUnsavedChanges(false);
 
-  };
+    };
+
+    const openDeleteModal = (grado) => {
+      setGradoToDelete(grado); // Guardar el grado que se desea eliminar
+      setModalDeleteVisible(true); // Abrir el modal de confirmación
+
+    };
 
   // Cambia el estado de la página actual después de aplicar el filtro
   // Validar el buscador
   const handleSearch = (event) => {
-    const input = event.target.value.toUpperCase();
-    const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
+    const input = event.target;
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
 
-    if (!regex.test(input)) {
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras, números, acentos, ñ, espacios y comas
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar'
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar caracteres permitidos
+    if (!regex.test(value)) {
       Swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar'
       });
       return;
     }
-    setSearchTerm(input);
+
+    // Validación para letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar'
+          });
+          return;
+        }
+      }
+    }
+
+    setSearchTerm(value);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
   // Filtro de búsqueda
-  const filteredGrados = grados.filter((grado) =>
-    grado.Nombre_grado.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredGrados = grados.filter((grado) => {
+    const nombreGrado = grado?.Nombre_grado?.toLowerCase() || ''; // Asegurarse de que exista o asignar cadena vacía
+    const nombreCiclo = getCicloName(grado?.Cod_ciclo)?.toLowerCase() || ''; // Manejar resultados de getCicloName
+  
+    return (
+      nombreGrado.includes(searchTerm.toLowerCase()) ||
+      nombreCiclo.includes(searchTerm.toLowerCase())
+    );
+  });
+  
 
   // Lógica de paginación
   const indexOfLastRecord = currentPage * recordsPerPage;
@@ -719,15 +907,36 @@ const ListaGrados = () => {
     <CContainer>
       {/* Contenedor del h1 y botón "Nuevo" */}
       <CRow className="align-items-center mb-5">
-        <CCol xs="8" md="9">
+        <CCol xs="12" md="9">
           {/* Título de la página */}
           <h1 className="mb-0">Mantenimiento Grados</h1>
         </CCol>
-        <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+        <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
           {/* Botón Nuevo para abrir el modal */}
+          {canInsert && (
           <CButton
-            style={{ backgroundColor: '#4B6251', color: 'white' }}
-            className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+          className="mb-3 mb-md-0 me-md-3 gap-1 rounded shadow"
+          style={{
+            backgroundColor: '#4B6251',
+            color: 'white',
+            transition: 'all 0.3s ease',
+            height: '40px', // Altura fija del botón
+            width: 'auto', // El botón se ajusta automáticamente al contenido
+            minWidth: '100px', // Establece un ancho mínimo para evitar que el botón sea demasiado pequeño
+            padding: '0 16px', // Padding consistente
+            fontSize: '16px', // Tamaño de texto consistente
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center', // Centra el contenido
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = "#3C4B43";
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = "#4B6251";
+            e.currentTarget.style.boxShadow = 'none';
+          }}
             onClick={() => {
               setModalVisible(true);
               setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
@@ -735,16 +944,71 @@ const ListaGrados = () => {
           >
             <CIcon icon={cilPlus} /> Nuevo
           </CButton>
-
-          {/* Botón de Reporte */}
-          <CButton
-            style={{ backgroundColor: '#6C8E58', color: 'white' }}
-            onClick={() => {
-              handleReporteGradosPdfClick();
-            }}
-          >
-            <CIcon icon={cilDescription} /> Reporte
-          </CButton>
+           )}
+          <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#6C8E58',
+          color: 'white',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#5A784C';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#6C8E58';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu
+        style={{
+          position: "absolute",
+          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+          backgroundColor: "#fff",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+          borderRadius: "4px",
+          overflow: "hidden",
+        }}
+      >
+        <CDropdownItem
+          onClick={handleReporteGradosPdfClick}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            borderBottom: "1px solid #eaeaea",
+            transition: "background-color 0.1s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+        </CDropdownItem>
+        <CDropdownItem
+        onClick={handleReporteExcelClick}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
         </CCol>
       </CRow>
 
@@ -757,7 +1021,7 @@ const ListaGrados = () => {
               <CIcon icon={cilSearch} />
             </CInputGroupText>
             <CFormInput
-              placeholder="Buscar Grado..."
+              placeholder="Buscar por grado o ciclo..."
               onChange={handleSearch}
               value={searchTerm}
             />
@@ -803,6 +1067,7 @@ const ListaGrados = () => {
                 <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
+                <option value="30">30</option>
               </CFormSelect>
               <span>&nbsp;registros</span>
             </div>
@@ -830,12 +1095,16 @@ const ListaGrados = () => {
                 <CTableDataCell>{getCicloName(grado.Cod_ciclo)}</CTableDataCell>
                 <CTableDataCell>{grado.Prefijo}</CTableDataCell>
                 <CTableDataCell>
+                {canUpdate && (
                   <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(grado)}>
                     <CIcon icon={cilPen} />
                   </CButton>
+                   )}
+                    {canDelete && (
                   <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(grado)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
+                  )}
                 </CTableDataCell>
               </CTableRow>
             ))}
@@ -923,7 +1192,8 @@ const ListaGrados = () => {
           <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoGrado)}>
             Cancelar
           </CButton>
-          <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateGrado}>
+          <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateGrado}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")}>
             <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
           </CButton>
         </CModalFooter>
