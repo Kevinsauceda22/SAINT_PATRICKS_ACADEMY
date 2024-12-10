@@ -521,6 +521,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         icon: 'warning',
         title: 'Acción bloqueada',
         text: 'Copiar y pegar no está permitido.',
+        confirmButtonText: 'Aceptar', 
       });
     };
     
@@ -538,6 +539,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'warning',
           title: 'Espacios múltiples',
           text: 'No se permite más de un espacio entre palabras.',
+          confirmButtonText: 'Aceptar', 
         });
         value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
       }
@@ -548,6 +550,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
           icon: 'warning',
           title: 'Caracteres no permitidos',
           text: 'Solo se permiten letras, números y espacios.',
+          confirmButtonText: 'Aceptar', 
         });
         return;
       }
@@ -563,6 +566,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
               icon: 'warning',
               title: 'Repetición de letras',
               text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+              confirmButtonText: 'Aceptar', 
             });
             return;
           }
@@ -589,7 +593,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     
     const generarReporteExcel = () => {
       // Validar que haya datos en la tabla
-      if (!secciones || secciones.length === 0) {
+      if (!currentRecords2 || currentRecords2.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -606,7 +610,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       ];
     
       // Crear filas con asistencias filtradas
-      const filas = secciones.map((seccion, index) => [
+      const filas = currentRecords2.map((seccion, index) => [
         index + 1,
         seccion.Seccion,
         seccion.Grado,
@@ -656,7 +660,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     };
 
     const generarReporteasignaturasExcel = () => {
-      if (!asignaturas || asignaturas.length === 0) {
+      if (!currentRecords3 || currentRecords3.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -668,10 +672,10 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     
       // Detalles de la sección, asignatura y año
       const detalles = [];
-      if (nombreSeccionSeleccionada && anioSeccionSeleccionada && nombreasignaturaSeleccionada) {
-        detalles.push([`Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} | Asignatura: ${nombreasignaturaSeleccionada}`]);
-      } else if (nombreSeccionSeleccionada && anioSeccionSeleccionada) {
-        detalles.push([`Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`]);
+      if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+        detalles.push([`Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`]);
+      } else if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+        detalles.push([`Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`]);
       }
     
       const encabezados = [
@@ -684,7 +688,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       ];
     
       // Crear filas con asignaturas
-      const filas = asignaturas.map((asignatura, index) => [
+      const filas = currentRecords3.map((asignatura, index) => [
         index + 1,
         asignatura.Nombre_asignatura || "N/A",
         asignatura.Descripcion_asignatura || "N/A",
@@ -719,7 +723,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     };
     
     const generarReportepromediosExcel = () => {
-      if (!promedios || promedios.length === 0) {
+      if (!currentRecords4 || currentRecords4.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -731,10 +735,10 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     
       // Detalles de la sección, asignatura y año
       let detalles = [];
-      if (nombreSeccionSeleccionada && anioSeccionSeleccionada && nombreasignaturaSeleccionada) {
-        detalles.push([`Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} | Asignatura: ${nombreasignaturaSeleccionada}`]);
-      } else if (nombreSeccionSeleccionada && anioSeccionSeleccionada) {
-        detalles.push([`Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`]);
+      if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada && nombreasignaturaSeleccionada) {
+        detalles.push([`Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} | Asignatura: ${nombreasignaturaSeleccionada}`]);
+      } else if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+        detalles.push([`Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`]);
       } else if (nombreasignaturaSeleccionada) {
         detalles.push([`Asignatura: ${nombreasignaturaSeleccionada}`]);
       }
@@ -748,7 +752,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       ];
     
       // Crear filas con asignaturas
-      const filas = promedios.map((promedio, index) => [
+      const filas = currentRecords4.map((promedio, index) => [
         index + 1,
         promedio.NombreParcial || "N/A",
         promedio.PromedioGeneral || 0,
@@ -786,7 +790,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     
     const generarReportepromediosPDF = () => {
        // Validar que haya datos en la tabla
-       if (!promedios || promedios.length === 0) {
+       if (!currentRecords4 || currentRecords4.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -821,16 +825,16 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
          // Detalles de la sección, asignatura y año
         doc.setFontSize(12);
         doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-        if (nombreSeccionSeleccionada && anioSeccionSeleccionada && nombreasignaturaSeleccionada) {
+        if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada && nombreasignaturaSeleccionada) {
           doc.text(
-            `Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} | Asignatura: ${nombreasignaturaSeleccionada}`,
+            `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} | Asignatura: ${nombreasignaturaSeleccionada}`,
             doc.internal.pageSize.width / 2,
             yPosition,
             { align: 'center' }
           );
-        } else if (nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+        } else if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada) {
           doc.text(
-            `Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`,
+            `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`,
             doc.internal.pageSize.width / 2,
             yPosition,
             { align: 'center' }
@@ -874,7 +878,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Parcial', 'Promedio', 'Total Aprobados','Total Reprobados' ]],
-          body: promedios.map((promedio, index) => [
+          body: currentRecords4.map((promedio, index) => [
             index + 1,
             `${promedio.NombreParcial}`.trim(),
             promedio.PromedioGeneral,
@@ -925,7 +929,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
 
     const generarReporteasignaturasPDF = () => {
        // Validar que haya datos en la tabla
-       if (!asignaturas || asignaturas.length === 0) {
+       if (!currentRecords3 || currentRecords3.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -960,16 +964,16 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
          // Detalles de la sección, asignatura y año
          doc.setFontSize(12);
          doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-         if (nombreSeccionSeleccionada && anioSeccionSeleccionada && nombreasignaturaSeleccionada) {
+          if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada  ) {
            doc.text(
-             `Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} | Asignatura: ${nombreasignaturaSeleccionada}`,
+             `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`,
              doc.internal.pageSize.width / 2,
              yPosition,
              { align: 'center' }
            );
-         } else if (nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+         } else if (gradoSeleccionado && nombreSeccionSeleccionada) {
            doc.text(
-             `Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`,
+             `Grado: ${gradoSeleccionado} | Año: ${nombreSeccionSeleccionada}`,
              doc.internal.pageSize.width / 2,
              yPosition,
              { align: 'center' }
@@ -1006,7 +1010,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Asignatura', 'Descripción', 'Promedio']],
-          body: asignaturas.map((asignatura, index) => [
+          body: currentRecords3.map((asignatura, index) => [
             index + 1,
             `${asignatura.Nombre_asignatura}`.trim(),
             asignatura.Descripcion_asignatura,
@@ -1055,7 +1059,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
 
     const generarReportePDF = () => {
        // Validar que haya datos en la tabla
-       if (!secciones || secciones.length === 0) {
+       if (!currentRecords2 || currentRecords2.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -1115,7 +1119,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Sección', 'Grado', 'Total Alumnos','Año Académico']],
-          body: secciones.map((seccion, index) => [
+          body: currentRecords2.map((seccion, index) => [
             index + 1,
             `${seccion.Seccion || ''}`.trim(),
             seccion.Grado,
@@ -1304,6 +1308,7 @@ yPosition += 8; // Espaciado entre líneas de detalle
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -1314,6 +1319,7 @@ yPosition += 8; // Espaciado entre líneas de detalle
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -1329,6 +1335,7 @@ yPosition += 8; // Espaciado entre líneas de detalle
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -1375,6 +1382,7 @@ yPosition += 8; // Espaciado entre líneas de detalle
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -1385,6 +1393,7 @@ yPosition += 8; // Espaciado entre líneas de detalle
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -1400,6 +1409,7 @@ yPosition += 8; // Espaciado entre líneas de detalle
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -1444,6 +1454,7 @@ const handleSearch4 = (event) => {
       icon: 'warning',
       title: 'Espacios múltiples',
       text: 'No se permite más de un espacio entre palabras.',
+      confirmButtonText: 'Aceptar',
     });
     value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
   }
@@ -1454,6 +1465,7 @@ const handleSearch4 = (event) => {
       icon: 'warning',
       title: 'Caracteres no permitidos',
       text: 'Solo se permiten letras, números y espacios.',
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
@@ -1469,6 +1481,7 @@ const handleSearch4 = (event) => {
           icon: 'warning',
           title: 'Repetición de letras',
           text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -1512,6 +1525,7 @@ const handleNombreBusquedaChange = (e) => {
       icon: 'warning',
       title: 'Espacios múltiples',
       text: 'No se permite más de un espacio entre palabras.',
+      confirmButtonText: 'Aceptar',
     });
     value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
   }
@@ -1522,6 +1536,7 @@ const handleNombreBusquedaChange = (e) => {
       icon: 'warning',
       title: 'Caracteres no permitidos',
       text: 'Solo se permiten letras, números y espacios.',
+      confirmButtonText: 'Aceptar',
     });
     return; // Detener si el valor no es válido
   }
@@ -1537,6 +1552,7 @@ const handleNombreBusquedaChange = (e) => {
           icon: 'warning',
           title: 'Repetición de letras',
           text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          confirmButtonText: 'Aceptar',
         });
         return; // Detener si el valor tiene letras repetidas
       }
@@ -2610,7 +2626,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
 )}
 
 
-<CModal visible={mostrarModalDetalleEstudiantes} onClose={() => setMostrarDetalleModalEstudiantes(false)} size="xl" backdrop="static">
+<CModal visible={mostrarModalDetalleEstudiantes} onClose={() => {setMostrarDetalleModalEstudiantes(false); setNombreBusqueda("");}} size="xl" backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Detalles de Estudiantes</CModalTitle>
   </CModalHeader>
@@ -2686,7 +2702,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
   <CModalFooter>
     <CButton
       color="secondary"
-      onClick={() => setMostrarDetalleModalEstudiantes(false)}
+     onClick={() => {setMostrarDetalleModalEstudiantes(false); setNombreBusqueda("");}}
     >
       Cerrar
     </CButton>
