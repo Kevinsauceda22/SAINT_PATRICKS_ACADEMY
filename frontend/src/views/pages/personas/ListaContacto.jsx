@@ -5,6 +5,8 @@ import swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom'
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import 'react-phone-number-input/style.css';
+import PhoneInput from 'react-phone-number-input';
 import {
   CButton,
   CContainer,
@@ -692,10 +694,10 @@ const fetchTiposContacto = async () => {
       </CPagination>
 
 {/********************************************MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+<CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
   <CModalHeader>
     <CModalTitle>{contactoToUpdate ? 'Actualizar Contacto' : 'Crear Nuevo Contacto'}</CModalTitle>
-  </CModalHeader> 
+  </CModalHeader>
   <CModalBody>
     {/* Mostrar el nombre de la persona seleccionada */}
     <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
@@ -713,9 +715,13 @@ const fetchTiposContacto = async () => {
         value={contactoToUpdate?.cod_tipo_contacto || nuevoContacto.cod_tipo_contacto}
         onChange={(e) => {
           const value = e.target.value;
+          // Encuentra el tipo de contacto basado en el nombre
+          const selectedTipo = tiposContacto.find(tipo => tipo.cod_tipo_contacto === value);
+          const tipoNombre = selectedTipo ? selectedTipo.tipo_contacto : '';
+          
           contactoToUpdate
-            ? setContactoToUpdate({ ...contactoToUpdate, cod_tipo_contacto: value })
-            : setNuevoContacto({ ...nuevoContacto, cod_tipo_contacto: value });
+            ? setContactoToUpdate({ ...contactoToUpdate, cod_tipo_contacto: value, tipo_contacto: tipoNombre })
+            : setNuevoContacto({ ...nuevoContacto, cod_tipo_contacto: value, tipo_contacto: tipoNombre });
         }}
         className="border-0"
       >
@@ -733,18 +739,41 @@ const fetchTiposContacto = async () => {
       <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
         Valor
       </div>
-      <CFormInput
-        placeholder="Valor"
-        value={contactoToUpdate?.Valor || nuevoContacto.Valor}
-        onChange={(e) => {
-          let value = e.target.value.slice(0, 50); // Limitar a 50 caracteres
-          if (/(\s{2,})/.test(value)) return; // Bloquear si hay más de un espacio entre palabras/números
-          contactoToUpdate
-            ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
-            : setNuevoContacto({ ...nuevoContacto, Valor: value });
-        }}
-        className="border-0"
-      />
+
+      {/* Usar react-phone-number-input solo para tipos de teléfono */}
+      {nuevoContacto.cod_tipo_contacto === '1' || nuevoContacto.cod_tipo_contacto === '2' ? (
+        <PhoneInput
+          international
+          defaultCountry="HN"  // Asegúrate de poner el país adecuado como predeterminado
+          value={contactoToUpdate?.Valor || nuevoContacto.Valor}
+          onChange={(value) => {
+            contactoToUpdate
+              ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
+              : setNuevoContacto({ ...nuevoContacto, Valor: value });
+          }}
+          className="border-0"
+        />
+      ) : (
+        <CFormInput
+          placeholder={nuevoContacto.cod_tipo_contacto === 'EMAIL' ? 'EMAIL' : 'Valor'}
+          value={contactoToUpdate?.Valor || nuevoContacto.Valor}
+          onChange={(e) => {
+            let value = e.target.value.slice(0, 50); // Limitar a 50 caracteres
+            if (/(\s{2,})/.test(value)) return; // Bloquear si hay más de un espacio entre palabras/números
+
+            // Validación por tipo de contacto
+            if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/\S+@\S+\.\S+/.test(value)) {
+              // Validación de correo electrónico
+              return;
+            }
+
+            contactoToUpdate
+              ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
+              : setNuevoContacto({ ...nuevoContacto, Valor: value });
+          }}
+          className="border-0"
+        />
+      )}
     </div>
   </CModalBody>
   <CModalFooter>
@@ -763,6 +792,8 @@ const fetchTiposContacto = async () => {
     </CButton>
   </CModalFooter>
 </CModal>
+
+{/********************************************FIN MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
 
 
 

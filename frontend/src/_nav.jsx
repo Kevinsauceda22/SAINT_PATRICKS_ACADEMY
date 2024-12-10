@@ -310,18 +310,6 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Familias',
-        to: '/ListaEstructura',
-        nameobject: 'ListaEstructura',
-      },
-      {
-        component: CNavItem,
-        name: 'Estructuras',
-        to: '/ListaEstructura',
-        nameobject: 'ListaRelacion',
-      },
-      {
-        component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
         nameobject: 'ListaRelacion',
@@ -360,11 +348,6 @@ const _nav = [
         name: 'Nacionalidades',
         to: '/nacionalidad',
         nameobject: 'nacionalidad',
-      },
-      {
-        component: CNavItem,
-        name: 'Contacto',
-        to: '/contacto',
       },
       {
         component: CNavItem,

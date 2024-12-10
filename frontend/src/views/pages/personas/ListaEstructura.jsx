@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription, cilArrowLeft } from '@coreui/icons'
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilArrowLeft } from '@coreui/icons'
 import swal from 'sweetalert2' // Importar SweetAlert
 import axios from 'axios'
 import { jsPDF } from 'jspdf' // Para generar archivos PDF
@@ -401,9 +401,7 @@ const handleUpdateEstructura = async () => {
     fetchEstructuraFamiliar();
   }, []);
 
-  const resetEstructuraToUpdate = () => {
-    setEstructuraToUpdate({ descripcion: '', cod_persona_padre: '', cod_persona_estudiante: '', cod_tipo_relacion: ''  });
-  };
+
 
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -546,7 +544,7 @@ const handleSearch = (e) => {
 /*******************************FUNCION DE REPORTERIA*************************************/
 // Función para generar reporte PDF
 const ReporteEstructuraPDF = () => {
-  const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
+  const doc = new jsPDF('p', 'mm', 'letter'); //
 
   if (!filteredRecords || filteredRecords.length === 0) {
     alert('No hay datos para exportar.');
@@ -591,7 +589,7 @@ const ReporteEstructuraPDF = () => {
 
     doc.autoTable({
       startY: 65,
-      margin: { left: 10, right: 10 }, // Centrado de la tabla
+      startY: (pageHeight - tableRows.length * 10) / 2, // Centrado de la tabla
       columns: [
         { header: '#', dataKey: 'index' },
         { header: 'Estudiante', dataKey: 'estudiante' },
@@ -1070,8 +1068,18 @@ return (
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalVisible(false)}>Cerrar</CButton>
-    <CButton color="primary" onClick={handleCreateEstructura}>Guardar</CButton>
+          <CButton
+            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+            onClick={() => setModalVisible(false)}
+          >
+            Cancelar
+          </CButton>
+          <CButton
+            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+            onClick={handleCreateEstructura} // Llamar a la función para actualizar los datos
+          >
+            <CIcon icon={cilSave} /> Guardar
+          </CButton>
   </CModalFooter>
 </CModal>
 {/* Fin del modal de agregar estructura familiar */}
@@ -1100,7 +1108,7 @@ return (
       {/* Campo de búsqueda para persona */}
       <div className="mb-3">
         <CInputGroup className="mb-3">
-          <CInputGroupText>Buscar Persona</CInputGroupText>
+        <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
           <CFormInput
             type="text"
             value={buscadorRelacion} // Asegura que use este estado
@@ -1188,8 +1196,18 @@ return (
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>Cerrar</CButton>
-    <CButton color="primary" onClick={handleUpdateEstructura}>Guardar</CButton>
+  <CButton
+            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+            onClick={() => setModalUpdateVisible(false)}
+          >
+            Cancelar
+          </CButton>
+          <CButton
+            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+            onClick={handleUpdateEstructura} // Llamar a la función para actualizar los datos
+          >
+            <CIcon icon={cilPen} /> Actualizar
+          </CButton>
   </CModalFooter>
 </CModal>
 
