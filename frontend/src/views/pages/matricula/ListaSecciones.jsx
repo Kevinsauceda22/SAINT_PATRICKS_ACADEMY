@@ -71,15 +71,18 @@ const fetchSeccionesPeriodo = async (periodo) => {
     const data = await response.json();
 
     if (response.ok) {
-      setSecciones(data.map((seccion, index) => ({ ...seccion, originalIndex: index + 1 })));
+      const seccionesConIndex = data.map((seccion, index) => ({ 
+        ...seccion, 
+        originalIndex: index + 1 
+      }));
+      setSecciones(seccionesConIndex);
+      console.log('Secciones cargadas:', seccionesConIndex); // Verifica que Cod_secciones esté presente
     } else {
       setSecciones([]);
-      swal.fire('Atención', `No se encontraron secciones en este periodo académico`, 'info');
+      console.log('No se encontraron secciones para el período proporcionado.');
     }
   } catch (error) {
-    console.error('Error capturado en este bloque:', error); // Detalle del error
-    console.error('Error al cargar secciones:', error);
-    swal.fire('Error', 'Hubo un problema al cargar las secciones.', 'error');
+    console.error('Error capturado al cargar secciones:', error);
   }
 };
 
@@ -257,18 +260,50 @@ const fetchEdificios = async () => {
 
 const fetchAulasPorEdificio = async (Cod_edificio) => {
   try {
-    const response = await fetch(`http://localhost:4000/api/secciones/aulas/por_edificio/${Cod_edificio}`);
-    const data = await response.json();
+      if (!Cod_edificio) {
+          console.error('Error: Cod_edificio no está definido.');
+          swal.fire('Error', 'El código del edificio no está definido.', 'error');
+          return;
+      }
 
-    if (response.ok && data.length > 0) {
-      setAulasFiltradas(data); // Actualiza las aulas disponibles
+      console.log("Código de edificio enviado:", Cod_edificio); // Depuración
+
+      const response = await fetch(`http://localhost:4000/api/secciones/aulas/por_edificio/${Cod_edificio}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        let aulas = data.aulas;
+        console.log("Respuesta del servidor:", data); // Depuración
+        console.log("Aulas cargadas:", aulas);       // Depuración
+    
+        // Verificar si aulas es un array
+        if (!Array.isArray(aulas)) {
+            console.error("La propiedad 'aulas' no es un array:", aulas);
+            return; // Salir si aulas no es un array
+        }
+    
+        // Verificar si el aula actual no está en la lista y agregarla
+        const aulaActual = aulas.find(aula => aula.Numero_aula === seccionToUpdate.p_Numero_aula);
+        if (!aulaActual && seccionToUpdate.p_Numero_aula) {
+            const aulaActualInfo = await fetch(`http://localhost:4000/api/secciones/${seccionToUpdate.p_Numero_aula}`);
+            const aulaActualData = await aulaActualInfo.json();
+            if (aulaActualInfo.ok) {
+                aulas.push(aulaActualData); // Agregar aula actual
+            } else {
+                console.error('Error al obtener el aula actual:', aulaActualData.mensaje);
+            }
+        }
+    
+        console.log("Aulas después de agregar el aula actual:", aulas); // Depuración
+        setAulasFiltradas(aulas);
     } else {
-      setAulasFiltradas([]); // Limpia el estado si no hay aulas disponibles
-      swal.fire('Atención', 'No hay aulas disponibles con espacio suficiente en este edificio.', 'info');
+        console.error('Error al obtener aulas del edificio:', data.mensaje);
+        swal.fire('Error', data.mensaje || 'No se pudieron cargar las aulas.', 'error');
     }
+    
   } catch (error) {
-    console.error('Error al obtener las aulas del edificio:', error);
-    swal.fire('Error', 'Hubo un problema al cargar las aulas disponibles.', 'error');
+      console.error('Error al cargar las aulas:', error);
+      swal.fire('Error', 'Hubo un problema al cargar las aulas.', 'error');
   }
 };
 
@@ -408,7 +443,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         { content: seccion.Nombre_seccion?.toUpperCase() || 'SIN NOMBRE', styles: { halign: 'center' } },
         seccion.Numero_aula?.toString() || 'SIN AULA',
         seccion.Nombre_grado?.toUpperCase() || 'SIN GRADO',
-        { content: getProfesorFullName(seccion.Cod_Profesor) || 'SIN PROFESOR', styles: { halign: 'center' } },
+        { content: getProfesorFullName(seccion.Cod_Profesor) || 'SIN PROFESOR', styles: { halign: 'left' } },
       ]);
 
       doc.autoTable({
@@ -613,39 +648,39 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   const handleUpdateSeccion = async () => {
     // Buscar el aula seleccionada
     const aulaSeleccionada = aulasFiltradas.find(
-      (aula) => aula.Numero_aula.toString() === seccionToUpdate.p_Numero_aula.toString()
+        (aula) => aula.Numero_aula.toString() === seccionToUpdate.p_Numero_aula.toString()
     );
   
-    // Validar la disponibilidad
-    if (!aulaSeleccionada) {
-      swal.fire('Error', 'El aula seleccionada no es válida.', 'error');
-      return;
-    }
+    // Validar si el aula seleccionada es diferente al aula actual
+    const aulaOriginal = seccionToUpdate.p_Numero_aula; // Aula actual de la sección
   
-    if (aulaSeleccionada.Secciones_disponibles <= 0) {
-      swal.fire('Error', 'No hay secciones disponibles en esta aula.', 'error');
-      return;
+    if (aulaSeleccionada && aulaSeleccionada.Numero_aula !== aulaOriginal) {
+        // Validar disponibilidad solo si el aula ha cambiado
+        if (aulaSeleccionada.Secciones_disponibles <= 0) {
+            swal.fire('Error', 'No hay secciones disponibles en esta aula.', 'error');
+            return;
+        }
     }
   
     try {
-      const response = await fetch('http://localhost:4000/api/secciones/actualizar_seccion', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(seccionToUpdate),
-      });
+        const response = await fetch('http://localhost:4000/api/secciones/actualizar_seccion', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(seccionToUpdate),
+        });
   
-      if (response.ok) {
-        swal.fire('Éxito', 'Sección actualizada correctamente.', 'success');
-        setModalUpdateVisible(false);
-        fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
-        fetchAulasPorEdificio(seccionToUpdate.Cod_edificio); // Actualizar las aulas disponibles
-      } else {
-        const errorData = await response.json();
-        swal.fire('Error', errorData.mensaje || 'No se pudo actualizar la sección.', 'error');
-      }
+        if (response.ok) {
+            swal.fire('Éxito', 'Sección actualizada correctamente.', 'success');
+            setModalUpdateVisible(false);
+            fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
+            fetchAulasPorEdificio(seccionToUpdate.Cod_edificio); // Actualizar las aulas disponibles
+        } else {
+            const errorData = await response.json();
+            swal.fire('Error', errorData.mensaje || 'No se pudo actualizar la sección.', 'error');
+        }
     } catch (error) {
-      console.error('Error al actualizar la sección:', error);
-      swal.fire('Error', 'Hubo un problema al actualizar la sección.', 'error');
+        console.error('Error al actualizar la sección:', error);
+        swal.fire('Error', 'Hubo un problema al actualizar la sección.', 'error');
     }
   };
   
@@ -664,12 +699,20 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
 
   // Función para abrir el modal de eliminación de una sección
   const openDeleteModal = (seccion) => {
-    setSeccionToDelete(seccion);
+    console.log('Sección seleccionada para eliminar:', seccion); // Verifica que `Cod_secciones` esté presente
+    setSeccionToDelete(seccion); // Asegúrate de que `seccion` contiene el campo Cod_secciones
     setModalDeleteVisible(true);
-  };
-
+  };  
+  
   // Función para manejar la eliminación de una sección
   const handleDeleteSeccion = async () => {
+    console.log('Sección a eliminar:', seccionToDelete); // Verifica el objeto completo
+  
+    if (!seccionToDelete.Cod_secciones) {
+      swal.fire('Error', 'No se ha seleccionado una sección válida para eliminar.', 'error');
+      return;
+    }
+  
     try {
       const response = await fetch(
         `http://localhost:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`,
@@ -680,12 +723,12 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         swal.fire('Eliminación exitosa', 'La sección ha sido eliminada correctamente.', 'success');
         setModalDeleteVisible(false);
   
-        // Recarga solo las secciones del período actual
         if (periodoSeleccionado) {
-          fetchSeccionesPeriodo(periodoSeleccionado);
+          fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones
         }
       } else {
-        swal.fire('Error', 'No se pudo eliminar la sección.', 'error');
+        const errorData = await response.json();
+        swal.fire('Error', errorData.mensaje || 'No se pudo eliminar la sección.', 'error');
       }
     } catch (error) {
       console.error('Error al eliminar la sección:', error);
@@ -693,6 +736,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     }
   };
   
+   
   // Función para manejar el cierre del modal y restablecer los estados
   const handleCloseModal = () => {
     swal.fire({
@@ -1244,25 +1288,25 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
 
       {/* Selección de Aula */}
       <CInputGroup className="mb-3">
-      <CInputGroupText>Aula</CInputGroupText>
-      <CFormSelect
-        value={seccionToUpdate.p_Numero_aula || ''}
-        onChange={(e) =>
-          setSeccionToUpdate({ ...seccionToUpdate, p_Numero_aula: e.target.value })
-        }
-        disabled={!seccionToUpdate.Cod_edificio}
-      >
-        <option value="">Seleccione un Aula</option>
-        {aulasFiltradas.map((aula) => (
-          <option
-            key={aula.Cod_aula}
-            value={aula.Numero_aula}
-            disabled={aula.Secciones_disponibles <= 0} // Deshabilitar aulas sin espacio
-          >
-            {`Aula ${aula.Numero_aula} - Secciones disponibles: ${aula.Secciones_disponibles}`}
-          </option>
-        ))}
-    </CFormSelect>
+        <CInputGroupText>Aula</CInputGroupText>
+        <CFormSelect
+            value={seccionToUpdate.p_Numero_aula || ''}
+            onChange={(e) =>
+                setSeccionToUpdate({ ...seccionToUpdate, p_Numero_aula: e.target.value })
+            }
+            disabled={!seccionToUpdate.Cod_edificio}
+        >
+            <option value="">Seleccione un Aula</option>
+            {aulasFiltradas.map((aula) => (
+                <option
+                    key={aula.Cod_aula}
+                    value={aula.Numero_aula}
+                    disabled={aula.Secciones_disponibles <= 0 && aula.Numero_aula !== seccionToUpdate.p_Numero_aula}
+                >
+                    {`Aula ${aula.Numero_aula} - Secciones disponibles: ${aula.Secciones_disponibles}`}
+                </option>
+            ))}
+        </CFormSelect>
     </CInputGroup>
 
       {/* Profesor */}

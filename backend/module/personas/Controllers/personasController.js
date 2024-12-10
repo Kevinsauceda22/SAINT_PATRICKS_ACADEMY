@@ -41,7 +41,7 @@ export const obtenerMunicipiosConDepartamento = async (req, res) => {
       const pool = await conectarDB(); // Conectar a la base de datos
   
       // Ejecutar el procedimiento almacenado GetMunicipiosConDepartamento
-      const [rows] = await pool.query('CALL P_Get_Municipios_Departamento()');
+      const [rows] = await pool.query('CALL P_Get_Municipios_Departamento()');  
   
       // Verificar si se encontraron resultados
       if (rows.length > 0) {

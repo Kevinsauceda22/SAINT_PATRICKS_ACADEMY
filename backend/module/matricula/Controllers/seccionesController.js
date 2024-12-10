@@ -106,21 +106,22 @@ export const obtenerAulasPorEdificio = async (req, res) => {
     const { Cod_edificio } = req.params;
   
     try {
-      const [rows] = await pool.query(
-        'SELECT Cod_aula, Numero_aula, Secciones_disponibles FROM tbl_aula WHERE Cod_edificio = ? AND Secciones_disponibles > 0',
-        [Cod_edificio]
-      );
+        const [rows] = await pool.query(
+            'SELECT Cod_aula, Numero_aula, Secciones_disponibles FROM tbl_aula WHERE Cod_edificio = ?',
+            [Cod_edificio]
+        );
   
-      if (!rows.length) {
-        return res.status(404).json({ mensaje: 'No hay aulas disponibles con espacio suficiente en este edificio.' });
-      }
+        if (!rows.length) {
+            return res.status(404).json({ mensaje: 'No hay aulas disponibles con espacio suficiente en este edificio.' });
+        }
   
-      res.json(rows);
+        // Asegúrate de devolver un objeto con la clave "aulas"
+        res.json({ aulas: rows });
     } catch (error) {
-      console.error('Error al obtener aulas por edificio:', error);
-      res.status(500).json({ mensaje: 'Error al obtener aulas por edificio', error: error.message });
+        console.error('Error al obtener aulas por edificio:', error);
+        res.status(500).json({ mensaje: 'Error al obtener aulas por edificio', error: error.message });
     }
-  };
+};
 
 // Proporciona opciones para seleccionar grados en la gestión de secciones.
 export const obtenerGrados = async (req, res) => {
@@ -298,14 +299,39 @@ export const actualizarSeccion = async (req, res) => {
             return res.status(400).json({ mensaje: "Todos los campos son requeridos." });
         }
 
-        // Validación para verificar si el número de aula existe y tiene disponibilidad
-        const [aula] = await pool.query('SELECT Secciones_disponibles, Cod_aula FROM tbl_aula WHERE Numero_aula = ?', [p_Numero_aula]);
-        if (!aula.length) {
-            return res.status(400).json({ mensaje: "El aula especificada no existe." });
+        // Consulta el aula original de la sección
+        const [seccionOriginal] = await pool.query(
+            `
+            SELECT a.Numero_aula 
+            FROM tbl_secciones s
+            JOIN tbl_aula a ON s.Cod_aula = a.Cod_aula
+            WHERE s.Cod_secciones = ?
+            `,
+            [p_Cod_secciones]
+        );
+
+
+        if (!seccionOriginal.length) {
+            return res.status(404).json({ mensaje: "La sección especificada no existe." });
         }
 
-        if (aula[0].Secciones_disponibles <= 0) {
-            return res.status(400).json({ mensaje: "El aula seleccionada no tiene secciones disponibles." });
+        const aulaOriginal = seccionOriginal[0].Numero_aula;
+
+        // Si el aula no ha cambiado, omite la validación de disponibilidad
+        if (aulaOriginal !== p_Numero_aula) {
+            // Validación para verificar si el número de aula existe y tiene disponibilidad
+            const [aula] = await pool.query(
+                'SELECT Secciones_disponibles, Cod_aula FROM tbl_aula WHERE Numero_aula = ?',
+                [p_Numero_aula]
+            );
+
+            if (!aula.length) {
+                return res.status(400).json({ mensaje: "El aula especificada no existe." });
+            }
+
+            if (aula[0].Secciones_disponibles <= 0) {
+                return res.status(400).json({ mensaje: "El aula seleccionada no tiene secciones disponibles." });
+            }
         }
 
         // Llamar al procedimiento almacenado para actualizar la sección
@@ -314,7 +340,6 @@ export const actualizarSeccion = async (req, res) => {
             [p_Cod_secciones, p_Nombre_seccion, p_Numero_aula, p_Nombre_grado, p_Cod_Profesor, p_Cod_periodo_matricula]
         );
 
-        // Actualizar la lista de aulas en la vista de frontend
         return res.status(200).json({ mensaje: 'Sección actualizada correctamente.', data: result });
     } catch (error) {
         console.error('Error al actualizar la sección:', error);
@@ -327,21 +352,51 @@ export const actualizarSeccion = async (req, res) => {
 
 // Controlador para eliminar una sección
 export const eliminarSeccion = async (req, res) => {
-    const { Cod_seccion } = req.params;
+    const { Cod_secciones } = req.params;
+    console.log('Cod_secciones recibido en el backend:', Cod_secciones); // Verifica el valor recibido
+  
+    try {
+      if (!Cod_secciones || isNaN(Cod_secciones)) {
+        return res.status(400).json({ mensaje: 'El parámetro Cod_secciones es inválido.' });
+      }
+  
+      const [result] = await pool.query('CALL sp_eliminar_secciones(?)', [Cod_secciones]);
+  
+      if (result.affectedRows > 0) {
+        return res.status(200).json({ mensaje: 'Sección eliminada correctamente.' });
+      } else {
+        return res.status(404).json({ mensaje: 'No se encontró la sección especificada.' });
+      }
+    } catch (error) {
+      console.error('Error al eliminar la sección:', error);
+  
+      if (error.sqlState === '45000') {
+        return res.status(400).json({ mensaje: error.message });
+      }
+  
+      return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};  
+
+// Controlador para obtener el aula en el modal de actualizar
+export const obtenerAulaPorNumero = async (req, res) => {
+    const { numero_aula } = req.params;
 
     try {
-        const [result] = await pool.query('CALL sp_eliminar_secciones(?)', [Cod_seccion]);
+        if (!numero_aula) {
+            return res.status(400).json({ mensaje: "El número de aula es requerido." });
+        }
 
-        if (result.affectedRows > 0) {
-            return res.status(200).json({ mensaje: 'Sección eliminada correctamente.' });
-        } else {
-            return res.status(404).json({ mensaje: 'No se encontró la sección especificada.' });
+        const [aula] = await pool.query('SELECT * FROM tbl_aula WHERE Numero_aula = ?', [numero_aula]);
+
+        if (!aula.length) {
+            console.error(`Aula no encontrada: ${numero_aula}`);
+            return res.status(404).json({ mensaje: "El aula especificada no existe." });
         }
+
+        return res.status(200).json(aula[0]);
     } catch (error) {
-        console.error('Error al eliminar la sección:', error);
-        if (error.sqlState === '45000') {
-            return res.status(400).json({ mensaje: error.message });
-        }
+        console.error('Error al obtener el aula:', error);
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };

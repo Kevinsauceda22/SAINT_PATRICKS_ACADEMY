@@ -34,7 +34,7 @@ import {
   CDropdownMenu,
   CDropdownItem
 } from '@coreui/react';
-
+import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
@@ -171,7 +171,7 @@ const handleChange = (event) => {
     return false;
   };
 
-    // Función para controlar la entrada de texto en los campos de nombre del edificio
+    // Función para controlar la entrada de texto en los campos
     const handleTipoRelacionInputChange = (e, setFunction) => {
       let value = e.target.value;
   
@@ -385,25 +385,154 @@ const handleChange = (event) => {
     setModalDeleteVisible(true);
   };
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1);
-  };
+  {/**************************************************FILTRADO Y BUSQUEDA DE DATOS********************************************************/}
 
-  const filteredTipoRelacion = tipoRelacion.filter((tipoRelacion) => 
-    tipoRelacion.tipo_relacion &&
-    tipoRelacion.tipo_relacion.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+/**************************************************BUSCADOR********************************************************/
+const handleSearch = (event) => {
+  setSearchTerm(event.target.value);
+  setCurrentPage(1);
+};
+
+const filteredTipoRelacion = tipoRelacion.filter((tipoRelacion) => 
+  tipoRelacion.tipo_relacion &&
+  tipoRelacion.tipo_relacion.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+const indexOfLastRecord = currentPage * recordsPerPage;
+const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+const currentRecords = filteredTipoRelacion.slice(indexOfFirstRecord, indexOfLastRecord);
+
+const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredTipoRelacion.length / recordsPerPage)) {
+    setCurrentPage(pageNumber);
+  }
+};
+
+
+/**************************************************REPORTERIA DE PDF********************************************************/
+const ReporteRelacionesPDF = () => {
+  const doc = new jsPDF('p', 'mm', 'letter'); 
   
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredTipoRelacion.slice(indexOfFirstRecord, indexOfLastRecord);
+  if (!filteredTipoRelacion || filteredTipoRelacion.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
 
-  const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredTipoRelacion.length / recordsPerPage)) {
-      setCurrentPage(pageNumber);
-    }
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Relaciones', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
+
+    // **Usar filteredTipoRelacion en lugar de tipoRelacion**
+    const tableRows = filteredTipoRelacion.map((tipo, index) => ({
+      index: (index + 1).toString(),
+      tipo_relacion: tipo.tipo_relacion?.toUpperCase() || 'N/D',
+    }));
+
+    const columnWidths = {
+      index: 20, // Ancho de la columna #
+      tipo_relacion: 100 // Ancho de la columna "Tipo Relación"
+    };
+    const tableWidth = columnWidths.index + columnWidths.tipo_relacion;
+
+    doc.autoTable({
+      startY: 65,
+      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrado de la tabla
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Tipo de Relación', dataKey: 'tipo_relacion' },
+      ],
+      body: tableRows,
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9, 
+        halign: 'center',
+      },
+      styles: {
+        fontSize: 7, 
+        cellPadding: 4, 
+      },
+      columnStyles: {
+        index: { cellWidth: 10 },
+        tipo_relacion: { cellWidth: 90 },
+      },
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        const footerY = doc.internal.pageSize.height - 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      },
+    });
+
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Relaciones</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:20px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Relaciones.pdf'; a.click();">
+              Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
   };
+
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
+};
 
   const exportToExcel = () => {
     // Convierte los datos de tipoRelacion a formato de hoja de cálculo
@@ -424,89 +553,6 @@ const handleChange = (event) => {
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'reporte_relacion.xlsx'); // Descarga el archivo Excel
   };
-  
-
-  const ReporteTipoRelaciones = () => {
-    const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-  
-    const img = new Image();
-    img.src = logo;
-  
-    img.onload = () => {
-        // Insertar el logo
-        doc.addImage(img, 'PNG', 10, 10, 20, 20); // Reducir el logo y ajustarlo al espacio
-  
-        // Cabecera del reporte
-        doc.setTextColor(22, 160, 133);
-        doc.setFontSize(14); // Tamaño de fuente reducido
-        doc.text("SAINT PATRICK'S ACADEMY", 35, 15, { align: 'left' });
-        doc.setFontSize(10);
-        doc.text('Reporte de Personas', 35, 22, { align: 'left' });
-  
-        // Detalles de la institución
-        doc.setFontSize(8);
-        doc.setTextColor(68, 68, 68);
-        doc.text('Casa Club del periodista, Colonia del Periodista', 35, 30, { align: 'left' });
-        doc.text('Teléfono: (504) 2234-8871', 35, 35, { align: 'left' });
-        doc.text('Correo: info@saintpatrickacademy.edu', 35, 40, { align: 'left' });
-  
-        // Tabla principal
-        doc.autoTable({
-          head: [['#', 'Tipo Relacion']], // Cabecera de la tabla
-          body: tipoRelacion.map((tipoRelacion, index) => [
-            index + 1,
-            tipoRelacion.tipo_relacion.toUpperCase(),
-          ]), // Datos que se mostrarán en la tabla
-            styles: {
-                fontSize: 6, // Reducir tamaño de fuente
-                textColor: [68, 68, 68],
-                cellPadding: 2, // Espaciado compacto
-            },
-            headStyles: {
-                fillColor: [22, 160, 133],
-                textColor: [255, 255, 255],
-                fontSize: 7,
-                fontStyle: 'bold',
-                halign: 'center', // Centrar el texto
-            },
-            alternateRowStyles: {
-                fillColor: [240, 248, 255], // Colores alternados para filas
-            },
-            columnStyles: {
-                0: { cellWidth: 15 }, // Ajustar ancho de columna #
-                1: { cellWidth: 20 }, // DNI
-            },
-            margin: { top: 10, right: 10, bottom: 10, left: 5 }, // Pegado a la izquierda
-            didDrawPage: function (data) {
-                // Pie de página
-                doc.setFontSize(7);
-                doc.setTextColor(100);
-  
-                // Agregar fecha y hora
-                const now = new Date();
-                const date = now.toLocaleDateString('es-HN', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                });
-                const time = now.toLocaleTimeString('es-HN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                });
-  
-                doc.text(`Fecha y hora de generación: ${date}, ${time}`, 10, pageHeight - 10);
-                doc.text(`Página ${data.pageNumber}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
-            },
-        });
-  
-        // Guardar el PDF
-        doc.save('Reporte_personas.pdf');
-    };
-  };
-
   
     
     // Verificar permisos
@@ -545,7 +591,7 @@ const handleChange = (event) => {
           </CDropdownToggle>
           <CDropdownMenu>
             <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
+            <CDropdownItem onClick={ReporteRelacionesPDF}>Descargar en PDF</CDropdownItem>
           </CDropdownMenu>
         </CDropdown>
       </CCol>

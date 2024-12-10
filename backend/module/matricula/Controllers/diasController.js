@@ -1,8 +1,5 @@
-
-
 import conectarDB from '../../../config/db.js';
 const pool = await conectarDB();
-
 
 export const obtenerDias = async (req, res) => {
     const { Cod_dias } = req.params; // Extraemos el parámetro de la URL
@@ -36,7 +33,6 @@ export const obtenerDias = async (req, res) => {
     }
 };
 
-
 // Controlador para crear un día
 export const crearDia = async (req, res) => {
     const { p_dias, p_prefijo_dia } = req.body; // Extraemos 'p_dias' y 'p_prefijo_dia' del cuerpo de la petición
@@ -67,7 +63,6 @@ export const crearDia = async (req, res) => {
         return res.status(500).json({ mensaje: "Error al insertar el día." });
     }
 };
-
 
 // Controlador para actualizar un día
 export const actualizarDia = async (req, res) => {
@@ -127,19 +122,3 @@ export const eliminarDia = async (req, res) => {
         return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription, cilArrowLeft } from '@coreui/icons'
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilArrowLeft } from '@coreui/icons'
 import swal from 'sweetalert2' // Importar SweetAlert
 import axios from 'axios'
 import { jsPDF } from 'jspdf' // Para generar archivos PDF
@@ -38,6 +38,7 @@ import {
   CDropdownMenu,
   CDropdownItem,
 } from '@coreui/react'
+import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
@@ -128,6 +129,18 @@ const ListaEstructura = () => {
       cargarEstructurasFamiliares();
     }
   }, [modalVisible, personaSeleccionada]);
+
+  useEffect(() => {
+    if (modalUpdateVisible === false && personaSeleccionada) {
+      const cargarEstructurasFamiliares = async () => {
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const datos = await respuesta.json();
+        setEstructurasFamiliares(datos);
+      };
+      cargarEstructurasFamiliares();
+    }
+  }, [modalUpdateVisible, personaSeleccionada]);
+  
   
 {/* -------------------------------------------------------------------------------------------------------------------------------------------- */}
 
@@ -335,7 +348,7 @@ const handleSeleccionarPersona = (persona) => {
   
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------- */}
 
-{/* Función para actualizar estructura */}
+{/*************************************************Función para actualizar estructura*******************************************************/}
 const handleUpdateEstructura = async () => {
 
   try {
@@ -345,7 +358,7 @@ const handleUpdateEstructura = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        descripcion: descripcionCapitalizado,
+        descripcion: estructuraToUpdate.descripcion,
         cod_persona_padre: estructuraToUpdate.cod_persona_padre,
         cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante,
         cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion,
@@ -383,9 +396,11 @@ const handleUpdateEstructura = async () => {
 
   {/* Fin de la función para actualizar estructura */}
 
-  const resetEstructuraToUpdate = () => {
-    setEstructuraToUpdate({ descripcion: '', cod_persona_padre: '', cod_persona_estudiante: '', cod_tipo_relacion: ''  });
-  };
+  useEffect(() => {
+    fetchEstructuraFamiliar();
+  }, []);
+
+
 
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -498,39 +513,199 @@ const disableCopyPaste = (e) => {
 
 
 {/*******************************************FUNCIONES DE FILTRADO, BUSQUEDA Y REPORTERIA************************************************/}
-  // Función de búsqueda
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1); // Volver a la primera página cuando se cambia el término de búsqueda
+
+{/*******************************FUNCION DE BUSQUEDA*************************************/}
+
+  const filteredRecords = estructurasFamiliares.filter(estructura => {
+    const estudiante = personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A';
+    const padreTutor = personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A';
+    const tipoRelacionTexto = tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/A';
+    const descripcion = estructura.descripcion?.toUpperCase() || 'N/A';
+
+    const searchText = searchTerm.toUpperCase(); // Convertir la búsqueda a mayúsculas para hacerla insensible a mayúsculas/minúsculas
+
+    // Verifica si el término de búsqueda se encuentra en alguno de los campos
+    return estudiante.includes(searchText) 
+      || padreTutor.includes(searchText) 
+      || tipoRelacionTexto.includes(searchText) 
+      || descripcion.includes(searchText);
+  });
+
+  // Paginación de los registros filtrados
+const currentRecords = filteredRecords.slice(
+  (currentPage - 1) * recordsPerPage,
+  currentPage * recordsPerPage
+);
+
+const handleSearch = (e) => {
+  const term = e.target.value; // Obtener el valor del input de búsqueda
+  setSearchTerm(term); // Actualiza el término de búsqueda
+}
+
+/*******************************FUNCION DE REPORTERIA*************************************/
+// Función para generar reporte PDF
+const ReporteEstructuraPDF = () => {
+  const doc = new jsPDF('p', 'mm', 'letter'); //
+
+  if (!filteredRecords || filteredRecords.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Estructura Familiar', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
+
+    // Tabla de datos
+    const tableRows = filteredRecords.map((estructura, index) => ({
+      index: (index + 1).toString(),
+      estudiante: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+      padre: personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+      tipo_relacion: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+      descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
+    }));
+
+    doc.autoTable({
+      startY: 65,
+      startY: (pageHeight - tableRows.length * 10) / 2, // Centrado de la tabla
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Estudiante', dataKey: 'estudiante' },
+        { header: 'Padre/Tutor', dataKey: 'padre' },
+        { header: 'Tipo de Relación', dataKey: 'tipo_relacion' },
+        { header: 'Descripción', dataKey: 'descripcion' },
+      ],
+      body: tableRows,
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9, // Aumentado el tamaño de la fuente
+        halign: 'center',
+      },
+      styles: {
+        fontSize: 7, // Aumentado el tamaño de la fuente
+        cellPadding: 4, // Aumentado el relleno de las celdas
+      },
+      columnStyles: {
+        index: { cellWidth: 10 },
+        estudiante: { cellWidth: 75 },
+        padre: { cellWidth: 75 },
+        tipo_relacion: { cellWidth: 40 },
+        descripcion: { cellWidth: 60 },
+      },
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        // Pie de página
+        const footerY = doc.internal.pageSize.height - 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      },
+    });
+
+    // Convertir PDF en Blob
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    // Crear ventana con visor
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Estructura Familiar</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:20px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Estructura_Familiar.pdf'; a.click();">
+              Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
   };
 
-  // Filtrado de estructura familiar
-const searchEstructuraFamiliar = (searchTerm) => {
-  return estructuraFamiliar.filter((estructura) => {
-    const tipoRelacionTexto = tipoRelacion.find((tipo) => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion.toUpperCase() || 'N/D';
-    const padreTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_padre)?.fullName.toUpperCase() || 'N/D';
-    const estudianteTexto = personas.find((persona) => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName.toUpperCase() || 'N/D';
-    const descripcionTexto = estructura.descripcion?.toUpperCase() || 'N/D';
-
-    // Aquí falta el return de la condición del filtro
-    return tipoRelacionTexto.includes(searchTerm.toUpperCase()) ||
-           padreTexto.includes(searchTerm.toUpperCase()) ||
-           estudianteTexto.includes(searchTerm.toUpperCase()) ||
-           descripcionTexto.includes(searchTerm.toUpperCase());
-  });
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
 };
 
-  const filteredEstructuraFamiliar = estructuraFamiliar.filter(
-    (estructura) =>
-      estructura.descripcion?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      estructura.cod_persona_estudiante?.toString().includes(searchTerm) || // Assuming cod_persona_estudiante is a number
-      estructura.cod_persona_padre?.toString().includes(searchTerm) ||
-      estructura.cod_tipo_relacion?.toString().includes(searchTerm),
-  )
+  
+  
+  // Función para generar reporte Excel
+  const ReporteEstructuraExcel = () => {
+    if (!filteredRecords || filteredRecords.length === 0) {
+      alert('No hay datos para exportar.');
+      return;
+    }
+  
+    // Crear los datos para la tabla
+    const tableRows = filteredRecords.map((estructura, index) => ({
+      '#': (index + 1).toString(),
+      Estudiante: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+      'Padre/Tutor': personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+      'Tipo de Relación': tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+      Descripción: estructura.descripcion?.toUpperCase() || 'N/D',
+    }));
+  
+    // Crear un libro de trabajo (workbook)
+    const ws = XLSX.utils.json_to_sheet(tableRows);
+  
+    // Crear el libro (workbook) y agregarle la hoja (worksheet)
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Reporte Estructura Familiar');
+  
+    // Generar el archivo Excel y descargarlo
+    XLSX.writeFile(wb, 'Reporte_Estructura_Familiar.xlsx');
+  };
+  
 
-  const indexOfLastRecord = currentPage * recordsPerPage
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage
-  const currentRecords = filteredEstructuraFamiliar.slice(indexOfFirstRecord, indexOfLastRecord)
+{/******************************************************************************************************************************************/}  
 
 {/* -------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -571,12 +746,15 @@ return (
       >
         <CIcon icon={cilPlus} /> Nuevo
       </CButton>
-  <CDropdown>
-    <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px' }}>
-      Reportes
-    </CDropdownToggle>
-    <CDropdownMenu></CDropdownMenu>
-  </CDropdown>
+        <CDropdown>
+          <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
+            Reporte
+          </CDropdownToggle>
+          <CDropdownMenu>
+          <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
+          <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
+          </CDropdownMenu>
+        </CDropdown>
 </CCol>
 
       </CRow>
@@ -621,99 +799,95 @@ return (
       </div>
       
       <div className="table-container">
-      <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
-  <CTable striped>
-    <CTableHead>
-      <CTableRow>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
-        {rolActual === 'ESTUDIANTE' ? (
-          <>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
-          </>
-        ) : (
-          <>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
-            <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
-          </>
-        )}
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo Relación</CTableHeaderCell>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-    <CTableBody>
-      {estructurasFamiliares.length > 0 ? (
-        estructurasFamiliares.map((estructura, index) => (
-          <CTableRow key={estructura.cod_estructura}>
-            <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{index + 1}</CTableDataCell>
-            {rolActual === 'ESTUDIANTE' ? (
-              <>
-                {/* Estudiante */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {`${personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}`}
-                </CTableDataCell>
-                {/* Padre/Tutor */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
-                </CTableDataCell>
-              </>
-            ) : (
-              <>
-                {/* Padre/Tutor */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
-                </CTableDataCell>
-                {/* Estudiante */}
-                <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-                  {`${personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}`}
-                </CTableDataCell>
-              </>
-            )}
-            {/* Tipo de Relación */}
-            <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-              {tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/A'}
-            </CTableDataCell>
-            {/* Descripción */}
-            <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
-              {estructura.descripcion.toUpperCase()}
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              <div className="d-flex justify-content-center">
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
+          <CTable striped>
+            <CTableHead>
+              <CTableRow>
+                <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
+                {rolActual === 'ESTUDIANTE' ? (
+                  <>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
+                  </>
+                ) : (
+                  <>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
+                  </>
+                )}
+                <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo Relación</CTableHeaderCell>
+                <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
+                <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+              </CTableRow>
+            </CTableHead>
 
+            <CTableBody>
+              {currentRecords.length > 0 ? (
+                currentRecords.map((estructura, index) => (
+                  <CTableRow key={estructura.cod_estructura}>
+                    <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                      {(currentPage - 1) * recordsPerPage + index + 1}
+                    </CTableDataCell>
 
-              {canUpdate && (
-                <CButton
-                  color="warning"
-                  onClick={() => handleOpenUpdateModal(estructura)}
-                  style={{ marginRight: '10px' }}
-                >
-                  <CIcon icon={cilPen} />
-                </CButton>
+                    {rolActual === 'ESTUDIANTE' ? (
+                      <>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                      </>
+                    ) : (
+                      <>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                          {personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}
+                        </CTableDataCell>
+                      </>
+                    )}
 
+                    <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                      {tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/A'}
+                    </CTableDataCell>
+
+                    <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+                      {estructura.descripcion.toUpperCase()}
+                    </CTableDataCell>
+
+                    <CTableDataCell className="text-center">
+                      <div className="d-flex justify-content-center">
+                        {canUpdate && (
+                          <CButton
+                            color="warning"
+                            onClick={() => handleOpenUpdateModal(estructura)}
+                            style={{ marginRight: '10px' }}
+                          >
+                            <CIcon icon={cilPen} />
+                          </CButton>
+                        )}
+                        {canDelete && (
+                          <CButton color="danger" onClick={() => openDeleteModal(estructura)}>
+                            <CIcon icon={cilTrash} />
+                          </CButton>
+                        )}
+                      </div>
+                    </CTableDataCell>
+                  </CTableRow>
+                ))
+              ) : (
+                <CTableRow>
+                  <CTableDataCell colSpan="6" className="text-center">
+                    No hay estructuras familiares para esta persona.
+                  </CTableDataCell>
+                </CTableRow>
               )}
-
-              
-{canDelete && (
-                <CButton color="danger" onClick={() => openDeleteModal(estructura)}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
-        )}
-
-
-              </div>
-            </CTableDataCell>
-          </CTableRow>
-        ))
-      ) : (
-        <CTableRow>
-          <CTableDataCell colSpan="6" className="text-center">No hay estructuras familiares para esta persona.</CTableDataCell>
-        </CTableRow>
-      )}
-    </CTableBody>
-  </CTable>
-</div>
-</div>
+            </CTableBody>
+          </CTable>
+        </div>
+      </div>
 
 {/****************************************************PAGINACION*****************************************************************/}
 
@@ -896,8 +1070,18 @@ return (
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalVisible(false)}>Cerrar</CButton>
-    <CButton color="primary" onClick={handleCreateEstructura}>Guardar</CButton>
+          <CButton
+            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+            onClick={() => setModalVisible(false)}
+          >
+            Cancelar
+          </CButton>
+          <CButton
+            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+            onClick={handleCreateEstructura} // Llamar a la función para actualizar los datos
+          >
+            <CIcon icon={cilSave} /> Guardar
+          </CButton>
   </CModalFooter>
 </CModal>
 {/* Fin del modal de agregar estructura familiar */}
@@ -924,7 +1108,7 @@ return (
       {/* Campo de búsqueda para persona */}
       <div className="mb-3">
         <CInputGroup className="mb-3">
-          <CInputGroupText>Buscar Persona</CInputGroupText>
+        <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
           <CFormInput
             type="text"
             value={buscadorRelacion} // Asegura que use este estado
@@ -1012,8 +1196,18 @@ return (
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalUpdateVisible(false)}>Cerrar</CButton>
-    <CButton color="primary" onClick={handleUpdateEstructura}>Guardar</CButton>
+  <CButton
+            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+            onClick={() => setModalUpdateVisible(false)}
+          >
+            Cancelar
+          </CButton>
+          <CButton
+            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+            onClick={handleUpdateEstructura} // Llamar a la función para actualizar los datos
+          >
+            <CIcon icon={cilPen} /> Actualizar
+          </CButton>
   </CModalFooter>
 </CModal>
 
@@ -1027,8 +1221,7 @@ return (
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          ¿Estás seguro de que deseas eliminar la estructura familiar con el código{' '}
-          {estructuraToDelete.Cod_genealogia}?
+          ¿Estás seguro de que deseas eliminar la estructura familiar?
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>

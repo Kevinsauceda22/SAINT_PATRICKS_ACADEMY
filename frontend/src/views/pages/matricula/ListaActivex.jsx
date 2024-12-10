@@ -41,7 +41,6 @@ const ListaActividades = () => {
   const [secciones, setSecciones] = useState([]); // Almacena las secciones disponibles para selección
   const [modalVisible, setModalVisible] = useState(false); // Controla la visibilidad del modal de creación
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Controla la visibilidad del modal de actualización
-  const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Controla la visibilidad del modal de eliminación
   const [nuevaActividad, setNuevaActividad] = useState({ Nombre: '', Descripcion: '', Hora_inicio: '', Hora_final: '', Nombre_seccion: '', Fecha: ''}); // Datos de la actividad nueva
   const [actividadToUpdate, setActividadToUpdate] = useState({}); // Datos de la actividad a actualizar
   const [actividadToDelete, setActividadToDelete] = useState({}); // Datos de la actividad a eliminar
@@ -51,9 +50,7 @@ const ListaActividades = () => {
   const [searchField, setSearchField] = useState("Nombre_actividad"); // Campo predeterminado
   const [horaInicioOriginal, setHoraInicioOriginal] = useState(null); // Estado para almacenar las horas originales
   const [horaFinalOriginal, setHoraFinalOriginal] = useState(null);
-  const [motivoCancelacion, setMotivoCancelacion] = useState(""); // Estado para almacenar el motivo
 
-  const [mostrarMotivo, setMostrarMotivo] = useState(false); // Control de visibilidad del campo de motivo
 
 
   // Cargar actividades al inicio
@@ -75,36 +72,33 @@ const ListaActividades = () => {
       console.error('Error al obtener las actividades extracurriculares:', error);
     }
   };
-
-  const fetchSecciones = async (Cod_secciones = 0) => { // Valor predeterminado: 0
+  const fetchSecciones = async () => {
     try {
-        const url = `http://localhost:4000/api/obtener_secciones/${Cod_secciones}`;
-        console.log(`Fetching: ${url}`); // Log para depuración
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            console.error(`HTTP Error: ${response.status}`);
-            throw new Error('Error al obtener las secciones');
-        }
-
-        const data = await response.json();
-        console.log('Datos obtenidos del servidor:', data);
-
-        if (!Array.isArray(data)) {
-            throw new Error('La respuesta del servidor no es un array');
-        }
-
+      const response = await fetch('http://localhost:4000/api/secciones/periodo-activo');
+      const data = await response.json();
+  
+      console.log('Respuesta del servidor:', data); // Verifica los datos recibidos
+  
+      if (response.ok) {
         const seccionesConGrado = data.map((seccion) => ({
-            ...seccion,
-            SeccionGrado: `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`, // Concatenar sección y grado
+          ...seccion,
+          SeccionGrado: `${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`,
         }));
-
-        console.log('Secciones procesadas:', seccionesConGrado);
+        console.log('Secciones procesadas:', seccionesConGrado); // Verifica las secciones procesadas
         setSecciones(seccionesConGrado);
+      } else {
+        console.error('Error al obtener las secciones:', data.message);
+        setSecciones([]); // Vaciar el estado si no hay secciones
+      }
     } catch (error) {
-        console.error('Error en fetchSecciones:', error.message);
+      console.error('Error al obtener las secciones:', error);
     }
-};
+  };
+   
+  // Llama a fetchSecciones cuando el componente se monte
+  useEffect(() => {
+    fetchSecciones();
+  }, []);
   
 
   // Cargar secciones al inicio
@@ -188,6 +182,10 @@ const ListaActividades = () => {
 // Función para manejar el cambio de estado
 const handleEstadoChange = async (idActividad, estadoActual) => {
   const nuevoEstado = estadoActual === 'Activa' ? 'Cancelada' : 'Activa'; // Determina el nuevo estado
+
+
+  console.log('ID Actividad:', idActividad);
+  console.log('Estado nuevo:', nuevoEstado);
 
   // Si el nuevo estado es 'Cancelada', mostramos el campo para ingresar el motivo
   if (nuevoEstado === 'Cancelada') {
@@ -393,7 +391,7 @@ const generatePDF = () => {
     // Subtítulo
     doc.setFontSize(12);
     doc.setTextColor(0);
-    doc.text('Listado Detallado de Actividades', pageWidth / 2, 65, { align: 'center' });
+    doc.text('Listado de Actividades', pageWidth / 2, 65, { align: 'center' });
 
     // Tabla de datos
     const tableColumn = [
@@ -408,7 +406,7 @@ const generatePDF = () => {
     ];
 
     const tableRows = currentRecords.map((actividad, index) => {
-      const seccion = secciones.find((s) => s.Nombre_seccion === actividad.Nombre_seccion); // Buscar sección
+      const seccion = secciones.find((s) => s.Cod_secciones === actividad.Codigo_seccion);
       return [
         { content: (index + 1 + (currentPage - 1) * recordsPerPage).toString(), styles: { halign: 'center' } }, // Centrado
         { content: (actividad.Nombre_actividad || 'Sin nombre').toUpperCase(), styles: { halign: 'left' } }, // Izquierda
@@ -582,91 +580,95 @@ const handleCreateActividad = async () => {
   }
 };
 
-  // Función para actualizar actividad
-  const handleUpdateActividad = async () => {
-    const { Fecha, Codigo_actividad, Nombre_actividad, Descripcion, Hora_inicio, Hora_final, Nombre_seccion } = actividadToUpdate;
-    // Validar que todos los campos requeridos tengan valores
-    if (!Nombre_actividad || !Descripcion || !Hora_inicio || !Hora_final || !Nombre_seccion || !Fecha) {
-      swal.fire('Error', 'Todos los campos son requeridos.', 'error');
-      return;
-    }
-   
-    // Validar traslape de actividades
-    if (verificarTraslape(actividadToUpdate)) {
-      swal.fire({ icon: 'warning', title: 'Traslape de actividades', text: 'Error. La actividad ya existe' });
-      return;
-    }
-    // Si no hay traslape, proceder con la actualización
-    try {
-      const response = await fetch('http://localhost:4000/api/actividades/extracurriculares', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p_Cod_actividad: Codigo_actividad,
-          p_Nombre: Nombre_actividad,
-          p_Descripcion: Descripcion,
-          p_Hora_inicio: Hora_inicio,
-          p_Hora_final: Hora_final,
-          p_Nombre_seccion: Nombre_seccion,
-          p_Fecha: Fecha,
-        }),
-      });
-      if (response.ok) {
-        swal.fire({ icon: 'success', title: 'Actualización exitosa', text: '¡Éxito!, La actividad ha sido actualizada correctamente.' });
-        setModalUpdateVisible(false);
-        fetchActividades();
-        resetActividadToUpdate();
-      } else {
-        const errorData = await response.json();
-        swal.fire({ icon: 'error', title: 'Error', text: `Error, no se pudo actualizar la actividad. Detalle: ${errorData.mensaje || 'Error en el servidor'}` });
-      }
-    } catch (error) {
-      console.error('Error, hubo un problema al actualizar la actividad:', error);
-      swal.fire({ icon: 'error', title: 'Error', text: 'Error, hubo un problema al actualizar la actividad.' });
-    }
-  };
+const handleUpdateActividad = async () => {
+  const {
+    Fecha,
+    Codigo_actividad,
+    Nombre_actividad,
+    Descripcion,
+    Hora_inicio,
+    Hora_final,
+    Cod_secciones, // Ahora usamos Cod_secciones
+  } = actividadToUpdate;
 
-  // Función para eliminar actividad
-  const handleDeleteActividad = async () => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/actividades/extracurriculares/${encodeURIComponent(actividadToDelete.Cod_actividades_extracurriculares)}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (response.ok) {
-        // Actualiza el estado de actividades eliminando el elemento sin hacer un nuevo fetch
-        setActividades((actividades) =>
-          actividades.filter((actividad) => actividad.Cod_actividades_extracurriculares !== actividadToDelete.Cod_actividades_extracurriculares)
-        );
-        // Cierra el modal y muestra la alerta de éxito
-        setModalDeleteVisible(false);
-        swal.fire({ icon: 'success', title: 'Eliminación exitosa', text: 'La actividad ha sido eliminada correctamente.' });
-      } else {
-        swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar la actividad.' });
-      }
-    } catch (error) {
-      console.error('Error al eliminar la actividad:', error);
-    }
-  };
+  // Validar que todos los campos requeridos tengan valores
+  if (!Nombre_actividad || !Descripcion || !Hora_inicio || !Hora_final || !Cod_secciones || !Fecha) {
+    swal.fire('Error', 'Todos los campos son requeridos.', 'error');
+    return;
+  }
 
-  // Función para abrir modal de actualización
+  // Validar traslape de actividades
+  if (verificarTraslape(actividadToUpdate)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Traslape de actividades',
+      text: 'Error. La actividad ya existe',
+    });
+    return;
+  }
+
+  // Si no hay traslape, proceder con la actualización
+  try {
+    const response = await fetch('http://localhost:4000/api/actividades/extracurriculares', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        p_Cod_actividad: Codigo_actividad,
+        p_Nombre: Nombre_actividad,
+        p_Descripcion: Descripcion,
+        p_Hora_inicio: Hora_inicio,
+        p_Hora_final: Hora_final,
+        p_Cod_secciones: Cod_secciones, // Usamos Cod_secciones directamente
+        p_Fecha: Fecha,
+      }),
+    });
+
+    if (response.ok) {
+      swal.fire({
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: '¡Éxito!, La actividad ha sido actualizada correctamente.',
+      });
+      setModalUpdateVisible(false);
+      fetchActividades();
+      resetActividadToUpdate();
+    } else {
+      const errorData = await response.json();
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Error, no se pudo actualizar la actividad. Detalle: ${
+          errorData.mensaje || 'Error en el servidor'
+        }`,
+      });
+    }
+  } catch (error) {
+    console.error('Error, hubo un problema al actualizar la actividad:', error);
+    swal.fire({ icon: 'error', title: 'Error', text: 'Error, hubo un problema al actualizar la actividad.' });
+  }
+};
+
   const openUpdateModal = (actividad) => {
-    // Asegúrate de que la fecha esté en el formato yyyy-mm-dd para el campo de fecha
-    const fechaFormateada = actividad.Fecha ? actividad.Fecha.split('T')[0] : ''; // Si la fecha tiene formato de fecha y hora, se separa la parte de la fecha
+    const fechaFormateada = actividad.Fecha ? actividad.Fecha.split('T')[0] : '';
+  
     setActividadToUpdate({
       ...actividad,
-      Fecha: fechaFormateada, // Asigna la fecha formateada al estado
+      Fecha: fechaFormateada,
+      Cod_secciones: actividad.Codigo_seccion, // Asigna Cod_secciones desde la actividad
+      Nombre_seccion: actividad.Nombre_seccion,
+      Nombre_grado: actividad.Nombre_grado,
     });
-    setHoraInicioOriginal(actividad.Hora_inicio); // Guarda la hora de inicio original
-    setHoraFinalOriginal(actividad.Hora_final);   // Guarda la hora de finalización original
+  
+    setHoraInicioOriginal(actividad.Hora_inicio);
+    setHoraFinalOriginal(actividad.Hora_final);
     setModalUpdateVisible(true);
   };
+  
+  
+  
+  
 
-  // Función para abrir modal de eliminación
-  const openDeleteModal = (actividad) => {
-    setActividadToDelete(actividad);
-    setModalDeleteVisible(true);
-  };
+  
 
   // Actividades filtradas según el término de búsqueda y el campo seleccionado
   const filteredActividades = actividades
@@ -836,7 +838,7 @@ const handleCreateActividad = async () => {
             {currentRecords.map((actividad, index) => {
               const rowIndex = indexOfFirstRecord + index + 1;
               const seccion = secciones.find(
-                (s) => s.Cod_secciones === actividad.Cod_secciones
+                (s) => s.Cod_secciones === actividad.Codigo_seccion
               );          
               return (
                 <CTableRow key={actividad.Cod_actividades_extracurriculares}>
@@ -888,34 +890,29 @@ const handleCreateActividad = async () => {
                         <CIcon icon={cilPen} style={{ fontSize: '12px' }} /> {/* Ícono más pequeño */}
                       </CButton>
 
-                      {/* Botón Eliminar */}
-                      <CButton
-                        color="danger"
-                        size="sm" // Tamaño más compacto
-                        onClick={() => openDeleteModal(actividad)}
-                        style={{ marginRight: '5px', padding: '2px 8px', fontSize: '12px' }} // Ajuste de padding y texto pequeño
-                      >
-                        <CIcon icon={cilTrash} style={{ fontSize: '12px' }} /> {/* Ícono más pequeño */}
-                      </CButton>
-
                       {/* Botón Cancelar / Activar */}
                       <CButton
-                        color={actividad.Estado === 'Activa' ? 'danger' : 'success'}
-                        size="sm" // Tamaño más compacto
-                        onClick={() =>
-                          handleEstadoChange(
-                            actividad.Cod_actividades_extracurriculares,
-                            actividad.Estado
-                          )
-                        }
-                        style={{ padding: '2px 8px', fontSize: '12px', textAlign: 'center' }} // Ajuste de padding y texto pequeño
-                      >
-                        <CIcon
-                          icon={actividad.Estado === 'Activa' ? cilBan : cilCheckCircle}
-                          style={{ fontSize: '12px', marginRight: '5px' }}
-                        />
-                        {actividad.Estado === 'Activa' ? 'Cancelar' : 'Activar'}
-                      </CButton>
+                          color={actividad.Estado === 'Activa' ? 'danger' : 'success'}
+                          size="sm"
+                          onClick={() => {
+                            if (!actividad.Codigo_actividad) {
+                              console.error('La actividad no tiene un ID válido:', actividad);
+                              return;
+                            }
+                            handleEstadoChange(
+                              actividad.Codigo_actividad,
+                              actividad.Estado
+                            );
+                          }}
+                          style={{ padding: '2px 8px', fontSize: '12px', textAlign: 'center' }}
+                        >
+                          <CIcon
+                            icon={actividad.Estado === 'Activa' ? cilBan : cilCheckCircle}
+                            style={{ fontSize: '12px', marginRight: '5px' }}
+                          />
+                          {actividad.Estado === 'Activa' ? 'Cancelar' : 'Activar'}
+                        </CButton>
+
 
                     </div>
                   </CTableDataCell>
@@ -1197,22 +1194,18 @@ const handleCreateActividad = async () => {
               />
             </CInputGroup>
   
-            {/* Campo para seleccionar sección y grado */}
             <CInputGroup className="mb-3">
-              <CInputGroupText>Sección y Grado</CInputGroupText>
-              <CFormSelect
-                value={actividadToUpdate.Nombre_seccion}
-                onChange={(e) => setActividadToUpdate({ ...actividadToUpdate, Nombre_seccion: e.target.value })}
-              >
-                <option value="">Seleccione una sección y grado</option>
-                {secciones.map((seccion) => (
-                  <option key={seccion.Cod_secciones} value={seccion.Nombre_seccion}>
-                    {`${seccion.Nombre_seccion} - ${seccion.Nombre_grado}`}
-                  </option>
-                ))}
-              </CFormSelect>
-            </CInputGroup>
-  
+            <CInputGroupText>Sección</CInputGroupText>
+            <CFormInput value={actividadToUpdate.Nombre_seccion} readOnly />
+          </CInputGroup>
+
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Grado</CInputGroupText>
+            <CFormInput value={actividadToUpdate.Nombre_grado} readOnly />
+          </CInputGroup>
+
+
+            
             {/* Campo para actualizar fecha */}
             <CInputGroup className="mb-3">
               <CInputGroupText>Fecha</CInputGroupText>
@@ -1236,31 +1229,8 @@ const handleCreateActividad = async () => {
         </CModalFooter>
       </CModal>
   
-      {/* Modal Eliminar Actividad */}
-      <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
-        <CModalHeader>
-          <CModalTitle>Confirmar Eliminación</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          ¿Estás seguro de que deseas eliminar la actividad: "{actividadToDelete.Nombre_actividad}"?
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
-            Cancelar
-          </CButton>
-          <CButton style={{ backgroundColor: '#E57368', color: 'white' }} onClick={handleDeleteActividad}>
-            <CIcon icon={cilTrash} style={{ marginRight: '5px' }} /> Eliminar
-          </CButton>
-        </CModalFooter>
-      </CModal>
+     
     </CContainer>
   );
 };
 export default ListaActividades;
-
-
-  
-
-
-
-  
