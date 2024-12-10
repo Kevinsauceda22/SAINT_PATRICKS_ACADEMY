@@ -1204,19 +1204,19 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
 
        // Detalles de la sección, asignatura y año
         // Detalles de la sección, asignatura y año
-doc.setFontSize(12);
-doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-
-// Crear el texto para mostrar
-const textoLinea1 = `Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} | Grado: ${gradoSeleccionado}`;
-const textoLinea2 = `Asignatura: ${nombreasignaturaSeleccionada} | Parcial: ${nombreParcialSeleccionado}`;
-
-// Agregar las dos líneas de texto al PDF
-doc.text(textoLinea1, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-yPosition += 6; // Espaciado entre las líneas
-doc.text(textoLinea2, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-
-yPosition += 8; // Espaciado entre líneas de detalle
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+      
+      // Crear el texto para mostrar
+      const textoLinea1 = `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`;
+      const textoLinea2 = `Asignatura: ${nombreasignaturaSeleccionada} | Parcial: ${nombreParcialSeleccionado}`;
+      
+      // Agregar las dos líneas de texto al PDF
+      doc.text(textoLinea1, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      yPosition += 6; // Espaciado entre las líneas
+      doc.text(textoLinea2, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      
+      yPosition += 8; // Espaciado entre líneas de detalle
 
         // Información adicional
 
@@ -1293,6 +1293,75 @@ yPosition += 8; // Espaciado entre líneas de detalle
        window.open(doc.output('bloburl'), '_blank');
      };
    };
+
+  const generarReporteDetalleExcel = () => {
+    if (!estudiantesdetalles || estudiantesdetalles.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte Excel.',
+        confirmButtonText: 'Aceptar',
+      });
+      return; // Salir de la función si no hay datos
+    }
+  
+    // Detalles de la sección, asignatura y año
+    let detalles = [];
+    if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada && nombreasignaturaSeleccionada) {
+      const textoLinea1 = `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`;
+      const textoLinea2 = `Asignatura: ${nombreasignaturaSeleccionada} | Parcial: ${nombreParcialSeleccionado}`;
+      detalles.push([textoLinea1], [textoLinea2]);
+    } else if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+      const textoLinea1 = `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`;
+      detalles.push([textoLinea1]);
+    } else if (nombreasignaturaSeleccionada) {
+      const textoLinea2 = `Asignatura: ${nombreasignaturaSeleccionada}`;
+      detalles.push([textoLinea2]);
+    }
+  
+    const encabezados = [
+      ["Saint Patrick Academy"],
+      ["Reporte de Nota por Parcial-Asignatura"],
+      ...detalles, // Agregar los detalles dinámicos
+      [], // Espacio en blanco
+      ["#", "Nombre Estudiante", "Nota Total", "Estado"],
+    ];
+  
+    // Crear filas con asignaturas
+    const filas = estudiantesdetalles.map((estudiante, index) => [
+      index + 1,
+      estudiante.NombreCompleto || "N/A",
+      estudiante.NotaTotal,
+      estudiante.EstadoNota,
+    ]);
+  
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+  
+    // Crear una hoja de trabajo
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+  
+    // Ajustar el texto para que haga salto de línea
+    hojaDeTrabajo["!cols"] = [
+      { wpx: 40 }, // # (Número)
+      { wpx: 200 }, // Nombre estudiante
+      { wpx: 100 }, // Nota Total
+      { wpx: 100 }, // Estado
+    ];
+  
+    hojaDeTrabajo["!rows"] = datos.map(() => ({ hpx: 20, wrapText: true }));
+  
+    // Crear el libro de trabajo
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Promedios Asignaturas");
+  
+    // Nombre del archivo con extensión correcta
+    const nombreArchivo = "Reporte_NotaTotal_Parcial_Asignatura.xlsx";
+  
+    // Descargar el archivo
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  };
+  
     //-------------------paginacion, buscador vista actual : secciones-----------------------------
   const handleSearch2 = (event) => {
     const input = event.target;
@@ -2658,7 +2727,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                     <CIcon icon={cilFile} size="sm" /> Abrir en PDF
                  </CDropdownItem>
                   <CDropdownItem
-                    //onClick={generarReporteExcel}
+                     onClick={generarReporteDetalleExcel}
                     style={{cursor: 'pointer',outline: 'none',backgroundColor: 'transparent',padding: '0.5rem 1rem',fontSize: '0.85rem',color: '#333', transition: 'background-color 0.3s',}}
                     onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}>
                     <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
