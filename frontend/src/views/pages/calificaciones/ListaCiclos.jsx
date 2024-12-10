@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription, } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilSpreadsheet, cilDescription,cilFile, } from '@coreui/icons'; // Importar iconos específicos
 import Swal from 'sweetalert2';
 import logo from 'src/assets/brand/logo_saint_patrick.png'
 import jsPDF from "jspdf";
@@ -77,7 +77,7 @@ const ListaCiclos = () => {
         console.error('Error al decodificar el token:', error);
       }
     }
-  });
+  }, []);
 
 
   const fetchCiclos = async () => {
@@ -100,17 +100,27 @@ const ListaCiclos = () => {
     const nombreCiclo = typeof nuevoCiclo === 'string' ? nuevoCiclo : nuevoCiclo.Nombre_ciclo;
     // Comprobación de vacío
     if (!nombreCiclo || nombreCiclo.trim() === '') {
-      Swal.fire('Error', 'El campo "Nombre del Ciclo" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Nombre del Ciclo" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
 
     // Verificar si el nombre del ciclo ya existe
     const cicloExistente = ciclos.some(
-      (ciclo) => ciclo.Nombre_ciclo.toLowerCase() === nombreCiclo.toLowerCase()
+      (ciclo) => ciclo.Nombre_ciclo.trim().toLowerCase() === nombreCiclo.trim().toLowerCase()
     );
 
     if (cicloExistente) {
-      Swal.fire('Error', `El ciclo "${nombreCiclo}" ya existe`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El ciclo "${nombreCiclo}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -119,18 +129,28 @@ const ListaCiclos = () => {
 
   const validarCicloUpdate = () => {
     if (!cicloToUpdate.Nombre_ciclo) {
-      Swal.fire('Error', 'El campo "Nombre del Ciclo" no puede estar vacío', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'El campo "Nombre del Ciclo" no puede estar vacío',
+        confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+      });
       return false;
     }
     // Verificar si el nombre del ciclo ya existe (excluyendo el ciclo actual que se está editando)
     const cicloExistente = ciclos.some(
       (ciclo) =>
-        ciclo.Nombre_ciclo.toLowerCase() === cicloToUpdate.Nombre_ciclo.toLowerCase() &&
+        ciclo.Nombre_ciclo.trim().toLowerCase() === cicloToUpdate.Nombre_ciclo.trim().toLowerCase() &&
         ciclo.Cod_ciclo !== cicloToUpdate.Cod_ciclo
     );
 
     if (cicloExistente) {
-      Swal.fire('Error', `El ciclo "${cicloToUpdate.Nombre_ciclo}" ya existe `, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `El ciclo "${cicloToUpdate.Nombre_ciclo}" ya existe`,
+        confirmButtonText: 'Aceptar' // Cambia el texto del botón
+      });
       return false;
     }
 
@@ -307,6 +327,7 @@ const ListaCiclos = () => {
         icon: 'warning',
         title: 'Espacios múltiples',
         text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar',
       });
       value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
     }
@@ -317,6 +338,7 @@ const ListaCiclos = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras y espacios.',
+        confirmButtonText: 'Aceptar',
       });
       return;
     }
@@ -332,6 +354,7 @@ const ListaCiclos = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
@@ -360,6 +383,7 @@ const ListaCiclos = () => {
       icon: 'warning',
       title: 'Acción bloqueada',
       text: 'Copiar y pegar no está permitido.',
+      confirmButtonText: 'Aceptar',
     });
   };
 
@@ -425,7 +449,7 @@ const ListaCiclos = () => {
 
         // 4. Registrar la acción en la bitácora
         // Usar el nombre del ciclo desde la respuesta (response.data.Nombre_ciclo)
-        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo ciclo`;
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo ciclo: ${nuevoCiclo} `;
 
         const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro',
           {
@@ -445,7 +469,12 @@ const ListaCiclos = () => {
 
         if (bitacoraResponse.status === 200 || bitacoraResponse.status === 201) {
           console.log('Registro en bitácora exitoso');
-          Swal.fire('Éxito', 'El Ciclo se ha creado correctamente', 'success');
+          Swal.fire({
+            icon: 'success',
+            title: '¡Éxito!',
+            text: 'El Ciclo se ha creado correctamente',
+            confirmButtonText: 'Aceptar',
+          });
 
           // 5. Realizar las acciones posteriores después de la creación exitosa
           // Refrescar la lista de ciclos
@@ -464,11 +493,21 @@ const ListaCiclos = () => {
         }
 
       } else {
-        Swal.fire('Error', 'No se pudo crear el ciclo', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo crear el ciclo',
+          confirmButtonText: 'Aceptar'
+        });
       }
     } catch (error) {
       console.error('Error al crear el ciclo:', error);
-      Swal.fire('Error', `Hubo un error al crear el ciclo: ${error.message}`, 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `Hubo un error al crear el ciclo: ${error.message}`,
+        confirmButtonText: 'Aceptar'
+      });
     }
   };
 
@@ -534,19 +573,34 @@ const ListaCiclos = () => {
         setModalUpdateVisible(false); // Cerrar el modal de actualización
         resetCiclotoUpdate(); // Resetear el ciclo a actualizar
         setHasUnsavedChanges(false);
-        Swal.fire('¡Éxito!', 'El ciclo se ha actualizado correctamente', 'success');
+        Swal.fire({
+          icon: 'success',
+          title: '¡Éxito!',
+          text: 'El ciclo se ha actualizado correctamente',
+          confirmButtonText: 'Aceptar',
+        });
       } else {
         Swal.fire('Error', 'Hubo un problema al actualizar el ciclo', 'error');
       }
   
       // Validación de campo obligatorio
       if (!cicloToUpdate.Nombre_ciclo) {
-        Swal.fire('Error', 'El nombre del ciclo es obligatorio', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'El nombre del ciclo es obligatorio',
+          confirmButtonText: 'Aceptar' // Cambia el texto del botón
+        });
         return false;
       }
   
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al actualizar el ciclo', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un problema al actualizar el ciclo',
+        confirmButtonText: 'Aceptar' 
+      });
       console.error('Error al actualizar el ciclo:', error);
     }
   };
@@ -606,12 +660,27 @@ const ListaCiclos = () => {
         fetchCiclos(); // Refrescar la lista de ciclos después de la eliminación
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
         setCicloToDelete({}); // Resetear el ciclo a eliminar
-        Swal.fire('¡Éxito!', 'El ciclo se ha eliminado correctamente', 'success');
+        Swal.fire({
+          icon: 'success',
+          title: '¡Éxito!',
+          text: 'El ciclo se ha eliminado correctamente',
+          confirmButtonText: 'Aceptar',
+        });
       } else {
-        Swal.fire('Error', 'El ciclo ya pertenece a un grado', 'error');
+        Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'El ciclo ya pertenece a un grado',
+          confirmButtonText: 'Aceptar' 
+        });
       }
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al eliminar el ciclo', 'error');
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Hubo un problema al eliminar el ciclo',
+        confirmButtonText: 'Aceptar' 
+      });
       console.error('Error al eliminar el ciclo:', error);
     }
   };
@@ -631,18 +700,54 @@ const ListaCiclos = () => {
   // Cambia el estado de la página actual después de aplicar el filtro
   // Validar el buscador
   const handleSearch = (event) => {
-    const input = event.target.value.toUpperCase();
-    const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
+    const input = event.target;
+    let value = input.value
+      .toUpperCase() // Convertir a mayúsculas
+      .trimStart(); // Evitar espacios al inicio
 
-    if (!regex.test(input)) {
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras, números, acentos, ñ, espacios y comas
+
+    // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
+    if (/\s{2,}/.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+        confirmButtonText: 'Aceptar'
+      });
+      value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
+    }
+
+    // Validar caracteres permitidos
+    if (!regex.test(value)) {
       Swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
+        confirmButtonText: 'Aceptar'
       });
       return;
     }
-    setSearchTerm(input);
+
+    // Validación para letras repetidas más de 4 veces seguidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            confirmButtonText: 'Aceptar'
+          });
+          return;
+        }
+      }
+    }
+
+    setSearchTerm(value);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
@@ -673,17 +778,37 @@ const ListaCiclos = () => {
     <CContainer>
       {/* Contenedor del h1 y botón "Nuevo" */}
       <CRow className="align-items-center mb-5">
-        <CCol xs="8" md="9">
+        <CCol xs="12" md="9">
           {/* Título de la página */}
           <h1 className="mb-0">Mantenimiento Ciclos</h1>
         </CCol>
-        <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+        <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
           {/* Botón Nuevo para abrir el modal */}
 
           {canInsert && (
             <CButton
-              style={{ backgroundColor: '#4B6251', color: 'white' }}
-              className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+            className="mb-3 mb-md-0 me-md-3 gap-1 rounded shadow"
+            style={{
+              backgroundColor: '#4B6251',
+              color: 'white',
+              transition: 'all 0.3s ease',
+              height: '40px', // Altura fija del botón
+              width: 'auto', // El botón se ajusta automáticamente al contenido
+              minWidth: '100px', // Establece un ancho mínimo para evitar que el botón sea demasiado pequeño
+              padding: '0 16px', // Padding consistente
+              fontSize: '16px', // Tamaño de texto consistente
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center', // Centra el contenido
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = "#3C4B43";
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = "#4B6251";
+              e.currentTarget.style.boxShadow = 'none';
+            }}
               onClick={() => {
                 setModalVisible(true);
                 setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
@@ -693,17 +818,70 @@ const ListaCiclos = () => {
             </CButton>
           )}
 
-          {/* Botón de Reporte */}
-          <CButton
-          
-            style={{ backgroundColor: '#6C8E58', color: 'white' }}
-            onClick={() => {
-              handleReporteClick()
-             
-            }}
-          >
-            <CIcon icon={cilDescription} /> Reporte
-          </CButton>
+<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#6C8E58',
+          color: 'white',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#5A784C';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#6C8E58';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu
+        style={{
+          position: "absolute",
+          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+          backgroundColor: "#fff",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+          borderRadius: "4px",
+          overflow: "hidden",
+        }}
+      >
+        <CDropdownItem
+          onClick={handleReporteClick}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            borderBottom: "1px solid #eaeaea",
+            transition: "background-color 0.1s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+        </CDropdownItem>
+        <CDropdownItem
+        onClick={handleReporteExcelClick}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
         </CCol>
       </CRow>
 
@@ -859,7 +1037,8 @@ const ListaCiclos = () => {
           <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoCiclo)}>
             Cancelar
           </CButton>
-          <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateCiclo}>
+          <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateCiclo}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")}>
             <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
           </CButton>
         </CModalFooter>
