@@ -47,8 +47,7 @@ const ListaParciales = () => {
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar ciclo
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Estado para el modal de eliminar ciclo
   const [nuevoParcial, setNuevoParcial] = useState({
-    Nombre_parcial: '',
-    Nota_recuperacion: ''
+    Nombre_parcial: ''
   }); // Estado para el nuevo ciclo
   const [parcialToUpdate, setParcialesToUpdate] = useState({}); // Estado para el ciclo a actualizar
   const [parcialToDelete, setParcialToDelete] = useState({}); // Estado para el ciclo a eliminar
@@ -58,8 +57,8 @@ const ListaParciales = () => {
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
-  const resetParcial = () => setNuevoParcial({ Nombre_parcial: '', Nota_recuperacion: '' });
-  const resetParcialtoUpdate = () => setParcialesToUpdate({ Nombre_parcial: '', Nota_recuperacion: '' });
+  const resetParcial = () => setNuevoParcial({ Nombre_parcial: '' });
+  const resetParcialtoUpdate = () => setParcialesToUpdate({ Nombre_parcial: ''});
   useEffect(() => {
     fetchParciales();
     const token = localStorage.getItem('token');
@@ -111,12 +110,6 @@ const ListaParciales = () => {
     return false;
   }
 
-  // Validación de Nota_recuperacion solo si tiene un valor
-if (nuevoParcial.Nota_recuperacion !== undefined && nuevoParcial.Nota_recuperacion !== '' && isNaN(nuevoParcial.Nota_recuperacion)) {
-  Swal.fire('Error', 'La nota de recuperación debe ser un número', 'error');
-  return false;
-}
-
 
   return true;
 };
@@ -140,12 +133,6 @@ const validarParcialesUpdate = () => {
     return false;
   }
 
-  // Validar Nota_recuperacion solo si tiene un valor
-  if (parcialToUpdate.Nota_recuperacion !== undefined && parcialToUpdate.Nota_recuperacion !== '' && isNaN(parcialToUpdate.Nota_recuperacion)) {
-    Swal.fire('Error', 'La nota de recuperación debe ser un número', 'error');
-    return false;
-  }
-  
 
   // Permitir la actualización sin importar si hay cambios o no
   return true;
@@ -343,7 +330,7 @@ const handleInputChange = (e, setFunction) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ Cod_parcial: parcialToUpdate.Cod_parcial, Nombre_parcial: parcialToUpdate.Nombre_parcial, Nota_recuperacion: parcialToUpdate.Nota_recuperacion }), // Envío del nombre actualizado y Cod_ciclo en el cuerpo
+        body: JSON.stringify({ Cod_parcial: parcialToUpdate.Cod_parcial, Nombre_parcial: parcialToUpdate.Nombre_parcial }), // Envío del nombre actualizado y Cod_ciclo en el cuerpo
       });
 
       if (response.ok) {
@@ -622,17 +609,27 @@ const paginate = (pageNumber) => {
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
-          // Pie de página
-          const currentDate = new Date();
-          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-          doc.setFontSize(10);
-          doc.setTextColor(100);
-          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-          pageNumber += 1; // Incrementar el número de página
-        },
-      });
+                    const currentDate = new Date();
+                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
+                    doc.setFontSize(10);
+                    doc.setTextColor(100);
+                    // Fecha y hora en el pie de página
+                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+                },
+                });
+                
+                // Asegúrate de calcular el total de páginas al final
+                const totalPages = doc.internal.getNumberOfPages();
+                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i); // Ve a cada página
+                    doc.setTextColor(100);
+                    const text = `Página ${i} de ${totalPages}`;
+                    // Agrega número de página en la posición correcta
+                    doc.text(text, pageWidth - 30, pageHeight - 10);
+                }
   
       // Abrir el PDF en lugar de descargarlo automáticamente
       window.open(doc.output('bloburl'), '_blank');
@@ -886,7 +883,6 @@ const paginate = (pageNumber) => {
               <CTableHeaderCell>#</CTableHeaderCell>
               {/* <CTableHeaderCell>Codigo Parcial</CTableHeaderCell> */}
               <CTableHeaderCell>Nombre del Parcial</CTableHeaderCell>
-              <CTableHeaderCell>Nota Recuperacion</CTableHeaderCell>
               <CTableHeaderCell>Acciones</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
@@ -899,7 +895,6 @@ const paginate = (pageNumber) => {
                 </CTableDataCell>
                 {/* <CTableDataCell>{parcial.Cod_parcial}</CTableDataCell> */}
                 <CTableDataCell>{parcial.Nombre_parcial}</CTableDataCell>
-                <CTableDataCell>{parcial.Nota_recuperacion}</CTableDataCell>
                 <CTableDataCell>
 
                   {canUpdate &&(
@@ -963,43 +958,6 @@ const paginate = (pageNumber) => {
               onChange={(e) => handleInputChange(e, setNuevoParcial)}
             />
           </CInputGroup>
-          <CInputGroup className="mb-3">
-            <CInputGroupText>Nota Recuperacion</CInputGroupText>
-            <CFormInput
-              type="number"
-              min={0} // No permitir negativos
-              max={100} // Limitar el valor máximo a 100
-              maxLength={11}
-              placeholder="Ingrese la nueva nota"
-              value={nuevoParcial.Nota_recuperacion}
-              onChange={(e) => {
-                const value = e.target.value; // Capturamos el valor como cadena
-            
-                // Si el campo está vacío, permitimos que se borre
-                if (value === '') {
-                  setNuevoParcial({ ...nuevoParcial, Nota_recuperacion: '' });
-                  return;
-                }
-            
-                const parsedValue = parseInt(value, 10);
-            
-                // Permitir valores entre 1 y 100
-                if (!isNaN(parsedValue) && parsedValue >= 1 && parsedValue <= 100) {
-                  setNuevoParcial({ ...nuevoParcial, Nota_recuperacion: parsedValue });
-                } else if (parsedValue < 1) {
-                  // Mostrar alerta si el valor es negativo
-                  Swal.fire({
-                    icon: 'warning',
-                    title: 'Valor no permitido',
-                    text: 'No se pueden ingresar valores negativos.',
-                    confirmButtonText: 'Entendido'
-                  }).then(() => {
-                    setNuevoParcial({ ...nuevoParcial, Nota_recuperacion: '' }); // Dejar el campo en blanco después de la alerta
-                  });
-                }
-              }}
-            />
-          </CInputGroup>
         </CForm>
         </CModalBody>
         <CModalFooter>
@@ -1033,36 +991,6 @@ const paginate = (pageNumber) => {
               value={parcialToUpdate.Nombre_parcial}
               onChange={(e) => handleInputChange(e, (value) => setParcialesToUpdate({...parcialToUpdate,Nombre_parcial: value})
             )}
-            />
-          </CInputGroup>
-          <CInputGroup className="mb-3">
-            <CInputGroupText>Nota Recuperacion</CInputGroupText>
-            <CFormInput
-              type="number"
-              min={1} // No permitir negativos
-              max={100} // Limitar el valor máximo a 100
-              maxLength={11}
-              placeholder="Ingrese la nueva nota"
-              value={parcialToUpdate.Nota_recuperacion}
-              onChange={(e) => {
-                const value = e.target.value; // Capturamos el valor como cadena
-    
-                // Permitir que se borre el campo
-                if (value === '') {
-                  setParcialesToUpdate({ ...parcialToUpdate, Nota_recuperacion: '' });
-                  return;
-                }
-    
-                const parsedValue = parseInt(value, 10);
-    
-                // Permitir valores entre 0 y 100
-                if (!isNaN(parsedValue) && parsedValue >= 0 && parsedValue <= 100) {
-                  setParcialesToUpdate({ ...parcialToUpdate, Nota_recuperacion: parsedValue });
-                } else if (parsedValue < 0) {
-                  // Si se intenta ingresar un valor negativo, puedes manejarlo aquí
-                  setParcialesToUpdate({ ...parcialToUpdate, Nota_recuperacion: 0 }); // Establecerlo a 0 si es negativo
-                }
-              }}
             />
           </CInputGroup>
         </CForm>
