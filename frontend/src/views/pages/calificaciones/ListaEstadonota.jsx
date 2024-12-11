@@ -1,8 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription ,cilFile,cilSpreadsheet} from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
+
+//necesarios abajo
+import axios from 'axios';
+import * as jwt_decode from 'jwt-decode';
+
 import {
   CButton,
   CContainer,
@@ -25,9 +30,17 @@ import {
   CFormSelect,
   CRow,
   CCol,
+  CDropdown,
+  CDropdownToggle, CDropdownMenu,CDropdownItem,
 } from '@coreui/react';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
+
+
+import logo from 'src/assets/brand/logo_saint_patrick.png'
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 const ListaEstadonota = () => {
   const {canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaEstadonota');
@@ -46,6 +59,18 @@ const ListaEstadonota = () => {
   
   useEffect(() => {
     fetchEstadonota();
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
   }, []);
 
   const fetchEstadonota = async () => {
@@ -72,7 +97,7 @@ const ListaEstadonota = () => {
         .toUpperCase() // Convertir a mayúsculas
         .trimStart(); // Evitar espacios al inicio
   
-      const regex =  /^[A-ZÑ\s]*$/; // Solo letras y espacios
+      const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras y espacios
   
       // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
       if (/\s{2,}/.test(value)) {
@@ -198,10 +223,25 @@ const ListaEstadonota = () => {
       return;
     }
       try {
+         // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+
       const response = await fetch('http://localhost:4000/api/estadoNotas/crearestadonota', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ Descripcion: nuevoEstadonota }), // Enviar descripción formateada
       });
@@ -209,6 +249,31 @@ const ListaEstadonota = () => {
       const result = await response.json();
 
       if (response.ok) {
+
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo estado nota: ${nuevoEstadonota} `;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 49, // Código del objeto para la acción
+             accion: 'INSERT', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
+
         fetchEstadonota(); // Actualiza la lista de estados de asistencia
         setModalVisible(false); // Cierra el modal
         setNuevoEstadonota('');
@@ -268,10 +333,26 @@ const ListaEstadonota = () => {
       return;
     }
     try {
+
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+   
       const response = await fetch('http://localhost:4000/api/estadoNotas/actualizarestadonota', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
         },
         body: JSON.stringify({ 
           Cod_estado: estadonotaToUpdate.Cod_estado, 
@@ -282,6 +363,32 @@ const ListaEstadonota = () => {
       const result = await response.json();
 
       if (response.ok) {
+
+        
+        // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el estado asistencia a: ${estadonotaToUpdate.Descripcion}`;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 49, // Código del objeto para la acción
+            accion: 'UPDATE', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+
         fetchEstadonota(); // Refrescar la lista de Estado nota después de la actualización
         setModalUpdateVisible(false); // Cerrar el modal de actualización
         resetEstadonotaToUpdate();
@@ -313,10 +420,25 @@ const ListaEstadonota = () => {
 
   const handleDeleteEstadonota = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+
       const response = await fetch('http://localhost:4000/api/estadoNotas/eliminarestadonota', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
         },
         body: JSON.stringify({ 
           Cod_estado: estadonotaToDelete.Cod_estado 
@@ -327,6 +449,30 @@ const ListaEstadonota = () => {
       const result = await response.json();
 
       if (response.ok) {
+
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el estado nota: ${estadonotaToDelete.Descripcion}`;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 49, // Código del objeto para la acción
+             accion: 'DELETE', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
         // Si la respuesta es exitosa
         fetchEstadonota(); // Refrescar la lista de Estado nota después de la eliminación
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
@@ -617,17 +763,37 @@ return (
   <CContainer>
     {/* Contenedor del h1 y botón "Nuevo" */}
     <CRow className="align-items-center mb-5">
-      <CCol xs="8" md="9">
+      <CCol xs="12" md="9">
         {/* Título de la página */}
-        <h1 className="mb-0">Mantenimiento Estado nota</h1>
+        <h1 className="mb-0">Mantenimiento Estado Nota</h1>
       </CCol>
-      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+      <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center mt-3 mt-md-0">
         {/* Botón Nuevo para abrir el modal */}
 
         {canInsert && (
         <CButton 
-          style={{ backgroundColor: '#4B6251', color: 'white' }} 
-          className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+        className="mb-3 mb-md-0 me-md-3 gap-1 rounded shadow"
+        style={{
+          backgroundColor: '#4B6251',
+          color: 'white',
+          transition: 'all 0.3s ease',
+          height: '40px', // Altura fija del botón
+          width: 'auto', // El botón se ajusta automáticamente al contenido
+          minWidth: '100px', // Establece un ancho mínimo para evitar que el botón sea demasiado pequeño
+          padding: '0 16px', // Padding consistente
+          fontSize: '16px', // Tamaño de texto consistente
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center', // Centra el contenido
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#3C4B43";
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#4B6251";
+          e.currentTarget.style.boxShadow = 'none';
+        }}
           onClick={() => { setModalVisible(true);
             setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
           }}
@@ -636,12 +802,70 @@ return (
         </CButton>
         )}
 
-        {/* Botón de Reporte */}
-        <CButton 
-          style={{ backgroundColor: '#6C8E58', color: 'white' }}
+<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#6C8E58',
+          color: 'white',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#5A784C';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#6C8E58';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu
+        style={{
+          position: "absolute",
+          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+          backgroundColor: "#fff",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+          borderRadius: "4px",
+          overflow: "hidden",
+        }}
+      >
+        <CDropdownItem
+          onClick={generarReportePDF}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            borderBottom: "1px solid #eaeaea",
+            transition: "background-color 0.1s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
         >
-          <CIcon icon={cilDescription} /> Reporte
-        </CButton>
+          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+        </CDropdownItem>
+        <CDropdownItem
+        onClick={generarReporteExcel}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
       </CCol>
     </CRow>
 
@@ -725,16 +949,17 @@ return (
               <CTableDataCell>{estadonota.Descripcion}</CTableDataCell>
               <CTableDataCell>
 
-{canUpdate && (
+                {canUpdate && (
                 <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(estadonota)}>
                   <CIcon icon={cilPen} />
                 </CButton>
-)}
+                )}
 
-
+                {canDelete && (
                 <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(estadonota)}>
                   <CIcon icon={cilTrash} />
                 </CButton>
+                )}
               </CTableDataCell>
             </CTableRow>
           ))}
@@ -853,16 +1078,6 @@ return (
  </CContainer>
   );
 
-  return { 
-    canSelect, 
-    canInsert, 
-    canUpdate, 
-    canDelete, 
-    hasAccess, 
-    loading,
-    error,
-    permissions 
-  };
 };
 
 
