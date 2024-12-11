@@ -131,6 +131,16 @@ const handleSeleccionarCodPersona = (persona) => {
     fetchTiposContacto(); // Llamar a la función para cargar los tipos de contacto al montar el componente
   }, []);
 
+  useEffect(() => {
+    if (!modalVisible) { // Cuando el modal se cierra (modalVisible = false)
+      const cargarContactosYTipos = async () => {
+        await fetchContactos();
+        await fetchTiposContacto();
+      };
+      cargarContactosYTipos();
+    }
+  }, [modalVisible]); // Se ejecuta cada vez que cambia el estado de modalVisible
+  
   const fetchContactos = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/contacto/obtenerContacto');
@@ -138,27 +148,25 @@ const handleSeleccionarCodPersona = (persona) => {
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verifica la respuesta de la API
       setContacto(data);
-      console.log('Estado de contacto después de setContacto:', contacto); // Verifica el estado
+      console.log('Estado de contacto después de setContacto:', data); // Verifica el estado actualizado
     } catch (error) {
+      console.error('Error fetching contactos:', error);
     }
   };
-
-
   
+  const fetchTiposContacto = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
+      if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
+      const data = await response.json();
+      
+      // Guardar toda la lista de tipos de contacto
+      setTiposContacto(data); // data ya contiene objetos con Cod_tipo_contacto y tipo_contacto
+    } catch (error) {
+      console.error('Error fetching tipos de contacto:', error);
+    }
+  };
   
-const fetchTiposContacto = async () => {
-  try {
-    const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
-    if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
-    const data = await response.json();
-    
-    // Guardar toda la lista de tipos de contacto
-    setTiposContacto(data); // data ya contiene objetos con Cod_tipo_contacto y tipo_contacto
-  } catch (error) {
-    console.error('Error fetching tipos de contacto:', error);
-  }
-};
-
 
 {/*******************************************************FUNCION PARA CREAR Y ACTUALIZAR**************************************************/}
   const handleCreateOrUpdate = async () => {
@@ -733,47 +741,50 @@ const fetchTiposContacto = async () => {
       </CFormSelect>
     </div>
 
-    {/* Campo de Valor */}
-    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
-      <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
-        Valor
-      </div>
+{/* Campo de Valor */}
+<div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
+  <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
+    Valor
+  </div>
 
-      {/* Usar react-phone-number-input solo para tipos de teléfono */}
-      {nuevoContacto.cod_tipo_contacto === '1' || nuevoContacto.cod_tipo_contacto === '2' ? (
-        <PhoneInput
-          international
-          defaultCountry="HN"  // Asegúrate de poner el país adecuado como predeterminado
-          value={contactoToUpdate?.Valor || nuevoContacto.Valor}
-          onChange={(value) => {
-            contactoToUpdate
-              ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
-              : setNuevoContacto({ ...nuevoContacto, Valor: value });
-          }}
-          className="border-0"
-        />
-      ) : (
-        <CFormInput
-          placeholder={nuevoContacto.cod_tipo_contacto === 'EMAIL' ? 'EMAIL' : 'Valor'}
-          value={contactoToUpdate?.Valor || nuevoContacto.Valor}
-          onChange={(e) => {
-            let value = e.target.value.slice(0, 50); // Limitar a 50 caracteres
-            if (/(\s{2,})/.test(value)) return; // Bloquear si hay más de un espacio entre palabras/números
+  {/* Usar react-phone-number-input solo para tipos de teléfono */}
+  {Number(nuevoContacto.cod_tipo_contacto) === 1 || Number(nuevoContacto.cod_tipo_contacto) === 2 ? (
+    <PhoneInput
+      international
+      defaultCountry="HN"  // Asegúrate de poner el país adecuado como predeterminado
+      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor} // Usar ?? en lugar de ||
+      onChange={(value) => {
+        if (contactoToUpdate) {
+          setContactoToUpdate((prev) => ({ ...prev, Valor: value })); // Usar función actualizadora
+        } else {
+          setNuevoContacto((prev) => ({ ...prev, Valor: value })); // Usar función actualizadora
+        }
+      }}
+      className="border-0"
+    />
+  ) : (
+    <CFormInput
+      placeholder={nuevoContacto.cod_tipo_contacto === 'EMAIL' ? 'EMAIL' : 'Valor'}
+      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor} // Usar ?? en lugar de ||
+      onChange={(e) => {
+        let value = e.target.value.slice(0, 50);
+        if (/(\s{2,})/.test(value)) return;
 
-            // Validación por tipo de contacto
-            if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/\S+@\S+\.\S+/.test(value)) {
-              // Validación de correo electrónico
-              return;
-            }
+        if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/\S+@\S+\.\S+/.test(value)) {
+          return;
+        }
 
-            contactoToUpdate
-              ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
-              : setNuevoContacto({ ...nuevoContacto, Valor: value });
-          }}
-          className="border-0"
-        />
-      )}
-    </div>
+        if (contactoToUpdate) {
+          setContactoToUpdate((prev) => ({ ...prev, Valor: value }));
+        } else {
+          setNuevoContacto((prev) => ({ ...prev, Valor: value }));
+        }
+      }}
+      className="border-0"
+    />
+  )}
+</div>
+
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
