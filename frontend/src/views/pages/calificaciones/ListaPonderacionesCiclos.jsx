@@ -163,18 +163,33 @@ const ListaPonderacionesCiclos = () => {
 
     const asignarPonderacion = async () => {
         if (!nuevaponderaciones || nuevaponderaciones === "") {
-          Swal.fire('Error', 'Por favor seleccione una ponderación', 'error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Por favor seleccione una ponderación',
+            confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+          });
           return false;
         }
       
         // Verificar si el valor es un número y no una cadena vacía
         if (isNaN(nuevaponderaciones) || nuevaponderaciones <= 0) {
-          Swal.fire('Error', 'La ponderación seleccionada no es válida.', 'error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'La ponderación seleccionada no es válida',
+            confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+          });
           return false;
         }
       
         if (isNaN(nuevaponderacionesciclos) || nuevaponderacionesciclos <= 0.5 || nuevaponderacionesciclos > 100) {
-          Swal.fire('Error', 'El puntaje debe ser un número entre 0.1 y 100', 'error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'El puntaje debe ser un número entre 0.5 y 100',
+            confirmButtonText: 'Aceptar' // Texto del botón de confirmación
+          });
           return false;
         }
       
@@ -233,7 +248,12 @@ const ListaPonderacionesCiclos = () => {
       
             if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
               // 5. Acciones posteriores si la asignación es exitosa
-              Swal.fire('¡Éxito!', 'Ponderación asignada correctamente', 'success');
+              Swal.fire({
+                icon: 'success',
+                title: '¡Éxito!',
+                text: 'Ponderación asignada correctamente',
+                confirmButtonText: 'Aceptar',
+              });
               setAssignModalVisible(false);
               setnuevaPonderaciones('');
               setnuevaPonderacionesCiclos('');
@@ -252,14 +272,29 @@ const ListaPonderacionesCiclos = () => {
             console.error('Error al asignar ponderación:', errorData);
       
             if (errorData.Mensaje) {
-              Swal.fire('Error', errorData.Mensaje, 'error');
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: errorData.Mensaje,
+                confirmButtonText: 'Aceptar'
+              });
             } else {
-              Swal.fire('Error', 'Hubo un problema al asignar la ponderación', 'error');
+              Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Hubo un problema al asignar la ponderación',
+                confirmButtonText: 'Aceptar' 
+              });
             }
           }
         } catch (error) {
           console.error('Error en la solicitud:', error);
-          Swal.fire('Error', 'Hubo un problema al conectar con el servidor', 'error');
+          Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Hubo un problema al asignar la ponderación',
+            confirmButtonText: 'Aceptar' 
+          });
         }
       };
 
@@ -317,32 +352,34 @@ const ListaPonderacionesCiclos = () => {
     
                 // Si la acción en la bitácora fue exitosa
                 if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
-                    // Mostrar mensaje de éxito
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Actualización exitosa',
-                        text: 'Datos actualizados correctamente',
-                    });
-    
-                    // Resetear el estado después de la actualización
-                    setEditIndex(null); // Salir del modo de edición
-                    setModalVisible(false); // Ocultar el modal
-                    setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
-                    reseteditdata(); // Resetear los datos editados
+                    console.log('Registro en bitácora exitoso');
                 } else {
                     // Mostrar error si no se pudo registrar la acción en la bitácora
                     Swal.fire({
                         icon: 'error',
                         title: 'Error',
                         text: 'No se pudo registrar la acción en la bitácora',
+                        confirmButtonText: 'Aceptar',
                     });
                 }
+                // Resetear el estado después de la actualización
+                setEditIndex(null); // Salir del modo de edición
+                setModalVisible(false); // Ocultar el modal
+                setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+                reseteditdata(); // Resetear los datos editados
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: 'La ponderación se ha actualizado correctamente',
+                    confirmButtonText: 'Aceptar',
+                });
             } else {
                 // Si hubo error al actualizar la ponderación
                 await Swal.fire({
                     icon: 'error',
                     title: 'Error',
                     text: 'Error al actualizar la ponderación',
+                    confirmButtonText: 'Aceptar',
                 });
             }
         } catch (error) {
@@ -351,9 +388,11 @@ const ListaPonderacionesCiclos = () => {
                 icon: 'error',
                 title: 'Error',
                 text: 'Ocurrió un error inesperado',
+                confirmButtonText: 'Aceptar',
             });
         }
     };
+    
     
 
     const generarReporteCiclosPDF = () => {
@@ -440,17 +479,27 @@ const ListaPonderacionesCiclos = () => {
                   },
                 alternateRowStyles: { fillColor: [240, 248, 255] },
                 didDrawPage: (data) => {
-                    // Pie de página
                     const currentDate = new Date();
                     const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
                     doc.setFontSize(10);
                     doc.setTextColor(100);
+                    // Fecha y hora en el pie de página
                     doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                    const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-                    doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-                    pageNumber += 1; // Incrementar el número de página
-                  },
-            });
+                },
+                });
+                
+                // Asegúrate de calcular el total de páginas al final
+                const totalPages = doc.internal.getNumberOfPages();
+                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i); // Ve a cada página
+                    doc.setTextColor(100);
+                    const text = `Página ${i} de ${totalPages}`;
+                    // Agrega número de página en la posición correcta
+                    doc.text(text, pageWidth - 30, pageHeight - 10);
+                }
 
             // Abrir el PDF
             window.open(doc.output('bloburl'), '_blank');
@@ -554,18 +603,28 @@ const ListaPonderacionesCiclos = () => {
                       },
                     alternateRowStyles: { fillColor: [240, 248, 255] },
                     didDrawPage: (data) => {
-                        // Pie de página
                         const currentDate = new Date();
                         const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                        const pageHeight = doc.internal.pageSize.height; // Altura de la página
                         doc.setFontSize(10);
                         doc.setTextColor(100);
+                        // Fecha y hora en el pie de página
                         doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                        const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-                        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-                        pageNumber += 1; // Incrementar el número de página
-                      },
-                });
-        
+                    },
+                    });
+                    
+                    // Asegúrate de calcular el total de páginas al final
+                    const totalPages = doc.internal.getNumberOfPages();
+                    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+                    
+                    for (let i = 1; i <= totalPages; i++) {
+                        doc.setPage(i); // Ve a cada página
+                        doc.setTextColor(100);
+                        const text = `Página ${i} de ${totalPages}`;
+                        // Agrega número de página en la posición correcta
+                        doc.text(text, pageWidth - 30, pageHeight - 10);
+                    }
+
                 // Agregar el total al final del reporte
                 const totalPonderaciones = calculateTotal(); // Calcula el total de los valores
                 yPosition = doc.lastAutoTable.finalY + 11; // Posición debajo de la tabla
@@ -585,6 +644,16 @@ const ListaPonderacionesCiclos = () => {
         
 
         const handleReporteExcelClick = () => {
+             // Validar que haya datos en la tabla
+            if (!ponderacionesciclos || ponderacionesciclos.length === 0) {
+                Swal.fire({
+                icon: 'info',
+                title: 'Tabla vacía',
+                text: 'No hay datos disponibles para generar el reporte excel.',
+                confirmButtonText: 'Aceptar',
+                });
+                return; // Salir de la función si no hay datos
+            }
             // Encabezados de la tabla
             const encabezados = [
                 ["Saint Patrick Academy"],
@@ -727,6 +796,7 @@ const ListaPonderacionesCiclos = () => {
               icon: 'warning',
               title: 'Espacios múltiples',
               text: 'No se permite más de un espacio entre palabras.',
+               confirmButtonText: 'Aceptar'
             });
             value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
           }
@@ -736,6 +806,7 @@ const ListaPonderacionesCiclos = () => {
                 icon: 'warning',
                 title: 'Caracteres no permitidos',
                 text: 'Solo se permiten letras y espacios.',
+                 confirmButtonText: 'Aceptar'
             });
             return; // Detener si la entrada no es válida
         }
@@ -750,6 +821,7 @@ const ListaPonderacionesCiclos = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+             confirmButtonText: 'Aceptar'
           });
           return;
         }
@@ -948,7 +1020,7 @@ const ListaPonderacionesCiclos = () => {
                 onClick={() => fetchPonderacionCiclo(ciclo.Cod_ciclo)}
                 onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
                 onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
-                style={{backgroundColor: '#F9B64E',fontSize: '0.85rem', color: '#5C4044', fontSize: '1rem' }} >
+                style={{backgroundColor: '#F9B64E', color: '#5C4044', fontSize: '1rem' }} >
                 <CIcon icon={cilPen} />
               </CButton>
               </div>
@@ -1035,27 +1107,41 @@ const ListaPonderacionesCiclos = () => {
                                                 <CTableDataCell>{getCicloName(ponderacionCiclo.Cod_ciclo)}</CTableDataCell>
 
                                                 <CTableDataCell>
-                                                    {editIndex === index ? (
-                                                        <input
-                                                            type="number"
-                                                            min={0.05}
-                                                            max={100}
-                                                            step="0.05"
-                                                            maxLength={11}
-                                                            value={editedData.Valor || ponderacionCiclo.Valor}
-                                                            onChange={(e) => {
-                                                                const value = parseFloat(e.target.value);
-                                                                if (!isNaN(value) && value >= 0.05 && value <= 100) {
-                                                                    setEditedData({ ...editedData, Valor: value });
-                                                                } else {
-                                                                    Swal.fire('Error', 'El valor debe estar entre 0.05 y 100', 'error');
-                                                                }
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        `${ponderacionCiclo.Valor}%`
-                                                    )}
-                                                </CTableDataCell>
+                                                {editIndex === index ? (
+                                                <input
+                                                    type="number"
+                                                    min={0} // Permite al usuario ingresar 0, pero no es el límite final válido
+                                                    max={100}
+                                                    step="0.05"
+                                                    maxLength={11}
+                                                    value={editedData.Valor || ''}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value; // Captura el valor como cadena
+                                                        // Permite actualizar temporalmente cualquier número entre 0 y 100
+                                                        if (value === '' || (!isNaN(value) && parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
+                                                            setEditedData({ ...editedData, Valor: value });
+                                                        }
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        const value = parseFloat(e.target.value); // Convierte el valor a número
+                                                        if (isNaN(value) || value < 0.05 || value > 100) {
+                                                            // Muestra error si está fuera del rango permitido final
+                                                            Swal.fire('Error', 'El valor debe estar entre 0.05 y 100', 'error');
+                                                            // Restablece a un valor válido o vacío
+                                                            setEditedData({ ...editedData, Valor: '' });
+                                                        } else {
+                                                            // Guarda el valor válido
+                                                            setEditedData({ ...editedData, Valor: value });
+                                                        }
+                                                    }}
+                                                />
+                                            ) : (
+                                                `${ponderacionCiclo.Valor}%`
+                                            )}
+
+                                            </CTableDataCell>
+
+
                                                 <CTableDataCell>
                                                     {editIndex === index ? (
                                                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -1156,7 +1242,7 @@ const ListaPonderacionesCiclos = () => {
 
             {/* Modal para asignar ponderación */}
             <CModal visible={assignModalVisible} backdrop="static">
-                <CModalHeader onClick={() => setAssignModalVisible(false)}>
+                <CModalHeader onClick={() => {setAssignModalVisible(false);setnuevaPonderaciones(''); setnuevaPonderacionesCiclos(''); }}>
                     <CModalTitle>Asignar Ponderación a: <strong>{cicloParaAsignar?.Nombre_ciclo}</strong></CModalTitle>
                 </CModalHeader>
                 <CModalBody>
@@ -1181,29 +1267,40 @@ const ListaPonderacionesCiclos = () => {
                             min={0.5}
                             max={100}
                             step="0.5"
-                            value={nuevaponderacionesciclos}
+                            value={nuevaponderacionesciclos || ''} // Permitir que el campo esté vacío inicialmente
                             onChange={(e) => {
-                                const value = parseFloat(e.target.value); // Convertir a número decimal
-                                if (!isNaN(value) && value >= 0.5 && value <= 100) {
-                                    setnuevaPonderacionesCiclos(value); // Almacenar el valor directamente
-                                } else if (value < 0.5) {
-                                    setnuevaPonderacionesCiclos(0.5); // Establecer a 0.5 si se intenta ingresar un valor menor
+                                const value = e.target.value; // Tomar el valor como cadena
+                                setnuevaPonderacionesCiclos(value); // Guardar temporalmente como cadena
+                            }}
+                            onBlur={(e) => {
+                                const value = parseFloat(e.target.value); // Convertir a número al salir del campo
+                                if (isNaN(value) || value < 0.5) {
+                                    setnuevaPonderacionesCiclos(0.5); // Establecer 0.5 como valor mínimo válido
                                 } else if (value > 100) {
-                                    setnuevaPonderacionesCiclos(100); // Establecer a 100 si se intenta ingresar un valor mayor
+                                    setnuevaPonderacionesCiclos(100); // Establecer 100 como valor máximo válido
+                                } else {
+                                    setnuevaPonderacionesCiclos(value); // Guardar el valor final válido
                                 }
                             }}
                             onKeyDown={(e) => {
-                                // Permitir solo números, backspace, delete y teclas de flecha
-                                if (!/[0-9.]/.test(e.key) && e.key !== "Backspace" && e.key !== "Delete" && e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+                                // Permitir números, punto decimal, backspace, delete y teclas de flecha
+                                if (
+                                    !/[0-9.]/.test(e.key) &&
+                                    e.key !== 'Backspace' &&
+                                    e.key !== 'Delete' &&
+                                    e.key !== 'ArrowLeft' &&
+                                    e.key !== 'ArrowRight'
+                                ) {
                                     e.preventDefault();
                                 }
                             }}
                             className="form-control"
                         />
+
                     </div>
                 </CModalBody>
                 <CModalFooter>
-                    <CButton color="secondary" style={{ fontSize: '0.85rem', cursor: 'pointer' }} onClick={() => setAssignModalVisible(false)}>Cancelar</CButton>
+                    <CButton color="secondary" style={{ fontSize: '0.85rem', cursor: 'pointer' }} onClick={() => {setAssignModalVisible(false);setnuevaPonderaciones(''); setnuevaPonderacionesCiclos(''); }}>Cancelar</CButton>
                     <CButton style={{ backgroundColor: '#4B6251', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }} onClick={asignarPonderacion}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")} >
                         Guardar <CIcon icon={cilSave} 
