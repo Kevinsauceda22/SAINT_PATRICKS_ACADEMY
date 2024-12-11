@@ -76,6 +76,7 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '56', name: 'Lista Grado Academico', description: 'Lista Grado Academico' },
     { id: '57', name: 'Lista Parciales', description: 'Lista Parciales' },
     { id: '58', name: 'Lista Ponderaciones', description: 'Lista Ponderaciones' },
+    { id: '104', name: 'Lista Institutos', description: 'ListaInstitutos' },
     { id: '59', name: 'Lista Tipo Contrato', description: 'Lista Tipo Contrato' },
     { id: '60', name: 'Tipo matrícula', description: 'tipo matricula' },
     { id: '61', name: 'Periodo matrícula', description: 'periodo matricula' },
