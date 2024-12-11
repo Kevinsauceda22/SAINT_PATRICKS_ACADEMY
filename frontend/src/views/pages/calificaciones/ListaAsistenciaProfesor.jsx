@@ -1134,7 +1134,6 @@ const handleObservacionChangeActualizar = (index, value) => {
                     // Agrega número de página en la posición correcta
                     doc.text(text, pageWidth - 30, pageHeight - 10);
                 }
-      });
   
       // Abrir el PDF en lugar de descargarlo automáticamente
       window.open(doc.output('bloburl'), '_blank');
