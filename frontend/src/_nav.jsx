@@ -175,10 +175,16 @@ const _nav = [
     items: [
       {
         component: CNavItem,
+        name: 'Parametro',
+        to: '/ListaParametro',
+      },
+      {
+        component: CNavItem,
         name: 'Asignaturas',
         to: '/ListaAsignaturas',
         nameobject: 'ListaAsignaturas',
       },
+      
       {
         component: CNavItem,
         name: 'Ciclos',
@@ -280,8 +286,8 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Aulas',
-        to: '/aulas',
-        nameobject: 'aulas',
+        to: '/pages/matricula/ListaAulas',
+        nameobject: 'ListaAulas',
       },
       {
         component: CNavItem,
@@ -347,6 +353,19 @@ const _nav = [
       },
       {
         component: CNavItem,
+        name: 'Familias',
+        to: '/ListaEstructura',
+        nameobject: 'ListaEstructura',
+      },
+      {
+        component: CNavItem,
+        name: 'Estructuras',
+        to: '/ListaEstructura',
+        nameobject: 'ListaRelacion',
+      },
+
+      {
+        component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
         nameobject: 'ListaRelacion',
@@ -362,6 +381,9 @@ const _nav = [
         to: '/ListaHistoricoProc',
         nameobject: 'ListaHistoricoProc',
       },
+
+
+
       {
         component: CNavItem,
         name: 'Departamento',
@@ -374,6 +396,12 @@ const _nav = [
         name: 'Municipios',
         to: '/municipios',
         nameobject: 'Municipios',
+      },
+
+      {
+        component: CNavItem,
+        name: 'Contacto',
+        to: '/contacto',
       },
       {
         component: CNavItem,
