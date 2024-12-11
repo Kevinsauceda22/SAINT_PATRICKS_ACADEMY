@@ -1,8 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription } from '@coreui/icons'; // Importar iconos específicos
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription,cilFile,cilSpreadsheet } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
+
+//necesarios abajo
+import axios from 'axios';
+import * as jwt_decode from 'jwt-decode';
+
 import {
   CButton,
   CContainer,
@@ -25,9 +30,18 @@ import {
   CFormSelect,
   CRow,
   CCol,
+  CDropdown,
+  CDropdownToggle, CDropdownMenu,CDropdownItem,
 } from '@coreui/react';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
+
+
+import logo from 'src/assets/brand/logo_saint_patrick.png'
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+
 
 const ListaEstadoasistencia = () => {
   const { canSelect, loading, error, canDelete, canInsert, canUpdate } = usePermission('ListaEstadoasistencia');
@@ -46,6 +60,18 @@ const ListaEstadoasistencia = () => {
 
   useEffect(() => {
     fetchEstadoasistencia();
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
   }, []);
 
   const fetchEstadoasistencia = async () => {
@@ -72,7 +98,7 @@ const ListaEstadoasistencia = () => {
       .toUpperCase() // Convertir a mayúsculas
       .trimStart(); // Evitar espacios al inicio
 
-    const regex = /^[A-ZÑ\s]*$/; // Solo letras y espacios
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/;// Solo letras y espacios
 
     // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
     if (/\s{2,}/.test(value)) {
@@ -197,17 +223,56 @@ const ListaEstadoasistencia = () => {
     }
 
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/crearestadoasistencias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ Descripcion_asistencia: nuevoEstadoasistencia }),  // Enviar descripción formateada
       });
   
       const result = await response.json();
-  
+
       if (response.ok) {
+        // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo estado asistencia: ${nuevoEstadoasistencia} `;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 54, // Código del objeto para la acción
+            accion: 'INSERT', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
         fetchEstadoasistencia();  // Actualiza la lista de estados de asistencia
         setModalVisible(false);  // Cierra el modal
         resetNuevoEstadoasistencia();
@@ -268,10 +333,25 @@ const ListaEstadoasistencia = () => {
     }
 
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+   
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/actualizarestadoasistencias', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
         },
         body: JSON.stringify({
           Cod_estado_asistencia: estadoasistenciaToUpdate.Cod_estado_asistencia,
@@ -282,6 +362,33 @@ const ListaEstadoasistencia = () => {
       const result = await response.json();
   
       if (response.ok) {
+
+        // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el estado asistencia a: ${estadoasistenciaToUpdate.Descripcion_asistencia}`;
+        
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 54, // Código del objeto para la acción
+            accion: 'UPDATE', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
+  
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
+  
+
+
         fetchEstadoasistencia(); // Refrescar la lista de estados de asistencia
         setModalUpdateVisible(false); // Cerrar el modal de actualización
         resetEstadoasistenciaToUpdate();
@@ -313,10 +420,25 @@ const ListaEstadoasistencia = () => {
 
   const handleDeleteEstadoasistencia = async () => {
     try {
+       // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
+
       const response = await fetch('http://localhost:4000/api/estadoAsistencia/eliminarestadoasistencias', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
         },
         body: JSON.stringify({
           Cod_estado_asistencia: estadoasistenciaToDelete.Cod_estado_asistencia
@@ -327,6 +449,31 @@ const ListaEstadoasistencia = () => {
       const result = await response.json();
 
       if (response.ok) {
+
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el estado asistencia: ${estadoasistenciaToDelete.Descripcion_asistencia}`;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 54, // Código del objeto para la acción
+             accion: 'DELETE', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
+
         // Si la respuesta es exitosa
         fetchEstadoasistencia(); // Refrescar la lista de estados de asistencia
         setModalDeleteVisible(false); // Cerrar el modal de confirmación
@@ -526,17 +673,27 @@ const ListaEstadoasistencia = () => {
           },
           alternateRowStyles: { fillColor: [240, 248, 255] },
           didDrawPage: (data) => {
-            // Pie de página
-            const currentDate = new Date();
-            const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-            const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-            doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-            pageNumber += 1; // Incrementar el número de página
-          },
-        });
+                    const currentDate = new Date();
+                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
+                    doc.setFontSize(10);
+                    doc.setTextColor(100);
+                    // Fecha y hora en el pie de página
+                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+                },
+                });
+                
+                // Asegúrate de calcular el total de páginas al final
+                const totalPages = doc.internal.getNumberOfPages();
+                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i); // Ve a cada página
+                    doc.setTextColor(100);
+                    const text = `Página ${i} de ${totalPages}`;
+                    // Agrega número de página en la posición correcta
+                    doc.text(text, pageWidth - 30, pageHeight - 10);
+                }
     
         // Abrir el PDF en lugar de descargarlo automáticamente
         window.open(doc.output('bloburl'), '_blank');
@@ -617,33 +774,113 @@ const ListaEstadoasistencia = () => {
   <CContainer>
     {/* Contenedor del h1 y botón "Nuevo" */}
     <CRow className="align-items-center mb-5">
-      <CCol xs="8" md="9">
-        {/* Título de la página */}
-        <h1 className="mb-0">Mantenimiento Estado asistencia</h1>
-      </CCol>
-      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
-        {/* Botón Nuevo para abrir el modal */}
+  <CCol xs="12" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Mantenimiento Estado Asistencia</h1>
+  </CCol>
+  
+  <CCol xs="12" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center mt-3 mt-md-0">
+    {/* Botón Nuevo para abrir el modal */}
+    {canInsert && (
+      <CButton
+        className="mb-3 mb-md-0 me-md-3 gap-1 rounded shadow"
+        style={{
+          backgroundColor: '#4B6251',
+          color: 'white',
+          transition: 'all 0.3s ease',
+          height: '40px', // Altura fija del botón
+          width: 'auto', // El botón se ajusta automáticamente al contenido
+          minWidth: '100px', // Establece un ancho mínimo para evitar que el botón sea demasiado pequeño
+          padding: '0 16px', // Padding consistente
+          fontSize: '16px', // Tamaño de texto consistente
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center', // Centra el contenido
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = "#3C4B43";
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = "#4B6251";
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        onClick={() => {
+          setModalVisible(true);
+          setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
+        }}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+    )}
 
-        {canInsert && (
-        <CButton 
-          style={{ backgroundColor: '#4B6251', color: 'white' }} 
-          className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
-          onClick={() => { setModalVisible(true);
-            setHasUnsavedChanges(false); // Resetear el estado al abrir el modal
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#6C8E58',
+          color: 'white',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#5A784C';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#6C8E58';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu
+        style={{
+          position: "absolute",
+          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+          backgroundColor: "#fff",
+          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+          borderRadius: "4px",
+          overflow: "hidden",
+        }}
+      >
+        <CDropdownItem
+          onClick={generarReportePDF}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            borderBottom: "1px solid #eaeaea",
+            transition: "background-color 0.1s",
           }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
         >
-          <CIcon icon={cilPlus} /> Nuevo
-        </CButton>
-        )}
+          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+        </CDropdownItem>
+        <CDropdownItem
+        onClick={generarReporteExcel}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+        >
+          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
 
-        {/* Botón de Reporte */}
-        <CButton 
-          style={{ backgroundColor: '#6C8E58', color: 'white' }}
-        >
-          <CIcon icon={cilDescription} /> Reporte
-        </CButton>
-      </CCol>
-    </CRow>
 
     {/* Contenedor de la barra de búsqueda y el selector dinámico */}
     <CRow className="align-items-center mt-4 mb-2">
@@ -794,7 +1031,8 @@ const ListaEstadoasistencia = () => {
         <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoEstadoasistencia)}>
           Cancelar
         </CButton>
-        <CButton  style={{ backgroundColor: '#4B6251',color: 'white' }} onClick={handleCreateEstadoasistencia}>
+        <CButton  style={{ backgroundColor: '#4B6251',color: 'white' }}  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")}
+         onClick={handleCreateEstadoasistencia}>
         <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
         </CButton>
       </CModalFooter>
@@ -829,7 +1067,8 @@ const ListaEstadoasistencia = () => {
         <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetEstadoasistenciaToUpdate)}>
           Cancelar
         </CButton>
-        <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }}  onClick={handleUpdateEstadoasistencia}>
+        <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }} 
+         onClick={handleUpdateEstadoasistencia}>
           <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
         </CButton>
       </CModalFooter>
