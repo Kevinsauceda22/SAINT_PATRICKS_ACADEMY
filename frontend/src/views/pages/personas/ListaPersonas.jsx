@@ -349,14 +349,6 @@ const openUpdateModal = (persona) => {
   
   
     });
-
-    setPersonaToUpdate({
-      ...personas,
-      fecha_nacimiento: fechaFormateada,
-      buscadorNacionalidad: nacionalidadSeleccionada 
-        ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}`
-        : '', // Asegúrate de que se asigne correctamente
-    });
     
   setModalUpdateVisible(true);
 };
@@ -365,13 +357,6 @@ useEffect(() => {
   console.log('buscadorNacionalidad:', buscadorNacionalidad);
 }, [buscadorNacionalidad]);
 
-setPersonaToUpdate({
-  ...personas,
-  fecha_nacimiento: fechaFormateada,
-  buscadorNacionalidad: nacionalidadSeleccionada 
-    ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}`
-    : '', // Asegúrate de que se asigne correctamente
-});
 
 const closeUpdateModal = () => {
   handleCloseModal(setModalUpdateVisible, resetPersonaToUpdate, personaToUpdate);

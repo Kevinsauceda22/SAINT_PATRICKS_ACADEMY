@@ -742,47 +742,50 @@ const handleSeleccionarCodPersona = (persona) => {
       </CFormSelect>
     </div>
 
-    {/* Campo de Valor */}
-    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
-      <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
-        Valor
-      </div>
+{/* Campo de Valor */}
+<div style={{ display: 'flex', alignItems: 'center', border: '1px solid #dcdcdc', marginBottom: '10px' }}>
+  <div style={{ minWidth: '150px', backgroundColor: '#f0f0f0', padding: '10px', textAlign: 'center', color: '#000', borderRight: '1px solid #dcdcdc' }}>
+    Valor
+  </div>
 
-      {/* Usar react-phone-number-input solo para tipos de teléfono */}
-      {nuevoContacto.cod_tipo_contacto === '1' || nuevoContacto.cod_tipo_contacto === '2' ? (
-        <PhoneInput
-          international
-          defaultCountry="HN"  // Asegúrate de poner el país adecuado como predeterminado
-          value={contactoToUpdate?.Valor || nuevoContacto.Valor}
-          onChange={(value) => {
-            contactoToUpdate
-              ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
-              : setNuevoContacto({ ...nuevoContacto, Valor: value });
-          }}
-          className="border-0"
-        />
-      ) : (
-        <CFormInput
-          placeholder={nuevoContacto.cod_tipo_contacto === 'EMAIL' ? 'EMAIL' : 'Valor'}
-          value={contactoToUpdate?.Valor || nuevoContacto.Valor}
-          onChange={(e) => {
-            let value = e.target.value.slice(0, 50); // Limitar a 50 caracteres
-            if (/(\s{2,})/.test(value)) return; // Bloquear si hay más de un espacio entre palabras/números
+  {/* Usar react-phone-number-input solo para tipos de teléfono */}
+  {Number(nuevoContacto.cod_tipo_contacto) === 1 || Number(nuevoContacto.cod_tipo_contacto) === 2 ? (
+    <PhoneInput
+      international
+      defaultCountry="HN"  // Asegúrate de poner el país adecuado como predeterminado
+      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor} // Usar ?? en lugar de ||
+      onChange={(value) => {
+        if (contactoToUpdate) {
+          setContactoToUpdate((prev) => ({ ...prev, Valor: value })); // Usar función actualizadora
+        } else {
+          setNuevoContacto((prev) => ({ ...prev, Valor: value })); // Usar función actualizadora
+        }
+      }}
+      className="border-0"
+    />
+  ) : (
+    <CFormInput
+      placeholder={nuevoContacto.cod_tipo_contacto === 'EMAIL' ? 'EMAIL' : 'Valor'}
+      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor} // Usar ?? en lugar de ||
+      onChange={(e) => {
+        let value = e.target.value.slice(0, 50);
+        if (/(\s{2,})/.test(value)) return;
 
-            // Validación por tipo de contacto
-            if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/\S+@\S+\.\S+/.test(value)) {
-              // Validación de correo electrónico
-              return;
-            }
+        if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/\S+@\S+\.\S+/.test(value)) {
+          return;
+        }
 
-            contactoToUpdate
-              ? setContactoToUpdate({ ...contactoToUpdate, Valor: value })
-              : setNuevoContacto({ ...nuevoContacto, Valor: value });
-          }}
-          className="border-0"
-        />
-      )}
-    </div>
+        if (contactoToUpdate) {
+          setContactoToUpdate((prev) => ({ ...prev, Valor: value }));
+        } else {
+          setNuevoContacto((prev) => ({ ...prev, Valor: value }));
+        }
+      }}
+      className="border-0"
+    />
+  )}
+</div>
+
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
