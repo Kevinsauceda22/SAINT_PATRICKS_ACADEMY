@@ -353,19 +353,6 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Familias',
-        to: '/ListaEstructura',
-        nameobject: 'ListaEstructura',
-      },
-      {
-        component: CNavItem,
-        name: 'Estructuras',
-        to: '/ListaEstructura',
-        nameobject: 'ListaRelacion',
-      },
-
-      {
-        component: CNavItem,
         name: 'Tipo de Relaciones',
         to: 'ListaRelacion',
         nameobject: 'ListaRelacion',
@@ -381,23 +368,18 @@ const _nav = [
         to: '/ListaHistoricoProc',
         nameobject: 'ListaHistoricoProc',
       },
-
-
-
       {
         component: CNavItem,
         name: 'Departamento',
         to: '/departamento',
         nameobject: 'departamento',
       },
-
       {
         component: CNavItem,
         name: 'Municipios',
         to: '/municipios',
         nameobject: 'Municipios',
       },
-
       {
         component: CNavItem,
         name: 'Contacto',
