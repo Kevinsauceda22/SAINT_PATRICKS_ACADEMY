@@ -928,16 +928,15 @@ const handleObservacionChangeActualizar = (index, value) => {
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
-          // Pie de página
+          const currentPage = doc.internal.getCurrentPageInfo().pageNumber; // Página actual
+          const totalPages = doc.internal.getNumberOfPages(); // Total de páginas
           const currentDate = new Date();
           const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
           doc.setFontSize(10);
           doc.setTextColor(100);
           doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-          pageNumber += 1; // Incrementar el número de página
-        },
+          doc.text(`Página ${currentPage} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+      },
       });
   
       // Abrir el PDF en lugar de descargarlo automáticamente
@@ -1102,17 +1101,16 @@ const handleObservacionChangeActualizar = (index, value) => {
           3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
-        didDrawPage: (data) => {
-          // Pie de página
+         didDrawPage: (data) => {
+          const currentPage = doc.internal.getCurrentPageInfo().pageNumber; // Página actual
+          const totalPages = doc.internal.getNumberOfPages(); // Total de páginas
           const currentDate = new Date();
           const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
           doc.setFontSize(10);
           doc.setTextColor(100);
           doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-          pageNumber += 1; // Incrementar el número de página
-        },
+          doc.text(`Página ${currentPage} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+      },
       });
   
       // Abrir el PDF en lugar de descargarlo automáticamente
