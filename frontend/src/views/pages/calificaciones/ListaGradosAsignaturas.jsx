@@ -301,7 +301,7 @@ const ListaGradosAsignaturas = () => {
             doc.setFontSize(10);
             doc.setTextColor(100);
             doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-            doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10, { align: 'right' });
+            doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
         }
     
             // Abre el PDF
