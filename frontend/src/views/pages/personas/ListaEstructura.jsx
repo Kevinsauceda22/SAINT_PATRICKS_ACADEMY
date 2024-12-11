@@ -74,6 +74,7 @@ const ListaEstructura = () => {
   const [codPersonaEstudiante, setCodPersonaEstudiante] = useState('');
   const [codPersonaPadre, setCodPersonaPadre] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   const [estructurasFamiliares, setEstructurasFamiliares] = useState([]);
   const [codPersonaSeleccionada, setCodPersonaSeleccionada] = useState('');
   const [filterEstructuraFamiliar, setFilterEstructuraFamiliar] = useState([]);
@@ -118,28 +119,69 @@ const ListaEstructura = () => {
     }
   }, [personaSeleccionada]);
 
-  useEffect(() => {
-    if (modalVisible === false && personaSeleccionada) {
-      // Cargar de nuevo las estructuras familiares cuando se cierra el modal y se ha añadido una nueva estructura.
-      const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
-        const datos = await respuesta.json();
-        setEstructurasFamiliares(datos);
-      };
-      cargarEstructurasFamiliares();
-    }
-  }, [modalVisible, personaSeleccionada]);
+
 
   useEffect(() => {
     if (modalUpdateVisible === false && personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
         const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
-        setEstructurasFamiliares(datos);
+  
+
+        if (Array.isArray(datos)) {
+
+          setEstructurasFamiliares(datos);
+        } else {
+
+          setEstructurasFamiliares([]);
+        }
       };
       cargarEstructurasFamiliares();
     }
   }, [modalUpdateVisible, personaSeleccionada]);
+
+
+
+  useEffect(() => {
+    if (modalVisible === false && personaSeleccionada) {
+      const cargarEstructurasFamiliares = async () => {
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const datos = await respuesta.json();
+  
+
+        if (Array.isArray(datos)) {
+
+          setEstructurasFamiliares(datos);
+        } else {
+
+          setEstructurasFamiliares([]);
+        }
+      };
+      cargarEstructurasFamiliares();
+    }
+  }, [modalVisible, personaSeleccionada]);
+
+
+  useEffect(() => {
+    if (modalDeleteVisible === false && personaSeleccionada) {
+      const cargarEstructurasFamiliares = async () => {
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const datos = await respuesta.json();
+  
+
+        if (Array.isArray(datos)) {
+
+          setEstructurasFamiliares(datos);
+        } else {
+
+          setEstructurasFamiliares([]);
+        }
+      };
+      cargarEstructurasFamiliares();
+    }
+  }, [modalDeleteVisible, personaSeleccionada]);
+  
+  
   
   
 {/* -------------------------------------------------------------------------------------------------------------------------------------------- */}
@@ -211,6 +253,16 @@ const handleSeleccionarPersona = (persona) => {
       descripcion: '',
     });
     setBuscadorRelacion('');
+  };
+
+  const resetEstructuraToUpdate = () => {
+    setEstructuraToUpdate({
+      cod_persona_padre: rolActual === 'PADRE' ? personaSeleccionada?.cod_persona || '' : '',
+      cod_persona_estudiante: rolActual === 'ESTUDIANTE' ? personaSeleccionada?.cod_persona || '' : '',
+      cod_tipo_relacion: '',
+      descripcion: '',
+    });
+    setBuscadorRelacion(''); 
   };
   
 
@@ -351,6 +403,7 @@ const handleSeleccionarPersona = (persona) => {
 {/*************************************************Función para actualizar estructura*******************************************************/}
 const handleUpdateEstructura = async () => {
 
+
   try {
     const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
       method: 'PUT',
@@ -466,8 +519,6 @@ const handleCloseModal = (closeFunction, resetFields) => {
 };
 
 
-
-
 const handleOpenUpdateModal = (estructura) => {
   // Configurar la estructura a actualizar
   setEstructuraToUpdate({
@@ -545,7 +596,7 @@ const handleSearch = (e) => {
 /*******************************FUNCION DE REPORTERIA*************************************/
 // Función para generar reporte PDF
 const ReporteEstructuraPDF = () => {
-  const doc = new jsPDF('p', 'mm', 'letter'); //
+  const doc = new jsPDF('l  ', 'mm', 'letter'); //
 
   if (!filteredRecords || filteredRecords.length === 0) {
     alert('No hay datos para exportar.');
@@ -587,6 +638,9 @@ const ReporteEstructuraPDF = () => {
       tipo_relacion: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
       descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
     }));
+
+    const pageHeight = doc.internal.pageSize.height;
+
 
     doc.autoTable({
       startY: 65,
@@ -992,27 +1046,20 @@ return (
         </CFormSelect>
       </CInputGroup>
 
-      {/* Campo de Descripción */}
-      <CInputGroup className="mt-3">
-  {errorMessages.descripcion && (
-    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-      {errorMessages.descripcion}
-    </div>
-  )}
-
-  
+{/* Campo de Descripción */}
+<CInputGroup className="mt-3">
   <CInputGroupText>Descripción</CInputGroupText>
   <CFormInput
     type="text"
     value={nuevaEstructura.descripcion}
-    onChange={e => {
-      const value = e.target.value;
+    onChange={(e) => {
+      const value = e.target.value.toUpperCase(); // Convertir a mayúsculas
 
       // Bloquear secuencias de más de tres letras repetidas
       if (/(.)\1{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.'
+          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
         }));
         return;
       }
@@ -1021,7 +1068,7 @@ return (
       if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.'
+          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
         }));
         return;
       }
@@ -1030,12 +1077,12 @@ return (
       if (/\s{2,}/.test(value)) {
         setErrorMessages((prevErrors) => ({
           ...prevErrors,
-          descripcion: 'La descripción no puede contener más de un espacio consecutivo.'
+          descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
         }));
         return;
       }
 
-      // Verifica si el campo está vacío
+      // Validar longitud mínima y campo vacío
       const erroresTemp = { ...errorMessages };
       if (!value.trim()) {
         erroresTemp.descripcion = 'La descripción no puede estar vacía.';
@@ -1045,7 +1092,8 @@ return (
         erroresTemp.descripcion = '';
       }
 
-      setNuevaEstructuraFamiliar(prev => ({
+      // Actualizar estado con el valor en mayúsculas
+      setNuevaEstructuraFamiliar((prev) => ({
         ...prev,
         descripcion: value,
       }));
@@ -1055,8 +1103,11 @@ return (
     required
   />
 </CInputGroup>
-
-{/* Estilos dentro del componente */}
+{errorMessages.descripcion && (
+  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+    {errorMessages.descripcion}
+  </div>
+)}
 <style jsx>{`
   .error-message {
     color: red;
@@ -1066,6 +1117,8 @@ return (
     margin-left: 12px;  /* Para alinearlo con el texto del input */
   }
 `}</style>
+
+
 
     </CForm>
   </CModalBody>
@@ -1089,7 +1142,9 @@ return (
 
 
 
-{/********************************* Modal para actualizar estructura familiar***************************************************/}
+{/********************************* MODAL PARA ACTUALIZAR ESTRUCTURA ***************************************************/}
+
+{/* Modal para actualizar estructura familiar */}
 <CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
@@ -1196,7 +1251,7 @@ return (
     </CForm>
   </CModalBody>
   <CModalFooter>
-  <CButton
+         <CButton
             style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
             onClick={() => setModalUpdateVisible(false)}
           >
@@ -1211,11 +1266,9 @@ return (
   </CModalFooter>
 </CModal>
 
+{/****************************************FIN DEL MODAL DE ACTUALIZAR********************************************************/}
 
-{/* Fin del modal actualizar */}
-
-
-      {/* Modal para eliminar una estructura */}
+{/******************************************MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
       <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
           <CModalTitle>Eliminar Estructura Familiar</CModalTitle>
@@ -1232,11 +1285,10 @@ return (
           </CButton>
         </CModalFooter>
       </CModal>
-      {/* Fin de eliminar  */}
+{/******************************************FIN MODAL PARA ELIMINAR ESTRUCTURA*********************************************/}
 
 
     </CContainer>
   )
 }
-  
 export default ListaEstructura

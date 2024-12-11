@@ -83,12 +83,6 @@ export const eliminarContacto = async (req, res) => {
     const pool = await conectarDB();
 
     try {
-        // Verificar si el contacto existe
-        const [existingRecord] = await pool.query('CALL P_Get_Contacto_Por_Codigo(?)', [cod_contacto]);
-
-        if (!existingRecord[0]) {
-            return res.status(404).json({ Mensaje: 'Contacto no encontrado' });
-        }
 
         // Proceder con la eliminación si el contacto existe
         await pool.query('CALL P_Delete_Contacto(?)', [cod_contacto]);
@@ -102,3 +96,4 @@ export const eliminarContacto = async (req, res) => {
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+

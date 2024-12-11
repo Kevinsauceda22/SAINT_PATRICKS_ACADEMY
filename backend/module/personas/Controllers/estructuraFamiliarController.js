@@ -219,6 +219,7 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
 
 
 
+
 // Controlador para eliminar 
 export const eliminarEstructuraFamiliar = async (req, res) => {
     const { Cod_genealogia } = req.params;
