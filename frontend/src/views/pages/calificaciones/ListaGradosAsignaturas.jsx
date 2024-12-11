@@ -287,18 +287,22 @@ const ListaGradosAsignaturas = () => {
                     styles: { fontSize: 10, cellPadding: 3, halign: 'center' },
                     headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255] },
                     alternateRowStyles: { fillColor: [240, 248, 255] },
-                    didDrawPage: (data) => {
-                        const currentPage = doc.internal.getCurrentPageInfo().pageNumber; // Página actual
-                        const totalPages = doc.internal.getNumberOfPages(); // Total de páginas
-                        const currentDate = new Date();
-                        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                        doc.setFontSize(10);
-                        doc.setTextColor(100);
-                        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                        doc.text(`Página ${currentPage} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10, { align: 'right' });
-                    },
-                });
-            });
+                     });
+        });
+
+        // Calcular total de páginas
+        const totalPages = doc.internal.getNumberOfPages();
+
+        // Agregar pie de página en cada página
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            const currentDate = new Date();
+            const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+            doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+        }
     
             // Abre el PDF
             window.open(doc.output('bloburl'), '_blank');
@@ -378,16 +382,27 @@ const ListaGradosAsignaturas = () => {
                 },
                 alternateRowStyles: { fillColor: [240, 248, 255] }, // Color alterno para filas
                 didDrawPage: (data) => {
-                    const currentPage = doc.internal.getCurrentPageInfo().pageNumber; // Página actual
-                    const totalPages = doc.internal.getNumberOfPages(); // Total de páginas
                     const currentDate = new Date();
                     const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
                     doc.setFontSize(10);
                     doc.setTextColor(100);
+                    // Fecha y hora en el pie de página
                     doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                    doc.text(`Página ${currentPage} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10, { align: 'right' });
                 },
-            });
+                });
+                
+                // Asegúrate de calcular el total de páginas al final
+                const totalPages = doc.internal.getNumberOfPages();
+                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i); // Ve a cada página
+                    doc.setTextColor(100);
+                    const text = `Página ${i} de ${totalPages}`;
+                    // Agrega número de página en la posición correcta
+                    doc.text(text, pageWidth - 30, pageHeight - 10);
+                }
     
             // Abre el PDF
             window.open(doc.output('bloburl'), '_blank');
