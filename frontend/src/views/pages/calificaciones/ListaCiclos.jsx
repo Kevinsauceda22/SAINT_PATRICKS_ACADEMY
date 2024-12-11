@@ -244,19 +244,28 @@ const ListaCiclos = () => {
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
-          // Pie de página
-          const currentDate = new Date();
-          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-          doc.setFontSize(10);
-          doc.setTextColor(100);
-          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-          pageNumber += 1; // Incrementar el número de página
-        },
-      });
-  
-  
+                    const currentDate = new Date();
+                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
+                    doc.setFontSize(10);
+                    doc.setTextColor(100);
+                    // Fecha y hora en el pie de página
+                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+                },
+                });
+                
+                // Asegúrate de calcular el total de páginas al final
+                const totalPages = doc.internal.getNumberOfPages();
+                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i); // Ve a cada página
+                    doc.setTextColor(100);
+                    const text = `Página ${i} de ${totalPages}`;
+                    // Agrega número de página en la posición correcta
+                    doc.text(text, pageWidth - 30, pageHeight - 10);
+                }
+
       // Abrir el PDF
       window.open(doc.output('bloburl'), '_blank');
     };
