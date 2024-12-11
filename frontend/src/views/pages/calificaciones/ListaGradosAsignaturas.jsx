@@ -397,6 +397,7 @@ const ListaGradosAsignaturas = () => {
             const totalPages = doc.internal.getNumberOfPages();
             for (let i = 1; i <= totalPages; i++) {
                 doc.setPage(i);
+               doc.setTextColor(100);
                 doc.text(`Página ${i} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
             }
     
