@@ -262,7 +262,7 @@ const ListaInstitutos = () => {
           },
           body: JSON.stringify({
             cod_usuario: decodedToken.cod_usuario, // Código del usuario
-            cod_objeto: 99, // Código del objeto para la acción
+            cod_objeto: 104, // Código del objeto para la acción
             accion: 'INSERT', // Acción realizada
             descripcion: descripcion, // Descripción de la acción
           }),
@@ -376,7 +376,7 @@ const ListaInstitutos = () => {
           },
           body: JSON.stringify({
             cod_usuario: decodedToken.cod_usuario, // Código del usuario
-            cod_objeto: 99, // Código del objeto para la acción
+            cod_objeto: 104, // Código del objeto para la acción
             accion: 'UPDATE', // Acción realizada
             descripcion: descripcion, // Descripción de la acción
           }),
@@ -463,7 +463,7 @@ const ListaInstitutos = () => {
            },
            body: JSON.stringify({
              cod_usuario: decodedToken.cod_usuario, // Código del usuario
-             cod_objeto: 99, // Código del objeto para la acción
+             cod_objeto: 104, // Código del objeto para la acción
              accion: 'DELETE', // Acción realizada
              descripcion: descripcion, // Descripción de la acción
            }),
