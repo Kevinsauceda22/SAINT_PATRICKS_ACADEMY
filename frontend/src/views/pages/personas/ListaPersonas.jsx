@@ -340,47 +340,10 @@ const handleCloseModal = (setModalVisible, resetData, formData) => {
 };
 
 
-const openUpdateModal = (persona) => {
-
-
-  console.log('Cod_nacionalidad de persona:', persona.cod_nacionalidad);
-
-  
-  // Asegúrate de que la fecha esté en el formato yyyy-MM-dd para el campo de fecha
-  const fechaFormateada = persona.fecha_nacimiento ? formatearFecha(persona.fecha_nacimiento) : '';
-  const nacionalidadSeleccionada = nacionalidad.find(nac => nac.Cod_nacionalidad === persona.cod_nacionalidad);
-  console.log('Nacionalidad seleccionada:', nacionalidadSeleccionada);
-  setPersonaToUpdate({
-      ...persona,
-      fecha_nacimiento: fechaFormateada,
-      buscadorNacionalidad: nacionalidadSeleccionada ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}` : '',
-  
-  
-    });
-    
-  setModalUpdateVisible(true);
-};
-
-useEffect(() => {
-  console.log('buscadorNacionalidad:', buscadorNacionalidad);
-}, [buscadorNacionalidad]);
-
-
-const closeUpdateModal = () => {
-  handleCloseModal(setModalUpdateVisible, resetPersonaToUpdate, personaToUpdate);
-};
-
-const openAddModal = () => {
-  setModalVisible(true);
-};
-
-const closeAddModal = () => {
-  handleCloseModal(setModalVisible, resetNuevaPersona, nuevaPersona);
-};
-
-const openDeleteModal = (persona) => {
-  setPersonaToDelete(persona);
-  setModalDeleteVisible(true);
+// Manejo de modales de detalle
+const openDetailModal = (persona) => {
+  setSelectedPersona(persona);
+  setShowDetailModal(true);
 };
 
 const closeDetailModal = () => {
@@ -987,7 +950,31 @@ const handleCreatePersona = async () => {
     doc.save('reporte_personas.pdf')
   }
 
+  const openUpdateModal = (persona) => {
+    setPersonaToUpdate({
+      cod_persona: persona.cod_persona,
+      dni_persona: persona.dni_persona,
+      Nombre: persona.Nombre,
+      Segundo_nombre: persona.Segundo_nombre,
+      Primer_apellido: persona.Primer_apellido,
+      Segundo_apellido: persona.Segundo_apellido,
+      cod_nacionalidad: persona.cod_nacionalidad,
+      direccion_persona: persona.direccion_persona,
+      fecha_nacimiento: persona.fecha_nacimiento,
+      Estado_Persona: persona.Estado_Persona,
+      cod_tipo_persona: persona.cod_tipo_persona,
+      cod_departamento: persona.cod_departamento,
+      cod_municipio: persona.cod_municipio,
+      cod_genero: persona.cod_genero,
+      principal: persona.principal,
+    })
+    setModalUpdateVisible(true)
+  }
 
+  const openDeleteModal = (persona) => {
+    setPersonaToDelete(persona)
+    setModalDeleteVisible(true)
+  }
 
   const handleSearch = (event) => {
     setSearchTerm(event.target.value)

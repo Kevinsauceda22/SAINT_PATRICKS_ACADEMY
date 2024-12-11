@@ -74,7 +74,6 @@ const ListaEstructura = () => {
   const [codPersonaEstudiante, setCodPersonaEstudiante] = useState('');
   const [codPersonaPadre, setCodPersonaPadre] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
   const [estructurasFamiliares, setEstructurasFamiliares] = useState([]);
   const [codPersonaSeleccionada, setCodPersonaSeleccionada] = useState('');
   const [filterEstructuraFamiliar, setFilterEstructuraFamiliar] = useState([]);
@@ -119,69 +118,28 @@ const ListaEstructura = () => {
     }
   }, [personaSeleccionada]);
 
-
+  useEffect(() => {
+    if (modalVisible === false && personaSeleccionada) {
+      // Cargar de nuevo las estructuras familiares cuando se cierra el modal y se ha añadido una nueva estructura.
+      const cargarEstructurasFamiliares = async () => {
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const datos = await respuesta.json();
+        setEstructurasFamiliares(datos);
+      };
+      cargarEstructurasFamiliares();
+    }
+  }, [modalVisible, personaSeleccionada]);
 
   useEffect(() => {
     if (modalUpdateVisible === false && personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
         const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
-  
-
-        if (Array.isArray(datos)) {
-
-          setEstructurasFamiliares(datos);
-        } else {
-
-          setEstructurasFamiliares([]);
-        }
+        setEstructurasFamiliares(datos);
       };
       cargarEstructurasFamiliares();
     }
   }, [modalUpdateVisible, personaSeleccionada]);
-
-
-
-  useEffect(() => {
-    if (modalVisible === false && personaSeleccionada) {
-      const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
-        const datos = await respuesta.json();
-  
-
-        if (Array.isArray(datos)) {
-
-          setEstructurasFamiliares(datos);
-        } else {
-
-          setEstructurasFamiliares([]);
-        }
-      };
-      cargarEstructurasFamiliares();
-    }
-  }, [modalVisible, personaSeleccionada]);
-
-
-  useEffect(() => {
-    if (modalDeleteVisible === false && personaSeleccionada) {
-      const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
-        const datos = await respuesta.json();
-  
-
-        if (Array.isArray(datos)) {
-
-          setEstructurasFamiliares(datos);
-        } else {
-
-          setEstructurasFamiliares([]);
-        }
-      };
-      cargarEstructurasFamiliares();
-    }
-  }, [modalDeleteVisible, personaSeleccionada]);
-  
-  
   
   
 {/* -------------------------------------------------------------------------------------------------------------------------------------------- */}
@@ -253,16 +211,6 @@ const handleSeleccionarPersona = (persona) => {
       descripcion: '',
     });
     setBuscadorRelacion('');
-  };
-
-  const resetEstructuraToUpdate = () => {
-    setEstructuraToUpdate({
-      cod_persona_padre: rolActual === 'PADRE' ? personaSeleccionada?.cod_persona || '' : '',
-      cod_persona_estudiante: rolActual === 'ESTUDIANTE' ? personaSeleccionada?.cod_persona || '' : '',
-      cod_tipo_relacion: '',
-      descripcion: '',
-    });
-    setBuscadorRelacion(''); 
   };
   
 
