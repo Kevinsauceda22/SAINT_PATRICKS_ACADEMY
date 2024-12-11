@@ -2,9 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch,cilInfo,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilFile,cilSpreadsheet,cilDescription,cilArrowLeft } from '@coreui/icons'; // Importar iconos específicos
 import Swal from 'sweetalert2';
-
-import * as jwt_decode from 'jwt-decode';
-
 import {CButton,CContainer, CTable,CTableHead,CTableRow, CTableHeaderCell,
   CTableBody,CTableDataCell,CCol,CRow, CModal,CModalHeader, CModalBody, CModalFooter,  CForm, 
   CFormInput,CFormSelect, CInputGroup,CFormTextarea,CInputGroupText, CPagination, CDropdown,CDropdownToggle,
@@ -20,7 +17,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ActividadesAcademicasProfesor = () => {
-  const { canSelect, canInsert, canUpdate,canDelete } = usePermission('ListaActividadesProfesor');
+  const { canSelect, canInsert, canUpdate } = usePermission('ListaActividadesProfesor');
   const [secciones, setSecciones] = useState([]);
   const [asignaturas, setAsignaturas] = useState([]);
   const [parciales, setParciales] = useState([]);
@@ -70,21 +67,6 @@ const ActividadesAcademicasProfesor = () => {
 
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
 
-   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
-        console.log('Token decodificado:', decodedToken);
-
-        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
-
-      } catch (error) {
-        console.error('Error al decodificar el token:', error);
-      }
-    }
-  }, []); 
-  
   // Fetch del código del profesor al cargar el componente
   const fetchCodProfesor = async () => {
     try {
@@ -533,19 +515,6 @@ const handleGestionarActividades = (parcial) => {
   
   const handleCrearActividad = async () => {
     try {
-       // Verificar si obtenemos el token correctamente
-       const token = localStorage.getItem('token');
-       if (!token) {
-         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-         return;
-       }
-   
-       // Decodificar el token para obtener el nombre del usuario
-       const decodedToken = jwt_decode.jwtDecode(token);
-       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-         console.error('No se pudo obtener el código o el nombre de usuario del token');
-         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-       }
       console.log("Valores actuales de nuevaActividad:", nuevaActividad);
   
       // Validación de campos requeridos
@@ -597,7 +566,6 @@ const handleGestionarActividades = (parcial) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(actividadData),
       });
@@ -605,34 +573,10 @@ const handleGestionarActividades = (parcial) => {
       const responseData = await response.json();
   
       if (response.ok) {
-         // 2. Registrar la acción en la bitácora
-         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva actividad académica: ${nuevaActividad.Nombre_actividad_academica} `;
-        
-         // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
-           method: 'POST',
-           headers: {
-             'Content-Type': 'application/json',
-             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-           },
-           body: JSON.stringify({
-             cod_usuario: decodedToken.cod_usuario, // Código del usuario
-             cod_objeto: 83, // Código del objeto para la acción
-             accion: 'INSERT', // Acción realizada
-             descripcion: descripcion, // Descripción de la acción
-           }),
-         });
-   
-         if (bitacoraResponse.ok) {
-           console.log('Registro en bitácora exitoso');
-         } else {
-           Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-         }
         Swal.fire({
           icon: "success",
           title: "¡Éxito!",
           text: "La actividad se ha creado correctamente.",
-          confirmButtonText: 'Aceptar',
         });
   
         // Refrescar actividades sin cambiar a vista inicial
@@ -731,7 +675,6 @@ const handleGestionarActividades = (parcial) => {
 
 
 
-  
 // Manejar actualización de actividad
 const handleActualizarActividad = async () => {
   const { Nombre_actividad_academica, Descripcion, Fechayhora_Inicio, Fechayhora_Fin, Valor, Cod_actividad_academica } = actividadToUpdate;
@@ -754,25 +697,12 @@ const handleActualizarActividad = async () => {
     Swal.fire({
       icon: "error",
       title: "Fechas inválidas",
-      text: 'La "Fecha y hora inicio" no puede ser mayor que la "Fecha y hora inicio".',
+      text: 'La "fecha inicio" no puede ser mayor que la "fecha fin".',
     });
     return;
   }
 
   try {
-     // Verificar si obtenemos el token correctamente
-     const token = localStorage.getItem('token');
-     if (!token) {
-       Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-       return;
-     }
- 
-     // Decodificar el token para obtener el nombre del usuario
-     const decodedToken = jwt_decode.jwtDecode(token);
-     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-       console.error('No se pudo obtener el código o el nombre de usuario del token');
-       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-     }
     // Validar espacio restante en el backend
     const response = await fetch("http://localhost:4000/api/actividadesacademicas/validar-valoractua", {
       method: "POST",
@@ -802,7 +732,6 @@ const handleActualizarActividad = async () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           Nombre_actividad_academica,
@@ -818,35 +747,10 @@ const handleActualizarActividad = async () => {
       throw new Error("Error en la actualización.");
     }
 
-     // Registrar la acción en la bitácora
-     const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la actividad academica: ${Nombre_actividad_academica}, con valor ${Valor}`;
-         
-     // Enviar a la bitácora
-     const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-         'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-       },
-       body: JSON.stringify({
-         cod_usuario: decodedToken.cod_usuario, // Código del usuario
-         cod_objeto: 83, // Código del objeto para la acción
-         accion: 'UPDATE', // Acción realizada
-         descripcion: descripcion, // Descripción de la acción
-       }),
-     });
-
-     if (bitacoraResponse.ok) {
-       console.log('Registro en bitácora exitoso');
-     } else {
-       Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-     }
-    
     Swal.fire({
       icon: "success",
       title: "¡Éxito!",
       text: "La actividad se ha actualizado correctamente.",
-      confirmButtonText: 'Aceptar',
     });
 
     // Refrescar actividades
@@ -897,21 +801,8 @@ const forceModalOpen = (actividad) => {
 };
 
 
-const handleEliminarActividad = async (id,nombre) => {
+const handleEliminarActividad = async (id) => {
     try {
-       // Verificar si obtenemos el token correctamente
-       const token = localStorage.getItem('token');
-       if (!token) {
-         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-         return;
-       }
-   
-       // Decodificar el token para obtener el nombre del usuario
-       const decodedToken = jwt_decode.jwtDecode(token);
-       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-         console.error('No se pudo obtener el código o el nombre de usuario del token');
-         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-       }
         const confirm = await Swal.fire({
             title: "¿Estás seguro?",
             text: "Esta acción eliminará la actividad de forma permanente.",
@@ -928,7 +819,6 @@ const handleEliminarActividad = async (id,nombre) => {
                     method: "DELETE",
                     headers: {
                         "Content-Type": "application/json",
-                        'Authorization': `Bearer ${token}`,
                     },
                 }
             );
@@ -936,34 +826,10 @@ const handleEliminarActividad = async (id,nombre) => {
             const responseData = await response.json();
 
             if (response.ok) {
-               // 2. Registrar la acción en la bitácora
-              const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado la actividad: ${nombre} con codigo ${id}`;
-              
-              // Enviar a la bitácora
-              const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-                },
-                body: JSON.stringify({
-                  cod_usuario: decodedToken.cod_usuario, // Código del usuario
-                  cod_objeto: 83, // Código del objeto para la acción
-                  accion: 'DELETE', // Acción realizada
-                  descripcion: descripcion, // Descripción de la acción
-                }),
-              });
-        
-              if (bitacoraResponse.ok) {
-                console.log('Registro en bitácora exitoso');
-              } else {
-                Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-              }
                 Swal.fire({
                     icon: "success",
                     title: "¡Éxito!",
                     text: responseData.mensaje,
-                    confirmButtonText: 'Aceptar',
                 });
 
                 // Refrescar actividades después de eliminar
@@ -1186,7 +1052,7 @@ const generarReporteExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Aceptar',
+      confirmButtonText: 'Entendido',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1253,7 +1119,7 @@ const generarReportePDF = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Aceptar',
+      confirmButtonText: 'Entendido',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1366,7 +1232,7 @@ const generarReporteParcialExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Aceptar',
+      confirmButtonText: 'Entendido',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1431,7 +1297,7 @@ const generarReporteParcialPDF = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Aceptar',
+      confirmButtonText: 'Entendido',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1551,7 +1417,7 @@ const generarReporteActividadesExcel = () => {
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Aceptar',
+      confirmButtonText: 'Entendido',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1625,6 +1491,7 @@ const generarReporteActividadesExcel = () => {
   XLSX.writeFile(libroDeTrabajo, nombreArchivo);
 };
 
+
 const generarReporteActividadesPDF = () => {
   // Validar que haya datos filtrados
   if (!filteredActividades || filteredActividades.length === 0) {
@@ -1632,13 +1499,10 @@ const generarReporteActividadesPDF = () => {
       icon: 'info',
       title: 'Sin datos',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Aceptar',
+      confirmButtonText: 'Entendido',
     });
     return; // Salir de la función si no hay datos
   }
-
-  // Calcular el total de los valores
-  const totalValor = filteredActividades.reduce((total, actividad) => total + parseFloat(actividad.Valor || 0), 0).toFixed(2);
 
   // Crear el PDF en orientación horizontal
   const doc = new jsPDF('landscape');
@@ -1689,6 +1553,20 @@ const generarReporteActividadesPDF = () => {
         yPosition,
         { align: 'center' }
       );
+    } else if (selectedSeccion?.Nombre_seccion && anioSeccionSeleccionada) {
+      doc.text(
+        `Sección: ${selectedSeccion.Nombre_seccion} | Año: ${anioSeccionSeleccionada}`,
+        doc.internal.pageSize.width / 2,
+        yPosition,
+        { align: 'center' }
+      );
+    } else if (selectedAsignatura?.Nombre_asignatura) {
+      doc.text(
+        `Asignatura: ${selectedAsignatura.Nombre_asignatura}`,
+        doc.internal.pageSize.width / 2,
+        yPosition,
+        { align: 'center' }
+      );
     }
 
     yPosition += 10;
@@ -1704,40 +1582,34 @@ const generarReporteActividadesPDF = () => {
     const pageHeight = doc.internal.pageSize.height; // Altura de la página
     let pageNumber = 1; // Página inicial
 
-    // Crear el cuerpo de la tabla
-    const body = filteredActividades.map((actividad, index) => [
-      index + 1,
-      actividad.Nombre_actividad_academica || '',
-      actividad.Descripcion || '',
-      listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A",
-      actividad.Fechayhora_Inicio
-        ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : 'N/A',
-      actividad.Fechayhora_Fin
-        ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-          })
-        : 'N/A',
-      actividad.Valor,
-    ]);
-
- 
-
-    // Generar la tabla
     doc.autoTable({
       startY: yPosition,
       head: [['#', 'Nombre Actividad', 'Descripción', 'Ponderación', 'Inicio', 'Fin', 'Valor']],
-      body: body,
+      body: filteredActividades.map((actividad, index) => [
+        index + 1,
+        actividad.Nombre_actividad_academica || '',
+        actividad.Descripcion || '',
+        listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A",
+        actividad.Fechayhora_Inicio
+          ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'N/A',
+        actividad.Fechayhora_Fin
+          ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'N/A',
+        actividad.Valor,
+      ]),
       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
@@ -1748,26 +1620,6 @@ const generarReporteActividadesPDF = () => {
         cellPadding: 2,
         overflow: 'linebreak',
         valign: 'middle',
-      },
-
-
-
-      foot: [['', '', '', '', '', 'Total:', totalValor]], // Añadir fila total al pie de la tabla
-      headStyles: {
-        fillColor: [0, 102, 51], // Verde para el encabezado
-        textColor: [255, 255, 255],
-        fontSize: 9,
-      },
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-        overflow: 'linebreak',
-        valign: 'middle',
-      },
-      footStyles: {
-        fillColor: [0, 102, 51], // Verde para la fila del pie
-        textColor: [255, 255, 255], // Texto en blanco para contraste
-        fontSize: 10,
       },
       columnStyles: {
         0: { cellWidth: 10 }, // Columna '#'
@@ -1804,7 +1656,6 @@ const generarReporteActividadesPDF = () => {
     });
   };
 };
-
 
 
 
@@ -2502,7 +2353,7 @@ const generarReporteActividadesPDF = () => {
           </CButton>
             )}
 
-            {canDelete && ( 
+            
           <CButton
           style={{
             backgroundColor: '#E57368', // Mismo color que el primer botón
@@ -2523,11 +2374,11 @@ const generarReporteActividadesPDF = () => {
             e.currentTarget.style.boxShadow = 'none';
             e.currentTarget.style.color = '#5C4044';
           }}
-            onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica,actividad.Nombre_actividad_academica)}
+            onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica)}
           >
            <CIcon icon={cilTrash} />
           </CButton>
-          )}
+          
          
         </CTableDataCell>
         
@@ -2625,166 +2476,42 @@ const generarReporteActividadesPDF = () => {
           onChange={(e) => handleInputChange(e, (value) =>setNuevaActividad({...nuevaActividad, Descripcion: e.target.value, }))}
         />
         </CInputGroup>
-       {/* Fecha y hora inicio */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha y hora inicio</CInputGroupText>
-  <CFormInput
-    type="date"
-    onPaste={disableCopyPaste}
-    onCopy={disableCopyPaste}
-    value={nuevaActividad.FechaInicio || ''}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      if (!selectedDate) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Fecha requerida',
-          text: 'Debe seleccionar una fecha antes de configurar la hora.',
-          confirmButtonText: 'Aceptar',
-        });
-        return;
-      }
-      setNuevaActividad({
-        ...nuevaActividad,
-        FechaInicio: selectedDate,
-        Fechayhora_Inicio: '', // Reset datetime input
-      });
-    }}
-  />
-  <CFormInput
-    type="time"
-    disabled={!nuevaActividad.FechaInicio}
-    value={
-      nuevaActividad.Fechayhora_Inicio
-        ? nuevaActividad.Fechayhora_Inicio.split('T')[1]
-        : ''
-    }
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const [hour] = selectedTime.split(':').map(Number);
-      if (hour < 7 || hour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Aceptar',
-        });
-        return;
-      }
+         {/* Fecha y hora inicio */}
+     <CInputGroup className="mb-3">
+      <CInputGroupText>Fecha y hora inicio</CInputGroupText> 
+      <CFormInput
+          type="datetime-local"
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevaActividad.Fechayhora_Inicio}
+          onChange={(e) =>
+            setNuevaActividad({
+              ...nuevaActividad,
+              Fechayhora_Inicio: e.target.value,
+            })
+          }
+        />
+        </CInputGroup>
 
-      // Validación si la fecha es la misma y hora fin ya está definida
-      if (
-        nuevaActividad.FechaInicio === nuevaActividad.FechaFin &&
-        nuevaActividad.Fechayhora_Fin
-      ) {
-        const [endHour, endMinute] = nuevaActividad.Fechayhora_Fin.split('T')[1]
-          ?.split(':')
-          .map(Number);
-        const [startHour, startMinute] = selectedTime.split(':').map(Number);
 
-        if (
-          startHour > endHour ||
-          (startHour === endHour && startMinute > endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora inicio inválida',
-            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Aceptar',
-          });
-          return;
-        }
-      }
+        {/* fecha y hora fin*/}
+     <CInputGroup className="mb-3">
+      <CInputGroupText>Fecha y hora fin</CInputGroupText> 
+      <CFormInput
+          type="datetime-local"
+          value={nuevaActividad.Fechayhora_Fin}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          onChange={(e) =>
+            setNuevaActividad({
+              ...nuevaActividad,
+              Fechayhora_Fin: e.target.value,
+            })
+          }
+        />
+         </CInputGroup>
 
-      setNuevaActividad({
-        ...nuevaActividad,
-        Fechayhora_Inicio: `${nuevaActividad.FechaInicio}T${selectedTime}`,
-      });
-    }}
-  />
-</CInputGroup>
-
-{/* Fecha y hora fin */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha y hora fin</CInputGroupText>
-  <CFormInput
-    type="date"
-    onPaste={disableCopyPaste}
-    onCopy={disableCopyPaste}
-    value={nuevaActividad.FechaFin || ''}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      if (!selectedDate) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Fecha requerida',
-          text: 'Debe seleccionar una fecha antes de configurar la hora.',
-          confirmButtonText: 'Aceptar',
-        });
-        return;
-      }
-      setNuevaActividad({
-        ...nuevaActividad,
-        FechaFin: selectedDate,
-        Fechayhora_Fin: '', // Reset datetime input
-      });
-    }}
-  />
-  <CFormInput
-    type="time"
-    disabled={!nuevaActividad.FechaFin}
-    value={
-      nuevaActividad.Fechayhora_Fin
-        ? nuevaActividad.Fechayhora_Fin.split('T')[1]
-        : ''
-    }
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const [hour] = selectedTime.split(':').map(Number);
-      if (hour < 7 || hour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Aceptar',
-        });
-        return;
-      }
-
-      // Validación si la fecha es la misma y hora inicio ya está definida
-      if (
-        nuevaActividad.FechaInicio === nuevaActividad.FechaFin &&
-        nuevaActividad.Fechayhora_Inicio
-      ) {
-        const [startHour, startMinute] = nuevaActividad.Fechayhora_Inicio.split(
-          'T'
-        )[1]
-          ?.split(':')
-          .map(Number);
-        const [endHour, endMinute] = selectedTime.split(':').map(Number);
-
-        if (
-          startHour > endHour ||
-          (startHour === endHour && startMinute > endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora fin inválida',
-            text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
-            confirmButtonText: 'Aceptar',
-          });
-          return;
-        }
-      }
-
-      setNuevaActividad({
-        ...nuevaActividad,
-        Fechayhora_Fin: `${nuevaActividad.FechaFin}T${selectedTime}`,
-      });
-    }}
-  />
-</CInputGroup>
-
+         
      {/* Ponderacion */}
      <CInputGroup className="mb-3">
      <CInputGroupText>Ponderación</CInputGroupText>
@@ -2844,7 +2571,7 @@ const generarReporteActividadesPDF = () => {
       // Validar que los números enteros no superen 2 dígitos
       if (value.includes(".")) {
         const [entero, decimal] = value.split(".");
-        if (entero.length > 3) {
+        if (entero.length > 2) {
           Swal.fire("Advertencia", "Solo se permiten dos dígitos enteros.", "warning");
           value = `${entero.substring(0, 2)}.${decimal}`; // Recortar a 2 dígitos enteros
         }
@@ -2852,7 +2579,7 @@ const generarReporteActividadesPDF = () => {
           Swal.fire("Advertencia", "Solo se permiten dos dígitos después del punto.", "warning");
           value = `${entero}.${decimal.substring(0, 2)}`; // Recortar a 2 decimales
         }
-      } else if (value.length > 3) {
+      } else if (value.length > 2) {
         // Si no hay decimales, limitar los enteros a 2 dígitos
         Swal.fire("Advertencia", "Solo se permiten dos dígitos enteros.", "warning");
         value = value.substring(0, 2); // Recortar a 2 dígitos enteros
@@ -2909,158 +2636,26 @@ backdrop="static" >
                 onChange={(e) => handleInputChange(e, (value) => setActividadToUpdate({...actividadToUpdate, Descripcion: e.target.value, }))}
             />
             </CInputGroup>
-{/* Fecha y hora inicio */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha y hora inicio</CInputGroupText>
-  <CFormInput
-    type="date"
-    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Inicio)?.split("T")[0]}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Inicio: `${selectedDate}T${actividadToUpdate?.Fechayhora_Inicio?.split("T")[1]}`, // Mantener la misma hora
-      });
-    }}
-    style={{ width: "120px" }}  // Ajustar tamaño de la fecha
-  />
-  <CFormInput
-    type="time"
-    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Inicio)?.split("T")[1]}
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const selectedDate = actividadToUpdate?.Fechayhora_Inicio?.split("T")[0];
-      const selectedHour = parseInt(selectedTime.split(":")[0]);
-      const selectedMinute = parseInt(selectedTime.split(":")[1]);
-
-      // Validación: hora debe estar entre las 7 AM y las 3 PM
-      if (selectedHour < 7 || selectedHour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Aceptar',
-        });
-        return;
-      }
-
-      // Validación: la hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma
-      const endDate = actividadToUpdate?.Fechayhora_Fin?.split("T")[0];
-      const endTime = actividadToUpdate?.Fechayhora_Fin?.split("T")[1];
-      const [endHour, endMinute] = endTime ? endTime.split(":").map(Number) : [null, null];
-
-      if (selectedDate === endDate && endHour !== null && endMinute !== null) {
-        if (
-          selectedHour > endHour ||
-          (selectedHour === endHour && selectedMinute >= endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora de inicio no válida',
-            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Aceptar',
-          });
-          return;
-        }
-      }
-
-      // Validación si la fecha es la misma y hora fin ya está definida
-      if (selectedDate === endDate && actividadToUpdate?.Fechayhora_Fin) {
-        const [endHour, endMinute] = actividadToUpdate?.Fechayhora_Fin.split('T')[1]
-          ?.split(':')
-          .map(Number);
-        const [startHour, startMinute] = selectedTime.split(':').map(Number);
-
-        if (
-          startHour > endHour ||
-          (startHour === endHour && startMinute > endMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora inicio inválida',
-            text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Aceptar',
-          });
-          return;
-        }
-      }
-
-      // Actualizar el estado si la hora es válida
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Inicio: `${selectedDate}T${selectedTime}`,
-      });
-    }}
-    style={{ width: "80px" }}  // Ajustar tamaño de la hora
-  />
-</CInputGroup>
 
 
-{/* Fecha y hora fin */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Fecha y hora fin</CInputGroupText>
-  <CFormInput
-    type="date"
-    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Fin)?.split("T")[0]}
-    onChange={(e) => {
-      const selectedDate = e.target.value;
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Fin: `${selectedDate}T${actividadToUpdate?.Fechayhora_Fin?.split("T")[1]}`, // Mantener la misma hora
-      });
-    }}
-    style={{ width: "120px" }}  // Ajustar tamaño de la fecha
-  />
-  <CFormInput
-    type="time"
-    value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Fin)?.split("T")[1]}
-    onChange={(e) => {
-      const selectedTime = e.target.value;
-      const selectedDate = actividadToUpdate?.Fechayhora_Fin?.split("T")[0];
-      const [selectedHour, selectedMinute] = selectedTime.split(":").map(Number);
-
-      // Validación: hora debe estar entre las 7 AM y las 3 PM
-      if (selectedHour < 7 || selectedHour >= 15) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Hora no válida',
-          text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Aceptar',
-        });
-        return;
-      }
-
-      // Validación si la fecha es la misma y la hora de inicio ya está definida
-      const startDate = actividadToUpdate?.Fechayhora_Inicio?.split("T")[0];
-      const [startHour, startMinute] = actividadToUpdate?.Fechayhora_Inicio?.split("T")[1]?.split(":").map(Number);
-
-      if (selectedDate === startDate && actividadToUpdate?.Fechayhora_Inicio) {
-        if (
-          startHour > selectedHour ||
-          (startHour === selectedHour && startMinute > selectedMinute)
-        ) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Hora fin inválida',
-            text: 'La hora de fin no puede ser menor que la hora de inicio si la fecha es la misma.',
-            confirmButtonText: 'Aceptar',
-          });
-          return;
-        }
-      }
-
-      // Actualizar el estado si la hora es válida
-      setActividadToUpdate({
-        ...actividadToUpdate,
-        Fechayhora_Fin: `${selectedDate}T${selectedTime}`,
-      });
-    }}
-    style={{ width: "80px" }}  // Ajustar tamaño de la hora
-  />
-</CInputGroup>
-
-
-
+             {/* Fecha y hora inicio */}
+             <CInputGroup className="mb-3">
+            <CInputGroupText>Fecha y hora inicio</CInputGroupText>
+            <CFormInput
+             type="datetime-local"
+             value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Inicio)}
+             onChange={(e) => setActividadToUpdate({...actividadToUpdate, Fechayhora_Inicio: e.target.value,})}
+           />
+           </CInputGroup>
+           {/* Fecha y hora FIN */}
+           <CInputGroup className="mb-3">
+           <CInputGroupText>Fecha y hora fin</CInputGroupText>
+           <CFormInput
+           type="datetime-local"
+           value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Fin)}
+            onChange={(e) => setActividadToUpdate({...actividadToUpdate, Fechayhora_Fin: e.target.value,})}
+            />
+           </CInputGroup>
           {/* Ponderación */}
 <CInputGroup className="mb-3">
   <CInputGroupText>Ponderación</CInputGroupText>
@@ -3117,7 +2712,7 @@ backdrop="static" >
       }
 
       // Validar que los números enteros no superen 2 dígitos
-      if (value.split(".")[0].length > 3) {
+      if (value.split(".")[0].length > 2) {
         Swal.fire("Advertencia", "El valor no puede tener más de dos dígitos enteros.", "warning");
         return; // Bloquear valores con más de 2 dígitos enteros
       }
