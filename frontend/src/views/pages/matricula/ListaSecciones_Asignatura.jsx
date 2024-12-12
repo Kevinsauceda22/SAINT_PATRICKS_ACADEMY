@@ -12,8 +12,12 @@ import {
   CModalBody, CModalFooter, CPagination, CTable, CTableHead, CTableRow, 
   CTableHeaderCell, CTableBody, CTableDataCell, CFormSelect, CRow, CCol, CFormCheck
 } from '@coreui/react';
+import AccessDenied from "../AccessDenied/AccessDenied"
+import usePermission from '../../../../context/usePermission';
 
 const ListaSecciones_Asignaturas = () => {
+   // Seguridad de botones
+   const { canSelect, canUpdate } = usePermission('ListaSecciones_Asignatura');
   // Estados para gestionar la información de las secciones y asignaturas
   const [secciones_asignaturas, setSecciones_Asignaturas] = useState([]);
   const [secciones, setSecciones] = useState([]);
@@ -655,6 +659,10 @@ const handleUpdateSeccionAsignatura = async () => {
   // Obtiene los registros actuales según la paginación y el filtro aplicado
   const currentRecords = filteredSeccionesAsignaturas.slice(indexOfFirstRecord, indexOfLastRecord);
 
+// Verificar permisos
+if (!canSelect) {
+  return <AccessDenied />;
+}
 
   return(
   <CContainer>
@@ -881,6 +889,7 @@ const handleUpdateSeccionAsignatura = async () => {
         </CTableDataCell>
         <CTableDataCell>
           <div className="d-flex justify-content-center">
+          {canUpdate && (
             <CButton
                 color="info"
                 onClick={() => {
@@ -899,6 +908,7 @@ const handleUpdateSeccionAsignatura = async () => {
               >
                 <CIcon icon={cilPen} />
               </CButton>
+              )}
 
             <CButton
               color="warning"
