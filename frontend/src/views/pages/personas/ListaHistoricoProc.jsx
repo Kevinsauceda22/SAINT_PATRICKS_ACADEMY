@@ -82,6 +82,22 @@ const ListaHistoricoProc = () => {
     navigate('/ListaPersonas');
   };
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(`http://localhost:4000/api/historial_proc/historico_persona/${personaSeleccionada.cod_persona}`);
+        const data = await response.json();
+        setHistoricoProcedencia(data);
+      } catch (error) {
+        console.error('Error al obtener el historial de la persona:', error);
+      }
+    };
+
+    if (personaSeleccionada) {
+      fetchData();
+    }
+  }, [personaSeleccionada]);  
+
 {/************************************************************************************************************************************************/}
 
 const formatearAnio = (fecha) => {
@@ -91,6 +107,13 @@ const formatearAnio = (fecha) => {
   return `${year}`;
 };
 
+const obtenerNombreCompleto = (persona) => {
+  if (!persona) return 'Información no disponible';
+  return [persona.Nombre, persona.Segundo_nombre, persona.Primer_apellido, persona.Segundo_apellido]
+    .filter(Boolean) // Filtrar los valores no definidos
+    .map(nombre => nombre.toUpperCase()) // Convertir todos los nombres a mayúsculas
+    .join(' '); // Unir todos los nombres en una sola cadena
+};
 
 
   useEffect(() => {
@@ -277,7 +300,6 @@ const handleSaveHistorico = async () => {
 
   // Verificar si algún campo está vacío o es nulo
   const campoFaltante = camposRequeridos.find(campo => !campo.valor || campo.valor.toString().trim() === '');
-  
   if (campoFaltante) {
     console.error(`El campo "${campoFaltante.campo}" está vacío o no es válido.`);
     swal.fire({
@@ -289,8 +311,9 @@ const handleSaveHistorico = async () => {
     return;
   }
 
+  // Datos a enviar a la API
   const data = {
-    cod_persona: personaSeleccionada.cod_persona,
+    cod_persona: personaSeleccionada.cod_persona,  // Verifica que este valor esté bien asignado
     instituto: historicoToUpdate.cod_procedencia ? historicoToUpdate.instituto : nuevoHistorico.instituto,
     lugar_procedencia: historicoToUpdate.cod_procedencia ? historicoToUpdate.lugar_procedencia : nuevoHistorico.lugar_procedencia,
     anio_ingreso: historicoToUpdate.cod_procedencia ? historicoToUpdate.anio_ingreso : nuevoHistorico.anio_ingreso,
@@ -313,7 +336,7 @@ const handleSaveHistorico = async () => {
           confirmButtonText: 'Aceptar'
         });
         handleCloseModal(setModalUpdateVisible, resetHistoricoToUpdate);
-        fetchHistoricoProcedencia();
+        fetchHistoricoProcedencia(personaSeleccionada.cod_persona); // Llama solo los datos de la persona
       } else {
         console.error('Error en la respuesta de la API:', response);
         swal.fire({
@@ -339,7 +362,7 @@ const handleSaveHistorico = async () => {
           confirmButtonText: 'Aceptar'
         });
         handleCloseModal(setModalVisible, resetNuevoHistorico);
-        fetchHistoricoProcedencia();
+        fetchHistoricoProcedencia(personaSeleccionada.cod_persona); // Llama solo los datos de la persona
       } else {
         console.error('Error en la respuesta de la API:', response);
         swal.fire({
@@ -360,6 +383,7 @@ const handleSaveHistorico = async () => {
     });
   }
 };
+
 
 
   
@@ -453,7 +477,19 @@ const paginate = (pageNumber) => {
         <CContainer>
 <CRow className="align-items-center mb-5">
   <CCol xs="8" md="9">
-    <h2 className="mb-0">Mantenimiento Historial Procedencia</h2>
+    <h2 className="mb-0">Historial Procedencia</h2>
+    {/* Nombre de la persona seleccionada */}
+    {personaSeleccionada ? (
+          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+            <strong>Procedencia del estudiante:</strong> {personaSeleccionada 
+              ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+              : 'Información no disponible'}
+          </div>
+        ) : (
+          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+            <strong>Persona Seleccionada:</strong> Información no disponible
+          </div>
+        )}
   </CCol>
   {/* Botones "Nuevo" y "Reporte" alineados arriba */}
   <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
@@ -554,50 +590,49 @@ const paginate = (pageNumber) => {
      </CCol>
     </CRow>
       {/* Tabla de histórico de procedencia con tamaño fijo */}
-        <div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
-        <CTable striped>
-        <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
-            <CTableRow>
-              <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '20%' }}>Nombre</CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '20%' }}>Instituto</CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '25%' }}>Lugar de Procedencia</CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '15%' }}>Año de ingreso</CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '15%' }}>Acciones</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {currentRecords
-              .filter((historico) => historico.cod_persona) // Filtra solo los registros de la persona seleccionada
-              .map((historico, index) => (
-                <CTableRow key={historico.cod_procedencia}>
-                  <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-                  <CTableDataCell style={{ textTransform: 'uppercase' }}>{personaSeleccionada
-                    ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
-                    : 'Información no disponible'}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.instituto}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.lugar_procedencia}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.anio_ingreso}</CTableDataCell>
-                <CTableDataCell className="text-center">
-                  <div className="d-flex justify-content-center">
-                    <CButton
-                      color="warning"
-                      onClick={() => openUpdateModal(historico)}
-                      style={{ marginRight: '10px' }}
-                    >
-                      <CIcon icon={cilPen} />
-                    </CButton>
-                    <CButton color="danger" onClick={() => openDeleteModal(historico)}>
-                      <CIcon icon={cilTrash} />
-                    </CButton>
-                  </div>
-                </CTableDataCell>
-              </CTableRow>
-            ))}
-        </CTableBody>
+      <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+  <CTable striped bordered hover>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell>Nombre</CTableHeaderCell>
+        <CTableHeaderCell>Instituto</CTableHeaderCell>
+        <CTableHeaderCell>Lugar de Procedencia</CTableHeaderCell>
+        <CTableHeaderCell>Año de Ingreso</CTableHeaderCell>
+        <CTableHeaderCell>Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords
+        .filter((historico) => {
+          console.log("filtrando por cod_persona:", personaSeleccionada?.cod_persona);
+          return historico.cod_persona === personaSeleccionada?.cod_persona;
+        })
+        .map((historico, index) => (
+          <CTableRow key={historico.cod_procedencia}>
+            <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
+            <CTableDataCell>
+              {personaSeleccionada
+                ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
+                : 'Información no disponible'}
+            </CTableDataCell>
+            <CTableDataCell>{historico.instituto.toUpperCase()}</CTableDataCell>
+            <CTableDataCell>{historico.lugar_procedencia.toUpperCase()}</CTableDataCell>
+            <CTableDataCell>{historico.anio_ingreso}</CTableDataCell>
+            <CTableDataCell>
+              <CButton color="warning" onClick={() => openUpdateModal(historico)}>
+                <CIcon icon={cilPen} />
+              </CButton>
+              <CButton color="danger" onClick={() => openDeleteModal(historico)} className="ms-2">
+                <CIcon icon={cilTrash} />
+              </CButton>
+            </CTableDataCell>
+          </CTableRow>
+        ))}
+    </CTableBody>
+  </CTable>
+</div>
 
-        </CTable>
-        </div>
 
           {/* Paginación */}
       <CPagination

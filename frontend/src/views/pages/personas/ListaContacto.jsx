@@ -632,44 +632,47 @@ const handleSeleccionarCodPersona = (persona) => {
 </CInputGroup>
 
 
-    {/* Tabla de datos filtrados */}
-    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-      <CTable striped bordered hover>
-        <CTableHead>
-          <CTableRow>
-            <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>Nombre</CTableHeaderCell>
-            <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
-            <CTableHeaderCell>Valor</CTableHeaderCell>
-            <CTableHeaderCell>Acciones</CTableHeaderCell>
+<div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+  <CTable striped bordered hover>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell>Nombre</CTableHeaderCell>
+        <CTableHeaderCell>Instituto</CTableHeaderCell>
+        <CTableHeaderCell>Lugar de Procedencia</CTableHeaderCell>
+        <CTableHeaderCell>Año de Ingreso</CTableHeaderCell>
+        <CTableHeaderCell>Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords
+        // Filtrar solo el registro correspondiente al estudiante seleccionado
+        .filter((historico) => historico.cod_persona === personaSeleccionada?.cod_persona)
+        .map((historico, index) => (
+          <CTableRow key={historico.cod_procedencia}>
+            <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
+            <CTableDataCell>
+              {personaSeleccionada
+                ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
+                : 'Información no disponible'}
+            </CTableDataCell>
+            <CTableDataCell>{historico.instituto.toUpperCase()}</CTableDataCell>
+            <CTableDataCell>{historico.lugar_procedencia.toUpperCase()}</CTableDataCell>
+            <CTableDataCell>{historico.anio_ingreso}</CTableDataCell>
+            <CTableDataCell>
+              <CButton color="warning" onClick={() => openUpdateModal(historico)}>
+                <CIcon icon={cilPen} />
+              </CButton>
+              <CButton color="danger" onClick={() => openDeleteModal(historico)} className="ms-2">
+                <CIcon icon={cilTrash} />
+              </CButton>
+            </CTableDataCell>
           </CTableRow>
-        </CTableHead>
-        <CTableBody>
-          {currentRecords.map((item, index) => (
-            <CTableRow key={item.cod_contacto}>
-              <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-              <CTableDataCell>
-                {personaSeleccionada
-                  ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
-                  : 'Información no disponible'}
-              </CTableDataCell>
-              <CTableDataCell>
-                {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
-              </CTableDataCell>
-              <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
-              <CTableDataCell>
-                <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
-                  <CIcon icon={cilPen} />
-                </CButton>
-                <CButton color="danger" onClick={() => handleDeleteContacto(item.cod_contacto, item.Valor)} className="ms-2">
-                  <CIcon icon={cilTrash} />
-                </CButton>
-              </CTableDataCell>
-            </CTableRow>
-          ))}
-        </CTableBody>
-      </CTable>
-    </div>
+        ))}
+    </CTableBody>
+  </CTable>
+</div>
+
 
 {/***********************************************************PAGINACION*******************************************************************/}
       <CPagination align="center" className="my-3">
