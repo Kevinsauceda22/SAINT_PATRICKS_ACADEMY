@@ -14,6 +14,58 @@ import {
 } from '@coreui/react';
 import AccessDenied from "../AccessDenied/AccessDenied"
 import usePermission from '../../../../context/usePermission';
+//importante para poder hacer la bitacora
+import axios from 'axios';
+import { AuthContext } from '/context/AuthProvider'; 
+
+// Funciones para decodificar JWT y registrar en la bitácora
+export const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error al decodificar el token JWT:', error);
+    return null;
+  }
+};
+
+const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
+  try {
+    const token = localStorage.getItem('token');
+    const decodedToken = decodeJWT(token);
+
+    if (!decodedToken) {
+      swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
+      return;
+    }
+
+    const cod_usuario = decodedToken.cod_usuario;
+    const nombre_usuario = decodedToken.nombre_usuario;
+
+    if (!cod_usuario || !nombre_usuario) {
+      swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
+      return;
+    }
+
+    const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
+
+    await axios.post(
+      'http://localhost:4000/api/bitacora/registro',
+      { cod_usuario, cod_objeto: 93, accion, descripcion },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (error) {
+    console.error('Error al registrar en bitácora:', error.message);
+    swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
+  }
+};
 
 const ListaSecciones_Asignaturas = () => {
    // Seguridad de botones
@@ -265,70 +317,75 @@ const ListaSecciones_Asignaturas = () => {
       swal.fire("Error", "Hubo un problema al abrir el modal de actualización.", "error");
     }
   };
-  
-  
 
-const handleUpdateSeccionAsignatura = async () => {
-  // Validar que los datos requeridos estén presentes y sean válidos
-  if (
-    !seccionAsignaturaToUpdate ||
-    !seccionAsignaturaToUpdate.p_Cod_seccion_asignatura ||
-    !seccionAsignaturaToUpdate.p_Cod_secciones ||
-    !seccionAsignaturaToUpdate.p_Hora_inicio ||
-    !seccionAsignaturaToUpdate.p_Hora_fin ||
-    !seccionAsignaturaToUpdate.p_Cod_grados_asignaturas ||
-    !seccionAsignaturaToUpdate.p_Cod_dias
-  ) {
-    swal.fire("Error", "Todos los campos son requeridos y deben estar completos.", "error");
-    return;
-  }
 
-  try {
-    // Verificar que `p_Cod_dias` sea un array, y convertirlo si es necesario
-    const codDiasArray = Array.isArray(seccionAsignaturaToUpdate.p_Cod_dias)
-      ? seccionAsignaturaToUpdate.p_Cod_dias
-      : seccionAsignaturaToUpdate.p_Cod_dias.split(",").map((dia) => dia.trim());
-
-    // Obtener nombres de los días seleccionados
-    const nombresDias = dias
-      .filter((dia) => codDiasArray.includes(dia.Cod_dias))
-      .map((dia) => dia.prefijo_dia.toUpperCase())
-      .join(", ");
-
-    // Preparar los datos para la solicitud
-    const payload = {
-      ...seccionAsignaturaToUpdate,
-      p_Cod_dias: codDiasArray.join(","), // Convertir el array a cadena separada por comas
-      p_Dias_nombres: nombresDias, // Asignar los nombres de los días seleccionados
-    };
-
-    console.log("Payload para la actualización:", payload);
-
-    // Enviar la solicitud PUT al backend
-    const response = await fetch(
-      "http://localhost:4000/api/secciones_asignaturas/actualizar_seccion_asig",
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-
-    // Manejar la respuesta del servidor
-    if (response.ok) {
-      swal.fire("Éxito", "Sección asignatura actualizada correctamente.", "success");
-      setModalUpdateVisible(false); // Cerrar el modal
-      fetchSeccionesAsigyHora(); // Recargar los datos
-    } else {
-      const errorData = await response.json();
-      swal.fire("Error", errorData.mensaje || "Error al actualizar la sección asignatura.", "error");
+  const handleUpdateSeccionAsignatura = async () => {
+    if (
+      !seccionAsignaturaToUpdate ||
+      !seccionAsignaturaToUpdate.p_Cod_seccion_asignatura ||
+      !seccionAsignaturaToUpdate.p_Cod_secciones ||
+      !seccionAsignaturaToUpdate.p_Hora_inicio ||
+      !seccionAsignaturaToUpdate.p_Hora_fin ||
+      !seccionAsignaturaToUpdate.p_Cod_grados_asignaturas ||
+      !seccionAsignaturaToUpdate.p_Cod_dias
+    ) {
+      swal.fire("Error", "Todos los campos son requeridos y deben estar completos.", "error");
+      return;
     }
-  } catch (error) {
-    console.error("Error al actualizar la sección asignatura:", error);
-    swal.fire("Error", "Error en el servidor. Por favor, inténtalo más tarde.", "error");
-  }
-};
-
+  
+    try {
+      const codDiasArray = Array.isArray(seccionAsignaturaToUpdate.p_Cod_dias)
+        ? seccionAsignaturaToUpdate.p_Cod_dias
+        : seccionAsignaturaToUpdate.p_Cod_dias.split(",").map((dia) => dia.trim());
+  
+      const nombresDias = dias
+        .filter((dia) => codDiasArray.includes(dia.Cod_dias))
+        .map((dia) => dia.prefijo_dia.toUpperCase())
+        .join(", ");
+  
+      const payload = {
+        ...seccionAsignaturaToUpdate,
+        p_Cod_dias: codDiasArray.join(","),
+        p_Dias_nombres: nombresDias,
+      };
+  
+      // Encuentra el nombre de la asignatura
+      const asignatura = grados_asignaturas.find(
+        (a) => a.Cod_grados_asignaturas === seccionAsignaturaToUpdate.p_Cod_grados_asignaturas
+      );
+      const nombreAsignatura = asignatura ? asignatura.Nombre_asignatura : "Asignatura desconocida";
+  
+      // Obtén el nombre de la sección y el grado
+      const nombreSeccion = seccionAsignaturaToUpdate.p_Nombre_seccion || "Sección desconocida";
+      const nombreGrado = seccionAsignaturaToUpdate.p_Cod_grado || "Grado desconocido";
+  
+      const response = await fetch(
+        "http://localhost:4000/api/secciones_asignaturas/actualizar_seccion_asig",
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+  
+      if (response.ok) {
+        // Registra en la bitácora incluyendo el nombre de la asignatura, sección y grado
+        await registrarEnBitacora(
+          'UPDATE',
+          `Actualización de la asignatura "${nombreAsignatura}" en la sección "${nombreSeccion}" del grado "${nombreGrado}".`
+        );
+        swal.fire("Éxito", "Sección asignatura actualizada correctamente.", "success");
+        setModalUpdateVisible(false);
+        fetchSeccionesAsigyHora();
+      } else {
+        const errorData = await response.json();
+        swal.fire("Error", errorData.mensaje || "Error al actualizar la sección asignatura.", "error");
+      }
+    } catch (error) {
+      console.error("Error al actualizar la sección asignatura:", error);
+      swal.fire("Error", "Error en el servidor. Por favor, inténtalo más tarde.", "error");
+    }
+  };
   
 
   // Función para manejar el cierre del modal y restablecer los estados
