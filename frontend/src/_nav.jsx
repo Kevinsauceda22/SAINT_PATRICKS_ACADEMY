@@ -286,7 +286,7 @@ const _nav = [
       {
         component: CNavItem,
         name: 'Aulas',
-        to: '/pages/matricula/ListaAulas',
+        to: '/aulas',
         nameobject: 'ListaAulas',
       },
       {
