@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription } from '@coreui/icons';
+import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription, cilArrowLeft } from '@coreui/icons';
 import swal from 'sweetalert2'; // Importar SweetAlert para mostrar mensajes de advertencia y éxito
 import { jsPDF } from 'jspdf';       // Para generar archivos PDF
 import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
 import * as XLSX from 'xlsx';        // Para generar archivos Excel
 import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
-
+import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom'
 import {
   CButton,
   CCol,
@@ -45,11 +46,11 @@ const ListaHistoricoProc = () => {
 
    // Estados de la aplicación
   const [historicoProcedencia, setHistoricoProcedencia] = useState([]); // Estado que almacena la lista de histórico de procedencia
-  const [errors, setErrors] = useState({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' }); // Estado para gestionar los errores de validación
+  const [errors, setErrors] = useState({ cod_persona: '', instituto: '', lugar_procedencia: '', anio_ingreso: ''  }); // Estado para gestionar los errores de validación
   const [modalVisible, setModalVisible] = useState(false); // Controla la visibilidad del modal de creación
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Controla la visibilidad del modal de actualización
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Controla la visibilidad del modal de eliminación
-  const [nuevoHistorico, setNuevoHistorico] = useState({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' }); // Estado del nuevo registro
+  const [nuevoHistorico, setNuevoHistorico] = useState({ cod_persona: '', instituto: '', lugar_procedencia: '', anio_ingreso: '' }); // Estado del nuevo registro
   const [historicoToUpdate, setHistoricoToUpdate] = useState({}); // Estado para el registro que se va a actualizar
   const [historicoToDelete, setHistoricoToDelete] = useState({}); // Estado para el registro que se va a eliminar
   const [searchTerm, setSearchTerm] = useState(''); // Estado del término de búsqueda
@@ -57,6 +58,44 @@ const ListaHistoricoProc = () => {
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Controla cuántos registros se muestran por página
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Controla si hay cambios sin guardar
 
+  
+  {/*********************************************************UBICACION DE PERSONAS*********************************************************/}
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Recupera personaSeleccionada del estado o maneja el caso en que no esté disponible
+  const { personaSeleccionada } = location.state || {};
+
+  // Manejo de error si personaSeleccionada no está definida
+  if (!personaSeleccionada) {
+    console.warn('No se ha proporcionado una persona seleccionada. Redirigiendo...');
+    navigate('/'); // O a donde desees redirigir en caso de error
+    return null; // No renderizar nada mientras se redirige
+  }
+
+  // Filtrar contactos relacionados con la persona seleccionada
+  const historicoProcedenciaPersona = historicoProcedencia.filter(
+    historicoProcedencia => historicoProcedencia.cod_persona === personaSeleccionada.cod_persona
+  );
+
+  const volverAListaPersonas = () => {
+    navigate('/ListaPersonas');
+  };
+
+{/************************************************************************************************************************************************/}
+
+const formatearAnio = (fecha) => {
+  if (!fecha) return '';
+  const fechaObj = new Date(fecha);
+  const year = fechaObj.getFullYear();
+  return `${year}`;
+};
+
+
+
+  useEffect(() => {
+    console.log(personaSeleccionada);
+  }, [personaSeleccionada]);
 
     // useEffect para cargar el histórico de procedencia al montar el componente
     useEffect(() => {
@@ -66,7 +105,7 @@ const ListaHistoricoProc = () => {
   // Función para obtener el histórico de procedencia desde la API
   const fetchHistoricoProcedencia = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/historial_proc/historico_procedencia'); // Realiza la petición al backend
+      const response = await fetch('http://localhost:4000/api/historial_proc/ver_historico_procedencia'); // Realiza la petición al backend
       const data = await response.json(); // Convierte la respuesta a JSON
       const dataWithIndex = data.map((historico, index) => ({
         ...historico,
@@ -209,147 +248,152 @@ const ListaHistoricoProc = () => {
   };
   // Maneja el cierre de los modales con advertencia si hay cambios sin guardar
   const handleCloseModal = () => {
-    swal.fire({
-        title: '¿Estás seguro?',
-        text: 'Tienes cambios sin guardar. ¿Deseas cerrar el modal?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, cerrar',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
           setModalVisible(false);
           resetNuevoHistorico();
           setModalUpdateVisible(false);
           setModalDeleteVisible(false);
-        }
-      }); 
+
   };
 
   // Reiniciar el formulario de nuevo registro
   const resetNuevoHistorico = () => {
-    setNuevoHistorico({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' });
+    setNuevoHistorico({ cod_persona: '', instituto: '', lugar_procedencia: '', anio_ingreso: ''});
   };
 
   // Reiniciar el formulario de actualización de registro
   const resetHistoricoToUpdate = () => {
-    setHistoricoToUpdate({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' });
+    setHistoricoToUpdate({ cod_persona: '', instituto: '', lugar_procedencia: '', anio_ingreso: ''});
   };
 
-// Función para crear un nuevo registro en el histórico de procedencia
-const handleCreateHistorico = async () => {
-    console.log('Valor a enviar:', nuevoHistorico.Nombre_procedencia); // Verifica el valor
-    console.log('Valor a enviar:', nuevoHistorico.Lugar_procedencia); // Verifica el valor
-    console.log('Valor a enviar:', nuevoHistorico.Instituto); // Verifica el valor
-  
+{/****************************************************************************************************************************************/}
 
-    
-    try {
+const handleSaveHistorico = async () => {
+  const camposRequeridos = [
+    { campo: 'instituto', valor: historicoToUpdate.cod_procedencia ? historicoToUpdate.instituto : nuevoHistorico.instituto },
+    { campo: 'lugar_procedencia', valor: historicoToUpdate.cod_procedencia ? historicoToUpdate.lugar_procedencia : nuevoHistorico.lugar_procedencia },
+    { campo: 'anio_ingreso', valor: historicoToUpdate.cod_procedencia ? historicoToUpdate.anio_ingreso : nuevoHistorico.anio_ingreso },
+    { campo: 'cod_persona', valor: personaSeleccionada ? personaSeleccionada.cod_persona : null }
+  ];
+
+  // Verificar si algún campo está vacío o es nulo
+  const campoFaltante = camposRequeridos.find(campo => !campo.valor || campo.valor.toString().trim() === '');
+  
+  if (campoFaltante) {
+    console.error(`El campo "${campoFaltante.campo}" está vacío o no es válido.`);
+    swal.fire({
+      icon: 'error',
+      title: 'Datos incompletos',
+      text: `El campo "${campoFaltante.campo}" es obligatorio.`,
+      confirmButtonText: 'Entendido'
+    });
+    return;
+  }
+
+  const data = {
+    cod_persona: personaSeleccionada.cod_persona,
+    instituto: historicoToUpdate.cod_procedencia ? historicoToUpdate.instituto : nuevoHistorico.instituto,
+    lugar_procedencia: historicoToUpdate.cod_procedencia ? historicoToUpdate.lugar_procedencia : nuevoHistorico.lugar_procedencia,
+    anio_ingreso: historicoToUpdate.cod_procedencia ? historicoToUpdate.anio_ingreso : nuevoHistorico.anio_ingreso,
+  };
+
+  try {
+    if (historicoToUpdate.cod_procedencia) {
+      // Llamada para actualizar
+      const response = await fetch(`http://localhost:4000/api/historial_proc/actualizar_historico/${historicoToUpdate.cod_procedencia}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (response.ok) {
+        swal.fire({
+          icon: 'success',
+          title: 'Éxito',
+          text: 'Procedencia actualizada correctamente',
+          confirmButtonText: 'Aceptar'
+        });
+        handleCloseModal(setModalUpdateVisible, resetHistoricoToUpdate);
+        fetchHistoricoProcedencia();
+      } else {
+        console.error('Error en la respuesta de la API:', response);
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'Error al actualizar la procedencia',
+          confirmButtonText: 'Aceptar'
+        });
+      }
+    } else {
+      // Llamada para insertar
       const response = await fetch('http://localhost:4000/api/historial_proc/crear_historico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p_Nombre_procedencia: nuevoHistorico.Nombre_procedencia,
-          p_Lugar_procedencia: nuevoHistorico.Lugar_procedencia,
-          p_Instituto: nuevoHistorico.Instituto,
-        }),
+        body: JSON.stringify(data)
       });
-      const errorData = await response.json(); // Captura el cuerpo de la respuesta
+
       if (response.ok) {
-        fetchHistoricoProcedencia(); // Recargar la lista de registros
-        setModalVisible(false); // Cerrar el modal
-        resetNuevoHistorico(); // Resetear los campos
-        setNuevoHistorico({Nombre_procedencia: '', Lugar_procedencia: '', Instituto: ''});
-       
-        swal.fire({ icon: 'success', title: 'Creación exitosa', text: 'La procedencia ha sido creado correctamente.' });
-      } else {
-        swal.fire({ icon: 'error', title: 'Error', text: `${errorData.mensaje || 'Error desconocido'}` });
-        console.error('Hubo un error al crear la procedencia', response.statusText, errorData); 
-      }
-    } catch (error) {
-      console.error('Error al crear la procedencia:', error);
-      swal.fire({
-        icon: 'error',
-        title: 'Error de conexión',
-        text: 'Ocurrió un problema al conectarse con el servidor.',
-      });
-    }
-  };
-  
-
-  // Función para actualizar un registro en el histórico de procedencia
-    const handleUpdateHistorico = async () => {
-        console.log('Valor a enviar para actualización:', historicoToUpdate.Nombre_procedencia);
-        console.log('Valor a enviar para actualización:', historicoToUpdate.Lugar_procedencia);
-        console.log('Valor a enviar para actualización:', historicoToUpdate.Instituto);
-    try {
-      const response = await fetch('http://localhost:4000/api/historial_proc/actualizar_historico', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p_cod_procedencia: historicoToUpdate.cod_procedencia,
-          p_Nombre_procedencia: historicoToUpdate.Nombre_procedencia,
-          p_Lugar_procedencia: historicoToUpdate.Lugar_procedencia,
-          p_Instituto: historicoToUpdate.Instituto,
-        }),
-      });
-  
-
-      const errorData = await response.json();
-      if (response.ok) {
-        fetchHistoricoProcedencia(); // Recargar la lista de registros
-        setModalUpdateVisible(false); // Cerrar el modal
-        resetHistoricoToUpdate(); // Resetear los campos
-        setHasUnsavedChanges(false); // Resetear cambios no guardados
-
-        const ProcedenciaCompleto = (historicoToUpdate.Nombre_procedencia.toUpperCase());
-
-        swal.fire({ icon: 'success', title: 'Actualización exitosa', text: `Se ha actualizado correctamente a la procedencia: ${ProcedenciaCompleto}.` });
-      } else {
-        swal.fire({ icon: 'error', title: 'Error', text: errorData?.mensaje || 'Hubo un error al actualizar la procedencia.',
+        swal.fire({
+          icon: 'success',
+          title: 'Éxito',
+          text: 'Procedencia agregada correctamente',
+          confirmButtonText: 'Aceptar'
         });
-      }
-    } catch (error) {
-      console.error('Error al actualizar el registro de procedencia:', error);
-      setMensajeError('Error en la conexión. Intente nuevamente.');
-       swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'Hubo un error en el servidor.',
-    });
-    }
-  };
-  
- // Función para eliminar un registro en el histórico de procedencia
-    const handleDeleteHistorico = async () => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/historial_proc/eliminar_historico/${encodeURIComponent(historicoToDelete.cod_procedencia)}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
-  
-
-       // Intentar obtener la respuesta JSON para los mensajes de error
-    const result = await response.json();
-      if (response.ok) {
-        fetchHistoricoProcedencia(); // Recargar la lista de registros
-        setModalDeleteVisible(false); // Cerrar el modal
-        setHistoricoToDelete({}); // Limpiar el registro seleccionado
-        swal.fire({ icon: 'success', title: 'Eliminación exitosa', text: 'La procedencia se ha sido eliminado correctamente.' });
+        handleCloseModal(setModalVisible, resetNuevoHistorico);
+        fetchHistoricoProcedencia();
       } else {
-        swal.fire({ icon: 'error', title: 'Error', text: result.Mensaje || 'Hubo un error al eliminar la procedencia.' });
-        console.error('Error al eliminar el día:', result);
-      }
-    } catch (error) {
-        console.error('Error al eliminar el día:', error);
+        console.error('Error en la respuesta de la API:', response);
         swal.fire({
           icon: 'error',
-          title: 'Error en el servidor',
-          text: 'Hubo un error en el servidor. Inténtalo más tarde.',
+          title: 'Error',
+          text: 'Error al agregar la procedencia',
+          confirmButtonText: 'Aceptar'
         });
+      }
     }
-  };
+  } catch (error) {
+    console.error('Error en la petición:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'Hubo un error al conectar con la API',
+      confirmButtonText: 'Aceptar'
+    });
+  }
+};
+
+
   
+  
+{/*************************************************************************************************************************************************/}
+
+const handleDeleteHistorico = async () => {
+  try {
+    const response = await fetch(`http://localhost:4000/api/historial_proc/eliminar_historico/${encodeURIComponent(historicoToDelete.cod_procedencia)}`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      fetchHistoricoProcedencia(); // Recargar la lista de registros
+      setModalDeleteVisible(false); // Cerrar el modal
+      setHistoricoToDelete({}); // Limpiar el registro seleccionado
+      swal.fire({ icon: 'success', title: 'Eliminación exitosa', text: 'La procedencia se ha sido eliminada correctamente.' });
+    } else {
+      swal.fire({ icon: 'error', title: 'Error', text: result.mensaje || 'Hubo un error al eliminar la procedencia.' });
+      console.error('Error al eliminar la procedencia:', result);
+    }
+  } catch (error) {
+    console.error('Error al eliminar la procedencia:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error en el servidor',
+      text: 'Hubo un error en el servidor. Inténtalo más tarde.',
+    });
+  }
+};
+
+{/**********************************************************************************************************************************************/}
   // Abre el modal de actualización con los datos del registro seleccionado
   const openUpdateModal = (historico) => {
     setHistoricoToUpdate(historico);
@@ -362,29 +406,40 @@ const handleCreateHistorico = async () => {
     setHistoricoToDelete(historico);
     setModalDeleteVisible(true);
   };
+
+  {/********************************************************BUSQUEDA Y FILTRADO****************************************************************/}
   
 // Maneja la búsqueda filtrando por nombre del edificio
-    const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1); // Reinicia a la primera página al buscar
-  };
+// Maneja la búsqueda filtrando por cualquier campo relevante del histórico de procedencia
+const handleSearch = (event) => {
+  setSearchTerm(event.target.value);
+  setCurrentPage(1); // Reinicia a la primera página al buscar
+};
 
-  // Filtra los edificios según el término de búsqueda
-  const filteredHistoricos = historicoProcedencia.filter((historicop) =>
-    historicop.Nombre_procedencia.toLowerCase().includes(searchTerm.toLowerCase())
+// Filtra los registros del histórico de procedencia según el término de búsqueda
+const filteredHistoricos = historicoProcedencia.filter((historicop) => {
+  const searchTermUpper = searchTerm.toUpperCase();
+  return (
+      String(historicop.cod_procedencia).toUpperCase().includes(searchTermUpper) ||
+      String(historicop.cod_persona).toUpperCase().includes(searchTermUpper) ||
+      historicop.instituto.toUpperCase().includes(searchTermUpper) ||
+      historicop.lugar_procedencia.toUpperCase().includes(searchTermUpper) ||
+      String(historicop.anio_ingreso).toUpperCase().includes(searchTermUpper)
   );
+});
 
-  // Cálculo de la paginación
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredHistoricos.slice(indexOfFirstRecord, indexOfLastRecord);
+// Cálculo de la paginación
+const indexOfLastRecord = currentPage * recordsPerPage;
+const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+const currentRecords = filteredHistoricos.slice(indexOfFirstRecord, indexOfLastRecord);
 
-  // Función para cambiar de página en la paginación
-  const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredHistoricos.length / recordsPerPage)) {
+// Función para cambiar de página en la paginación
+const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredHistoricos.length / recordsPerPage)) {
       setCurrentPage(pageNumber);
-    }
-  };
+  }
+};
+
 
 
     
@@ -396,33 +451,48 @@ const handleCreateHistorico = async () => {
 
     return(
         <CContainer>
-    <CRow className="align-items-center mb-5">
-      <CCol xs="8" md="9">
-      <h2 className="mb-0">Mantenimiento Historial Procedencia</h2>
-      </CCol>
-      {/* Botones "Nuevo" y "Reporte" alineados arriba */}
-      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
-      <CButton 
-              style={{ backgroundColor: '#4B6251', color: 'white' }} 
-              className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
-              onClick={() => setModalVisible(true)}
-            >
-              <CIcon icon={cilPlus} /> Nuevo
-            </CButton>
-              {/* Botón Reportes con dropdown */}
-        <CDropdown>
-          <CDropdownToggle
-            style={{ backgroundColor: '#6C8E58', color: 'white' }}
-          >
-             <CIcon icon={cilDescription} />Reporte
-          </CDropdownToggle>
-          <CDropdownMenu>
-            <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
-        </CCol>
-      </CRow>
+<CRow className="align-items-center mb-5">
+  <CCol xs="8" md="9">
+    <h2 className="mb-0">Mantenimiento Historial Procedencia</h2>
+  </CCol>
+  {/* Botones "Nuevo" y "Reporte" alineados arriba */}
+  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+    {/* Botón "Personas" */}
+    <CButton
+      color="secondary"
+      onClick={volverAListaPersonas}
+      style={{
+        minWidth: '120px', // Ancho consistente para todos los botones
+      }}
+      className="mb-3 mb-md-0 me-md-3" // Espaciado entre botones
+    >
+      <CIcon icon={cilArrowLeft} /> Personas
+    </CButton>
+    
+    {/* Botón "Nuevo" */}
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px' }} // Mismo tamaño
+      className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+      onClick={() => setModalVisible(true)}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
+    
+    {/* Botón "Reporte" con dropdown */}
+    <CDropdown>
+      <CDropdownToggle
+        style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px' }} // Mismo tamaño
+        className="mb-3 mb-md-0 me-md-3" // Espaciado consistente
+      >
+        <CIcon icon={cilDescription} /> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
       {/* Filtro de búsqueda y selección de registros */}
       <CRow className="align-items-center mt-4 mb-2">
             {/* Barra de búsqueda  */}
@@ -486,39 +556,46 @@ const handleCreateHistorico = async () => {
       {/* Tabla de histórico de procedencia con tamaño fijo */}
         <div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
         <CTable striped>
-            <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
+        <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
             <CTableRow>
-                <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '40%' }}>Nombre de Procedencia</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '40%' }}>Lugar de Procedencia</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '40%' }}>Instituto</CTableHeaderCell>
-                <CTableHeaderCell  style={{ width: '45%' }}>Acciones</CTableHeaderCell>
+              <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '20%' }}>Nombre</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '20%' }}>Instituto</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '25%' }}>Lugar de Procedencia</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '15%' }}>Año de ingreso</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '15%' }}>Acciones</CTableHeaderCell>
             </CTableRow>
-            </CTableHead>
-            <CTableBody>
-            {currentRecords.map((historico) => (
+          </CTableHead>
+          <CTableBody>
+            {currentRecords
+              .filter((historico) => historico.cod_persona) // Filtra solo los registros de la persona seleccionada
+              .map((historico, index) => (
                 <CTableRow key={historico.cod_procedencia}>
-                <CTableDataCell className="text-center">{historico.originalIndex}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Nombre_procedencia}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Lugar_procedencia}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Instituto}</CTableDataCell>
+                  <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
+                  <CTableDataCell style={{ textTransform: 'uppercase' }}>{personaSeleccionada
+                    ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
+                    : 'Información no disponible'}</CTableDataCell>
+                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.instituto}</CTableDataCell>
+                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.lugar_procedencia}</CTableDataCell>
+                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.anio_ingreso}</CTableDataCell>
                 <CTableDataCell className="text-center">
-                    <div className="d-flex justify-content-center">
+                  <div className="d-flex justify-content-center">
                     <CButton
-                        color="warning"
-                        onClick={() => openUpdateModal(historico)}
-                        style={{ marginRight: '10px' }}
+                      color="warning"
+                      onClick={() => openUpdateModal(historico)}
+                      style={{ marginRight: '10px' }}
                     >
-                        <CIcon icon={cilPen} />
+                      <CIcon icon={cilPen} />
                     </CButton>
                     <CButton color="danger" onClick={() => openDeleteModal(historico)}>
-                        <CIcon icon={cilTrash} />
+                      <CIcon icon={cilTrash} />
                     </CButton>
-                    </div>
+                  </div>
                 </CTableDataCell>
-                </CTableRow>
+              </CTableRow>
             ))}
-            </CTableBody>
+        </CTableBody>
+
         </CTable>
         </div>
 
@@ -555,123 +632,115 @@ const handleCreateHistorico = async () => {
       </div>
 
 
-        {/* Modal Crear Procedencia */}
-    <CModal visible={modalVisible} backdrop="static">
-    <CModalHeader closeButton={false}>
-        <CModalTitle>Ingresar Procedencia</CModalTitle>
-        <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoHistorico)}/>
-    </CModalHeader>
-    <CModalBody>
-        <CForm>
-        <CFormInput
-            label="Nombre de Procedencia"
-            name="Nombre_procedencia" 
-            value={nuevoHistorico.Nombre_procedencia}
-            maxLength={80}
-            onPaste={disableCopyPaste}
-            onCopy={disableCopyPaste}
-            style={{ textTransform: 'uppercase' }}
-            
-            onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
-        />
-        <CFormInput
-            label="Lugar de Procedencia"
-            name="Lugar_procedencia" 
-            value={nuevoHistorico.Lugar_procedencia}
-            maxLength={80}
-            onPaste={disableCopyPaste}
-            onCopy={disableCopyPaste}
-            style={{ textTransform: 'uppercase' }}
-            
-            onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
-        />
-        <CFormInput
-            label="Instituto"
-            name="Instituto" 
-            value={nuevoHistorico.Instituto}
-            maxLength={80}
-            onPaste={disableCopyPaste}
-            onCopy={disableCopyPaste}
-            style={{ textTransform: 'uppercase' }}
-           
-            onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
-        />
-       
-        </CForm>
-    </CModalBody>
-    <CModalFooter>
-        <CButton color="secondary" onClick={handleCloseModal}>
-        Cancelar
-        </CButton>
-        <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white' }}
-        onClick={handleCreateHistorico}
-        disabled={errors.Nombre_procedencia || errors.Lugar_procedencia || errors.Instituto}
-        >
-        Guardar
-        </CButton>
-    </CModalFooter>
-    </CModal>
-
-
-    {/* Modal Actualizar Procedencia */}
-<CModal visible={modalUpdateVisible} backdrop="static">
-  <CModalHeader closeButton={false}>
-    <CModalTitle>Actualizar Procedencia</CModalTitle>
-    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetHistoricoToUpdate)} />
+{/**************************************************MODAL DE AGREGAR***************************************************************/}
+<CModal visible={modalVisible || modalUpdateVisible} onClose={() => {
+  if (historicoToUpdate.cod_procedencia) {
+    handleCloseModal(setModalUpdateVisible, resetHistoricoToUpdate);
+  } else {
+    handleCloseModal(setModalVisible, resetNuevoHistorico);
+  }
+}} backdrop="static">
+  <CModalHeader closeButton>
+    <CModalTitle>{historicoToUpdate.cod_procedencia ? 'Actualizar Procedencia' : 'Ingresar Procedencia'}</CModalTitle>
   </CModalHeader>
   <CModalBody>
+    <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
+      <strong>PERSONA:</strong> {personaSeleccionada 
+        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+        : 'Información no disponible'}
+    </div>
     <CForm>
-      <CFormInput
-        label="Identificador"
-        value={historicoToUpdate.cod_procedencia}
-        readOnly
-      />
-      <CFormInput
-        label="Nombre de Procedencia"
-        value={historicoToUpdate.Nombre_procedencia || ''}
-        maxLength={80}
-        name="Nombre_procedencia"
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        style={{ textTransform: 'uppercase' }}
-        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
-      />
-      <CFormInput
-        label="Lugar de Procedencia"
-        value={historicoToUpdate.Lugar_procedencia || ''}
-        maxLength={80}
-        name="Lugar_procedencia"
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        style={{ textTransform: 'uppercase' }}
-        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
-      />
-      <CFormInput
-        label="Instituto"
-        value={historicoToUpdate.Instituto || ''}
-        maxLength={80}
-        name="Instituto"
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        style={{ textTransform: 'uppercase' }}
-        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
-      />
+      <div className="mb-3">
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Instituto</CInputGroupText>
+          <CFormInput
+            name="instituto"
+            value={historicoToUpdate.instituto || nuevoHistorico.instituto || ''}
+            maxLength={80}
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
+            style={{ textTransform: 'uppercase' }}
+            onChange={(e) =>
+              historicoToUpdate.cod_procedencia
+                ? handleNombreInputChange(e, setHistoricoToUpdate)
+                : handleNombreInputChange(e, setNuevoHistorico)
+            }
+          />
+        </CInputGroup>
+      </div>
+
+      <div className="mb-3">
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Lugar de Procedencia</CInputGroupText>
+          <CFormInput
+            name="lugar_procedencia"
+            value={historicoToUpdate.lugar_procedencia || nuevoHistorico.lugar_procedencia || ''}
+            maxLength={80}
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
+            style={{ textTransform: 'uppercase' }}
+            onChange={(e) =>
+              historicoToUpdate.cod_procedencia
+                ? handleNombreInputChange(e, setHistoricoToUpdate)
+                : handleNombreInputChange(e, setNuevoHistorico)
+            }
+          />
+        </CInputGroup>
+      </div>
+
+      <div className="mb-3">
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Año de Ingreso</CInputGroupText>
+          <CFormInput
+            name="anio_ingreso"
+            type="number"
+            min="1900"
+            max={new Date().getFullYear()}
+            value={historicoToUpdate.anio_ingreso || nuevoHistorico.anio_ingreso || ''}
+            onChange={(e) =>
+              historicoToUpdate.cod_procedencia
+                ? setHistoricoToUpdate((prevState) => ({
+                    ...prevState,
+                    anio_ingreso: e.target.value,
+                  }))
+                : setNuevoHistorico((prevState) => ({
+                    ...prevState,
+                    anio_ingreso: e.target.value,
+                  }))
+            }
+          />
+        </CInputGroup>
+      </div>
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={handleCloseModal}>
+    <CButton
+      style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
+      onClick={() => {
+        if (historicoToUpdate.cod_procedencia) {
+          handleCloseModal(setModalUpdateVisible, resetHistoricoToUpdate);
+        } else {
+          handleCloseModal(setModalVisible, resetNuevoHistorico);
+        }
+      }}
+    >
       Cancelar
     </CButton>
     <CButton
-      style={{ backgroundColor: '#F9B64E', color: 'white' }}
-      onClick={handleUpdateHistorico}
+      style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
+      onClick={handleSaveHistorico}
+      disabled={errors.instituto || errors.lugar_procedencia || errors.anio_ingreso}
     >
-      <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
+      <CIcon icon={historicoToUpdate.cod_procedencia ? cilPen : cilSave} />
+      &nbsp;
+      {historicoToUpdate.cod_procedencia ? 'Actualizar' : 'Guardar'}
     </CButton>
   </CModalFooter>
 </CModal>
 
+
+
+{/**************************************************FIN MODAL DE AGREGAR***************************************************************/}
 
     {/* Modal Eliminar Procedencia */}
 <CModal visible={modalDeleteVisible} backdrop="static">

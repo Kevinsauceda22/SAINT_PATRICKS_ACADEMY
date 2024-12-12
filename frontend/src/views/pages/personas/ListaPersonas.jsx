@@ -13,6 +13,7 @@ import {
   cilDescription,
   cilInfo,
   cilContact,
+  cilHistory,
   cilPeople,
 } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
@@ -154,6 +155,11 @@ const ListaPersonas = () => {
   const abrirContactoModal = (personas) => {
     console.log('Persona seleccionada en el componente origen:', personas); // Verifica que los datos estén presentes
     navigate('/contacto', { state: { personaSeleccionada: personas } });
+  };
+
+  const abrirHistoricoProcedenciaModal = (personas) => {
+    console.log('Persona seleccionada en el componente origen:', personas); // Verifica que los datos estén presentes
+    navigate('/ListaHistoricoProc', { state: { personaSeleccionada: personas } });
   };
 
 
@@ -1360,13 +1366,23 @@ return (
                   >
                     <CIcon icon={cilPeople} />{' '}
                   </CButton>
-                  <CButton
-                  color="primary"
-                  onClick={() => abrirContactoModal(persona)}
-                  style={{ marginLeft: '10px' }}
-                >
-                  <CIcon icon={cilContact} /> {/* Cambia esto por el ícono adecuado */}
-                </CButton>
+                    {
+                      tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo === 'ESTUDIANTE' ? (
+                        <CButton
+                          onClick={() => abrirHistoricoProcedenciaModal(persona)}
+                          style={{ marginLeft: '10px', backgroundColor: '#90EE90', borderColor: '#90EE90' }}
+                        >
+                          <CIcon icon={cilHistory} />
+                        </CButton>
+                      ) : (
+                        <CButton
+                          onClick={() => abrirContactoModal(persona)}
+                          style={{ marginLeft: '10px', backgroundColor: '#007bff', borderColor: '#007bff' }}
+                        >
+                          <CIcon icon={cilContact} />
+                        </CButton>
+                      )
+                    }
                 </div>
               </CTableDataCell>
             </CTableRow>

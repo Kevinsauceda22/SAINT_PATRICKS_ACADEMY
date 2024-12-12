@@ -382,11 +382,6 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Contacto',
-        to: '/contacto',
-      },
-      {
-        component: CNavItem,
         name: 'Nacionalidades',
         to: '/nacionalidad',
         nameobject: 'nacionalidad',

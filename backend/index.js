@@ -171,8 +171,6 @@ app.use('/api/aula', aulasRoutes);
 app.use('/api', actividadesextraRoutes);
 // Rutas para el día
 app.use('/api/dia', diasRoutes);
-// Rutas para el historico procedencia
-app.use('/api/historial_proc', historicoprocRoutes);
 // Usar las rutas de solicitud
 app.use('/api/tipopersona', tipopersonaRoutes);
 // Usar las rutas de solicitud
@@ -201,7 +199,7 @@ app.use('/api/gestion_academica', gestion_academicaRoutes);
 
 // Rutas para manejar personas
 app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
-
+app.use('/api/historial_proc', historicoprocRoutes);
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 app.use('/api/nacionalidad', nacionalidadRoutes);
