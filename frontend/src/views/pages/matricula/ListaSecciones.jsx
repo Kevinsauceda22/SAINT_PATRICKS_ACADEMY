@@ -13,6 +13,26 @@ import {
 import { useNavigate } from 'react-router-dom';
 import AccessDenied from "../AccessDenied/AccessDenied"
 import usePermission from '../../../../context/usePermission';
+import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
+
+// Path: src/utils/jwtUtils.js
+
+export const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error al decodificar el token JWT:', error);
+    return null;
+  }
+};
 
 
 const ListaSecciones = () => {
@@ -504,7 +524,48 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       alert('No se pudo cargar el logo.');
     };
   };
-
+const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
+    try {
+      const token = localStorage.getItem('token');
+      const decodedToken = decodeJWT(token);
+  
+      if (!decodedToken) {
+        swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
+        return;
+      }
+  
+      const cod_usuario = decodedToken.cod_usuario;
+      const nombre_usuario = decodedToken.nombre_usuario;
+  
+      if (!cod_usuario || !nombre_usuario) {
+        swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
+        return;
+      }
+  
+      const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
+      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 97, accion, descripcion });
+  
+      await fetch('http://localhost:4000/api/bitacora/registro', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          cod_usuario,
+          cod_objeto: 97, // Objeto relacionado con secciones
+          accion,
+          descripcion,
+        }),
+      });
+  
+      console.log('Registro en bitácora exitoso');
+    } catch (error) {
+      console.error('Error al registrar en bitácora:', error.message);
+      swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
+    }
+  };
+  
   // Funciones CRUD
 
   // Funcion para abrir el modal de crear
@@ -597,6 +658,14 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   
       if (response.ok) {
         swal.fire('Creación exitosa', 'La sección ha sido creada correctamente.', 'success');
+  
+        // Registro en la bitácora
+        await registrarEnBitacora(
+          'INSERT',
+          `Sección creada. Nombre: ${nuevaSeccion.Nombre_seccion || 'No especificado'}, Aula: ${nuevaSeccion.Cod_aula}, Grado: ${nuevaSeccion.Cod_grado}, Profesor: ${nuevaSeccion.Cod_profesor}.`
+        );
+  
+        // Recargar datos
         fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones
         fetchAulasPorEdificio(edificioSeleccionado); // Actualizar las aulas disponibles
         setModalVisible(false); // Cerrar el modal
@@ -609,6 +678,8 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       swal.fire('Error', 'Error de conexión o en el servidor.', 'error');
     }
   };
+  
+
 
   
   const openUpdateModal = async (Cod_secciones) => {
@@ -644,45 +715,51 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
 };
 
 
-  // Función para manejar la actualización de una sección
   const handleUpdateSeccion = async () => {
-    // Buscar el aula seleccionada
-    const aulaSeleccionada = aulasFiltradas.find(
-        (aula) => aula.Numero_aula.toString() === seccionToUpdate.p_Numero_aula.toString()
-    );
-  
-    // Validar si el aula seleccionada es diferente al aula actual
-    const aulaOriginal = seccionToUpdate.p_Numero_aula; // Aula actual de la sección
-  
-    if (aulaSeleccionada && aulaSeleccionada.Numero_aula !== aulaOriginal) {
-        // Validar disponibilidad solo si el aula ha cambiado
-        if (aulaSeleccionada.Secciones_disponibles <= 0) {
-            swal.fire('Error', 'No hay secciones disponibles en esta aula.', 'error');
-            return;
-        }
+  // Buscar el aula seleccionada
+  const aulaSeleccionada = aulasFiltradas.find(
+    (aula) => aula.Numero_aula.toString() === seccionToUpdate.p_Numero_aula.toString()
+  );
+
+  // Validar si el aula seleccionada es diferente al aula actual
+  const aulaOriginal = seccionToUpdate.p_Numero_aula;
+
+  if (aulaSeleccionada && aulaSeleccionada.Numero_aula !== aulaOriginal) {
+    // Validar disponibilidad solo si el aula ha cambiado
+    if (aulaSeleccionada.Secciones_disponibles <= 0) {
+      swal.fire('Error', 'No hay secciones disponibles en esta aula.', 'error');
+      return;
     }
-  
-    try {
-        const response = await fetch('http://localhost:4000/api/secciones/actualizar_seccion', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(seccionToUpdate),
-        });
-  
-        if (response.ok) {
-            swal.fire('Éxito', 'Sección actualizada correctamente.', 'success');
-            setModalUpdateVisible(false);
-            fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
-            fetchAulasPorEdificio(seccionToUpdate.Cod_edificio); // Actualizar las aulas disponibles
-        } else {
-            const errorData = await response.json();
-            swal.fire('Error', errorData.mensaje || 'No se pudo actualizar la sección.', 'error');
-        }
-    } catch (error) {
-        console.error('Error al actualizar la sección:', error);
-        swal.fire('Error', 'Hubo un problema al actualizar la sección.', 'error');
+  }
+
+  try {
+    const response = await fetch('http://localhost:4000/api/secciones/actualizar_seccion', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(seccionToUpdate),
+    });
+
+    if (response.ok) {
+      swal.fire('Éxito', 'Sección actualizada correctamente.', 'success');
+
+      // Registro en la bitácora
+      await registrarEnBitacora(
+        'UPDATE',
+        `Sección actualizada. Nombre: ${seccionToUpdate.p_Nombre_seccion}, Aula: ${seccionToUpdate.p_Numero_aula}, Grado: ${seccionToUpdate.p_Nombre_grado}, Profesor: ${seccionToUpdate.p_Cod_Profesor}.`
+      );
+
+      setModalUpdateVisible(false);
+      fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
+      fetchAulasPorEdificio(seccionToUpdate.Cod_edificio); // Actualizar las aulas disponibles
+    } else {
+      const errorData = await response.json();
+      swal.fire('Error', errorData.mensaje || 'No se pudo actualizar la sección.', 'error');
     }
-  };
+  } catch (error) {
+    console.error('Error al actualizar la sección:', error);
+    swal.fire('Error', 'Hubo un problema al actualizar la sección.', 'error');
+  }
+};
   
   const resetSeccionToUpdate = () => {
     // Limpia los datos del estado `seccionToUpdate`
@@ -721,6 +798,13 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   
       if (response.ok) {
         swal.fire('Eliminación exitosa', 'La sección ha sido eliminada correctamente.', 'success');
+  
+        // Registro en la bitácora
+        await registrarEnBitacora(
+          'DELETE',
+          `Sección eliminada. Código: ${seccionToDelete.Cod_secciones}, Nombre: ${seccionToDelete.Nombre_seccion || 'No especificado'}.`
+        );
+  
         setModalDeleteVisible(false);
   
         if (periodoSeleccionado) {
