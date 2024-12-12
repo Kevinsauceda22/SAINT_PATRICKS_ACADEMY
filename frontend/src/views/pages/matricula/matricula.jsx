@@ -41,8 +41,32 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
+import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
+
+// Path: src/utils/jwtUtils.js
+
+export const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error al decodificar el token JWT:', error);
+    return null;
+  }
+};
 
 const MatriculaForm = () => {
+    const { canSelect,  error,canDelete, canInsert, canUpdate } = usePermission('Matricula');
+  
   const [loading, setLoading] = useState(true);
   const [opciones, setOpciones] = useState({
     estados_matricula: [],
@@ -59,6 +83,7 @@ const MatriculaForm = () => {
   const [selectedGrado, setSelectedGrado] = useState(''); // Define el estado para el grado seleccionado
   const [periodoActivo, setPeriodoActivo] = useState(null); // Nuevo estado para el período activo
   const navigate = useNavigate(); // Hook para la navegación
+  const token = localStorage.getItem('token');
   const [matriculaData, setMatriculaData] = useState({
     fecha_matricula: '',
     cod_grado: '',
@@ -318,28 +343,41 @@ const handleGradoChange = (e) => {
   obtenerSeccionesPorGrado(codGrado); // Llama a la función para obtener las secciones filtradas
 };
 
-const registrarEnBitacora = async (accion, descripcion) => {
+const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
   try {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    const decodedToken = decodeJWT(token);
 
-    const decodedToken = jwtDecode(token);
+    if (!decodedToken) {
+      Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
+      return;
+    }
+
     const cod_usuario = decodedToken.cod_usuario;
+    const nombre_usuario = decodedToken.nombre_usuario;
 
-    await axios.post('http://localhost:4000/api/bitacora/registro', {
-      cod_usuario: cod_usuario,
-      cod_objeto: 77, // Objeto Matrícula
-      accion: accion,
-      descripcion: descripcion
-    }, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+    if (!cod_usuario || !nombre_usuario) {
+      Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
+      return;
+    }
+
+    const descripcion = `El usuario: ${nombre_usuario} (${cod_usuario}) realizó la acción: ${accion}. ${descripcionAdicional}`;
+    console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 77, accion, descripcion });
+
+    await axios.post(
+      'http://localhost:4000/api/bitacora/registro',
+      { cod_usuario, cod_objeto: 77, accion, descripcion },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    console.log('Registro en bitácora exitoso');
   } catch (error) {
-    console.error('Error al registrar en bitácora:', error);
+    console.error('Error al registrar en bitácora:', error.message);
+    Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
   }
 };
+
+
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -419,6 +457,12 @@ const handleSubmit = async (e) => {
         icon: 'success',
       });
 
+      // Registrar en la bitácora
+      await registrarEnBitacora(
+        'INSERT',
+        `Creó una matrícula para el estudiante con código ${dataToSend.cod_hijo} en el período ${dataToSend.cod_periodo_matricula}.`
+      );
+
       // Reiniciar el modal y los estados del formulario
       setModalVisible(false);
       setStep(1);
@@ -446,6 +490,12 @@ const handleSubmit = async (e) => {
   } catch (error) {
     const errorMessage = error.response?.data?.message || error.message || 'Error al crear la matrícula.';
     console.error('Error al crear la matrícula:', errorMessage);
+
+    // Registrar en la bitácora el error
+    await registrarEnBitacora(
+      'Error',
+      `Error al crear matrícula: ${errorMessage}`
+    );
 
     Swal.fire('Error', errorMessage, 'error');
   }

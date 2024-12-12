@@ -29,8 +29,25 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
 
 
+export const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error al decodificar el token JWT:', error);
+    return null;
+  }
+};
 
 const MySwal = withReactContent(Swal);
 
@@ -169,26 +186,57 @@ const preventCopyPaste = (e) => {
       console.error('Error al obtener conceptos:', error);
     }
   };
-
+  const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
+    try {
+      const token = localStorage.getItem('token');
+      const decodedToken = decodeJWT(token);
+  
+      if (!decodedToken) {
+        Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
+        return;
+      }
+  
+      const cod_usuario = decodedToken.cod_usuario;
+      const nombre_usuario = decodedToken.nombre_usuario;
+  
+      if (!cod_usuario || !nombre_usuario) {
+        Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
+        return;
+      }
+  
+      const descripcion = `El usuario: ${nombre_usuario} (${cod_usuario}) realizó la acción: ${accion}. ${descripcionAdicional}`;
+      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 106, accion, descripcion });
+  
+      await axios.post(
+        'http://localhost:4000/api/bitacora/registro',
+        { cod_usuario, cod_objeto: 106, accion, descripcion },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+  
+      console.log('Registro en bitácora exitoso');
+    } catch (error) {
+      console.error('Error al registrar en bitácora:', error.message);
+      Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
+    }
+  };
+  
   const registrarPago = async (e) => {
     e.preventDefault();
   
-   
-  try {
-    // Usar descripción ingresada o la obtenida de la API
-    const descripcionFinal = pagoActual.descripcion || descripcionMatricula;
-
-    // Validar que exista una descripción válida
-    if (!descripcionFinal || !descripcionFinal.trim()) {
-      MySwal.fire({
-        icon: 'warning',
-        title: 'Campo obligatorio',
-        text: 'La descripción no puede estar vacía.',
-        confirmButtonText: 'Entendido',
-      });
-      return;
-    }
-
+    try {
+      // Usar descripción ingresada o la obtenida de la API
+      const descripcionFinal = pagoActual.descripcion || descripcionMatricula;
+  
+      // Validar que exista una descripción válida
+      if (!descripcionFinal || !descripcionFinal.trim()) {
+        MySwal.fire({
+          icon: 'warning',
+          title: 'Campo obligatorio',
+          text: 'La descripción no puede estar vacía.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
   
       const monto = parseFloat(pagoActual.monto || valorMatricula || 0);
   
@@ -287,7 +335,6 @@ const preventCopyPaste = (e) => {
         cod_caja: pagoActual.cod_caja,
         monto: montoFinal, // Monto ajustado con descuento aplicado
         descripcion: descripcionFinal, // Usar la descripción final
-
         cod_concepto: pagoActual.cod_concepto,
         cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
       };
@@ -304,6 +351,12 @@ const preventCopyPaste = (e) => {
           text: 'El pago se ha registrado correctamente.',
           confirmButtonText: 'Aceptar',
         });
+  
+        // Registro en la bitácora
+        await registrarEnBitacora(
+          'INSERT',
+          `Registró un pago de ${montoFinal.toFixed(2)} con concepto "${pagoActual.descripcion}" en la caja ${pagoActual.cod_caja}.`
+        );
   
         // Construir datos de la caja para el reporte individual
         const cajaConDatos = {
@@ -359,6 +412,7 @@ const preventCopyPaste = (e) => {
   };
   
   
+  
   // Obtener el concepto "Matricula"
   useEffect(() => {
     const fetchConceptoMatricula = async () => {
@@ -400,164 +454,205 @@ const preventCopyPaste = (e) => {
   
   const crearNuevaCaja = async () => {
     console.log("Datos de la nueva caja:", nuevaCaja);
-
+  
     // Validación de campos obligatorios
     if (!nuevaCaja.descripcion || !nuevaCaja.monto || !nuevaCaja.cod_concepto || !nuevaCaja.dni_padre) {
-        await MySwal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Todos los campos son obligatorios.',
-        });
-        return;
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Todos los campos son obligatorios.',
+      });
+      return;
     }
-
+  
     // Validación de formato del DNI
     const dniRegex = /^[0-9]{13}$/; // Asume que el DNI de Honduras tiene 13 dígitos
     if (!dniRegex.test(nuevaCaja.dni_padre)) {
-        await MySwal.fire({
-            icon: 'error',
-            title: 'Error en el DNI',
-            text: 'El DNI debe tener 13 dígitos y contener solo números.',
-        });
-        return;
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Error en el DNI',
+        text: 'El DNI debe tener 13 dígitos y contener solo números.',
+      });
+      return;
     }
-
+  
     // Validación de descripción
     if (nuevaCaja.descripcion.length > 25) {
-        await MySwal.fire({
-            icon: 'error',
-            title: 'Error en la descripción',
-            text: 'La descripción no puede exceder los 25 caracteres.',
-        });
-        return;
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Error en la descripción',
+        text: 'La descripción no puede exceder los 25 caracteres.',
+      });
+      return;
     }
-
+  
     if (/([A-Z])\1\1/.test(nuevaCaja.descripcion)) {
-        await MySwal.fire({
-            icon: 'error',
-            title: 'Error en la descripción',
-            text: 'La descripción no puede contener tres letras iguales consecutivas.',
-        });
-        return;
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Error en la descripción',
+        text: 'La descripción no puede contener tres letras iguales consecutivas.',
+      });
+      return;
     }
-
+  
     if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion)) {
-        await MySwal.fire({
-            icon: 'error',
-            title: 'Error en la descripción',
-            text: 'La descripción no puede contener símbolos o caracteres especiales.',
-        });
-        return;
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Error en la descripción',
+        text: 'La descripción no puede contener símbolos o caracteres especiales.',
+      });
+      return;
     }
-
+  
     // Validación de descuento (si aplica)
     let descuentoAplicado = 0;
-
+  
     if (nuevaCaja.aplicar_descuento && nuevaCaja.valor_descuento) {
-        const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
-
-        if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
-            await MySwal.fire({
-                icon: 'error',
-                title: 'Error en el descuento',
-                text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
-            });
-            return;
-        }
-
-        descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
-    }
-
-    const montoFinal = nuevaCaja.monto - descuentoAplicado;
-
-    if (montoFinal < 0) {
+      const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
+  
+      if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
         await MySwal.fire({
-            icon: 'error',
-            title: 'Error en el monto',
-            text: 'El monto final no puede ser negativo.',
+          icon: 'error',
+          title: 'Error en el descuento',
+          text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
         });
         return;
+      }
+  
+      descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
     }
-
+  
+    const montoFinal = nuevaCaja.monto - descuentoAplicado;
+  
+    if (montoFinal < 0) {
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Error en el monto',
+        text: 'El monto final no puede ser negativo.',
+      });
+      return;
+    }
+  
     try {
-        // Preparar los datos para enviar al servidor
-        const datosCaja = {
-            descripcion: nuevaCaja.descripcion,
-            monto: montoFinal, // Monto ajustado con descuento aplicado
-            cod_concepto: nuevaCaja.cod_concepto,
-            dni_padre: nuevaCaja.dni_padre,
-            estado_pago: 'Pendiente',
-            aplicar_descuento: nuevaCaja.aplicar_descuento || false,
-            cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
+      // Preparar los datos para enviar al servidor
+      const datosCaja = {
+        descripcion: nuevaCaja.descripcion,
+        monto: montoFinal,
+        cod_concepto: nuevaCaja.cod_concepto,
+        dni_padre: nuevaCaja.dni_padre,
+        estado_pago: 'Pendiente',
+        aplicar_descuento: nuevaCaja.aplicar_descuento || false,
+        cod_descuento: nuevaCaja.aplicar_descuento ? nuevaCaja.cod_descuento : null,
+      };
+  
+      console.log("Datos enviados al servidor:", datosCaja);
+  
+      // Realizar la solicitud al servidor
+      const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
+  
+      if (response.status === 201 || response.status === 200) {
+        console.log("Caja creada exitosamente");
+  
+        // Registro en la bitácora
+        await registrarEnBitacora(
+          'INSERT',
+          `Caja creada. Descripción: "${nuevaCaja.descripcion}", Monto: ${montoFinal.toFixed(2)}, DNI del Padre: ${nuevaCaja.dni_padre}.`
+        );
+  
+        // Construir datos para el PDF
+        const cajaConDatos = {
+          Cod_caja: response.data.cod_caja || 'No disponible',
+          Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
+          Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
+          Descripcion: nuevaCaja.descripcion,
+          Monto: montoFinal,
+          Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
+          Estado_pago: 'Pendiente',
+          Fecha_pago: new Date(),
+          Hora_registro: new Date(),
         };
-
-        console.log("Datos enviados al servidor:", datosCaja);
-
-        // Realizar la solicitud al servidor
-        const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
-
-        if (response.status === 201 || response.status === 200) {
-            console.log("Caja creada exitosamente");
-
-            // Construir datos para el PDF
-            const cajaConDatos = {
-                Cod_caja: response.data.cod_caja || 'No disponible',
-                Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
-                Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
-                Descripcion: nuevaCaja.descripcion,
-                Monto: montoFinal,
-                Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
-                Estado_pago: 'Pendiente',
-                Fecha_pago: new Date(),
-                Hora_registro: new Date(),
-            };
-
-            // Mostrar la alerta de éxito
-            await MySwal.fire({
-                icon: 'success',
-                title: 'Éxito',
-                text: 'La nueva caja se ha creado exitosamente.',
-            });
-
-            // Preguntar si desea imprimir el recibo
-            const imprimir = await MySwal.fire({
-                title: '¿Desea imprimir el recibo?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Sí, generar',
-                cancelButtonText: 'No',
-            });
-
-            if (imprimir.isConfirmed) {
-                // Llamar a la función para generar el PDF
-                generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
-            }
-
-            // Reiniciar el modal y recargar datos
-            resetNuevaCajaModal();
-            setModalNuevaCajaVisible(false);
-            obtenerCajasPendientes();
-        } else {
-            console.log("Error en el servidor:", response);
-
-            // Manejo de error cuando el servidor no responde con 201 o 200
-            await MySwal.fire({
-                icon: 'warning',
-                title: 'Atención',
-                text: 'No se pudo crear la caja. Intente de nuevo.',
-            });
-        }
-    } catch (error) {
-        console.error("Error al crear la caja:", error);
-
-        // Manejo de errores generales
+  
+        // Mostrar la alerta de éxito
         await MySwal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Ocurrió un error al conectar con el servidor.',
+          icon: 'success',
+          title: 'Éxito',
+          text: 'La nueva caja se ha creado exitosamente.',
         });
+  
+        // Preguntar si desea imprimir el recibo
+        const imprimir = await MySwal.fire({
+          title: '¿Desea imprimir el recibo?',
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, generar',
+          cancelButtonText: 'No',
+        });
+  
+        if (imprimir.isConfirmed) {
+          // Llamar a la función para generar el PDF
+          generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
+        }
+  
+        // Reiniciar el modal y recargar datos
+        resetNuevaCajaModal();
+        setModalNuevaCajaVisible(false);
+        obtenerCajasPendientes();
+      } else {
+        console.log("Error en el servidor:", response);
+  
+        // Manejo de error cuando el servidor no responde con 201 o 200
+        await MySwal.fire({
+          icon: 'warning',
+          title: 'Atención',
+          text: 'No se pudo crear la caja. Intente de nuevo.',
+        });
+      }
+    } catch (error) {
+      console.error("Error al crear la caja:", error);
+  
+      // Manejo de errores generales
+      await MySwal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Ocurrió un error al conectar con el servidor.',
+      });
     }
-};
+  };
+  const registrarEnBitacoracaja = async (accion, descripcionAdicional = '') => {
+    try {
+      const token = localStorage.getItem('token');
+      const decodedToken = decodeJWT(token);
+  
+      if (!decodedToken) {
+        Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
+        return;
+      }
+  
+      const cod_usuario = decodedToken.cod_usuario;
+      const nombre_usuario = decodedToken.nombre_usuario;
+  
+      if (!cod_usuario || !nombre_usuario) {
+        Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
+        return;
+      }
+  
+      const descripcion = `El usuario: ${nombre_usuario} (${cod_usuario}) realizó la acción: ${accion}. ${descripcionAdicional}`;
+  
+      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 106, accion, descripcion });
+  
+      await axios.post(
+        'http://localhost:4000/api/bitacora/registro',
+        { cod_usuario, cod_objeto: 106, accion, descripcion },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+  
+      console.log('Registro en bitácora exitoso');
+    } catch (error) {
+      console.error('Error al registrar en bitácora:', error.message);
+      Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
+    }
+  };
+    
 
 
   
