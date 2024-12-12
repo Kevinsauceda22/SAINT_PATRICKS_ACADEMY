@@ -361,7 +361,7 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
       return;
     }
 
-    const descripcion = `El usuario: ${nombre_usuario} (${cod_usuario}) realizó la acción: ${accion}. ${descripcionAdicional}`;
+    const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
     console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 77, accion, descripcion });
 
     await axios.post(
