@@ -15,6 +15,58 @@ import usePermission from '../../../../context/usePermission';
 //importante para poder hacer la bitacora
 import axios from 'axios';
 import * as jwt_decode from 'jwt-decode';
+import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
+
+// Funciones para decodificar JWT y registrar en la bitácora
+export const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Error al decodificar el token JWT:', error);
+    return null;
+  }
+};
+
+const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
+  try {
+    const token = localStorage.getItem('token');
+    const decodedToken = decodeJWT(token);
+
+    if (!decodedToken) {
+      Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
+      return;
+    }
+
+    const cod_usuario = decodedToken.cod_usuario;
+    const nombre_usuario = decodedToken.nombre_usuario;
+
+    if (!cod_usuario || !nombre_usuario) {
+      Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
+      return;
+    }
+
+    const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
+
+    await axios.post(
+      'http://localhost:4000/api/bitacora/registro',
+      { cod_usuario, cod_objeto: 96, accion, descripcion },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+  } catch (error) {
+    console.error('Error al registrar en bitácora:', error.message);
+    Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
+  }
+};
+
+
 
 const ListaGestion_Academica = () => {
   // Definición de estados
@@ -406,17 +458,16 @@ const ListaGestion_Academica = () => {
         return;
       }
   
+      await registrarEnBitacora('INSERT', 'Se creó un nuevo agrupador en la gestión académica.');
+  
       Swal.fire('Éxito', 'Agrupador creado exitosamente.', 'success');
-      fetchAgrupadores(); // Recargar los datos
-      toggleModal(); // Cerrar el modal
+      fetchAgrupadores();
+      setShowModal(false);
     } catch (error) {
-      console.error('Error al crear agrupador:', error); // Registro detallado
-      const errorMessage = error.message.includes('Failed to fetch')
-          ? 'No se pudo conectar al servidor para guardar el agrupador. Verifica tu conexión.'
-          : 'Hubo un problema al crear el agrupador. Por favor, inténtalo nuevamente.';
-      Swal.fire('Error', errorMessage, 'error');
-  } 
+      Swal.fire('Error', 'Hubo un problema al crear el agrupador.', 'error');
+    } 
   };
+  
 
     // Verificar permisos
   if (!canSelect) {
