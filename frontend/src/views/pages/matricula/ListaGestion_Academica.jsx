@@ -12,12 +12,14 @@ import { useNavigate } from 'react-router-dom';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import AccessDenied from "../AccessDenied/AccessDenied"
 import usePermission from '../../../../context/usePermission';
-
+//importante para poder hacer la bitacora
+import axios from 'axios';
+import * as jwt_decode from 'jwt-decode';
 
 const ListaGestion_Academica = () => {
   // Definición de estados
   // Seguridad de botones
-  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('gestion_academica');
+  const { canSelect, canInsert} = usePermission('gestion_academica');
   const [agrupadores, setAgrupadores] = useState([]);
   const [periodos, setPeriodos] = useState([]);
   const [showModal, setShowModal] = useState(false);
