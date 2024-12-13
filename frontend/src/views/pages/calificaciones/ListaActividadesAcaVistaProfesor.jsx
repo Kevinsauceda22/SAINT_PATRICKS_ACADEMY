@@ -21,11 +21,13 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ActividadesAcademicasProfesor = () => {
   const { canSelect, canInsert, canUpdate,canDelete } = usePermission('ListaActividadesProfesor');
-  const [secciones, setSecciones] = useState([]);
+  const [secciones, setSecciones] = useState([]); // ✅ Initialize as an empty array
+
   const [asignaturas, setAsignaturas] = useState([]);
   const [parciales, setParciales] = useState([]);
   const [actividades, setActividades] = useState([]);
   const [nuevoActividad, setNuevoActividad] = useState( '' );
+  
   const [selectedSeccion, setSelectedSeccion] = useState(null);
   const [selectedAsignatura, setSelectedAsignatura] = useState(null);
   const [vistaActual, setVistaActual] = useState("secciones");
@@ -109,7 +111,7 @@ const ActividadesAcademicasProfesor = () => {
   const fetchSecciones = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4000/api/secciones/porprofesor', {
+      const response = await fetch('http://localhost:4000/api/seccion/porprofesores', {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -368,7 +370,7 @@ const fetchActividades = async () => {
       }
 
       const data = await response.json();
-      setActividades(data); // Update activities in the table
+      setActividades(Array.isArray(data) ? data : []);
 
 
 
@@ -377,10 +379,11 @@ const fetchActividades = async () => {
   const totalValor = data.reduce((sum, actividad) => sum + (actividad.Valor || 0), 0);
   setValorTotalActividades(totalValor);
     
-  } catch (error) {
-      console.error('Error al obtener actividades:', error);
-      Swal.fire('Error', 'No se pudieron cargar las actividades.', 'error');
-  }
+} catch (error) {
+  console.error('Error al obtener actividades:', error);
+  Swal.fire('Error', 'No se pudieron cargar las actividades.', 'error');
+  setActividades([]); // Always reset activities to an array
+}
 };
 
 
@@ -1054,8 +1057,8 @@ const handleEliminarActividad = async (id,nombre) => {
   };
   
   // Filtro de búsqueda
-  const filteredSecciones= secciones.filter((seccion) =>
-    seccion.Nombre_seccion.toLowerCase().includes(searchTerm.toLowerCase())||
+  const filteredSecciones = secciones.filter(seccion => 
+    seccion.Nombre_seccion.toLowerCase().includes(searchTerm.toLowerCase()) || 
     seccion.Nombre_grado.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -1090,7 +1093,7 @@ const handleSearch2 = (event) => {
 };
 
 // Filtro de búsqueda
-const filteredAsignaturas= asignaturas.filter((asignatura) =>
+const filteredAsignaturas = asignaturas.filter(asignatura => 
   asignatura.Nombre_asignatura.toLowerCase().includes(searchTerm2.toLowerCase())
 );
 
@@ -1125,7 +1128,7 @@ const handleSearch3 = (event) => {
 };
 
 // Filtro de búsqueda
-const filteredParciales= parciales.filter((parcial) =>
+const filteredParciales = parciales.filter(parcial => 
   parcial.Nombre_parcial.toLowerCase().includes(searchTerm3.toLowerCase())
 );
 

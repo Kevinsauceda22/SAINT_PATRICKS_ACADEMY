@@ -26,7 +26,7 @@ import bitacoraRoutes from './module/auth/bitacora_routes.js';
 import dashboard from './module/dashboard/dashboardRoutes.js';
 import parametroRoutes from './module/calificaciones/Routes/parametroRoutes.js';
 import ActividadAcademicaPadreRoutes from './module/calificaciones/Routes/actividades_AcademicasPadreRoutes.js'
-
+import seccionRoutes from './module/calificaciones/Routes/seccionesRoutes.js';
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
 
@@ -43,6 +43,7 @@ import personaRoutes from "./module/personas/Routes/personasRoutes.js";
 import seccionesRoutes from './module/matricula/Routes/seccionesRoutes.js';
 import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import gestion_academicaRoutes from './module/matricula/Routes/gestion_academicaRoutes.js';
+
 
 import personasRoutes from "./module/personas/personaRoutes.js";
 import nacionalidadRoutes from "./module/personas/Routes/nacionalidadRoutes.js";
@@ -158,7 +159,7 @@ app.use('/api/actividadesAcademicas', actividadesRoutes);
 app.use('/api/gradoAsignatura',gradoAsignaturaRoutes);
 app.use('/api/parametro',parametroRoutes);
 app.use('/api/actividades', ActividadAcademicaPadreRoutes); //vista padre de actividades
-
+app.use('/api/seccion', seccionRoutes);
 
 
 // Matrícula

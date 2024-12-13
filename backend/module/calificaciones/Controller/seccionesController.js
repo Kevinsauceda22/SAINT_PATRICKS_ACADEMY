@@ -55,16 +55,7 @@ export const deleteSeccion = async (req, res) => {
 
 //------------------------------------------------------------------------------- Parte Ariel--------------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
 // Controlador para obtener las secciones filtradas por el profesor
-
 export const obtenerSeccionesPorProfesor = async (req, res) => {
     try {
         const token = req.headers.authorization?.split(' ')[1];
@@ -106,9 +97,6 @@ export const obtenerSeccionesPorProfesor = async (req, res) => {
                 
             );
 
-
-
-            
             // Consulta para obtener el nombre del período
             const [periodoResult] = await pool.query(
                 'SELECT Anio_academico FROM tbl_periodo_matricula WHERE Cod_periodo_matricula = ?',
@@ -131,13 +119,7 @@ export const obtenerSeccionesPorProfesor = async (req, res) => {
     }
 };
 
-
-
-
-
 // Nueva función para obtener todas las secciones y profesores para el administrador
-
-
 export const obtenerTodasLasSeccionesYProfesoresAdmin = async (req, res) => {
     try {
       const { codProfesor } = req.params; // Obtener `Cod_Profesor` desde los parámetros de la URL
@@ -156,15 +138,6 @@ export const obtenerTodasLasSeccionesYProfesoresAdmin = async (req, res) => {
       res.status(500).json({ mensaje: 'Error al obtener las secciones del profesor' });
     }
   };
-  
-  
-  
-  
-  
-  
-  
-  
-  
   
   
   
