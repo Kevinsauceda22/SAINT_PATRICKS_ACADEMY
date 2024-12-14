@@ -455,32 +455,86 @@ export const obtenerTodasLasCajasPendientes = async (req, res) => {
   }
 };
 
-// Controlador para obtener el valor del parámetro "Matricula" y su descripción
 export const obtenerValorMatricula = async (req, res) => {
+  const { cod_caja } = req.query; // Obtener el código de la caja desde la solicitud
+
+  if (!cod_caja) {
+    return res.status(400).json({ message: 'El código de la caja es requerido.' });
+  }
+
   try {
-    // Consulta para obtener el valor y la descripción del parámetro "Matricula"
-    const [rows] = await pool.query(
-      'SELECT Parametro, Valor FROM tbl_parametros WHERE Parametro = ?',
-      ['Pago de matricula']
+    // Paso 1: Obtener el grado asociado a la caja
+    const [[gradoResult]] = await pool.query(
+      `
+      SELECT sm.Cod_grado
+      FROM tbl_caja c
+      INNER JOIN tbl_matricula m ON c.Cod_caja = m.Cod_caja
+      INNER JOIN tbl_secciones_matricula sm ON m.Cod_matricula = sm.Cod_matricula
+      WHERE c.Cod_caja = ?;
+      `,
+      [cod_caja]
     );
 
-    if (rows.length === 0) {
-      // Si no se encuentra el parámetro
+    if (!gradoResult || !gradoResult.Cod_grado) {
       return res
         .status(404)
-        .json({ message: 'El valor del parámetro "Pago de matricula" no se encontró.' });
+        .json({ message: 'No se encontró un grado asociado a la caja proporcionada.' });
     }
 
-    // Devolver tanto el valor como la descripción del parámetro
+    const codGrado = gradoResult.Cod_grado;
+
+    // Paso 2: Obtener el ciclo asociado al grado
+    const [[cicloResult]] = await pool.query(
+      'SELECT Cod_ciclo FROM tbl_grados WHERE Cod_grado = ?',
+      [codGrado]
+    );
+
+    if (!cicloResult || !cicloResult.Cod_ciclo) {
+      return res
+        .status(404)
+        .json({ message: 'No se encontró un ciclo asociado al grado proporcionado.' });
+    }
+
+    const codCiclo = cicloResult.Cod_ciclo;
+
+    // Paso 3: Obtener el nombre del ciclo
+    const [[nombreCicloResult]] = await pool.query(
+      'SELECT Nombre_ciclo FROM tbl_ciclos WHERE Cod_ciclo = ?',
+      [codCiclo]
+    );
+
+    if (!nombreCicloResult || !nombreCicloResult.Nombre_ciclo) {
+      return res
+        .status(404)
+        .json({ message: 'No se encontró el nombre del ciclo asociado.' });
+    }
+
+    const nombreCiclo = nombreCicloResult.Nombre_ciclo;
+
+    // Paso 4: Obtener el precio asociado al ciclo desde los parámetros
+    const [[parametroResult]] = await pool.query(
+      'SELECT Valor FROM tbl_parametros WHERE Parametro = ?',
+      [`Pago de matrícula - ${nombreCiclo}`]
+    );
+
+    if (!parametroResult || !parametroResult.Valor) {
+      return res.status(404).json({
+        message: `No se encontró un precio configurado para el ciclo: ${nombreCiclo}.`,
+      });
+    }
+
+    // Paso 5: Devolver el valor, el nombre del ciclo, y la descripción
     res.status(200).json({
-      parametro: rows[0].Parametro, // Descripción del parámetro
-      valor: rows[0].Valor, // Valor asociado
+      parametro: `Pago de matrícula - ${nombreCiclo}`, // Descripción dinámica con el nombre del ciclo
+      valor: parametroResult.Valor, // Precio correspondiente al ciclo
     });
   } catch (error) {
-    console.error('Error al obtener el valor del parámetro "Matricula":', error);
+    console.error('Error al obtener el valor de matrícula:', error);
     res.status(500).json({ message: 'Error interno del servidor.' });
   }
 };
+
+
 // Controlador para obtener el código del concepto "Matricula"
 export const obtenerConceptoMatricula = async (req, res) => {
   try {
@@ -579,5 +633,43 @@ export const obtenerValorMensualidad = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener el valor de la mensualidad:', error);
     res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
+  }
+};
+
+export const obtenerNombreAlumnoPorCaja = async (req, res) => {
+  const { cod_caja } = req.query;
+
+  if (!cod_caja) {
+    return res
+      .status(400)
+      .json({ message: 'El código de la caja es requerido para obtener el nombre del alumno.' });
+  }
+
+  try {
+    // Hacer JOIN entre tbl_matricula y tbl_personas para obtener el primer nombre y primer apellido
+    const [rows] = await pool.query(
+      `SELECT 
+          p.Nombre AS primer_nombre, 
+          p.Primer_apellido AS primer_apellido 
+       FROM tbl_matricula m
+       JOIN tbl_personas p ON m.cod_persona = p.cod_persona
+       WHERE m.Cod_caja = ?`,
+      [cod_caja]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        message: 'No se encontró ningún alumno asociado a esta caja.',
+      });
+    }
+
+    // Retornar el nombre completo (primer nombre y primer apellido) del alumno
+    const alumno = rows[0];
+    res.status(200).json({
+      nombre: `${alumno.primer_nombre} ${alumno.primer_apellido}`,
+    });
+  } catch (error) {
+    console.error('Error al obtener el nombre del alumno:', error);
+    res.status(500).json({ message: 'Error interno del servidor.' });
   }
 };
