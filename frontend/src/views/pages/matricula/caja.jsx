@@ -653,7 +653,34 @@ const preventCopyPaste = (e) => {
     }
   };
     
-
+  useEffect(() => {
+    const cargarNombreAlumno = async () => {
+      try {
+        if (!pagoActual.cod_caja) {
+          console.warn('No se proporcionó el código de la caja.');
+          return;
+        }
+  
+        const response = await axios.get(
+          `http://localhost:4000/api/caja/nombre-alumno?cod_caja=${pagoActual.cod_caja}`
+        );
+  
+        if (response.status === 200) {
+          setNombreAlumno(response.data.nombre); // Guardar el nombre del alumno en el estado
+        } else {
+          console.error('Error al cargar el nombre del alumno:', response.data.message);
+        }
+      } catch (error) {
+        console.error('Error al cargar el nombre del alumno:', error);
+      }
+    };
+  
+    cargarNombreAlumno();
+  }, [pagoActual.cod_caja]);
+  
+  // Estado para guardar el nombre del alumno
+  const [nombreAlumno, setNombreAlumno] = useState('');
+  
 
   
 
@@ -995,58 +1022,72 @@ const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
 };
 
   
-  useEffect(() => {
-    const cargarValorMatricula = async () => {
-      try {
-        const response = await axios.get('http://localhost:4000/api/caja/parametro/Matricula');
-        if (response.status === 200) {
-          const { valor, parametro } = response.data;
-          setValorMatricula(valor); // Guarda el valor de la matrícula
-          setDescripcionMatricula(parametro); // Guarda la descripción de la matrícula
-          console.log('Descripción Matricula cargada:', parametro); // Depuración
-        }
-      } catch (error) {
-        console.error('Error al obtener la descripción de Matricula:', error);
-      }
-    };
-    cargarValorMatricula();
-  }, []);
-  
-  useEffect(() => {
-    if (descripcionMatricula) {
-      setPagoActual((prev) => ({
-        ...prev,
-        descripcion: prev.descripcion || descripcionMatricula, // Si no hay descripción manual, usa descripcionMatricula
-      }));
-    }
-  }, [descripcionMatricula]);
-  
-
-// Actualizar el estado "pagoActual" con "valorMatricula" y "descripcionMatricula"
 useEffect(() => {
-  if (valorMatricula && descripcionMatricula) {
+  const cargarValorMatriculaPorCaja = async () => {
+    try {
+      const codCaja = pagoActual.cod_caja; // Obtén el código de la caja
+
+      if (!codCaja) {
+        console.warn('No se proporcionó el código de la caja.');
+        return;
+      }
+
+      // Llama a la API para obtener el valor de matrícula basado en la caja
+      const response = await axios.get(
+        `http://localhost:4000/api/caja/parametro/Matricula?cod_caja=${codCaja}`
+      );
+
+      if (response.status === 200) {
+        const { valor, parametro } = response.data;
+        setValorMatricula(valor); // Actualiza el valor de matrícula
+        setDescripcionMatricula(parametro); // Actualiza la descripción con el nombre del ciclo
+      } else {
+        console.error('Error al cargar el valor de matrícula:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Error al cargar el valor de matrícula por caja:', error);
+    }
+  };
+
+  cargarValorMatriculaPorCaja();
+}, [pagoActual.cod_caja]); // Recalcular si cambia la caja
+
+// Sincronizar la descripción en el estado de pagoActual
+useEffect(() => {
+  if (descripcionMatricula) {
     setPagoActual((prev) => ({
       ...prev,
-      monto: valorMatricula, // Establece el monto
-      descripcion: descripcionMatricula, // Establece la descripción
+      descripcion: descripcionMatricula, // Usar la descripción dinámica
     }));
   }
-}, [valorMatricula, descripcionMatricula]);
-  // Actualizar el monto con el valor de "Matricula"
-  useEffect(() => {
-    if (valorMatricula) {
-      setPagoActual((prev) => ({
-        ...prev,
-        monto: valorMatricula, // Asigna el valor de Matricula al monto
-      }));
-    }
-  }, [valorMatricula]);
-  
-  const calcularVuelto = (monto, descuento, recibido) => {
-    const montoConDescuento = monto - descuento;
-    return recibido - montoConDescuento;
-  };
-  
+}, [descripcionMatricula]);
+
+// Sincronizar descripción si cambia el valor
+useEffect(() => {
+  if (descripcionMatricula) {
+    setPagoActual((prev) => ({
+      ...prev,
+      descripcion: 'Pago de matrícula', // Descripción fija
+    }));
+  }
+}, [descripcionMatricula]);
+
+// Sincronizar monto con el valor de matrícula
+useEffect(() => {
+  if (valorMatricula) {
+    setPagoActual((prev) => ({
+      ...prev,
+      monto: valorMatricula, // Valor dinámico sincronizado según el ciclo
+    }));
+  }
+}, [valorMatricula]);
+
+// Calcular vuelto basado en monto, descuento y dinero recibido
+const calcularVuelto = (monto, descuento, recibido) => {
+  const montoConDescuento = monto - descuento;
+  return recibido - montoConDescuento;
+};
+
   
   return (
     <CContainer>
@@ -1305,15 +1346,57 @@ useEffect(() => {
   backdrop="static"
   className="modal-md border-0 rounded shadow"
 >
-  <CModalHeader closeButton className="bg-light border-0">
-    <CModalTitle className="fw-bold" style={{ color: '#4B6251' }}>
-      <CIcon icon={cilWallet} className="me-2" /> Registrar Pago
-    </CModalTitle>
-  </CModalHeader>
+<CModalHeader
+  className="bg-light border-bottom py-3 px-4"
+  style={{
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '5px',
+  }}
+>
+  {/* Encabezado principal */}
+  <div
+    className="d-flex align-items-center justify-content-start"
+    style={{
+      gap: '10px',
+      width: '100%',
+    }}
+  >
+    <CIcon icon={cilWallet} style={{ fontSize: '2rem', color: '#4B6251' }} />
+    <h4
+      className="fw-bold mb-0"
+      style={{
+        color: '#4B6251',
+        fontSize: '1.7rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.5px',
+      }}
+    >
+      Pago de Matricula
+    </h4>
+  </div>
+
+  {/* Subtítulo: Nombre del alumno */}
+  {nombreAlumno && (
+    <span
+      style={{
+        fontSize: '1.2rem',
+        fontWeight: '500',
+        color: '#6C757D', // Gris suave
+        marginLeft: '2.5rem', // Alineado con el ícono
+      }}
+    >
+      Matrícula del Alumno{' '}
+      <strong style={{ color: '#4B6251', textTransform: 'uppercase' }}>
+        {nombreAlumno}
+      </strong>
+    </span>
+  )}
+</CModalHeader>
+
   <CModalBody className="p-4">
     <CForm onSubmit={registrarPago}>
-      {/* Campo de descripción */}
-      <CInputGroup className="mb-3">
+    <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
     <CIcon icon={cilDescription} className="text-muted" />
   </CInputGroupText>
@@ -1321,60 +1404,25 @@ useEffect(() => {
     type="text"
     name="descripcion"
     placeholder="Descripción"
-    value={descripcionMatricula || pagoActual.descripcion || ''} // Prioriza descripcionMatricula
-    readOnly // Si no deseas que sea editable
+    value={descripcionMatricula || pagoActual.descripcion || ''} // Descripción dinámica
+    readOnly
     className="form-control border-0 shadow-sm"
   />
 </CInputGroup>
-{/* Campo de monto */}
+
 <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
     <CIcon icon={cilDollar} className="text-muted" />
   </CInputGroupText>
   <CFormInput
-  type="number"
-  name="monto"
-  placeholder="Monto (Lempiras)"
-  value={pagoActual.monto || valorMatricula || ''} // Toma el valor de Matricula como predeterminado
-  onChange={(e) => {
-    const value = e.target.value;
-
-    // Validaciones
-    if (/[^0-9.]/.test(value)) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        monto: 'El monto solo puede contener números y puntos.',
-      }));
-    } else if (parseFloat(value) <= 0 || isNaN(parseFloat(value))) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        monto: 'El monto debe ser mayor a 0.',
-      }));
-    } else if (value.length > 25) {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        monto: 'El monto no puede exceder los 25 caracteres.',
-      }));
-    } else {
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        monto: '', // Limpia los errores
-      }));
-    }
-
-    // Actualiza el estado con el valor ingresado
-    setPagoActual((prevState) => ({
-      ...prevState,
-      monto: value, // Actualiza monto manualmente
-    }));
-  }}
-  onPaste={(e) => e.preventDefault()} // Bloquea pegar
-  onCopy={(e) => e.preventDefault()} // Bloquea copiar
-  className={`form-control border-0 shadow-sm ${errors.monto ? 'is-invalid' : ''}`} // Resalta inválido si hay errores
-  required
-/>
-{errors.monto && <small className="text-danger">{errors.monto}</small>} {/* Muestra error debajo */}
-
+    type="number"
+    name="monto"
+    placeholder="Monto (Lempiras)"
+    value={pagoActual.monto || valorMatricula || ''} // Monto dinámico
+    readOnly
+    className={`form-control border-0 shadow-sm`}
+    required
+  />
 </CInputGroup>
 
       {/* Selección de concepto */}

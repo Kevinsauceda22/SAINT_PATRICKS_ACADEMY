@@ -310,7 +310,9 @@ const _nav = [
     name: 'Caja',
     to: '/caja', 
     nameobject: 'Solicitud_admin',
-  },
+    icon: cilDollar, // Aquí se asigna un ícono representativo de dinero
+},
+
 
   {
     component: CNavGroup,
