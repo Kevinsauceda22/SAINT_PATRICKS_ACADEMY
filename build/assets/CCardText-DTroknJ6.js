@@ -1,0 +1,1 @@
+import{r as o,_ as p,R as d,a as i,c as N,P as a}from"./index-SVRFFNc9.js";var r=o.forwardRef(function(e,t){var c=e.children,s=e.as,n=s===void 0?"p":s,l=e.className,m=p(e,["children","as","className"]);return d.createElement(n,i({className:N("card-text",l)},m,{ref:t}),c)});r.propTypes={as:a.elementType,children:a.node,className:a.string};r.displayName="CCardText";export{r as C};
