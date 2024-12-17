@@ -76,7 +76,7 @@ const ListaGradosAsignaturas = () => {
     //LLAMADO AL GET GRADOS
     const fetchGrados = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/grados/verGrados');
+            const response = await fetch('http://74.50.68.87:4000/api/grados/verGrados');
             const data = await response.json();
             // Asignar un índice original basado en el orden en la base de datos
             const dataWithIndex = data.map((grado, index) => ({
@@ -103,7 +103,7 @@ const ListaGradosAsignaturas = () => {
     //llamado a todos los grados y sus asignaturas
     const fetchGradosAsignaturasOrden = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/gradoAsignatura/obtenerGradosAsignaturasOrden'); // URL de tu API
+            const response = await fetch('http://74.50.68.87:4000/api/gradoAsignatura/obtenerGradosAsignaturasOrden'); // URL de tu API
             const data = await response.json();
 
             return data; // Devuelve directamente los datos completos
@@ -116,7 +116,7 @@ const ListaGradosAsignaturas = () => {
     // LLAMADO AL GET ASIGNATURAS
     const fetchAsignaturas = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/asignaturas/verAsignaturas');
+            const response = await fetch('http://74.50.68.87:4000/api/asignaturas/verAsignaturas');
             const data = await response.json();
             // Asignar un índice original basado en el orden en la base de datos
             const dataWithIndex = data.map((asignatura, index) => ({
@@ -141,7 +141,7 @@ const ListaGradosAsignaturas = () => {
     const fetchGradosAsignaturas = async (codGrado) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:4000/api/gradoAsignatura/verGradosAsignaturas/${codGrado}`);
+            const response = await fetch(`http://74.50.68.87:4000/api/gradoAsignatura/verGradosAsignaturas/${codGrado}`);
             const data = await response.json();
             setGradosAsignaturas(data);
             setModalVisible(true); // Muestra el modal después de obtener los datos
@@ -501,7 +501,7 @@ const ListaGradosAsignaturas = () => {
 
         try {
             // Petición al servidor para asignar la asignatura
-            const response = await fetch('http://localhost:4000/api/gradoAsignatura/crearGradoAsignatura', {
+            const response = await fetch('http://74.50.68.87:4000/api/gradoAsignatura/crearGradoAsignatura', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -555,7 +555,7 @@ const ListaGradosAsignaturas = () => {
     // LLAMADO DE API PARA PODER ELIMINAR UNA ASIGNATURA DE UN GRADO
     const handleDeleteGradoAsignatura = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/gradoAsignatura/eliminarGradoAsignaturas', {
+            const response = await fetch('http://74.50.68.87:4000/api/gradoAsignatura/eliminarGradoAsignaturas', {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

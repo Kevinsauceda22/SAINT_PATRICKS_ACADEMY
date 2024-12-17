@@ -57,7 +57,7 @@ const TipoPersona = () => {
 
   const obtenerTiposPersona = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipopersona/tipo-persona');
+      const response = await fetch('http://74.50.68.87:4000/api/tipopersona/tipo-persona');
       const data = await response.json();
       if (response.ok) {
         setTiposPersona(data);
@@ -96,7 +96,7 @@ const TipoPersona = () => {
 
   const crearTipoPersona = async (tipo) => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipopersona/tipo-persona', {
+      const response = await fetch('http://74.50.68.87:4000/api/tipopersona/tipo-persona', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ const TipoPersona = () => {
 
   const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/tipopersona/tipo-persona/${codTipo}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/tipopersona/tipo-persona/${codTipo}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -160,7 +160,7 @@ const TipoPersona = () => {
 
   const eliminarTipoPersona = async (codTipo) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/tipopersona/tipo-persona/${codTipo}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/tipopersona/tipo-persona/${codTipo}`, {
         method: 'DELETE',
       });
 

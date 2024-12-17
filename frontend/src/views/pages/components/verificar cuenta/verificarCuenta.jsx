@@ -11,7 +11,7 @@ const VerificarCuenta = () => {
     useEffect(() => {
         const confirmarCuenta = async () => {
             try {
-                const response = await fetch(`http://localhost:4000/api/usuarios/confirmar/${token_usuario}`, {
+                const response = await fetch(`http://74.50.68.87:4000/api/usuarios/confirmar/${token_usuario}`, {
                     method: 'GET', // Usar GET para confirmar la cuenta
                     headers: {
                         'Content-Type': 'application/json',

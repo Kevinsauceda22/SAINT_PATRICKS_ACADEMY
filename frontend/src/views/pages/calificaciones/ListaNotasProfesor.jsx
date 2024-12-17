@@ -86,7 +86,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Token no encontrado');
   
-      const response = await fetch('http://localhost:4000/api/notas/seccionesporprofe', {
+      const response = await fetch('http://74.50.68.87:4000/api/notas/seccionesporprofe', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -106,7 +106,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   const fetchAsignaturas = async (Cod_secciones) => {
     try {
       setCargando(true);
-      const response = await fetch(`http://localhost:4000/api/notas/notas?Cod_seccion=${Cod_secciones}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/notas/notas?Cod_seccion=${Cod_secciones}`);
       if (!response.ok) throw new Error('Error al obtener las asignaturas');
       const data = await response.json();
       setAsignaturas(data);
@@ -121,7 +121,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   const fetchPromedio = async (Cod_seccion_asignatura) => {
     try {
       setCargando(true);
-      const response = await fetch(`http://localhost:4000/api/notas/promedio?Cod_seccion_asignatura=${Cod_seccion_asignatura}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/notas/promedio?Cod_seccion_asignatura=${Cod_seccion_asignatura}`);
       if (!response.ok) throw new Error('Error al obtener los promedios');
       const data = await response.json();
       setPromedios(data);
@@ -136,7 +136,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   const fetchActividades = async (Cod_seccion_asignatura) => {
     try {
       setCargando(true);
-      const response = await fetch(`http://localhost:4000/api/notas/actividades?Cod_seccion_asignatura=${Cod_seccion_asignatura}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/notas/actividades?Cod_seccion_asignatura=${Cod_seccion_asignatura}`);
       if (!response.ok) throw new Error('Error al obtener las actividades');
       const data = await response.json();
   
@@ -172,7 +172,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       console.log('Cod_seccion_asignatura:', Cod_seccion_asignatura, 'Cod_parcial:', Cod_parcial);
   
       const response = await fetch(
-        `http://localhost:4000/api/notas/actividadescalificadas?Cod_seccion_asignatura=${Cod_seccion_asignatura}`
+        `http://74.50.68.87:4000/api/notas/actividadescalificadas?Cod_seccion_asignatura=${Cod_seccion_asignatura}`
       );
       if (!response.ok) throw new Error('Error al obtener las actividades');
       const data = await response.json();
@@ -195,7 +195,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   
   const fetchEstudiantes = async (actividad) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/seccionalumno/estudiantes/${selectedCodSeccion}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/seccionalumno/estudiantes/${selectedCodSeccion}`);
       if (!response.ok) throw new Error('Error al obtener la lista de estudiantes');
       const data = await response.json();
       setEstudiantes(data);
@@ -212,7 +212,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       console.log('Parametros:', { codSeccion, codSeccionAsignatura, codParcial, codActividadAsignatura }); // Verifica los valores
       setCargando(true);
       const response = await fetch(
-        `http://localhost:4000/api/notas/notasactividad/${codSeccion}/${codSeccionAsignatura}/${codParcial}/${codActividadAsignatura}`
+        `http://74.50.68.87:4000/api/notas/notasactividad/${codSeccion}/${codSeccionAsignatura}/${codParcial}/${codActividadAsignatura}`
       );
       if (!response.ok) throw new Error("Error al obtener las notas");
       const data = await response.json();
@@ -258,7 +258,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       }));
   
       // Realiza la solicitud al endpoint de actualización
-      const response = await fetch('http://localhost:4000/api/notas/actualizarnota', {
+      const response = await fetch('http://74.50.68.87:4000/api/notas/actualizarnota', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
          const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado las notas con los códigos: ${codigosActualizados}`;
          
           // Enviar a la bitácora
-          const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -354,7 +354,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       }));
   
       // Realizar la solicitud al backend
-      const response = await fetch('http://localhost:4000/api/notas/crearnota', {
+      const response = await fetch('http://74.50.68.87:4000/api/notas/crearnota', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -370,7 +370,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevas notas `;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -422,7 +422,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   
       // Realizar la solicitud con los parámetros
       const response = await fetch(
-        `http://localhost:4000/api/notas/notatotal/${Cod_seccion}/${Cod_seccion_asignatura}/${Cod_parcial}`
+        `http://74.50.68.87:4000/api/notas/notatotal/${Cod_seccion}/${Cod_seccion_asignatura}/${Cod_parcial}`
       );
   
       if (!response.ok) throw new Error("Error al obtener la lista de estudiantes");

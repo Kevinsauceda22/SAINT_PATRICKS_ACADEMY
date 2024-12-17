@@ -107,7 +107,7 @@ const Solicitud = () => {
         throw new Error('Usuario no autenticado. Por favor, inicia sesión.');
       }
 
-      const response = await fetch('http://localhost:4000/api/solicitud/solicitudes', {
+      const response = await fetch('http://74.50.68.87:4000/api/solicitud/solicitudes', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -385,7 +385,7 @@ allowOutsideClick: false,
                 Estado: cita.estado, // Mantener el estado actual
             };
 
-            const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
+            const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -588,8 +588,8 @@ allowOutsideClick: false,
   
       const response = await fetch(
         selectedCita
-          ? `http://localhost:4000/api/solicitud/solicitudes/${selectedCita.id}`
-          : 'http://localhost:4000/api/solicitud/solicitudes',
+          ? `http://74.50.68.87:4000/api/solicitud/solicitudes/${selectedCita.id}`
+          : 'http://74.50.68.87:4000/api/solicitud/solicitudes',
         {
           method: selectedCita ? 'PUT' : 'POST',
           headers: {

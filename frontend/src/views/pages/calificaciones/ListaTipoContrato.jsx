@@ -76,7 +76,7 @@ const ListaTipoContratos = () => {
 
   const fetchTipoContratos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/contratos/tiposContrato');
+      const response = await fetch('http://74.50.68.87:4000/api/contratos/tiposContrato');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((tiposContratos, index) => ({
@@ -235,7 +235,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
          console.error('No se pudo obtener el código o el nombre de usuario del token');
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
-      const response = await fetch('http://localhost:4000/api/contratos/creartiposContrato', {
+      const response = await fetch('http://74.50.68.87:4000/api/contratos/creartiposContrato', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo tipo de contrato: ${nuevoContrato.Descripcion} `;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -334,7 +334,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
       }
   
-      const response = await fetch('http://localhost:4000/api/contratos/actualizartiposContrato', {
+      const response = await fetch('http://74.50.68.87:4000/api/contratos/actualizartiposContrato', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -349,7 +349,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
          const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el tipo de contrato a: ${contratoToUpdate.Descripcion} con código ${contratoToUpdate.Cod_tipo_contrato} `;
         
          // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
            method: 'POST',
            headers: {
              'Content-Type': 'application/json',
@@ -413,7 +413,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
          console.error('No se pudo obtener el código o el nombre de usuario del token');
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
-      const response = await fetch('http://localhost:4000/api/contratos/eliminartiposcontrato', {
+      const response = await fetch('http://74.50.68.87:4000/api/contratos/eliminartiposcontrato', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -428,7 +428,7 @@ const resetContratoToUpdate = () => setContratoToUpdate({ Descripcion: '' });
          const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el tipo de contrato: ${contratoToDelete.Descripcion} con código ${contratoToDelete.Cod_tipo_contrato} `;
         
          // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
            method: 'POST',
            headers: {
              'Content-Type': 'application/json',

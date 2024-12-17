@@ -52,7 +52,7 @@ const DepartamentoMantenimiento = () => {
   
   const obtenerDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamentos');
+      const response = await fetch('http://74.50.68.87:4000/api/departamento/departamentos');
       const data = await response.json();
       if (response.ok) {
         // Convertir todos los nombres de los departamentos a mayúsculas
@@ -116,7 +116,7 @@ const DepartamentoMantenimiento = () => {
     }
   
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamentos', {
+      const response = await fetch('http://74.50.68.87:4000/api/departamento/departamentos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre_departamento: nombreDepartamento }),
@@ -147,7 +147,7 @@ const DepartamentoMantenimiento = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:4000/api/departamento/departamentos/${codDepartamento}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/departamento/departamentos/${codDepartamento}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nombre_departamento: nombreDepartamento }),
@@ -169,7 +169,7 @@ const DepartamentoMantenimiento = () => {
 
   const eliminarDepartamento = async (codDepartamento) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/departamento/departamentos/${codDepartamento}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/departamento/departamentos/${codDepartamento}`, {
         method: 'DELETE',
       });
 

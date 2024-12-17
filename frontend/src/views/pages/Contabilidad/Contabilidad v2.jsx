@@ -91,7 +91,7 @@ const LibroDiario = () => {
         }
 
         // Cargar cuentas
-        const cuentasResponse = await fetch('http://localhost:4000/api/catalogocuentas', {
+        const cuentasResponse = await fetch('http://74.50.68.87:4000/api/catalogocuentas', {
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -106,7 +106,7 @@ const LibroDiario = () => {
         setCuentas(cuentasData);
 
         // Cargar registros
-        const registrosResponse = await fetch('http://localhost:4000/api/Librodiario', {
+        const registrosResponse = await fetch('http://74.50.68.87:4000/api/Librodiario', {
           headers: {
             'Authorization': `Bearer ${token}`
           },
@@ -167,7 +167,7 @@ const LibroDiario = () => {
         throw new Error('No hay token de autenticación');
       }
 
-      const response = await fetch('http://localhost:4000/api/Librodiario', {
+      const response = await fetch('http://74.50.68.87:4000/api/Librodiario', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

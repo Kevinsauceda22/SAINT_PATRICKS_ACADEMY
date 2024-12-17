@@ -110,7 +110,7 @@ useEffect(() => {
             throw new Error('Token no disponible.');
         }
 
-        const response = await fetch('http://localhost:4000/api/seccionalumno/seccionesporprofe', {
+        const response = await fetch('http://74.50.68.87:4000/api/seccionalumno/seccionesporprofe', {
             method: 'GET',
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -142,7 +142,7 @@ useEffect(() => {
   //trae los estados asistencia y les aplica un estilo(color e icono)
   const fetchEstadosAsistencia = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/estadoasistencias');
+      const response = await fetch('http://74.50.68.87:4000/api/estadoAsistencia/estadoasistencias');
       if (!response.ok) throw new Error('Error al cargar estados de asistencia.');
       const data = await response.json();
       setEstadosAsistencia(data); // Guardar los estados de asistencia en el estado
@@ -159,7 +159,7 @@ useEffect(() => {
   // trae todos los alumnos por seccion 
   const fetchAlumnosPorSeccion = async (codSeccion) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/seccionalumno/estudiantes/${codSeccion}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/seccionalumno/estudiantes/${codSeccion}`);
       if (!response.ok) throw new Error('Error al cargar estudiantes.');
       const data = await response.json();
   
@@ -192,7 +192,7 @@ useEffect(() => {
   const fetchTodasAsistencias = async (fecha) => {
     try {
       const fechaFormateada = formatFecha(fecha);
-      const response = await fetch(`http://localhost:4000/api/asistencia/asistencias?cod_seccion=${codSeccionSeleccionada}&fecha=${fechaFormateada}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/asistencia/asistencias?cod_seccion=${codSeccionSeleccionada}&fecha=${fechaFormateada}`);
       if (!response.ok) {
         throw new Error('Error al obtener las asistencias.');
       }
@@ -220,7 +220,7 @@ useEffect(() => {
     if (!codSeccionSeleccionada) return;
   
     try {
-      const response = await fetch(`http://localhost:4000/api/asistencia/recuento?codSeccion=${codSeccionSeleccionada}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/asistencia/recuento?codSeccion=${codSeccionSeleccionada}`);
       if (!response.ok) throw new Error('Error al obtener el recuento de asistencias.');
       const data = await response.json();
   
@@ -259,7 +259,7 @@ useEffect(() => {
     const formattedDate = date.toISOString().split('T')[0];
     setFecha(formattedDate);
 
-    const response = await fetch(`http://localhost:4000/api/asistencia/asistencias?cod_seccion=${codSeccionSeleccionada}&fecha=${formattedDate}`);
+    const response = await fetch(`http://74.50.68.87:4000/api/asistencia/asistencias?cod_seccion=${codSeccionSeleccionada}&fecha=${formattedDate}`);
     if (!response.ok) throw new Error('Error al obtener las asistencias.');
     
     const data = await response.json();
@@ -431,7 +431,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       }));
   
       // Verificar si ya existen registros para esta fecha antes de hacer la inserción
-      const verificarResponse = await fetch('http://localhost:4000/api/asistencia/verificarExistencia', {
+      const verificarResponse = await fetch('http://74.50.68.87:4000/api/asistencia/verificarExistencia', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -451,7 +451,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       }
   
       // Insertar asistencias si no existen registros previos
-      const response = await fetch('http://localhost:4000/api/asistencia/crearasistencias', {
+      const response = await fetch('http://74.50.68.87:4000/api/asistencia/crearasistencias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -465,7 +465,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva asistencia para la fecha: ${fechaConHoraFormateada} `;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -537,7 +537,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       }));
   
       // Realiza la solicitud de actualización
-      const response = await fetch('http://localhost:4000/api/asistencia/actualizarasistencias', {
+      const response = await fetch('http://74.50.68.87:4000/api/asistencia/actualizarasistencias', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -555,7 +555,7 @@ const handleObservacionChangeActualizar = (index, value) => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado las asistencias con los códigos: ${codigosActualizados}`;
         
          // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
            method: 'POST',
            headers: {
              'Content-Type': 'application/json',
@@ -1157,7 +1157,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       if (Cod_secciones) {
         try {
             // Hacer una solicitud fetch para obtener la nomenclatura
-            const response = await fetch(`http://localhost:4000/api/seccionalumno/nomenclatura?codSeccion=${Cod_secciones}`);
+            const response = await fetch(`http://74.50.68.87:4000/api/seccionalumno/nomenclatura?codSeccion=${Cod_secciones}`);
             if (!response.ok) throw new Error('Error al obtener la nomenclatura.');
 
             const data = await response.json();

@@ -41,7 +41,7 @@ const MatriculaForm = () => {
   const obtenerMatriculasConPeriodo = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:4000/api/matricula/matriculas-con-periodo');
+      const response = await axios.get('http://74.50.68.87:4000/api/matricula/matriculas-con-periodo');
       const matriculasData = response.data.data || [];
 
       const aniosUnicos = [...new Set(matriculasData.map((m) => m.Anio_academico))].sort((a, b) => b - a);

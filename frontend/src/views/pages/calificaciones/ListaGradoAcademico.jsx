@@ -186,7 +186,7 @@ const ListaGradoAcademico = () => {
 
   const fetchGradosAcademicos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/gradosAcademicos/verGradosAcademicos');
+      const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/verGradosAcademicos');
       const data = await response.json();
      // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((gradosAcademicos, index) => ({
@@ -242,7 +242,7 @@ const handleCreateGrado = async () => {
        console.error('No se pudo obtener el código o el nombre de usuario del token');
        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
      }
-    const response = await fetch('http://localhost:4000/api/gradosAcademicos/crearGradoAcademico', {
+    const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/crearGradoAcademico', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -256,7 +256,7 @@ const handleCreateGrado = async () => {
        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo grado académico: ${nuevoGrado.Descripcion} `;
         
        // Enviar a la bitácora
-       const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+       const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
          method: 'POST',
          headers: {
            'Content-Type': 'application/json',
@@ -341,7 +341,7 @@ const handleUpdateGrado = async () => {
        console.error('No se pudo obtener el código o el nombre de usuario del token');
        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
      }
-    const response = await fetch('http://localhost:4000/api/gradosAcademicos/actualizarGradoAcademico', {
+    const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/actualizarGradoAcademico', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -355,7 +355,7 @@ const handleUpdateGrado = async () => {
        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el grado académico a: ${gradoToUpdate.Descripcion} con código ${gradoToUpdate.Cod_grado_academico} `;
         
        // Enviar a la bitácora
-       const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+       const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
          method: 'POST',
          headers: {
            'Content-Type': 'application/json',
@@ -410,7 +410,7 @@ const handleUpdateGrado = async () => {
          console.error('No se pudo obtener el código o el nombre de usuario del token');
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
-      const response = await fetch('http://localhost:4000/api/gradosAcademicos/eliminarGradoAcademico', {
+      const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/eliminarGradoAcademico', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -424,7 +424,7 @@ const handleUpdateGrado = async () => {
          const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el grado académico: ${gradoToDelete.Descripcion} con código ${gradoToDelete.Cod_grado_academico} `;
         
          // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
            method: 'POST',
            headers: {
              'Content-Type': 'application/json',

@@ -39,7 +39,7 @@ const RutaProtegida = () => {
     const actualizarEstadoOtp = async () => {
       try {
         await axios.put(
-          `http://localhost:4000/api/usuarios/actualizarOtp/${auth?.cod_usuario}`,
+          `http://74.50.68.87:4000/api/usuarios/actualizarOtp/${auth?.cod_usuario}`,
           { otp_verified: 0 }
         );
         console.log('Estado otp_verified actualizado correctamente');

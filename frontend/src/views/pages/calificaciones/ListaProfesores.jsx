@@ -85,7 +85,7 @@ const ListaProfesores = () => {
 
   const fetchListaPersonas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verpersonas');
+      const response = await fetch('http://74.50.68.87:4000/api/persona/verpersonas');
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verificar estructura de la respuesta
   
@@ -193,7 +193,7 @@ const resetProfesorToUpdate = () => setProfesorToUpdate('');
 
   const fetchListaTiposContrato = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/contratos/tiposContrato');
+      const response = await fetch('http://74.50.68.87:4000/api/contratos/tiposContrato');
       const data = await response.json();
       setListaTiposContrato(data);
     } catch (error) {
@@ -203,7 +203,7 @@ const resetProfesorToUpdate = () => setProfesorToUpdate('');
   
   const fetchListaGradosAcademicos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/gradosAcademicos/verGradosAcademicos');
+      const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/verGradosAcademicos');
       const data = await response.json();
       setListaGradosAcademicos(data);
     } catch (error) {
@@ -212,7 +212,7 @@ const resetProfesorToUpdate = () => setProfesorToUpdate('');
   };
   const fetchProfesores = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/profesores/verprofesores');
+      const response = await fetch('http://74.50.68.87:4000/api/profesores/verprofesores');
       const data = await response.json();
       setProfesores(data);
     } catch (error) {
@@ -303,7 +303,7 @@ if (duplicada) {
   
 
   try {
-    const response = await fetch('http://localhost:4000/api/profesores/crearprofesor', {
+    const response = await fetch('http://74.50.68.87:4000/api/profesores/crearprofesor', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ const handleUpdateProfesor = async () => {
   }
 
   try {
-      const response = await fetch('http://localhost:4000/api/profesores/actualizarprofesor', {
+      const response = await fetch('http://74.50.68.87:4000/api/profesores/actualizarprofesor', {
           method: 'PUT',
           headers: {
               'Content-Type': 'application/json',
@@ -397,7 +397,7 @@ const handleUpdateProfesor = async () => {
   const handleDeleteProfesor = async () => {
 
     try {
-      const response = await fetch('http://localhost:4000/api/profesores/eliminarprofesor', {
+      const response = await fetch('http://74.50.68.87:4000/api/profesores/eliminarprofesor', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -432,7 +432,7 @@ const toggleEstado = async (profesor) => {
     setLoading(true);  // Activar el indicador de carga
 
     // Llamada a la API para actualizar el estado
-    const response = await axios.post('http://localhost:4000/api/profesores/actualizarEstadoProfesor', {
+    const response = await axios.post('http://74.50.68.87:4000/api/profesores/actualizarEstadoProfesor', {
       cod_profesor: profesor.Cod_profesor,
       estado: nuevoEstado,
     });

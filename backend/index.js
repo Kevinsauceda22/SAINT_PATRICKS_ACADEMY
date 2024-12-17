@@ -220,6 +220,19 @@ app.use('/api/caja', cajaRoutes);
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;
 
+
+
+app.use(cors()); // Habilitar CORS para conexiones desde el frontend
+app.use(express.json()); // Habilitar JSON en el backend
+
+(async () => {
+    await conectarDB(); // Conectar a MariaDB
+})();
+
+app.get('/api', (req, res) => {
+    res.json({ message: 'Backend funcionando correctamente' });
+});
+
 // Iniciar el servidor en el puerto especificado
 app.listen(PORT, () => {
     console.log(`Servidor backend en ejecución en el puerto ${PORT}`);

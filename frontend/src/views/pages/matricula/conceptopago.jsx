@@ -148,7 +148,7 @@ const ConceptoPago = () => {
 
   const obtenerConceptos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/conceptopago/concepto-pago');
+      const response = await fetch('http://74.50.68.87:4000/api/conceptopago/concepto-pago');
       const data = await response.json();
       if (response.ok) {
         setConceptos(data);
@@ -172,7 +172,7 @@ const ConceptoPago = () => {
     if (!isConceptoValid || !isDescripcionValid || !isActivoValid) return;
 
     try {
-      const response = await fetch(`http://localhost:4000/api/conceptopago/concepto-pago/${conceptoActual.codConcepto}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/conceptopago/concepto-pago/${conceptoActual.codConcepto}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -206,7 +206,7 @@ const ConceptoPago = () => {
     if (!isConceptoValid || !isDescripcionValid || !isActivoValid) return;
 
     try {
-      const response = await fetch('http://localhost:4000/api/conceptopago/concepto-pago', {
+      const response = await fetch('http://74.50.68.87:4000/api/conceptopago/concepto-pago', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -233,7 +233,7 @@ const ConceptoPago = () => {
 
   const eliminarConcepto = async (codConcepto) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/conceptopago/concepto-pago/${codConcepto}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/conceptopago/concepto-pago/${codConcepto}`, {
         method: 'DELETE',
       });
 

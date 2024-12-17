@@ -57,7 +57,7 @@ const ListaHistoriales = () => {
 
   const fetchPersonas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verPersonas');
+      const response = await fetch('http://74.50.68.87:4000/api/persona/verPersonas');
       const data = await response.json();
       console.log(data);
       setPersona(data);
@@ -68,7 +68,7 @@ const ListaHistoriales = () => {
 
   const fetchGrados = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/grados/vergrados');
+      const response = await fetch('http://74.50.68.87:4000/api/grados/vergrados');
       const data = await response.json();
       console.log(data); // Verifica la respuesta en la consola
       setGrados(data); 
@@ -79,7 +79,7 @@ const ListaHistoriales = () => {
 
 const fetchInstituto = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/instituto/instituto');
+    const response = await fetch('http://74.50.68.87:4000/api/instituto/instituto');
     const data = await response.json();
     console.log(data); //verifica las respuestas en la consola
     setInstituto(data);
@@ -90,7 +90,7 @@ const fetchInstituto = async () => {
 
   const fetchHistorial = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/historialAcademico/gradosMatricula');
+      const response = await fetch('http://74.50.68.87:4000/api/historialAcademico/gradosMatricula');
   
       if (!response.ok) {
         throw new Error('Error en la solicitud al servidor');
@@ -128,7 +128,7 @@ const fetchInstituto = async () => {
     setError(null);
   
     try {
-      const response = await fetch(`http://localhost:4000/api/historialAcademico/gradosMatricula/${cod_grado}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/historialAcademico/gradosMatricula/${cod_grado}`);
       
       if (!response.ok) {
         throw new Error("Error al obtener las personas del grado");
@@ -264,7 +264,7 @@ const fetchInstituto = async () => {
       setHistoriales([]);
   
       // Hacer la solicitud para obtener los historiales del nuevo estudiante
-      const response = await fetch(`http://localhost:4000/api/historialAcademico/historiales/persona/${cod_persona}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/historialAcademico/historiales/persona/${cod_persona}`);
       const data = await response.json();
   
       // Renumera los historiales secuencialmente
@@ -359,7 +359,7 @@ const handleCreateHistorial = async () => {
   const historialConEstado = { ...nuevoHistorial, Cod_estado: codEstado };
 
   try {
-    const response = await fetch('http://localhost:4000/api/historialAcademico/crearhistorial', {
+    const response = await fetch('http://74.50.68.87:4000/api/historialAcademico/crearhistorial', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -407,7 +407,7 @@ const handleUpdateHistorial = async () => {
   const historialActualizado = { ...nuevoHistorial, Cod_estado: codEstado };
 
   try {
-    const response = await fetch('http://localhost:4000/api/historialAcademico/actualizarhistorial', {
+    const response = await fetch('http://74.50.68.87:4000/api/historialAcademico/actualizarhistorial', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -452,7 +452,7 @@ const handleCancelModal = () => {
     // Si el usuario confirma, proceder con la eliminación
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:4000/api/historialAcademico/eliminarhistorial`, {
+        const response = await fetch(`http://74.50.68.87:4000/api/historialAcademico/eliminarhistorial`, {
           method: 'DELETE',
           headers: {
             'Content-Type': 'application/json',

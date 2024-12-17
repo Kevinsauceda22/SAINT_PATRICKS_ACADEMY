@@ -46,7 +46,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
   const fetchSecciones = async () => {
     try {
-        const response = await fetch('http://localhost:4000/api/notas/seccion', {
+        const response = await fetch('http://74.50.68.87:4000/api/notas/seccion', {
             method: 'GET',
         });
 
@@ -62,7 +62,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
   const fetchEstudiantes = async (Cod_secciones) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/seccionalumno/estudiantes/${Cod_secciones}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/seccionalumno/estudiantes/${Cod_secciones}`);
       if (!response.ok) throw new Error('Error al obtener la lista de estudiantes');
       const data = await response.json();
       setEstudiantes(data);
@@ -76,7 +76,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
     try {
       setNombreEstudiante(nombreEstudiante);
       setIdentidadEstudiante(identidad);
-      const response = await fetch(`http://localhost:4000/api/notas/notasypromedio/${Cod_seccion_matricula}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/notas/notasypromedio/${Cod_seccion_matricula}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`, // Incluye el token si es necesario

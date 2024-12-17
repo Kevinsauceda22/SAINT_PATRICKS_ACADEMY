@@ -39,7 +39,7 @@ const GradosYSecciones = () => {
 
   const obtenerGradosYAniosAcademicos = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+      const response = await axios.get('http://74.50.68.87:4000/api/matricula/opciones');
       const periodos = response.data.periodos_matricula || [];
       const anios = [...new Set(periodos.map((p) => p.Anio_academico))].sort((a, b) => b - a);
       setAniosAcademicos(anios);
@@ -56,7 +56,7 @@ const GradosYSecciones = () => {
     setSecciones([]);
     setSelectedSeccion('');
     try {
-      const response = await axios.get(`http://localhost:4000/api/matricula/detalles/${cod_grado}`);
+      const response = await axios.get(`http://74.50.68.87:4000/api/matricula/detalles/${cod_grado}`);
       setSecciones(response.data.data || []);
     } catch (error) {
       console.error('Error al obtener las secciones por grado:', error);
@@ -74,7 +74,7 @@ const GradosYSecciones = () => {
     try {
       console.log(`Fetching alumnos for sección: ${cod_seccion}, año académico: ${anio_academico}`);
       const response = await axios.get(
-        `http://localhost:4000/api/matricula/alumnos/seccion/${cod_seccion}`,
+        `http://74.50.68.87:4000/api/matricula/alumnos/seccion/${cod_seccion}`,
         {
           params: { anio_academico }, // Pasar el año académico como query param
         }
