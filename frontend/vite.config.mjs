@@ -7,6 +7,7 @@ import { resolve } from 'path'
 export default defineConfig({
   base: './',
   build: {
+    
     outDir: 'build',
     alias: {
       '@': resolve(__dirname, 'src')
