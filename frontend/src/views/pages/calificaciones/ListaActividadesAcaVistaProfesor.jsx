@@ -2629,7 +2629,7 @@ const generarReporteActividadesPDF = () => {
         />
         </CInputGroup>
        {/* Fecha y hora inicio */}
-       <CInputGroup className="mb-3">
+<CInputGroup className="mb-3">
   <CInputGroupText>Fecha y hora inicio</CInputGroupText>
   <CFormInput
     type="date"
@@ -2643,7 +2643,7 @@ const generarReporteActividadesPDF = () => {
           icon: 'warning',
           title: 'Fecha requerida',
           text: 'Debe seleccionar una fecha antes de configurar la hora.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -2670,20 +2670,11 @@ const generarReporteActividadesPDF = () => {
           icon: 'warning',
           title: 'Hora no válida',
           text: 'La hora debe estar entre las 7:00 AM y las 3:00 PM.',
-          confirmButtonText: 'Entendido',
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
 
-      // Validación si la fecha es la misma y hora fin ya está definida
-      if (
-        nuevaActividad.FechaInicio === nuevaActividad.FechaFin &&
-        nuevaActividad.Fechayhora_Fin
-      ) {
-        const [endHour, endMinute] = nuevaActividad.Fechayhora_Fin.split('T')[1]
-          ?.split(':')
-          .map(Number);
-        const [startHour, startMinute] = selectedTime.split(':').map(Number);
 
         if (
           startHour > endHour ||
@@ -2693,17 +2684,13 @@ const generarReporteActividadesPDF = () => {
             icon: 'error',
             title: 'Hora inicio inválida',
             text: 'La hora de inicio no puede ser mayor que la hora de fin si la fecha es la misma.',
-            confirmButtonText: 'Entendido',
+            confirmButtonText: 'Aceptar',
           });
           return;
         }
       }
 
-      setNuevaActividad({
-        ...nuevaActividad,
-        Fechayhora_Inicio: `${nuevaActividad.FechaInicio}T${selectedTime}`,
-      });
-    }}
+    }
   />
 </CInputGroup>
 
@@ -3063,6 +3050,26 @@ backdrop="static" >
   />
 </CInputGroup>
 
+
+
+             {/* Fecha y hora inicio */}
+             <CInputGroup className="mb-3">
+            <CInputGroupText>Fecha y hora inicio</CInputGroupText>
+            <CFormInput
+             type="datetime-local"
+             value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Inicio)}
+             onChange={(e) => setActividadToUpdate({...actividadToUpdate, Fechayhora_Inicio: e.target.value,})}
+           />
+           </CInputGroup>
+           {/* Fecha y hora FIN */}
+           <CInputGroup className="mb-3">
+           <CInputGroupText>Fecha y hora fin</CInputGroupText>
+           <CFormInput
+           type="datetime-local"
+           value={formatDateTimeLocal(actividadToUpdate?.Fechayhora_Fin)}
+            onChange={(e) => setActividadToUpdate({...actividadToUpdate, Fechayhora_Fin: e.target.value,})}
+            />
+           </CInputGroup>
           {/* Ponderación */}
 <CInputGroup className="mb-3">
   <CInputGroupText>Ponderación</CInputGroupText>
