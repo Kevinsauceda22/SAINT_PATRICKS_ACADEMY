@@ -68,7 +68,7 @@ const ChangePassword = () => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.put(
-          'http://localhost:4000/api/usuarios/actualizar-password-temporal',
+          'http://74.50.68.87/api/usuarios/actualizar-password-temporal',
           {
             cod_usuario: auth.cod_usuario,
             nueva_contraseña: password

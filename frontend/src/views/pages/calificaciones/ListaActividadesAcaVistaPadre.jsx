@@ -65,7 +65,7 @@ useEffect(() => {
     const obtenerDatos = async () => {
       setCargando(true);
       try {
-        const response = await fetch('http://localhost:4000/api/actividades/actividadesAcademicasPadre/codPersona', {
+        const response = await fetch('http://74.50.68.87/api/actividades/actividadesAcademicasPadre/codPersona', {
           headers: { Authorization: `Bearer ${token}` }
         });
   

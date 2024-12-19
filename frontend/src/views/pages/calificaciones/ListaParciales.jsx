@@ -77,7 +77,7 @@ const ListaParciales = () => {
 
   const fetchParciales = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/parciales/verParciales');
+      const response = await fetch('http://74.50.68.87/api/parciales/verParciales');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((parcial, index) => ({
@@ -254,7 +254,7 @@ const handleInputChange = (e, setFunction) => {
          console.error('No se pudo obtener el código o el nombre de usuario del token');
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
-      const response = await fetch('http://localhost:4000/api/parciales/crearParcial', {
+      const response = await fetch('http://74.50.68.87/api/parciales/crearParcial', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -268,7 +268,7 @@ const handleInputChange = (e, setFunction) => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo parcial: ${nuevoParcial} `;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -324,7 +324,7 @@ const handleInputChange = (e, setFunction) => {
          console.error('No se pudo obtener el código o el nombre de usuario del token');
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
-      const response = await fetch('http://localhost:4000/api/parciales/actualizarParcial', {
+      const response = await fetch('http://74.50.68.87/api/parciales/actualizarParcial', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -338,7 +338,7 @@ const handleInputChange = (e, setFunction) => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el parcial a: ${parcialToUpdate.Nombre_parcial}`;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -392,7 +392,7 @@ const handleInputChange = (e, setFunction) => {
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
 
-      const response = await fetch('http://localhost:4000/api/parciales/eliminar_parcial', {
+      const response = await fetch('http://74.50.68.87/api/parciales/eliminar_parcial', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -406,7 +406,7 @@ const handleInputChange = (e, setFunction) => {
          const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el parcial con código: ${parcialToDelete.Cod_parcial}`;
         
          // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
            method: 'POST',
            headers: {
              'Content-Type': 'application/json',

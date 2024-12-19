@@ -56,7 +56,7 @@ const Login = () => {
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        const response = await axios.post('http://localhost:4000/api/usuarios/login', {
+        const response = await axios.post('http://74.50.68.87i/usuarios/login', {
           identificador: formData.identificador,
           contraseña_usuario: formData.contraseña_usuario,
           twoFactorCode: formData.twoFactorCode
@@ -81,7 +81,7 @@ const Login = () => {
             }
 
             // Intentar registro en bitácora
-            await axios.post('http://localhost:4000/api/bitacora/registro', {
+            await axios.post('http://74.50.68.87i/bitacora/registro', {
               cod_usuario: decodedToken.cod_usuario,
               cod_objeto: 76,
               accion: 'LOGIN',

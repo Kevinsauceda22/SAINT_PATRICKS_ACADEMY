@@ -52,7 +52,7 @@ const Dashboard = () => {
 
       const decodedToken = jwtDecode(token);
       await axios.post(
-        'http://localhost:4000/api/bitacora/registro',
+        'http://74.50.68.87/api/bitacora/registro',
         {
           cod_usuario: decodedToken.cod_usuario,
           cod_objeto: 78, // Dashboard
@@ -78,7 +78,7 @@ const Dashboard = () => {
         await registrarEnBitacora('SELECT', 'Acceso al Dashboard');
 
         // Peticiones en paralelo para mejor rendimiento
-        const response = await axios.get('http://localhost:4000/api/dashboard/stats', {
+        const response = await axios.get('http://74.50.68.87/api/dashboard/stats', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStats(response.data);

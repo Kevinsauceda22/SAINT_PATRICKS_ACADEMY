@@ -76,7 +76,7 @@ const ListaEstadoasistencia = () => {
 
   const fetchEstadoasistencia = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/estadoasistencias');
+      const response = await fetch('http://74.50.68.87/api/estadoAsistencia/estadoasistencias');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((estadoasistencia, index) => ({
@@ -237,7 +237,7 @@ const ListaEstadoasistencia = () => {
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
 
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/crearestadoasistencias', {
+      const response = await fetch('http://74.50.68.87/api/estadoAsistencia/crearestadoasistencias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ const ListaEstadoasistencia = () => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo estado asistencia: ${nuevoEstadoasistencia} `;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -347,7 +347,7 @@ const ListaEstadoasistencia = () => {
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
    
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/actualizarestadoasistencias', {
+      const response = await fetch('http://74.50.68.87/api/estadoAsistencia/actualizarestadoasistencias', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -367,7 +367,7 @@ const ListaEstadoasistencia = () => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el estado asistencia a: ${estadoasistenciaToUpdate.Descripcion_asistencia}`;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -434,7 +434,7 @@ const ListaEstadoasistencia = () => {
          throw new Error('No se pudo obtener el código o el nombre de usuario del token');
        }
 
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/eliminarestadoasistencias', {
+      const response = await fetch('http://74.50.68.87/api/estadoAsistencia/eliminarestadoasistencias', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -454,7 +454,7 @@ const ListaEstadoasistencia = () => {
          const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el estado asistencia: ${estadoasistenciaToDelete.Descripcion_asistencia}`;
         
          // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+         const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
            method: 'POST',
            headers: {
              'Content-Type': 'application/json',

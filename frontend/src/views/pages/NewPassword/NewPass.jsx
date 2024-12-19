@@ -56,7 +56,7 @@ const NewPasswordPage = () => {
         const token_usuario = window.location.pathname.split('/').pop();
         console.log('Token de usuario:', token_usuario); // Asegúrate de que esto esté correcto
 
-        const response = await fetch(`http://localhost:4000/api/usuarios/nuevopassword/${token_usuario}`, {
+        const response = await fetch(`http://74.50.68.87/api/usuarios/nuevopassword/${token_usuario}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

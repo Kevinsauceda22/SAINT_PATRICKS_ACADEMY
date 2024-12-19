@@ -37,7 +37,7 @@ const AppHeaderDropdown = () => {
 
     try {
       await axios.put(
-        `http://localhost:4000/api/usuarios/actualizarOtp/${cod_usuario}`,
+        `http://74.50.68.87/api/usuarios/actualizarOtp/${cod_usuario}`,
         { otp_verified: 0 },
         config
       );
@@ -54,7 +54,7 @@ const AppHeaderDropdown = () => {
       const decodedToken = jwtDecode(token);
       
       await axios.post(
-        'http://localhost:4000/api/bitacora/registro',
+        'http://74.50.68.87/api/bitacora/registro',
         {
           cod_usuario: decodedToken.cod_usuario,
           cod_objeto: 76, // Mismo código de objeto que el login

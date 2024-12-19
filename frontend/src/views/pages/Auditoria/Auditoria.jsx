@@ -54,7 +54,7 @@ const ReporteActividades = () => {
         }
       };
 
-      const response = await axios.get('http://localhost:4000/api/bitacora/reporte', config);
+      const response = await axios.get('http://74.50.68.87/api/bitacora/reporte', config);
       setActividades(response.data);
       setLoading(false);
     } catch (error) {
@@ -66,7 +66,7 @@ const ReporteActividades = () => {
   const cargarUsuarios = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:4000/api/usuarios', {
+      const response = await axios.get('http://74.50.68.87/api/usuarios', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsuarios(response.data);
@@ -78,7 +78,7 @@ const ReporteActividades = () => {
   const cargarObjetos = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:4000/api/bitacora/objetos', {
+      const response = await axios.get('http://74.50.68.87/api/bitacora/objetos', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setObjetos(response.data);

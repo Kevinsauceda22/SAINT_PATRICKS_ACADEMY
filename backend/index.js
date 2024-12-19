@@ -93,7 +93,7 @@ init();
 
 // Middleware para permitir CORS desde cualquier origen
 app.use(cors({
-    origin: 'http://localhost:3000', // Permitir sólo desde el frontend
+    origin: 'http://74.50.68.87', // Permitir sólo desde el frontend
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
     credentials: true, // Para permitir cookies en las solicitudes
 }));

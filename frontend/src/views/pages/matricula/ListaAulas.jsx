@@ -63,7 +63,7 @@ const ListaAulas = () => {
 
     const fetchEdificios = async () => {
       try {
-          const response = await fetch('http://localhost:4000/api/aula/edificio');
+          const response = await fetch('http://74.50.68.87i/aula/edificio');
           const data = await response.json();
           console.log("Datos de edificios cargados:", data); // Revisa el contenido de `data`
           setEdificios(data);
@@ -79,7 +79,7 @@ const ListaAulas = () => {
 
   const fetchAulas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/aula/aulas');
+      const response = await fetch('http://74.50.68.87i/aula/aulas');
       const data = await response.json();
       setAulas(data);
     } catch (error) {
@@ -298,7 +298,7 @@ const ListaAulas = () => {
   }
   
     try {
-      const response = await fetch('http://localhost:4000/api/aula/crear_aula', {
+      const response = await fetch('http://74.50.68.87i/aula/crear_aula', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -387,7 +387,7 @@ const ListaAulas = () => {
     }
   
     try {
-      const response = await fetch(`http://localhost:4000/api/aula/actualizar_aula/${aulaToUpdate.Cod_aula}`, {
+      const response = await fetch(`http://74.50.68.87i/aula/actualizar_aula/${aulaToUpdate.Cod_aula}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updateData),
@@ -422,7 +422,7 @@ const ListaAulas = () => {
   
   const handleDeleteAula = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/aula/${aulaToDelete.Cod_aula}`, {
+      const response = await fetch(`http://74.50.68.87i/aula/${aulaToDelete.Cod_aula}`, {
         method: 'DELETE',
       });
 

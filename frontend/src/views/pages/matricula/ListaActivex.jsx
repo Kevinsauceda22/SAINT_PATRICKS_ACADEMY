@@ -61,7 +61,7 @@ const ListaActividades = () => {
    // Función para obtener actividades de la base de datos
    const fetchActividades = async (Cod_actividades_extracurriculares = 0 ) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/actividades/extracurriculares/${Cod_actividades_extracurriculares}`);
+      const response = await fetch(`http://74.50.68.87i/actividades/extracurriculares/${Cod_actividades_extracurriculares}`);
       const data = await response.json();
       const dataWithIndex = data.map((actividad, index) => ({
         ...actividad,
@@ -74,7 +74,7 @@ const ListaActividades = () => {
   };
   const fetchSecciones = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/secciones/periodo-activo');
+      const response = await fetch('http://74.50.68.87i/secciones/periodo-activo');
       const data = await response.json();
   
       console.log('Respuesta del servidor:', data); // Verifica los datos recibidos
@@ -271,7 +271,7 @@ const handleEstadoChange = async (idActividad, estadoActual) => {
 
         // Llamamos a la función de actualización del estado solo si se proporcionó el motivo
         try {
-          const response = await fetch('http://localhost:4000/api/actividades/cambiar_estado', {
+          const response = await fetch('http://74.50.68.87i/actividades/cambiar_estado', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -298,7 +298,7 @@ const handleEstadoChange = async (idActividad, estadoActual) => {
   } else {
     // Si el estado no es 'Cancelada', se cambia sin motivo
     try {
-      const response = await fetch('http://localhost:4000/api/actividades/cambiar_estado', {
+      const response = await fetch('http://74.50.68.87i/actividades/cambiar_estado', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -538,7 +538,7 @@ const handleCreateActividad = async () => {
 
   // **Si todas las validaciones pasan, se procede con la creación**
   try {
-    const response = await fetch('http://localhost:4000/api/actividades/extracurriculares', {
+    const response = await fetch('http://74.50.68.87i/actividades/extracurriculares', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -609,7 +609,7 @@ const handleUpdateActividad = async () => {
 
   // Si no hay traslape, proceder con la actualización
   try {
-    const response = await fetch('http://localhost:4000/api/actividades/extracurriculares', {
+    const response = await fetch('http://74.50.68.87i/actividades/extracurriculares', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

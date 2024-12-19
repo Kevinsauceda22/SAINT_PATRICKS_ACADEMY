@@ -56,7 +56,7 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
     const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
 
     await axios.post(
-      'http://localhost:4000/api/bitacora/registro',
+      'http://74.50.68.87i/bitacora/registro',
       { cod_usuario, cod_objeto: 96, accion, descripcion },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -91,7 +91,7 @@ const ListaGestion_Academica = () => {
   // Función para obtener agrupadores desde la API
   const fetchAgrupadores = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/gestion_academica/obtenerTodasAgrupaciones');
+      const response = await fetch('http://74.50.68.87i/gestion_academica/obtenerTodasAgrupaciones');
       if (!response.ok) throw new Error('Error en la respuesta del servidor');
       const data = await response.json();
       setAgrupadores(data); // Guardar los datos en el estado
@@ -107,7 +107,7 @@ const ListaGestion_Academica = () => {
   // Función para obtener periodos desde la API
   const fetchPeriodos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/gestion_academica/obtener_periodo');
+      const response = await fetch('http://74.50.68.87i/gestion_academica/obtener_periodo');
       if (!response.ok) throw new Error('Error en la respuesta del servidor');
       const data = await response.json();
       setPeriodos(data);
@@ -129,7 +129,7 @@ const ListaGestion_Academica = () => {
   const handleDescargarPDF = async (Cod_periodo_matricula) => {
     try {
       // Llamada a la API para obtener el año académico
-      const responsePeriodo = await fetch(`http://localhost:4000/api/gestion_academica/detalle/${Cod_periodo_matricula}`);
+      const responsePeriodo = await fetch(`http://74.50.68.87i/gestion_academica/detalle/${Cod_periodo_matricula}`);
       if (!responsePeriodo.ok) {
         throw new Error(`Error al obtener datos del período: ${responsePeriodo.status}`);
       }
@@ -137,7 +137,7 @@ const ListaGestion_Academica = () => {
       const AnioAcademico = periodoData.Anio_academico || "Sin Año Académico";
 
       // Llamada a la API para obtener las secciones
-      const responseSecciones = await fetch(`http://localhost:4000/api/gestion_academica/secciones_por_periodo/${Cod_periodo_matricula}`);
+      const responseSecciones = await fetch(`http://74.50.68.87i/gestion_academica/secciones_por_periodo/${Cod_periodo_matricula}`);
       if (!responseSecciones.ok) {
         throw new Error(`Error al obtener datos del servidor: ${responseSecciones.status}`);
       }
@@ -447,7 +447,7 @@ const ListaGestion_Academica = () => {
   // Función para guardar un nuevo agrupador
   const handleGuardarAgrupador = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/gestion_academica/crear_agrupador', {
+      const response = await fetch('http://74.50.68.87i/gestion_academica/crear_agrupador', {
         method: 'POST',
       });
   

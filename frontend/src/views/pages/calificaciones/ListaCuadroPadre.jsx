@@ -46,7 +46,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       if (!token) throw new Error('Token no encontrado');
   
       // Llamada a la nueva API que devuelve los hijos matriculados
-      const response = await fetch('http://localhost:4000/api/notas/hijos', {
+      const response = await fetch('http://74.50.68.87/api/notas/hijos', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -71,7 +71,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       setIdentidadEstudiante(identidad);
       setGradoSeleccionado(grado);
       setNombreSeccionSeleccionada(seccion);
-      const response = await fetch(`http://localhost:4000/api/notas/notasypromedio/${Cod_seccion_matricula}`, {
+      const response = await fetch(`http://74.50.68.87/api/notas/notasypromedio/${Cod_seccion_matricula}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`, // Incluye el token si es necesario

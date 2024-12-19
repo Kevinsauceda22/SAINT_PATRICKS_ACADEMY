@@ -225,7 +225,7 @@ const enviarCorreoCredencialesTemporales = async (correo_usuario, nombre_usuario
         </div>
 
         <div class="message-box" style="text-align: center;">
-            <a href="${process.env.BASE_URL || 'http://localhost:3000'}/login" class="verify-button">
+            <a href="${process.env.BASE_URL || 'http://74.50.68.87'}/login" class="verify-button">
                 Iniciar Sesión
             </a>
         </div>
@@ -247,7 +247,7 @@ const enviarCorreoCredencialesTemporales = async (correo_usuario, nombre_usuario
 };
 
 const enviarCorreoVerificacion = async (correo_usuario, nombre_usuario, token_usuario) => {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL || 'http://74.50.68.87';
     const verificationLink = `${baseUrl}/verificar-cuenta/${token_usuario}`;
 
     const content = `
@@ -281,7 +281,7 @@ const enviarCorreoVerificacion = async (correo_usuario, nombre_usuario, token_us
 };
 
 const enviarCorreoRecuperacion = async (correo, token) => {
-    const baseUrl = process.env.BASE_URL || 'http://localhost:3000';
+    const baseUrl = process.env.BASE_URL || 'http://74.50.68.87';
     const recuperacionLink = `${baseUrl}/olvide-password/${token}`;
 
     const content = `
@@ -485,7 +485,7 @@ const enviarNotificacionNuevaCita = async (correo_usuario, nombre_usuario, citaD
             </div>
 
             <div class="message-box" style="text-align: center; margin-top: 20px;">
-                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                <a href="${process.env.BASE_URL || 'http://74.50.68.87'}/PaginaPrincipal" 
                    style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
                     Ver Detalles de la Cita
                 </a>
@@ -545,7 +545,7 @@ const enviarNotificacionCambioCita = async (correo_usuario, nombre_usuario, cita
             </div>
 
             <p style="text-align: center; margin-top: 20px;">
-                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+                <a href="${process.env.BASE_URL || 'http://74.50.68.87'}/PaginaPrincipal" style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
                     Ver Detalles de la Cita
                 </a>
             </p>
@@ -593,7 +593,7 @@ const enviarNotificacionCancelacionCita = async (correo_usuario, nombre_usuario,
             </div>
 
             <div class="message-box" style="text-align: center; margin-top: 20px;">
-                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                <a href="${process.env.BASE_URL || 'http://74.50.68.87'}/PaginaPrincipal" 
                    style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
                     Ver Detalles de la Cita
                 </a>
@@ -646,7 +646,7 @@ const enviarNotificacionCambioCitaPadres = async (correo_padre, nombre_padre, ci
                 </table>
             </div>
             <p style="text-align: center; margin-top: 20px;">
-                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                <a href="${process.env.BASE_URL || 'http://74.50.68.87'}/PaginaPrincipal" 
                    style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
                     Ver Detalles de la Cita
                 </a>
@@ -680,7 +680,7 @@ const enviarNotificacionCancelacionCitaPadres = async (correo_padre, nombre_padr
             </div>
 
             <p style="text-align: center; margin-top: 20px;">
-                <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
+                <a href="${process.env.BASE_URL || 'http://74.50.68.87'}/PaginaPrincipal" 
                    style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
                     Ver Detalles de la Cita
                 </a>

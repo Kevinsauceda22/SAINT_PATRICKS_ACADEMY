@@ -57,7 +57,7 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
     const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
 
     await axios.post(
-      'http://localhost:4000/api/bitacora/registro',
+      'http://74.50.68.87i/bitacora/registro',
       { cod_usuario, cod_objeto: 93, accion, descripcion },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -140,7 +140,7 @@ const ListaSecciones_Asignaturas = () => {
   // Función para obtener las asignaturas y horas de una sección específica
   const fetchSeccionesAsigyHora = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/secciones_asignaturas/asignaturas/${seccionSeleccionada}`);
+      const response = await fetch(`http://74.50.68.87i/secciones_asignaturas/asignaturas/${seccionSeleccionada}`);
       const data = await response.json();
       console.log("Datos crudos recibidos de la API:", data);
   
@@ -167,7 +167,7 @@ const ListaSecciones_Asignaturas = () => {
   const fetchSecciones = async (Cod_grado, Cod_periodo_matricula) => { 
     try {
       const response = await fetch(
-        `http://localhost:4000/api/secciones_asignaturas/secciones/${Cod_grado}/${Cod_periodo_matricula}`
+        `http://74.50.68.87i/secciones_asignaturas/secciones/${Cod_grado}/${Cod_periodo_matricula}`
       );
   
       if (!response.ok) {
@@ -195,7 +195,7 @@ const ListaSecciones_Asignaturas = () => {
   
     try {
       const response = await fetch(
-        `http://localhost:4000/api/secciones_asignaturas/secciones/${Cod_grado}/${periodoSeleccionado}`
+        `http://74.50.68.87i/secciones_asignaturas/secciones/${Cod_grado}/${periodoSeleccionado}`
       );
   
       if (!response.ok) {
@@ -214,7 +214,7 @@ const ListaSecciones_Asignaturas = () => {
   // Funcion periodo activo
   const fetchPeriodoEstado = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/gestion_academica/obtener_periodo`);
+      const response = await fetch(`http://74.50.68.87i/gestion_academica/obtener_periodo`);
       const data = await response.json();
   
       // Encuentra el período seleccionado y actualiza su estado
@@ -235,7 +235,7 @@ const ListaSecciones_Asignaturas = () => {
   // Función para obtener los días disponibles
   const fetchDias = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/secciones_asignaturas/dias');
+      const response = await fetch('http://74.50.68.87i/secciones_asignaturas/dias');
       const data = await response.json();
       setDias(data);
     } catch (error) {
@@ -247,7 +247,7 @@ const ListaSecciones_Asignaturas = () => {
   // Función para obtener los grados y asignaturas disponibles
   const fetchGradosAsignaturas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/secciones_asignaturas/grados_asignaturas');
+      const response = await fetch('http://74.50.68.87i/secciones_asignaturas/grados_asignaturas');
       const data = await response.json();
       setGradosAsignaturas(data);
       console.log('Datos cargados en grados_asignaturas:', data); // <-- Aquí imprimimos los datos obtenidos
@@ -300,7 +300,7 @@ const ListaSecciones_Asignaturas = () => {
   
       // Fetch de asignaturas (como antes)
       const response = await fetch(
-        `http://localhost:4000/api/secciones_asignaturas/asignaturasgrados/${seccionSeleccionada}`
+        `http://74.50.68.87i/secciones_asignaturas/asignaturasgrados/${seccionSeleccionada}`
       );
       const data = await response.json();
   
@@ -360,7 +360,7 @@ const ListaSecciones_Asignaturas = () => {
       const nombreGrado = seccionAsignaturaToUpdate.p_Cod_grado || "Grado desconocido";
   
       const response = await fetch(
-        "http://localhost:4000/api/secciones_asignaturas/actualizar_seccion_asig",
+        "http://74.50.68.87i/secciones_asignaturas/actualizar_seccion_asig",
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -553,7 +553,7 @@ const ListaSecciones_Asignaturas = () => {
   const handleDescargarPDFSeccionesAsignaturas = async (Cod_seccion_asignatura) => {
       try {
           // Llamada a la API para obtener los detalles de la sección asignatura
-          const response = await fetch(`http://localhost:4000/api/secciones_asignaturas/detalle/${Cod_seccion_asignatura}`);
+          const response = await fetch(`http://74.50.68.87i/secciones_asignaturas/detalle/${Cod_seccion_asignatura}`);
           if (!response.ok) {
               throw new Error(`Error al obtener datos de la sección asignatura: ${response.status}`);
           }
