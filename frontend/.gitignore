@@ -8,8 +8,6 @@ yarn.lock
 # testing
 /coverage
 
-# production
-/build
 
 # misc
 .eslintcache
