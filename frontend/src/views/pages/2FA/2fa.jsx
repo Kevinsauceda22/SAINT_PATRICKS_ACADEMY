@@ -61,7 +61,7 @@ const Auth2FA = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/usuarios/verifyTwoFactorAuthCode', {
+      const response = await fetch('http://74.50.68.87/api/usuarios/verifyTwoFactorAuthCode', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

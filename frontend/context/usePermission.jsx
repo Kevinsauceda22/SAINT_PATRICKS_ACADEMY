@@ -32,7 +32,7 @@ export const usePermission = (objectName) => {
         },
       };
 
-      const response = await axios.get(`http://localhost:4000/api/usuarios/permisos`, config);
+      const response = await axios.get(`http://74.50.68.87/api/usuarios/permisos`, config);
 
       // Verificar si hay datos en la respuesta
       if (response.data && response.data.permissions && response.data.permissions.length > 0) {

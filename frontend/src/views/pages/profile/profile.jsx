@@ -24,7 +24,7 @@ const UserProfile = () => {
   const MAX_ATTEMPTS = 3;
 
    // API configuration with base URL
-   const API_BASE_URL = 'http://localhost:4000/api';
+   const API_BASE_URL = 'http://74.50.68.87/api';
   
    const getAuthHeaders = () => ({
      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
@@ -83,7 +83,7 @@ const UserProfile = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `http://localhost:4000/api/usuarios/enableTwoFactorAuth/${auth.cod_usuario}`,
+        `http://74.50.68.87/api/usuarios/enableTwoFactorAuth/${auth.cod_usuario}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -117,7 +117,7 @@ const UserProfile = () => {
         return;
       }
   
-      const response = await fetch('http://localhost:4000/api/usuarios/verifyTwoFactorAuthCode', {
+      const response = await fetch('http://74.50.68.87/api/usuarios/verifyTwoFactorAuthCode', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -180,7 +180,7 @@ const UserProfile = () => {
     if (result.isConfirmed) {
       try {
         const response = await axios.post(
-          'http://localhost:4000/api/usuarios/disableTwoFactorAuth',
+          'http://74.50.68.87/api/usuarios/disableTwoFactorAuth',
           { cod_usuario: auth.cod_usuario },
           { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
         );

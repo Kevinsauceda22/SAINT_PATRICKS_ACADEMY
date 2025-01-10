@@ -82,7 +82,7 @@ const ListaCiclos = () => {
 
   const fetchCiclos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ciclos/verCiclos');
+      const response = await fetch('http://74.50.68.87/api/ciclos/verCiclos');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
       const dataWithIndex = data.map((ciclo, index) => ({
@@ -433,7 +433,7 @@ const ListaCiclos = () => {
 
       // 2. Realizar la solicitud para crear el ciclo
       const response = await axios.post(
-        'http://localhost:4000/api/ciclos/crearCiclo',
+        'http://74.50.68.87/api/ciclos/crearCiclo',
         { Nombre_ciclo: nuevoCiclo },  // Datos a enviar
         {
           headers: {
@@ -460,7 +460,7 @@ const ListaCiclos = () => {
         // Usar el nombre del ciclo desde la respuesta (response.data.Nombre_ciclo)
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nuevo ciclo: ${nuevoCiclo} `;
 
-        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro',
+        const bitacoraResponse = await axios.post('http://74.50.68.87/api/bitacora/registro',
           {
             cod_usuario: decodedToken.cod_usuario,  // Extraemos el código de usuario desde el token
             cod_objeto: 52,  // Código de objeto para la acción
@@ -540,7 +540,7 @@ const ListaCiclos = () => {
       }
   
       // 1. Realizar la solicitud para actualizar el ciclo
-      const response = await fetch('http://localhost:4000/api/ciclos/actualizarCiclo', {
+      const response = await fetch('http://74.50.68.87/api/ciclos/actualizarCiclo', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -557,7 +557,7 @@ const ListaCiclos = () => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el ciclo: ${cicloToUpdate.Nombre_ciclo}`;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -631,7 +631,7 @@ const ListaCiclos = () => {
       }
   
       // 1. Realizar la solicitud para eliminar el ciclo
-      const response = await fetch('http://localhost:4000/api/ciclos/eliminarCiclo', {
+      const response = await fetch('http://74.50.68.87/api/ciclos/eliminarCiclo', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -645,7 +645,7 @@ const ListaCiclos = () => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el ciclo: ${cicloToDelete.Nombre_ciclo}`;
         
         // Enviar a la bitácora
-        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+        const bitacoraResponse = await fetch('http://74.50.68.87/api/bitacora/registro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

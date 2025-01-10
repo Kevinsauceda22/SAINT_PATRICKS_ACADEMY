@@ -8,7 +8,7 @@ const PasswordReset = () => {
   const resetPassword = async (e) => {
     e.preventDefault(); // Prevenir el comportamiento predeterminado del formulario
     try {
-      const response = await fetch('http://localhost:4000/api/usuarios/olvide-password', {
+      const response = await fetch('http://74.50.68.87/api/usuarios/olvide-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -132,7 +132,7 @@ const PreRegisterForm = () => {
     if (!validateStep(currentStep)) return;
 
     try {
-      const response = await axios.post('http://localhost:4000/api/usuarios/pre-registrar-padre', {
+      const response = await axios.post('http://74.50.68.87/api/usuarios/pre-registrar-padre', {
         primer_nombre: formData.primerNombre,
         primer_apellido: formData.primerApellido,
         correo_usuario: formData.identificador,

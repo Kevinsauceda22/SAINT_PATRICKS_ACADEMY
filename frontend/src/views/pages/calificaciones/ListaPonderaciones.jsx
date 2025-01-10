@@ -79,7 +79,7 @@ const ListaPonderaciones = () => {
 
   const fetchPonderacion = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
+      const response = await fetch('http://74.50.68.87/api/ponderaciones/verPonderaciones');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
       const dataWithIndex = data.map((ponderacion, index) => ({
@@ -432,7 +432,7 @@ const ListaPonderaciones = () => {
       }
   
       // 2. Realizar la solicitud para crear la ponderación
-      const response = await fetch('http://localhost:4000/api/ponderaciones/crearPonderacion', {
+      const response = await fetch('http://74.50.68.87/api/ponderaciones/crearPonderacion', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -458,7 +458,7 @@ const ListaPonderaciones = () => {
         // 5. Registrar la acción en la bitácora
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado una nueva ponderación: ${nuevaPonderacion}`;
   
-        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+        const bitacoraResponse = await axios.post('http://74.50.68.87/api/bitacora/registro', 
           {
             cod_usuario: decodedToken.cod_usuario,
             cod_objeto: 58,  // Código de objeto para la acción de crear ponderación
@@ -525,7 +525,7 @@ const ListaPonderaciones = () => {
       }
   
       // 2. Realizar la solicitud para actualizar la ponderación
-      const response = await fetch('http://localhost:4000/api/ponderaciones/actualizarPonderacion', {
+      const response = await fetch('http://74.50.68.87/api/ponderaciones/actualizarPonderacion', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -552,7 +552,7 @@ const ListaPonderaciones = () => {
         // 5. Registrar la acción en la bitácora
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la ponderación: ${ponderacionToUpdate.Descripcion_ponderacion} `;
   
-        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+        const bitacoraResponse = await axios.post('http://74.50.68.87/api/bitacora/registro', 
           {
             cod_usuario: decodedToken.cod_usuario,
             cod_objeto: 58,  // Código de objeto para la acción de actualizar ponderación
@@ -617,7 +617,7 @@ const ListaPonderaciones = () => {
       }
   
       // 2. Realizar la solicitud para eliminar la ponderación
-      const response = await fetch('http://localhost:4000/api/ponderaciones/eliminarPonderacion', {
+      const response = await fetch('http://74.50.68.87/api/ponderaciones/eliminarPonderacion', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -643,7 +643,7 @@ const ListaPonderaciones = () => {
         // 5. Registrar la acción en la bitácora
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado la ponderación: ${ponderacionToDelete.Descripcion_ponderacion}`;
   
-        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+        const bitacoraResponse = await axios.post('http://74.50.68.87/api/bitacora/registro', 
           {
             cod_usuario: decodedToken.cod_usuario,
             cod_objeto: 58,  // Código de objeto para la acción de eliminar ponderación

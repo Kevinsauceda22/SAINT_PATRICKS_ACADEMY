@@ -43,7 +43,7 @@ const CatalogoContable = () => {
   }, [searchTerm, cuentas]);
   const fetchCuentas = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/catalogoCuentas', {
+      const response = await axios.get('http://74.50.68.87/api/catalogoCuentas', {
         headers: {
           'Authorization': 'Bearer ' + localStorage.getItem('token')
         }
@@ -94,7 +94,7 @@ const CatalogoContable = () => {
       }).then(async (result) => {
         if (result.isConfirmed) {
           try {
-            await axios.delete(`http://localhost:4000/api/catalogoCuentas/${cuenta.Cod_cuenta}`, {
+            await axios.delete(`http://74.50.68.87/api/catalogoCuentas/${cuenta.Cod_cuenta}`, {
               headers: {
                 'Authorization': 'Bearer ' + localStorage.getItem('token')
               }
@@ -146,13 +146,13 @@ const CatalogoContable = () => {
         let response;
         if (editingCuenta.Cod_cuenta) {
           response = await axios.put(
-            `http://localhost:4000/api/catalogoCuentas/${editingCuenta.Cod_cuenta}`,
+            `http://74.50.68.87/api/catalogoCuentas/${editingCuenta.Cod_cuenta}`,
             cuentaData,
             { headers }
           );
         } else {
           response = await axios.post(
-            'http://localhost:4000/api/catalogoCuentas',
+            'http://74.50.68.87/api/catalogoCuentas',
             cuentaData,
             { headers }
           );

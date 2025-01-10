@@ -85,7 +85,7 @@ const ListaHistoricoProc = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`http://localhost:4000/api/historial_proc/historico_persona/${personaSeleccionada.cod_persona}`);
+        const response = await fetch(`http://74.50.68.87/api/historial_proc/historico_persona/${personaSeleccionada.cod_persona}`);
         const data = await response.json();
         setHistoricoProcedencia(data);
       } catch (error) {
@@ -128,7 +128,7 @@ const obtenerNombreCompleto = (persona) => {
   // Función para obtener el histórico de procedencia desde la API
   const fetchHistoricoProcedencia = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/historial_proc/ver_historico_procedencia'); // Realiza la petición al backend
+      const response = await fetch('http://74.50.68.87/api/historial_proc/ver_historico_procedencia'); // Realiza la petición al backend
       const data = await response.json(); // Convierte la respuesta a JSON
       const dataWithIndex = data.map((historico, index) => ({
         ...historico,
@@ -322,7 +322,7 @@ const handleSaveHistorico = async () => {
   try {
     if (historicoToUpdate.cod_procedencia) {
       // Llamada para actualizar
-      const response = await fetch(`http://localhost:4000/api/historial_proc/actualizar_historico/${historicoToUpdate.cod_procedencia}`, {
+      const response = await fetch(`http://74.50.68.87/api/historial_proc/actualizar_historico/${historicoToUpdate.cod_procedencia}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -348,7 +348,7 @@ const handleSaveHistorico = async () => {
       }
     } else {
       // Llamada para insertar
-      const response = await fetch('http://localhost:4000/api/historial_proc/crear_historico', {
+      const response = await fetch('http://74.50.68.87/api/historial_proc/crear_historico', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -392,7 +392,7 @@ const handleSaveHistorico = async () => {
 
 const handleDeleteHistorico = async () => {
   try {
-    const response = await fetch(`http://localhost:4000/api/historial_proc/eliminar_historico/${encodeURIComponent(historicoToDelete.cod_procedencia)}`, {
+    const response = await fetch(`http://74.50.68.87/api/historial_proc/eliminar_historico/${encodeURIComponent(historicoToDelete.cod_procedencia)}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
     });

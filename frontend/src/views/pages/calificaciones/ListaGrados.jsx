@@ -87,7 +87,7 @@ const ListaGrados = () => {
 
   const fetchCiclos = async () => { // Asegúrate de que esta función esté definida
     try {
-      const response = await fetch('http://localhost:4000/api/ciclos/verCiclos');
+      const response = await fetch('http://74.50.68.87/api/ciclos/verCiclos');
       const data = await response.json();
       setCiclos(data);
     } catch (error) {
@@ -105,7 +105,7 @@ const ListaGrados = () => {
 
   const fetchGrados = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/grados/verGrados');
+      const response = await fetch('http://74.50.68.87/api/grados/verGrados');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
       const dataWithIndex = data.map((grado, index) => ({
@@ -359,7 +359,7 @@ const ListaGrados = () => {
   
       // 3. Realizar la solicitud para crear el grado
       const response = await axios.post(
-        'http://localhost:4000/api/grados/crearGrado',
+        'http://74.50.68.87/api/grados/crearGrado',
         {
           Cod_ciclo: nuevoCiclo,
           Nombre_grado: nuevoGrado,
@@ -389,7 +389,7 @@ const ListaGrados = () => {
         // 5. Registrar la acción en la bitácora
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado un nuevo grado ${nuevoGrado}`;
   
-        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro', 
+        const bitacoraResponse = await axios.post('http://74.50.68.87/api/bitacora/registro', 
           {
             cod_usuario: decodedToken.cod_usuario,
             cod_objeto: 55,  // Código de objeto para la acción de crear grado
@@ -475,7 +475,7 @@ const ListaGrados = () => {
   
       // 2. Realizar la solicitud para actualizar el grado
       const response = await axios.put(
-        'http://localhost:4000/api/grados/actualizarGrado',
+        'http://74.50.68.87/api/grados/actualizarGrado',
         {
           Cod_grado: gradoToUpdate.Cod_grado,
           Cod_ciclo: gradoToUpdate.Cod_ciclo,
@@ -506,7 +506,7 @@ const ListaGrados = () => {
         // 4. Registrar la acción en la bitácora
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado el grado a: ${gradoToUpdate.Nombre_grado}`;
   
-        const bitacoraResponse = await axios.post('http://localhost:4000/api/bitacora/registro',
+        const bitacoraResponse = await axios.post('http://74.50.68.87/api/bitacora/registro',
           {
             cod_usuario: decodedToken.cod_usuario,
             cod_objeto: 55,  // Código de objeto para la acción de actualizar grado
@@ -585,7 +585,7 @@ const ListaGrados = () => {
   
       // 3. Realizar la solicitud para eliminar el grado
       const response = await axios.delete(
-        'http://localhost:4000/api/grados/eliminarGrado',
+        'http://74.50.68.87/api/grados/eliminarGrado',
         {
           data: { Cod_grado: gradoToDelete.Cod_grado }, // Enviar Cod_grado en el cuerpo
           headers: {
@@ -602,7 +602,7 @@ const ListaGrados = () => {
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el grado: ${gradoToDelete.Nombre_grado}`;
   
         const bitacoraResponse = await axios.post(
-          'http://localhost:4000/api/bitacora/registro',
+          'http://74.50.68.87/api/bitacora/registro',
           {
             cod_usuario: decodedToken.cod_usuario,
             cod_objeto: 55,  // Código de objeto para la acción de eliminar grado

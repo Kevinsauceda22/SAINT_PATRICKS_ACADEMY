@@ -49,7 +49,7 @@ const ListaGeneroPersona = () => {
 
   const fetchGeneros = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/generoPersona/obtenerGeneroPersona');
+      const response = await fetch('http://74.50.68.87/api/generoPersona/obtenerGeneroPersona');
       if (!response.ok) {
         throw new Error(`Error en la solicitud: ${response.statusText}`);
       }
@@ -547,8 +547,8 @@ const handlePrintIndividual = (genero) => {
   
     try {
       const url = isUpdating
-        ? `http://localhost:4000/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`
-        : 'http://localhost:4000/api/generoPersona/crearGeneroPersona';
+        ? `http://74.50.68.87/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`
+        : 'http://74.50.68.87/api/generoPersona/crearGeneroPersona';
       const method = isUpdating ? 'PUT' : 'POST';
   
       console.log('Enviando datos:', JSON.stringify({ Tipo_genero: genero.Tipo_genero.trim() })); // Debug
@@ -616,7 +616,7 @@ const handlePrintIndividual = (genero) => {
       if (!confirmResult.isConfirmed) return;
   
       const response = await fetch(
-        `http://localhost:4000/api/generoPersona/eliminarGeneroPersona/${encodeURIComponent(Cod_genero)}`,
+        `http://74.50.68.87/api/generoPersona/eliminarGeneroPersona/${encodeURIComponent(Cod_genero)}`,
         { method: 'DELETE' }
       );
   
