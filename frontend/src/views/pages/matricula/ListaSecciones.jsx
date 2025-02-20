@@ -142,22 +142,32 @@ const validateInput = (value) => {
 const handleGestionarClick = (seccion) => {
   const { Cod_secciones, Nombre_grado } = seccion;
 
+  // Verificamos si Cod_secciones es un valor primitivo o un objeto
+  console.log('Tipo de Cod_secciones:', typeof Cod_secciones);
+  console.log('Valor de Cod_secciones:', Cod_secciones);
+
+  // Si Cod_secciones es un objeto, extraemos el valor que representa el código de la sección
+  const codigoSeccion = typeof Cod_secciones === 'object' ? Cod_secciones.Cod_seccion || Cod_secciones.id || Cod_secciones.valor : Cod_secciones;
+
+  console.log('Usando codigoSeccion:', codigoSeccion);
+
   console.log('Navegando a lista-secciones-asignatura con:', { 
-    seccionSeleccionada: Cod_secciones, 
+    seccionSeleccionada: codigoSeccion, 
     periodoSeleccionado, 
     gradoSeleccionado: Nombre_grado,
-    profesores // Asegúrate de pasar los profesores aquí
+    profesores
   });
 
   navigate(`/lista-secciones-asignatura/`, { 
     state: { 
-      seccionSeleccionada: Cod_secciones, 
+      seccionSeleccionada: codigoSeccion,
       periodoSeleccionado, 
       gradoSeleccionado: Nombre_grado,
-      profesores // Aquí también
-    } 
+      profesores 
+    }
   });
 };
+
 
 // Funcion para cargar segun el estado y los botones
 useEffect(() => {

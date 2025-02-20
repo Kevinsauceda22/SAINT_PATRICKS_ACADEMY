@@ -128,7 +128,7 @@ const handleSeleccionarCodPersona = (persona) => {
 {/*******************************************************************************************************************/}
   useEffect(() => {
     fetchContactos();
-    fetchTiposContacto(); // Llamar a la función para cargar los tipos de contacto al montar el componente
+    fetch   (); // Llamar a la función para cargar los tipos de contacto al montar el componente
   }, []);
 
   useEffect(() => {
