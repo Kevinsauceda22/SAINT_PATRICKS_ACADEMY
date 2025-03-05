@@ -3,9 +3,6 @@ import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch, cilInfo, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilFile, cilSpreadsheet, cilDescription, cilArrowLeft } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
-
-import * as jwt_decode from 'jwt-decode';
-
 import { left } from '@popperjs/core';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importa el plugin para tablas
@@ -122,21 +119,9 @@ const VistaActividadesAcademicasAdmin = () => {
 
   // Fetch de profesores
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
-        console.log('Token decodificado:', decodedToken);
-
-        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
-
-      } catch (error) {
-        console.error('Error al decodificar el token:', error);
-      }
-    }
     const fetchProfesores = async () => {
       try {
-        const response = await fetch('http://74.50.68.87:4000/api/profesores/VerProfesores');
+        const response = await fetch('http://localhost:4000/api/profesores/VerProfesores');
         const data = await response.json();
         setProfesores(data);
       } catch (error) {
@@ -147,7 +132,7 @@ const VistaActividadesAcademicasAdmin = () => {
 
     const fetchListaPersonas = async () => {
       try {
-        const response = await fetch('http://74.50.68.87:4000/api/persona/verpersonas');
+        const response = await fetch('http://localhost:4000/api/persona/verpersonas');
         const data = await response.json();
         const dataWithIndex = data.map((persona) => ({
           ...persona,
@@ -200,7 +185,7 @@ const VistaActividadesAcademicasAdmin = () => {
   const handleVerSecciones = async (profesor) => {
     setSelectedProfesor(profesor);
     try {
-      const response = await fetch(`http://74.50.68.87:4000/api/secciones/porprofesor/${profesor.Cod_profesor}`);
+      const response = await fetch(`http://localhost:4000/api/secciones/porprofesor/${profesor.Cod_profesor}`);
       const data = await response.json();
       if (response.ok) {
         setSecciones(data);
@@ -215,7 +200,7 @@ const VistaActividadesAcademicasAdmin = () => {
 
   const obtenerParciales = async (codAsignatura) => {
     try {
-      const response = await fetch(`http://74.50.68.87:4000/api/actividadesAcademicas/parciales/${codAsignatura}`);
+      const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/parciales/${codAsignatura}`);
       if (response.ok) {
         const data = await response.json();
         console.log('Parciales:', data); // Verifica los datos
@@ -232,7 +217,7 @@ const VistaActividadesAcademicasAdmin = () => {
     console.log('CodParcial:', CodParcial);
 
     try {
-        const response = await fetch(`http://74.50.68.87:4000/api/actividadesAcademicas/actividades/${Cod_seccion_asignatura}/${CodParcial}`);
+        const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/actividades/${Cod_seccion_asignatura}/${CodParcial}`);
         if (!response.ok) throw new Error('Error al obtener actividades');
         const data = await response.json();
         setActividades(data); // Actualiza las actividades en el estado
@@ -260,7 +245,7 @@ const handleClick = () => {
   const handleVerAsignaturas = async (seccion) => {
     setSelectedSeccion(seccion);
     try {
-      const response = await fetch(`http://74.50.68.87:4000/api/secciones_asignaturas/porseccion/${seccion.Cod_secciones}`);
+      const response = await fetch(`http://localhost:4000/api/secciones_asignaturas/porseccion/${seccion.Cod_secciones}`);
       const data = await response.json();
       if (response.ok) {
         setAsignaturas(data);
@@ -288,7 +273,7 @@ const handleClick = () => {
   const fetchActividades = async (Cod_profesor, Cod_seccion_asignatura) => {
     try {
       const response = await fetch(
-        `http://74.50.68.87:4000/api/actividadesAcademicas/porProfesorYAsignatura/${Cod_profesor}/${Cod_seccion_asignatura}`
+        `http://localhost:4000/api/actividadesAcademicas/porProfesorYAsignatura/${Cod_profesor}/${Cod_seccion_asignatura}`
       );
       const data = await response.json();
 
@@ -307,7 +292,7 @@ const handleClick = () => {
 
   const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor) => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/actividadesacademicas/validar-valor', {
+      const response = await fetch('http://localhost:4000/api/actividadesacademicas/validar-valor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -332,7 +317,7 @@ const handleClick = () => {
 
   const fetchlistaActividades = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/verPonderaciones');
+      const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
       const data = await response.json();
       setponderaciones(data);
     } catch (error) {
@@ -341,7 +326,7 @@ const handleClick = () => {
   };
   const fetchlistaponderacion = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/verPonderaciones');
+      const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
       const data = await response.json();
       setponderaciones(data);
     } catch (error) {
@@ -351,7 +336,7 @@ const handleClick = () => {
 
   const fetchListaParcial = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/parciales/verParciales');
+      const response = await fetch('http://localhost:4000/api/parciales/verParciales');
       const data = await response.json();
       setparcial(data);
     } catch (error) {
@@ -364,7 +349,7 @@ const handleClick = () => {
 
   const fetchListaCiclo = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/ponderacionCiclo/verPonderacionesCiclos');
+      const response = await fetch('http://localhost:4000/api/ponderacionCiclo/verPonderacionesCiclos');
       const data = await response.json();
       setlistaponderacionesC(data);
     } catch (error) {
@@ -455,233 +440,132 @@ const handleClick = () => {
       text: 'Copiar y pegar no esta permitido'
     });
   };
- ///////////////// PDF ///////////
- const generarReportePDF = () => {
-  // Validar que haya datos filtrados
-  if (!actividadesFiltradas || actividadesFiltradas.length === 0) {
-    Swal.fire({
-      icon: 'info',
-      title: 'Sin datos',
-      text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Aceptar',
-    });
-    return; // Salir de la función si no hay datos
-  }
+  ///////////////// PDF ///////////
+  const generarReportePDF = () => {
+    const doc = new jsPDF();
+    const img = new Image();
+    img.src = logo; // Reemplaza con la URL o ruta de tu logo.
 
-  // Calcular el total de valores
-  const totalValor = actividadesFiltradas.reduce(
-    (total, actividad) => total + parseFloat(actividad?.Valor || 0),
-    0
-  ).toFixed(2); // Redondear a dos decimales
+    img.onload = () => {
+      // Agregar logo
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
 
-  // Crear el PDF en orientación horizontal
-  const doc = new jsPDF('landscape');
-  const img = new Image();
-  img.src = logo;
+      let yPosition = 20;
 
-  img.onload = () => {
-    // Agregar logo
-    doc.addImage(img, 'PNG', 10, 10, 30, 30);
+      // Título
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51);
+      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
 
-    let yPosition = 20; // Posición inicial en el eje Y
+      yPosition += 12;
 
-    // Título principal
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51); // Verde
-    doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      doc.setFontSize(16);
+      doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
 
-    yPosition += 10;
+      yPosition += 10;
 
-    // Información adicional
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      // Detalles
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0);
+      doc.text('Listado de Actividades', 10, yPosition);
 
-    yPosition += 4;
-    doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      yPosition += 6;
 
-    yPosition += 4;
-    doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51);
+      doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-    yPosition += 10;
+      yPosition += 4;
 
-    // Subtítulo
-    doc.setTextColor(0, 102, 51); // Verde
-    doc.setFontSize(16);
-    doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      // Tabla
+      doc.autoTable({
+        startY: yPosition,
+        head: [['Nombre de la Actividad', 'Descripción', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor']],
+        body: actividadesFiltradas.map((actividad) => [
+          actividad.Nombre_actividad_academica,
+          actividad.Descripcion,
+          new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+          }),
+          new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+            dateStyle: 'short',
+            timeStyle: 'short',
+          }),
+          actividad.Valor,
+        ]),
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+      });
 
-    yPosition += 10;
+      // Guardar el PDF
+      window.open(doc.output('bloburl'), '_blank');
+    };
 
-    // Detalles dinámicos sobre la sección, asignatura, parcial y año
-    doc.setFontSize(12);
-    doc.setTextColor(0, 102, 51); // Verde
-    doc.setFont('helvetica', 'bold'); // Negrita
-    if (selectedSeccion?.Nombre_seccion && selectedAsignatura?.Nombre_asignatura && selectedParcial?.Nombre_parcial) {
-      doc.text(
-        `Profesor: ${getNombreCompleto(selectedProfesor.cod_persona)} 
-        Sección: ${selectedSeccion.Nombre_seccion} | Asignatura: ${selectedAsignatura.Nombre_asignatura} | Parcial: ${selectedParcial.Nombre_parcial}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
-    } else if (selectedSeccion?.Nombre_seccion && anioSeccionSeleccionada) {
-      doc.text(
-        `Sección: ${selectedSeccion.Nombre_seccion} | Año: ${anioSeccionSeleccionada}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
-    } else if (selectedAsignatura?.Nombre_asignatura) {
-      doc.text(
-        `Asignatura: ${selectedAsignatura.Nombre_asignatura}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
-    }
-
-    yPosition += 10;
-
-    // Línea divisoria
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(0, 102, 51);
-    doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
-
-    yPosition += 6; // Espaciado antes de la tabla
-
-    // Configuración para la tabla
-    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-    let pageNumber = 1; // Página inicial
-
-    doc.autoTable({
-      startY: yPosition,
-      head: [['#', 'Nombre Actividad', 'Descripción', 'Fecha y hora Inicio', 'Fecha y hora Fin', 'Valor']],
-      body: actividadesFiltradas.map((actividad, index) => [
-        index + 1,
-        actividad.Nombre_actividad_academica || '',
-        actividad.Descripcion || '',
-        actividad.Fechayhora_Inicio
-          ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : 'N/A',
-        actividad.Fechayhora_Fin
-          ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-            })
-          : 'N/A',
-        actividad.Valor,
-      ]),
-      foot: [['', '', '', '', 'Total:', totalValor]], // Añadir fila total al pie de la tabla
-      headStyles: {
-        fillColor: [0, 102, 51], // Verde para el encabezado
-        textColor: [255, 255, 255],
-        fontSize: 9,
-      },
-      styles: {
-        fontSize: 8,
-        cellPadding: 2,
-        overflow: 'linebreak',
-        valign: 'middle',
-      },
-      footStyles: {
-        fillColor: [0, 102, 51], // Verde para la fila del pie
-        textColor: [255, 255, 255], // Texto en blanco para contraste
-        fontSize: 10,
-      },
-      columnStyles: {
-        0: { cellWidth: 'auto' },
-        1: { cellWidth: 'auto' },
-        2: { cellWidth: 'auto' },
-        3: { cellWidth: 'auto' },
-        4: { cellWidth: 'auto' },
-        5: { cellWidth: 'auto' },
-      },
-      tableWidth: 'auto',
-      margin: { left: 10, right: 10 },
-      didDrawPage: (data) => {
-        const currentDate = new Date();
-        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-        const totalPages = doc.internal.getNumberOfPages();
-        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-        pageNumber += 1;
-      },
-    });
-
-    // Abrir el PDF
-    window.open(doc.output('bloburl'), '_blank');
+    img.onerror = () => {
+      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+      window.open(doc.output('bloburl'), '_blank');
+    };
   };
 
-  img.onerror = () => {
-    Swal.fire({
-      icon: 'error',
-      title: 'Error',
-      text: 'No se pudo cargar el logo para el reporte.',
-    });
+  /////////////////////7 EXCEL ///////////////////////////77
+  const generarReporteExcel = () => {
+    const encabezados = [
+      ['Saint Patrick Academy'],
+      ['Reporte de Actividades Académicas'],
+      ['Fecha de generación: ' + new Date().toLocaleDateString()],
+      [], // Espacio en blanco
+      ['Nombre de la Actividad', 'Descripción', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor'],
+    ];
+
+    // Crear filas con actividades filtradas
+    const filas = actividadesFiltradas.map((actividad) => [
+      actividad.Nombre_actividad_academica,
+      actividad.Descripcion,
+      new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }),
+      new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      }),
+      actividad.Valor,
+    ]);
+
+    // Combinar encabezados y filas
+    const datos = [...encabezados, ...filas];
+
+    // Crear una hoja de trabajo
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+
+    // Ajustar el ancho de columnas automáticamente
+    hojaDeTrabajo['!cols'] = [
+      { wpx: 200 }, // Nombre de la Actividad
+      { wpx: 300 }, // Descripción
+      { wpx: 150 }, // Fecha y Hora Inicio
+      { wpx: 150 }, // Fecha y Hora Fin
+      { wpx: 100 }, // Valor
+    ];
+
+    // Crear el libro de trabajo
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Actividades Académicas');
+
+    // Guardar el archivo Excel con un nombre personalizado
+    const nombreArchivo = `Reporte_Actividades_${new Date().toLocaleDateString()}.xlsx`;
+
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
   };
-};
-
-
-/////////////////////7 EXCEL ///////////////////////////77
-const generarReporteExcel = () => {
-  const encabezados = [
-    ['Saint Patrick Academy'],
-    ['Reporte de Actividades Académicas'],
-    ['Fecha de generación: ' + new Date().toLocaleDateString()],
-    [], // Espacio en blanco
-    ['Nombre de la Actividad', 'Descripción', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor'],
-  ];
-
-  // Crear filas con actividades filtradas
-  const filas = actividadesFiltradas.map((actividad) => [
-    actividad.Nombre_actividad_academica,
-    actividad.Descripcion,
-    new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }),
-    new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    }),
-    actividad.Valor,
-  ]);
-
-  // Combinar encabezados y filas
-  const datos = [...encabezados, ...filas];
-
-  // Crear una hoja de trabajo
-  const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
-
-  // Ajustar el ancho de columnas automáticamente
-  hojaDeTrabajo['!cols'] = [
-    { wpx: 200 }, // Nombre de la Actividad
-    { wpx: 300 }, // Descripción
-    { wpx: 150 }, // Fecha y Hora Inicio
-    { wpx: 150 }, // Fecha y Hora Fin
-    { wpx: 100 }, // Valor
-  ];
-
-  // Crear el libro de trabajo
-  const libroDeTrabajo = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Actividades Académicas');
-
-  // Guardar el archivo Excel con un nombre personalizado
-  const nombreArchivo = `Reporte_Actividades_${new Date().toLocaleDateString()}.xlsx`;
-
-  XLSX.writeFile(libroDeTrabajo, nombreArchivo);
-};
 
 
 
@@ -978,19 +862,6 @@ const generarReporteExcel = () => {
 
   const handleCrearActividad = async () => {
     try {
-      // Verificar si obtenemos el token correctamente
-       const token = localStorage.getItem('token');
-       if (!token) {
-         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-         return;
-       }
-   
-       // Decodificar el token para obtener el nombre del usuario
-       const decodedToken = jwt_decode.jwtDecode(token);
-       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-         console.error('No se pudo obtener el código o el nombre de usuario del token');
-         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-       }
       // Validación de campos requeridos
       if (
         !selectedProfesor?.Cod_profesor ||
@@ -1047,11 +918,10 @@ const generarReporteExcel = () => {
         Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura || ''
       };
 
-      const response = await fetch('http://74.50.68.87:4000/api/actividadesAcademicas/registrar', {
+      const response = await fetch('http://localhost:4000/api/actividadesAcademicas/registrar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(actividadData),
       });
@@ -1059,29 +929,6 @@ const generarReporteExcel = () => {
       const responseData = await response.json();
 
       if (response.ok) {
-         // 2. Registrar la acción en la bitácora
-         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva actividad académica: ${nuevaActividad.Nombre_actividad_academica} `;
-        
-         // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
-           method: 'POST',
-           headers: {
-             'Content-Type': 'application/json',
-             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-           },
-           body: JSON.stringify({
-             cod_usuario: decodedToken.cod_usuario, // Código del usuario
-             cod_objeto: 79, // Código del objeto para la acción
-             accion: 'INSERT', // Acción realizada
-             descripcion: descripcion, // Descripción de la acción
-           }),
-         });
-   
-         if (bitacoraResponse.ok) {
-           console.log('Registro en bitácora exitoso');
-         } else {
-           Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-         }
         setModalVisible(false);
         resetNuevaActividad();
         setHasUnsavedChanges(false)
@@ -1089,7 +936,6 @@ const generarReporteExcel = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'La actividad se ha creado correctamente.',
-          confirmButtonText: 'Aceptar',
         });
         setModalVisible(false);
 
@@ -1136,21 +982,8 @@ const handleActualizarActividad = async () => {
   }
 
   try {
-     // Verificar si obtenemos el token correctamente
-     const token = localStorage.getItem('token');
-     if (!token) {
-       Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-       return;
-     }
- 
-     // Decodificar el token para obtener el nombre del usuario
-     const decodedToken = jwt_decode.jwtDecode(token);
-     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-       console.error('No se pudo obtener el código o el nombre de usuario del token');
-       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-     }
     // Validar espacio restante en el backend
-    const response = await fetch("http://74.50.68.87:4000/api/actividadesacademicas/validar-valoractua", {
+    const response = await fetch("http://localhost:4000/api/actividadesacademicas/validar-valoractua", {
       method: "POST",
       headers: {
           "Content-Type": "application/json",
@@ -1173,12 +1006,11 @@ const handleActualizarActividad = async () => {
 
     // Si pasa la validación, proceder con la actualización
     const updateResponse = await fetch(
-      `http://74.50.68.87:4000/api/actividadesAcademicas/${Cod_actividad_academica}`,
+      `http://localhost:4000/api/actividadesAcademicas/${Cod_actividad_academica}`,
       {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           Nombre_actividad_academica,
@@ -1194,34 +1026,10 @@ const handleActualizarActividad = async () => {
       throw new Error("Error en la actualización.");
     }
 
-     // Registrar la acción en la bitácora
-     const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la actividad academica: ${Nombre_actividad_academica}, con valor ${Valor}`;
-         
-     // Enviar a la bitácora
-     const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
-       method: 'POST',
-       headers: {
-         'Content-Type': 'application/json',
-         'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-       },
-       body: JSON.stringify({
-         cod_usuario: decodedToken.cod_usuario, // Código del usuario
-         cod_objeto: 79, // Código del objeto para la acción
-         accion: 'UPDATE', // Acción realizada
-         descripcion: descripcion, // Descripción de la acción
-       }),
-     });
-
-     if (bitacoraResponse.ok) {
-       console.log('Registro en bitácora exitoso');
-     } else {
-       Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-     }
     Swal.fire({
       icon: "success",
       title: "¡Éxito!",
       text: "La actividad se ha actualizado correctamente.",
-      confirmButtonText: 'Aceptar',
     });
 
     // Refrescar actividades
@@ -1253,21 +1061,8 @@ const handleCloseUpdateModal = () => {
 
 
 
-const handleEliminarActividad = async (id,nombre) => {
+const handleEliminarActividad = async (id) => {
   try {
-     // Verificar si obtenemos el token correctamente
-     const token = localStorage.getItem('token');
-     if (!token) {
-       Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-       return;
-     }
- 
-     // Decodificar el token para obtener el nombre del usuario
-     const decodedToken = jwt_decode.jwtDecode(token);
-     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-       console.error('No se pudo obtener el código o el nombre de usuario del token');
-       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-     }
       const confirm = await Swal.fire({
           title: "¿Estás seguro?",
           text: "Esta acción eliminará la actividad de forma permanente.",
@@ -1279,12 +1074,11 @@ const handleEliminarActividad = async (id,nombre) => {
 
       if (confirm.isConfirmed) {
           const response = await fetch(
-              `http://74.50.68.87:4000/api/actividadesAcademicas/${id}`,
+              `http://localhost:4000/api/actividadesAcademicas/${id}`,
               {
                   method: "DELETE",
                   headers: {
                       "Content-Type": "application/json",
-                    'Authorization': `Bearer ${token}`,
                   },
               }
           );
@@ -1292,34 +1086,10 @@ const handleEliminarActividad = async (id,nombre) => {
           const responseData = await response.json();
 
           if (response.ok) {
-             // 2. Registrar la acción en la bitácora
-             const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado la actividad: ${nombre} con codigo ${id}`;
-              
-             // Enviar a la bitácora
-             const bitacoraResponse = await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
-               method: 'POST',
-               headers: {
-                 'Content-Type': 'application/json',
-                 'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-               },
-               body: JSON.stringify({
-                 cod_usuario: decodedToken.cod_usuario, // Código del usuario
-                 cod_objeto: 79, // Código del objeto para la acción
-                 accion: 'DELETE', // Acción realizada
-                 descripcion: descripcion, // Descripción de la acción
-               }),
-             });
-       
-             if (bitacoraResponse.ok) {
-               console.log('Registro en bitácora exitoso');
-             } else {
-               Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-             }
               Swal.fire({
                   icon: "success",
                   title: "¡Éxito!",
                   text: responseData.mensaje,
-                  confirmButtonText: 'Aceptar',
               });
 
               // Refrescar actividades después de eliminar
@@ -2421,7 +2191,7 @@ const calcularTotalValor = () => {
                 <CIcon icon={cilArrowLeft} />Regresar a parciales
               </CButton>
               <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h1 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem", }}> Profesor: {getNombreCompleto(selectedProfesor.cod_persona) } /  Sección: {selectedSeccion.Nombre_seccion} / Parciales  {selectedParcial.Nombre_parcial} </h1>
+                <h1 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem", }}> Profesor: {getNombreCompleto(selectedProfesor.cod_persona) } /  Sección: {selectedSeccion.Nombre_seccion} / Parciales  {selectedAsignatura.Nombre_asignatura} </h1>
               </div>
               {/* Botón "Nuevo" a la derecha */}
               <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
@@ -2668,7 +2438,7 @@ const calcularTotalValor = () => {
                             e.currentTarget.style.boxShadow = 'none';
                             e.currentTarget.style.color = '#5C4044';
                           }}
-                          onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica,actividad.Nombre_actividad_academica)}
+                          onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica)}
                         >
                           <CIcon icon={cilTrash} />
                         </CButton>

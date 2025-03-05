@@ -32,8 +32,6 @@ import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
-import logo from 'src/assets/brand/logo_saint_patrick.png';
-
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
@@ -61,7 +59,7 @@ const PeriodosMatricula = () => {
 
   const obtenerPeriodos = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/periodomatricula/periodos');
+      const response = await fetch('http://localhost:4000/api/periodomatricula/periodos');
       const data = await response.json();
       setPeriodos(data);
       setFilteredPeriodos(data);
@@ -108,7 +106,7 @@ const PeriodosMatricula = () => {
     }
 
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/periodomatricula/crearperiodomatricula', {
+      const response = await fetch('http://localhost:4000/api/periodomatricula/crearperiodomatricula', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -153,7 +151,7 @@ const PeriodosMatricula = () => {
         return;
       }
 
-      const response = await fetch(`http://74.50.68.87:4000/api/periodomatricula/periodos/${id}`, {
+      const response = await fetch(`http://localhost:4000/api/periodomatricula/periodos/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -256,7 +254,7 @@ const PeriodosMatricula = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`http://74.50.68.87:4000/api/periodomatricula/periodos/${id}`, {
+        const response = await fetch(`http://localhost:4000/api/periodomatricula/periodos/${id}`, {
           method: 'DELETE',
         });
 
@@ -276,146 +274,27 @@ const PeriodosMatricula = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
+    doc.text('Reporte de Periodos de Matrícula', 10, 10);
 
-    // Configurar la imagen del logo
-    const img = new Image();
-    img.src = logo; // Asegúrate de importar el logo desde el directorio correspondiente
+    doc.autoTable({
+      head: [['#', 'Fecha Inicio', 'Fecha Fin', 'Año Académico', 'Estado']],
+      body: periodos.map((periodo, index) => [
+        index + 1,
+        periodo.Fecha_inicio,
+        periodo.Fecha_fin,
+        periodo.Anio_academico,
+        periodo.estado,
+      ]),
+    });
 
-    img.onload = () => {
-        // Añadir el logo en la esquina superior izquierda
-        doc.addImage(img, 'PNG', 10, 10, 30, 30);
-
-        // Encabezado del documento
-        doc.setFontSize(18);
-        doc.setTextColor(0, 102, 51); // Verde oscuro
-        doc.text(
-            "SAINT PATRICK'S ACADEMY",
-            doc.internal.pageSize.width / 2,
-            20,
-            { align: 'center' }
-        );
-
-        // Título del reporte
-        doc.setFontSize(14);
-        doc.text(
-            'Reporte de Periodos de Matrícula',
-            doc.internal.pageSize.width / 2,
-            30,
-            { align: 'center' }
-        );
-
-        // Detalles de la institución
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(
-            'Casa Club del periodista, Colonia del Periodista',
-            doc.internal.pageSize.width / 2,
-            40,
-            { align: 'center' }
-        );
-        doc.text(
-            'Teléfono: (504) 2234-8871',
-            doc.internal.pageSize.width / 2,
-            45,
-            { align: 'center' }
-        );
-        doc.text(
-            'Correo: info@saintpatrickacademy.edu',
-            doc.internal.pageSize.width / 2,
-            50,
-            { align: 'center' }
-        );
-
-        // Línea divisoria
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(0, 102, 51); // Verde oscuro
-        doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-
-        // Título de la tabla
-        doc.setFontSize(12);
-        doc.setTextColor(0, 51, 102); // Azul oscuro
-        doc.text(
-            'Detalles de los Periodos de Matrícula',
-            doc.internal.pageSize.width / 2,
-            65,
-            { align: 'center' }
-        );
-
-        // Configurar la tabla de periodos con diseño mejorado
-        doc.autoTable({
-            startY: 75,
-            head: [['#', 'Fecha Inicio', 'Fecha Fin', 'Año Académico', 'Estado']],
-            body: periodos.map((periodo, index) => [
-                index + 1,
-                periodo.Fecha_inicio || 'N/A',
-                periodo.Fecha_fin || 'N/A',
-                periodo.Anio_academico || 'N/A',
-                periodo.estado || 'N/A',
-            ]),
-            styles: {
-                fontSize: 10,
-                textColor: [34, 34, 34], // Gris oscuro para texto
-                cellPadding: 4,
-                valign: 'middle',
-                overflow: 'linebreak',
-            },
-            headStyles: {
-                fillColor: [0, 102, 51], // Verde oscuro para encabezados
-                textColor: [255, 255, 255],
-                fontSize: 10,
-            },
-            alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
-            margin: { left: 10, right: 10 },
-        });
-
-        // Pie de página con fecha, hora y número de página
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            const creationDateTime = new Date().toLocaleString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-            });
-
-            // Fecha y hora alineada a la izquierda
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text(
-                `Fecha y Hora de Generación: ${creationDateTime}`,
-                10,
-                doc.internal.pageSize.height - 10
-            );
-
-            // Número de página alineado a la derecha
-            doc.text(
-                `Página ${i} de ${pageCount}`,
-                doc.internal.pageSize.width - 30,
-                doc.internal.pageSize.height - 10,
-                { align: 'right' }
-            );
-        }
-
-        // Generar el archivo PDF como un Blob y abrirlo en una nueva pestaña
-        const pdfBlob = doc.output('blob'); // Genera el PDF como un Blob
-        const pdfURL = URL.createObjectURL(pdfBlob); // Crea una URL para el Blob
-        window.open(pdfURL); // Abre el archivo PDF en una nueva pestaña
-    };
-
-    img.onerror = () => {
-        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-    };
-};
-
+    doc.save('Reporte_Periodos_Matricula.pdf');
+  };
   const toggleEstado = async (periodo) => {
     try {
       const nuevoEstado = periodo.estado === 'activo' ? 'inactivo' : 'activo';
   
       // Realizar la solicitud al backend para actualizar el estado
-      const response = await fetch('http://74.50.68.87:4000/api/periodomatricula/estado', {
+      const response = await fetch('http://localhost:4000/api/periodomatricula/estado', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -565,14 +444,13 @@ const PeriodosMatricula = () => {
         <CTableDataCell>{periodo.Fecha_fin}</CTableDataCell>
         <CTableDataCell>{periodo.Anio_academico}</CTableDataCell>
         <CTableDataCell>
-        <CButton
-  color={periodo.estado === 'activo' ? 'success' : 'danger'} // Cambiar colores
-  onClick={() => toggleEstado(periodo)} // Llamada a la función toggleEstado
-  style={{ opacity: 0.9 }}
->
-  {periodo.estado === 'activo' ? 'Desactivar' : 'Activar'}
-</CButton>
-
+          <CButton
+            color={periodo.estado === 'activo' ? 'danger' : 'success'}
+            onClick={() => toggleEstado(periodo)} // Llamada a la función toggleEstado
+            style={{ opacity: 0.9 }}
+          >
+            {periodo.estado === 'activo' ? 'Desactivar' : 'Activar'}
+          </CButton>
         </CTableDataCell>
         <CTableDataCell className="text-end">
           {canUpdate && (

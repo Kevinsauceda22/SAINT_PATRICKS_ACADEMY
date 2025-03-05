@@ -23,13 +23,24 @@ import {
     getPermisos,
     obtenerDatosPreRegistro,
     completarPerfilPadre,
-    verificarEstadoPerfil
+    verificarEstadoPerfil,
+    obtenerPerfilUsuario,
+    editarPerfilUsuario,
+    uploadAvatar,
+    getAvatar,
+    getPersonaComplete,
+    getGeneros,
+    getNacionalidades,
+    getDepartamentos,
+    getMunicipios
 
 } from './usuarios_controller.js';
 
 import checkAuth from '../../middleware/Auth_middleware.js'; 
+import upload from '../../config/uploadConfig.js';
 
 const router = express.Router();    
+
 
 
 // Rutas protegidas que requieren token JWT para acceder
@@ -68,13 +79,35 @@ router.put('/padre/completar-perfil/:cod_usuario', checkAuth, completarPerfilPad
 // Ruta para verificar el estado del perfil
 router.get('/padre/verificar-estado/:cod_usuario', checkAuth, verificarEstadoPerfil);
 
+// Get user profile
+router.get('/perfil/:cod_usuario', checkAuth, obtenerPerfilUsuario);
 
+// Update user profile
+router.put('/perfil/:cod_usuario', checkAuth , editarPerfilUsuario);
+
+// Rutas para manejo de avatar
+router.post('/upload-avatar/:cod_usuario', 
+    checkAuth, 
+    upload.single('avatar'), 
+    uploadAvatar
+);
+
+router.get('/avatar/:cod_usuario', 
+    checkAuth, 
+    getAvatar
+);
 
 //obtenerPermisosPorRolYObjeto
 router.get('/permisos', getPermisos);
 
+// Remove the additional route from here and keep only the complete route
+router.get('/complete/:cod_persona', getPersonaComplete);
 
-
+// Add these new routes to your existing router
+router.get('/generos', checkAuth, getGeneros);
+router.get('/nacionalidades', checkAuth, getNacionalidades);
+router.get('/departamentos', checkAuth, getDepartamentos);
+router.get('/municipios', checkAuth, getMunicipios);
 
 // Rutas públicas
 // Ruta para crear un nuevo usuario (no requiere autenticación)====999
@@ -91,6 +124,7 @@ router.get('/olvide-password/:token', comprobarToken);
 router.post('/nuevopassword/:token', cambiarContrasena);
 //ruta para pre-registrar al padre de familia
 router.post('/pre-registrar-padre', preRegistroUsuario);
+
 
 
 export default router;

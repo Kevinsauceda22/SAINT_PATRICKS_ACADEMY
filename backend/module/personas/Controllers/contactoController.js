@@ -96,4 +96,3 @@ export const eliminarContacto = async (req, res) => {
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
-

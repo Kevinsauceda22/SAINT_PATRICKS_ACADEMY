@@ -46,9 +46,6 @@ const Permisos = React.lazy(() => import ("./views/pages/Permissions/Permissions
 const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
 const ListaNotasProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaNotasProfesor'));
 const ListaNotas = React.lazy(() => import('./views/pages/calificaciones/ListaNotas'));
-const ListaCuadroProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaCuadroProfesor'));
-const ListaCuadro = React.lazy(() => import('./views/pages/calificaciones/ListaCuadro'));
-const ListaCuadroPadre = React.lazy(() => import('./views/pages/calificaciones/ListaCuadroPadre'));
 const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
 const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
 const ListaGradosAsignaturas = React.lazy(() => import('./views/pages/calificaciones/ListaGradosAsignaturas'))
@@ -59,9 +56,6 @@ const Contabilidad = React.lazy(() => import('./views/pages/Contabilidad/Contabi
 const LibroDiario = React.lazy(() => import('./views/pages/Contabilidad/LibroDiario'));
 const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
 const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
-const ListaParametro = React.lazy(() => import('./views/pages/calificaciones/ListaParametro'));
-const ListaActividadesPadre = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaPadre'));
-const ListaInstitutos = React.lazy(() => import('./views/pages/calificaciones/ListaInstitutos'));
 const Auditoria = React.lazy(() => import('./views/pages/Auditoria/Auditoria'));
 
 const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
@@ -83,6 +77,7 @@ const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
+const ListaProcedenciaPersona = React.lazy(() => import('./views/pages/personas/ListaProcedenciaPersona')); 
 const Tipopersona = React.lazy(() => import('./views/pages/personas/Tipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
@@ -173,18 +168,14 @@ const App = () => {
                 <Route path="/ListaAsistenciaProfesor" element={<ListaAsistenciaProfesor />} />
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
+                <Route path="/ListaHistoricoProc" element={<ListaHistoricoProc />} />
                 <Route path="/ListaHistoriales" element={<ListaHistoriales />} />
-                <Route path="/ListaInstitutos" element={<ListaInstitutos />} />
-                <Route path="/ListaActividadesAcaVistaPadre" element={<ListaActividadesPadre />} />
 
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
                 <Route path="/ListaEstadoasistencia" element={<ListaEstadoasistencia />} />
                 <Route path="/ListaEstadonota" element={<ListaEstadoNota />} />
                 <Route path="/ListaNotasProfesor" element={<ListaNotasProfesor />} />
                 <Route path="/ListaNotas" element={<ListaNotas />} />
-                <Route path="/ListaCuadroProfesor" element={<ListaCuadroProfesor />} />
-                <Route path="/ListaCuadroPadre" element={<ListaCuadroPadre />} />
-                <Route path="/ListaCuadro" element={<ListaCuadro />} />
                 <Route path="/ListaGradoAcademico" element={<ListaGradoAcademico />} />
                 <Route path="/ListaGrados" element={<ListaGrado />} />
                 <Route path="/ListaGradosAsignaturas" element={<ListaGradosAsignaturas />} />
@@ -193,7 +184,7 @@ const App = () => {
                 <Route path="/ListaPonderacionesCiclos" element={<ListaPonderacionesCiclos />} />
                 <Route path="/ListaProfesores" element={<ListaProfesor />} />
                 <Route path="/VistaListaProfesor" element={<VistaListaProfesor />} />
-                 <Route path="/ListaParametro" element={<ListaParametro />} />
+
                 <Route path="/ListaTipoContrato" element={<ListaTipoContrato />} />
                
                 <Route path="/tipomatricula" element={<Tipomatricula />} />
@@ -217,7 +208,7 @@ const App = () => {
                  <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
-                <Route path="/ListaHistoricoProc" element={<ListaHistoricoProc />} />
+                 <Route path="/ListaProcedenciaPersona" element={<ListaPersonas />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
                 <Route path="/caja" element={<Caja />} />

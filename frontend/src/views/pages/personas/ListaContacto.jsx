@@ -89,7 +89,7 @@ const ListaContacto = () => {
 {/*******************************************************************************************************************/}
 useEffect(() => {
   const cargarPersonas = async () => {
-    const respuesta = await fetch('http://74.50.68.87:4000/api/estructuraFamiliar/verPersonas');
+    const respuesta = await fetch('http://localhost:4000/api/estructuraFamiliar/verPersonas');
     const datos = await respuesta.json();
     setPersonas(datos);
   };
@@ -128,7 +128,7 @@ const handleSeleccionarCodPersona = (persona) => {
 {/*******************************************************************************************************************/}
   useEffect(() => {
     fetchContactos();
-    fetchTiposContacto(); // Llamar a la función para cargar los tipos de contacto al montar el componente
+    fetch   (); // Llamar a la función para cargar los tipos de contacto al montar el componente
   }, []);
 
   useEffect(() => {
@@ -143,7 +143,7 @@ const handleSeleccionarCodPersona = (persona) => {
   
   const fetchContactos = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/contacto/obtenerContacto');
+      const response = await fetch('http://localhost:4000/api/contacto/obtenerContacto');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verifica la respuesta de la API
@@ -156,7 +156,7 @@ const handleSeleccionarCodPersona = (persona) => {
   
   const fetchTiposContacto = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/tipoContacto/obtenerTipoContacto');
+      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
       
@@ -235,8 +235,8 @@ const handleSeleccionarCodPersona = (persona) => {
     // Proceder con la creación o actualización
     setIsSubmitting(true);
     const url = contactoToUpdate
-      ? `http://74.50.68.87:4000/api/contacto/actualizarContacto/${contactoToUpdate.cod_contacto}`
-      : 'http://74.50.68.87:4000/api/contacto/crearContacto';
+      ? `http://localhost:4000/api/contacto/actualizarContacto/${contactoToUpdate.cod_contacto}`
+      : 'http://localhost:4000/api/contacto/crearContacto';
     const method = contactoToUpdate ? 'PUT' : 'POST';
     const body = JSON.stringify(contactoActual);
   
@@ -305,7 +305,7 @@ const handleSeleccionarCodPersona = (persona) => {
       if (!confirmResult.isConfirmed) return;
   
       const response = await fetch(
-        `http://74.50.68.87:4000/api/contacto/eliminarContacto/${encodeURIComponent(cod_contacto)}`,
+        `http://localhost:4000/api/contacto/eliminarContacto/${encodeURIComponent(cod_contacto)}`,
         { method: 'DELETE' }
       );
   
@@ -632,47 +632,44 @@ const handleSeleccionarCodPersona = (persona) => {
 </CInputGroup>
 
 
-<div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-  <CTable striped bordered hover>
-    <CTableHead>
-      <CTableRow>
-        <CTableHeaderCell>#</CTableHeaderCell>
-        <CTableHeaderCell>Nombre</CTableHeaderCell>
-        <CTableHeaderCell>Instituto</CTableHeaderCell>
-        <CTableHeaderCell>Lugar de Procedencia</CTableHeaderCell>
-        <CTableHeaderCell>Año de Ingreso</CTableHeaderCell>
-        <CTableHeaderCell>Acciones</CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-    <CTableBody>
-      {currentRecords
-        // Filtrar solo el registro correspondiente al estudiante seleccionado
-        .filter((historico) => historico.cod_persona === personaSeleccionada?.cod_persona)
-        .map((historico, index) => (
-          <CTableRow key={historico.cod_procedencia}>
-            <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-            <CTableDataCell>
-              {personaSeleccionada
-                ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
-                : 'Información no disponible'}
-            </CTableDataCell>
-            <CTableDataCell>{historico.instituto.toUpperCase()}</CTableDataCell>
-            <CTableDataCell>{historico.lugar_procedencia.toUpperCase()}</CTableDataCell>
-            <CTableDataCell>{historico.anio_ingreso}</CTableDataCell>
-            <CTableDataCell>
-              <CButton color="warning" onClick={() => openUpdateModal(historico)}>
-                <CIcon icon={cilPen} />
-              </CButton>
-              <CButton color="danger" onClick={() => openDeleteModal(historico)} className="ms-2">
-                <CIcon icon={cilTrash} />
-              </CButton>
-            </CTableDataCell>
+    {/* Tabla de datos filtrados */}
+    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+      <CTable striped bordered hover>
+        <CTableHead>
+          <CTableRow>
+            <CTableHeaderCell>#</CTableHeaderCell>
+            <CTableHeaderCell>Nombre</CTableHeaderCell>
+            <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
+            <CTableHeaderCell>Valor</CTableHeaderCell>
+            <CTableHeaderCell>Acciones</CTableHeaderCell>
           </CTableRow>
-        ))}
-    </CTableBody>
-  </CTable>
-</div>
-
+        </CTableHead>
+        <CTableBody>
+          {currentRecords.map((item, index) => (
+            <CTableRow key={item.cod_contacto}>
+              <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
+              <CTableDataCell>
+                {personaSeleccionada
+                  ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
+                  : 'Información no disponible'}
+              </CTableDataCell>
+              <CTableDataCell>
+                {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
+              </CTableDataCell>
+              <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
+              <CTableDataCell>
+                <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
+                  <CIcon icon={cilPen} />
+                </CButton>
+                <CButton color="danger" onClick={() => handleDeleteContacto(item.cod_contacto, item.Valor)} className="ms-2">
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              </CTableDataCell>
+            </CTableRow>
+          ))}
+        </CTableBody>
+      </CTable>
+    </div>
 
 {/***********************************************************PAGINACION*******************************************************************/}
       <CPagination align="center" className="my-3">
@@ -816,5 +813,4 @@ const handleSeleccionarCodPersona = (persona) => {
 };
 
 export default ListaContacto;
-
 

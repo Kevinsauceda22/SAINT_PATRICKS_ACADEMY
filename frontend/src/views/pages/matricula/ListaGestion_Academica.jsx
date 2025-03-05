@@ -12,66 +12,12 @@ import { useNavigate } from 'react-router-dom';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import AccessDenied from "../AccessDenied/AccessDenied"
 import usePermission from '../../../../context/usePermission';
-//importante para poder hacer la bitacora
-import axios from 'axios';
-import * as jwt_decode from 'jwt-decode';
-import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
-
-// Funciones para decodificar JWT y registrar en la bitácora
-export const decodeJWT = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error al decodificar el token JWT:', error);
-    return null;
-  }
-};
-
-const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
-  try {
-    const token = localStorage.getItem('token');
-    const decodedToken = decodeJWT(token);
-
-    if (!decodedToken) {
-      Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
-      return;
-    }
-
-    const cod_usuario = decodedToken.cod_usuario;
-    const nombre_usuario = decodedToken.nombre_usuario;
-
-    if (!cod_usuario || !nombre_usuario) {
-      Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
-      return;
-    }
-
-    const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
-
-    await axios.post(
-      'http://74.50.68.87:4000/api/bitacora/registro',
-      { cod_usuario, cod_objeto: 96, accion, descripcion },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-  } catch (error) {
-    console.error('Error al registrar en bitácora:', error.message);
-    Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
-  }
-};
-
 
 
 const ListaGestion_Academica = () => {
   // Definición de estados
   // Seguridad de botones
-  const { canSelect, canInsert} = usePermission('gestion_academica');
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('gestion_academica');
   const [agrupadores, setAgrupadores] = useState([]);
   const [periodos, setPeriodos] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -91,7 +37,7 @@ const ListaGestion_Academica = () => {
   // Función para obtener agrupadores desde la API
   const fetchAgrupadores = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/gestion_academica/obtenerTodasAgrupaciones');
+      const response = await fetch('http://localhost:4000/api/gestion_academica/obtenerTodasAgrupaciones');
       if (!response.ok) throw new Error('Error en la respuesta del servidor');
       const data = await response.json();
       setAgrupadores(data); // Guardar los datos en el estado
@@ -107,7 +53,7 @@ const ListaGestion_Academica = () => {
   // Función para obtener periodos desde la API
   const fetchPeriodos = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/gestion_academica/obtener_periodo');
+      const response = await fetch('http://localhost:4000/api/gestion_academica/obtener_periodo');
       if (!response.ok) throw new Error('Error en la respuesta del servidor');
       const data = await response.json();
       setPeriodos(data);
@@ -129,7 +75,7 @@ const ListaGestion_Academica = () => {
   const handleDescargarPDF = async (Cod_periodo_matricula) => {
     try {
       // Llamada a la API para obtener el año académico
-      const responsePeriodo = await fetch(`http://74.50.68.87:4000/api/gestion_academica/detalle/${Cod_periodo_matricula}`);
+      const responsePeriodo = await fetch(`http://localhost:4000/api/gestion_academica/detalle/${Cod_periodo_matricula}`);
       if (!responsePeriodo.ok) {
         throw new Error(`Error al obtener datos del período: ${responsePeriodo.status}`);
       }
@@ -137,7 +83,7 @@ const ListaGestion_Academica = () => {
       const AnioAcademico = periodoData.Anio_academico || "Sin Año Académico";
 
       // Llamada a la API para obtener las secciones
-      const responseSecciones = await fetch(`http://74.50.68.87:4000/api/gestion_academica/secciones_por_periodo/${Cod_periodo_matricula}`);
+      const responseSecciones = await fetch(`http://localhost:4000/api/gestion_academica/secciones_por_periodo/${Cod_periodo_matricula}`);
       if (!responseSecciones.ok) {
         throw new Error(`Error al obtener datos del servidor: ${responseSecciones.status}`);
       }
@@ -447,7 +393,7 @@ const ListaGestion_Academica = () => {
   // Función para guardar un nuevo agrupador
   const handleGuardarAgrupador = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/gestion_academica/crear_agrupador', {
+      const response = await fetch('http://localhost:4000/api/gestion_academica/crear_agrupador', {
         method: 'POST',
       });
   
@@ -458,16 +404,17 @@ const ListaGestion_Academica = () => {
         return;
       }
   
-      await registrarEnBitacora('INSERT', 'Se creó un nuevo agrupador en la gestión académica.');
-  
       Swal.fire('Éxito', 'Agrupador creado exitosamente.', 'success');
-      fetchAgrupadores();
-      setShowModal(false);
+      fetchAgrupadores(); // Recargar los datos
+      toggleModal(); // Cerrar el modal
     } catch (error) {
-      Swal.fire('Error', 'Hubo un problema al crear el agrupador.', 'error');
-    } 
+      console.error('Error al crear agrupador:', error); // Registro detallado
+      const errorMessage = error.message.includes('Failed to fetch')
+          ? 'No se pudo conectar al servidor para guardar el agrupador. Verifica tu conexión.'
+          : 'Hubo un problema al crear el agrupador. Por favor, inténtalo nuevamente.';
+      Swal.fire('Error', errorMessage, 'error');
+  } 
   };
-  
 
     // Verificar permisos
   if (!canSelect) {

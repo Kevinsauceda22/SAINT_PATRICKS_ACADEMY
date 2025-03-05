@@ -1,8 +1,8 @@
-
 import conectarDB from '../../../config/db.js';
 import { enviarNotificacionNuevaActividad,
          enviarNotificacionCancelacionActividad,
          enviarNotificacionCambioActividad} from '../../../helpers/emailHelper.js';
+
 
 const pool = await conectarDB();
 

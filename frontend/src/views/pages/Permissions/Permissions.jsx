@@ -41,10 +41,9 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '90', name: 'Solicitudes Administrador', description: 'Solicitud_admin' },
     { id: '91', name: 'Solicitudes Padre', description: 'Solicitudes_Padre' },
     { id: '93', name: 'ListaSecciones Asignatura', description: 'ListaSecciones' },
-    { id: '94', name: 'Lista Parametro', description: 'ListaParametro' },
-    { id: '95', name: 'Cuadro Profesor', description: 'ListaCuadroProfesor' },
-    { id: '95', name: 'Cuadro', description: 'ListaCuadro' },
-    { id: '103', name: 'CuadroPadre', description: 'ListaCuadroPadre' }
+    { id: '96', name: 'Gestion Academica', description: 'GestionAca' },
+    { id: '97', name: 'Secciones', description: 'GestionAca' }
+
 
   ];
 
@@ -76,7 +75,6 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '56', name: 'Lista Grado Academico', description: 'Lista Grado Academico' },
     { id: '57', name: 'Lista Parciales', description: 'Lista Parciales' },
     { id: '58', name: 'Lista Ponderaciones', description: 'Lista Ponderaciones' },
-    { id: '104', name: 'Lista Institutos', description: 'ListaInstitutos' },
     { id: '59', name: 'Lista Tipo Contrato', description: 'Lista Tipo Contrato' },
     { id: '60', name: 'Tipo matrícula', description: 'tipo matricula' },
     { id: '61', name: 'Periodo matrícula', description: 'periodo matricula' },
@@ -118,7 +116,7 @@ const GestorDePermisos = ({ pathName }) => {
 
   const cargarPermisos = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/roles/permisos', {
+      const response = await fetch('http://localhost:4000/api/roles/permisos', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -246,7 +244,7 @@ const GestorDePermisos = ({ pathName }) => {
   
       console.log('Enviando actualización:', datosActualizacion);
   
-      const response = await fetch(`http://74.50.68.87:4000/api/roles/permisos/estado/${Cod_Permiso}`, {
+      const response = await fetch(`http://localhost:4000/api/roles/permisos/estado/${Cod_Permiso}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

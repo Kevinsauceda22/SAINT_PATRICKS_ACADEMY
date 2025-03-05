@@ -65,6 +65,7 @@ export const obtenerSolicitudes = async (req, res) => {
         return res.status(500).json({ message: 'Error al obtener las solicitudes.' });
     }
 };
+
 export const obtenerUsuariosPorRolAdmin = async (req, res) => {
   try {
       const query = 'CALL obtener_usuarios_por_rol_admin()';
@@ -94,7 +95,6 @@ export const obtenerUsuariosPorRolAdmin = async (req, res) => {
       });
   }
 };
-
 
 
 export const insertarSolicitud = async (req, res) => {
@@ -331,6 +331,7 @@ export const obtenerSolicitudPorCod = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener la solicitud', error: error.message });
     }
 };
+
 
 
 

@@ -98,15 +98,6 @@ const _nav = [
     icon: cilTask,
     nameobject: 'ListaActividadesProfesor',
   },
-
-  {
-    component: CNavItem,
-    name: 'Mis Actividades ',
-    to: '/ListaActividadesAcaVistaPadre',
-    icon: cilTask,
-    nameobject: 'ListaActividadesAcaVistaPadre',
-    
-  },
   {
     component: CNavItem,
     name: 'Extracurriculares',
@@ -128,28 +119,6 @@ const _nav = [
     icon: cilFile,
     nameobject: 'ListaNotas',
   },
-   {
-    component: CNavItem,
-    name: 'Mis Cuadros',
-    to: '/ListaCuadroProfesor',
-    icon: cilFile,
-    nameobject: 'ListaCuadroProfesor',
-  },
-   {
-    component: CNavItem,
-    name: 'Cuadros',
-    to: '/ListaCuadroPadre',
-    icon: cilFile,
-    nameobject: 'ListaCuadroPadre',
-  },
-   {
-    component: CNavItem,
-    name: 'Cuadros',
-    to: '/ListaCuadro',
-    icon: cilFile,
-    nameobject: 'ListaCuadro',
-  },
-
   
     {
       component: CNavItem,
@@ -175,16 +144,10 @@ const _nav = [
     items: [
       {
         component: CNavItem,
-        name: 'Parametro',
-        to: '/ListaParametro',
-      },
-      {
-        component: CNavItem,
         name: 'Asignaturas',
         to: '/ListaAsignaturas',
         nameobject: 'ListaAsignaturas',
       },
-      
       {
         component: CNavItem,
         name: 'Ciclos',
@@ -248,12 +211,6 @@ const _nav = [
         nameobject: 'ListaHistorial',
       },
       {
-        componente: CNavItem,
-        name: 'Institutos',
-        to: '/ListaInstitutos',
-        nameobject: 'ListaInstitutos',
-      },
-      {
         component: CNavItem,
         name: 'Tipo matricula',
         to: '/tipomatricula',
@@ -287,7 +244,7 @@ const _nav = [
         component: CNavItem,
         name: 'Aulas',
         to: '/aulas',
-        nameobject: 'ListaAulas',
+        nameobject: 'aulas',
       },
       {
         component: CNavItem,
@@ -310,9 +267,7 @@ const _nav = [
     name: 'Caja',
     to: '/caja', 
     nameobject: 'Solicitud_admin',
-    icon: cilDollar, // Aquí se asigna un ícono representativo de dinero
-},
-
+  },
 
   {
     component: CNavGroup,
@@ -369,6 +324,11 @@ const _nav = [
         name: 'Historial Procedencia',
         to: '/ListaHistoricoProc',
         nameobject: 'ListaHistoricoProc',
+      },{
+        component: CNavItem,
+        name: 'Procedencia Persona',
+        to: '/ListaProcedenciaPersona',
+        nameobject: 'ListaProcedenciaPersona',
       },
       {
         component: CNavItem,
@@ -376,6 +336,7 @@ const _nav = [
         to: '/departamento',
         nameobject: 'departamento',
       },
+
       {
         component: CNavItem,
         name: 'Municipios',

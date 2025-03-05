@@ -1,58 +1,32 @@
 import express from 'express';
-import { obtenerDetalleSeccionAsignatura, 
-         obtenerSecciones, 
-         obtenerDias, 
-         obtenerGradosAsignaturas,
-         crearHorarioSeccionAsignatura, 
-         actualizarSeccionAsignatura, 
-         obtenerAsignaturasyHorarios,
-         obtenerAsignaturasPorSeccionYGrado,
-         obtenerSeccionesPorGrado,
-         obtenerAsignaturasPorProfesor,
-         obtenerAsignaturasPorSeccion,
-         getDetalleSeccionAsignatura, 
-         obtenerAsignaturasPorGradoYSeccion
+import {obtenerTodasSeccionesAsignaturas, 
+        obtenerDias,
+        obtenerTodasAsignaturas,
+        crearSeccionAsignatura, 
+        actualizarSeccionAsignatura, 
+        eliminarSeccionAsignatura,
 } from '../Controllers/secc_asigController.js';
 
 const router = express.Router();
 
-// Ruta para obtener todas las secciones y asignaturas o una específica
-router.get('/obtener_seccion_asig/:Cod_seccion_asignatura?', obtenerDetalleSeccionAsignatura);
 
 // Ruta para obtener secciones
-router.get('/secciones/:Cod_grado/:Cod_periodo_matricula', obtenerSecciones);
+router.get('/verSeccionesAsignaturas', obtenerTodasSeccionesAsignaturas);
 
-// Ruta para obtener secciones
-router.get('/dias', obtenerDias);
+// Ruta para obtener Dias
+router.get('/verDias', obtenerDias);
 
-// Ruta para obtener secciones
-router.get('/grados_asignaturas', obtenerGradosAsignaturas);
-
-// Ruta para crear una nueva sección y asignatura
-router.post('/crear_seccion_asig', crearHorarioSeccionAsignatura);
+// Ruta para obtener Asignaturas
+router.get('/verAsignaturas', obtenerTodasAsignaturas);
 
 // Ruta para actualizar una sección
-router.put('/actualizar_seccion_asig', actualizarSeccionAsignatura);
+router.post('/crearSeccionAsignatura', crearSeccionAsignatura);
 
 // Ruta para obtener secciones
-router.get('/asignaturashorarios/:cod_seccion', obtenerAsignaturasyHorarios);
+router.put('/actualizarSeccionAsignatura/:Cod_seccion_asignatura', actualizarSeccionAsignatura);
 
-// Ruta para obtener secciones por el momento no
-router.get('/asignaturasgrados/:Cod_secciones', obtenerAsignaturasPorSeccionYGrado);
+// Ruta para eliminar 
+router.delete('/eliminarSeccionAsignatura/:Cod_seccion_asignatura', eliminarSeccionAsignatura);
 
-// Ruta para obtener secciones
-router.get('/gradosasig/:Cod_grado', obtenerSeccionesPorGrado);
-
-// Ruta para obtener las asignaturas por codSeccion y profesor
-router.get('/verseccionesasignaturas/:codSeccion', obtenerAsignaturasPorProfesor);
-
-// Definir la ruta para obtener asignaturas por sección
-router.get('/porseccion/:codSeccion', obtenerAsignaturasPorSeccion);
-
-// Detalles
-router.get('/detalle/:Cod_seccion_asignatura', getDetalleSeccionAsignatura);
-
-// Ruta 
-router.get('/asignaturas/:Cod_seccion?', obtenerAsignaturasPorGradoYSeccion);
 
 export default router;

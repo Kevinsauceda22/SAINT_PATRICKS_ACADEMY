@@ -645,6 +645,7 @@ const enviarNotificacionCambioCitaPadres = async (correo_padre, nombre_padre, ci
                     </tr>
                 </table>
             </div>
+
             <p style="text-align: center; margin-top: 20px;">
                 <a href="${process.env.BASE_URL || 'http://localhost:3000'}/PaginaPrincipal" 
                    style="background-color: #4B6251; color: #fff; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">

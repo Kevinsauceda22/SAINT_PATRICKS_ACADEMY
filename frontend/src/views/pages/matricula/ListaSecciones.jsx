@@ -13,26 +13,6 @@ import {
 import { useNavigate } from 'react-router-dom';
 import AccessDenied from "../AccessDenied/AccessDenied"
 import usePermission from '../../../../context/usePermission';
-import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
-
-// Path: src/utils/jwtUtils.js
-
-export const decodeJWT = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error al decodificar el token JWT:', error);
-    return null;
-  }
-};
 
 
 const ListaSecciones = () => {
@@ -67,7 +47,7 @@ const ListaSecciones = () => {
 // Función para obtener el período académico activo
 const fetchPeriodoAcademico = async () => {
   try {
-    const response = await fetch('http://74.50.68.87:4000/api/secciones/periodo_academico/activo');
+    const response = await fetch('http://localhost:4000/api/secciones/periodo_academico/activo');
     const data = await response.json();
 
     if (data && data.Anio_academico) {
@@ -86,7 +66,7 @@ const fetchPeriodoAcademico = async () => {
 const fetchSeccionesPeriodo = async (periodo) => {
   try {
     const response = await fetch(
-      `http://74.50.68.87:4000/api/secciones/obtener_seccperiodo/${periodo}`
+      `http://localhost:4000/api/secciones/obtener_seccperiodo/${periodo}`
     );
     const data = await response.json();
 
@@ -162,22 +142,32 @@ const validateInput = (value) => {
 const handleGestionarClick = (seccion) => {
   const { Cod_secciones, Nombre_grado } = seccion;
 
+  // Verificamos si Cod_secciones es un valor primitivo o un objeto
+  console.log('Tipo de Cod_secciones:', typeof Cod_secciones);
+  console.log('Valor de Cod_secciones:', Cod_secciones);
+
+  // Si Cod_secciones es un objeto, extraemos el valor que representa el código de la sección
+  const codigoSeccion = typeof Cod_secciones === 'object' ? Cod_secciones.Cod_seccion || Cod_secciones.id || Cod_secciones.valor : Cod_secciones;
+
+  console.log('Usando codigoSeccion:', codigoSeccion);
+
   console.log('Navegando a lista-secciones-asignatura con:', { 
-    seccionSeleccionada: Cod_secciones, 
+    seccionSeleccionada: codigoSeccion, 
     periodoSeleccionado, 
     gradoSeleccionado: Nombre_grado,
-    profesores // Asegúrate de pasar los profesores aquí
+    profesores
   });
 
   navigate(`/lista-secciones-asignatura/`, { 
     state: { 
-      seccionSeleccionada: Cod_secciones, 
+      seccionSeleccionada: codigoSeccion,
       periodoSeleccionado, 
       gradoSeleccionado: Nombre_grado,
-      profesores // Aquí también
-    } 
+      profesores 
+    }
   });
 };
+
 
 // Funcion para cargar segun el estado y los botones
 useEffect(() => {
@@ -194,7 +184,7 @@ useEffect(() => {
 
 const fetchPeriodoEstado = async (periodo) => {
   try {
-    const response = await fetch(`http://74.50.68.87:4000/api/gestion_academica/obtener_periodo`);
+    const response = await fetch(`http://localhost:4000/api/gestion_academica/obtener_periodo`);
     const data = await response.json();
 
     console.log('Períodos recibidos:', data); // Log para depuración
@@ -217,7 +207,7 @@ const fetchPeriodoEstado = async (periodo) => {
 // Función para obtener las secciones
 const fetchSecciones = async (Cod_secciones) => {
   try {
-    const response = await fetch( `http://74.50.68.87:4000/api/secciones/obtener_secciones/${Cod_secciones}`);
+    const response = await fetch( `http://localhost:4000/api/secciones/obtener_secciones/${Cod_secciones}`);
     const data = await response.json();
     const dataWithIndex = data.map((seccion, index) => ({
       ...seccion,
@@ -232,14 +222,14 @@ const fetchSecciones = async (Cod_secciones) => {
 
 // Función para obtener los grados
 const fetchGrados = async () => {
-  const response = await fetch('http://74.50.68.87:4000/api/secciones/grados');
+  const response = await fetch('http://localhost:4000/api/secciones/grados');
   const data = await response.json();
   setGrados(data);
 };
 
 // Función para obtener los profesores
 const fetchProfesores = async () => {
-  const response = await fetch('http://74.50.68.87:4000/api/secciones/profesores');
+  const response = await fetch('http://localhost:4000/api/secciones/profesores');
   const data = await response.json();
   setProfesores(data);
 };
@@ -247,7 +237,7 @@ const fetchProfesores = async () => {
 // Función para obtener todos los periodos académicos
 const fetchPeriodosAcademicos = async () => {
   try {
-      const response = await fetch('http://74.50.68.87:4000/api/secciones/periodo_academico');
+      const response = await fetch('http://localhost:4000/api/secciones/periodo_academico');
       const data = await response.json();
 
       if (response.ok && data.length > 0) {
@@ -266,7 +256,7 @@ const fetchPeriodosAcademicos = async () => {
 // Función para obtener los edificios
 const fetchEdificios = async () => {
   try {
-    const response = await fetch('http://74.50.68.87:4000/api/secciones/edificios');
+    const response = await fetch('http://localhost:4000/api/secciones/edificios');
     if (!response.ok) {
       throw new Error(`Error HTTP: ${response.status}`);
     }
@@ -288,7 +278,7 @@ const fetchAulasPorEdificio = async (Cod_edificio) => {
 
       console.log("Código de edificio enviado:", Cod_edificio); // Depuración
 
-      const response = await fetch(`http://74.50.68.87:4000/api/secciones/aulas/por_edificio/${Cod_edificio}`);
+      const response = await fetch(`http://localhost:4000/api/secciones/aulas/por_edificio/${Cod_edificio}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -305,7 +295,7 @@ const fetchAulasPorEdificio = async (Cod_edificio) => {
         // Verificar si el aula actual no está en la lista y agregarla
         const aulaActual = aulas.find(aula => aula.Numero_aula === seccionToUpdate.p_Numero_aula);
         if (!aulaActual && seccionToUpdate.p_Numero_aula) {
-            const aulaActualInfo = await fetch(`http://74.50.68.87:4000/api/secciones/${seccionToUpdate.p_Numero_aula}`);
+            const aulaActualInfo = await fetch(`http://localhost:4000/api/secciones/${seccionToUpdate.p_Numero_aula}`);
             const aulaActualData = await aulaActualInfo.json();
             if (aulaActualInfo.ok) {
                 aulas.push(aulaActualData); // Agregar aula actual
@@ -524,48 +514,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       alert('No se pudo cargar el logo.');
     };
   };
-const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
-    try {
-      const token = localStorage.getItem('token');
-      const decodedToken = decodeJWT(token);
-  
-      if (!decodedToken) {
-        swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
-        return;
-      }
-  
-      const cod_usuario = decodedToken.cod_usuario;
-      const nombre_usuario = decodedToken.nombre_usuario;
-  
-      if (!cod_usuario || !nombre_usuario) {
-        swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
-        return;
-      }
-  
-      const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
-      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 97, accion, descripcion });
-  
-      await fetch('http://74.50.68.87:4000/api/bitacora/registro', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          cod_usuario,
-          cod_objeto: 97, // Objeto relacionado con secciones
-          accion,
-          descripcion,
-        }),
-      });
-  
-      console.log('Registro en bitácora exitoso');
-    } catch (error) {
-      console.error('Error al registrar en bitácora:', error.message);
-      swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
-    }
-  };
-  
+
   // Funciones CRUD
 
   // Funcion para abrir el modal de crear
@@ -601,7 +550,7 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
     try {
       setLoadingNombre(true); // Activar mensaje de carga
       const response = await fetch(
-        `http://74.50.68.87:4000/api/secciones/generar_nombre_seccion/${codGrado}/${anioAcademicoActivo}`
+        `http://localhost:4000/api/secciones/generar_nombre_seccion/${codGrado}/${anioAcademicoActivo}`
       );
       const data = await response.json();
   
@@ -643,7 +592,7 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
     }
   
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/secciones/crear_seccion', {
+      const response = await fetch('http://localhost:4000/api/secciones/crear_seccion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -658,14 +607,6 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
   
       if (response.ok) {
         swal.fire('Creación exitosa', 'La sección ha sido creada correctamente.', 'success');
-  
-        // Registro en la bitácora
-        await registrarEnBitacora(
-          'INSERT',
-          `Sección creada. Nombre: ${nuevaSeccion.Nombre_seccion || 'No especificado'}, Aula: ${nuevaSeccion.Cod_aula}, Grado: ${nuevaSeccion.Cod_grado}, Profesor: ${nuevaSeccion.Cod_profesor}.`
-        );
-  
-        // Recargar datos
         fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones
         fetchAulasPorEdificio(edificioSeleccionado); // Actualizar las aulas disponibles
         setModalVisible(false); // Cerrar el modal
@@ -678,13 +619,11 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
       swal.fire('Error', 'Error de conexión o en el servidor.', 'error');
     }
   };
-  
-
 
   
   const openUpdateModal = async (Cod_secciones) => {
     try {
-        const response = await fetch(`http://74.50.68.87:4000/api/secciones/obtener_seccion/${Cod_secciones}`);
+        const response = await fetch(`http://localhost:4000/api/secciones/obtener_seccion/${Cod_secciones}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -715,51 +654,45 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
 };
 
 
+  // Función para manejar la actualización de una sección
   const handleUpdateSeccion = async () => {
-  // Buscar el aula seleccionada
-  const aulaSeleccionada = aulasFiltradas.find(
-    (aula) => aula.Numero_aula.toString() === seccionToUpdate.p_Numero_aula.toString()
-  );
-
-  // Validar si el aula seleccionada es diferente al aula actual
-  const aulaOriginal = seccionToUpdate.p_Numero_aula;
-
-  if (aulaSeleccionada && aulaSeleccionada.Numero_aula !== aulaOriginal) {
-    // Validar disponibilidad solo si el aula ha cambiado
-    if (aulaSeleccionada.Secciones_disponibles <= 0) {
-      swal.fire('Error', 'No hay secciones disponibles en esta aula.', 'error');
-      return;
+    // Buscar el aula seleccionada
+    const aulaSeleccionada = aulasFiltradas.find(
+        (aula) => aula.Numero_aula.toString() === seccionToUpdate.p_Numero_aula.toString()
+    );
+  
+    // Validar si el aula seleccionada es diferente al aula actual
+    const aulaOriginal = seccionToUpdate.p_Numero_aula; // Aula actual de la sección
+  
+    if (aulaSeleccionada && aulaSeleccionada.Numero_aula !== aulaOriginal) {
+        // Validar disponibilidad solo si el aula ha cambiado
+        if (aulaSeleccionada.Secciones_disponibles <= 0) {
+            swal.fire('Error', 'No hay secciones disponibles en esta aula.', 'error');
+            return;
+        }
     }
-  }
-
-  try {
-    const response = await fetch('http://74.50.68.87:4000/api/secciones/actualizar_seccion', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(seccionToUpdate),
-    });
-
-    if (response.ok) {
-      swal.fire('Éxito', 'Sección actualizada correctamente.', 'success');
-
-      // Registro en la bitácora
-      await registrarEnBitacora(
-        'UPDATE',
-        `Sección actualizada. Nombre: ${seccionToUpdate.p_Nombre_seccion}, Aula: ${seccionToUpdate.p_Numero_aula}, Grado: ${seccionToUpdate.p_Nombre_grado}, Profesor: ${seccionToUpdate.p_Cod_Profesor}.`
-      );
-
-      setModalUpdateVisible(false);
-      fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
-      fetchAulasPorEdificio(seccionToUpdate.Cod_edificio); // Actualizar las aulas disponibles
-    } else {
-      const errorData = await response.json();
-      swal.fire('Error', errorData.mensaje || 'No se pudo actualizar la sección.', 'error');
+  
+    try {
+        const response = await fetch('http://localhost:4000/api/secciones/actualizar_seccion', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(seccionToUpdate),
+        });
+  
+        if (response.ok) {
+            swal.fire('Éxito', 'Sección actualizada correctamente.', 'success');
+            setModalUpdateVisible(false);
+            fetchSeccionesPeriodo(periodoSeleccionado); // Recargar las secciones del período actual
+            fetchAulasPorEdificio(seccionToUpdate.Cod_edificio); // Actualizar las aulas disponibles
+        } else {
+            const errorData = await response.json();
+            swal.fire('Error', errorData.mensaje || 'No se pudo actualizar la sección.', 'error');
+        }
+    } catch (error) {
+        console.error('Error al actualizar la sección:', error);
+        swal.fire('Error', 'Hubo un problema al actualizar la sección.', 'error');
     }
-  } catch (error) {
-    console.error('Error al actualizar la sección:', error);
-    swal.fire('Error', 'Hubo un problema al actualizar la sección.', 'error');
-  }
-};
+  };
   
   const resetSeccionToUpdate = () => {
     // Limpia los datos del estado `seccionToUpdate`
@@ -792,19 +725,12 @@ const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
   
     try {
       const response = await fetch(
-        `http://74.50.68.87:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`,
+        `http://localhost:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`,
         { method: 'DELETE' }
       );
   
       if (response.ok) {
         swal.fire('Eliminación exitosa', 'La sección ha sido eliminada correctamente.', 'success');
-  
-        // Registro en la bitácora
-        await registrarEnBitacora(
-          'DELETE',
-          `Sección eliminada. Código: ${seccionToDelete.Cod_secciones}, Nombre: ${seccionToDelete.Nombre_seccion || 'No especificado'}.`
-        );
-  
         setModalDeleteVisible(false);
   
         if (periodoSeleccionado) {

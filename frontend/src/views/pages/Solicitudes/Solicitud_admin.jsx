@@ -84,7 +84,7 @@ const Solicitud = () => {
   const fetchSolicitudes = async () => {
     setLoading(true);
     try {
-        const response = await fetch('http://74.50.68.87:4000/api/Solicitud_admin/solicitudess');
+        const response = await fetch('http://localhost:4000/api/Solicitud_admin/solicitudess');
         if (!response.ok) throw new Error('Error al obtener las solicitudes');
         const data = await response.json();
 
@@ -216,7 +216,7 @@ const getIconByEstado = (estado) => {
       let citaDetails = { ...selectedCita };
       try {
         const response = await fetch(
-          `http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${selectedCita.id}`
+          `http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${selectedCita.id}`
         );
         if (!response.ok) {
           throw new Error('Error al obtener detalles de la solicitud.');
@@ -313,7 +313,7 @@ const getIconByEstado = (estado) => {
   
     if (citaSeleccionada.estado === 'Pendiente') {
       try {
-        const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${citaId}`);
+        const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${citaId}`);
         if (!response.ok) throw new Error('Error al obtener detalles de la solicitud.');
   
         const detailedData = await response.json();
@@ -421,7 +421,7 @@ allowOutsideClick: false,
             Estado: cita.estado, // Mantener el estado actual
           };
   
-          const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
+          const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestData),
@@ -459,7 +459,7 @@ allowOutsideClick: false,
 // Nuevo fetch para obtener la cita con la persona creadora
 const fetchSolicitudConPersona = async (Cod_solicitud) => {
   try {
-    const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${Cod_solicitud}`);
+    const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${Cod_solicitud}`);
     if (!response.ok) {
       if (response.status === 404) throw new Error('Solicitud no encontrada.');
       throw new Error('Error al obtener la solicitud con persona.');
@@ -528,7 +528,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
       };
   
       const response = await fetch(
-        `http://74.50.68.87:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`,
+        `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`,
         {
           method: 'PUT',
           headers: {
@@ -689,8 +689,8 @@ allowOutsideClick: false,
   
       const response = await fetch(
         selectedCita
-          ? `http://74.50.68.87:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
-          : 'http://74.50.68.87:4000/api/Solicitud_admin/solicitudes',
+          ? `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
+          : 'http://localhost:4000/api/Solicitud_admin/solicitudes',
         {
           method: selectedCita ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -773,7 +773,7 @@ allowOutsideClick: false,
       const updatedSolicitudes = await Promise.all(
         solicitudes.map(async (cita) => {
           try {
-            const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${cita.id}`);
+            const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${cita.id}`);
             if (!response.ok) {
               throw new Error('Error al obtener detalles de la solicitud.');
             }
@@ -1090,7 +1090,7 @@ allowOutsideClick: false,
 
       
 
-      <CModal visible={formModalVisible} onClose={handleModalClose} backdrop="static">
+<CModal visible={formModalVisible} onClose={handleModalClose} backdrop="static">
   <CModalHeader closeButton style={{ backgroundColor: '#4B6251', color: 'white' }}>
     <CModalTitle>{selectedCita ? 'Editar Cita' : 'Crear Nueva Cita'}</CModalTitle>
   </CModalHeader>
@@ -1175,47 +1175,90 @@ allowOutsideClick: false,
             />
           </CCol>
         </CRow>
-        
 
+        {/* Mostrar cancelar solo en el modo de edición */}
         {selectedCita && (
-  <CRow className="mb-3">
-  <CCol md={12}>
-      <CFormLabel>Estado</CFormLabel>
-      <div className="form-check form-switch">
-          <input
-              className="form-check-input"
-              type="checkbox"
-              id="estadoSwitch"
-              checked={formValues.estado === "Cancelada"}
-              onChange={() =>
-                  setFormValues((prevValues) => ({
-                      ...prevValues,
-                      estado: prevValues.estado === "Cancelada" ? "Pendiente" : "Cancelada",
-                  }))
-              }
-              style={{
-                  width: "3rem",
-                  height: "1.5rem",
-                  backgroundColor: formValues.estado === "Cancelada" ? "red" : "",
-                  border: formValues.estado === "Cancelada" ? "1px solid red" : "",
-              }}
-          />
-          <label
-              className="form-check-label"
-              htmlFor="estadoSwitch"
-              style={{
-                  fontSize: "1.25rem",
-                  color: formValues.estado === "Cancelada" ? "red" : "green",
-                  fontWeight: "bold",
-              }}
-          >
-              {formValues.estado === "Cancelada" ? "Cancelada" : "Activo"}
-          </label>
-      </div>
-  </CCol>
-</CRow>
+          <>
+            {/* Estado */}
+            <CRow className="mb-4">
+              <CCol md={12}>
+                <CFormLabel>Estado</CFormLabel>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    backgroundColor:
+                      formValues.estado === 'Cancelada' ? '#FFE5E5' : '#E5FFE5',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '0.5rem',
+                    border: '1px solid',
+                    borderColor: formValues.estado === 'Cancelada' ? 'red' : 'green',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 'bold',
+                      color: formValues.estado === 'Cancelada' ? 'red' : 'green',
+                      fontSize: '1.2rem',
+                    }}
+                  >
+                    {formValues.estado === 'Cancelada' ? 'CANCELADA' : 'ACTIVO'}
+                  </span>
+                  <div className="form-check form-switch">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="estadoSwitch"
+                      checked={formValues.estado === 'Cancelada'}
+                      onChange={() =>
+                        setFormValues((prevValues) => ({
+                          ...prevValues,
+                          estado: prevValues.estado === 'Cancelada' ? 'Pendiente' : 'Cancelada',
+                          motivoCancelacion: prevValues.estado === 'Cancelada' ? '' : prevValues.motivoCancelacion,
+                        }))
+                      }
+                      style={{
+                        width: '2.5rem',
+                        height: '1.5rem',
+                        backgroundColor: formValues.estado === 'Cancelada' ? 'red' : '#4B6251',
+                        border: formValues.estado === 'Cancelada'
+                          ? '1px solid red'
+                          : '1px solid #4B6251',
+                        transition: 'background-color 0.3s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              </CCol>
+            </CRow>
 
-)}
+            {/* Motivo de Cancelación */}
+            {formValues.estado === 'Cancelada' && (
+              <CRow className="mb-4">
+                <CCol md={12}>
+                  <CFormLabel>Motivo de Cancelación</CFormLabel>
+                  <textarea
+                    className="form-control"
+                    placeholder="Escribe el motivo de cancelación aquí..."
+                    value={formValues.motivoCancelacion}
+                    name="motivoCancelacion"
+                    onChange={handleValidatedInputChange}
+                    required={formValues.estado === 'Cancelada'}
+                    style={{
+                      borderColor: '#4B6251',
+                      backgroundColor: '#FFF8F8',
+                      borderRadius: '0.5rem',
+                      padding: '0.5rem',
+                    }}
+                  />
+                </CCol>
+              </CRow>
+            )}
+          </>
+        )}
+
         <CModalFooter>
           <CButton
             type="submit"
@@ -1233,6 +1276,7 @@ allowOutsideClick: false,
     </CForm>
   </CModalBody>
 </CModal>
+
 
 <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
   <CModalHeader closeButton style={{ backgroundColor: '#6C8E58', color: 'white' }}>

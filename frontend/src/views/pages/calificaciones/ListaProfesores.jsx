@@ -85,7 +85,7 @@ const ListaProfesores = () => {
 
   const fetchListaPersonas = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/persona/verpersonas');
+      const response = await fetch('http://localhost:4000/api/persona/verpersonas');
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verificar estructura de la respuesta
   
@@ -193,7 +193,7 @@ const resetProfesorToUpdate = () => setProfesorToUpdate('');
 
   const fetchListaTiposContrato = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/contratos/tiposContrato');
+      const response = await fetch('http://localhost:4000/api/contratos/tiposContrato');
       const data = await response.json();
       setListaTiposContrato(data);
     } catch (error) {
@@ -203,7 +203,7 @@ const resetProfesorToUpdate = () => setProfesorToUpdate('');
   
   const fetchListaGradosAcademicos = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/verGradosAcademicos');
+      const response = await fetch('http://localhost:4000/api/gradosAcademicos/verGradosAcademicos');
       const data = await response.json();
       setListaGradosAcademicos(data);
     } catch (error) {
@@ -212,7 +212,7 @@ const resetProfesorToUpdate = () => setProfesorToUpdate('');
   };
   const fetchProfesores = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/profesores/verprofesores');
+      const response = await fetch('http://localhost:4000/api/profesores/verprofesores');
       const data = await response.json();
       setProfesores(data);
     } catch (error) {
@@ -303,7 +303,7 @@ if (duplicada) {
   
 
   try {
-    const response = await fetch('http://74.50.68.87:4000/api/profesores/crearprofesor', {
+    const response = await fetch('http://localhost:4000/api/profesores/crearprofesor', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -356,7 +356,7 @@ const handleUpdateProfesor = async () => {
   }
 
   try {
-      const response = await fetch('http://74.50.68.87:4000/api/profesores/actualizarprofesor', {
+      const response = await fetch('http://localhost:4000/api/profesores/actualizarprofesor', {
           method: 'PUT',
           headers: {
               'Content-Type': 'application/json',
@@ -397,7 +397,7 @@ const handleUpdateProfesor = async () => {
   const handleDeleteProfesor = async () => {
 
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/profesores/eliminarprofesor', {
+      const response = await fetch('http://localhost:4000/api/profesores/eliminarprofesor', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -432,7 +432,7 @@ const toggleEstado = async (profesor) => {
     setLoading(true);  // Activar el indicador de carga
 
     // Llamada a la API para actualizar el estado
-    const response = await axios.post('http://74.50.68.87:4000/api/profesores/actualizarEstadoProfesor', {
+    const response = await axios.post('http://localhost:4000/api/profesores/actualizarEstadoProfesor', {
       cod_profesor: profesor.Cod_profesor,
       estado: nuevoEstado,
     });
@@ -693,35 +693,17 @@ const filteredRecords = searchTerm
 //=========================================================== pdf y excel================================================
 const generarReportePDF = () => {
   // Filtrar registros si hay búsqueda activa
-  const registrosParaReporte = profesores.map((profesor, index) => {
-    const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
-    const nombreCompleto = persona
-      ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`.toUpperCase()
-      : 'DESCONOCIDO';
+  const registrosParaReporte = searchTerm
+    ? profesores.filter((profesor) => {
+        const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
+        const nombreCompleto = persona
+          ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`.toUpperCase()
+          : '';
+        return nombreCompleto.includes(searchTerm.trim().toUpperCase());
+      })
+    : profesores;  // Si no hay filtro, usar todos los profesores
 
-    // Obtener tipo de contrato y grado académico
-    const tipoContrato = listaTiposContrato.find(
-      (tipo) => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato
-    )?.Descripcion.toUpperCase() || 'N/A';
-    const gradoAcademico = listaGradosAcademicos.find(
-      (grado) => grado.Cod_grado_academico === profesor.Cod_grado_academico
-    )?.Descripcion.toUpperCase() || 'N/A';
-
-    // Determinar el estado (Activo o Inactivo)
-    const estado = profesor.Estado ? 'Activo' : 'Inactivo';
-
-    return {
-      index: index + 1,
-      nombreCompleto,
-      gradoAcademico,
-      tipoContrato,
-      horaEntrada: profesor.Hora_entrada || 'N/A',
-      horaSalida: profesor.Hora_salida || 'N/A',
-      estado, // Agregar el estado aquí
-    };
-  });
-
-  // Validar si hay registros para generar el reporte
+  // Validar si hay registros para mostrar
   if (registrosParaReporte.length === 0) {
     swal.fire({
       icon: 'warning',
@@ -778,21 +760,38 @@ const generarReportePDF = () => {
     doc.setDrawColor(0, 102, 51); // Verde
     doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-    yPosition += 6;
+    yPosition += 4;
 
-    // Generar tabla
+    // Generar tabla con registros filtrados o completos
     doc.autoTable({
       startY: yPosition,
-      head: [['#', 'DNI-Nombre', 'Grado Académico', 'Tipo de Contrato', 'Hora Entrada', 'Hora Salida', 'Estado']],
-      body: registrosParaReporte.map((registro) => [
-        registro.index,
-        registro.nombreCompleto,
-        registro.gradoAcademico,
-        registro.tipoContrato,
-        registro.horaEntrada,
-        registro.horaSalida,
-        registro.estado, // Mostrar el estado en la tabla
-      ]),
+      head: [['#', 'Nombre', 'Grado Académico', 'Tipo de Contrato', 'Hora Entrada', 'Hora Salida', 'Fecha Ingreso', 'Fecha Fin Contrato', 'Años de Experiencia']],
+      body: registrosParaReporte.map((profesor, index) => {
+        const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
+        const nombreCompleto = persona
+          ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
+          : 'Desconocido';
+
+        const fechaIngreso = new Date(profesor.Fecha_ingreso).toLocaleDateString('es-ES');
+        const fechaFinContrato = new Date(profesor.Fecha_fin_contrato).toLocaleDateString('es-ES');
+        const añosExperiencia = profesor.Años_experiencia;
+
+        return [
+          index + 1,
+          nombreCompleto,
+          listaGradosAcademicos.find(
+            (grado) => grado.Cod_grado_academico === profesor.Cod_grado_academico
+          )?.Descripcion || 'N/A',
+          listaTiposContrato.find(
+            (tipo) => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato
+          )?.Descripcion || 'N/A',
+          profesor.Hora_entrada,
+          profesor.Hora_salida,
+          fechaIngreso, // Mostrar fecha de ingreso
+          fechaFinContrato, // Mostrar fecha de fin de contrato
+          `${añosExperiencia} años`, // Mostrar años de experiencia
+        ];
+      }),
       headStyles: {
         fillColor: [0, 102, 51], // Verde oscuro para encabezado
         textColor: [255, 255, 255], // Texto blanco
@@ -1011,6 +1010,7 @@ const generarReporteExcel = () => {
     onChange={handleSearch}
     style={{ fontSize: '0.9rem' }}
     />
+
          {/* Botón para limpiar la búsqueda */}
       <CButton
             style={{border: '1px solid #ccc',
@@ -1333,7 +1333,13 @@ const generarReporteExcel = () => {
   </CModalHeader> 
   <CModalBody>
     <CForm>
-    
+       
+      {/* Formulario de Actualización */}
+  <BuscadorDinamico
+    listaPersonas={listaPersonas} // Pasa la lista de personas
+    nuevoProfesor={profesorToUpdate} // Cambia 'nuevoProfesor' a 'profesorToUpdate'
+    setNuevoProfesor={setProfesorToUpdate} // Cambia 'setNuevoProfesor' a 'setProfesorToUpdate'
+  />
      
       {/* Select para Grado Académico */}
       <CInputGroup className="mb-3">

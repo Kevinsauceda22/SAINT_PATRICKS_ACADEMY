@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-    obtenerHistorialesPorPersona,
+    obtenerHistoriales,
     crearHistorial,
     actualizarHistorial,
     eliminarHistorial
@@ -8,18 +8,16 @@ import {
 
 const router = express.Router();
 
-// Ruta para obtener historiales acadÃ©micos por Cod_persona
-router.get('/historiales/persona/:Cod_persona', obtenerHistorialesPorPersona);
+// Ruta para obtener todos los historiales académicos
+router.get('/historiales', obtenerHistoriales);
 
-
-
-// Ruta para crear un nuevo historial acadÃ©mico
+// Ruta para crear un nuevo historial académico
 router.post('/crearhistorial', crearHistorial);
 
-// Ruta para actualizar un historial acadÃ©mico
+// Ruta para actualizar un historial académico
 router.put('/actualizarhistorial', actualizarHistorial);
 
-// Ruta para eliminar un historial acadÃ©mico
+// Ruta para eliminar un historial académico
 router.delete('/eliminarhistorial', eliminarHistorial);
 
 export default router;

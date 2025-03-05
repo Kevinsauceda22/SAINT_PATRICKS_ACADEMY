@@ -111,7 +111,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     if (personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://74.50.68.87:4000/api/estructuraFamiliar/verEstructurasFamiliares/${personaSeleccionada.cod_persona}`);
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructurasFamiliares/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
         setEstructurasFamiliares(datos);
       };
@@ -124,7 +124,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     if (modalUpdateVisible === false && personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://74.50.68.87:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
   
 
@@ -145,7 +145,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     if (modalVisible === false && personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://74.50.68.87:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
   
 
@@ -165,7 +165,7 @@ const ListaEstructura = () => {
   useEffect(() => {
     if (modalDeleteVisible === false && personaSeleccionada) {
       const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://74.50.68.87:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
         const datos = await respuesta.json();
   
 
@@ -190,7 +190,7 @@ const ListaEstructura = () => {
   // Cargar datos iniciales
   useEffect(() => {
     const cargarPersonas = async () => {
-      const respuesta = await fetch('http://74.50.68.87:4000/api/estructuraFamiliar/verPersonas');
+      const respuesta = await fetch('http://localhost:4000/api/estructuraFamiliar/verPersonas');
       const datos = await respuesta.json();
       setPersonas(datos);
     };
@@ -277,7 +277,7 @@ const handleSeleccionarPersona = (persona) => {
     const fetchTipoRelacion = async () => {
       try {
         const response = await axios.get(
-          `http://74.50.68.87:4000/api/estructuraFamiliar/verTipoRelacion`,
+          `http://localhost:4000/api/estructuraFamiliar/verTipoRelacion`,
         )
         setTipoRelacion(response.data)
         console.log('Datos de tipo Relacion:', response.data) // Verifica la estructura de los datos
@@ -295,7 +295,7 @@ const handleSeleccionarPersona = (persona) => {
   const fetchEstructuraFamiliar = async () => {
     try {
       const response = await fetch(
-        'http://74.50.68.87:4000/api/estructuraFamiliar/verEstructuraFamiliar',
+        'http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar',
       )
       const data = await response.json()
       console.log(data)
@@ -357,7 +357,7 @@ const handleSeleccionarPersona = (persona) => {
       descripcion: nuevaEstructura.descripcion,
     };
 
-    const response = await fetch('http://74.50.68.87:4000/api/estructuraFamiliar/crearEstructuraFamiliar', {
+    const response = await fetch('http://localhost:4000/api/estructuraFamiliar/crearEstructuraFamiliar', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -405,7 +405,7 @@ const handleUpdateEstructura = async () => {
 
 
   try {
-    const response = await fetch(`http://74.50.68.87:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
+    const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -461,7 +461,7 @@ const handleUpdateEstructura = async () => {
   const handleDeleteEstructura = async () => {
     try {
       const response = await fetch(
-        `http://74.50.68.87:4000/api/estructuraFamiliar/eliminarEstructuraFamiliar/${encodeURIComponent(estructuraToDelete.Cod_genealogia)}`,
+        `http://localhost:4000/api/estructuraFamiliar/eliminarEstructuraFamiliar/${encodeURIComponent(estructuraToDelete.Cod_genealogia)}`,
         {
           method: 'DELETE',
           headers: {
@@ -596,7 +596,7 @@ const handleSearch = (e) => {
 /*******************************FUNCION DE REPORTERIA*************************************/
 // Función para generar reporte PDF
 const ReporteEstructuraPDF = () => {
-  const doc = new jsPDF('l  ', 'mm', 'letter'); //
+  const doc = new jsPDF('p', 'mm', 'letter'); //
 
   if (!filteredRecords || filteredRecords.length === 0) {
     alert('No hay datos para exportar.');
@@ -638,9 +638,6 @@ const ReporteEstructuraPDF = () => {
       tipo_relacion: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
       descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
     }));
-
-    const pageHeight = doc.internal.pageSize.height;
-
 
     doc.autoTable({
       startY: 65,
@@ -1251,7 +1248,7 @@ return (
     </CForm>
   </CModalBody>
   <CModalFooter>
-         <CButton
+  <CButton
             style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
             onClick={() => setModalUpdateVisible(false)}
           >

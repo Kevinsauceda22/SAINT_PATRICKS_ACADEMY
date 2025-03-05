@@ -24,9 +24,7 @@ import InstitutosRoutes from './module/calificaciones/Routes/InstitutosRoutes.js
 import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRoutes.js';
 import bitacoraRoutes from './module/auth/bitacora_routes.js';
 import dashboard from './module/dashboard/dashboardRoutes.js';
-import parametroRoutes from './module/calificaciones/Routes/parametroRoutes.js';
-import ActividadAcademicaPadreRoutes from './module/calificaciones/Routes/actividades_AcademicasPadreRoutes.js'
-import seccionRoutes from './module/calificaciones/Routes/seccionesRoutes.js';
+
 
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
 
@@ -43,7 +41,6 @@ import personaRoutes from "./module/personas/Routes/personasRoutes.js";
 import seccionesRoutes from './module/matricula/Routes/seccionesRoutes.js';
 import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import gestion_academicaRoutes from './module/matricula/Routes/gestion_academicaRoutes.js';
-
 
 import personasRoutes from "./module/personas/personaRoutes.js";
 import nacionalidadRoutes from "./module/personas/Routes/nacionalidadRoutes.js";
@@ -68,9 +65,11 @@ import generoPersonaRoutes from './module/personas/Routes/generoPersonaRoutes.js
 import contactoRoutes from './module/personas/Routes/contactoRoutes.js';
 import tipoContactoRoutes from './module/personas/Routes/tipoContactoRoutes.js';
 
-
-
-
+// Agregar estas importaciones
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import avatarRoutes from './module/auth/usuario_routes.js';
 
 //importtacion de middleware
 
@@ -78,6 +77,9 @@ import tipoContactoRoutes from './module/personas/Routes/tipoContactoRoutes.js';
 dotenv.config(); 
 
 const app = express();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const init = async () => {
     try {
@@ -99,6 +101,12 @@ app.use(cors({
 }));
 
 app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes
+
+// Configurar multer para servir archivos estáticos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Registrar rutas de avatar - agregar antes de las demás rutas
+app.use('/api/avatar', avatarRoutes);
 
 // Autenticación y seguridad
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
@@ -157,9 +165,6 @@ app.use('/api/ponderacionCiclo',Ponderaciones_CiclosRoutes);
 app.use('/api/actividadesAcademicas', actividadesRoutes);
 //Ruta para asignar asignaturas a un grado
 app.use('/api/gradoAsignatura',gradoAsignaturaRoutes);
-app.use('/api/parametro',parametroRoutes);
-app.use('/api/actividades', ActividadAcademicaPadreRoutes); //vista padre de actividades
-app.use('/api/seccion', seccionRoutes);
 
 
 // Matrícula
@@ -172,6 +177,8 @@ app.use('/api/aula', aulasRoutes);
 app.use('/api', actividadesextraRoutes);
 // Rutas para el día
 app.use('/api/dia', diasRoutes);
+// Rutas para el historico procedencia
+app.use('/api/historial_proc', historicoprocRoutes);
 // Usar las rutas de solicitud
 app.use('/api/tipopersona', tipopersonaRoutes);
 // Usar las rutas de solicitud
@@ -194,13 +201,13 @@ app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 // Rutas para secciones
 app.use('/api/secciones', seccionesRoutes);
 // Rutas para secciones y asignaturas
-app.use('/api/secciones_asignaturas', secc_asigRoutes);
+app.use('/api/seccionesAsignaturas', secc_asigRoutes);
 // Rutas para Gestion academica
 app.use('/api/gestion_academica', gestion_academicaRoutes);
 
 // Rutas para manejar personas
 app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
-app.use('/api/historial_proc', historicoprocRoutes);
+
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 app.use('/api/nacionalidad', nacionalidadRoutes);
@@ -219,19 +226,6 @@ app.use('/api/caja', cajaRoutes);
 
 // Puerto de la aplicación en el que se ejecutará
 const PORT = process.env.PORT || 4000;
-
-
-
-app.use(cors()); // Habilitar CORS para conexiones desde el frontend
-app.use(express.json()); // Habilitar JSON en el backend
-
-(async () => {
-    await conectarDB(); // Conectar a MariaDB
-})();
-
-app.get('/api', (req, res) => {
-    res.json({ message: 'Backend funcionando correctamente' });
-});
 
 // Iniciar el servidor en el puerto especificado
 app.listen(PORT, () => {

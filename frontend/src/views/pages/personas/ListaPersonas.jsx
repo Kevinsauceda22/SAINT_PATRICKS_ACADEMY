@@ -13,7 +13,6 @@ import {
   cilDescription,
   cilInfo,
   cilContact,
-  cilHistory,
   cilPeople,
 } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
@@ -91,7 +90,7 @@ const ListaPersonas = () => {
   const [personaToDelete, setPersonaToDelete] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [recordsPerPage, setRecordsPerPage] = useState(10)
+  const [recordsPerPage, setRecordsPerPage] = useState(5)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   const [tipoPersona, setTipoPersona] = useState([])
@@ -155,11 +154,6 @@ const ListaPersonas = () => {
   const abrirContactoModal = (personas) => {
     console.log('Persona seleccionada en el componente origen:', personas); // Verifica que los datos estén presentes
     navigate('/contacto', { state: { personaSeleccionada: personas } });
-  };
-
-  const abrirHistoricoProcedenciaModal = (personas) => {
-    console.log('Persona seleccionada en el componente origen:', personas); // Verifica que los datos estén presentes
-    navigate('/ListaHistoricoProc', { state: { personaSeleccionada: personas } });
   };
 
 
@@ -511,7 +505,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
     const fetchPersonas = async () => {
       try {
-        const response = await fetch('http://74.50.68.87:4000/api/persona/verPersonas')
+        const response = await fetch('http://localhost:4000/api/persona/verPersonas')
         const data = await response.json()
   
         // Agrega un console.log aquí para ver los datos originales
@@ -533,7 +527,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
   const fetchNacionalidad = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/nacionalidad/verNacionalidades')
+      const response = await fetch('http://localhost:4000/api/nacionalidad/verNacionalidades')
       const data = await response.json()
       console.log('Datos recibidos de nacionalidad:', data)
       setNacionalidad(data)
@@ -544,7 +538,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
 const fetchMunicipio = async () => {
   try {
-    const response = await fetch('http://74.50.68.87:4000/api/persona/verMunicipios');
+    const response = await fetch('http://localhost:4000/api/persona/verMunicipios');
     const data = await response.json();
     console.log('Datos recibidos de la API:', data);
 
@@ -564,7 +558,7 @@ const fetchMunicipio = async () => {
 
   const fetchDepartamentos = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/persona/verDepartamentos')
+      const response = await fetch('http://localhost:4000/api/persona/verDepartamentos')
       const data = await response.json()
       console.log('Datos recibidos de departamentos:', data)
       setDepartamentos(data)
@@ -575,7 +569,7 @@ const fetchMunicipio = async () => {
 
   const fetchTipoPersona = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/persona/verTipoPersona')
+      const response = await fetch('http://localhost:4000/api/persona/verTipoPersona')
       const data = await response.json()
       console.log('Datos recibidos de tipo de persona:', data)
       setTipoPersona(data)
@@ -586,7 +580,7 @@ const fetchMunicipio = async () => {
 
   const fetchGeneros = async () => {
     try {
-      const response = await fetch('http://74.50.68.87:4000/api/persona/verGeneros')
+      const response = await fetch('http://localhost:4000/api/persona/verGeneros')
       const data = await response.json()
       console.log('Datos recibidos de géneros:', data)
       setGeneros(data)
@@ -720,7 +714,7 @@ const handleCreatePersona = async () => {
   });
 
   try {
-    const response = await fetch('http://74.50.68.87:4000/api/persona/crearPersona', {
+    const response = await fetch('http://localhost:4000/api/persona/crearPersona', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -871,7 +865,7 @@ const handleCreatePersona = async () => {
     });
   
     try {
-      const response = await fetch(`http://74.50.68.87:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`, {
+      const response = await fetch(`http://localhost:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -933,7 +927,7 @@ const handleCreatePersona = async () => {
   const handleDeletePersona = async () => {
     try {
       const response = await fetch(
-        `http://74.50.68.87:4000/api/persona/eliminarPersona/${encodeURIComponent(personaToDelete.cod_persona)}`,
+        `http://localhost:4000/api/persona/eliminarPersona/${encodeURIComponent(personaToDelete.cod_persona)}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -1366,23 +1360,13 @@ return (
                   >
                     <CIcon icon={cilPeople} />{' '}
                   </CButton>
-                    {
-                      tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo === 'ESTUDIANTE' ? (
-                        <CButton
-                          onClick={() => abrirHistoricoProcedenciaModal(persona)}
-                          style={{ marginLeft: '10px', backgroundColor: '#90EE90', borderColor: '#90EE90' }}
-                        >
-                          <CIcon icon={cilHistory} />
-                        </CButton>
-                      ) : (
-                        <CButton
-                          onClick={() => abrirContactoModal(persona)}
-                          style={{ marginLeft: '10px', backgroundColor: '#007bff', borderColor: '#007bff' }}
-                        >
-                          <CIcon icon={cilContact} />
-                        </CButton>
-                      )
-                    }
+                  <CButton
+                  color="primary"
+                  onClick={() => abrirContactoModal(persona)}
+                  style={{ marginLeft: '10px' }}
+                >
+                  <CIcon icon={cilContact} /> {/* Cambia esto por el ícono adecuado */}
+                </CButton>
                 </div>
               </CTableDataCell>
             </CTableRow>
@@ -3048,4 +3032,7 @@ return (
   )
 }
 export default ListaPersonas
+
+
+
 

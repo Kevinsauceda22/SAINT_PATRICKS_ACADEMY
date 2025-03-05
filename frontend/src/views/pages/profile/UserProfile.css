@@ -41,7 +41,6 @@ body {
   margin: 2rem auto;
   padding: 1.5rem;
 }
-
 /* Profile Header */
 .profile-header {
   background: var(--background);
@@ -52,28 +51,62 @@ body {
   display: flex;
   gap: 2rem;
   align-items: flex-start;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .profile-avatar {
   position: relative;
   flex-shrink: 0;
-}
-
-.avatar-image {
+  overflow: hidden;
   width: 128px;
   height: 128px;
   border-radius: var(--radius-full);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background-color: var(--surface);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.profile-avatar:hover {
+  transform: scale(1.05);  /* Efecto zoom al pasar el cursor */
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2); /* Sombras más pronunciadas */
+}
+
+.avatar-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
   object-fit: cover;
+  background-color: #f5f5f5;
+  object-position: center;
   border: 4px solid var(--primary-light);
   background: var(--surface);
+  transition: opacity 0.9s ease-in-out;
+}
+
+.avatar-image[src*="uploads"] {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Prevenir cacheo de imágenes */
+.avatar-image {
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  -ms-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.avatar-image.loaded {
+  opacity: 1;  /* Imagen completamente visible cuando cargada */
 }
 
 .avatar-edit-button {
   position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 32px;
-  height: 32px;
+  bottom: 5px;
+  right: 5px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-full);
   background: var(--primary);
   border: 2px solid var(--background);
@@ -83,11 +116,23 @@ body {
   justify-content: center;
   cursor: pointer;
   box-shadow: var(--shadow-sm);
-  transition: background-color 0.2s;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .avatar-edit-button:hover {
   background: var(--primary-hover);
+  transform: scale(1.1); /* Efecto de aumento al pasar el cursor */
+}
+
+/* Estilo del icono dentro del botón */
+.avatar-edit-button i {
+  font-size: 16px;
+  margin-left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.avatar-edit-button:hover i {
+  transform: rotate(15deg); /* Rotación del icono al pasar el cursor */
 }
 
 .profile-info {
@@ -435,4 +480,182 @@ body {
   gap: 2rem;
   animation: slideUp 0.3s ease;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); /* Mantener la sombra actual */
+}
+
+/* Estilos generales para todos los inputs */
+input, select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  margin-bottom: 15px;
+  box-sizing: border-box;
+  color: #333;
+}
+
+/* Estilo al enfocar el input */
+input:focus, select:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.2);
+}
+
+/* Estilo específico para el input de fecha */
+input[type="date"] {
+  padding: 11px 15px;
+  cursor: pointer;
+}
+
+/* Estilo para el desplegable de género */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  padding-right: 40px;
+  cursor: pointer;
+}
+
+/* Estilos para etiquetas de los campos */
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #444;
+  font-size: 14px;
+}
+
+/* Estilos para los contenedores de los inputs */
+.input-container {
+  margin-bottom: 20px;
+  position: relative;
+}
+
+/* Estilo para campos obligatorios */
+.required label::after {
+  content: " *";
+  color: #e53935;
+}
+
+/* Estilo para mensajes de error */
+.error-message {
+  color: #e53935;
+  font-size: 12px;
+  margin-top: 5px;
+  display: none;
+}
+
+/* Estilo para inputs con error */
+.has-error input, .has-error select {
+  border-color: #e53935;
+}
+
+/* Estilos para botones */
+.button {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 14px;
+}
+
+.primary-button {
+  background-color: #2196F3;
+  color: white;
+}
+
+.secondary-button {
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+
+
+.change-photo-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.image-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 600px;
+  outline: none;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-preview-container {
+  width: 100%;
+  height: 400px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.image-preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.image-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.image-actions button,
+.image-actions label {
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

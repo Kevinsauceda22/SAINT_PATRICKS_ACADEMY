@@ -304,6 +304,7 @@ export const insertarSolicitud = async (req, res) => {
 };
 
 
+
 export const actualizarEstadoCitas = async (req, res) => {
     try {
         const query = 'CALL actualizar_estado_citas()'; // Llama al procedimiento almacenado para actualizar los estados

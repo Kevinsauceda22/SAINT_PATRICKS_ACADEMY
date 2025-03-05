@@ -56,70 +56,83 @@ const Login = () => {
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        const response = await axios.post('http://74.50.68.87:4000/api/usuarios/login', {
+        const response = await axios.post('http://localhost:4000/api/usuarios/login', {
           identificador: formData.identificador,
-          contraseña_usuario: formData.contraseña_usuario,
-          twoFactorCode: formData.twoFactorCode
+          contraseña_usuario: formData.contraseña_usuario
         });
 
-        console.log('Respuesta completa del login:', response.data);
-
         if (response.data.token) {
-          // Guardar token y datos del usuario
+          // Guardar token y proceder con el login exitoso
           localStorage.setItem('token', response.data.token);
-          
-          // Decodificar el token para obtener el cod_usuario
           const decodedToken = jwt_decode.jwtDecode(response.data.token);
-          console.log('Token decodificado:', decodedToken);
 
           // Registrar en bitácora
           try {
-            // Asumiendo que el cod_usuario está en el token
-            if (!decodedToken.cod_usuario) {
-              console.error('Token decodificado:', decodedToken);
-              throw new Error('No se pudo obtener el código de usuario del token');
-            }
-
-            // Intentar registro en bitácora
-            await axios.post('http://74.50.68.87:4000/api/bitacora/registro', {
+            await axios.post('http://localhost:4000/api/bitacora/registro', {
               cod_usuario: decodedToken.cod_usuario,
               cod_objeto: 76,
               accion: 'LOGIN',
               descripcion: `Inicio de sesión exitoso del usuario: ${formData.identificador}`
             }, {
-              headers: {
-                'Authorization': `Bearer ${response.data.token}`
-              }
+              headers: { 'Authorization': `Bearer ${response.data.token}` }
             });
-
-            console.log('Registro en bitácora exitoso');
           } catch (bitacoraError) {
             console.error('Error al registrar en bitácora:', bitacoraError);
-            console.error('Token decodificado:', decodedToken);
           }
 
-          const isTwoFactorEnabled = response.data.is_two_factor_enabled === 1;
-          console.log('Estado 2FA:', isTwoFactorEnabled);
-
-          if (isTwoFactorEnabled) {
+          // Manejar autenticación de dos factores
+          if (response.data.is_two_factor_enabled === 1) {
             localStorage.setItem('temp_identificador', formData.identificador);
             await handleTransition('/2fa');
           } else {
             await handleTransition('/dashboard');
-            if (response.data.is_two_factor_enabled === 1) {
-              toast.info('Tu cuenta tiene autenticación de dos factores activada. Puedes configurarla en tu perfil.', {
-                position: 'top-right',
-                autoClose: 5000,
-              });
-            }
           }
         }
       } catch (error) {
         console.error('Error en el login:', error);
-        toast.error(error.response?.data?.mensaje || 'Error en el inicio de sesión', {
-          position: 'top-center',
-          autoClose: 5000,
-        });
+        
+        // Manejar diferentes tipos de errores
+        if (error.response) {
+          const { status, data } = error.response;
+          
+          switch (status) {
+            case 403: // Cuenta bloqueada
+              toast.error(data.mensaje, {
+                position: 'top-center',
+                autoClose: 8000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+              });
+              break;
+              
+            case 401: // Credenciales incorrectas
+              toast.error(data.mensaje, {
+                position: 'top-center',
+                autoClose: 5000
+              });
+              // Mostrar intentos restantes si están disponibles
+              if (data.intentosRestantes !== undefined) {
+                toast.warning(`Intentos restantes: ${data.intentosRestantes}`, {
+                  position: 'top-center',
+                  autoClose: 5000
+                });
+              }
+              break;
+              
+            default:
+              toast.error('Error en el inicio de sesión. Por favor, intente nuevamente.', {
+                position: 'top-center',
+                autoClose: 5000
+              });
+          }
+        } else {
+          toast.error('Error de conexión. Por favor, verifique su conexión a internet.', {
+            position: 'top-center',
+            autoClose: 5000
+          });
+        }
       } finally {
         setIsLoading(false);
       }

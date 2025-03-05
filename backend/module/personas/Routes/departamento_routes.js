@@ -6,7 +6,7 @@ import {
   editarDepartamento,
   eliminarDepartamento
   
-} from '../controllers/departamentos_controler.js';
+} from '../Controllers/departamentos_controler.js';
 
 import {
     obtenerMunicipios,
@@ -14,7 +14,7 @@ import {
     editarMunicipio,
     eliminarMunicipio,
     obtenerMunicipiosPorDepartamento
-  } from '../controllers/municipio_controller.js';
+  } from '../Controllers/municipio_controller.js';
 
 const router = express.Router();
 

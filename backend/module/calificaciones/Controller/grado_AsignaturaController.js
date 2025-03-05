@@ -41,25 +41,24 @@ export const obtenerGradosAsignaturasOrden = async (req, res) => {
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+
 export const crearGradoAsignatura = async (req, res) => {
     const { Cod_grado, Cod_asignatura } = req.body;
 
     try {
-        // Ejecuta el procedimiento almacenado
         await pool.query('CALL insert_grados_Asignaturas(?, ?)', [Cod_grado, Cod_asignatura]);
-        // Responde con éxito si la consulta se ejecuta correctamente
-        return res.status(201).json({ Mensaje: 'Asignatura asignada exitosamente' });
+        res.status(201).json({ Mensaje: 'Asignatura asignada exitosamente' });
     } catch (error) {
         console.error('Error al asignar una asignatura dentro del grado:', error);
-
-        // Si el error es un SIGNAL personalizado
-        if (error.sqlState === '45000') {
-            return res.status(400).json({ Mensaje: 'La asignatura ya está asignada a este grado.' });
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        if (error.sqlState === '45000') { // Manejar el error lanzado por SIGNAL
+            res.status(400).json({ Mensaje: 'La asignatura ya está asignada a este grado.' });
+        } else {
+            res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
         }
-
-        // Respuesta genérica para otros errores
-        return res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
-    }}
+    }
+};
 
 
 export const actualizarGradoAsignatura = async (req, res) => {

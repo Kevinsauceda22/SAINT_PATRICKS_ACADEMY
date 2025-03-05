@@ -6,7 +6,7 @@ import {
     eliminarMunicipio,
     obtenerMunicipiosPorDepartamento
 
-} from '../Controllers/municipio_controller.js'; // Asegúrate de que esta ruta sea correcta
+} from '../Controllers/municipioController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
 

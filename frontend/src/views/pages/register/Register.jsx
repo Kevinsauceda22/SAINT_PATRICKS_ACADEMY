@@ -86,6 +86,7 @@ const ParentProfileForm = () => {
           setLoading(false);
           return;
         }
+
         const decoded = jwtDecode(token);
         const cod_usuario = decoded.cod_usuario;
         const config = {
@@ -93,11 +94,13 @@ const ParentProfileForm = () => {
             Authorization: `Bearer ${token}`,
           },
         };
+
         // Cargar datos pre-registrados
         const datosResponse = await axios.get(
-          `http://74.50.68.87:4000/api/usuarios/padre/datos-preregistro/${cod_usuario}`,
+          `http://localhost:4000/api/usuarios/padre/datos-preregistro/${cod_usuario}`,
           config
         );
+
         if (datosResponse.data.success) {
           const preloadedData = {
             Nombre: datosResponse.data.datos.nombre,
@@ -109,11 +112,13 @@ const ParentProfileForm = () => {
             ...preloadedData,
           }));
         }
+
         // Cargar departamentos
         const departamentosResponse = await axios.get(
-          'http://74.50.68.87:4000/api/departamento/departamentos',
+          'http://localhost:4000/api/departamento/departamentos',
           config
         );
+
         if (departamentosResponse.data) {
           const departamentosUnicos = departamentosResponse.data.reduce((acc, current) => {
             const x = acc.find(item => item.cod_departamento === current.cod_departamento);
@@ -122,10 +127,12 @@ const ParentProfileForm = () => {
             }
             return acc;
           }, []);
+
           setDepartamentos(departamentosUnicos.sort((a, b) => 
             a.nombre_departamento.localeCompare(b.nombre_departamento)
           ));
         }
+
       } catch (error) {
         console.error('Error al cargar datos iniciales:', error);
         setErrorMessage(
@@ -136,6 +143,7 @@ const ParentProfileForm = () => {
         setLoading(false);
       }
     };
+
     cargarDatosIniciales();
   }, []);
 
@@ -150,7 +158,7 @@ const ParentProfileForm = () => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(
-          `http://74.50.68.87:4000/api/departamento/municipios/${formData.cod_departamento}`,
+          `http://localhost:4000/api/departamento/municipios/${formData.cod_departamento}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -226,7 +234,7 @@ const handleSubmit = async (e) => {
     const cod_usuario = decoded.cod_usuario;
 
     const response = await axios.put(
-      `http://74.50.68.87:4000/api/usuarios/padre/completar-perfil/${cod_usuario}`,
+      `http://localhost:4000/api/usuarios/padre/completar-perfil/${cod_usuario}`,
       formData,
       {
         headers: {
@@ -256,6 +264,7 @@ const handleSubmit = async (e) => {
     setLoading(false);
   }
 };
+
 if (loading) {
   return <div className="loading-spinner">Cargando...</div>;
 }

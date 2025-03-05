@@ -37,7 +37,7 @@ const AppHeaderDropdown = () => {
 
     try {
       await axios.put(
-        `http://74.50.68.87:4000/api/usuarios/actualizarOtp/${cod_usuario}`,
+        `http://localhost:4000/api/usuarios/actualizarOtp/${cod_usuario}`,
         { otp_verified: 0 },
         config
       );
@@ -54,7 +54,7 @@ const AppHeaderDropdown = () => {
       const decodedToken = jwtDecode(token);
       
       await axios.post(
-        'http://74.50.68.87:4000/api/bitacora/registro',
+        'http://localhost:4000/api/bitacora/registro',
         {
           cod_usuario: decodedToken.cod_usuario,
           cod_objeto: 76, // Mismo código de objeto que el login
@@ -104,7 +104,10 @@ const AppHeaderDropdown = () => {
           Perfil
         </CDropdownItem>
 
-   
+        <CDropdownItem href="/MisPagos">
+          <CIcon icon={cilCreditCard} className="me-2" />
+          Mis Pagos
+        </CDropdownItem>
 
         <CDropdownDivider />
 

@@ -6,11 +6,6 @@ import logo from 'src/assets/brand/logo_saint_patrick.png'
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
-
-//necesarios abajo
-import axios from 'axios';
-import * as jwt_decode from 'jwt-decode';
-
 import {
     CTable,
     CTableHead,
@@ -63,25 +58,11 @@ const ListaPonderacionesCiclos = () => {
         fetchCiclos();
         fetchPonderaciones();
         fetchGrados();
-        const token = localStorage.getItem('token');
-        
-        if (token) {
-          try {
-            const decodedToken = jwt_decode(token); // Decodificamos el token
-            console.log('Token decodificado:', decodedToken);
-            
-            // Realiza las acciones adicionales que necesites, como verificar permisos o roles
-          } catch (error) {
-            console.error('Error al decodificar el token:', error);
-          }
-        }
-      }, []); // Arreglo de dependencias vacío, solo se ejecuta al montar el componente
-    
-    
+    }, []);
 
     const fetchCiclos = async () => {
         try {
-            const response = await fetch('http://74.50.68.87:4000/api/ciclos/verCiclos');
+            const response = await fetch('http://localhost:4000/api/ciclos/verCiclos');
             const data = await response.json();
             setCiclos(data);
         } catch (error) {
@@ -99,7 +80,7 @@ const ListaPonderacionesCiclos = () => {
 
     const fetchPonderaciones = async () => {
         try {
-            const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/verPonderaciones');
+            const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
             const data = await response.json();
             setPonderaciones(data);
         } catch (error) {
@@ -116,7 +97,7 @@ const ListaPonderacionesCiclos = () => {
     const fetchPonderacionCiclo = async (codCiclo) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://74.50.68.87:4000/api/ponderacionCiclo/verPonderacionesCiclos/${codCiclo}`);
+            const response = await fetch(`http://localhost:4000/api/ponderacionCiclo/verPonderacionesCiclos/${codCiclo}`);
             const data = await response.json();
             setPonderacionesCiclos(data);
             setSelectedCiclo(codCiclo); // Guardar el ciclo seleccionado
@@ -130,7 +111,7 @@ const ListaPonderacionesCiclos = () => {
 
     const fetchGrados = async () => {
         try {
-            const response = await fetch('http://74.50.68.87:4000/api/grados/verGrados');
+            const response = await fetch('http://localhost:4000/api/grados/verGrados');
             const data = await response.json();
             // Asignar un índice original basado en el orden en la base de datos
             const dataWithIndex = data.map((grado, index) => ({
@@ -163,165 +144,65 @@ const ListaPonderacionesCiclos = () => {
 
     const asignarPonderacion = async () => {
         if (!nuevaponderaciones || nuevaponderaciones === "") {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Por favor seleccione una ponderación',
-            confirmButtonText: 'Aceptar' // Texto del botón de confirmación
-          });
-          return false;
+            Swal.fire('Error', 'Por favor seleccione una ponderación', 'error');
+            return false;
         }
-      
-        // Verificar si el valor es un número y no una cadena vacía
+
+        // Aquí podrías también verificar si el valor es un número y no una cadena vacía
         if (isNaN(nuevaponderaciones) || nuevaponderaciones <= 0) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'La ponderación seleccionada no es válida',
-            confirmButtonText: 'Aceptar' // Texto del botón de confirmación
-          });
-          return false;
+            Swal.fire('Error', 'La ponderación seleccionada no es válida.', 'error');
+            return false;
         }
-      
+
         if (isNaN(nuevaponderacionesciclos) || nuevaponderacionesciclos <= 0.5 || nuevaponderacionesciclos > 100) {
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'El puntaje debe ser un número entre 0.5 y 100',
-            confirmButtonText: 'Aceptar' // Texto del botón de confirmación
-          });
-          return false;
+            Swal.fire('Error', 'El puntaje debe ser un número entre 0.1 y 100', 'error');
+            return false;
         }
-      
+
         try {
-          // 1. Verificar si obtenemos el token correctamente
-          const token = localStorage.getItem('token');
-          console.log('Token obtenido:', token);  // Depuración
-          if (!token) {
-            Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-            return;
-          }
-      
-          // 2. Realizar la solicitud para asignar la ponderación
-          const response = await fetch('http://74.50.68.87:4000/api/ponderacionCiclo/crearPonderacionesCiclos', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,  // Pasar el token en los encabezados
-            },
-            body: JSON.stringify({
-              Cod_ponderacion: nuevaponderaciones,
-              Cod_ciclo: cicloParaAsignar.Cod_ciclo,
-              Valor: nuevaponderacionesciclos
-            }),
-          });
-      
-          if (response.ok) {
-            // 3. Decodificar el token para obtener el código de usuario
-            const decodedToken = jwt_decode.jwtDecode(token);
-            console.log('Token decodificado:', decodedToken);  // Depuración
-      
-            // Verificar si el código de usuario está presente en el token
-            if (!decodedToken.cod_usuario) {
-              console.error('No se pudo obtener el código de usuario del token');
-              throw new Error('No se pudo obtener el código de usuario del token');
-            }
-      
-            // 4. Registrar la acción en la bitácora
-            const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha asignado una ponderación al ciclo: ${cicloParaAsignar.Nombre_ciclo}`;
-      
-            const bitacoraResponse = await axios.post('http://74.50.68.87:4000/api/bitacora/registro', 
-              {
-                cod_usuario: decodedToken.cod_usuario,
-                cod_objeto: 89 ,  // Código de objeto para la acción de asignar ponderación a un ciclo
-                accion: 'INSERT',
-                descripcion: descripcion,
-              },
-              {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                },
-              }
-            );
-      
-            console.log('Respuesta de registro en bitácora:', bitacoraResponse);  // Verifica la respuesta
-      
-            if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
-              // 5. Acciones posteriores si la asignación es exitosa
-              Swal.fire({
-                icon: 'success',
-                title: '¡Éxito!',
-                text: 'Ponderación asignada correctamente',
-                confirmButtonText: 'Aceptar',
-              });
-              setAssignModalVisible(false);
-              setnuevaPonderaciones('');
-              setnuevaPonderacionesCiclos('');
-      
-              // Recargar las ponderaciones para el ciclo seleccionado
-              await fetchPonderacionCiclo(cicloParaAsignar.Cod_ciclo);
-      
-              // Abrir el modal de información con datos actualizados
-              setModalVisible(true);
-              
+            const response = await fetch('http://localhost:4000/api/ponderacionCiclo/crearPonderacionesCiclos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    Cod_ponderacion: nuevaponderaciones,
+                    Cod_ciclo: cicloParaAsignar.Cod_ciclo,
+                    Valor: nuevaponderacionesciclos
+                }),
+            });
+
+            if (response.ok) {
+                Swal.fire('¡Éxito!', 'Ponderación asignada correctamente', 'success');
+                setAssignModalVisible(false);
+                setnuevaPonderaciones('');
+                setnuevaPonderacionesCiclos('');
+                // Recargar las ponderaciones para el ciclo seleccionado
+                await fetchPonderacionCiclo(cicloParaAsignar.Cod_ciclo);
+
+                // Abrir el modal de información con datos actualizados
+                setModalVisible(true);
+
+                Swal.fire('¡Éxito!', 'Se ha asignado la ponderación correctamente', 'success');
             } else {
-              Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+                const errorData = await response.json();
+                console.error('Error al asignar ponderación:', errorData);
+                // Aquí ya no necesitas comprobar errorData.sqlMessage porque ahora solo envía Mensaje genérico
+                if (errorData.Mensaje) {
+                    Swal.fire('Error', errorData.Mensaje, 'error'); // Esto mostrará el mensaje genérico
+                } else {
+                    Swal.fire('Error', 'Hubo un problema al asignar la ponderación', 'error');
+                }
             }
-          } else {
-            const errorData = await response.json();
-            console.error('Error al asignar ponderación:', errorData);
-      
-            if (errorData.Mensaje) {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: errorData.Mensaje,
-                confirmButtonText: 'Aceptar'
-              });
-            } else {
-              Swal.fire({
-                icon: 'error',
-                title: 'Error',
-                text: 'Hubo un problema al asignar la ponderación',
-                confirmButtonText: 'Aceptar' 
-              });
-            }
-          }
         } catch (error) {
-          console.error('Error en la solicitud:', error);
-          Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'Hubo un problema al asignar la ponderación',
-            confirmButtonText: 'Aceptar' 
-          });
+            console.error('Error en la solicitud:', error);
+            Swal.fire('Error', 'Hubo un problema al conectar con el servidor', 'error');
         }
-      };
+    };
 
-
-      const handleSaveUpdate = async (ponderacionCiclo) => {
+    const handleSaveUpdate = async (ponderacionCiclo) => {
         try {
-            // Obtener el token del almacenamiento local
-            const token = localStorage.getItem('token');
-            if (!token) {
-                Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-                return;
-            }
-    
-            // Decodificar el token para obtener el código de usuario
-            const decodedToken = jwt_decode.jwtDecode(token);
-            if (!decodedToken.cod_usuario) {
-                console.error('No se pudo obtener el código de usuario del token');
-                throw new Error('No se pudo obtener el código de usuario del token');
-            }
-    
-            // Realizar la actualización de la ponderación
-            const response = await fetch('http://74.50.68.87:4000/api/ponderacionCiclo/actualizarPonderacionesCiclos', {
+            const response = await fetch('http://localhost:4000/api/ponderacionCiclo/actualizarPonderacionesCiclos', {
                 method: 'PUT',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`, // Pasar el token en los encabezados
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     Cod_ponderacion_ciclo: ponderacionCiclo.Cod_ponderacion_ciclo,
                     Cod_ponderacion: editedData.Cod_ponderacion || ponderacionCiclo.Cod_ponderacion,
@@ -329,57 +210,23 @@ const ListaPonderacionesCiclos = () => {
                     Valor: editedData.Valor || ponderacionCiclo.Valor,
                 }),
             });
-    
+
             if (response.ok) {
-                // Registrar la acción en la bitácora
-                const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la ponderación al ciclo: ${getCicloName(ponderacionCiclo.Cod_ciclo)}`;
-    
-                const bitacoraResponse = await axios.post('http://74.50.68.87:4000/api/bitacora/registro', 
-                    {
-                        cod_usuario: decodedToken.cod_usuario,
-                        cod_objeto: 89,  // Código de objeto para la acción de actualizar ponderación ciclo
-                        accion: 'UPDATE',
-                        descripcion: descripcion,
-                    },
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                        },
-                    }
-                );
-    
-                console.log('Respuesta de registro en bitácora:', bitacoraResponse);
-    
-                // Si la acción en la bitácora fue exitosa
-                if (bitacoraResponse.status >= 200 && bitacoraResponse.status < 300) {
-                    console.log('Registro en bitácora exitoso');
-                } else {
-                    // Mostrar error si no se pudo registrar la acción en la bitácora
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'No se pudo registrar la acción en la bitácora',
-                        confirmButtonText: 'Aceptar',
-                    });
-                }
-                // Resetear el estado después de la actualización
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Actualización exitosa',
+                    text: 'Datos actualizados correctamente',
+                });
                 setEditIndex(null); // Salir del modo de edición
                 setModalVisible(false); // Ocultar el modal
                 setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
                 reseteditdata(); // Resetear los datos editados
-                Swal.fire({
-                    icon: 'success',
-                    title: '¡Éxito!',
-                    text: 'La ponderación se ha actualizado correctamente',
-                    confirmButtonText: 'Aceptar',
-                });
+                // Aquí puedes volver a cargar las ponderaciones si es necesario
             } else {
-                // Si hubo error al actualizar la ponderación
                 await Swal.fire({
                     icon: 'error',
                     title: 'Error',
                     text: 'Error al actualizar la ponderación',
-                    confirmButtonText: 'Aceptar',
                 });
             }
         } catch (error) {
@@ -388,12 +235,9 @@ const ListaPonderacionesCiclos = () => {
                 icon: 'error',
                 title: 'Error',
                 text: 'Ocurrió un error inesperado',
-                confirmButtonText: 'Aceptar',
             });
         }
     };
-    
-    
 
     const generarReporteCiclosPDF = () => {
          // Validar que haya datos en la tabla
@@ -402,7 +246,7 @@ const ListaPonderacionesCiclos = () => {
             icon: 'info',
             title: 'Tabla vacía',
             text: 'No hay datos disponibles para generar el reporte.',
-            confirmButtonText: 'Aceptar',
+            confirmButtonText: 'Entendido',
             });
             return; // Salir de la función si no hay datos
         }
@@ -479,27 +323,17 @@ const ListaPonderacionesCiclos = () => {
                   },
                 alternateRowStyles: { fillColor: [240, 248, 255] },
                 didDrawPage: (data) => {
+                    // Pie de página
                     const currentDate = new Date();
                     const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
                     doc.setFontSize(10);
                     doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
                     doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+                    const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+                    doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+                    pageNumber += 1; // Incrementar el número de página
+                  },
+            });
 
             // Abrir el PDF
             window.open(doc.output('bloburl'), '_blank');
@@ -518,7 +352,7 @@ const ListaPonderacionesCiclos = () => {
             icon: 'info',
             title: 'Tabla vacía',
             text: 'No hay datos disponibles para generar el reporte.',
-            confirmButtonText: 'Aceptar',
+            confirmButtonText: 'Entendido',
             });
             return; // Salir de la función si no hay datos
         }
@@ -603,28 +437,18 @@ const ListaPonderacionesCiclos = () => {
                       },
                     alternateRowStyles: { fillColor: [240, 248, 255] },
                     didDrawPage: (data) => {
+                        // Pie de página
                         const currentDate = new Date();
                         const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                        const pageHeight = doc.internal.pageSize.height; // Altura de la página
                         doc.setFontSize(10);
                         doc.setTextColor(100);
-                        // Fecha y hora en el pie de página
                         doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                    },
-                    });
-                    
-                    // Asegúrate de calcular el total de páginas al final
-                    const totalPages = doc.internal.getNumberOfPages();
-                    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                    
-                    for (let i = 1; i <= totalPages; i++) {
-                        doc.setPage(i); // Ve a cada página
-                        doc.setTextColor(100);
-                        const text = `Página ${i} de ${totalPages}`;
-                        // Agrega número de página en la posición correcta
-                        doc.text(text, pageWidth - 30, pageHeight - 10);
-                    }
-
+                        const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
+                        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
+                        pageNumber += 1; // Incrementar el número de página
+                      },
+                });
+        
                 // Agregar el total al final del reporte
                 const totalPonderaciones = calculateTotal(); // Calcula el total de los valores
                 yPosition = doc.lastAutoTable.finalY + 11; // Posición debajo de la tabla
@@ -644,16 +468,6 @@ const ListaPonderacionesCiclos = () => {
         
 
         const handleReporteExcelClick = () => {
-             // Validar que haya datos en la tabla
-            if (!ponderacionesciclos || ponderacionesciclos.length === 0) {
-                Swal.fire({
-                icon: 'info',
-                title: 'Tabla vacía',
-                text: 'No hay datos disponibles para generar el reporte excel.',
-                confirmButtonText: 'Aceptar',
-                });
-                return; // Salir de la función si no hay datos
-            }
             // Encabezados de la tabla
             const encabezados = [
                 ["Saint Patrick Academy"],
@@ -714,7 +528,7 @@ const ListaPonderacionesCiclos = () => {
         icon: 'info',
         title: 'Tabla vacía',
         text: 'No hay datos disponibles para generar el reporte excel.',
-        confirmButtonText: 'Aceptar',
+        confirmButtonText: 'Entendido',
         });
         return; // Salir de la función si no hay datos
     }
@@ -796,7 +610,6 @@ const ListaPonderacionesCiclos = () => {
               icon: 'warning',
               title: 'Espacios múltiples',
               text: 'No se permite más de un espacio entre palabras.',
-               confirmButtonText: 'Aceptar'
             });
             value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
           }
@@ -806,7 +619,6 @@ const ListaPonderacionesCiclos = () => {
                 icon: 'warning',
                 title: 'Caracteres no permitidos',
                 text: 'Solo se permiten letras y espacios.',
-                 confirmButtonText: 'Aceptar'
             });
             return; // Detener si la entrada no es válida
         }
@@ -821,7 +633,6 @@ const ListaPonderacionesCiclos = () => {
             icon: 'warning',
             title: 'Repetición de letras',
             text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
-             confirmButtonText: 'Aceptar'
           });
           return;
         }
@@ -1020,7 +831,7 @@ const ListaPonderacionesCiclos = () => {
                 onClick={() => fetchPonderacionCiclo(ciclo.Cod_ciclo)}
                 onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
                 onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
-                style={{backgroundColor: '#F9B64E', color: '#5C4044', fontSize: '1rem' }} >
+                style={{backgroundColor: '#F9B64E',fontSize: '0.85rem', color: '#5C4044', fontSize: '1rem' }} >
                 <CIcon icon={cilPen} />
               </CButton>
               </div>
@@ -1107,41 +918,27 @@ const ListaPonderacionesCiclos = () => {
                                                 <CTableDataCell>{getCicloName(ponderacionCiclo.Cod_ciclo)}</CTableDataCell>
 
                                                 <CTableDataCell>
-                                                {editIndex === index ? (
-                                                <input
-                                                    type="number"
-                                                    min={0} // Permite al usuario ingresar 0, pero no es el límite final válido
-                                                    max={100}
-                                                    step="0.05"
-                                                    maxLength={11}
-                                                    value={editedData.Valor || ''}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value; // Captura el valor como cadena
-                                                        // Permite actualizar temporalmente cualquier número entre 0 y 100
-                                                        if (value === '' || (!isNaN(value) && parseFloat(value) >= 0 && parseFloat(value) <= 100)) {
-                                                            setEditedData({ ...editedData, Valor: value });
-                                                        }
-                                                    }}
-                                                    onBlur={(e) => {
-                                                        const value = parseFloat(e.target.value); // Convierte el valor a número
-                                                        if (isNaN(value) || value < 0.05 || value > 100) {
-                                                            // Muestra error si está fuera del rango permitido final
-                                                            Swal.fire('Error', 'El valor debe estar entre 0.05 y 100', 'error');
-                                                            // Restablece a un valor válido o vacío
-                                                            setEditedData({ ...editedData, Valor: '' });
-                                                        } else {
-                                                            // Guarda el valor válido
-                                                            setEditedData({ ...editedData, Valor: value });
-                                                        }
-                                                    }}
-                                                />
-                                            ) : (
-                                                `${ponderacionCiclo.Valor}%`
-                                            )}
-
-                                            </CTableDataCell>
-
-
+                                                    {editIndex === index ? (
+                                                        <input
+                                                            type="number"
+                                                            min={0.05}
+                                                            max={100}
+                                                            step="0.05"
+                                                            maxLength={11}
+                                                            value={editedData.Valor || ponderacionCiclo.Valor}
+                                                            onChange={(e) => {
+                                                                const value = parseFloat(e.target.value);
+                                                                if (!isNaN(value) && value >= 0.05 && value <= 100) {
+                                                                    setEditedData({ ...editedData, Valor: value });
+                                                                } else {
+                                                                    Swal.fire('Error', 'El valor debe estar entre 0.05 y 100', 'error');
+                                                                }
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        `${ponderacionCiclo.Valor}%`
+                                                    )}
+                                                </CTableDataCell>
                                                 <CTableDataCell>
                                                     {editIndex === index ? (
                                                         <div style={{ display: 'flex', gap: '8px' }}>
@@ -1242,7 +1039,7 @@ const ListaPonderacionesCiclos = () => {
 
             {/* Modal para asignar ponderación */}
             <CModal visible={assignModalVisible} backdrop="static">
-                <CModalHeader onClick={() => {setAssignModalVisible(false);setnuevaPonderaciones(''); setnuevaPonderacionesCiclos(''); }}>
+                <CModalHeader onClick={() => setAssignModalVisible(false)}>
                     <CModalTitle>Asignar Ponderación a: <strong>{cicloParaAsignar?.Nombre_ciclo}</strong></CModalTitle>
                 </CModalHeader>
                 <CModalBody>
@@ -1267,40 +1064,29 @@ const ListaPonderacionesCiclos = () => {
                             min={0.5}
                             max={100}
                             step="0.5"
-                            value={nuevaponderacionesciclos || ''} // Permitir que el campo esté vacío inicialmente
+                            value={nuevaponderacionesciclos}
                             onChange={(e) => {
-                                const value = e.target.value; // Tomar el valor como cadena
-                                setnuevaPonderacionesCiclos(value); // Guardar temporalmente como cadena
-                            }}
-                            onBlur={(e) => {
-                                const value = parseFloat(e.target.value); // Convertir a número al salir del campo
-                                if (isNaN(value) || value < 0.5) {
-                                    setnuevaPonderacionesCiclos(0.5); // Establecer 0.5 como valor mínimo válido
+                                const value = parseFloat(e.target.value); // Convertir a número decimal
+                                if (!isNaN(value) && value >= 0.5 && value <= 100) {
+                                    setnuevaPonderacionesCiclos(value); // Almacenar el valor directamente
+                                } else if (value < 0.5) {
+                                    setnuevaPonderacionesCiclos(0.5); // Establecer a 0.5 si se intenta ingresar un valor menor
                                 } else if (value > 100) {
-                                    setnuevaPonderacionesCiclos(100); // Establecer 100 como valor máximo válido
-                                } else {
-                                    setnuevaPonderacionesCiclos(value); // Guardar el valor final válido
+                                    setnuevaPonderacionesCiclos(100); // Establecer a 100 si se intenta ingresar un valor mayor
                                 }
                             }}
                             onKeyDown={(e) => {
-                                // Permitir números, punto decimal, backspace, delete y teclas de flecha
-                                if (
-                                    !/[0-9.]/.test(e.key) &&
-                                    e.key !== 'Backspace' &&
-                                    e.key !== 'Delete' &&
-                                    e.key !== 'ArrowLeft' &&
-                                    e.key !== 'ArrowRight'
-                                ) {
+                                // Permitir solo números, backspace, delete y teclas de flecha
+                                if (!/[0-9.]/.test(e.key) && e.key !== "Backspace" && e.key !== "Delete" && e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
                                     e.preventDefault();
                                 }
                             }}
                             className="form-control"
                         />
-
                     </div>
                 </CModalBody>
                 <CModalFooter>
-                    <CButton color="secondary" style={{ fontSize: '0.85rem', cursor: 'pointer' }} onClick={() => {setAssignModalVisible(false);setnuevaPonderaciones(''); setnuevaPonderacionesCiclos(''); }}>Cancelar</CButton>
+                    <CButton color="secondary" style={{ fontSize: '0.85rem', cursor: 'pointer' }} onClick={() => setAssignModalVisible(false)}>Cancelar</CButton>
                     <CButton style={{ backgroundColor: '#4B6251', color: 'white', fontSize: '0.85rem', cursor: 'pointer' }} onClick={asignarPonderacion}
                     onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")} >
                         Guardar <CIcon icon={cilSave} 

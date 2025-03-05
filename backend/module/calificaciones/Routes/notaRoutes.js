@@ -11,7 +11,6 @@ import {
     obtenerpromedionotas,
     obtenerNotasPorActividad,
     ObtenerActividadesPorAsignaturaCalificadas,
-    obtenerHijosPorToken,
 
     obtenerNotasYPromedio
 } from '../Controller/notaController.js'; // Importamos las funciones del controlador
@@ -39,7 +38,7 @@ router.put('/actualizarnota', actualizarNota);
 
 // Ruta para obtener las notas y el promedio unificados
 router.get('/notasypromedio/:CodSeccionMatricula', obtenerNotasYPromedio);
-router.get('/hijos', obtenerHijosPorToken);
+
 
 export default router;
 

@@ -29,25 +29,8 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
-import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
 
 
-export const decodeJWT = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error al decodificar el token JWT:', error);
-    return null;
-  }
-};
 
 const MySwal = withReactContent(Swal);
 
@@ -156,7 +139,7 @@ const preventCopyPaste = (e) => {
 
   const obtenerCajasPendientes = async () => {
     try {
-      const response = await axios.get('http://74.50.68.87:4000/api/caja/todas-pendientes');
+      const response = await axios.get('http://localhost:4000/api/caja/todas-pendientes');
       if (response.status === 200) {
         setPagosPendientes(
           response.data.data.sort((a, b) => new Date(b.Fecha_pago) - new Date(a.Fecha_pago))
@@ -180,63 +163,32 @@ const preventCopyPaste = (e) => {
   
   const cargarConceptos = async () => {
     try {
-      const response = await axios.get('http://74.50.68.87:4000/api/caja/conceptos');
+      const response = await axios.get('http://localhost:4000/api/caja/conceptos');
       setConceptos(response.data.data || []);
     } catch (error) {
       console.error('Error al obtener conceptos:', error);
     }
   };
-  const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
-    try {
-      const token = localStorage.getItem('token');
-      const decodedToken = decodeJWT(token);
-  
-      if (!decodedToken) {
-        Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
-        return;
-      }
-  
-      const cod_usuario = decodedToken.cod_usuario;
-      const nombre_usuario = decodedToken.nombre_usuario;
-  
-      if (!cod_usuario || !nombre_usuario) {
-        Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
-        return;
-      }
-  
-      const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
-      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 106, accion, descripcion });
-  
-      await axios.post(
-        'http://74.50.68.87:4000/api/bitacora/registro',
-        { cod_usuario, cod_objeto: 106, accion, descripcion },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      console.log('Registro en bitácora exitoso');
-    } catch (error) {
-      console.error('Error al registrar en bitácora:', error.message);
-      Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
-    }
-  };
-  
+
   const registrarPago = async (e) => {
     e.preventDefault();
   
-    try {
-      // Usar descripción ingresada o la obtenida de la API
-      const descripcionFinal = pagoActual.descripcion || descripcionMatricula;
-  
-      // Validar que exista una descripción válida
-      if (!descripcionFinal || !descripcionFinal.trim()) {
-        MySwal.fire({
-          icon: 'warning',
-          title: 'Campo obligatorio',
-          text: 'La descripción no puede estar vacía.',
-          confirmButtonText: 'Entendido',
-        });
-        return;
-      }
+   
+  try {
+    // Usar descripción ingresada o la obtenida de la API
+    const descripcionFinal = pagoActual.descripcion || descripcionMatricula;
+
+    // Validar que exista una descripción válida
+    if (!descripcionFinal || !descripcionFinal.trim()) {
+      MySwal.fire({
+        icon: 'warning',
+        title: 'Campo obligatorio',
+        text: 'La descripción no puede estar vacía.',
+        confirmButtonText: 'Entendido',
+      });
+      return;
+    }
+
   
       const monto = parseFloat(pagoActual.monto || valorMatricula || 0);
   
@@ -253,7 +205,7 @@ const preventCopyPaste = (e) => {
       // Validar que el concepto "Matricula" esté cargado antes de continuar
       if (!pagoActual.cod_concepto) {
         try {
-          const response = await axios.get('http://74.50.68.87:4000/api/caja/concepto/matricula');
+          const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
           if (response.status === 200 && response.data.cod_concepto) {
             pagoActual.cod_concepto = response.data.cod_concepto;
           } else {
@@ -335,6 +287,7 @@ const preventCopyPaste = (e) => {
         cod_caja: pagoActual.cod_caja,
         monto: montoFinal, // Monto ajustado con descuento aplicado
         descripcion: descripcionFinal, // Usar la descripción final
+
         cod_concepto: pagoActual.cod_concepto,
         cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
       };
@@ -342,7 +295,7 @@ const preventCopyPaste = (e) => {
       console.log('Datos enviados al servidor:', datosPago); // Depuración
   
       // Enviar los datos al servidor
-      const response = await axios.post('http://74.50.68.87:4000/api/caja/pago', datosPago);
+      const response = await axios.post('http://localhost:4000/api/caja/pago', datosPago);
   
       if (response.status === 201 || response.status === 200) {
         MySwal.fire({
@@ -351,12 +304,6 @@ const preventCopyPaste = (e) => {
           text: 'El pago se ha registrado correctamente.',
           confirmButtonText: 'Aceptar',
         });
-  
-        // Registro en la bitácora
-        await registrarEnBitacora(
-          'INSERT',
-          `Registró un pago de ${montoFinal.toFixed(2)} con concepto "${pagoActual.descripcion}" en la caja ${pagoActual.cod_caja}.`
-        );
   
         // Construir datos de la caja para el reporte individual
         const cajaConDatos = {
@@ -412,12 +359,11 @@ const preventCopyPaste = (e) => {
   };
   
   
-  
   // Obtener el concepto "Matricula"
   useEffect(() => {
     const fetchConceptoMatricula = async () => {
       try {
-        const response = await axios.get('http://74.50.68.87:4000/api/caja/concepto/matricula');
+        const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
         if (response.status === 200) {
           setPagoActual((prevState) => ({
             ...prevState,
@@ -436,7 +382,7 @@ const preventCopyPaste = (e) => {
   useEffect(() => {
     const fetchDescuentos = async () => {
       try {
-        const response = await axios.get('http://74.50.68.87:4000/api/caja/descuentos');
+        const response = await axios.get('http://localhost:4000/api/caja/descuentos');
         if (response.status === 200 && response.data.data) {
           setDescuentos(response.data.data);
           console.log('Descuentos obtenidos:', response.data.data);
@@ -454,233 +400,165 @@ const preventCopyPaste = (e) => {
   
   const crearNuevaCaja = async () => {
     console.log("Datos de la nueva caja:", nuevaCaja);
-  
+
     // Validación de campos obligatorios
     if (!nuevaCaja.descripcion || !nuevaCaja.monto || !nuevaCaja.cod_concepto || !nuevaCaja.dni_padre) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Todos los campos son obligatorios.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Todos los campos son obligatorios.',
+        });
+        return;
     }
-  
+
     // Validación de formato del DNI
     const dniRegex = /^[0-9]{13}$/; // Asume que el DNI de Honduras tiene 13 dígitos
     if (!dniRegex.test(nuevaCaja.dni_padre)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en el DNI',
-        text: 'El DNI debe tener 13 dígitos y contener solo números.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en el DNI',
+            text: 'El DNI debe tener 13 dígitos y contener solo números.',
+        });
+        return;
     }
-  
+
     // Validación de descripción
     if (nuevaCaja.descripcion.length > 25) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede exceder los 25 caracteres.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede exceder los 25 caracteres.',
+        });
+        return;
     }
-  
+
     if (/([A-Z])\1\1/.test(nuevaCaja.descripcion)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede contener tres letras iguales consecutivas.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede contener tres letras iguales consecutivas.',
+        });
+        return;
     }
-  
+
     if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede contener símbolos o caracteres especiales.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede contener símbolos o caracteres especiales.',
+        });
+        return;
     }
-  
+
     // Validación de descuento (si aplica)
     let descuentoAplicado = 0;
-  
+
     if (nuevaCaja.aplicar_descuento && nuevaCaja.valor_descuento) {
-      const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
-  
-      if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
-        await MySwal.fire({
-          icon: 'error',
-          title: 'Error en el descuento',
-          text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
-        });
-        return;
-      }
-  
-      descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
+        const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
+
+        if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
+            await MySwal.fire({
+                icon: 'error',
+                title: 'Error en el descuento',
+                text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
+            });
+            return;
+        }
+
+        descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
     }
-  
+
     const montoFinal = nuevaCaja.monto - descuentoAplicado;
-  
+
     if (montoFinal < 0) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en el monto',
-        text: 'El monto final no puede ser negativo.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en el monto',
+            text: 'El monto final no puede ser negativo.',
+        });
+        return;
     }
-  
+
     try {
-      // Preparar los datos para enviar al servidor
-      const datosCaja = {
-        descripcion: nuevaCaja.descripcion,
-        monto: montoFinal,
-        cod_concepto: nuevaCaja.cod_concepto,
-        dni_padre: nuevaCaja.dni_padre,
-        estado_pago: 'Pendiente',
-        aplicar_descuento: nuevaCaja.aplicar_descuento || false,
-        cod_descuento: nuevaCaja.aplicar_descuento ? nuevaCaja.cod_descuento : null,
-      };
-  
-      console.log("Datos enviados al servidor:", datosCaja);
-  
-      // Realizar la solicitud al servidor
-      const response = await axios.post('http://74.50.68.87:4000/api/caja/oficial', datosCaja);
-  
-      if (response.status === 201 || response.status === 200) {
-        console.log("Caja creada exitosamente");
-  
-        // Registro en la bitácora
-        await registrarEnBitacora(
-          'INSERT',
-          `Caja creada. Descripción: "${nuevaCaja.descripcion}", Monto: ${montoFinal.toFixed(2)}, DNI del Padre: ${nuevaCaja.dni_padre}.`
-        );
-  
-        // Construir datos para el PDF
-        const cajaConDatos = {
-          Cod_caja: response.data.cod_caja || 'No disponible',
-          Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
-          Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
-          Descripcion: nuevaCaja.descripcion,
-          Monto: montoFinal,
-          Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
-          Estado_pago: 'Pendiente',
-          Fecha_pago: new Date(),
-          Hora_registro: new Date(),
+        // Preparar los datos para enviar al servidor
+        const datosCaja = {
+            descripcion: nuevaCaja.descripcion,
+            monto: montoFinal, // Monto ajustado con descuento aplicado
+            cod_concepto: nuevaCaja.cod_concepto,
+            dni_padre: nuevaCaja.dni_padre,
+            estado_pago: 'Pendiente',
+            aplicar_descuento: nuevaCaja.aplicar_descuento || false,
+            cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
         };
-  
-        // Mostrar la alerta de éxito
-        await MySwal.fire({
-          icon: 'success',
-          title: 'Éxito',
-          text: 'La nueva caja se ha creado exitosamente.',
-        });
-  
-        // Preguntar si desea imprimir el recibo
-        const imprimir = await MySwal.fire({
-          title: '¿Desea imprimir el recibo?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, generar',
-          cancelButtonText: 'No',
-        });
-  
-        if (imprimir.isConfirmed) {
-          // Llamar a la función para generar el PDF
-          generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
-        }
-  
-        // Reiniciar el modal y recargar datos
-        resetNuevaCajaModal();
-        setModalNuevaCajaVisible(false);
-        obtenerCajasPendientes();
-      } else {
-        console.log("Error en el servidor:", response);
-  
-        // Manejo de error cuando el servidor no responde con 201 o 200
-        await MySwal.fire({
-          icon: 'warning',
-          title: 'Atención',
-          text: 'No se pudo crear la caja. Intente de nuevo.',
-        });
-      }
-    } catch (error) {
-      console.error("Error al crear la caja:", error);
-  
-      // Manejo de errores generales
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Ocurrió un error al conectar con el servidor.',
-      });
-    }
-  };
-  const registrarEnBitacoracaja = async (accion, descripcionAdicional = '') => {
-    try {
-      const token = localStorage.getItem('token');
-      const decodedToken = decodeJWT(token);
-  
-      if (!decodedToken) {
-        Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
-        return;
-      }
-  
-      const cod_usuario = decodedToken.cod_usuario;
-      const nombre_usuario = decodedToken.nombre_usuario;
-  
-      if (!cod_usuario || !nombre_usuario) {
-        Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
-        return;
-      }
-  
-      const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
-  
-      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 106, accion, descripcion });
-  
-      await axios.post(
-        'http://74.50.68.87:4000/api/bitacora/registro',
-        { cod_usuario, cod_objeto: 106, accion, descripcion },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      console.log('Registro en bitácora exitoso');
-    } catch (error) {
-      console.error('Error al registrar en bitácora:', error.message);
-      Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
-    }
-  };
-    
-  useEffect(() => {
-    const cargarNombreAlumno = async () => {
-      try {
-        if (!pagoActual.cod_caja) {
-          console.warn('No se proporcionó el código de la caja.');
-          return;
-        }
-  
-        const response = await axios.get(
-          `http://74.50.68.87:4000/api/caja/nombre-alumno?cod_caja=${pagoActual.cod_caja}`
-        );
-  
-        if (response.status === 200) {
-          setNombreAlumno(response.data.nombre); // Guardar el nombre del alumno en el estado
+
+        console.log("Datos enviados al servidor:", datosCaja);
+
+        // Realizar la solicitud al servidor
+        const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
+
+        if (response.status === 201 || response.status === 200) {
+            console.log("Caja creada exitosamente");
+
+            // Construir datos para el PDF
+            const cajaConDatos = {
+                Cod_caja: response.data.cod_caja || 'No disponible',
+                Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
+                Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
+                Descripcion: nuevaCaja.descripcion,
+                Monto: montoFinal,
+                Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
+                Estado_pago: 'Pendiente',
+                Fecha_pago: new Date(),
+                Hora_registro: new Date(),
+            };
+
+            // Mostrar la alerta de éxito
+            await MySwal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'La nueva caja se ha creado exitosamente.',
+            });
+
+            // Preguntar si desea imprimir el recibo
+            const imprimir = await MySwal.fire({
+                title: '¿Desea imprimir el recibo?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, generar',
+                cancelButtonText: 'No',
+            });
+
+            if (imprimir.isConfirmed) {
+                // Llamar a la función para generar el PDF
+                generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
+            }
+
+            // Reiniciar el modal y recargar datos
+            resetNuevaCajaModal();
+            setModalNuevaCajaVisible(false);
+            obtenerCajasPendientes();
         } else {
-          console.error('Error al cargar el nombre del alumno:', response.data.message);
+            console.log("Error en el servidor:", response);
+
+            // Manejo de error cuando el servidor no responde con 201 o 200
+            await MySwal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'No se pudo crear la caja. Intente de nuevo.',
+            });
         }
-      } catch (error) {
-        console.error('Error al cargar el nombre del alumno:', error);
-      }
-    };
-  
-    cargarNombreAlumno();
-  }, [pagoActual.cod_caja]);
-  
-  // Estado para guardar el nombre del alumno
-  const [nombreAlumno, setNombreAlumno] = useState('');
-  
+    } catch (error) {
+        console.error("Error al crear la caja:", error);
+
+        // Manejo de errores generales
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error al conectar con el servidor.',
+        });
+    }
+};
+
 
   
 
@@ -707,7 +585,7 @@ const buscarCajasPorDni = async (dni) => {
     }
 
     // URL del endpoint que has configurado
-    const url = `http://74.50.68.87:4000/api/caja/buscar-por-dni?dni=${dni}`;
+    const url = `http://localhost:4000/api/caja/buscar-por-dni?dni=${dni}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -1022,72 +900,58 @@ const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
 };
 
   
-useEffect(() => {
-  const cargarValorMatriculaPorCaja = async () => {
-    try {
-      const codCaja = pagoActual.cod_caja; // Obtén el código de la caja
-
-      if (!codCaja) {
-        console.warn('No se proporcionó el código de la caja.');
-        return;
+  useEffect(() => {
+    const cargarValorMatricula = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/caja/parametro/Matricula');
+        if (response.status === 200) {
+          const { valor, parametro } = response.data;
+          setValorMatricula(valor); // Guarda el valor de la matrícula
+          setDescripcionMatricula(parametro); // Guarda la descripción de la matrícula
+          console.log('Descripción Matricula cargada:', parametro); // Depuración
+        }
+      } catch (error) {
+        console.error('Error al obtener la descripción de Matricula:', error);
       }
-
-      // Llama a la API para obtener el valor de matrícula basado en la caja
-      const response = await axios.get(
-        `http://74.50.68.87:4000/api/caja/parametro/Matricula?cod_caja=${codCaja}`
-      );
-
-      if (response.status === 200) {
-        const { valor, parametro } = response.data;
-        setValorMatricula(valor); // Actualiza el valor de matrícula
-        setDescripcionMatricula(parametro); // Actualiza la descripción con el nombre del ciclo
-      } else {
-        console.error('Error al cargar el valor de matrícula:', response.data.message);
-      }
-    } catch (error) {
-      console.error('Error al cargar el valor de matrícula por caja:', error);
+    };
+    cargarValorMatricula();
+  }, []);
+  
+  useEffect(() => {
+    if (descripcionMatricula) {
+      setPagoActual((prev) => ({
+        ...prev,
+        descripcion: prev.descripcion || descripcionMatricula, // Si no hay descripción manual, usa descripcionMatricula
+      }));
     }
+  }, [descripcionMatricula]);
+  
+
+// Actualizar el estado "pagoActual" con "valorMatricula" y "descripcionMatricula"
+useEffect(() => {
+  if (valorMatricula && descripcionMatricula) {
+    setPagoActual((prev) => ({
+      ...prev,
+      monto: valorMatricula, // Establece el monto
+      descripcion: descripcionMatricula, // Establece la descripción
+    }));
+  }
+}, [valorMatricula, descripcionMatricula]);
+  // Actualizar el monto con el valor de "Matricula"
+  useEffect(() => {
+    if (valorMatricula) {
+      setPagoActual((prev) => ({
+        ...prev,
+        monto: valorMatricula, // Asigna el valor de Matricula al monto
+      }));
+    }
+  }, [valorMatricula]);
+  
+  const calcularVuelto = (monto, descuento, recibido) => {
+    const montoConDescuento = monto - descuento;
+    return recibido - montoConDescuento;
   };
-
-  cargarValorMatriculaPorCaja();
-}, [pagoActual.cod_caja]); // Recalcular si cambia la caja
-
-// Sincronizar la descripción en el estado de pagoActual
-useEffect(() => {
-  if (descripcionMatricula) {
-    setPagoActual((prev) => ({
-      ...prev,
-      descripcion: descripcionMatricula, // Usar la descripción dinámica
-    }));
-  }
-}, [descripcionMatricula]);
-
-// Sincronizar descripción si cambia el valor
-useEffect(() => {
-  if (descripcionMatricula) {
-    setPagoActual((prev) => ({
-      ...prev,
-      descripcion: 'Pago de matrícula', // Descripción fija
-    }));
-  }
-}, [descripcionMatricula]);
-
-// Sincronizar monto con el valor de matrícula
-useEffect(() => {
-  if (valorMatricula) {
-    setPagoActual((prev) => ({
-      ...prev,
-      monto: valorMatricula, // Valor dinámico sincronizado según el ciclo
-    }));
-  }
-}, [valorMatricula]);
-
-// Calcular vuelto basado en monto, descuento y dinero recibido
-const calcularVuelto = (monto, descuento, recibido) => {
-  const montoConDescuento = monto - descuento;
-  return recibido - montoConDescuento;
-};
-
+  
   
   return (
     <CContainer>
@@ -1346,57 +1210,15 @@ const calcularVuelto = (monto, descuento, recibido) => {
   backdrop="static"
   className="modal-md border-0 rounded shadow"
 >
-<CModalHeader
-  className="bg-light border-bottom py-3 px-4"
-  style={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px',
-  }}
->
-  {/* Encabezado principal */}
-  <div
-    className="d-flex align-items-center justify-content-start"
-    style={{
-      gap: '10px',
-      width: '100%',
-    }}
-  >
-    <CIcon icon={cilWallet} style={{ fontSize: '2rem', color: '#4B6251' }} />
-    <h4
-      className="fw-bold mb-0"
-      style={{
-        color: '#4B6251',
-        fontSize: '1.7rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-      }}
-    >
-      Pago de Matricula
-    </h4>
-  </div>
-
-  {/* Subtítulo: Nombre del alumno */}
-  {nombreAlumno && (
-    <span
-      style={{
-        fontSize: '1.2rem',
-        fontWeight: '500',
-        color: '#6C757D', // Gris suave
-        marginLeft: '2.5rem', // Alineado con el ícono
-      }}
-    >
-      Matrícula del Alumno{' '}
-      <strong style={{ color: '#4B6251', textTransform: 'uppercase' }}>
-        {nombreAlumno}
-      </strong>
-    </span>
-  )}
-</CModalHeader>
-
+  <CModalHeader closeButton className="bg-light border-0">
+    <CModalTitle className="fw-bold" style={{ color: '#4B6251' }}>
+      <CIcon icon={cilWallet} className="me-2" /> Registrar Pago
+    </CModalTitle>
+  </CModalHeader>
   <CModalBody className="p-4">
     <CForm onSubmit={registrarPago}>
-    <CInputGroup className="mb-3">
+      {/* Campo de descripción */}
+      <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
     <CIcon icon={cilDescription} className="text-muted" />
   </CInputGroupText>
@@ -1404,25 +1226,60 @@ const calcularVuelto = (monto, descuento, recibido) => {
     type="text"
     name="descripcion"
     placeholder="Descripción"
-    value={descripcionMatricula || pagoActual.descripcion || ''} // Descripción dinámica
-    readOnly
+    value={descripcionMatricula || pagoActual.descripcion || ''} // Prioriza descripcionMatricula
+    readOnly // Si no deseas que sea editable
     className="form-control border-0 shadow-sm"
   />
 </CInputGroup>
-
+{/* Campo de monto */}
 <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
     <CIcon icon={cilDollar} className="text-muted" />
   </CInputGroupText>
   <CFormInput
-    type="number"
-    name="monto"
-    placeholder="Monto (Lempiras)"
-    value={pagoActual.monto || valorMatricula || ''} // Monto dinámico
-    readOnly
-    className={`form-control border-0 shadow-sm`}
-    required
-  />
+  type="number"
+  name="monto"
+  placeholder="Monto (Lempiras)"
+  value={pagoActual.monto || valorMatricula || ''} // Toma el valor de Matricula como predeterminado
+  onChange={(e) => {
+    const value = e.target.value;
+
+    // Validaciones
+    if (/[^0-9.]/.test(value)) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto solo puede contener números y puntos.',
+      }));
+    } else if (parseFloat(value) <= 0 || isNaN(parseFloat(value))) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto debe ser mayor a 0.',
+      }));
+    } else if (value.length > 25) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto no puede exceder los 25 caracteres.',
+      }));
+    } else {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: '', // Limpia los errores
+      }));
+    }
+
+    // Actualiza el estado con el valor ingresado
+    setPagoActual((prevState) => ({
+      ...prevState,
+      monto: value, // Actualiza monto manualmente
+    }));
+  }}
+  onPaste={(e) => e.preventDefault()} // Bloquea pegar
+  onCopy={(e) => e.preventDefault()} // Bloquea copiar
+  className={`form-control border-0 shadow-sm ${errors.monto ? 'is-invalid' : ''}`} // Resalta inválido si hay errores
+  required
+/>
+{errors.monto && <small className="text-danger">{errors.monto}</small>} {/* Muestra error debajo */}
+
 </CInputGroup>
 
       {/* Selección de concepto */}

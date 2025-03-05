@@ -15,7 +15,6 @@ import {
   obtenerDescuentos,
   buscarCajasPorDni,
   obtenerValorMensualidad,
-  obtenerNombreAlumnoPorCaja,
 } from '../Controllers/cajaController.js';
 
 const router = express.Router();
@@ -63,7 +62,6 @@ router.get('/descuentos', obtenerDescuentos);
 router.get('/buscar-por-dni', buscarCajasPorDni);
 // Endpoint para obtener el valor de la mensualidad
 router.get('/valor-mensualidad', obtenerValorMensualidad);
-// Ruta para obtener el nombre del alumno basado en el código de la caja
-router.get('/nombre-alumno', obtenerNombreAlumnoPorCaja);
+
 
 export default router;

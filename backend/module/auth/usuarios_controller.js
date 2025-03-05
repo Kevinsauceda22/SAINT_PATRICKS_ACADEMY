@@ -7,6 +7,7 @@ const pool = await conectarDB();
 import cors from 'cors';
 import speakeasy from 'speakeasy';
 import qrcode from 'qrcode';
+import upload from '../../config/uploadConfig.js';
 
 //con este controlador se obtiene un usuario por su id y tiene una ruta protegida que requiere un token jwt
 export const obtenerUsuarioPorId = async (req, res) => {
@@ -547,13 +548,12 @@ export const eliminarUsuarioCompleto = async (req, res) => {
 export const autenticarUsuario = async (req, res) => {
     const { identificador, contraseña_usuario } = req.body;
 
-    // Validar datos de entrada
     if (!identificador || !contraseña_usuario) {
         return res.status(400).json({ mensaje: 'Identificador y contraseña son requeridos' });
     }
 
     try {
-        // Verificar si el usuario existe por nombre de usuario o correo
+        // Buscar usuario por nombre de usuario o correo
         const [users] = await pool.query(
             'SELECT * FROM tbl_usuarios WHERE nombre_usuario = ? OR correo_usuario = ?',
             [identificador, identificador]
@@ -565,62 +565,60 @@ export const autenticarUsuario = async (req, res) => {
 
         const usuario = users[0];
 
-        // Verificar la contraseña actual
-        const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
-        if (!contraseñaValida) {
-            return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
-        }
-
-        // Verificar contraseñas anteriores (excluyendo la contraseña actual)
-        const [contraseñasAnteriores] = await pool.query(
-            `SELECT Contraseña 
-             FROM tbl_hist_contraseña 
-             WHERE cod_usuario = ? 
-             AND Contraseña != ?`,
-            [usuario.cod_usuario, usuario.contraseña_usuario] // Remove ORDER BY for now
-        );
-
-        for (const contraseñaAnt of contraseñasAnteriores) {
-            const esContraseñaAntigua = await bcrypt.compare(contraseña_usuario, contraseñaAnt.Contraseña);
-            if (esContraseñaAntigua) {
-                return res.status(401).json({ mensaje: 'La contraseña ingresada coincide con una contraseña anterior. Por favor, usa una contraseña nueva.' });
+        // Verificar si el usuario está bloqueado
+        const ahora = new Date();
+        if (usuario.intentos_fallidos >= 3 && usuario.ultimo_intento) {
+            const diferencia = (ahora - new Date(usuario.ultimo_intento)) / 1000; // Diferencia en segundos
+            if (diferencia < 300) {
+                return res.status(403).json({ mensaje: 'Cuenta bloqueada. Inténtelo más tarde.' });
+            } else {
+                // Reiniciar intentos fallidos después de 5 minutos
+                await pool.query(
+                    'UPDATE tbl_usuarios SET intentos_fallidos = 0, ultimo_intento = NULL WHERE cod_usuario = ?',
+                    [usuario.cod_usuario]
+                );
+                usuario.intentos_fallidos = 0; // Actualizar en memoria
+                usuario.ultimo_intento = null;
             }
         }
 
-        // Verificar si el usuario ha confirmado su cuenta
+        // Verificar la contraseña
+        const contraseñaValida = await bcrypt.compare(contraseña_usuario, usuario.contraseña_usuario);
+        if (!contraseñaValida) {
+            const nuevosIntentos = usuario.intentos_fallidos + 1;
+            await pool.query(
+                'UPDATE tbl_usuarios SET intentos_fallidos = ?, ultimo_intento = ? WHERE cod_usuario = ?',
+                [nuevosIntentos, ahora, usuario.cod_usuario]
+            );
+            return res.status(401).json({ mensaje: 'Contraseña o nombre de usuario/correo incorrecto' });
+        }
+
+        // Si la autenticación es correcta, restablecer los intentos fallidos
+        await pool.query(
+            'UPDATE tbl_usuarios SET intentos_fallidos = 0, ultimo_intento = NULL WHERE cod_usuario = ?',
+            [usuario.cod_usuario]
+        );
+
+        // Verificar si la cuenta está confirmada
         if (!usuario.confirmacion_email) {
             return res.status(403).json({ mensaje: 'Cuenta no confirmada. Por favor, verifica tu correo electrónico.' });
         }
 
-        if (usuario.cod_estado_usuario === 1) {
-            // Usuario activo, continuar con la lógica
-        
-            // Verificar si la autenticación de dos factores está habilitada
-            if (usuario.is_two_factor_enabled==1) {
-                // Lógica para manejar la autenticación de dos factores
-                // Por ejemplo, enviar un código de verificación al usuario
-                return res.status(200).json({ mensaje: 'La autenticación de dos factores está habilitada. Se ha enviado un código de verificación.' });
-            } else {
-                // Lógica para usuarios que no tienen 2FA habilitado
-                return res.status(200).json({ mensaje: 'Acceso concedido. La autenticación de dos factores no está habilitada.' });
-            }
-        }
-        
-        // Verificar el estado del usuario
+        // Verificar estados de cuenta
         if (usuario.cod_estado_usuario === 2) {
-            return res.status(403).json({ mensaje: 'Tu cuenta está en revisión. Por favor, contacta al administrador.' });
+            return res.status(403).json({ mensaje: 'Tu cuenta está en revisión. Contacta al administrador.' });
         } else if (usuario.cod_estado_usuario === 3) {
-            return res.status(403).json({ mensaje: 'Tu cuenta ha sido suspendida. Por favor, contacta al administrador.' });
+            return res.status(403).json({ mensaje: 'Tu cuenta ha sido suspendida. Contacta al administrador.' });
         }
 
-        // Actualizar Fecha de última conexión
+        // Actualizar última conexión
         const fechaConexion = new Date();
         await pool.query(
             'UPDATE tbl_usuarios SET Fecha_ultima_conexion = ? WHERE cod_usuario = ?',
             [fechaConexion, usuario.cod_usuario]
         );
 
-        // Actualizar Primer_ingreso si está vacío
+        // Actualizar primer ingreso si está vacío
         if (!usuario.Primer_ingreso) {
             await pool.query(
                 'UPDATE tbl_usuarios SET Primer_ingreso = ? WHERE cod_usuario = ?',
@@ -628,29 +626,28 @@ export const autenticarUsuario = async (req, res) => {
             );
         }
 
-        // Actualizar Fecha de vencimiento
+        // Calcular fecha de vencimiento
         const fechaVencimiento = new Date();
         fechaVencimiento.setFullYear(fechaVencimiento.getFullYear() + 12);
-        
         await pool.query(
             'UPDATE tbl_usuarios SET Fecha_vencimiento = ? WHERE cod_usuario = ?',
             [fechaVencimiento, usuario.cod_usuario]
         );
 
-        // Generar el token si la autenticación es exitosa
+        // Generar token JWT
         const token = jwt.sign(
-            { 
-                cod_usuario: usuario.cod_usuario, 
-                nombre_usuario: usuario.nombre_usuario, 
+            {
+                cod_usuario: usuario.cod_usuario,
+                nombre_usuario: usuario.nombre_usuario,
                 rol_usuario: usuario.cod_rol,
                 cod_persona: usuario.cod_persona,
-                is_two_factor_enabled: usuario.is_two_factor_enabled // Agrega esta línea
+                is_two_factor_enabled: usuario.is_two_factor_enabled
             },
             process.env.JWT_SECRET,
             { expiresIn: '1h' }
         );
 
-        // Retornar respuesta con el token y el estado del usuario
+        // Respuesta exitosa
         return res.status(200).json({
             mensaje: 'Autenticación exitosa',
             token,
@@ -1294,6 +1291,49 @@ export const completarPerfilPadre = async (req, res) => {
     }
 };
 
+export const getDepartamentos = async (req, res) => {
+    try {
+        const [result] = await pool.query("SELECT * FROM tbl_departamento");
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error("Error al obtener departamentos:", error);
+        res.status(500).json({ success: false, message: "Error al obtener departamentos" });
+    }
+};
+
+ export const getGeneros = async (req, res) => {
+    try {
+        const [generos] = await pool.query("SELECT * FROM tbl_genero_persona");
+        res.json({ success: true, generos });
+    } catch (error) {
+        console.error('Error al obtener géneros:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener géneros' });
+    }
+};
+
+
+export const getMunicipios = async (req, res) => {
+    try {
+        const [result] = await pool.query("SELECT * FROM tbl_municipio");
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error("Error al obtener municipios:", error);
+        res.status(500).json({ success: false, message: "Error al obtener municipios" });
+    }
+};
+
+export const getNacionalidades = async (req, res) => {
+    try {
+        const [nacionalidades] = await pool.query("SELECT * FROM tbl_nacionalidad");
+        res.json({ success: true, nacionalidades });
+    } catch (error) {
+        console.error('Error al obtener nacionalidades:', error);
+        res.status(500).json({ success: false, message: 'Error al obtener nacionalidades' });
+    }
+};
+
+
+
 // Controlador para verificar el estado del perfil
 export const verificarEstadoPerfil = async (req, res) => {
     const { cod_usuario } = req.params;
@@ -1344,5 +1384,216 @@ export const verificarEstadoPerfil = async (req, res) => {
     }
 };
 
+export const obtenerPerfilUsuario = async (req, res) => {
+    try {
+      const { cod_usuario } = req.params; // Get user ID from URL params
+      
+      const query = `
+        SELECT u.*, p.*
+        FROM tbl_usuarios u
+        LEFT JOIN tbl_personas p ON u.cod_persona = p.cod_persona
+        WHERE u.cod_usuario = ?
+      `;
+      
+      const [user] = await pool.query(query, [cod_usuario]);
+      
+      if (!user || user.length === 0) {
+        return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+      }
+      
+      // Remove sensitive information
+      delete user[0].contraseña_usuario;
+      delete user[0].token_usuario;
+      delete user[0].two_factor_code;
+      
+      return res.status(200).json({ 
+        exito: true, 
+        datos: user[0] 
+      });
+    } catch (error) {
+      console.error('Error al obtener perfil de usuario:', error);
+      return res.status(500).json({ 
+        mensaje: 'Error al obtener información del perfil' 
+      });
+    }
+  };
+  
+  export const editarPerfilUsuario = async (req, res) => {
+    const { cod_usuario } = req.params; // Obtener ID de usuario desde los parámetros
+    const connection = await pool.getConnection();
+    
+    try {
+        await connection.beginTransaction();
+        
+        const {
+            Nombre,
+            dni_persona,
+            Segundo_nombre,
+            Primer_apellido,
+            Segundo_apellido,
+            direccion_persona,
+            fecha_nacimiento,
+            tipo_persona,
+            departamento,
+            municipio,
+            genero_persona,
+            nacionalidad
+        } = req.body;
+
+        const formattedFechaNacimiento = fecha_nacimiento ? fecha_nacimiento.split('T')[0] : null;
+
+        const [userData] = await connection.query(
+            'SELECT cod_persona FROM tbl_usuarios WHERE cod_usuario = ?', 
+            [cod_usuario]
+        );
+
+        if (!userData || userData.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ mensaje: 'Usuario no encontrado.' });
+        }
+
+        const personId = userData[0].cod_persona;
+
+        const personFields = [];
+        const personValues = [];
+
+        // Asignar valores a los campos de la tabla 'tbl_personas'
+        if (Nombre) personFields.push('Nombre = ?'), personValues.push(Nombre);
+        if (Segundo_nombre || Segundo_nombre === null) personFields.push('Segundo_nombre = ?'), personValues.push(Segundo_nombre);
+        // Validar el DNI
+        if (dni_persona && /^\d{13}$/.test(dni_persona)) personFields.push('dni_persona = ?'), personValues.push(dni_persona);
+        if (Primer_apellido) personFields.push('Primer_apellido = ?'), personValues.push(Primer_apellido);
+        if (Segundo_apellido || Segundo_apellido === null) personFields.push('Segundo_apellido = ?'), personValues.push(Segundo_apellido);
+        if (direccion_persona) personFields.push('direccion_persona = ?'), personValues.push(direccion_persona);
+        if (formattedFechaNacimiento) personFields.push('fecha_nacimiento = ?'), personValues.push(formattedFechaNacimiento);
+        if (tipo_persona) personFields.push('cod_tipo_persona = ?'), personValues.push(tipo_persona);
+        if (genero_persona) personFields.push('cod_genero = ?'), personValues.push(genero_persona);
+        if (nacionalidad) personFields.push('cod_nacionalidad = ?'), personValues.push(nacionalidad);
+        if (municipio) personFields.push('cod_municipio = ?'), personValues.push(municipio);
+        if (departamento) personFields.push('cod_departamento = ?'), personValues.push(departamento);
+
+        // Actualizar datos en la tabla 'tbl_personas'
+        if (personFields.length > 0) {
+            const personUpdateQuery = `
+                UPDATE tbl_personas 
+                SET ${personFields.join(', ')} 
+                WHERE cod_persona = ?
+            `;
+
+            await connection.query(personUpdateQuery, [...personValues, personId]);
+        }
+
+        await connection.commit();
+        res.status(200).json({ mensaje: 'Perfil actualizado correctamente.' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al actualizar el perfil:', error);
+        res.status(500).json({ mensaje: 'Error al actualizar el perfil del usuario.' });
+    } finally {
+        connection.release();
+    }
+};
+
+// Controlador para subir/actualizar avatar
+export const uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'No se ha subido ningún archivo' });
+        }
+
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        const { cod_usuario } = req.params;
+
+        const [result] = await pool.query(
+            'UPDATE tbl_usuarios SET avatar_url = ? WHERE cod_usuario = ?',
+            [avatarUrl, cod_usuario]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Avatar actualizado correctamente',
+            avatarUrl: avatarUrl
+        });
+
+    } catch (error) {
+        console.error('Error al subir avatar:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error al procesar la imagen',
+            error: error.message
+        });
+    }
+};
+
+// Controlador para obtener el avatar actual
+export const getAvatar = async (req, res) => {
+    try {
+        const { cod_usuario } = req.params;
+        const [user] = await pool.query('SELECT avatar_url FROM tbl_usuarios WHERE cod_usuario = ?', [cod_usuario]);
+
+        if (!user || user.length === 0) {
+            return res.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+        res.json({ avatarUrl: user[0].avatar_url });
+    } catch (error) {
+        console.error('Error al obtener avatar:', error);
+        res.status(500).json({ error: 'Error al obtener el avatar' });
+    }
+};
+
+export const getPersonaComplete = async (req, res) => {
+    try {
+        const [result] = await pool.query(`
+            SELECT 
+                p.*,
+                n.pais_nacionalidad as nombre_nacionalidad,
+                d.Nombre_departamento,  -- Asegurando el nombre correcto
+                m.nombre_municipio,
+g.Tipo_genero as genero_descripcion
+            FROM tbl_personas p
+            LEFT JOIN tbl_nacionalidad n ON p.cod_nacionalidad = n.cod_nacionalidad
+            LEFT JOIN tbl_departamento d ON p.cod_departamento = d.Cod_departamento
+            LEFT JOIN tbl_municipio m ON p.cod_municipio = m.cod_municipio
+            LEFT JOIN tbl_genero_persona g ON p.Cod_genero = g.cod_genero
+            WHERE p.cod_persona = ?
+        `, [req.params.cod_persona]);
+
+        
+        if (result.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Persona no encontrada' 
+            });
+        }
+
+        // Transformar los datos antes de enviarlos
+        const personData = {
+            ...result[0],
+            Nacionalidad: result[0].nombre_nacionalidad,
+            Nombre_departamento: result[0].Nombre_departamento,  // Ajuste en la transformación
+            Nombre_municipio: result[0].nombre_municipio,
+            genero_persona: result[0].cod_genero
+        };
+
+        res.json(personData);
+
+    } catch (error) {
+        console.error('Error al obtener datos completos:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error al obtener datos',
+            error: error.message 
+        });
+    }
+};
 
 
+//ya no metan mas codigo aqui por favor hay demasiado codigo aqui JAJAJA
+
+
+//Steven porfavor explicame esto creo que solo vos le entiendes a este macaneo q tenes aqui

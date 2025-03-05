@@ -241,4 +241,3 @@ export const eliminarPersona = async (req, res) => {
     }
 };
 
-
