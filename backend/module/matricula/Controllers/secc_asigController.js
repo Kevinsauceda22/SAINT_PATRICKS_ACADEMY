@@ -2,6 +2,9 @@ import conectarDB from '../../../config/db.js';
 import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
 
+
+
+
 export const obtenerTodasSeccionesAsignaturas = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL G_Get_SeccionesAsignaturas()');
@@ -16,19 +19,34 @@ export const obtenerTodasSeccionesAsignaturas = async (req, res) => {
     }
 };
 
-export const obtenerDias = async (req, res) => {
+export const obtenerTodasSecciones = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL G_Get_dias()');
+        const [rows] = await pool.query('CALL G_Get_Secciones()');
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
         } else {
-            res.status(404).json({ Mensaje: 'No se encontraron los días' });
+            res.status(404).json({ Mensaje: 'No se encontraron secciones' });
         }
     } catch (error) {
-        console.error('Error al obtener la lista de días:', error);
+        console.error('Error al obtener la lista de secciones:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+export const obtenerTodosGrados = async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL G_Get_Grados()');
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontraron grados' });
+        }
+    } catch (error) {
+        console.error('Error al obtener la lista de grados:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
 
 export const obtenerTodasAsignaturas = async (req, res) => {
     try {
@@ -50,7 +68,6 @@ export const crearSeccionAsignatura = async (req, res) => {
         horario_inicio,
         horario_fin,
         cod_secciones,
-        cod_grado,
         lunes,
         martes,
         miercoles,
@@ -61,11 +78,10 @@ export const crearSeccionAsignatura = async (req, res) => {
     } = req.body;
 
     try {
-        await pool.query('CALL G_Post_SeccionAsignatura(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        await pool.query('CALL G_Post_SeccionAsignatura(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             horario_inicio,
             horario_fin,
             cod_secciones,
-            cod_grado,
             lunes,
             martes,
             miercoles,
@@ -89,7 +105,6 @@ export const actualizarSeccionAsignatura = async (req, res) => {
         horario_inicio,
         horario_fin,
         cod_secciones,
-        cod_grado,
         lunes,
         martes,
         miercoles,
@@ -100,12 +115,11 @@ export const actualizarSeccionAsignatura = async (req, res) => {
     } = req.body;
 
     try {
-        await pool.query('CALL G_Put_SeccionAsignatura(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        await pool.query('CALL G_Put_SeccionAsignatura(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             Cod_seccion_asignatura,
             horario_inicio,
             horario_fin,
             cod_secciones,
-            cod_grado,
             lunes,
             martes,
             miercoles,
@@ -135,6 +149,8 @@ export const eliminarSeccionAsignatura = async (req, res) => {
         res.status(200).json({ Mensaje: 'Sección y asignatura eliminada exitosamente' });
     } catch (error) {
         console.error('Error al eliminar la sección y asignatura:', error);
-        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message, stack: error.stack });
     }
 };
+
+
