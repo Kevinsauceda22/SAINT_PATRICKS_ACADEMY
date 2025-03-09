@@ -64,7 +64,7 @@ const ListaParametro = () => {
 
   const fetchParametros = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/parametro/parametro');
+      const response = await fetch('http://74.50.68.87:4000/api/parametro/parametro');
       if (!response.ok) {
         throw new Error('No se pudieron obtener los parámetros');
       }
@@ -209,7 +209,7 @@ const ListaParametro = () => {
   
         const token = localStorage.getItem('token'); // o el lugar donde guardas el token
 
-        const response = await fetch('http://localhost:4000/api/parametro/crearparametro', {
+        const response = await fetch('http://74.50.68.87:4000/api/parametro/crearparametro', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ const handleUpdateParametro = async () => {
   try {
     const fechaModificacion = formatFechaMySQL(new Date()); // Formatear la fecha
 
-    const response = await fetch('http://localhost:4000/api/parametro/actualizarparametro', {
+    const response = await fetch('http://74.50.68.87:4000/api/parametro/actualizarparametro', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ Cod_parametro, Parametro, Valor, Fecha_Modificacion: fechaModificacion }),

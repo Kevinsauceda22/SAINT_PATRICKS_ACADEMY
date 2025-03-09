@@ -50,7 +50,7 @@ const ListaEstadonota = () => {
 
   const fetchEstadonota = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadoNotas/estadonota');
+      const response = await fetch('http://74.50.68.87:4000/api/estadoNotas/estadonota');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((estadonota, index) => ({
@@ -192,7 +192,7 @@ const ListaEstadonota = () => {
       return;
     }
       try {
-      const response = await fetch('http://localhost:4000/api/estadoNotas/crearestadonota', {
+      const response = await fetch('http://74.50.68.87:4000/api/estadoNotas/crearestadonota', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -259,7 +259,7 @@ const ListaEstadonota = () => {
       return;
     }
     try {
-      const response = await fetch('http://localhost:4000/api/estadoNotas/actualizarestadonota', {
+      const response = await fetch('http://74.50.68.87:4000/api/estadoNotas/actualizarestadonota', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -303,7 +303,7 @@ const ListaEstadonota = () => {
 
   const handleDeleteEstadonota = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadoNotas/eliminarestadonota', {
+      const response = await fetch('http://74.50.68.87:4000/api/estadoNotas/eliminarestadonota', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

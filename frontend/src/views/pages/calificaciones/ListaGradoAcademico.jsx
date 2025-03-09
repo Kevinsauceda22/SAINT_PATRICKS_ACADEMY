@@ -159,7 +159,7 @@ const ListaGradoAcademico = () => {
 
   const fetchGradosAcademicos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/gradosAcademicos/verGradosAcademicos');
+      const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/verGradosAcademicos');
       const data = await response.json();
      // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((gradosAcademicos, index) => ({
@@ -200,7 +200,7 @@ const handleCreateGrado = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:4000/api/gradosAcademicos/crearGradoAcademico', {
+    const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/crearGradoAcademico', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -258,7 +258,7 @@ const handleUpdateGrado = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:4000/api/gradosAcademicos/actualizarGradoAcademico', {
+    const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/actualizarGradoAcademico', {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -289,7 +289,7 @@ const handleUpdateGrado = async () => {
 
   const handleDeleteGrado = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/gradosAcademicos/eliminarGradoAcademico', {
+      const response = await fetch('http://74.50.68.87:4000/api/gradosAcademicos/eliminarGradoAcademico', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

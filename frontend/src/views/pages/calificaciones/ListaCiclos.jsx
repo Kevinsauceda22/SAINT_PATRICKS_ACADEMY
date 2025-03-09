@@ -54,7 +54,7 @@ const ListaCiclos = () => {
 
   const fetchCiclos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ciclos/verCiclos');
+      const response = await fetch('http://74.50.68.87:4000/api/ciclos/verCiclos');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
       const dataWithIndex = data.map((ciclo, index) => ({
@@ -209,7 +209,7 @@ const ListaCiclos = () => {
   const handleCreateCiclo = async () => {
     if (!validarCiclo()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/ciclos/crearCiclo', {
+      const response = await fetch('http://74.50.68.87:4000/api/ciclos/crearCiclo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -235,7 +235,7 @@ const ListaCiclos = () => {
   const handleUpdateCiclo = async () => {
     if (!validarCicloUpdate()) return ;  
     try {
-      const response = await fetch('http://localhost:4000/api/ciclos/actualizarCiclo', {
+      const response = await fetch('http://74.50.68.87:4000/api/ciclos/actualizarCiclo', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -264,7 +264,7 @@ const ListaCiclos = () => {
 
   const handleDeleteCiclo = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ciclos/eliminarCiclo', {
+      const response = await fetch('http://74.50.68.87:4000/api/ciclos/eliminarCiclo', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

@@ -87,7 +87,7 @@ const MatriculaForm = () => {
   const cargarOpcionesConPredeterminados = async () => {
     try {
       // Llamada a la API para obtener opciones
-      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+      const response = await axios.get('http://74.50.68.87:4000/api/matricula/opciones');
       const { estados_matricula, tipos_matricula } = response.data;
   
       // Asignar opciones al estado
@@ -150,7 +150,7 @@ useEffect(() => {
 const obtenerOpciones = async () => {
   try {
     setLoading(true);
-    const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+    const response = await axios.get('http://74.50.68.87:4000/api/matricula/opciones');
     const opcionesData = response.data;
 
     // Verificar los datos completos recibidos desde el servidor
@@ -204,7 +204,7 @@ const obtenerOpciones = async () => {
 
   const obtenerMatriculas = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/matricula/matriculas');
+      const response = await axios.get('http://74.50.68.87:4000/api/matricula/matriculas');
       const matriculasCargadas = response.data.data || [];
   
       // Asocia el año académico a cada matrícula
@@ -232,7 +232,7 @@ const obtenerOpciones = async () => {
     }
   
     try {
-      const response = await axios.get(`http://localhost:4000/api/matricula/hijos/${dniPadre}`);
+      const response = await axios.get(`http://74.50.68.87:4000/api/matricula/hijos/${dniPadre}`);
       const { padre, hijos } = response.data;
   
       if (!padre || !padre.Nombre_Padre) {
@@ -278,7 +278,7 @@ const obtenerOpciones = async () => {
 useEffect(() => {
   const cargarPeriodoActivo = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+      const response = await axios.get('http://74.50.68.87:4000/api/matricula/opciones');
       const periodoEncontrado = response.data.periodos_matricula.find(p => p.estado === 'activo');
       setPeriodoActivo(periodoEncontrado); // Guarda el período activo
     } catch (error) {
@@ -299,7 +299,7 @@ const obtenerSeccionesPorGrado = async (codGrado) => {
   try {
     // Enviar la solicitud al backend con los parámetros necesarios
     const response = await axios.get(
-      `http://localhost:4000/api/matricula/secciones/${codGrado}`, 
+      `http://74.50.68.87:4000/api/matricula/secciones/${codGrado}`, 
       { params: { cod_periodo_matricula: periodoActivo.Cod_periodo_matricula } } // Enviar el período activo como parámetro
     );
 
@@ -326,7 +326,7 @@ const registrarEnBitacora = async (accion, descripcion) => {
     const decodedToken = jwtDecode(token);
     const cod_usuario = decodedToken.cod_usuario;
 
-    await axios.post('http://localhost:4000/api/bitacora/registro', {
+    await axios.post('http://74.50.68.87:4000/api/bitacora/registro', {
       cod_usuario: cod_usuario,
       cod_objeto: 77, // Objeto Matrícula
       accion: accion,
@@ -407,7 +407,7 @@ const handleSubmit = async (e) => {
 
   try {
     // Realizar la solicitud al backend
-    const response = await axios.post('http://localhost:4000/api/matricula/crearmatricula', dataToSend);
+    const response = await axios.post('http://74.50.68.87:4000/api/matricula/crearmatricula', dataToSend);
 
     if (response.status === 201) {
       const message = response.data.message;
@@ -706,7 +706,7 @@ const exportToExcel = () => {
       const obtenerNombreMaestro = async (codSeccion) => {
         try {
           const response = await fetch(
-            `http://localhost:4000/api/matricula/secciones/${matricula.Cod_grado}?cod_periodo_matricula=${matricula.Cod_periodo_matricula}`
+            `http://74.50.68.87:4000/api/matricula/secciones/${matricula.Cod_grado}?cod_periodo_matricula=${matricula.Cod_periodo_matricula}`
           );
           if (response.ok) {
             const result = await response.json();
@@ -730,7 +730,7 @@ const exportToExcel = () => {
       // Obtener las opciones de matrícula
       let opciones = {};
       try {
-        const response = await fetch('http://localhost:4000/api/matricula/opciones');
+        const response = await fetch('http://74.50.68.87:4000/api/matricula/opciones');
         if (response.ok) {
           opciones = await response.json();
         } else {
@@ -746,7 +746,7 @@ const exportToExcel = () => {
       if (matricula.Cod_seccion) {
         try {
           const response = await fetch(
-            `http://localhost:4000/api/matricula/horario/${matricula.Cod_seccion}`
+            `http://74.50.68.87:4000/api/matricula/horario/${matricula.Cod_seccion}`
           );
           if (response.ok) {
             const result = await response.json();

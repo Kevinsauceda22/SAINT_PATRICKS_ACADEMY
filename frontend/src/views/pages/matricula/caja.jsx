@@ -139,7 +139,7 @@ const preventCopyPaste = (e) => {
 
   const obtenerCajasPendientes = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/caja/todas-pendientes');
+      const response = await axios.get('http://74.50.68.87:4000/api/caja/todas-pendientes');
       if (response.status === 200) {
         setPagosPendientes(
           response.data.data.sort((a, b) => new Date(b.Fecha_pago) - new Date(a.Fecha_pago))
@@ -163,7 +163,7 @@ const preventCopyPaste = (e) => {
   
   const cargarConceptos = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/caja/conceptos');
+      const response = await axios.get('http://74.50.68.87:4000/api/caja/conceptos');
       setConceptos(response.data.data || []);
     } catch (error) {
       console.error('Error al obtener conceptos:', error);
@@ -205,7 +205,7 @@ const preventCopyPaste = (e) => {
       // Validar que el concepto "Matricula" esté cargado antes de continuar
       if (!pagoActual.cod_concepto) {
         try {
-          const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
+          const response = await axios.get('http://74.50.68.87:4000/api/caja/concepto/matricula');
           if (response.status === 200 && response.data.cod_concepto) {
             pagoActual.cod_concepto = response.data.cod_concepto;
           } else {
@@ -295,7 +295,7 @@ const preventCopyPaste = (e) => {
       console.log('Datos enviados al servidor:', datosPago); // Depuración
   
       // Enviar los datos al servidor
-      const response = await axios.post('http://localhost:4000/api/caja/pago', datosPago);
+      const response = await axios.post('http://74.50.68.87:4000/api/caja/pago', datosPago);
   
       if (response.status === 201 || response.status === 200) {
         MySwal.fire({
@@ -363,7 +363,7 @@ const preventCopyPaste = (e) => {
   useEffect(() => {
     const fetchConceptoMatricula = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
+        const response = await axios.get('http://74.50.68.87:4000/api/caja/concepto/matricula');
         if (response.status === 200) {
           setPagoActual((prevState) => ({
             ...prevState,
@@ -382,7 +382,7 @@ const preventCopyPaste = (e) => {
   useEffect(() => {
     const fetchDescuentos = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/caja/descuentos');
+        const response = await axios.get('http://74.50.68.87:4000/api/caja/descuentos');
         if (response.status === 200 && response.data.data) {
           setDescuentos(response.data.data);
           console.log('Descuentos obtenidos:', response.data.data);
@@ -494,7 +494,7 @@ const preventCopyPaste = (e) => {
         console.log("Datos enviados al servidor:", datosCaja);
 
         // Realizar la solicitud al servidor
-        const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
+        const response = await axios.post('http://74.50.68.87:4000/api/caja/oficial', datosCaja);
 
         if (response.status === 201 || response.status === 200) {
             console.log("Caja creada exitosamente");
@@ -585,7 +585,7 @@ const buscarCajasPorDni = async (dni) => {
     }
 
     // URL del endpoint que has configurado
-    const url = `http://localhost:4000/api/caja/buscar-por-dni?dni=${dni}`;
+    const url = `http://74.50.68.87:4000/api/caja/buscar-por-dni?dni=${dni}`;
 
     const response = await fetch(url, {
       method: 'GET',
@@ -903,7 +903,7 @@ const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
   useEffect(() => {
     const cargarValorMatricula = async () => {
       try {
-        const response = await axios.get('http://localhost:4000/api/caja/parametro/Matricula');
+        const response = await axios.get('http://74.50.68.87:4000/api/caja/parametro/Matricula');
         if (response.status === 200) {
           const { valor, parametro } = response.data;
           setValorMatricula(valor); // Guarda el valor de la matrícula

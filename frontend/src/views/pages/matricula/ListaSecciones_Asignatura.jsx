@@ -85,7 +85,7 @@ const [filteredProfesores, setFilteredProfesores] = useState([]);
 
 const fetchSeccionesAsignaturas = async () => {
   try {
-    const response = await fetch("http://localhost:4000/api/seccionesAsignaturas/verSeccionesAsignaturas");
+    const response = await fetch("http://74.50.68.87:4000/api/seccionesAsignaturas/verSeccionesAsignaturas");
     if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
 
     const data = await response.json();
@@ -100,7 +100,7 @@ const fetchSeccionesAsignaturas = async () => {
 
 const fetchDias = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/seccionesAsignaturas/verDias');
+    const response = await fetch('http://74.50.68.87:4000/api/seccionesAsignaturas/verDias');
     if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
     
     const data = await response.json();
@@ -120,7 +120,7 @@ const fetchDias = async () => {
 
 const fetchAsignaturas = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/seccionesAsignaturas/verAsignaturas');
+    const response = await fetch('http://74.50.68.87:4000/api/seccionesAsignaturas/verAsignaturas');
     if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
     const data = await response.json();
     console.log('Datos obtenidos de la API de Asignaturas:', data);
@@ -181,8 +181,8 @@ const handleSubmit = async () => {
   }
 
   const url = horarioToUpdate
-    ? `http://localhost:4000/api/seccionesAsignaturas/actualizarSeccionAsignatura/${horarioToUpdate.Cod_seccion_asignatura}`
-    : 'http://localhost:4000/api/seccionesAsignaturas/crearSeccionAsignatura';
+    ? `http://74.50.68.87:4000/api/seccionesAsignaturas/actualizarSeccionAsignatura/${horarioToUpdate.Cod_seccion_asignatura}`
+    : 'http://74.50.68.87:4000/api/seccionesAsignaturas/crearSeccionAsignatura';
   const method = horarioToUpdate ? 'PUT' : 'POST';
 
   try {
@@ -226,7 +226,7 @@ const handleDeleteSeccionAsignatura = async (cod_seccion_asignatura, descripcion
     if (!confirmResult.isConfirmed) return;
 
     const response = await fetch(
-      `http://localhost:4000/api/seccionesAsignaturas/eliminarSeccionAsignatura/${encodeURIComponent(Cod_seccion_asignatura)}`,
+      `http://74.50.68.87:4000/api/seccionesAsignaturas/eliminarSeccionAsignatura/${encodeURIComponent(Cod_seccion_asignatura)}`,
       { method: 'DELETE' }
     );
 

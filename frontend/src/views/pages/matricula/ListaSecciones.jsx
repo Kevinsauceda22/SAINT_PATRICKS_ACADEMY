@@ -47,7 +47,7 @@ const ListaSecciones = () => {
 // Función para obtener el período académico activo
 const fetchPeriodoAcademico = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/secciones/periodo_academico/activo');
+    const response = await fetch('http://74.50.68.87:4000/api/secciones/periodo_academico/activo');
     const data = await response.json();
 
     if (data && data.Anio_academico) {
@@ -66,7 +66,7 @@ const fetchPeriodoAcademico = async () => {
 const fetchSeccionesPeriodo = async (periodo) => {
   try {
     const response = await fetch(
-      `http://localhost:4000/api/secciones/obtener_seccperiodo/${periodo}`
+      `http://74.50.68.87:4000/api/secciones/obtener_seccperiodo/${periodo}`
     );
     const data = await response.json();
 
@@ -184,7 +184,7 @@ useEffect(() => {
 
 const fetchPeriodoEstado = async (periodo) => {
   try {
-    const response = await fetch(`http://localhost:4000/api/gestion_academica/obtener_periodo`);
+    const response = await fetch(`http://74.50.68.87:4000/api/gestion_academica/obtener_periodo`);
     const data = await response.json();
 
     console.log('Períodos recibidos:', data); // Log para depuración
@@ -207,7 +207,7 @@ const fetchPeriodoEstado = async (periodo) => {
 // Función para obtener las secciones
 const fetchSecciones = async (Cod_secciones) => {
   try {
-    const response = await fetch( `http://localhost:4000/api/secciones/obtener_secciones/${Cod_secciones}`);
+    const response = await fetch( `http://74.50.68.87:4000/api/secciones/obtener_secciones/${Cod_secciones}`);
     const data = await response.json();
     const dataWithIndex = data.map((seccion, index) => ({
       ...seccion,
@@ -222,14 +222,14 @@ const fetchSecciones = async (Cod_secciones) => {
 
 // Función para obtener los grados
 const fetchGrados = async () => {
-  const response = await fetch('http://localhost:4000/api/secciones/grados');
+  const response = await fetch('http://74.50.68.87:4000/api/secciones/grados');
   const data = await response.json();
   setGrados(data);
 };
 
 // Función para obtener los profesores
 const fetchProfesores = async () => {
-  const response = await fetch('http://localhost:4000/api/secciones/profesores');
+  const response = await fetch('http://74.50.68.87:4000/api/secciones/profesores');
   const data = await response.json();
   setProfesores(data);
 };
@@ -237,7 +237,7 @@ const fetchProfesores = async () => {
 // Función para obtener todos los periodos académicos
 const fetchPeriodosAcademicos = async () => {
   try {
-      const response = await fetch('http://localhost:4000/api/secciones/periodo_academico');
+      const response = await fetch('http://74.50.68.87:4000/api/secciones/periodo_academico');
       const data = await response.json();
 
       if (response.ok && data.length > 0) {
@@ -256,7 +256,7 @@ const fetchPeriodosAcademicos = async () => {
 // Función para obtener los edificios
 const fetchEdificios = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/secciones/edificios');
+    const response = await fetch('http://74.50.68.87:4000/api/secciones/edificios');
     if (!response.ok) {
       throw new Error(`Error HTTP: ${response.status}`);
     }
@@ -278,7 +278,7 @@ const fetchAulasPorEdificio = async (Cod_edificio) => {
 
       console.log("Código de edificio enviado:", Cod_edificio); // Depuración
 
-      const response = await fetch(`http://localhost:4000/api/secciones/aulas/por_edificio/${Cod_edificio}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/secciones/aulas/por_edificio/${Cod_edificio}`);
       const data = await response.json();
 
       if (response.ok) {
@@ -295,7 +295,7 @@ const fetchAulasPorEdificio = async (Cod_edificio) => {
         // Verificar si el aula actual no está en la lista y agregarla
         const aulaActual = aulas.find(aula => aula.Numero_aula === seccionToUpdate.p_Numero_aula);
         if (!aulaActual && seccionToUpdate.p_Numero_aula) {
-            const aulaActualInfo = await fetch(`http://localhost:4000/api/secciones/${seccionToUpdate.p_Numero_aula}`);
+            const aulaActualInfo = await fetch(`http://74.50.68.87:4000/api/secciones/${seccionToUpdate.p_Numero_aula}`);
             const aulaActualData = await aulaActualInfo.json();
             if (aulaActualInfo.ok) {
                 aulas.push(aulaActualData); // Agregar aula actual
@@ -550,7 +550,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     try {
       setLoadingNombre(true); // Activar mensaje de carga
       const response = await fetch(
-        `http://localhost:4000/api/secciones/generar_nombre_seccion/${codGrado}/${anioAcademicoActivo}`
+        `http://74.50.68.87:4000/api/secciones/generar_nombre_seccion/${codGrado}/${anioAcademicoActivo}`
       );
       const data = await response.json();
   
@@ -592,7 +592,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     }
   
     try {
-      const response = await fetch('http://localhost:4000/api/secciones/crear_seccion', {
+      const response = await fetch('http://74.50.68.87:4000/api/secciones/crear_seccion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -623,7 +623,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   
   const openUpdateModal = async (Cod_secciones) => {
     try {
-        const response = await fetch(`http://localhost:4000/api/secciones/obtener_seccion/${Cod_secciones}`);
+        const response = await fetch(`http://74.50.68.87:4000/api/secciones/obtener_seccion/${Cod_secciones}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -673,7 +673,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     }
   
     try {
-        const response = await fetch('http://localhost:4000/api/secciones/actualizar_seccion', {
+        const response = await fetch('http://74.50.68.87:4000/api/secciones/actualizar_seccion', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(seccionToUpdate),
@@ -725,7 +725,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   
     try {
       const response = await fetch(
-        `http://localhost:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`,
+        `http://74.50.68.87:4000/api/secciones/eliminar_seccion/${seccionToDelete.Cod_secciones}`,
         { method: 'DELETE' }
       );
   

@@ -89,7 +89,7 @@ const ListaContacto = () => {
 {/*******************************************************************************************************************/}
 useEffect(() => {
   const cargarPersonas = async () => {
-    const respuesta = await fetch('http://localhost:4000/api/estructuraFamiliar/verPersonas');
+    const respuesta = await fetch('http://74.50.68.87:4000/api/estructuraFamiliar/verPersonas');
     const datos = await respuesta.json();
     setPersonas(datos);
   };
@@ -143,7 +143,7 @@ const handleSeleccionarCodPersona = (persona) => {
   
   const fetchContactos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/contacto/obtenerContacto');
+      const response = await fetch('http://74.50.68.87:4000/api/contacto/obtenerContacto');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verifica la respuesta de la API
@@ -156,7 +156,7 @@ const handleSeleccionarCodPersona = (persona) => {
   
   const fetchTiposContacto = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
+      const response = await fetch('http://74.50.68.87:4000/api/tipoContacto/obtenerTipoContacto');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
       
@@ -235,8 +235,8 @@ const handleSeleccionarCodPersona = (persona) => {
     // Proceder con la creación o actualización
     setIsSubmitting(true);
     const url = contactoToUpdate
-      ? `http://localhost:4000/api/contacto/actualizarContacto/${contactoToUpdate.cod_contacto}`
-      : 'http://localhost:4000/api/contacto/crearContacto';
+      ? `http://74.50.68.87:4000/api/contacto/actualizarContacto/${contactoToUpdate.cod_contacto}`
+      : 'http://74.50.68.87:4000/api/contacto/crearContacto';
     const method = contactoToUpdate ? 'PUT' : 'POST';
     const body = JSON.stringify(contactoActual);
   
@@ -305,7 +305,7 @@ const handleSeleccionarCodPersona = (persona) => {
       if (!confirmResult.isConfirmed) return;
   
       const response = await fetch(
-        `http://localhost:4000/api/contacto/eliminarContacto/${encodeURIComponent(cod_contacto)}`,
+        `http://74.50.68.87:4000/api/contacto/eliminarContacto/${encodeURIComponent(cod_contacto)}`,
         { method: 'DELETE' }
       );
   

@@ -39,7 +39,7 @@ const UserProfile = () => {
   const MAX_ATTEMPTS = 3;
 
   // API configuration with base URL
-  const API_BASE_URL = 'http://localhost:4000';
+  const API_BASE_URL = 'http://74.50.68.87:4000';
   
   const getAuthHeaders = () => ({
     headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }

@@ -65,7 +65,7 @@ const ListaTipoRelacion = () => {
 
  const fetchTipoRelacion = async () => {
   try {
-    const response = await fetch(`http://localhost:4000/api/tipoRelacion/verTodoTipoRelacion`);
+    const response = await fetch(`http://74.50.68.87:4000/api/tipoRelacion/verTodoTipoRelacion`);
     const data = await response.json();
     console.log('Datos obtenidos:', data); // Agrega este log para depurar
     const dataWithIndex = data.map((tipoRelacion, index) => ({
@@ -266,7 +266,7 @@ const handleChange = (event) => {
       }
   
       try {
-        const response = await fetch(`http://localhost:4000/api/tipoRelacion/crearTipoRelacion`, {
+        const response = await fetch(`http://74.50.68.87:4000/api/tipoRelacion/crearTipoRelacion`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -307,7 +307,7 @@ const handleChange = (event) => {
       }
   
       try {
-        const response = await fetch(`http://localhost:4000/api/tipoRelacion/actualizarTipoRelacion/${tipoRelacionToUpdate.Cod_tipo_relacion}`, {
+        const response = await fetch(`http://74.50.68.87:4000/api/tipoRelacion/actualizarTipoRelacion/${tipoRelacionToUpdate.Cod_tipo_relacion}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -343,7 +343,7 @@ const handleChange = (event) => {
     const handleDeleteRelacion = async () => {
       try {
         const response = await fetch(
-          `http://localhost:4000/api/tipoRelacion/eliminarTipoRelacion/${encodeURIComponent(tipoRelacionToDelete.Cod_tipo_relacion)}`,
+          `http://74.50.68.87:4000/api/tipoRelacion/eliminarTipoRelacion/${encodeURIComponent(tipoRelacionToDelete.Cod_tipo_relacion)}`,
           {
             method: 'DELETE',
             headers: {

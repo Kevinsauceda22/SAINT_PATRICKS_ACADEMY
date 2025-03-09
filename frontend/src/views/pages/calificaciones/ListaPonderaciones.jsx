@@ -52,7 +52,7 @@ const ListaPonderaciones = () => {
 
   const fetchPonderacion = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
+      const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/verPonderaciones');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
       const dataWithIndex = data.map((ponderacion, index) => ({
@@ -215,7 +215,7 @@ const ListaPonderaciones = () => {
   const handleCreatePonderacion = async () => {
     if (!validarPonderacion()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/ponderaciones/crearPonderacion', {
+      const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/crearPonderacion', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -241,7 +241,7 @@ const ListaPonderaciones = () => {
   const handleUpdatePonderacion = async () => {
     if (!validarPonderacionUpdate()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/ponderaciones/actualizarPonderacion', {
+      const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/actualizarPonderacion', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -269,7 +269,7 @@ const ListaPonderaciones = () => {
 
   const handleDeletePonderacion = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ponderaciones/eliminarPonderacion', {
+      const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/eliminarPonderacion', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

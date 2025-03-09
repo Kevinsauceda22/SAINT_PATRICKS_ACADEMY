@@ -50,7 +50,7 @@ const ListaEstadoasistencia = () => {
 
   const fetchEstadoasistencia = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/estadoasistencias');
+      const response = await fetch('http://74.50.68.87:4000/api/estadoAsistencia/estadoasistencias');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((estadoasistencia, index) => ({
@@ -191,7 +191,7 @@ const ListaEstadoasistencia = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/crearestadoasistencias', {
+      const response = await fetch('http://74.50.68.87:4000/api/estadoAsistencia/crearestadoasistencias', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -259,7 +259,7 @@ const ListaEstadoasistencia = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/actualizarestadoasistencias', {
+      const response = await fetch('http://74.50.68.87:4000/api/estadoAsistencia/actualizarestadoasistencias', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -303,7 +303,7 @@ const ListaEstadoasistencia = () => {
 
   const handleDeleteEstadoasistencia = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadoAsistencia/eliminarestadoasistencias', {
+      const response = await fetch('http://74.50.68.87:4000/api/estadoAsistencia/eliminarestadoasistencias', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

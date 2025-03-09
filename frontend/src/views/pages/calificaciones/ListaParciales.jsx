@@ -57,7 +57,7 @@ const ListaParciales = () => {
 
   const fetchParciales = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/parciales/verParciales');
+      const response = await fetch('http://74.50.68.87:4000/api/parciales/verParciales');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((parcial, index) => ({
@@ -234,7 +234,7 @@ const handleInputChange = (e, setFunction) => {
   const handleCreateParcial = async () => {
     if (!validateParcial()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/parciales/crearParcial', {
+      const response = await fetch('http://74.50.68.87:4000/api/parciales/crearParcial', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -260,7 +260,7 @@ const handleInputChange = (e, setFunction) => {
   const handleUpdateParcial = async () => {
     if (!validarParcialesUpdate()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/parciales/actualizarParcial', {
+      const response = await fetch('http://74.50.68.87:4000/api/parciales/actualizarParcial', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -284,7 +284,7 @@ const handleInputChange = (e, setFunction) => {
 
   const handleDeleteParcial = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/parciales/eliminar_parcial', {
+      const response = await fetch('http://74.50.68.87:4000/api/parciales/eliminar_parcial', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

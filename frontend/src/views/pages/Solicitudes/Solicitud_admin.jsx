@@ -84,7 +84,7 @@ const Solicitud = () => {
   const fetchSolicitudes = async () => {
     setLoading(true);
     try {
-        const response = await fetch('http://localhost:4000/api/Solicitud_admin/solicitudess');
+        const response = await fetch('http://74.50.68.87:4000/api/Solicitud_admin/solicitudess');
         if (!response.ok) throw new Error('Error al obtener las solicitudes');
         const data = await response.json();
 
@@ -216,7 +216,7 @@ const getIconByEstado = (estado) => {
       let citaDetails = { ...selectedCita };
       try {
         const response = await fetch(
-          `http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${selectedCita.id}`
+          `http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${selectedCita.id}`
         );
         if (!response.ok) {
           throw new Error('Error al obtener detalles de la solicitud.');
@@ -313,7 +313,7 @@ const getIconByEstado = (estado) => {
   
     if (citaSeleccionada.estado === 'Pendiente') {
       try {
-        const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${citaId}`);
+        const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${citaId}`);
         if (!response.ok) throw new Error('Error al obtener detalles de la solicitud.');
   
         const detailedData = await response.json();
@@ -421,7 +421,7 @@ allowOutsideClick: false,
             Estado: cita.estado, // Mantener el estado actual
           };
   
-          const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
+          const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes/${citaId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(requestData),
@@ -459,7 +459,7 @@ allowOutsideClick: false,
 // Nuevo fetch para obtener la cita con la persona creadora
 const fetchSolicitudConPersona = async (Cod_solicitud) => {
   try {
-    const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${Cod_solicitud}`);
+    const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${Cod_solicitud}`);
     if (!response.ok) {
       if (response.status === 404) throw new Error('Solicitud no encontrada.');
       throw new Error('Error al obtener la solicitud con persona.');
@@ -528,7 +528,7 @@ const fetchSolicitudConPersona = async (Cod_solicitud) => {
       };
   
       const response = await fetch(
-        `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`,
+        `http://74.50.68.87:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`,
         {
           method: 'PUT',
           headers: {
@@ -689,8 +689,8 @@ allowOutsideClick: false,
   
       const response = await fetch(
         selectedCita
-          ? `http://localhost:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
-          : 'http://localhost:4000/api/Solicitud_admin/solicitudes',
+          ? `http://74.50.68.87:4000/api/Solicitud_admin/solicitudes/${selectedCita.id}`
+          : 'http://74.50.68.87:4000/api/Solicitud_admin/solicitudes',
         {
           method: selectedCita ? 'PUT' : 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -773,7 +773,7 @@ allowOutsideClick: false,
       const updatedSolicitudes = await Promise.all(
         solicitudes.map(async (cita) => {
           try {
-            const response = await fetch(`http://localhost:4000/api/Solicitud_admin/solicitudes-persona/${cita.id}`);
+            const response = await fetch(`http://74.50.68.87:4000/api/Solicitud_admin/solicitudes-persona/${cita.id}`);
             if (!response.ok) {
               throw new Error('Error al obtener detalles de la solicitud.');
             }

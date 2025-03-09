@@ -70,7 +70,7 @@ const Login = () => {
 
           // Registrar en bitácora
           try {
-            await axios.post('http://localhost:4000/api/bitacora/registro', {
+            await axios.post('http://74.50.68.87:4000/api/bitacora/registro', {
               cod_usuario: decodedToken.cod_usuario,
               cod_objeto: 76,
               accion: 'LOGIN',

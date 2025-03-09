@@ -110,7 +110,7 @@ const VistaActividadesAcademicasAdmin = () => {
   useEffect(() => {
     const fetchProfesores = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/profesores/VerProfesores');
+        const response = await fetch('http://74.50.68.87:4000/api/profesores/VerProfesores');
         const data = await response.json();
         setProfesores(data);
       } catch (error) {
@@ -121,7 +121,7 @@ const VistaActividadesAcademicasAdmin = () => {
 
     const fetchListaPersonas = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/persona/verpersonas');
+        const response = await fetch('http://74.50.68.87:4000/api/persona/verpersonas');
         const data = await response.json();
         const dataWithIndex = data.map((persona) => ({
           ...persona,
@@ -158,7 +158,7 @@ const VistaActividadesAcademicasAdmin = () => {
   const handleVerSecciones = async (profesor) => {
     setSelectedProfesor(profesor);
     try {
-      const response = await fetch(`http://localhost:4000/api/secciones/porprofesor/${profesor.Cod_profesor}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/secciones/porprofesor/${profesor.Cod_profesor}`);
       const data = await response.json();
       if (response.ok) {
         setSecciones(data);
@@ -175,7 +175,7 @@ const VistaActividadesAcademicasAdmin = () => {
   const handleVerAsignaturas = async (seccion) => {
     setSelectedSeccion(seccion);
     try {
-      const response = await fetch(`http://localhost:4000/api/secciones_asignaturas/porseccion/${seccion.Cod_secciones}`);
+      const response = await fetch(`http://74.50.68.87:4000/api/secciones_asignaturas/porseccion/${seccion.Cod_secciones}`);
       const data = await response.json();
       if (response.ok) {
         setAsignaturas(data);
@@ -194,7 +194,7 @@ const VistaActividadesAcademicasAdmin = () => {
   setSelectedAsignatura(asignatura);
   try {
     const response = await fetch(
-      `http://localhost:4000/api/actividadesAcademicas/porProfesorYAsignatura/${selectedProfesor.Cod_profesor}/${asignatura.Cod_seccion_asignatura}`
+      `http://74.50.68.87:4000/api/actividadesAcademicas/porProfesorYAsignatura/${selectedProfesor.Cod_profesor}/${asignatura.Cod_seccion_asignatura}`
     );
     const data = await response.json();
     console.log('Actividades recibidas:', data); // Depuración
@@ -209,7 +209,7 @@ const VistaActividadesAcademicasAdmin = () => {
 const fetchActividades = async (Cod_profesor, Cod_seccion_asignatura) => {
   try {
     const response = await fetch(
-      `http://localhost:4000/api/actividadesAcademicas/porProfesorYAsignatura/${Cod_profesor}/${Cod_seccion_asignatura}`
+      `http://74.50.68.87:4000/api/actividadesAcademicas/porProfesorYAsignatura/${Cod_profesor}/${Cod_seccion_asignatura}`
     );
     const data = await response.json();
 
@@ -228,7 +228,7 @@ const fetchActividades = async (Cod_profesor, Cod_seccion_asignatura) => {
 
 const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor) => {
   try {
-      const response = await fetch('http://localhost:4000/api/actividadesacademicas/validar-valor', {
+      const response = await fetch('http://74.50.68.87:4000/api/actividadesacademicas/validar-valor', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
@@ -253,7 +253,7 @@ const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_seccion_asignatu
 
 const fetchlistaActividades = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
+    const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/verPonderaciones');
     const data = await response.json();
     setponderaciones(data);
   } catch (error) {
@@ -262,7 +262,7 @@ const fetchlistaActividades = async () => {
 };
   const fetchlistaponderacion = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
+      const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/verPonderaciones');
       const data = await response.json();
       setponderaciones(data);
     } catch (error) {
@@ -272,7 +272,7 @@ const fetchlistaActividades = async () => {
   
   const fetchListaParcial = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/parciales/verParciales');
+      const response = await fetch('http://74.50.68.87:4000/api/parciales/verParciales');
       const data = await response.json();
       setparcial(data);
     } catch (error) {
@@ -281,7 +281,7 @@ const fetchlistaActividades = async () => {
   };
   const fetchListaCiclo= async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/ponderacionCiclo/verPonderacionesCiclos');
+      const response = await fetch('http://74.50.68.87:4000/api/ponderacionCiclo/verPonderacionesCiclos');
       const data = await response.json();
       setlistaponderacionesC(data);
     } catch (error) {
@@ -808,7 +808,7 @@ if (!esValido) {
           Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura || ''
       };
 
-      const response = await fetch('http://localhost:4000/api/actividadesAcademicas/registrar', {
+      const response = await fetch('http://74.50.68.87:4000/api/actividadesAcademicas/registrar', {
           method: 'POST',
           headers: {
               'Content-Type': 'application/json',
@@ -881,7 +881,7 @@ const handleActualizarActividad = async () => {
 
  // Validar valor con el límite de la ponderación
  try {
-  const response = await fetch('http://localhost:4000/api/actividadesacademicas/validar-valoractua', {
+  const response = await fetch('http://74.50.68.87:4000/api/actividadesacademicas/validar-valoractua', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -930,7 +930,7 @@ const handleActualizarActividad = async () => {
     };
 
     const response = await fetch(
-      `http://localhost:4000/api/actividadesAcademicas/actualizar/${actividadToUpdate.Cod_actividad_academica}`,
+      `http://74.50.68.87:4000/api/actividadesAcademicas/actualizar/${actividadToUpdate.Cod_actividad_academica}`,
       {
         method: "PUT",
         headers: {
@@ -989,7 +989,7 @@ const handleEliminarActividad = async (Cod_actividad_academica) => {
 
     if (result.isConfirmed) {
       // Realiza la solicitud DELETE
-      const response = await fetch('http://localhost:4000/api/actividadesAcademicas/eliminarActividad', {
+      const response = await fetch('http://74.50.68.87:4000/api/actividadesAcademicas/eliminarActividad', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

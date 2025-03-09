@@ -55,7 +55,7 @@ const MunicipioMantenimiento = () => {
 
   const obtenerMunicipios = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/municipios');
+      const response = await fetch('http://74.50.68.87:4000/api/departamento/municipios');
       const data = await response.json();
       if (response.ok) {
         // Convertir los nombres de los municipios a mayúsculas de manera segura
@@ -78,7 +78,7 @@ const MunicipioMantenimiento = () => {
   
   const obtenerDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamentos');
+      const response = await fetch('http://74.50.68.87:4000/api/departamento/departamentos');
       const data = await response.json();
       if (response.ok) {
         // Convertir los nombres de los departamentos a mayúsculas de manera segura
@@ -120,7 +120,7 @@ const crearMunicipio = async () => {
 
   // Realizar la creación del municipio
   try {
-    const response = await fetch('http://localhost:4000/api/departamento/municipios', {
+    const response = await fetch('http://74.50.68.87:4000/api/departamento/municipios', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre_municipio: nombreMunicipio, cod_departamento: codDepartamento }),
@@ -212,7 +212,7 @@ const handleInputChange = (e) => {
     }
 
     try {
-      const response = await fetch(`http://localhost:4000/api/departamento/municipios/${codMunicipio}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/departamento/municipios/${codMunicipio}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -237,7 +237,7 @@ const handleInputChange = (e) => {
 
   const eliminarMunicipio = async (codMunicipio) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/departamento/municipios/${codMunicipio}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/departamento/municipios/${codMunicipio}`, {
         method: 'DELETE',
       });
 

@@ -55,7 +55,7 @@ const ListaNacionalidad = () => {
 
   const fetchNacionalidades = async () => {
     try {
-      const response = await fetch("http://localhost:4000/api/nacionalidad/verNacionalidades");
+      const response = await fetch("http://74.50.68.87:4000/api/nacionalidad/verNacionalidades");
       if (!response.ok) throw new Error("Error al cargar nacionalidades");
       const data = await response.json();
       
@@ -286,8 +286,8 @@ const ListaNacionalidad = () => {
     setIsSubmitting(true);
   
     const url = nacionalidadToEdit
-      ? `http://localhost:4000/api/nacionalidad/actualizarNacionalidades/${nacionalidadToEdit.Cod_nacionalidad}`
-      : "http://localhost:4000/api/nacionalidad/crearNacionalidades";
+      ? `http://74.50.68.87:4000/api/nacionalidad/actualizarNacionalidades/${nacionalidadToEdit.Cod_nacionalidad}`
+      : "http://74.50.68.87:4000/api/nacionalidad/crearNacionalidades";
   
     const method = nacionalidadToEdit ? "PUT" : "POST";
   
@@ -369,7 +369,7 @@ const ListaNacionalidad = () => {
       console.log("Enviando solicitud DELETE...");
   
       const response = await fetch(
-        `http://localhost:4000/api/nacionalidad/eliminarNacionalidades/${encodeURIComponent(Cod_nacionalidad)}`,
+        `http://74.50.68.87:4000/api/nacionalidad/eliminarNacionalidades/${encodeURIComponent(Cod_nacionalidad)}`,
         {
           method: "DELETE",
         }

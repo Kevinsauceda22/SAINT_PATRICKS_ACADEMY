@@ -151,7 +151,7 @@ const LibroDiario = () => {
   const fetchRegistros = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:4000/api/Librodiario', {
+      const response = await fetch('http://74.50.68.87:4000/api/Librodiario', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -179,7 +179,7 @@ const LibroDiario = () => {
 
   const fetchCuentas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/catalogoCuentas', {
+      const response = await fetch('http://74.50.68.87:4000/api/catalogoCuentas', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -265,7 +265,7 @@ const LibroDiario = () => {
       console.log('Datos del Acreedor:', formDataAcreedor);
   
       // Create the debtor and creditor records in the backend
-      const deudorResponse = await fetch('http://localhost:4000/api/Librodiario', {
+      const deudorResponse = await fetch('http://74.50.68.87:4000/api/Librodiario', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -274,7 +274,7 @@ const LibroDiario = () => {
         body: JSON.stringify(formDataDeudor)
       });
   
-      const acreedorResponse = await fetch('http://localhost:4000/api/Librodiario', {
+      const acreedorResponse = await fetch('http://74.50.68.87:4000/api/Librodiario', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -324,7 +324,7 @@ const LibroDiario = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:4000/api/Librodiario/${Cod_libro_diario}`, {
+        const response = await fetch(`http://74.50.68.87:4000/api/Librodiario/${Cod_libro_diario}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`

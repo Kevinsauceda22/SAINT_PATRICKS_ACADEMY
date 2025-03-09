@@ -58,7 +58,7 @@ import {
 
   const fetchDias = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/dia/dias');
+      const response = await fetch('http://74.50.68.87:4000/api/dia/dias');
       const data = await response.json();
       const dataWithIndex = data.map((dia, index) => ({
         ...dia,
@@ -77,7 +77,7 @@ import {
     console.log('Valor a enviar:', nuevoDia.dias); // Verifica el valor
     console.log('Valor a enviar:', nuevoDia.prefijo_dia); // Verifica el valor
     try {
-      const response = await fetch('http://localhost:4000/api/dia/crear_dia', {
+      const response = await fetch('http://74.50.68.87:4000/api/dia/crear_dia', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +142,7 @@ const handleUpdateDia = async () => {
  
 
   try {
-      const response = await fetch('http://localhost:4000/api/dia/actualizar_dia', {
+      const response = await fetch('http://74.50.68.87:4000/api/dia/actualizar_dia', {
           method: 'PUT',
           headers: {
               'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const handleUpdateDia = async () => {
 
 const handleDeleteDia = async () => {
   try {
-    const response = await fetch(`http://localhost:4000/api/dia/${diaToDelete.Cod_dias}`, {
+    const response = await fetch(`http://74.50.68.87:4000/api/dia/${diaToDelete.Cod_dias}`, {
       method: 'DELETE',
     });
 

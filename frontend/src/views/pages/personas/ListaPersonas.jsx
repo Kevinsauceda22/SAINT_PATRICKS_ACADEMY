@@ -505,7 +505,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
     const fetchPersonas = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/persona/verPersonas')
+        const response = await fetch('http://74.50.68.87:4000/api/persona/verPersonas')
         const data = await response.json()
   
         // Agrega un console.log aquí para ver los datos originales
@@ -527,7 +527,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
   const fetchNacionalidad = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/nacionalidad/verNacionalidades')
+      const response = await fetch('http://74.50.68.87:4000/api/nacionalidad/verNacionalidades')
       const data = await response.json()
       console.log('Datos recibidos de nacionalidad:', data)
       setNacionalidad(data)
@@ -538,7 +538,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
 const fetchMunicipio = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/persona/verMunicipios');
+    const response = await fetch('http://74.50.68.87:4000/api/persona/verMunicipios');
     const data = await response.json();
     console.log('Datos recibidos de la API:', data);
 
@@ -558,7 +558,7 @@ const fetchMunicipio = async () => {
 
   const fetchDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verDepartamentos')
+      const response = await fetch('http://74.50.68.87:4000/api/persona/verDepartamentos')
       const data = await response.json()
       console.log('Datos recibidos de departamentos:', data)
       setDepartamentos(data)
@@ -569,7 +569,7 @@ const fetchMunicipio = async () => {
 
   const fetchTipoPersona = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verTipoPersona')
+      const response = await fetch('http://74.50.68.87:4000/api/persona/verTipoPersona')
       const data = await response.json()
       console.log('Datos recibidos de tipo de persona:', data)
       setTipoPersona(data)
@@ -580,7 +580,7 @@ const fetchMunicipio = async () => {
 
   const fetchGeneros = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verGeneros')
+      const response = await fetch('http://74.50.68.87:4000/api/persona/verGeneros')
       const data = await response.json()
       console.log('Datos recibidos de géneros:', data)
       setGeneros(data)
@@ -714,7 +714,7 @@ const handleCreatePersona = async () => {
   });
 
   try {
-    const response = await fetch('http://localhost:4000/api/persona/crearPersona', {
+    const response = await fetch('http://74.50.68.87:4000/api/persona/crearPersona', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -865,7 +865,7 @@ const handleCreatePersona = async () => {
     });
   
     try {
-      const response = await fetch(`http://localhost:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -927,7 +927,7 @@ const handleCreatePersona = async () => {
   const handleDeletePersona = async () => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/persona/eliminarPersona/${encodeURIComponent(personaToDelete.cod_persona)}`,
+        `http://74.50.68.87:4000/api/persona/eliminarPersona/${encodeURIComponent(personaToDelete.cod_persona)}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },

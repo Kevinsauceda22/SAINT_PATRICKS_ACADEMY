@@ -57,7 +57,7 @@ const EstadoMatricula = () => {
 
   const obtenerEstados = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadomatricula/estado-matricula');
+      const response = await fetch('http://74.50.68.87:4000/api/estadomatricula/estado-matricula');
       const data = await response.json();
       if (response.ok) {
         setEstados(data);
@@ -75,7 +75,7 @@ const EstadoMatricula = () => {
 
   const crearEstado = async (tipo) => {
     try {
-      const response = await fetch('http://localhost:4000/api/estadomatricula/estado-matricula', {
+      const response = await fetch('http://74.50.68.87:4000/api/estadomatricula/estado-matricula', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ const EstadoMatricula = () => {
 
   const eliminarEstado = async (codEstado) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/estadomatricula/estado-matricula/${codEstado}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/estadomatricula/estado-matricula/${codEstado}`, {
         method: 'DELETE',
       });
 
@@ -115,7 +115,7 @@ const EstadoMatricula = () => {
 
   const actualizarEstado = async (codEstado, nuevoTipo) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/estadomatricula/estado-matricula/${codEstado}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/estadomatricula/estado-matricula/${codEstado}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

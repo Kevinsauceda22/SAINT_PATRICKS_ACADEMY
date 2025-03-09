@@ -71,7 +71,7 @@ const ActividadesAcademicasProfesor = () => {
   const fetchCodProfesor = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4000/api/profesores/obtenerCodProfesor', {
+      const response = await fetch('http://74.50.68.87:4000/api/profesores/obtenerCodProfesor', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) {
@@ -91,7 +91,7 @@ const ActividadesAcademicasProfesor = () => {
   const fetchSecciones = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4000/api/secciones/porprofesor', {
+      const response = await fetch('http://74.50.68.87:4000/api/secciones/porprofesor', {
         method: 'GET',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -105,7 +105,7 @@ const ActividadesAcademicasProfesor = () => {
   const fetchAsignaturas = async (codSeccion) => {
     try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:4000/api/asignaturas/porprofesor/${codSeccion}`, {
+        const response = await fetch(`http://74.50.68.87:4000/api/asignaturas/porprofesor/${codSeccion}`, {
             headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -128,7 +128,7 @@ const ActividadesAcademicasProfesor = () => {
 const fetchParciales = async () => {
   try {
     // Realizar solicitud a la API
-    const response = await fetch(`http://localhost:4000/api/parciales/verParciales`, {
+    const response = await fetch(`http://74.50.68.87:4000/api/parciales/verParciales`, {
       
       method: 'GET',
     });
@@ -167,7 +167,7 @@ const fetchParciales = async () => {
 const fetchListaCiclo = async () => {
   try {
     const token = localStorage.getItem('token'); // Asegúrate de que el token esté disponible
-    const response = await fetch('http://localhost:4000/api/actividadesAcademicas/obtenerPonderacionesPorProfesor', {
+    const response = await fetch('http://74.50.68.87:4000/api/actividadesAcademicas/obtenerPonderacionesPorProfesor', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -265,7 +265,7 @@ const handleAbrirModal = async () => {
   try {
     // Llama al endpoint para obtener el Cod_profesor
     const token = localStorage.getItem('token'); // Asegúrate de que el token esté en localStorage
-    const response = await fetch('http://localhost:4000/api/profesores/obtenerCodProfesor', {
+    const response = await fetch('http://74.50.68.87:4000/api/profesores/obtenerCodProfesor', {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -338,7 +338,7 @@ const fetchActividades = async () => {
 
       const token = localStorage.getItem('token');
       const response = await fetch(
-          `http://localhost:4000/api/actividadesAcademicas/actividadesporparcialseccion?codSeccion=${selectedSeccion.Cod_secciones}&codParcial=${selectedParcial.Cod_parcial}&codAsignatura=${selectedAsignatura.Cod_asignatura}`,
+          `http://74.50.68.87:4000/api/actividadesAcademicas/actividadesporparcialseccion?codSeccion=${selectedSeccion.Cod_secciones}&codParcial=${selectedParcial.Cod_parcial}&codAsignatura=${selectedAsignatura.Cod_asignatura}`,
           {
               method: 'GET',
               headers: { Authorization: `Bearer ${token}` },
@@ -416,7 +416,7 @@ const handleSeleccionarAsignatura = (asignatura) => {
 const obtenerCodCicloPorPonderacionCiclo = async (Cod_ponderacion_ciclo) => {
   try {
     const response = await fetch(
-      `http://localhost:4000/api/ponderacionCiclo/ciclo?Cod_ponderacion_ciclo=${Cod_ponderacion_ciclo}`
+      `http://74.50.68.87:4000/api/ponderacionCiclo/ciclo?Cod_ponderacion_ciclo=${Cod_ponderacion_ciclo}`
     );
     const data = await response.json();
 
@@ -562,7 +562,7 @@ const handleGestionarActividades = (parcial) => {
         Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura,
       };
   
-      const response = await fetch("http://localhost:4000/api/actividadesAcademicas/registrar", {
+      const response = await fetch("http://74.50.68.87:4000/api/actividadesAcademicas/registrar", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -617,7 +617,7 @@ const handleGestionarActividades = (parcial) => {
 
   const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor) => {
     try {
-        const response = await fetch('http://localhost:4000/api/actividadesacademicas/validar-valor', {
+        const response = await fetch('http://74.50.68.87:4000/api/actividadesacademicas/validar-valor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -704,7 +704,7 @@ const handleActualizarActividad = async () => {
 
   try {
     // Validar espacio restante en el backend
-    const response = await fetch("http://localhost:4000/api/actividadesacademicas/validar-valoractua", {
+    const response = await fetch("http://74.50.68.87:4000/api/actividadesacademicas/validar-valoractua", {
       method: "POST",
       headers: {
           "Content-Type": "application/json",
@@ -727,7 +727,7 @@ const handleActualizarActividad = async () => {
 
     // Si pasa la validación, proceder con la actualización
     const updateResponse = await fetch(
-      `http://localhost:4000/api/actividadesAcademicas/${Cod_actividad_academica}`,
+      `http://74.50.68.87:4000/api/actividadesAcademicas/${Cod_actividad_academica}`,
       {
         method: "PUT",
         headers: {
@@ -814,7 +814,7 @@ const handleEliminarActividad = async (id) => {
 
         if (confirm.isConfirmed) {
             const response = await fetch(
-                `http://localhost:4000/api/actividadesAcademicas/${id}`,
+                `http://74.50.68.87:4000/api/actividadesAcademicas/${id}`,
                 {
                     method: "DELETE",
                     headers: {

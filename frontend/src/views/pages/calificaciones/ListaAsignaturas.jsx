@@ -58,7 +58,7 @@ const ListaAsignaturas = () => {
 
   const fetchAsignaturas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/asignaturas/verAsignaturas');
+      const response = await fetch('http://74.50.68.87:4000/api/asignaturas/verAsignaturas');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
     const dataWithIndex = data.map((asignatura, index) => ({
@@ -233,7 +233,7 @@ const ListaAsignaturas = () => {
   const handleCreateAsignatura = async () => {
     if (!validateAsignatura()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/asignaturas/crearAsignatura', {
+      const response = await fetch('http://74.50.68.87:4000/api/asignaturas/crearAsignatura', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -260,7 +260,7 @@ const ListaAsignaturas = () => {
   const handleUpdateAsignatura = async () => {
     if (!validarAsignaturaUpdate()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/asignaturas/actualizarAsignatura', {
+      const response = await fetch('http://74.50.68.87:4000/api/asignaturas/actualizarAsignatura', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -285,7 +285,7 @@ const ListaAsignaturas = () => {
 
   const handleDeleteAsignatura = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/asignaturas/eliminar_asignatura', {
+      const response = await fetch('http://74.50.68.87:4000/api/asignaturas/eliminar_asignatura', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

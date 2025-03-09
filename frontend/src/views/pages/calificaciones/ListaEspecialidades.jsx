@@ -56,7 +56,7 @@ const ListaEspecialidades = () => {
 
   const fetchEspecialidades = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/especialidades/verespecialidades');
+      const response = await fetch('http://74.50.68.87:4000/api/especialidades/verespecialidades');
       const data = await response.json();
       const dataWithIndex = data.map((especialidades, index) => ({
         ...especialidades,
@@ -210,7 +210,7 @@ const valdiarEspecialidad = () => {
     }
   
     try {
-      const response = await fetch('http://localhost:4000/api/especialidades/crearespecialidad', {
+      const response = await fetch('http://74.50.68.87:4000/api/especialidades/crearespecialidad', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -263,7 +263,7 @@ const valdiarEspecialidad = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/especialidades/actualizarespecialidad', {
+      const response = await fetch('http://74.50.68.87:4000/api/especialidades/actualizarespecialidad', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -292,7 +292,7 @@ const valdiarEspecialidad = () => {
 
   const handleDeleteEspecialidad = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/especialidades/eliminarespecialidad', {
+      const response = await fetch('http://74.50.68.87:4000/api/especialidades/eliminarespecialidad', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

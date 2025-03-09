@@ -63,7 +63,7 @@ const ListaEdificios = () => {
   // Función para obtener los edificios desde la API
   const fetchEdificios = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/edificio/edificios'); // Realiza la petición al backend
+      const response = await fetch('http://74.50.68.87:4000/api/edificio/edificios'); // Realiza la petición al backend
       const data = await response.json(); // Convierte la respuesta a JSON
       const dataWithIndex = data.map((edificio, index) => ({
         ...edificio,
@@ -85,7 +85,7 @@ const ListaEdificios = () => {
     if (isDuplicateEdificio()) return;
 
     try {
-      const response = await fetch('http://localhost:4000/api/edificio/crear_edificio', {
+      const response = await fetch('http://74.50.68.87:4000/api/edificio/crear_edificio', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -116,7 +116,7 @@ const ListaEdificios = () => {
     if (!validateNombreEdificio(nombreCapitalizado)) return;
 
     try {
-      const response = await fetch('http://localhost:4000/api/edificio/actualizar_edificio', {
+      const response = await fetch('http://74.50.68.87:4000/api/edificio/actualizar_edificio', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -144,7 +144,7 @@ const ListaEdificios = () => {
   // Función para eliminar un edificio
   const handleDeleteEdificio = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/edificio/${encodeURIComponent(edificioToDelete.Cod_edificio)}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/edificio/${encodeURIComponent(edificioToDelete.Cod_edificio)}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });

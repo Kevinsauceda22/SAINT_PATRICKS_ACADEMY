@@ -62,7 +62,7 @@ const ListaPonderacionesCiclos = () => {
 
     const fetchCiclos = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/ciclos/verCiclos');
+            const response = await fetch('http://74.50.68.87:4000/api/ciclos/verCiclos');
             const data = await response.json();
             setCiclos(data);
         } catch (error) {
@@ -80,7 +80,7 @@ const ListaPonderacionesCiclos = () => {
 
     const fetchPonderaciones = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/ponderaciones/verPonderaciones');
+            const response = await fetch('http://74.50.68.87:4000/api/ponderaciones/verPonderaciones');
             const data = await response.json();
             setPonderaciones(data);
         } catch (error) {
@@ -97,7 +97,7 @@ const ListaPonderacionesCiclos = () => {
     const fetchPonderacionCiclo = async (codCiclo) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:4000/api/ponderacionCiclo/verPonderacionesCiclos/${codCiclo}`);
+            const response = await fetch(`http://74.50.68.87:4000/api/ponderacionCiclo/verPonderacionesCiclos/${codCiclo}`);
             const data = await response.json();
             setPonderacionesCiclos(data);
             setSelectedCiclo(codCiclo); // Guardar el ciclo seleccionado
@@ -111,7 +111,7 @@ const ListaPonderacionesCiclos = () => {
 
     const fetchGrados = async () => {
         try {
-            const response = await fetch('http://localhost:4000/api/grados/verGrados');
+            const response = await fetch('http://74.50.68.87:4000/api/grados/verGrados');
             const data = await response.json();
             // Asignar un índice original basado en el orden en la base de datos
             const dataWithIndex = data.map((grado, index) => ({
@@ -160,7 +160,7 @@ const ListaPonderacionesCiclos = () => {
         }
 
         try {
-            const response = await fetch('http://localhost:4000/api/ponderacionCiclo/crearPonderacionesCiclos', {
+            const response = await fetch('http://74.50.68.87:4000/api/ponderacionCiclo/crearPonderacionesCiclos', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -200,7 +200,7 @@ const ListaPonderacionesCiclos = () => {
 
     const handleSaveUpdate = async (ponderacionCiclo) => {
         try {
-            const response = await fetch('http://localhost:4000/api/ponderacionCiclo/actualizarPonderacionesCiclos', {
+            const response = await fetch('http://74.50.68.87:4000/api/ponderacionCiclo/actualizarPonderacionesCiclos', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

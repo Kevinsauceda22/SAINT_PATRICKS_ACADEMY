@@ -38,7 +38,7 @@ const MatriculasPorGrado = () => {
   // Obtener los grados y los años académicos
   const obtenerGradosYAniosAcademicos = async () => {
     try {
-      const response = await axios.get('http://localhost:4000/api/matricula/opciones');
+      const response = await axios.get('http://74.50.68.87:4000/api/matricula/opciones');
       const periodos = response.data.periodos_matricula || [];
       const anios = [...new Set(periodos.map((p) => p.Anio_academico))].sort((a, b) => b - a);
       setAniosAcademicos(anios);
@@ -55,7 +55,7 @@ const MatriculasPorGrado = () => {
     setAlumnos([]);
     setLoading(true);
     try {
-      const response = await axios.get(`http://localhost:4000/api/matricula/alumnos/${cod_grado}`, {
+      const response = await axios.get(`http://74.50.68.87:4000/api/matricula/alumnos/${cod_grado}`, {
         params: { anio_academico: anio },
       });
       setAlumnos(response.data.data || []);

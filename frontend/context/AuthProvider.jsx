@@ -32,7 +32,7 @@ const AuthProvider = ({ children }) => {
         };
 
         const { data } = await axios.get(
-          `http://localhost:4000/api/usuarios/perfil/${cod_usuario}`,
+          `http://74.50.68.87:4000/api/usuarios/perfil/${cod_usuario}`,
           config
         );
 
@@ -145,7 +145,7 @@ const NuevaContrasena = () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "http://localhost:4000/api/usuarios/actualizar-password-primer-ingreso",
+        "http://74.50.68.87:4000/api/usuarios/actualizar-password-primer-ingreso",
         {
           cod_usuario: auth.cod_usuario,
           nueva_contraseña: password

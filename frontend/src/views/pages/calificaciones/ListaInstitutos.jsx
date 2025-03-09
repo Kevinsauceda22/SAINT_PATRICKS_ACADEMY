@@ -46,7 +46,7 @@ const Institutos = () => {
   // Obtener los institutos desde la API
   const fetchInstitutos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/instituto/instituto');
+      const response = await fetch('http://74.50.68.87:4000/api/instituto/instituto');
       if (!response.ok) {
         throw new Error(`Error en la respuesta: ${response.status}`);
       }
@@ -112,7 +112,7 @@ const Institutos = () => {
     if (!validateFields()) return;
   
     try {
-      const response = await fetch('http://localhost:4000/api/instituto/actualizarinstituto', {
+      const response = await fetch('http://74.50.68.87:4000/api/instituto/actualizarinstituto', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ const Institutos = () => {
     if (!validateFields()) return;
   
     try {
-      const response = await fetch('http://localhost:4000/api/instituto/crearinstituto', {
+      const response = await fetch('http://74.50.68.87:4000/api/instituto/crearinstituto', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const Institutos = () => {
     // Si el usuario confirma, procede con la eliminación
     if (result.isConfirmed) {
       try {
-        const response = await fetch('http://localhost:4000/api/instituto/eliminarinstituto', {
+        const response = await fetch('http://74.50.68.87:4000/api/instituto/eliminarinstituto', {
           method: 'DELETE', 
           headers: {
             'Content-Type': 'application/json',

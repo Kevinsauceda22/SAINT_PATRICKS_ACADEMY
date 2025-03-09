@@ -59,7 +59,7 @@ const PeriodosMatricula = () => {
 
   const obtenerPeriodos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/periodomatricula/periodos');
+      const response = await fetch('http://74.50.68.87:4000/api/periodomatricula/periodos');
       const data = await response.json();
       setPeriodos(data);
       setFilteredPeriodos(data);
@@ -106,7 +106,7 @@ const PeriodosMatricula = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:4000/api/periodomatricula/crearperiodomatricula', {
+      const response = await fetch('http://74.50.68.87:4000/api/periodomatricula/crearperiodomatricula', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -151,7 +151,7 @@ const PeriodosMatricula = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:4000/api/periodomatricula/periodos/${id}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/periodomatricula/periodos/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -254,7 +254,7 @@ const PeriodosMatricula = () => {
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch(`http://localhost:4000/api/periodomatricula/periodos/${id}`, {
+        const response = await fetch(`http://74.50.68.87:4000/api/periodomatricula/periodos/${id}`, {
           method: 'DELETE',
         });
 
@@ -294,7 +294,7 @@ const PeriodosMatricula = () => {
       const nuevoEstado = periodo.estado === 'activo' ? 'inactivo' : 'activo';
   
       // Realizar la solicitud al backend para actualizar el estado
-      const response = await fetch('http://localhost:4000/api/periodomatricula/estado', {
+      const response = await fetch('http://74.50.68.87:4000/api/periodomatricula/estado', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

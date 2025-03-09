@@ -51,7 +51,7 @@ const TipoMatricula = () => {
 
   const obtenerTipos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipomatricula/tipo-matricula');
+      const response = await fetch('http://74.50.68.87:4000/api/tipomatricula/tipo-matricula');
       const data = await response.json();
       if (response.ok) {
         setTipos(data);
@@ -90,7 +90,7 @@ const TipoMatricula = () => {
 
   const crearTipo = async (tipo) => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipomatricula/tipo-matricula', {
+      const response = await fetch('http://74.50.68.87:4000/api/tipomatricula/tipo-matricula', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -122,7 +122,7 @@ const TipoMatricula = () => {
 
   const actualizarTipo = async (codTipo, nuevoTipo) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/tipomatricula/tipo-matricula/${codTipo}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/tipomatricula/tipo-matricula/${codTipo}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -154,7 +154,7 @@ const TipoMatricula = () => {
 
   const eliminarTipo = async (codTipo) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/tipomatricula/tipo-matricula/${codTipo}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/tipomatricula/tipo-matricula/${codTipo}`, {
         method: 'DELETE',
       });
 

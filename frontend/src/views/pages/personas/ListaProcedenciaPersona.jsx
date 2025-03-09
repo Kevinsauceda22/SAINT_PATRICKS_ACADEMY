@@ -59,7 +59,7 @@ const ListaProcedenciaPersona = () => {
 
   const fetchProcedenciaPersona = async () => {
     try {
-      const response = await fetch(`http://localhost:4000/api/procedencia/persona/:cod_procedencia_persona`);
+      const response = await fetch(`http://74.50.68.87:4000/api/procedencia/persona/:cod_procedencia_persona`);
       const data = await response.json();
   
       // Agregar los nombres y apellidos a los registros
@@ -83,7 +83,7 @@ const ListaProcedenciaPersona = () => {
   
   const fetchProcedencias = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/procedencia/procendencia');
+      const response = await fetch('http://74.50.68.87:4000/api/procedencia/procendencia');
       const data = await response.json();
       setProcedencias(data); // Asegúrate de que data contiene el formato esperado
     } catch (error) {
@@ -93,7 +93,7 @@ const ListaProcedenciaPersona = () => {
   
   const fetchPersonas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/procedencia/total_personas');
+      const response = await fetch('http://74.50.68.87:4000/api/procedencia/total_personas');
       const data = await response.json();
       setPersonas(data); // Asegúrate de que data contiene el formato esperado
     } catch (error) {
@@ -105,7 +105,7 @@ const ListaProcedenciaPersona = () => {
   // Obtener el nombre y el apellido basado en cod_persona
 const fetchNombreApellido = async (codPersona) => {
   try {
-    const response = await fetch(`http://localhost:4000/api/procedencia/nombre/${codPersona}`);
+    const response = await fetch(`http://74.50.68.87:4000/api/procedencia/nombre/${codPersona}`);
     if (!response.ok) {
       console.error(`Error al obtener el nombre para cod_persona ${codPersona}:`, response.statusText);
       return { Nombre: 'Desconocido', Primer_apellido: '' }; // Fallback si falla
@@ -135,7 +135,7 @@ const handleInsertProcedenciaPersona = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:4000/api/procedencia/crear_procedencia', {
+    const response = await fetch('http://74.50.68.87:4000/api/procedencia/crear_procedencia', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

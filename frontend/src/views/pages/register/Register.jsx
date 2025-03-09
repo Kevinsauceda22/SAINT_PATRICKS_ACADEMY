@@ -97,7 +97,7 @@ const ParentProfileForm = () => {
 
         // Cargar datos pre-registrados
         const datosResponse = await axios.get(
-          `http://localhost:4000/api/usuarios/padre/datos-preregistro/${cod_usuario}`,
+          `http://74.50.68.87:4000/api/usuarios/padre/datos-preregistro/${cod_usuario}`,
           config
         );
 
@@ -115,7 +115,7 @@ const ParentProfileForm = () => {
 
         // Cargar departamentos
         const departamentosResponse = await axios.get(
-          'http://localhost:4000/api/departamento/departamentos',
+          'http://74.50.68.87:4000/api/departamento/departamentos',
           config
         );
 
@@ -158,7 +158,7 @@ const ParentProfileForm = () => {
       try {
         const token = localStorage.getItem('token');
         const response = await axios.get(
-          `http://localhost:4000/api/departamento/municipios/${formData.cod_departamento}`,
+          `http://74.50.68.87:4000/api/departamento/municipios/${formData.cod_departamento}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -234,7 +234,7 @@ const handleSubmit = async (e) => {
     const cod_usuario = decoded.cod_usuario;
 
     const response = await axios.put(
-      `http://localhost:4000/api/usuarios/padre/completar-perfil/${cod_usuario}`,
+      `http://74.50.68.87:4000/api/usuarios/padre/completar-perfil/${cod_usuario}`,
       formData,
       {
         headers: {

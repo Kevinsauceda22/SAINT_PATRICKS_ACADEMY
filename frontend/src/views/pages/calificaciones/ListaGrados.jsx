@@ -59,7 +59,7 @@ const ListaGrados = () => {
 
   const fetchCiclos = async () => { // Asegúrate de que esta función esté definida
     try {
-      const response = await fetch('http://localhost:4000/api/ciclos/verCiclos');
+      const response = await fetch('http://74.50.68.87:4000/api/ciclos/verCiclos');
       const data = await response.json();
       setCiclos(data);
     } catch (error) {
@@ -77,7 +77,7 @@ const ListaGrados = () => {
 
   const fetchGrados = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/grados/verGrados');
+      const response = await fetch('http://74.50.68.87:4000/api/grados/verGrados');
       const data = await response.json();
       // Asignar un índice original basado en el orden en la base de datos
       const dataWithIndex = data.map((grado, index) => ({
@@ -278,7 +278,7 @@ const ListaGrados = () => {
   const handleCreateGrado = async () => {
     if (!validarCiclo() || !validarGrado()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/grados/crearGrado', {
+      const response = await fetch('http://74.50.68.87:4000/api/grados/crearGrado', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -313,7 +313,7 @@ const ListaGrados = () => {
     }
     if (!validarGradoUpdate()) return;
     try {
-      const response = await fetch('http://localhost:4000/api/grados/actualizarGrado', {
+      const response = await fetch('http://74.50.68.87:4000/api/grados/actualizarGrado', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -338,7 +338,7 @@ const ListaGrados = () => {
 
   const handleDeleteGrado = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/grados/eliminarGrado', {
+      const response = await fetch('http://74.50.68.87:4000/api/grados/eliminarGrado', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

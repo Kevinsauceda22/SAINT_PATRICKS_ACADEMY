@@ -53,7 +53,7 @@ const ListaTipoContacto = () => {
 
   const fetchTiposContacto = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
+      const response = await fetch('http://74.50.68.87:4000/api/tipoContacto/obtenerTipoContacto');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
   
@@ -282,8 +282,8 @@ const handleCreateOrUpdate = async () => {
   setIsSubmitting(true);
 
   const url = tipoContactoToUpdate
-    ? `http://localhost:4000/api/tipoContacto/actualizarTipoContacto/${tipoContactoToUpdate.cod_tipo_contacto}`
-    : 'http://localhost:4000/api/tipoContacto/crearTipoContacto';
+    ? `http://74.50.68.87:4000/api/tipoContacto/actualizarTipoContacto/${tipoContactoToUpdate.cod_tipo_contacto}`
+    : 'http://74.50.68.87:4000/api/tipoContacto/crearTipoContacto';
   const method = tipoContactoToUpdate ? 'PUT' : 'POST';
   const body = JSON.stringify({ tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() });
 
@@ -351,7 +351,7 @@ const handleDeleteTipoContacto = async (cod_tipo_contacto, tipo_contacto) => {
 
     if (!confirmResult.isConfirmed) return;
 
-    const response = await fetch(`http://localhost:4000/api/tipoContacto/eliminarTipoContacto/${encodeURIComponent(cod_tipo_contacto)}`, {
+    const response = await fetch(`http://74.50.68.87:4000/api/tipoContacto/eliminarTipoContacto/${encodeURIComponent(cod_tipo_contacto)}`, {
       method: 'DELETE',
     });
 

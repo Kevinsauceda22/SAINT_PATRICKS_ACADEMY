@@ -86,7 +86,7 @@ const UserManagement = () => {
       const token = localStorage.getItem('token');
       // Cargar departamentos
       const deptoResponse = await axios.get(
-        'http://localhost:4000/api/departamento/departamentos',
+        'http://74.50.68.87:4000/api/departamento/departamentos',
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -104,7 +104,7 @@ const UserManagement = () => {
 
       // Cargar nacionalidades
       const nacResponse = await axios.get(
-        'http://localhost:4000/api/nacionalidad/vernacionalidades',
+        'http://74.50.68.87:4000/api/nacionalidad/vernacionalidades',
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -301,7 +301,7 @@ const UserManagement = () => {
           try {
             const token = localStorage.getItem('token');
             const response = await axios.get(
-              `http://localhost:4000/api/departamento/municipios/${departamentoId}`,
+              `http://74.50.68.87:4000/api/departamento/municipios/${departamentoId}`,
               {
                 headers: { Authorization: `Bearer ${token}` }
               }
@@ -409,7 +409,7 @@ const UserManagement = () => {
           }
         });
         
-        axios.post('http://localhost:4000/api/usuarios/crear-usuario', 
+        axios.post('http://74.50.68.87:4000/api/usuarios/crear-usuario', 
           result.value,
           {
             headers: { 
@@ -456,7 +456,7 @@ const UserManagement = () => {
     }
 
     try {
-      const response = await axios.get('http://localhost:4000/api/usuarios/Todos-los-usuarios', {
+      const response = await axios.get('http://74.50.68.87:4000/api/usuarios/Todos-los-usuarios', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -557,7 +557,7 @@ const UserManagement = () => {
       setProcessingUsers(prev => new Set(prev).add(userId));
 
       const response = await axios.put(
-        'http://localhost:4000/api/usuarios/cambiar-estado',
+        'http://74.50.68.87:4000/api/usuarios/cambiar-estado',
         {
           userId: userId,
           Cod_estado_usuario: newStatus,

@@ -116,7 +116,7 @@ const GestorDePermisos = ({ pathName }) => {
 
   const cargarPermisos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/roles/permisos', {
+      const response = await fetch('http://74.50.68.87:4000/api/roles/permisos', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -244,7 +244,7 @@ const GestorDePermisos = ({ pathName }) => {
   
       console.log('Enviando actualización:', datosActualizacion);
   
-      const response = await fetch(`http://localhost:4000/api/roles/permisos/estado/${Cod_Permiso}`, {
+      const response = await fetch(`http://74.50.68.87:4000/api/roles/permisos/estado/${Cod_Permiso}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
