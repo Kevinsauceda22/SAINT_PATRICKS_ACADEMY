@@ -96,7 +96,7 @@ init();
 // Middleware para permitir CORS desde cualquier origen
 // Función para verificar los orígenes permitidos
 app.use(cors({
-    origin: 'http://localhost:3000',  // Permitir cualquier origen
+    origin: '*',  // Permitir cualquier origen
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true,
 }));
