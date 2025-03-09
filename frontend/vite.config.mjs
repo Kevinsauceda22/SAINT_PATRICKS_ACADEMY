@@ -35,7 +35,7 @@ export default defineConfig({
     extensions: ['.mjs', '.js', '.ts', '.jsx', '.tsx', '.json', '.scss'],
   },
   server: {
-    port: 3000,
+    port: 4173,
     proxy: {
       // Configura tu proxy aquí si es necesario
     },

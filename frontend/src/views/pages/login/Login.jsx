@@ -56,7 +56,9 @@ const Login = () => {
     if (Object.keys(newErrors).length === 0) {
       setIsLoading(true);
       try {
-        const response = await axios.post('http://localhost:4000/api/usuarios/login', {
+
+        const response = await axios.post('http://74.50.68.87:4000/api/usuarios/login', {
+
           identificador: formData.identificador,
           contraseña_usuario: formData.contraseña_usuario
         });

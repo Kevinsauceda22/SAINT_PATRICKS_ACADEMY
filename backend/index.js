@@ -94,11 +94,13 @@ const init = async () => {
 init();
 
 // Middleware para permitir CORS desde cualquier origen
+// Función para verificar los orígenes permitidos
 app.use(cors({
-    origin: 'http://localhost:3000', // Permitir sólo desde el frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
-    credentials: true, // Para permitir cookies en las solicitudes
+    origin: 'http://localhost:3000',  // Permitir cualquier origen
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
 }));
+app.options('*', cors());  // Permite las solicitudes OPTIONS de todos los orígenes
 
 app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes
 
