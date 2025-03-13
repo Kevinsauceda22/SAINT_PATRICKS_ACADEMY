@@ -190,7 +190,7 @@ app.use('/api/pagos', pagoRoutes); // Ruta para crear un nuevo pago
 // Rutas para secciones
 app.use('/api/secciones', seccionesRoutes);
 // Rutas para secciones y asignaturas
-app.use('/api/seccionesAsignaturas', secc_asigRoutes);
+app.use('/api/secciones_asignaturas', secc_asigRoutes);
 // Rutas para Gestion academica
 app.use('/api/gestion_academica', gestion_academicaRoutes);
 
