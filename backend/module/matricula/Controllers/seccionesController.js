@@ -2,7 +2,7 @@ import conectarDB from '../../../config/db.js';
 import jwt from 'jsonwebtoken';
 const pool = await conectarDB();
 
-// Utilizado para cargar información detallada para edición del reistro o visualización.
+// Utilizado para cargar información detallada para edición del registro o visualización.
 export const obtenerSeccionPorId = async (req, res) => {
     const { Cod_secciones } = req.params;
 
@@ -70,7 +70,8 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
             JOIN tbl_aula a ON s.Cod_aula = a.Cod_aula
             JOIN tbl_grados g ON s.Cod_grado = g.Cod_grado
             JOIN tbl_periodo_matricula p ON s.Cod_periodo_matricula = p.Cod_periodo_matricula
-            WHERE s.Cod_periodo_matricula = ?;
+            WHERE s.Cod_periodo_matricula = ?
+            ORDER BY s.Cod_secciones DESC;  -- Ordenar por Cod_secciones de manera descendente
         `;
 
         console.log("Ejecutando consulta con:", query, Cod_periodo_matricula);
@@ -89,6 +90,7 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
         res.status(500).json({ mensaje: "Error al obtener las secciones.", error });
     }
 };
+
 
 // Proporciona opciones para seleccionar edificios en formularios de gestión de secciones.
 export const obtenerEdificios = async (req, res) => {
@@ -259,6 +261,8 @@ export const crearSeccion = async (req, res) => {
             throw new Error('No se encontraron asignaturas asociadas al grado.');
         }
 
+        // PROBANDO 12-03-2025 PARA VER SI FUNCIONA SECCIONES
+        /*
         const seccionesAsignaturasValues = asignaturas.map(asignatura => [
             Cod_secciones,
             null, // Hora_inicio
@@ -266,21 +270,21 @@ export const crearSeccion = async (req, res) => {
             asignatura.Cod_grados_asignaturas,
             null, // Dias_nombres
         ]);
-
+        
         await connection.query(
             'INSERT INTO tbl_secciones_asignaturas (Cod_secciones, Hora_inicio, Hora_fin, Cod_grados_asignaturas, Dias_nombres) VALUES ?',
             [seccionesAsignaturasValues]
-        );
+        );*/
 
         await connection.commit();
 
         res.status(201).json({
-            mensaje: 'Sección creada correctamente con asignaturas vinculadas.',
+            mensaje: 'Sección creada correctamente.',
             Cod_secciones,
         });
     } catch (error) {
         await connection.rollback();
-        console.error('Error al crear la sección y vincular asignaturas:', error);
+        console.error('Error al crear la sección:', error);
         res.status(500).json({
             mensaje: 'Error en el servidor',
             error: error.sqlMessage || error.message,

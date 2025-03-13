@@ -4,7 +4,7 @@ const pool = await conectarDB();
 // Controlador para obtener todos los períodos de matrícula desde la base de datos.
 export const obtenerPeriodos = async (req, res) => {
     try {
-        // Consulta para obtener todos los períodos de matrícula
+        // Consulta para obtener todos los períodos de matrícula.
         const [rows] = await pool.query(`
             SELECT Cod_periodo_matricula, Anio_academico, Estado
             FROM tbl_periodo_matricula
