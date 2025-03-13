@@ -596,7 +596,7 @@ const handleSearch = (e) => {
 /*******************************FUNCION DE REPORTERIA*************************************/
 // Función para generar reporte PDF
 const ReporteEstructuraPDF = () => {
-  const doc = new jsPDF('l  ', 'mm', 'letter'); //
+  const doc = new jsPDF('p', 'mm', 'letter'); //
 
   if (!filteredRecords || filteredRecords.length === 0) {
     alert('No hay datos para exportar.');
@@ -638,9 +638,6 @@ const ReporteEstructuraPDF = () => {
       tipo_relacion: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
       descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
     }));
-
-    const pageHeight = doc.internal.pageSize.height;
-
 
     doc.autoTable({
       startY: 65,
@@ -1251,7 +1248,7 @@ return (
     </CForm>
   </CModalBody>
   <CModalFooter>
-         <CButton
+  <CButton
             style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
             onClick={() => setModalUpdateVisible(false)}
           >

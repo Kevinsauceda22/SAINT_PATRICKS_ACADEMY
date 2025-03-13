@@ -90,7 +90,7 @@ const ListaPersonas = () => {
   const [personaToDelete, setPersonaToDelete] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [recordsPerPage, setRecordsPerPage] = useState(10)
+  const [recordsPerPage, setRecordsPerPage] = useState(5)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   const [tipoPersona, setTipoPersona] = useState([])
