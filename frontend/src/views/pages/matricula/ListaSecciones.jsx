@@ -139,8 +139,11 @@ const validateInput = (value) => {
   return value;
 };
 
+
 const handleGestionarClick = (seccion) => {
-  const { Cod_secciones, Nombre_grado } = seccion;
+  console.log('Datos completos de la sección:', seccion); // Verifica qué datos recibe la función
+
+  const { Cod_secciones, Nombre_grado, Nombre_seccion } = seccion || {}; // Extraemos Nombre_grado y Nombre_seccion
 
   // Verificamos si Cod_secciones es un valor primitivo o un objeto
   console.log('Tipo de Cod_secciones:', typeof Cod_secciones);
@@ -149,12 +152,29 @@ const handleGestionarClick = (seccion) => {
   // Si Cod_secciones es un objeto, extraemos el valor que representa el código de la sección
   const codigoSeccion = typeof Cod_secciones === 'object' ? Cod_secciones.Cod_seccion || Cod_secciones.id || Cod_secciones.valor : Cod_secciones;
 
+  // Verificamos si Nombre_grado existe
+  console.log('Tipo de Nombre_grado:', typeof Nombre_grado);
+  console.log('Valor de Nombre_grado:', Nombre_grado);
+
+  // Usamos Nombre_grado en lugar de Cod_grado
+  const nombreGrado = typeof Nombre_grado === 'object' ? Nombre_grado.Nombre_grado || Nombre_grado.id || Nombre_grado.valor : Nombre_grado;
+
+  // Verificamos si Nombre_seccion existe
+  console.log('Tipo de Nombre_seccion:', typeof Nombre_seccion);
+  console.log('Valor de Nombre_seccion:', Nombre_seccion);
+
+  // Usamos Nombre_seccion
+  const nombreSeccion = typeof Nombre_seccion === 'object' ? Nombre_seccion.Nombre_seccion || Nombre_seccion.id || Nombre_seccion.valor : Nombre_seccion;
+
   console.log('Usando codigoSeccion:', codigoSeccion);
+  console.log('Usando nombreGrado:', nombreGrado);
+  console.log('Usando nombreSeccion:', nombreSeccion);
 
   console.log('Navegando a lista-secciones-asignatura con:', { 
     seccionSeleccionada: codigoSeccion, 
     periodoSeleccionado, 
-    gradoSeleccionado: Nombre_grado,
+    gradoSeleccionado: nombreGrado,
+    nombreSeccionSeleccionado: nombreSeccion,
     profesores
   });
 
@@ -162,11 +182,13 @@ const handleGestionarClick = (seccion) => {
     state: { 
       seccionSeleccionada: codigoSeccion,
       periodoSeleccionado, 
-      gradoSeleccionado: Nombre_grado,
+      gradoSeleccionado: nombreGrado,
+      nombreSeccionSeleccionado: nombreSeccion,
       profesores 
     }
   });
 };
+
 
 
 // Funcion para cargar segun el estado y los botones

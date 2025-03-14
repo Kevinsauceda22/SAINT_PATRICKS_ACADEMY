@@ -1,7 +1,8 @@
 import express from 'express';
 import {obtenerTodasSeccionesAsignaturas, 
-        obtenerDias,
         obtenerTodasAsignaturas,
+        obtenerTodasSecciones,
+        obtenerTodosGrados,
         crearSeccionAsignatura, 
         actualizarSeccionAsignatura, 
         eliminarSeccionAsignatura,
@@ -13,11 +14,14 @@ const router = express.Router();
 // Ruta para obtener secciones
 router.get('/verSeccionesAsignaturas', obtenerTodasSeccionesAsignaturas);
 
-// Ruta para obtener Dias
-router.get('/verDias', obtenerDias);
-
 // Ruta para obtener Asignaturas
 router.get('/verAsignaturas', obtenerTodasAsignaturas);
+
+//Rutas para obtener secciones
+router.get('/verSecciones', obtenerTodasSecciones);
+
+//Rutas para obtener Grados
+router.get('/verGrados', obtenerTodosGrados);
 
 // Ruta para actualizar una sección
 router.post('/crearSeccionAsignatura', crearSeccionAsignatura);
