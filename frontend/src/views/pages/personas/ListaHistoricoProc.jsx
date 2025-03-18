@@ -502,7 +502,7 @@ const eliminarHistoricoProcedencia = async (historico) => {
 
   // Filtra los edificios según el término de búsqueda
   const filteredHistoricos = historicoProcedencia.filter((historicop) =>
-    historicop.Nombre_procedencia.toLowerCase().includes(searchTerm.toLowerCase())
+    historicop.lugar_procedencia.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Cálculo de la paginación
@@ -626,9 +626,9 @@ const eliminarHistoricoProcedencia = async (historico) => {
             {currentRecords.map((historico) => (
                 <CTableRow key={historico.cod_procedencia}>
                 <CTableDataCell className="text-center">{historico.originalIndex}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Nombre_procedencia}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Lugar_procedencia}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Instituto}</CTableDataCell>
+                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.instituto}</CTableDataCell>
+                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.lugar_procedencia}</CTableDataCell>
+                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.anio_ingreso}</CTableDataCell>
                 <CTableDataCell className="text-center">
                     <div className="d-flex justify-content-center">
                     <CButton

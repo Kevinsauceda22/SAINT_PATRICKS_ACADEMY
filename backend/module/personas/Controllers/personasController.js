@@ -220,10 +220,6 @@ export const actualizarPersona = async (req, res) => {
     }
 };
 
-
-
-
-
 export const eliminarPersona = async (req, res) => {
     const { cod_persona } = req.params;
 
@@ -240,4 +236,3 @@ export const eliminarPersona = async (req, res) => {
         connection.release();
     }
 };
-
