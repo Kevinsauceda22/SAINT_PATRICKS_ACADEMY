@@ -605,9 +605,9 @@ const ListaGestion_Academica = () => {
     <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.97rem'}}>
       <CTableRow>
         <CTableHeaderCell className="text-center">#</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Total Secciones</CTableHeaderCell>
         <CTableHeaderCell className="text-center">Año Académico</CTableHeaderCell>
         <CTableHeaderCell className="text-center">Fecha de Creación</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Total Secciones</CTableHeaderCell>
         <CTableHeaderCell className="text-center">Estado</CTableHeaderCell>
         <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
       </CTableRow>
@@ -623,11 +623,11 @@ const ListaGestion_Academica = () => {
               }}
           >
               <CTableDataCell className="text-center">{index + 1}</CTableDataCell>
-              <CTableDataCell className="text-center">{agrupador.Total_secciones}</CTableDataCell>
               <CTableDataCell className="text-center">{agrupador.Anio_academico}</CTableDataCell>
               <CTableDataCell className="text-center">
                   {new Date(agrupador.Fecha_agrupacion).toLocaleDateString()}
               </CTableDataCell>
+              <CTableDataCell className="text-center">{agrupador.Total_secciones}</CTableDataCell>
               <CTableDataCell className="text-center">
                   <span
                       style={{
