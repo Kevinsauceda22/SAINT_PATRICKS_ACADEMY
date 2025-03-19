@@ -374,12 +374,16 @@ const paginate = (pageNumber) => {
 };
 
 // Secciones filtradas según el término de búsqueda
-const normalizeString = (str) =>
-  str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
+// Función para normalizar las cadenas, eliminando acentos y convirtiendo todo a mayúsculas
+const normalizeString = (str) => {
+  return str
+    .toUpperCase() // Convierte todo a mayúsculas
+    .normalize("NFD") // Normaliza la cadena para separar los acentos
+    .replace(/[\u0300-\u036f]/g, ""); // Elimina los acentos
+};
 const filteredSecciones = secciones
   .filter((seccion) => {
-    const normalizedSearchTerm = normalizeString(searchTerm);
+    const normalizedSearchTerm = normalizeString(searchTerm); // Utiliza la función normalizeString
 
     if (searchField === "Nombre_seccion") {
       return normalizeString(seccion.Nombre_seccion).includes(normalizedSearchTerm);
@@ -393,9 +397,8 @@ const filteredSecciones = secciones
     }
     return false;
   })
-  .sort((a, b) => 
-    a.Nombre_seccion.localeCompare(b.Nombre_seccion, "es", { sensitivity: "base" })
-  );
+  .sort((a, b) => b.Cod_secciones - a.Cod_secciones); // Ordenar por Cod_secciones en orden descendente
+
 
 const indexOfLastRecord = currentPage * recordsPerPage;
 const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
@@ -618,6 +621,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          
           p_Cod_aula: nuevaSeccion.Cod_aula,
           p_Cod_grado: nuevaSeccion.Cod_grado,
           p_Cod_Profesor: nuevaSeccion.Cod_profesor,
@@ -801,7 +805,9 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   {/* Fila del título */}
   <CRow className="align-items-center mb-3">
     <CCol xs="12" className="text-center">
-      <h2 className="fw-bold">Gestión de Secciones</h2>
+    <h2 className="fw-bold">
+  Gestión de Secciones Año {secciones.length > 0 ? getPeriodoAcademico(secciones[0].Cod_periodo_matricula) : "No disponible"}
+</h2>
     </CCol>
   </CRow>
 
@@ -968,40 +974,24 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     <CTable striped bordered hover>
       <CTableHead style={{ position: "sticky", top: 0, zIndex: 1, backgroundColor: "#fff" }}>
         <CTableRow>
-          <CTableHeaderCell className="text-center" style={{ width: "5%" }}>
-            #
-          </CTableHeaderCell>
-          <CTableHeaderCell className="text-center" style={{ width: "10%" }}>
-            Sección
-          </CTableHeaderCell>
-          <CTableHeaderCell className="text-center" style={{ width: "10%" }}>
-            Aula
-          </CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "5%" }}>#</CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "20%" }}>Periodo Matrícula</CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "10%" }}>Aula</CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "10%" }}>Sección</CTableHeaderCell>
           <CTableHeaderCell style={{ width: "20%" }}>Grado</CTableHeaderCell>
           <CTableHeaderCell style={{ width: "20%" }}>Maestro guía</CTableHeaderCell>
-          <CTableHeaderCell className="text-center" style={{ width: "20%" }}>
-            Periodo Matrícula
-          </CTableHeaderCell>
-          <CTableHeaderCell className="text-center" style={{ width: "15%" }}>
-            Acciones
-          </CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "15%" }}>Acciones</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
       <CTableBody>
         {currentRecords.map((seccion, index) => (
           <CTableRow key={seccion.Cod_secciones}>
-            <CTableDataCell className="text-center">
-              {indexOfFirstRecord + index + 1}
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              {seccion.Nombre_seccion.toUpperCase()}
-            </CTableDataCell>
-            <CTableDataCell className="text-center">
-              {seccion.Numero_aula}
-            </CTableDataCell>
+            <CTableDataCell className="text-center"> {indexOfFirstRecord + index + 1}</CTableDataCell>
+            <CTableDataCell>{getPeriodoAcademico(seccion.Cod_periodo_matricula)}</CTableDataCell>
+            <CTableDataCell className="text-center"> {seccion.Numero_aula} </CTableDataCell>
+            <CTableDataCell className="text-center"> {seccion.Nombre_seccion.toUpperCase()} </CTableDataCell>
             <CTableDataCell>{seccion.Nombre_grado.toUpperCase()}</CTableDataCell>
             <CTableDataCell>{getProfesorFullName(seccion.Cod_Profesor)}</CTableDataCell>
-            <CTableDataCell>{getPeriodoAcademico(seccion.Cod_periodo_matricula)}</CTableDataCell>
             <CTableDataCell className="text-center">
               <div className="d-flex justify-content-center">
                 
