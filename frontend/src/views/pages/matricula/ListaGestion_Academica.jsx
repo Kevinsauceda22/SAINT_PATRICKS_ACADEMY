@@ -1,10 +1,13 @@
 // Importaciones de librerías y componentes necesarios
 import React, { useEffect, useState } from 'react';
 import {
-  CButton,CCard,CCardBody,CCol,CContainer,CModal,CModalBody,CModalFooter,CModalHeader,CModalTitle,CRow,CTable,CTableBody,CTableDataCell,CTableHead,CTableHeaderCell,CTableRow,CInputGroup,CInputGroupText,CFormInput,CFormSelect,
+  CButton,CCard,CCardBody,CCol,CContainer,CModal,CModalBody,CModalFooter,CModalHeader,CModalTitle,CRow,CTable,CTableBody,CTableDataCell,CTableHead,CTableHeaderCell,CTableRow,CInputGroup,CInputGroupText,CFormInput,CFormSelect,CDropdown,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,CPagination,CSpinner,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
-import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch, cilDescription } from '@coreui/icons';
+import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch,cilBrushAlt, cilFile, cilSpreadsheet, cilPen, cilTrash, cilSave, cilX, cilCheck, cilInfo, cilDescription } from '@coreui/icons';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import "jspdf-autotable";
@@ -422,78 +425,77 @@ const ListaGestion_Academica = () => {
   }
   
   return (
-    <CContainer style={{ marginTop: '10px', maxWidth: '900px' }}>
-  {/* Título centrado en negritas */}
-  <CRow className="align-items-center justify-content-center mb-2">
-    {/* Ajuste del margen inferior (antes era `mb-5`, ahora `mb-2`) */}
-    <CCol xs="12" className="text-center">
-      <h2 className="fw-bold" style={{ color: '#333' }}>
-        <CIcon icon={cilBook} className="me-1" />
-        Gestión Académica
-      </h2>
-    </CCol>
-  </CRow>
+    <div className="container mt-1">
+  {/* Título, Boton Nuevo y Boton de Reporte */}
+  
+  <CRow className='align-items-center mb-5'>
+    <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+    {/* Titulo */}
+    <div className="flex-grow-1 text-center">
+    <h4 className="text-center fw-semibold pb-1 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Gestión Académica</h4>
+    </div>
 
-  {/* Botones "Nuevo" y "Reporte" arriba */}
-  <CRow className="align-items-center mb-4" style={{ marginTop: '-10px' }}>
-    {/* Ajuste del margen superior para acercar los botones al título */}
-    <CCol xs="12" className="d-flex justify-content-between">
-      {/* Botón "Nuevo" */}
-      {canInsert && (
+    {/* Botón "Nuevo" */}
+    {canInsert && (
       <CButton
-        className="d-flex align-items-center gap-1 rounded shadow"
-        style={{
-          backgroundColor: '#4B6251',
-          color: 'white',
-          padding: '10px 16px',
-          fontSize: '0.9rem',
-        }}
-        onClick={() => setShowModal(true)}
-      >
-        <CIcon icon={cilPlus} /> Nuevo
-      </CButton>
+      className="btn-sm d-flex align-items-center gap-1 rounded shadow"
+      style={{
+        backgroundColor: '#4B6251',
+        color: 'white',
+        padding: '6.5px 16px',
+        fontSize: '0.85rem', 
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+      }}
+      
+      onClick={() => setShowModal(true)}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
       )}
-
-      {/* Botón "Generar PDF" */}
-      <CButton
-        className="d-flex align-items-center rounded shadow"
-        style={{
-          backgroundColor: "#6C8E58",
-          color: "white",
-          padding: "10px 16px",
-          fontSize: "0.9rem",
-        }}
-        onClick={handleGenerarPDFVista}
+    
+    {/* Botón "Generar PDF" */}
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+         style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease', }}
+         onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
+         onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
+         <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
+    <CDropdownItem
+      onClick={handleGenerarPDFVista}
+      style={{
+      cursor: 'pointer',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      padding: '0.5rem 1rem',
+      fontSize: '0.85rem',
+      color: '#333',
+      borderBottom: '1px solid #eaeaea',
+      transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
       >
-        <CIcon icon={cilDescription} /> Reporte
-      </CButton>
+      <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+    </CDropdownItem>
+    {/*Reporte excel"*/}
+
+    </CDropdownMenu>
+    </CDropdown>
+    
     </CCol>
   </CRow>
+
 
   {/* Barra de búsqueda y selector de registros abajo */}
-  <CRow className="align-items-center mb-4">
-    {/* Botón Limpiar en el borde izquierdo */}
-    <CCol xs="12" md="2" className="text-start">
-      <CButton
-        color="light"
-        onClick={() => {
-          setSearchTerm('');
-        }}
-        style={{
-          padding: "6px 12px",
-          fontSize: "0.9rem",
-          backgroundColor: "#E0E0E0", // Gris claro
-          color: "#000",
-          border: "1px solid #CCC",
-        }}
-      >
-        Limpiar
-      </CButton>
-    </CCol>
+  <CRow className="align-items-center mt-4 mb-3">
+   
+    {/* Barra de búsqueda */}
+    <CCol xs="12" md="8" className='d-flex flex-wrap align-items-center'>
 
-    {/* Campo de búsqueda y selector */}
-    <CCol xs="12" md="6" className="d-flex align-items-center gap-2">
-      <CInputGroup>
+    <CInputGroup>
         <CInputGroupText>
           <CIcon icon={cilSearch} />
         </CInputGroupText>
@@ -537,11 +539,37 @@ const ListaGestion_Academica = () => {
           <option value="Total_secciones">Total de secciones</option>
           <option value="Anio_academico">Año Académico</option>
         </CFormSelect>
-      </CInputGroup>
+
+    {/* Botón para limpiar la búsqueda */}
+
+    <CButton
+    style={{
+        border: '1px solid #ccc',
+        transition: 'all 0.1s ease-in-out', // Duración de la transición
+        backgroundColor: '#F3F4F7', // Color por defecto
+        color: '#343a40', // Color de texto por defecto
+        height: '35px',
+    }}
+    onClick={() => {
+        setSearchTerm('');
+        setCurrentPage(1);
+    }}
+    onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el botón "limpiar"
+        e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el botón "limpiar"
+    }}
+    onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el botón "limpiar"
+        e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el botón "limpiar"
+    }}
+    >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+    </CButton>
+    </CInputGroup>
     </CCol>
 
     {/* Selector de Número de Registros */}
-    <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
+    <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
       <CInputGroup style={{ width: "auto", display: "inline-block" }}>
         <div className="d-inline-flex align-items-center">
           <span>Mostrar&nbsp;</span>
@@ -550,7 +578,7 @@ const ListaGestion_Academica = () => {
               width: "80px",
               display: "inline-block",
               textAlign: "center",
-              fontSize: "0.9rem",
+              fontSize: "0.85rem",
             }}
             onChange={(e) => {
               const value = Number(e.target.value);
@@ -571,11 +599,10 @@ const ListaGestion_Academica = () => {
 
 
   {/* Tabla de agrupadores */}
-  <CCard>
-    <CCardBody>
-      <div className="table-container mt-4" style={{ overflowX: 'auto', marginBottom: '20px' }}>
-        <CTable striped bordered hover>
-    <CTableHead>
+  
+      <div className="table-responsive" style={{ height: '315px', overflowX: 'auto', overflowY: 'hidden', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
+            <CTable striped bordered hover responsive>
+    <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.97rem'}}>
       <CTableRow>
         <CTableHeaderCell className="text-center">#</CTableHeaderCell>
         <CTableHeaderCell className="text-center">Total Secciones</CTableHeaderCell>
@@ -633,7 +660,7 @@ const ListaGestion_Academica = () => {
         ))
       ) : (
           <CTableRow>
-            <CTableDataCell colSpan="6" className="text-center">
+            <CTableDataCell colSpan={4} className="text-center">
               No hay agrupadores disponibles.
             </CTableDataCell>
           </CTableRow>
@@ -641,8 +668,6 @@ const ListaGestion_Academica = () => {
       </CTableBody>
     </CTable>
   </div>
-</CCardBody>
-</CCard>
 
   {/* Paginación */}
   <div
@@ -657,14 +682,7 @@ const ListaGestion_Academica = () => {
   >
     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
       <CButton
-        style={{
-          backgroundColor: '#6f8173',
-          color: '#D9EAD3',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-        }}
+        style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
         disabled={currentPage === 1}
         onClick={() => paginate(currentPage - 1)}
       >
@@ -672,14 +690,7 @@ const ListaGestion_Academica = () => {
       </CButton>
 
       <CButton
-        style={{
-          backgroundColor: '#6f8173',
-          color: '#D9EAD3',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-        }}
+        style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
         disabled={currentPage === Math.ceil(filteredAgrupadores.length / recordsPerPage)}
         onClick={() => paginate(currentPage + 1)}
       >
@@ -712,7 +723,7 @@ const ListaGestion_Academica = () => {
       </CButton>
     </CModalFooter>
   </CModal>
-</CContainer>
+    </div>
 
   );
 };
