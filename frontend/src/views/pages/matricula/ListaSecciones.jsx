@@ -621,7 +621,6 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          
           p_Cod_aula: nuevaSeccion.Cod_aula,
           p_Cod_grado: nuevaSeccion.Cod_grado,
           p_Cod_Profesor: nuevaSeccion.Cod_profesor,

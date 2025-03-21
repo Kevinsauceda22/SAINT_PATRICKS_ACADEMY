@@ -208,7 +208,65 @@ export const obtenerPeriodos = async (req, res) => {
     }
 };
 
-// Controlador para crear una nueva sección con aulas y asignaturas vinculadas.
+// Controlador para crear una nueva sección con aulas.
+/*export const crearSeccion = async (req, res) => {
+    const { p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
+
+    // Validar los datos obligatorios
+    if (!p_Cod_aula || !p_Cod_grado || !p_Cod_Profesor || !p_Cod_periodo_matricula) {
+        return res.status(400).json({ mensaje: 'Todos los campos son requeridos.' });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+        await connection.beginTransaction();
+
+        // Paso 1: Verificar secciones disponibles en el aula seleccionada
+        const [aula] = await connection.query(
+            'SELECT Secciones_disponibles FROM tbl_aula WHERE Cod_aula = ?',
+            [p_Cod_aula]
+        );
+
+        if (!aula.length || aula[0].Secciones_disponibles <= 0) {
+            return res.status(400).json({ mensaje: 'No hay secciones disponibles en esta aula.' });
+        }
+
+        // Paso 2: Llamar al procedimiento almacenado para insertar la nueva sección
+        const [result] = await connection.query(
+            'CALL sp_insertar_secciones(?, ?, ?, ?)',
+            [p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula]
+        );
+
+        const Cod_secciones = result[0]?.[0]?.Cod_secciones;
+        if (!Cod_secciones) {
+            throw new Error('No se pudo obtener el ID de la sección creada. Verifica el procedimiento almacenado.');
+        }
+
+        // Paso 3: Actualizar las secciones disponibles y ocupadas del aula
+        await connection.query(
+            'UPDATE tbl_aula SET Secciones_disponibles = Secciones_disponibles - 1, Secciones_ocupadas = Secciones_ocupadas + 1 WHERE Cod_aula = ?',
+            [p_Cod_aula]
+        );
+
+        await connection.commit();
+
+        res.status(201).json({
+            mensaje: 'Sección creada correctamente.',
+            Cod_secciones,
+        });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al crear la sección:', error);
+        res.status(500).json({
+            mensaje: 'Error en el servidor',
+            error: error.sqlMessage || error.message,
+        });
+    } finally {
+        connection.release();
+    }
+};*/
+
 export const crearSeccion = async (req, res) => {
     const { p_Cod_aula, p_Cod_grado, p_Cod_Profesor, p_Cod_periodo_matricula } = req.body;
 
@@ -249,38 +307,15 @@ export const crearSeccion = async (req, res) => {
             [p_Cod_aula]
         );
 
-        // Paso 4: Vincular asignaturas con la nueva sección
-        const [asignaturas] = await connection.query(
-            'SELECT Cod_grados_asignaturas FROM tbl_grados_asignaturas WHERE Cod_grado = ?',
-            [p_Cod_grado]
-        );
-
-        if (!asignaturas.length) {
-            throw new Error('No se encontraron asignaturas asociadas al grado.');
-        }
-
-        const seccionesAsignaturasValues = asignaturas.map(asignatura => [
-            Cod_secciones,
-            null, // Hora_inicio
-            null, // Hora_fin
-            asignatura.Cod_grados_asignaturas,
-            null, // Dias_nombres
-        ]);
-
-        await connection.query(
-            'INSERT INTO tbl_secciones_asignaturas (Cod_secciones, Hora_inicio, Hora_fin, Cod_grados_asignaturas, Dias_nombres) VALUES ?',
-            [seccionesAsignaturasValues]
-        );
-
         await connection.commit();
 
         res.status(201).json({
-            mensaje: 'Sección creada correctamente con asignaturas vinculadas.',
+            mensaje: 'Sección creada correctamente.',
             Cod_secciones,
         });
     } catch (error) {
         await connection.rollback();
-        console.error('Error al crear la sección y vincular asignaturas:', error);
+        console.error('Error al crear la sección:', error);
         res.status(500).json({
             mensaje: 'Error en el servidor',
             error: error.sqlMessage || error.message,
@@ -289,6 +324,7 @@ export const crearSeccion = async (req, res) => {
         connection.release();
     }
 };
+
 
 // Controlador para actualizar los datos de una sección existente.
 export const actualizarSeccion = async (req, res) => {
