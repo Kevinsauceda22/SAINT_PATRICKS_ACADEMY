@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
 import { useLocation } from 'react-router-dom';
-import { cilSearch,  cilPen, cilTrash, cilPlus, cilDescription, cilArrowLeft, cilSettings } from '@coreui/icons';
+import { cilSearch,  cilPen, cilTrash, cilBrushAlt, cilFile, cilPlus, cilDescription, cilArrowLeft, cilSettings } from '@coreui/icons';
 import swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -799,31 +799,23 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   }
       
   return (
-    <CContainer>
-  <div className="container mt-3"> {/* Contenedor general con margen superior */}
-  {/* Fila del título */}
-  <CRow className="align-items-center mb-3">
-    <CCol xs="12" className="text-center">
-    <h2 className="fw-bold">
-  Gestión de Secciones Año {secciones.length > 0 ? getPeriodoAcademico(secciones[0].Cod_periodo_matricula) : "No disponible"}
-</h2>
-    </CCol>
-  </CRow>
+  <div className="container mt-1"> {/* Contenedor general con margen superior */}
+  {/* Título, Boton Nuevo y Boton de Reporte */}
 
-  {/* Fila de los botones */}
-  <CRow className="align-items-center mb-3">
-    {/* Botón "Gestión Académica" alineado a la izquierda */}
-    <CCol xs="12" md="4" className="text-start mb-2 mb-md-0">
-      <CButton
-        className="d-flex align-items-center gap-1 rounded shadow"
+  <CRow className="align-items-center mb-5">
+    <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+    
+    {/* Botón "Gestión Académica" */}
+    <CButton
+        className="btn-sm d-flex align-items-center gap-1 rounded shadow"
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
         style={{
           backgroundColor: "#656565",
           color: "#FFFFFF",
-          padding: "10px 16px",
-          fontSize: "0.9rem",
-          transition: "background-color 0.2s ease, box-shadow 0.3s ease",
+          padding: '6.5px 16px',
+          fontSize: '0.85rem',
+          transition: 'all 0.3s ease',
           boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
           whiteSpace: "nowrap",
         }}
@@ -831,23 +823,23 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       >
         <CIcon icon={cilArrowLeft} /> Gestión Académica
       </CButton>
-    </CCol>
-
-    {/* Botón "Nuevo" y dropdown "Reporte" alineados a la derecha */}
-    <CCol
-      xs="12"
-      md="8"
-      className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2"
-    >
+    
+    {/* Titulo */}
+    <div className="flex-grow-1 text-center">
+    <h4 className="text-center fw-semibold pb-1 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Gestión de Secciones Año {secciones.length > 0 ? getPeriodoAcademico(secciones[0].Cod_periodo_matricula) : "No disponible"}</h4>
+    </div>
+    
       {/* Botón "Nuevo" */}
       {canInsert && (
         <CButton
-          className="d-flex align-items-center gap-1 rounded shadow"
+          className="btn-sm d-flex align-items-center gap-1 rounded shadow"
           style={{
             backgroundColor: esPeriodoActivo ? '#4B6251' : '#C0C0C0',
             color: 'white',
-            padding: '10px 16px',
-            fontSize: '0.9rem',
+            padding: '6.5px 16px',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
           }}
           onClick={esPeriodoActivo ? openCreateModal : null}
           disabled={!esPeriodoActivo}
@@ -857,54 +849,39 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       )}
 
       {/* Botón de Reporte */}
-      <CDropdown>
-        <CDropdownToggle
-          style={{
-            backgroundColor: "#6C8E58",
-            color: "white",
-            padding: "10px 16px",
-            fontSize: "0.9rem",
-          }}
-          className="d-flex align-items-center rounded shadow"
-        >
-          <CIcon icon={cilDescription} /> Reporte
-        </CDropdownToggle>
-        <CDropdownMenu>
+      <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+            <CDropdownToggle
+               style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease', }}
+               onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
+               onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
+               <CIcon icon={cilDescription}/> Reporte
+            </CDropdownToggle>
+            <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
           <CDropdownItem
             onClick={() => generateSeccionesPDF(filteredSecciones)}
             style={{
-              color: "#6C8E58",
-              fontWeight: "bold",
-            }}
-          >
-            Ver Reporte en PDF
-          </CDropdownItem>
+                  cursor: 'pointer',
+                  outline: 'none',
+                  backgroundColor: 'transparent',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.85rem',
+                  color: '#333',
+                  borderBottom: '1px solid #eaeaea',
+                  transition: 'background-color 0.3s',
+                  }}
+                  onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+                  onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+                  >
+                  <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+                </CDropdownItem>
+                {/*Reporte excel"*/}
         </CDropdownMenu>
       </CDropdown>
     </CCol>
   </CRow>
 
   {/* Contenedor de la barra de búsqueda y el selector de registros */}
-<div className="filter-container mb-4">
-  <CRow className="align-items-center">
-    {/* Botón Limpiar en el borde izquierdo */}
-    <CCol xs="12" md="2" className="text-start">
-      <CButton
-        color="light"
-        onClick={() => {
-          setSearchTerm('');
-        }}
-        style={{
-          padding: "6px 12px",
-          fontSize: "0.9rem",
-          backgroundColor: "#E0E0E0", // Gris claro
-          color: "#000",
-          border: "1px solid #CCC",
-        }}
-      >
-        Limpiar
-      </CButton>
-    </CCol>
+  <CRow className="align-items-center mt-4 mb-3">
 
     {/* Barra de búsqueda */}
     <CCol xs="12" md="6" className="d-flex align-items-center gap-2">
@@ -934,19 +911,46 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
           <option value="Nombre_grado">Grado</option>
           <option value="Nombre_profesor">Maestro guía</option>
         </CFormSelect>
+
+    {/* Botón para limpiar la búsqueda */}
+
+    <CButton
+        style={{
+            border: '1px solid #ccc',
+            transition: 'all 0.1s ease-in-out', // Duración de la transición
+            backgroundColor: '#F3F4F7', // Color por defecto
+            color: '#343a40', // Color de texto por defecto
+            height: '35px',
+        }}
+        onClick={() => {
+            setSearchTerm('');
+            setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el botón "limpiar"
+            e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el botón "limpiar"
+        }}
+        onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el botón "limpiar"
+            e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el botón "limpiar"
+        }}
+        >
+            <CIcon icon={cilBrushAlt} /> Limpiar
+        </CButton>
       </CInputGroup>
     </CCol>
 
     {/* Selector de número de registros */}
-    <CCol xs="12" md="4" className="text-md-end">
-      <CInputGroup style={{ width: "auto", display: "inline-flex", alignItems: "center" }}>
+    <CCol xs="12" md="6" className="text-md-end mt-2 mt-md-0">
+       <CInputGroup style={{ width: "auto", display: "inline-block" }}>
+       <div className="d-inline-flex align-items-center">
         <span>Mostrar&nbsp;</span>
         <CFormSelect
           style={{
-            padding: "6px",
-            fontSize: "0.9rem",
             width: "80px",
+            display: "inline-block",
             textAlign: "center",
+            fontSize: "0.85rem",
           }}
           onChange={(e) => {
             const value = Number(e.target.value);
@@ -960,10 +964,10 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
           <option value="20">20</option>
         </CFormSelect>
         <span>&nbsp;registros</span>
+        </div>
       </CInputGroup>
     </CCol>
   </CRow>
-</div>
 
   {/* Tabla de secciones */}
   <div
@@ -974,11 +978,11 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       <CTableHead style={{ position: "sticky", top: 0, zIndex: 1, backgroundColor: "#fff" }}>
         <CTableRow>
           <CTableHeaderCell className="text-center" style={{ width: "5%" }}>#</CTableHeaderCell>
-          <CTableHeaderCell className="text-center" style={{ width: "20%" }}>Periodo Matrícula</CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "15%" }}>Periodo Matrícula</CTableHeaderCell>
           <CTableHeaderCell className="text-center" style={{ width: "10%" }}>Aula</CTableHeaderCell>
           <CTableHeaderCell className="text-center" style={{ width: "10%" }}>Sección</CTableHeaderCell>
-          <CTableHeaderCell style={{ width: "20%" }}>Grado</CTableHeaderCell>
-          <CTableHeaderCell style={{ width: "20%" }}>Maestro guía</CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "20%" }}>Grado</CTableHeaderCell>
+          <CTableHeaderCell className="text-center" style={{ width: "25%" }}>Maestro guía</CTableHeaderCell>
           <CTableHeaderCell className="text-center" style={{ width: "15%" }}>Acciones</CTableHeaderCell>
         </CTableRow>
       </CTableHead>
@@ -986,7 +990,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         {currentRecords.map((seccion, index) => (
           <CTableRow key={seccion.Cod_secciones}>
             <CTableDataCell className="text-center"> {indexOfFirstRecord + index + 1}</CTableDataCell>
-            <CTableDataCell>{getPeriodoAcademico(seccion.Cod_periodo_matricula)}</CTableDataCell>
+            <CTableDataCell className="text-center"> {getPeriodoAcademico(seccion.Cod_periodo_matricula)}</CTableDataCell>
             <CTableDataCell className="text-center"> {seccion.Numero_aula} </CTableDataCell>
             <CTableDataCell className="text-center"> {seccion.Nombre_seccion.toUpperCase()} </CTableDataCell>
             <CTableDataCell>{seccion.Nombre_grado.toUpperCase()}</CTableDataCell>
@@ -1027,7 +1031,6 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       </CTableBody>
     </CTable>
   </div>
-</div>
 
   {/* Paginación Fija */}
   <div
@@ -1043,16 +1046,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   {/* Botones de Paginación */}
   <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
     <CButton
-      style={{
-        backgroundColor: '#6f8173',
-        color: '#D9EAD3',
-        padding: '8px 16px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-        fontSize: '0.9rem',
-        fontWeight: 'bold',
-        border: 'none',
-      }}
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
       disabled={currentPage === 1}
       onClick={() => paginate(currentPage - 1)}
     >
@@ -1060,16 +1054,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     </CButton>
 
     <CButton
-      style={{
-        backgroundColor: '#6f8173',
-        color: '#D9EAD3',
-        padding: '8px 16px',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-        fontSize: '0.9rem',
-        fontWeight: 'bold',
-        border: 'none',
-      }}
+      style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
       disabled={currentPage === Math.ceil(filteredSecciones.length / recordsPerPage)}
       onClick={() => paginate(currentPage + 1)}
     >
@@ -1378,7 +1363,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
           <CButton color="danger" onClick={handleDeleteSeccion}><CIcon icon={cilTrash} /> Eliminar</CButton>
         </CModalFooter>
       </CModal>
-    </CContainer>
+    </div>
   );
 };
 export default ListaSecciones;

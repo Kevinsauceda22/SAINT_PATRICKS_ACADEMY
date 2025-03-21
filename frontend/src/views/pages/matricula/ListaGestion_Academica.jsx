@@ -493,8 +493,7 @@ const ListaGestion_Academica = () => {
   <CRow className="align-items-center mt-4 mb-3">
    
     {/* Barra de búsqueda */}
-    <CCol xs="12" md="8" className='d-flex flex-wrap align-items-center'>
-
+    <CCol xs="12" md="6" className='d-flex flex-wrap align-items-center'>
     <CInputGroup>
         <CInputGroupText>
           <CIcon icon={cilSearch} />
@@ -569,7 +568,7 @@ const ListaGestion_Academica = () => {
     </CCol>
 
     {/* Selector de Número de Registros */}
-    <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CCol xs="12" md="6" className="text-md-end mt-2 mt-md-0">
       <CInputGroup style={{ width: "auto", display: "inline-block" }}>
         <div className="d-inline-flex align-items-center">
           <span>Mostrar&nbsp;</span>
@@ -599,17 +598,19 @@ const ListaGestion_Academica = () => {
 
 
   {/* Tabla de agrupadores */}
-  
-      <div className="table-responsive" style={{ height: '315px', overflowX: 'auto', overflowY: 'hidden', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
-            <CTable striped bordered hover responsive>
-    <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.97rem'}}>
-      <CTableRow>
-        <CTableHeaderCell className="text-center">#</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Año Académico</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Fecha de Creación</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Total Secciones</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Estado</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+  <div
+      className="table-container mt-4"
+      style={{ height: "300px", overflowY: "auto", marginBottom: "20px" }}
+    >
+        <CTable striped bordered hover>
+        <CTableHead style={{ position: "sticky", top: 0, zIndex: 1, backgroundColor: "#fff" }}>
+        <CTableRow>
+        <CTableHeaderCell className="text-center" style={{ width: "7%" }}>#</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "22%" }}>Año Académico</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "22%" }}>Fecha de Creación</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "16%" }}>Total Secciones</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "17%" }}>Estado</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "16%" }}>Acciones</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>
@@ -658,7 +659,8 @@ const ListaGestion_Academica = () => {
               </CTableDataCell>
           </CTableRow>
         ))
-      ) : (
+      ) : 
+      (
           <CTableRow>
             <CTableDataCell colSpan={4} className="text-center">
               No hay agrupadores disponibles.
