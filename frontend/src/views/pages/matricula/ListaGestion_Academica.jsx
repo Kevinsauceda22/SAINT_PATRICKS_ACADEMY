@@ -4,7 +4,7 @@ import {
   CButton,CCard,CCardBody,CCol,CContainer,CModal,CModalBody,CModalFooter,CModalHeader,CModalTitle,CRow,CTable,CTableBody,CTableDataCell,CTableHead,CTableHeaderCell,CTableRow,CInputGroup,CInputGroupText,CFormInput,CFormSelect,CDropdown,
   CDropdownItem,
   CDropdownMenu,
-  CDropdownToggle,CPagination,CSpinner,
+  CDropdownToggle,CPagination,CSpinner,utils, writeFile,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
 import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch,cilBrushAlt, cilFile, cilSpreadsheet, cilPen, cilTrash, cilSave, cilX, cilCheck, cilInfo, cilDescription } from '@coreui/icons';
@@ -338,7 +338,10 @@ const ListaGestion_Academica = () => {
       Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
     };
   };
+
+  //REPORTE EN EXCEL
   
+
   // Función para alternar la visibilidad del modal
   const toggleModal = () => setShowModal(!showModal);
 
@@ -480,7 +483,9 @@ const ListaGestion_Academica = () => {
       >
       <CIcon icon={cilFile} size="sm" /> Abrir en PDF
     </CDropdownItem>
+
     {/*Reporte excel"*/}
+    
 
     </CDropdownMenu>
     </CDropdown>
@@ -623,7 +628,7 @@ const ListaGestion_Academica = () => {
                   fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal', // Negritas si está activo
               }}
           >
-              <CTableDataCell className="text-center">{index + 1}</CTableDataCell>
+              <CTableDataCell className="text-center">{indexOfFirstRecord + index + 1}</CTableDataCell>
               <CTableDataCell className="text-center">{agrupador.Anio_academico}</CTableDataCell>
               <CTableDataCell className="text-center">
                   {new Date(agrupador.Fecha_agrupacion).toLocaleDateString()}
@@ -641,20 +646,22 @@ const ListaGestion_Academica = () => {
               </CTableDataCell>
               <CTableDataCell className="text-center">
                   <div className="d-flex justify-content-center gap-2">
-                      <CButton
-                          color="info"
-                          onClick={() => handleGestionarClick(agrupador.Cod_periodo_matricula)}
-                          className="d-flex align-items-center"
-                      >
-                          <CIcon icon={cilSettings} />
-                      </CButton>
-                      <CButton
-                          color="warning"
-                          onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
-                          className="d-flex align-items-center"
-                      >
-                          <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
-                      </CButton>
+                  <CButton
+                    color="info"
+                    onClick={() => handleGestionarClick(agrupador.Cod_periodo_matricula)}
+                    className="d-flex align-items-center"
+                    title="Gestionar Secciones"
+                  >
+                    <CIcon icon={cilSettings} />
+                  </CButton>
+                  <CButton 
+                    color="warning"
+                    onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
+                    className="d-flex align-items-center"
+                    title="PDF de Todas las Secciones"
+                  >
+                    <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
+                  </CButton>
                   </div>
               </CTableDataCell>
           </CTableRow>

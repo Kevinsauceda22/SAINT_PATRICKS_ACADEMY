@@ -1004,26 +1004,33 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
                 onClick={() => openUpdateModal(seccion.Cod_secciones)}
                 className="me-2"
                 disabled={!esPeriodoActivo}
+                title="Editar Registro"
               >
                 <CIcon icon={cilPen} />
-               </CButton>
+              </CButton>
+              
                )}
-                {canDelete && (
                 <CButton
-                  color="danger"
-                  onClick={() => openDeleteModal(seccion)} // Solo abre el modal si el período está activo
-                  className="me-2"
-                  disabled={!esPeriodoActivo} // Deshabilita si el período está inactivo
-                >
-                  <CIcon icon={cilTrash} />
-                </CButton>
+                color="info"
+                onClick={() => handleGestionarClick(seccion)}
+                className="me-2"
+                title="Gestionar Horario"
+              >
+                <CIcon icon={cilSettings} />
+              </CButton>
+              {canDelete && (
+                <CButton
+                color="danger"
+                onClick={() => openDeleteModal(seccion)}
+                
+                disabled={!esPeriodoActivo}
+                title="Eliminar Registro"
+              >
+                <CIcon icon={cilTrash} />
+              </CButton>
+              
                 )}
-                <CButton
-                  color="info"
-                  onClick={() => handleGestionarClick(seccion)}
-                >
-                  <CIcon icon={cilSettings} />
-                </CButton>
+
               </div>
             </CTableDataCell>
           </CTableRow>
