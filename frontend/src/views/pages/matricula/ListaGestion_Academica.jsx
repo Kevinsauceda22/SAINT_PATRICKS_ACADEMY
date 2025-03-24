@@ -4,7 +4,8 @@ import {
   CButton,CCard,CCardBody,CCol,CContainer,CModal,CModalBody,CModalFooter,CModalHeader,CModalTitle,CRow,CTable,CTableBody,CTableDataCell,CTableHead,CTableHeaderCell,CTableRow,CInputGroup,CInputGroupText,CFormInput,CFormSelect,CDropdown,
   CDropdownItem,
   CDropdownMenu,
-  CDropdownToggle,CPagination,CSpinner,utils, writeFile,
+  CDropdownToggle,
+  //CPagination,CSpinner,utils, writeFile,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
 import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch,cilBrushAlt, cilFile, cilSpreadsheet, cilPen, cilTrash, cilSave, cilX, cilCheck, cilInfo, cilDescription } from '@coreui/icons';
