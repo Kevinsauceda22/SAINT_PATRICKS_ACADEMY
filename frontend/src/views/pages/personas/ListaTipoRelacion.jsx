@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription} from '@coreui/icons';
+import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilInfo, cilDescription} from '@coreui/icons';
+import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 import swal from 'sweetalert2'; // Importar SweetAlert
 import { jsPDF } from 'jspdf';       // Para generar archivos PDF
 import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
@@ -54,8 +55,12 @@ const ListaTipoRelacion = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
   const [recordsPerPage, setRecordsPerPage] = useState(10);
+
+
+
   
   const [tipo_relacion, setTipo_relacion] = useState('');
+    const [loading, setLoading] = useState(false);
 
 
 
@@ -247,99 +252,100 @@ const handleChange = (event) => {
     };
 
 {/********************************************FUNCION PARA CREAR RELACION**************************************************************/}
-    const handleCreateRelacion= async () => {
+const handleCreateRelacion = async () => {
+  if (isDuplicateRelacion()) {
+    return;
+  }
+  const relacionCapitalizado = capitalizeWords(nuevaRelacion.tipo_relacion.trim().replace(/\s+/g, ' '));
 
-      if (isDuplicateRelacion()) {
-        return;
-      }
-      const relacionCapitalizado = capitalizeWords(nuevaRelacion.tipo_relacion.trim().replace(/\s+/g, ' '));
-  
-      // Validaciones antes de crear 
-      if (!validateTiporelacion(relacionCapitalizado)) {
-        return;
-      }
-      if (!validateEmptyFields()) {
-        return;
-      }
-      if (isDuplicateRelacion()) {
-        return;
-      }
-  
-      try {
-        const response = await fetch(`http://localhost:4000/api/tipoRelacion/crearTipoRelacion`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tipo_relacion: relacionCapitalizado,
-          }),
-        });
-  
-        if (response.ok) {
-          fetchTipoRelacion();
-          setModalVisible(false); // Cerrar el modal sin advertencia al guardar
-          resetNuevaRelacion();
-          setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
-          swal.fire({
-            icon: 'success',
-            title: 'Creación exitosa',
-            text: 'La relacion ha sido creado correctamente.',
-          });
-        } else {
-          swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo crear la relacion.',
-          });
-        }
-      } catch (error) {
-        console.error('Error al crear la relación:', error);
-      }
-    };
+  // Validaciones antes de crear 
+  if (!validateTiporelacion(relacionCapitalizado)) {
+    return;
+  }
+  if (!validateEmptyFields()) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:4000/api/tipoRelacion/crearTipoRelacion`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tipo_relacion: relacionCapitalizado,
+        estado: 1, // Relación activa por defecto
+      }),
+    });
+
+    if (response.ok) {
+      fetchTipoRelacion();
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevaRelacion();
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+      swal.fire({
+        icon: 'success',
+        title: 'Creación exitosa',
+        text: 'La relación ha sido creada correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo crear la relación.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al crear la relación:', error);
+  }
+};
+
 
   {/*******************************************FUNCION PARA ACTUALIZAR*********************************************************/}
-    const handleUpdateRelacion = async () => {
-      const relacionCapitalizado = capitalizeWords(tipoRelacionToUpdate.tipo_relacion.trim().replace(/\s+/g, ' '));
+  const handleUpdateRelacion = async () => {
+    const relacionCapitalizado = capitalizeWords(tipoRelacionToUpdate.tipo_relacion.trim().replace(/\s+/g, ' '));
   
-      if (!validateTiporelacion(relacionCapitalizado)) {
-        return;
-      }
+    if (!validateTiporelacion(relacionCapitalizado)) {
+      return;
+    }
   
-      try {
-        const response = await fetch(`http://localhost:4000/api/tipoRelacion/actualizarTipoRelacion/${tipoRelacionToUpdate.Cod_tipo_relacion}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            Cod_tipo_relacion: tipoRelacionToUpdate.Cod_tipo_relacion,
-            tipo_relacion: relacionCapitalizado,
-          }),
+    try {
+      const response = await fetch(`http://localhost:4000/api/tipoRelacion/actualizarTipoRelacion/${tipoRelacionToUpdate.Cod_tipo_relacion}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Cod_tipo_relacion: tipoRelacionToUpdate.Cod_tipo_relacion,
+          tipo_relacion: relacionCapitalizado,
+          estado: tipoRelacionToUpdate.estado,  // Mantener el estado o modificarlo
+        }),
+      });
+  
+      if (response.ok) {
+        fetchTipoRelacion();
+        setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
+        resetRelacionToUpdate();
+        setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+        swal.fire({
+          icon: 'success',
+          title: 'Actualización exitosa',
+          text: 'La relación ha sido actualizada correctamente.',
         });
-  
-        if (response.ok) {
-          fetchTipoRelacion();
-          setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
-          resetRelacionToUpdate();
-          setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
-          swal.fire({
-            icon: 'success',
-            title: 'Actualización exitosa',
-            text: 'La relacion ha sido actualizado correctamente.',
-          });
-        } else {
-          swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo actualizar la relación.',
-          });
-        }
-      } catch (error) {
-        console.error('Error al actualizar la relacion:', error);
+      } else {
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo actualizar la relación.',
+        });
       }
-    };
+    } catch (error) {
+      console.error('Error al actualizar la relación:', error);
+    }
+  };
+  
 
+{/********************************************************************************************************************************/}
     const handleDeleteRelacion = async () => {
       try {
         const response = await fetch(
@@ -384,6 +390,44 @@ const handleChange = (event) => {
     setTipoRelacionToDelete(tipoRelacion);
     setModalDeleteVisible(true);
   };
+
+
+  {/***********************************************************************************************************************************/}
+  const toggleEstado = async (tipoRelacion) => {
+    const nuevoEstado = tipoRelacion.estado ? 0 : 1;
+  
+    try {
+      setLoading(true);
+  
+      const response = await axios.post('http://localhost:4000/api/tipoRelacion/actualizarEstadoTipoRelacion', {
+        cod_tipo_relacion: tipoRelacion.Cod_tipo_relacion,
+        estado: nuevoEstado,
+      });
+  
+      if (response.data.mensaje === 'Estado actualizado exitosamente') {
+        // Actualizar el estado correctamente
+        setTipoRelacion((prevRelaciones) =>
+          prevRelaciones.map((relacion) =>
+            relacion.Cod_tipo_relacion === tipoRelacion.Cod_tipo_relacion
+              ? { ...relacion, estado: nuevoEstado }
+              : relacion
+          )
+        );
+      } else {
+        console.error('Error al cambiar el estado:', response.data.mensaje);
+      }
+    } catch (error) {
+      console.error('Error al realizar la solicitud:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
+  
+  
+
+    {/***********************************************************************************************************************************/}
 
   {/**************************************************FILTRADO Y BUSQUEDA DE DATOS********************************************************/}
 
@@ -606,7 +650,7 @@ const ReporteRelacionesPDF = () => {
             <CIcon icon={cilSearch} />
           </CInputGroupText>
           <CFormInput
-            placeholder="Buscar tipo género..."
+            placeholder="Buscar tipo relación..."
             onChange={handleSearch}
             value={searchTerm}
           />
@@ -659,45 +703,61 @@ const ReporteRelacionesPDF = () => {
     </CRow>
 
       <div  style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px', }}>
-        <CTable striped>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
-              <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
-              <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-
-          <CTableBody>
-  {currentRecords.map((tipoRelacion) => (
-    <CTableRow key={tipoRelacion.Cod_tipo_relacion}>
-      <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.originalIndex}</CTableDataCell>
-      <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.tipo_relacion.toUpperCase()}  {/* Convert to uppercase */}</CTableDataCell>
-      <CTableDataCell className="text-center">
-        <div className="d-flex justify-content-center">
-
-          {canUpdate && (
-          <CButton
-            color="warning"
-            onClick={() => openUpdateModal(tipoRelacion)}
-            style={{ marginRight: '10px' }}
-          >
-            <CIcon icon={cilPen} />
-          </CButton>
-          )}
-
-          {canDelete && (
-          <CButton color="danger" onClick={() => openDeleteModal(tipoRelacion)}>
-            <CIcon icon={cilTrash} />
-          </CButton>
-          )}
-        </div>
-      </CTableDataCell>
+      <CTable striped>
+  <CTableHead>
+    <CTableRow>
+      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
+      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
+      <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
     </CTableRow>
-  ))}
-</CTableBody>
+  </CTableHead>
 
-        </CTable>
+  <CTableBody>
+    {currentRecords.map((tipoRelacion) => (
+      <CTableRow key={tipoRelacion.Cod_tipo_relacion}>
+        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.originalIndex}</CTableDataCell>
+        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.tipo_relacion.toUpperCase()}</CTableDataCell>
+        <CTableDataCell className="text-center">
+          <div className="d-flex justify-content-center">
+            {canUpdate && (
+              <CButton
+                color="warning"
+                onClick={() => openUpdateModal(tipoRelacion)}
+                style={{ marginRight: '10px' }}
+                disabled={tipoRelacion.estado === 0} // Deshabilitado si está inactivo
+                title={tipoRelacion.estado ? 'Editar relación' : 'Relación inactiva'}
+              >
+                <CIcon icon={cilPen} />
+              </CButton>
+            )}
+
+            {canDelete && (
+              <CButton color="danger" onClick={() => openDeleteModal(tipoRelacion)}>
+                <CIcon icon={cilTrash} />
+              </CButton>
+            )}
+
+            {/* Botón de Activar/Inactivar */}
+            <CButton
+              style={{
+                backgroundColor: tipoRelacion.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                color: 'white',
+                marginLeft: '10px',
+              }}
+              onClick={() => toggleEstado(tipoRelacion)} // Función para cambiar estado
+              disabled={loading} // Deshabilitar mientras carga
+            >
+              {loading ? 'Cambiando...' : tipoRelacion.estado ? 'Activo' : 'Inactivo'}
+            </CButton>
+          </div>
+        </CTableDataCell>
+      </CTableRow>
+    ))}
+  </CTableBody>
+</CTable>
+
+
+
       </div>
 
                 {/* Paginación Fija */}
@@ -724,90 +784,84 @@ const ReporteRelacionesPDF = () => {
     </div>
   
 
-      {/* Modal Crear Relacion */}
-      <CModal visible={modalVisible} onClose={() => handleCloseModal(setModalVisible, resetNuevaRelacion)} backdrop="static">
-  <CModalHeader>
-    <CModalTitle>Ingresar Nueva Relación</CModalTitle>
+    <CModal visible={modalVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Ingresar Nuevo Tipo de Relación</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevaRelacion)} />
   </CModalHeader>
   <CModalBody>
     <CForm>
-      <CFormInput
-        label="Tipo Relación"
-        value={nuevaRelacion.tipo_relacion}
-        maxLength={50} // Límite de caracteres
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        onChange={(e) => handleTipoRelacionInputChange(e, setNuevaRelacion, handleChange, setRelacionError)}
-        onBlur={isDuplicateRelacion}
-        style={{ textTransform: 'uppercase' }} // Esto asegura que el texto se muestre en mayúsculas
-      />
-      {/* Mostrar mensaje de error si existe */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Relación</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese un nuevo tipo de relación  "
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevaRelacion.tipo_relacion}
+          onChange={(e) => handleTipoRelacionInputChange(e, setNuevaRelacion, handleChange, setRelacionError)}
+          onBlur={isDuplicateRelacion}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
       {relacionError && (
-          <p style={{ color: 'red', fontSize: '0.9em' }}>{relacionError}</p>
-        )}
+        <p style={{ color: 'red', fontSize: '0.9em' }}>{relacionError}</p>
+      )}
     </CForm>
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevaRelacion)}>
-      Cerrar
+      Cancelar
     </CButton>
-    <CButton
-      color="primary"
-      onClick={handleCreateRelacion} // Cambia esto a la función correcta
-      disabled={!!relacionError.tipo_relacion} // Deshabilita el botón si hay errores
-    >
-      Guardar
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateRelacion} disabled={!!relacionError.tipo_relacion}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
     </CButton>
   </CModalFooter>
 </CModal>
 
-{/* Modal Actualizar Relación */}
-<CModal visible={modalUpdateVisible} onClose={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)} backdrop="static">
-  <CModalHeader>
-    <CModalTitle>Actualizar Relación</CModalTitle>
+<CModal visible={modalUpdateVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Actualizar Tipo Relación</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)} />
   </CModalHeader>
-  <CForm>
-    <CModalBody>
-      <CFormInput
-        label="Identificador"
-        value={tipoRelacionToUpdate.Cod_tipo_relacion}
-        readOnly
-      />
-      <CFormInput
-        label="Tipo Relación"
-        value={tipoRelacionToUpdate.tipo_relacion}
-        maxLength={50} // Límite de caracteres
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        onChange={(e) => handleTipoRelacionInputChange(e, setTipoRelacionToUpdate, handleChange)}
-        style={{ textTransform: 'uppercase' }} // Esto asegura que el texto se muestre en mayúsculas
-      />
-      {/* Mostrar mensaje de error si existe */}
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Relación</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el tipo de relación"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={tipoRelacionToUpdate.tipo_relacion}
+          onChange={(e) => handleTipoRelacionInputChange(e, setTipoRelacionToUpdate, handleChange)}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
       {errors.tipo_relacion && <p style={{ color: 'red' }}>{errors.tipo_relacion}</p>}
-    </CModalBody>
-    <CModalFooter>
-      <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)}>
-        Cerrar
-      </CButton>
-      <CButton
-            color="primary"
-            onClick={handleUpdateRelacion}
-            disabled={errors.tipo_relacion}
-      >
-        Guardar
-      </CButton>
-    </CModalFooter>
-  </CForm>
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateRelacion} disabled={errors.tipo_relacion}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
 </CModal>
+
 
 
       {/* Modal Eliminar Relacion*/}
       <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
-          <CModalTitle>Eliminar edificio</CModalTitle>
+          <CModalTitle>Eliminar Tipo Relación</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          ¿Estás seguro de que deseas eliminar el edificio "{tipoRelacionToDelete.tipo_relacion}"?
+          ¿Estás seguro de que deseas eliminar el tipo de relación "{tipoRelacionToDelete.tipo_relacion}"?
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>

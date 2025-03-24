@@ -219,7 +219,7 @@ export const actualizarPersona = async (req, res) => {
         connection.release();
     }
 };
-
+    
 
 
 

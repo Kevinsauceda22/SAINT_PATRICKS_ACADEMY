@@ -319,16 +319,18 @@ const _nav = [
         name: 'Tipo persona',
         to: '/tipopersona',
         nameobject: 'tipopersona',
-      },{
+      },
+      {
         component: CNavItem,
-        name: 'Historial Procedencia',
-        to: '/ListaHistoricoProc',
-        nameobject: 'ListaHistoricoProc',
-      },{
+        name: 'Telefonos',
+        to: '/telefonos',
+        nameobject: 'telefonos',
+      },
+      {
         component: CNavItem,
-        name: 'Procedencia Persona',
-        to: '/ListaProcedenciaPersona',
-        nameobject: 'ListaProcedenciaPersona',
+        name: 'tipo Documentos',
+        to: '/ListaTipoDocumentos',
+        nameobject: 'ListaTipoDocumentos',
       },
       {
         component: CNavItem,
@@ -336,7 +338,6 @@ const _nav = [
         to: '/departamento',
         nameobject: 'departamento',
       },
-
       {
         component: CNavItem,
         name: 'Municipios',

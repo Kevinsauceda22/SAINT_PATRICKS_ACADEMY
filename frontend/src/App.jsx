@@ -77,14 +77,15 @@ const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
-const ListaProcedenciaPersona = React.lazy(() => import('./views/pages/personas/ListaProcedenciaPersona')); 
+const ListaProcedenciaEstudiante = React.lazy(() => import('./views/pages/personas/ListaProcedenciaEstudiante')); 
+const ListaTelefonos = React.lazy(() => import('./views/pages/personas/ListaTelefonos'));
+const ListaTipoDocumentos = React.lazy(() => import('./views/pages/personas/ListaTipoDocumentos'));
 const Tipopersona = React.lazy(() => import('./views/pages/personas/Tipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
 const RegistrarHijo = React.lazy(() => import('./views/pages/register/registerhijo')) 
 const CompletarDatos = React.lazy(() => import('./views/pages/register/Register')) 
-const ListaHistoricoProc = React.lazy(() => import('./views/pages/personas/ListaHistoricoProc')); 
 const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
 const Solicitud= React.lazy(() => import('./views/pages/Solicitudes/Solicitud'))
 const Solicitud_admin = React.lazy(() => import('./views/pages/Solicitudes/Solicitud_admin'))
@@ -168,7 +169,6 @@ const App = () => {
                 <Route path="/ListaAsistenciaProfesor" element={<ListaAsistenciaProfesor />} />
                 <Route path="/UserMagnament" element={<ListaUsuarios />} />
                 <Route path="/ListaCiclos" element={<ListaCiclos />} />
-                <Route path="/ListaHistoricoProc" element={<ListaHistoricoProc />} />
                 <Route path="/ListaHistoriales" element={<ListaHistoriales />} />
 
                 <Route path="/ListaEspecialidades" element={<ListaEspecialidades />} />
@@ -208,7 +208,9 @@ const App = () => {
                  <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
-                 <Route path="/ListaProcedenciaPersona" element={<ListaPersonas />} />
+                <Route path="/ListaTipoDocumentos" element={<ListaTipoDocumentos />} />
+                <Route path="/ListaTelefonos" element={<ListaTelefonos />} />
+                <Route path="/ListaProcedenciaEstudiante" element={<ListaProcedenciaEstudiante />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />
                 <Route path="/caja" element={<Caja />} />

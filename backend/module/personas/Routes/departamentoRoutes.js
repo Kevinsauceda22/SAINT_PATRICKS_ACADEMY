@@ -18,6 +18,6 @@ router.put('/departamento/:Cod_departamento', actualizarDepartamento);
 router.delete('/departamento/:Cod_departamento', eliminarDepartamento);
 
 // Obtener todos los departamentos o uno específico
-router.get('/departamento/:Cod_departamento?', obtenerDepartamento); // El ? hace que el parámetro sea opcional
+router.get('/departamento/:Cod_departamento', obtenerDepartamento); 
 
 export default router;

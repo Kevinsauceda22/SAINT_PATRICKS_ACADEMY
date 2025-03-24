@@ -34,7 +34,7 @@ import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
 import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
 import diasRoutes from './module/matricula/Routes/diasRoutes.js';
-import historicoprocRoutes from './module/personas/Routes/historicoprocRoutes.js';
+import procedenciaEstudianteRoutes from './module/personas/Routes/procedenciaEstudianteRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personaRoutes from "./module/personas/Routes/personasRoutes.js";
@@ -42,13 +42,16 @@ import seccionesRoutes from './module/matricula/Routes/seccionesRoutes.js';
 import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
 import gestion_academicaRoutes from './module/matricula/Routes/gestion_academicaRoutes.js';
 
+
+import telefonosRoutes from "./module/personas/Routes/telefonosRoutes.js";
+import tipoDocumento from "./module/personas/Routes/tipoDocumentoRoutes.js";
 import personasRoutes from "./module/personas/personaRoutes.js";
 import nacionalidadRoutes from "./module/personas/Routes/nacionalidadRoutes.js";
-import tipopersonaRoutes from './module/matricula/Routes/tipopersonaRoutes.js';
+import tipopersonaRoutes from './module/personas/Routes/tipopersonaRoutes.js';
 import tipomatriculaRoutes from './module/matricula/Routes/tipomatriculaRoutes.js';
 import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRoutes.js';
 import estadomatriculaRoutes from './module/matricula/Routes/estadomatriculaRoutes.js';
-import departamentoRoutes from './module/matricula/Routes/departamentoRoutes.js';
+import departamentoRoutes from './module/personas/Routes/departamentoRoutes.js';
 import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
 import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
 import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
@@ -166,18 +169,12 @@ app.use('/api/aula', aulasRoutes);
 app.use('/api', actividadesextraRoutes);
 // Rutas para el día
 app.use('/api/dia', diasRoutes);
-// Rutas para el historico procedencia
-app.use('/api/historial_proc', historicoprocRoutes);
-// Usar las rutas de solicitud
-app.use('/api/tipopersona', tipopersonaRoutes);
 // Usar las rutas de solicitud
 app.use('/api/tipomatricula', tipomatriculaRoutes);
 // Usar las rutas de solicitud
 app.use('/api/periodomatricula', periodomatriculaRoutes);
 // Usar las rutas de solicitud
 app.use('/api/estadomatricula', estadomatriculaRoutes);
-// Usar las rutas de solicitud
-app.use('/api/departamento', departamento);
 // Usar las rutas de solicitud
 app.use('/api/conceptopago', conceptopagoRoutes);
 // Usar las rutas de solicitud
@@ -197,6 +194,12 @@ app.use('/api/gestion_academica', gestion_academicaRoutes);
 // Rutas para manejar personas
 app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
 
+
+app.use('/api/telefonos', telefonosRoutes);
+app.use('/api/tipopersona', tipopersonaRoutes);
+app.use('/api/departamento', departamento);
+app.use('/api/procedenciaEstudiante', procedenciaEstudianteRoutes);
+app.use('/api/tipoDocumento', tipoDocumento);
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
 app.use('/api/nacionalidad', nacionalidadRoutes);

@@ -1248,137 +1248,171 @@ return (
           </CDropdownMenu>
         </CDropdown>
       </div>
+{/* Contenedor de la barra de búsqueda y el selector dinámico */}
+<CRow className="align-items-center mt-4 mb-2">
+  {/* Barra de búsqueda */}
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText style={{ backgroundColor: '#F3F4F7', color: '#343a40' }}>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar persona..."
+        onChange={handleSearch}
+        value={searchTerm}
+        style={{
+          fontSize: '0.85rem',
+          backgroundColor: '#ffffff', // Fondo blanco para la entrada
+          color: '#343a40',
+        }}
+      />
+      <CButton
+        style={{
+          border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out',
+          backgroundColor: '#F3F4F7', // Fondo gris uniforme
+          color: '#343a40',
+          fontSize: '0.85rem',
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
 
-      {/* Filtro de búsqueda y selección de registros */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <CInputGroup style={{ maxWidth: '400px' }}>
-          <CInputGroupText>Buscar</CInputGroupText>
-          <CFormInput
-            placeholder="Buscar"
-            onChange={handleSearch}
-            value={searchTerm}
-          />
-          <CButton
-            style={{ backgroundColor: '#cccccc', color: 'black' }}
-            onClick={() => {
-              setSearchTerm('')
-              setCurrentPage(1)
-            }}
-          >
-            Limpiar
-          </CButton>
-        </CInputGroup>
-        <div className="d-flex align-items-center">
-          <label htmlFor="recordsPerPageSelect" className="mr-2">
-            Mostrar
-          </label>
-          <select
-            id="recordsPerPageSelect"
-            value={recordsPerPage}
-            onChange={(e) => {
-              setRecordsPerPage(Number(e.target.value))
-              setCurrentPage(1)
-            }}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-            <option value={20}>20</option>
-          </select>
-          <span style={{ marginLeft: '10px' }}>registros</span>
-        </div>
+  {/* Selector dinámico a la par de la barra de búsqueda */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span style={{ fontSize: '0.85rem' }}>Mostrar&nbsp;</span>
+        <CFormSelect
+          style={{
+            width: '80px',
+            display: 'inline-block',
+            textAlign: 'center',
+            fontSize: '0.85rem',
+            backgroundColor: '#ffffff', // Fondo blanco también aquí
+          }}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1);
+          }}
+          value={recordsPerPage}
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="15">15</option>
+          <option value="20">20</option>
+        </CFormSelect>
+        <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
       </div>
+    </CInputGroup>
+  </CCol>
+</CRow>
+
+
 
       <div className="table-container">
       <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
-  <CTable striped bordered hover>
-    <CTableHead>
-      <CTableRow>
-        <CTableHeaderCell>#</CTableHeaderCell>
-        <CTableHeaderCell>DNI</CTableHeaderCell>
-        <CTableHeaderCell>Primer Nombre</CTableHeaderCell>
-        <CTableHeaderCell>Segundo Nombre</CTableHeaderCell>
-        <CTableHeaderCell>Primer Apellido</CTableHeaderCell>
-        <CTableHeaderCell>Segundo Apellido</CTableHeaderCell>
-        <CTableHeaderCell>Dirección</CTableHeaderCell>
-        <CTableHeaderCell>Fecha de Nacimiento</CTableHeaderCell>
-        <CTableHeaderCell>Principal</CTableHeaderCell>
-        <CTableHeaderCell>Estado</CTableHeaderCell>
-        <CTableHeaderCell>Nacionalidad</CTableHeaderCell>
-        <CTableHeaderCell>Departamento</CTableHeaderCell>
-        <CTableHeaderCell>Municipio</CTableHeaderCell>
-        <CTableHeaderCell>Tipo de Persona</CTableHeaderCell>
-        <CTableHeaderCell>Género</CTableHeaderCell>
-        <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
-      </CTableRow>
-    </CTableHead>
-    <CTableBody>
-      {console.log('currentRecords:', currentRecords)}{' '}
-      {/* Verifica el contenido de currentRecords */}
-      {currentRecords.length > 0 ? (
-        currentRecords.map((persona) => {
-          return (
-            <CTableRow key={persona.cod_persona}>
-              <CTableDataCell>{persona.originalIndex}</CTableDataCell>
-              <CTableDataCell>{persona.dni_persona ? persona.dni_persona.toUpperCase() : 'N/D'}</CTableDataCell>
-              <CTableDataCell>{persona.Nombre ? persona.Nombre.toUpperCase() : 'N/D'}</CTableDataCell>
-              <CTableDataCell>{persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/D'}</CTableDataCell>
-              <CTableDataCell>{persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/D'}</CTableDataCell>
-              <CTableDataCell>{persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/D'}</CTableDataCell>
-              <CTableDataCell>{persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/D'}</CTableDataCell>
-              <CTableDataCell>{' '}{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}</CTableDataCell>
-              <CTableDataCell className="text-center">{persona.principal ? (<CIcon icon={cilCheckCircle} style={{ fontSize: '2em', color: '#28a745' }}/>) : ( 
-              <CIcon icon={cilXCircle} style={{ fontSize: '2em', color: '#dc3545' }}/> )} </CTableDataCell>
-              <CTableDataCell className="text-center">
+{/* Tabla adaptada con letras más pequeñas y columnas reorganizadas */}
+<CTable striped bordered hover>
+  <CTableHead>
+    <CTableRow>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>DNI</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Primer Nombre</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Segundo Nombre</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Primer Apellido</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Segundo Apellido</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Fecha de Nacimiento</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Estado</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Dirección</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Nacionalidad</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Departamento</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Municipio</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Tipo de Persona</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Género</CTableHeaderCell>
+      <CTableHeaderCell style={{ fontSize: '0.85rem', textAlign: 'end' }}>Acciones</CTableHeaderCell>
+    </CTableRow>
+  </CTableHead>
+  <CTableBody>
+    {console.log('currentRecords:', currentRecords)}{/* Verifica el contenido de currentRecords */}
+    {currentRecords.length > 0 ? (
+      currentRecords.map((persona) => (
+        <CTableRow key={persona.cod_persona}>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.dni_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Segundo_nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Primer_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Segundo_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
             {persona.Estado_Persona === 'A' ? (
               <span className="badge bg-success">Activo</span>
             ) : (
               <span className="badge bg-warning text-dark">Suspendido</span>
             )}
           </CTableDataCell>
-              <CTableDataCell>{nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}</CTableDataCell>
-              <CTableDataCell>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
-              <CTableDataCell>{municipio.find((municipio) => municipio.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
-              <CTableDataCell>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
-              <CTableDataCell>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
-              <CTableDataCell className="text-center">
-                <div className="d-flex justify-content-center">
-                  <CButton
-                    color="warning"
-                    onClick={() => openUpdateModal(persona)}
-                    style={{ marginRight: '10px' }}
-                  >
-                    <CIcon icon={cilPen} />
-                  </CButton>
-                  <CButton color="danger" onClick={() => openDeleteModal(persona)}>
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                  <CButton
-                    color="secondary"
-                    onClick={() => abrirEstructuraFamiliarModal(persona)}
-                    style={{ marginLeft: '10px' }}
-                  >
-                    <CIcon icon={cilPeople} />{' '}
-                  </CButton>
-                  <CButton
-                  color="primary"
-                  onClick={() => abrirContactoModal(persona)}
-                  style={{ marginLeft: '10px' }}
-                >
-                  <CIcon icon={cilContact} /> {/* Cambia esto por el ícono adecuado */}
-                </CButton>
-                </div>
-              </CTableDataCell>
-            </CTableRow>
-          )
-        })
-      ) : (
-        <CTableRow>
-          <CTableDataCell colSpan="13" className="text-center"></CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.direccion_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{municipio.find((municipio) => municipio.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              <CButton
+                color="warning"
+                onClick={() => openUpdateModal(persona)}
+                style={{ marginRight: '10px', fontSize: '0.75rem' }}
+              >
+                <CIcon icon={cilPen} />
+              </CButton>
+              <CButton
+                color="danger"
+                onClick={() => openDeleteModal(persona)}
+                style={{ marginRight: '10px', fontSize: '0.75rem' }}
+              >
+                <CIcon icon={cilTrash} />
+              </CButton>
+              <CButton
+                color="secondary"
+                onClick={() => abrirEstructuraFamiliarModal(persona)}
+                style={{ marginLeft: '10px', fontSize: '0.75rem' }}
+              >
+                <CIcon icon={cilPeople} />
+              </CButton>
+              <CButton
+                color="primary"
+                onClick={() => abrirContactoModal(persona)}
+                style={{ marginLeft: '10px', fontSize: '0.75rem' }}
+              >
+                <CIcon icon={cilContact} />
+              </CButton>
+            </div>
+          </CTableDataCell>
         </CTableRow>
-      )}
-    </CTableBody>
-  </CTable>
+      ))
+    ) : (
+      <CTableRow>
+        <CTableDataCell colSpan="13" className="text-center" style={{ fontSize: '0.85rem' }}>No hay registros</CTableDataCell>
+      </CTableRow>
+    )}
+  </CTableBody>
+</CTable>
+
 </div>
       </div>
 {/****************************************************PAGINACION*****************************************************************/}
