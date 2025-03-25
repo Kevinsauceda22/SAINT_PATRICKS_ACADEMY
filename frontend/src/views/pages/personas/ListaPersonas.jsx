@@ -963,7 +963,7 @@ const searchPersonas = (searchTerm) => {
     originalIndex: index + 1, // Agregar índice original para ordenar
   })).filter((persona) => {
     // Lógica de filtro
-    const tipoPersonaTexto = tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D';
+    const tipoPersonaTexto = tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D';
     const generoTexto = generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D';
     const nacionalidadTexto = nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D';
     const departamentoTexto = departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D';
@@ -1227,10 +1227,7 @@ const ReportePersonasPDF = () => {
 
 return (
     <CContainer>
-      
-      <div className="flex-grow-1 text-center"></div>
-      <h4 className="text-center fw-semibold pb-1 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Personas</h4>
-      
+      <h1>Personas</h1>
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}
       <div className="d-flex justify-content-end mb-3">
         <CButton
@@ -1372,7 +1369,7 @@ return (
           <CTableDataCell style={{ fontSize: '0.85rem' }}>{nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}</CTableDataCell>
           <CTableDataCell style={{ fontSize: '0.85rem' }}>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
           <CTableDataCell style={{ fontSize: '0.85rem' }}>{municipio.find((municipio) => municipio.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D'}</CTableDataCell>
+          <CTableDataCell style={{ fontSize: '0.85rem' }}>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
           <CTableDataCell style={{ fontSize: '0.85rem' }}>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
           <CTableDataCell className="text-center">
             <div className="d-flex justify-content-center">
@@ -1978,7 +1975,7 @@ return (
             {tipoPersona &&
               tipoPersona.map((tipo) => (
                 <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                  {tipo.Tipo_persona.toUpperCase()}
+                  {tipo.Tipo.toUpperCase()}
                 </option>
               ))}
           </CFormSelect>
@@ -2768,7 +2765,7 @@ return (
             {tipoPersona &&
               tipoPersona.map((tipo) => (
                 <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                  {tipo.Tipo_persona.toUpperCase()}
+                  {tipo.Tipo.toUpperCase()}
                 </option>
               ))}
           </CFormSelect>
