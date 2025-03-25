@@ -32,8 +32,6 @@ import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaci
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
 import edificiosRoutes from './module/matricula/Routes/edificiosRoutes.js';
 import aulasRoutes from './module/matricula/Routes/aulasRoutes.js';
-import actividadesextraRoutes from './module/matricula/Routes/actividadesextraRoutes.js';
-import diasRoutes from './module/matricula/Routes/diasRoutes.js';
 import historicoprocRoutes from './module/personas/Routes/historicoprocRoutes.js';
 import solicitudRoutes from './module/matricula/Routes/solicitudRoutes.js';
 import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
@@ -175,10 +173,6 @@ app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
 app.use('/api/edificio', edificiosRoutes);
 // Rutas para las aulas
 app.use('/api/aula', aulasRoutes);
-// Rutas para las actividades extracurriculares
-app.use('/api', actividadesextraRoutes);
-// Rutas para el día
-app.use('/api/dia', diasRoutes);
 // Rutas para el historico procedencia
 app.use('/api/historial_proc', historicoprocRoutes);
 // Usar las rutas de solicitud
