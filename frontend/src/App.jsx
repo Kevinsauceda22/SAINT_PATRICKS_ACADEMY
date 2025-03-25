@@ -68,7 +68,9 @@ const Municipios = React.lazy(() => import('./views/pages/matricula/municipios')
 const Estadomatricula = React.lazy(() => import('./views/pages/matricula/estadomatricula'));
 const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopago'));
 const ListaEdificios = React.lazy(() => import('./views/pages/matricula/ListaEdificios'));
+const ListaActivex = React.lazy(() => import('./views/pages/matricula/ListaActivex')); 
 const ListaAulas = React.lazy(() => import('./views/pages/matricula/ListaAulas'));
+const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias'));
 const ListaSecciones = React.lazy(() => import('./views/pages/matricula/ListaSecciones'));
 const ListaSecciones_Asignatura = React.lazy(() => import('./views/pages/matricula/ListaSecciones_Asignatura'));
 const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/ListaGestion_Academica'));
@@ -194,10 +196,14 @@ const App = () => {
                 <Route path="/conceptopago" element={<Conceptopago />} />
                 <Route path="/edificios" element={<ListaEdificios />} />
                 <Route path="/aulas" element={<ListaAulas />} />
+                <Route path="/dias" element={<ListaDias />} />
                 <Route path="/lista-secciones-asignatura" element={<ListaSecciones_Asignatura />} />
                 <Route path="/gestion_academica"  element={<ListaGestion_Academica />} />
                 <Route exact path="/lista-secciones" element={<ListaSecciones />} /> 
-              
+
+                <Route path="/actividades" element={<ListaActivex />} />
+                 <Route path="/dias"  element={<ListaDias />} />
+                
                  <Route path="/Tipopersona" element={<Tipopersona />} />
                  <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
