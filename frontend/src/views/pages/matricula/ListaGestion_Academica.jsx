@@ -1,10 +1,14 @@
 // Importaciones de librerías y componentes necesarios
 import React, { useEffect, useState } from 'react';
 import {
-  CButton,CCard,CCardBody,CCol,CContainer,CModal,CModalBody,CModalFooter,CModalHeader,CModalTitle,CRow,CTable,CTableBody,CTableDataCell,CTableHead,CTableHeaderCell,CTableRow,CInputGroup,CInputGroupText,CFormInput,CFormSelect,
+  CButton,CCard,CCardBody,CCol,CContainer,CModal,CModalBody,CModalFooter,CModalHeader,CModalTitle,CRow,CTable,CTableBody,CTableDataCell,CTableHead,CTableHeaderCell,CTableRow,CInputGroup,CInputGroupText,CFormInput,CFormSelect,CDropdown,
+  CDropdownItem,
+  CDropdownMenu,
+  CDropdownToggle,
+  //CPagination,CSpinner,utils, writeFile,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
-import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch, cilDescription } from '@coreui/icons';
+import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch,cilBrushAlt, cilFile, cilSpreadsheet, cilPen, cilTrash, cilSave, cilX, cilCheck, cilInfo, cilDescription } from '@coreui/icons';
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import "jspdf-autotable";
@@ -71,62 +75,213 @@ const ListaGestion_Academica = () => {
     navigate(`/lista-secciones/`, { state: { periodoSeleccionado: Cod_periodo_matricula } });
   };
 
-  // Función para descargar el PDF individual
-  const handleDescargarPDF = async (Cod_periodo_matricula) => {
-    try {
-      // Llamada a la API para obtener el año académico
-      const responsePeriodo = await fetch(`http://localhost:4000/api/gestion_academica/detalle/${Cod_periodo_matricula}`);
-      if (!responsePeriodo.ok) {
-        throw new Error(`Error al obtener datos del período: ${responsePeriodo.status}`);
-      }
-      const periodoData = await responsePeriodo.json();
-      const AnioAcademico = periodoData.Anio_academico || "Sin Año Académico";
-
-      // Llamada a la API para obtener las secciones
-      const responseSecciones = await fetch(`http://localhost:4000/api/gestion_academica/secciones_por_periodo/${Cod_periodo_matricula}`);
-      if (!responseSecciones.ok) {
-        throw new Error(`Error al obtener datos del servidor: ${responseSecciones.status}`);
-      }
-      const data = await responseSecciones.json();
-
-      // Crear el documento PDF
+    // Función para descargar el PDF individual
+    const handleDescargarPDF = async (Cod_periodo_matricula) => {
+      try {
+        // Llamada a la API para obtener el año académico
+        const responsePeriodo = await fetch(`http://74.50.68.87:4000/api/gestion_academica/detalle/${Cod_periodo_matricula}`);
+        if (!responsePeriodo.ok) {
+          throw new Error(`Error al obtener datos del período: ${responsePeriodo.status}`);
+        }
+        const periodoData = await responsePeriodo.json();
+        const AnioAcademico = periodoData.Anio_academico || "Sin Año Académico";
+  
+        // Llamada a la API para obtener las secciones
+        const responseSecciones = await fetch(`http://74.50.68.87:4000/api/gestion_academica/secciones_por_periodo/${Cod_periodo_matricula}`);
+        if (!responseSecciones.ok) {
+          throw new Error(`Error al obtener datos del servidor: ${responseSecciones.status}`);
+        }
+        const data = await responseSecciones.json();
+  
+        // Crear el documento PDF
+        const doc = new jsPDF();
+        const img = new Image();
+        img.src = logo; // Asegúrate de tener el logo disponible y en la misma ruta
+  
+        img.onload = () => {
+          const pageWidth = doc.internal.pageSize.width;
+  
+          // Encabezado del PDF
+          doc.addImage(img, "PNG", 10, 10, 45, 45);
+          doc.setFontSize(18);
+          doc.setTextColor(0, 102, 51);
+          doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: "center" });
+  
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          doc.text("Casa Club del periodista, Colonia del Periodista", pageWidth / 2, 32, { align: "center" });
+          doc.text("Teléfono: (504) 2234-8871", pageWidth / 2, 37, { align: "center" });
+          doc.text("Correo: info@saintpatrickacademy.edu", pageWidth / 2, 42, { align: "center" });
+  
+          doc.setFontSize(14);
+          doc.setTextColor(0, 102, 51);
+          doc.text(`Listado de Secciones - Año Académico ${AnioAcademico}`, pageWidth / 2, 50, { align: "center" });
+  
+          doc.setLineWidth(0.5);
+          doc.setDrawColor(0, 102, 51);
+          doc.line(10, 55, pageWidth - 10, 55);
+  
+          // Tabla de datos
+          const tableColumn = ["#", "Sección", "Aula", "Grado", "Maestro guía"];
+          const tableRows = data.map((seccion, index) => [
+            { content: (index + 1).toString(), styles: { halign: "center" } },
+            { content: seccion.Nombre_seccion?.toUpperCase() || "SIN NOMBRE", styles: { halign: "center" } },
+            { content: seccion.Aula?.toString() || "SIN AULA", styles: { halign: "center" } },
+            seccion.Grado?.toUpperCase() || "SIN GRADO",
+            { content: seccion.Profesor?.toUpperCase() || "SIN PROFESOR", styles: { halign: "left" } },
+          ]);
+  
+          doc.autoTable({
+            startY: 70,
+            head: [tableColumn],
+            body: tableRows,
+            headStyles: {
+              fillColor: [0, 102, 51],
+              textColor: [255, 255, 255],
+              fontSize: 10,
+              halign: "center",
+            },
+            styles: {
+              fontSize: 10,
+              cellPadding: 3,
+            },
+            alternateRowStyles: {
+              fillColor: [240, 248, 255],
+            },
+            didDrawPage: (data) => {
+              const pageCount = doc.internal.getNumberOfPages();
+              const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+  
+              // Pie de página
+              const footerY = doc.internal.pageSize.height - 10;
+              doc.setFontSize(10);
+              doc.setTextColor(0, 102, 51);
+              doc.text(
+                `Página ${pageCurrent} de ${pageCount}`,
+                pageWidth - 10,
+                footerY,
+                { align: "right" }
+              );
+  
+              const now = new Date();
+              const dateString = now.toLocaleDateString("es-HN", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              });
+              const timeString = now.toLocaleTimeString("es-HN", {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              });
+              doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+            },
+          });
+  
+          // Convertir PDF en Blob y mostrarlo en una nueva ventana
+          const pdfBlob = doc.output("blob");
+          const pdfURL = URL.createObjectURL(pdfBlob);
+  
+          // Crear ventana con visor de PDF
+          const newWindow = window.open("", "_blank");
+          newWindow.document.title = `Reporte de Secciones - Año ${AnioAcademico}`;
+          newWindow.document.write(`
+            <html>
+              <head>
+                <title>Reporte de Secciones - Año ${AnioAcademico}</title>
+                <style>
+                  body {
+                    margin: 0;
+                    padding: 0;
+                    overflow: hidden;
+                  }
+                  iframe {
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                  }
+                  .download-button {
+                    position: fixed;
+                    top: 10px;
+                    right: 10px;
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 10px 15px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                  }
+                </style>
+              </head>
+              <body>
+                <iframe src="${pdfURL}"></iframe>
+                <button class="download-button" 
+                  onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Secciones_${AnioAcademico}.pdf'; a.click();">
+                  Descargar PDF
+                </button>
+              </body>
+            </html>
+          `);
+        };
+  
+        img.onerror = () => {
+          Swal.fire('Error', 'No se pudo cargar el logo del encabezado. Verifica la ruta o la conexión.', 'error');
+        };
+      } catch (error) {
+        console.error('Error en handleDescargarPDF:', error); // Registro detallado
+        const errorMessage = error.message.includes('Error al obtener datos del período')
+            ? 'No se pudo obtener la información del período académico. Verifica los datos.'
+            : 'No se pudieron cargar las secciones para generar el PDF. Inténtalo nuevamente.';
+        Swal.fire('Error', errorMessage, 'error');
+    }  
+    };
+  
+    // Función para descargar el PDF de la vista agrupadora
+    const handleGenerarPDFVista = () => {
       const doc = new jsPDF();
       const img = new Image();
-      img.src = logo; // Asegúrate de tener el logo disponible y en la misma ruta
-
+      img.src = logo; // Ruta al logo que estás utilizando
+      
       img.onload = () => {
         const pageWidth = doc.internal.pageSize.width;
-
+    
         // Encabezado del PDF
-        doc.addImage(img, "PNG", 10, 10, 45, 45);
+        doc.addImage(img, 'PNG', 10, 10, 45, 45);
         doc.setFontSize(18);
         doc.setTextColor(0, 102, 51);
-        doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: "center" });
-
+        doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+    
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text("Casa Club del periodista, Colonia del Periodista", pageWidth / 2, 32, { align: "center" });
-        doc.text("Teléfono: (504) 2234-8871", pageWidth / 2, 37, { align: "center" });
-        doc.text("Correo: info@saintpatrickacademy.edu", pageWidth / 2, 42, { align: "center" });
-
+        doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+        doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+        doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+    
         doc.setFontSize(14);
         doc.setTextColor(0, 102, 51);
-        doc.text(`Listado de Secciones - Año Académico ${AnioAcademico}`, pageWidth / 2, 50, { align: "center" });
-
+        doc.text('Reporte de Gestión Académica', pageWidth / 2, 50, { align: 'center' });
+    
         doc.setLineWidth(0.5);
         doc.setDrawColor(0, 102, 51);
         doc.line(10, 55, pageWidth - 10, 55);
-
-        // Tabla de datos
-        const tableColumn = ["#", "Sección", "Aula", "Grado", "Maestro guía"];
-        const tableRows = data.map((seccion, index) => [
-          { content: (index + 1).toString(), styles: { halign: "center" } },
-          { content: seccion.Nombre_seccion?.toUpperCase() || "SIN NOMBRE", styles: { halign: "center" } },
-          { content: seccion.Aula?.toString() || "SIN AULA", styles: { halign: "center" } },
-          seccion.Grado?.toUpperCase() || "SIN GRADO",
-          { content: seccion.Profesor?.toUpperCase() || "SIN PROFESOR", styles: { halign: "left" } },
+    
+        // Cuerpo del PDF (tabla de datos)
+        const tableColumn = ['#', 'Total Secciones', 'Año Académico', 'Fecha de Creación', 'Estado'];
+        const tableRows = currentRecords.map((agrupador, index) => [
+          { content: index + 1, styles: { halign: 'center' } },
+          { content: agrupador.Total_secciones.toString(), styles: { halign: 'center' } },
+          { content: agrupador.Anio_academico.toString(), styles: { halign: 'center' } },
+          { content: new Date(agrupador.Fecha_agrupacion).toLocaleDateString(), styles: { halign: 'center' } },
+          {
+            content: agrupador.Estado,
+            styles: {
+              halign: 'center',
+              textColor: agrupador.Estado === 'Activo' ? [0, 128, 0] : [255, 0, 0],
+              fontStyle: agrupador.Estado === 'Activo' ? 'bold' : 'normal',
+            },
+          },
         ]);
-
+    
         doc.autoTable({
           startY: 70,
           head: [tableColumn],
@@ -135,7 +290,7 @@ const ListaGestion_Academica = () => {
             fillColor: [0, 102, 51],
             textColor: [255, 255, 255],
             fontSize: 10,
-            halign: "center",
+            halign: 'center',
           },
           styles: {
             fontSize: 10,
@@ -147,195 +302,47 @@ const ListaGestion_Academica = () => {
           didDrawPage: (data) => {
             const pageCount = doc.internal.getNumberOfPages();
             const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
+    
             // Pie de página
             const footerY = doc.internal.pageSize.height - 10;
             doc.setFontSize(10);
             doc.setTextColor(0, 102, 51);
-            doc.text(
-              `Página ${pageCurrent} de ${pageCount}`,
-              pageWidth - 10,
-              footerY,
-              { align: "right" }
-            );
-
+            doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+    
             const now = new Date();
-            const dateString = now.toLocaleDateString("es-HN", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
+            const dateString = now.toLocaleDateString('es-HN', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
             });
-            const timeString = now.toLocaleTimeString("es-HN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
+            const timeString = now.toLocaleTimeString('es-HN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
             });
             doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
           },
         });
-
-        // Convertir PDF en Blob y mostrarlo en una nueva ventana
-        const pdfBlob = doc.output("blob");
-        const pdfURL = URL.createObjectURL(pdfBlob);
-
-        // Crear ventana con visor de PDF
-        const newWindow = window.open("", "_blank");
-        newWindow.document.title = `Reporte de Secciones - Año ${AnioAcademico}`;
-        newWindow.document.write(`
-          <html>
-            <head>
-              <title>Reporte de Secciones - Año ${AnioAcademico}</title>
-              <style>
-                body {
-                  margin: 0;
-                  padding: 0;
-                  overflow: hidden;
-                }
-                iframe {
-                  width: 100%;
-                  height: 100%;
-                  border: none;
-                }
-                .download-button {
-                  position: fixed;
-                  top: 10px;
-                  right: 10px;
-                  background-color: #6c757d;
-                  color: white;
-                  border: none;
-                  padding: 10px 15px;
-                  border-radius: 5px;
-                  cursor: pointer;
-                }
-              </style>
-            </head>
-            <body>
-              <iframe src="${pdfURL}"></iframe>
-              <button class="download-button" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Secciones_${AnioAcademico}.pdf'; a.click();">
-                Descargar PDF
-              </button>
-            </body>
-          </html>
-        `);
-      };
-
-      img.onerror = () => {
-        Swal.fire('Error', 'No se pudo cargar el logo del encabezado. Verifica la ruta o la conexión.', 'error');
-      };
-    } catch (error) {
-      console.error('Error en handleDescargarPDF:', error); // Registro detallado
-      const errorMessage = error.message.includes('Error al obtener datos del período')
-          ? 'No se pudo obtener la información del período académico. Verifica los datos.'
-          : 'No se pudieron cargar las secciones para generar el PDF. Inténtalo nuevamente.';
-      Swal.fire('Error', errorMessage, 'error');
-  }  
-  };
-
-  // Función para descargar el PDF de la vista agrupadora
-  const handleGenerarPDFVista = () => {
-    const doc = new jsPDF();
-    const img = new Image();
-    img.src = logo; // Ruta al logo que estás utilizando
     
-    img.onload = () => {
-      const pageWidth = doc.internal.pageSize.width;
-  
-      // Encabezado del PDF
-      doc.addImage(img, 'PNG', 10, 10, 45, 45);
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-  
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-  
-      doc.setFontSize(14);
-      doc.setTextColor(0, 102, 51);
-      doc.text('Reporte de Gestión Académica', pageWidth / 2, 50, { align: 'center' });
-  
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 55, pageWidth - 10, 55);
-  
-      // Cuerpo del PDF (tabla de datos)
-      const tableColumn = ['#', 'Total Secciones', 'Año Académico', 'Fecha de Creación', 'Estado'];
-      const tableRows = currentRecords.map((agrupador, index) => [
-        { content: index + 1, styles: { halign: 'center' } },
-        { content: agrupador.Total_secciones.toString(), styles: { halign: 'center' } },
-        { content: agrupador.Anio_academico.toString(), styles: { halign: 'center' } },
-        { content: new Date(agrupador.Fecha_agrupacion).toLocaleDateString(), styles: { halign: 'center' } },
-        {
-          content: agrupador.Estado,
-          styles: {
-            halign: 'center',
-            textColor: agrupador.Estado === 'Activo' ? [0, 128, 0] : [255, 0, 0],
-            fontStyle: agrupador.Estado === 'Activo' ? 'bold' : 'normal',
-          },
-        },
-      ]);
-  
-      doc.autoTable({
-        startY: 70,
-        head: [tableColumn],
-        body: tableRows,
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 10,
-          halign: 'center',
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: {
-          fillColor: [240, 248, 255],
-        },
-        didDrawPage: (data) => {
-          const pageCount = doc.internal.getNumberOfPages();
-          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-  
-          // Pie de página
-          const footerY = doc.internal.pageSize.height - 10;
-          doc.setFontSize(10);
-          doc.setTextColor(0, 102, 51);
-          doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-  
-          const now = new Date();
-          const dateString = now.toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-          const timeString = now.toLocaleTimeString('es-HN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
-          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-        },
-      });
-  
-      // Convertir PDF en Blob y mostrar en una nueva ventana
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
-  
-      // Abrir el visor de PDF predeterminado del navegador
-      const newWindow = window.open(pdfURL, '_blank');
-      if (newWindow) {
-        newWindow.document.title = 'Reporte de Gestión Académica';
-      }
+        // Convertir PDF en Blob y mostrar en una nueva ventana
+        const pdfBlob = doc.output('blob');
+        const pdfURL = URL.createObjectURL(pdfBlob);
+    
+        // Abrir el visor de PDF predeterminado del navegador
+        const newWindow = window.open(pdfURL, '_blank');
+        if (newWindow) {
+          newWindow.document.title = 'Reporte de Gestión Académica';
+        }
+      };
+    
+      img.onerror = () => {
+        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+      };
     };
   
-    img.onerror = () => {
-      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-    };
-  };
+    //REPORTE EN EXCEL
   
+
   // Función para alternar la visibilidad del modal
   const toggleModal = () => setShowModal(!showModal);
 
@@ -422,78 +429,78 @@ const ListaGestion_Academica = () => {
   }
   
   return (
-    <CContainer style={{ marginTop: '10px', maxWidth: '900px' }}>
-  {/* Título centrado en negritas */}
-  <CRow className="align-items-center justify-content-center mb-2">
-    {/* Ajuste del margen inferior (antes era `mb-5`, ahora `mb-2`) */}
-    <CCol xs="12" className="text-center">
-      <h2 className="fw-bold" style={{ color: '#333' }}>
-        <CIcon icon={cilBook} className="me-1" />
-        Gestión Académica
-      </h2>
-    </CCol>
-  </CRow>
+    <div className="container mt-1">
+  {/* Título, Boton Nuevo y Boton de Reporte */}
+  
+  <CRow className='align-items-center mb-5'>
+    <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+    {/* Titulo */}
+    <div className="flex-grow-1 text-center">
+    <h4 className="text-center fw-semibold pb-1 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Gestión Académica</h4>
+    </div>
 
-  {/* Botones "Nuevo" y "Reporte" arriba */}
-  <CRow className="align-items-center mb-4" style={{ marginTop: '-10px' }}>
-    {/* Ajuste del margen superior para acercar los botones al título */}
-    <CCol xs="12" className="d-flex justify-content-between">
-      {/* Botón "Nuevo" */}
-      {canInsert && (
+    {/* Botón "Nuevo" */}
+    {canInsert && (
       <CButton
-        className="d-flex align-items-center gap-1 rounded shadow"
-        style={{
-          backgroundColor: '#4B6251',
-          color: 'white',
-          padding: '10px 16px',
-          fontSize: '0.9rem',
-        }}
-        onClick={() => setShowModal(true)}
-      >
-        <CIcon icon={cilPlus} /> Nuevo
-      </CButton>
+      className="btn-sm d-flex align-items-center gap-1 rounded shadow"
+      style={{
+        backgroundColor: '#4B6251',
+        color: 'white',
+        padding: '6.5px 16px',
+        fontSize: '0.85rem', 
+        cursor: 'pointer',
+        transition: 'all 0.3s ease',
+      }}
+      
+      onClick={() => setShowModal(true)}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
       )}
-
-      {/* Botón "Generar PDF" */}
-      <CButton
-        className="d-flex align-items-center rounded shadow"
-        style={{
-          backgroundColor: "#6C8E58",
-          color: "white",
-          padding: "10px 16px",
-          fontSize: "0.9rem",
-        }}
-        onClick={handleGenerarPDFVista}
+    
+    {/* Botón "Generar PDF" */}
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+         style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease', }}
+         onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
+         onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
+         <CIcon icon={cilDescription}/> Reporte
+      </CDropdownToggle>
+      <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
+    <CDropdownItem
+      onClick={handleGenerarPDFVista}
+      style={{
+      cursor: 'pointer',
+      outline: 'none',
+      backgroundColor: 'transparent',
+      padding: '0.5rem 1rem',
+      fontSize: '0.85rem',
+      color: '#333',
+      borderBottom: '1px solid #eaeaea',
+      transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
       >
-        <CIcon icon={cilDescription} /> Reporte
-      </CButton>
+      <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+    </CDropdownItem>
+
+    {/*Reporte excel"*/}
+    
+
+    </CDropdownMenu>
+    </CDropdown>
+    
     </CCol>
   </CRow>
+
 
   {/* Barra de búsqueda y selector de registros abajo */}
-  <CRow className="align-items-center mb-4">
-    {/* Botón Limpiar en el borde izquierdo */}
-    <CCol xs="12" md="2" className="text-start">
-      <CButton
-        color="light"
-        onClick={() => {
-          setSearchTerm('');
-        }}
-        style={{
-          padding: "6px 12px",
-          fontSize: "0.9rem",
-          backgroundColor: "#E0E0E0", // Gris claro
-          color: "#000",
-          border: "1px solid #CCC",
-        }}
-      >
-        Limpiar
-      </CButton>
-    </CCol>
-
-    {/* Campo de búsqueda y selector */}
-    <CCol xs="12" md="6" className="d-flex align-items-center gap-2">
-      <CInputGroup>
+  <CRow className="align-items-center mt-4 mb-3">
+   
+    {/* Barra de búsqueda */}
+    <CCol xs="12" md="6" className='d-flex flex-wrap align-items-center'>
+    <CInputGroup>
         <CInputGroupText>
           <CIcon icon={cilSearch} />
         </CInputGroupText>
@@ -537,11 +544,37 @@ const ListaGestion_Academica = () => {
           <option value="Total_secciones">Total de secciones</option>
           <option value="Anio_academico">Año Académico</option>
         </CFormSelect>
-      </CInputGroup>
+
+    {/* Botón para limpiar la búsqueda */}
+
+    <CButton
+    style={{
+        border: '1px solid #ccc',
+        transition: 'all 0.1s ease-in-out', // Duración de la transición
+        backgroundColor: '#F3F4F7', // Color por defecto
+        color: '#343a40', // Color de texto por defecto
+        height: '35px',
+    }}
+    onClick={() => {
+        setSearchTerm('');
+        setCurrentPage(1);
+    }}
+    onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el botón "limpiar"
+        e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el botón "limpiar"
+    }}
+    onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el botón "limpiar"
+        e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el botón "limpiar"
+    }}
+    >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+    </CButton>
+    </CInputGroup>
     </CCol>
 
     {/* Selector de Número de Registros */}
-    <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
+    <CCol xs="12" md="6" className="text-md-end mt-2 mt-md-0">
       <CInputGroup style={{ width: "auto", display: "inline-block" }}>
         <div className="d-inline-flex align-items-center">
           <span>Mostrar&nbsp;</span>
@@ -550,7 +583,7 @@ const ListaGestion_Academica = () => {
               width: "80px",
               display: "inline-block",
               textAlign: "center",
-              fontSize: "0.9rem",
+              fontSize: "0.85rem",
             }}
             onChange={(e) => {
               const value = Number(e.target.value);
@@ -571,18 +604,19 @@ const ListaGestion_Academica = () => {
 
 
   {/* Tabla de agrupadores */}
-  <CCard>
-    <CCardBody>
-      <div className="table-container mt-4" style={{ overflowX: 'auto', marginBottom: '20px' }}>
+  <div
+      className="table-container mt-4"
+      style={{ height: "300px", overflowY: "auto", marginBottom: "20px" }}
+    >
         <CTable striped bordered hover>
-    <CTableHead>
-      <CTableRow>
-        <CTableHeaderCell className="text-center">#</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Total Secciones</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Año Académico</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Fecha de Creación</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Estado</CTableHeaderCell>
-        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+        <CTableHead style={{ position: "sticky", top: 0, zIndex: 1, backgroundColor: "#fff" }}>
+        <CTableRow>
+        <CTableHeaderCell className="text-center" style={{ width: "7%" }}>#</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "22%" }}>Año Académico</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "22%" }}>Fecha de Creación</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "16%" }}>Total Secciones</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "17%" }}>Estado</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: "16%" }}>Acciones</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
     <CTableBody>
@@ -595,12 +629,12 @@ const ListaGestion_Academica = () => {
                   fontWeight: agrupador.Estado === 'Activo' ? 'bold' : 'normal', // Negritas si está activo
               }}
           >
-              <CTableDataCell className="text-center">{index + 1}</CTableDataCell>
-              <CTableDataCell className="text-center">{agrupador.Total_secciones}</CTableDataCell>
+              <CTableDataCell className="text-center">{indexOfFirstRecord + index + 1}</CTableDataCell>
               <CTableDataCell className="text-center">{agrupador.Anio_academico}</CTableDataCell>
               <CTableDataCell className="text-center">
                   {new Date(agrupador.Fecha_agrupacion).toLocaleDateString()}
               </CTableDataCell>
+              <CTableDataCell className="text-center">{agrupador.Total_secciones}</CTableDataCell>
               <CTableDataCell className="text-center">
                   <span
                       style={{
@@ -613,27 +647,30 @@ const ListaGestion_Academica = () => {
               </CTableDataCell>
               <CTableDataCell className="text-center">
                   <div className="d-flex justify-content-center gap-2">
-                      <CButton
-                          color="info"
-                          onClick={() => handleGestionarClick(agrupador.Cod_periodo_matricula)}
-                          className="d-flex align-items-center"
-                      >
-                          <CIcon icon={cilSettings} />
-                      </CButton>
-                      <CButton
-                          color="warning"
-                          onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
-                          className="d-flex align-items-center"
-                      >
-                          <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
-                      </CButton>
+                  <CButton
+                    color="info"
+                    onClick={() => handleGestionarClick(agrupador.Cod_periodo_matricula)}
+                    className="d-flex align-items-center"
+                    title="Gestionar Secciones"
+                  >
+                    <CIcon icon={cilSettings} />
+                  </CButton>
+                  <CButton 
+                    color="warning"
+                    onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
+                    className="d-flex align-items-center"
+                    title="PDF de Todas las Secciones"
+                  >
+                    <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
+                  </CButton>
                   </div>
               </CTableDataCell>
           </CTableRow>
         ))
-      ) : (
+      ) : 
+      (
           <CTableRow>
-            <CTableDataCell colSpan="6" className="text-center">
+            <CTableDataCell colSpan={4} className="text-center">
               No hay agrupadores disponibles.
             </CTableDataCell>
           </CTableRow>
@@ -641,8 +678,6 @@ const ListaGestion_Academica = () => {
       </CTableBody>
     </CTable>
   </div>
-</CCardBody>
-</CCard>
 
   {/* Paginación */}
   <div
@@ -657,14 +692,7 @@ const ListaGestion_Academica = () => {
   >
     <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
       <CButton
-        style={{
-          backgroundColor: '#6f8173',
-          color: '#D9EAD3',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-        }}
+        style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
         disabled={currentPage === 1}
         onClick={() => paginate(currentPage - 1)}
       >
@@ -672,14 +700,7 @@ const ListaGestion_Academica = () => {
       </CButton>
 
       <CButton
-        style={{
-          backgroundColor: '#6f8173',
-          color: '#D9EAD3',
-          padding: '8px 16px',
-          borderRadius: '8px',
-          fontSize: '0.9rem',
-          fontWeight: 'bold',
-        }}
+        style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
         disabled={currentPage === Math.ceil(filteredAgrupadores.length / recordsPerPage)}
         onClick={() => paginate(currentPage + 1)}
       >
@@ -707,12 +728,12 @@ const ListaGestion_Academica = () => {
       <CButton color="secondary" onClick={handleCloseModal}>
         Cancelar
       </CButton>
-      <CButton color="primary" onClick={handleGuardarAgrupador}>
-        Confirmar
+      <CButton style={{backgroundColor: '#4B6251', color: 'white' }} onClick={handleGuardarAgrupador}>
+       <CIcon icon={cilSave} style={{ marginRight: '5px' }} />Guardar
       </CButton>
     </CModalFooter>
   </CModal>
-</CContainer>
+    </div>
 
   );
 };
