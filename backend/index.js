@@ -47,11 +47,11 @@ import telefonosRoutes from "./module/personas/Routes/telefonosRoutes.js";
 import tipoDocumento from "./module/personas/Routes/tipoDocumentoRoutes.js";
 import personasRoutes from "./module/personas/personaRoutes.js";
 import nacionalidadRoutes from "./module/personas/Routes/nacionalidadRoutes.js";
-import tipopersonaRoutes from './module/personas/Routes/tipopersonaRoutes.js';
+import tipoPersonaRoutes from "./module/personas/Routes/tipopersonaRoutes.js";
 import tipomatriculaRoutes from './module/matricula/Routes/tipomatriculaRoutes.js';
 import periodomatriculaRoutes from './module/matricula/Routes/periodomatriculaRoutes.js';
 import estadomatriculaRoutes from './module/matricula/Routes/estadomatriculaRoutes.js';
-import departamentoRoutes from './module/personas/Routes/departamentoRoutes.js';
+import departamentosRoutes from './module/personas/Routes/departamentosRoutes.js';
 import conceptopagoRoutes from './module/matricula/Routes/conceptopagoRoutes.js';
 import tipoRelacionRoutes from './module/personas/Routes/tipoRelacionRoutes.js';
 import estructuraFamiliarRoutes from './module/personas/Routes/estructuraFamiliarRoutes.js';
@@ -196,8 +196,8 @@ app.use('/api/persona', personaRoutes); // Ruta de personas de grupo 2
 
 
 app.use('/api/telefonos', telefonosRoutes);
-app.use('/api/tipopersona', tipopersonaRoutes);
-app.use('/api/departamento', departamento);
+app.use('/api/tipoPersona', tipoPersonaRoutes);
+app.use('/api/departamentos', departamentosRoutes);
 app.use('/api/procedenciaEstudiante', procedenciaEstudianteRoutes);
 app.use('/api/tipoDocumento', tipoDocumento);
 app.use('/api/tipoRelacion', tipoRelacionRoutes);

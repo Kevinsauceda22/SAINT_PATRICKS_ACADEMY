@@ -80,7 +80,7 @@ const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaN
 const ListaProcedenciaEstudiante = React.lazy(() => import('./views/pages/personas/ListaProcedenciaEstudiante')); 
 const ListaTelefonos = React.lazy(() => import('./views/pages/personas/ListaTelefonos'));
 const ListaTipoDocumentos = React.lazy(() => import('./views/pages/personas/ListaTipoDocumentos'));
-const Tipopersona = React.lazy(() => import('./views/pages/personas/Tipopersona'));
+const ListaTipoPersona = React.lazy(() => import('./views/pages/personas/ListaTipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
 const MisPagos = React.lazy(() => import('./views/pages/MisPagos/Mis_pagos')) 
 const Dashboard2 = React.lazy(() => import('./views/pages/PaginaPrincipal/PaginaPrincipal')) 
@@ -204,7 +204,7 @@ const App = () => {
                 <Route path="/actividades" element={<ListaActivex />} />
                  <Route path="/dias"  element={<ListaDias />} />
                 
-                 <Route path="/Tipopersona" element={<Tipopersona />} />
+                 <Route path="/ListaTipoPersona" element={<ListaTipoPersona />} />
                  <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />

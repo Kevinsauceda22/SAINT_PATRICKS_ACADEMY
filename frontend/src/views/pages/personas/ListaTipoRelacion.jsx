@@ -253,12 +253,10 @@ const handleChange = (event) => {
 
 {/********************************************FUNCION PARA CREAR RELACION**************************************************************/}
 const handleCreateRelacion = async () => {
-  if (isDuplicateRelacion()) {
-    return;
-  }
+  // Validar el tipo de relación antes de enviarlo
   const relacionCapitalizado = capitalizeWords(nuevaRelacion.tipo_relacion.trim().replace(/\s+/g, ' '));
 
-  // Validaciones antes de crear 
+  // Validaciones antes de crear
   if (!validateTiporelacion(relacionCapitalizado)) {
     return;
   }
@@ -273,21 +271,34 @@ const handleCreateRelacion = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        tipo_relacion: relacionCapitalizado,
+        tipo_relacion: relacionCapitalizado,  // Usamos la relación validada
         estado: 1, // Relación activa por defecto
       }),
     });
 
     if (response.ok) {
-      fetchTipoRelacion();
-      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
-      resetNuevaRelacion();
-      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
-      swal.fire({
-        icon: 'success',
-        title: 'Creación exitosa',
-        text: 'La relación ha sido creada correctamente.',
-      });
+      // Respuesta esperada
+      const result = await response.json();
+
+      // Verificar que la respuesta tiene la estructura correcta
+      if (result.Cod_tipo_relacion && result.tipo_relacion && result.estado !== undefined) {
+        // Actualiza la lista de tipos de relaciones
+        fetchTipoRelacion();
+        setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+        resetNuevaRelacion(); // Reiniciar el estado de la nueva relación
+        setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+        swal.fire({
+          icon: 'success',
+          title: 'Creación exitosa',
+          text: `La relación "${result.tipo_relacion}" ha sido creada correctamente.`,
+        });
+      } else {
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: 'La respuesta de la API no contiene los datos esperados.',
+        });
+      }
     } else {
       swal.fire({
         icon: 'error',
@@ -297,8 +308,14 @@ const handleCreateRelacion = async () => {
     }
   } catch (error) {
     console.error('Error al crear la relación:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar crear la relación.',
+    });
   }
 };
+
 
 
   {/*******************************************FUNCION PARA ACTUALIZAR*********************************************************/}
@@ -783,7 +800,7 @@ const ReporteRelacionesPDF = () => {
       </span>
     </div>
   
-
+{/*********************************************************************************************************************************/}
     <CModal visible={modalVisible} backdrop="static">
   <CModalHeader closeButton={false}>
     <CModalTitle>Ingresar Nuevo Tipo de Relación</CModalTitle>
@@ -820,6 +837,7 @@ const ReporteRelacionesPDF = () => {
   </CModalFooter>
 </CModal>
 
+{/** /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
 <CModal visible={modalUpdateVisible} backdrop="static">
   <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Tipo Relación</CModalTitle>

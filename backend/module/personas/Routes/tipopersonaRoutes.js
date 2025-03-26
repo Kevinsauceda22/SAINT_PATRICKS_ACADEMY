@@ -1,23 +1,27 @@
 import express from 'express';
 import {
-    crearTipoPersona,
-    actualizarTipoPersona,
-    eliminarTipoPersona,
-    obtenerTipoPersona
-} from '../Controllers/tipopersonaController.js';
+        obtenerTodoTipoPersona,
+        crearTipoPersona,
+        actualizarTipoPersona,
+        actualizarEstadoTipoPersona,
+        eliminarTipoPersona
+} from '../Controllers/tipoPersonaController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
 
-// Crear un nuevo tipo de persona
-router.post('/tipo-persona', crearTipoPersona);
+// Ruta para obtener todas los tipos de persona
+router.get('/verTodoTipoPersona', obtenerTodoTipoPersona);
 
-// Actualizar un tipo de persona
-router.put('/tipo-persona/:Cod_tipo_persona', actualizarTipoPersona);
+// Ruta para crear un tipo de persona
+router.post('/crearTipoPersona', crearTipoPersona);
 
-// Eliminar un tipo de persona
-router.delete('/tipo-persona/:Cod_tipo_persona', eliminarTipoPersona);
+// Ruta para actualizar un tipo de persona
+router.put('/actualizarTipoPersona/:Cod_tipo_persona', actualizarTipoPersona);
 
-// Obtener todos los tipos de persona o uno específico
-router.get('/tipo-persona/:Cod_tipo_persona?', obtenerTipoPersona); // El ? hace que el parámetro sea opcional
+// Ruta para actualizar el estado de un tipo de persona
+router.post('/actualizarEstadoTipoPersona', actualizarEstadoTipoPersona);
+
+// Ruta para eliminar un tipo de persona
+router.delete('/eliminarTipoPersona/:Cod_tipo_persona', eliminarTipoPersona);
 
 export default router;

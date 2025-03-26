@@ -1,92 +1,82 @@
 import conectarDB from '../../../config/db.js';
-
 const pool = await conectarDB();
 
-export const crearTipoPersona = async (req, res) => {
-    const { Tipo } = req.body;
-
-    // Validar que el tipo no sea NULL
-    if (!Tipo) {
-        return res.status(400).json({ Mensaje: 'El tipo de persona no puede ser NULL' });
-    }
-
+// Controlador para obtener todos los tipos de persona
+export const obtenerTodoTipoPersona = async (req, res) => {
     try {
-        // Verificar si el tipo ya existe
-        const [existeTipo] = await pool.query('SELECT * FROM tbl_tipo_persona WHERE Tipo = ?', [Tipo]);
-        if (existeTipo.length > 0) {
-            return res.status(400).json({ Mensaje: 'El tipo de persona ya existe' });
+        const [rows] = await pool.query('CALL P_Get_TipoPersona()');
+
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontraron tipos de persona' });
         }
-
-        // Llamada al procedimiento almacenado para insertar un tipo de persona
-        await pool.query('CALL sp_insert_tipo_persona(?)', [Tipo]);
-
-        console.log('Tipo creado exitosamente');
-        res.status(200).json({ Mensaje: 'Tipo de persona creado exitosamente' });
-        
     } catch (error) {
-        console.error('Error al crear el tipo de persona:', error);
+        console.error('Error al obtener la lista de tipos de persona:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
 
-// Obtener todos los tipos de persona o uno específico por Cod_tipo_persona
-export const obtenerTipoPersona = async (req, res) => {
-    const { Cod_tipo_persona } = req.params;
+// Controlador para crear un tipo de persona
+export const crearTipoPersona = async (req, res) => {
+    const { tipo_persona, estado } = req.body;
+
+    if (!tipo_persona || estado === undefined) {
+        return res.status(400).json({ mensaje: 'Faltan parámetros' });
+    }
 
     try {
-        let query;
-        let params;
-
-        if (Cod_tipo_persona) {
-            query = 'CALL sp_get_tipo_persona(?)'; // Para obtener un tipo específico
-            params = [Cod_tipo_persona];
-        } else {
-            query = 'CALL sp_get_tipo_persona(NULL)'; // Para obtener todos los tipos
-            params = [null];
-        }
-
-        const [results] = await pool.query(query, params);
-
-        // Verificar si hay resultados
-        if (!results || results[0].length === 0) {
-            return res.status(404).json({ Mensaje: 'Tipo de persona no encontrado' });
-        }
-
-        res.status(200).json(results[0]);
+        await pool.query('CALL P_Post_TipoPersona(?, ?)', [tipo_persona, estado]);
+        res.status(201).json({ mensaje: 'Tipo de persona creado exitosamente' });
     } catch (error) {
-        console.error('Error al obtener el tipo de persona:', error);
-        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        console.error('Error al crear tipo de persona:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
 
 // Controlador para actualizar un tipo de persona
 export const actualizarTipoPersona = async (req, res) => {
     const { Cod_tipo_persona } = req.params;
-    const { Tipo } = req.body;
+    const { tipo_persona, estado } = req.body;
 
-    // Verificar que el código del tipo de persona sea válido
-    if (!Cod_tipo_persona) {
-        return res.status(400).json({ Mensaje: 'El código del tipo de persona es requerido.' });
+    if (!tipo_persona || estado === undefined) {
+        return res.status(400).json({ mensaje: 'Faltan parámetros' });
     }
 
-  
     try {
-        // Verificar si el tipo ya existe para otro registro
-        const [existeTipo] = await pool.query('SELECT * FROM tbl_tipo_persona WHERE Tipo = ? AND Cod_tipo_persona != ?', [Tipo, Cod_tipo_persona]);
-        if (existeTipo.length > 0) {
-            return res.status(400).json({ Mensaje: 'El tipo de persona ya existe' });
-        }
-
-        // Llamada al procedimiento almacenado para actualizar el tipo de persona
-        await pool.query('CALL sp_update_tipo_persona(?, ?)', [
+        await pool.query('CALL P_Put_TipoPersona(?, ?, ?)', [
             Cod_tipo_persona,
-            Tipo
+            tipo_persona,
+            estado
         ]);
-
-        res.status(200).json({ Mensaje: 'Tipo de persona actualizado exitosamente' });
+        res.status(200).json({ mensaje: 'Tipo de persona actualizado exitosamente' });
     } catch (error) {
-        console.error('Error al actualizar el tipo de persona:', error);
-        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        console.error('Error al actualizar tipo de persona:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+// Controlador para actualizar el estado de un tipo de persona
+export const actualizarEstadoTipoPersona = async (req, res) => {
+    const { cod_tipo_persona, estado } = req.body;
+
+    // Validar parámetros
+    if (!cod_tipo_persona || estado === undefined) {
+        return res.status(400).json({ mensaje: 'Faltan parámetros' });
+    }
+
+    try {
+        // Llamar al procedimiento almacenado
+        const [results] = await pool.query('CALL P_Put_EstadoTipoPersona(?, ?)', [cod_tipo_persona, estado]);
+
+        // Obtener el mensaje devuelto por el procedimiento
+        const mensaje = results[0][0].mensaje;
+
+        console.log(`Estado actualizado para tipo de persona ${cod_tipo_persona}: ${estado}`); // Debug en consola
+        res.json({ mensaje, cod_tipo_persona, estado }); // Respuesta al frontend
+    } catch (error) {
+        console.error('Error al ejecutar el procedimiento almacenado:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 };
 
@@ -94,13 +84,15 @@ export const actualizarTipoPersona = async (req, res) => {
 export const eliminarTipoPersona = async (req, res) => {
     const { Cod_tipo_persona } = req.params;
 
-    try {
-        // Llamada al procedimiento almacenado para eliminar el tipo de persona
-        await pool.query('CALL sp_delete_tipo_persona(?)', [Cod_tipo_persona]);
+    if (!Cod_tipo_persona) {
+        return res.status(400).json({ Mensaje: 'Cod_tipo_persona es requerido' });
+    }
 
+    try {
+        await pool.query('CALL P_Delete_TipoPersona(?)', [Cod_tipo_persona]);
         res.status(200).json({ Mensaje: 'Tipo de persona eliminado exitosamente' });
     } catch (error) {
-        console.error('Error al eliminar el tipo de persona:', error);
+        console.error('Error al eliminar tipo de persona:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };

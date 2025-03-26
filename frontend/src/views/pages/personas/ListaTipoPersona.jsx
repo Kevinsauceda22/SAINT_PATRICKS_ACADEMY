@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilFile } from '@coreui/icons';
 import { CIcon } from '@coreui/icons-react';
 import swal from 'sweetalert2';
@@ -41,7 +42,7 @@ const TipoPersona = () => {
   const {canSelect, canUpdate, canDelete, canInsert } = usePermission('tipopersona');
 
   const [tiposPersona, setTiposPersona] = useState([]);
-  const [loading, setLoading] = useState(true);
+   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTipos, setFilteredTipos] = useState([]);
@@ -51,15 +52,25 @@ const TipoPersona = () => {
   const [editar, setEditar] = useState(false);
   const [estadoActual, setEstadoActual] = useState({ Tipo: '' });
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false); 
+
+
+
+
+
+
+  
   useEffect(() => {
     obtenerTiposPersona();
   }, []);
+
   const [errorMensaje, setErrorMensaje] = useState(''); // Estado para el mensaje de error
+
+
 
 // Función para obtener los tipos de persona
 const obtenerTiposPersona = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/tipopersona/tipo-persona');
+    const response = await fetch('http://localhost:4000/api/tipoPersona/verTodoTipoPersona');
     const data = await response.json();
     if (response.ok) {
       setTiposPersona(data);
@@ -73,6 +84,8 @@ const obtenerTiposPersona = async () => {
     setLoading(false);
   }
 };
+
+
 const handleTipoChange = (e) => {
   const textoValido = validarTipoEnTiempoReal(e.target.value);
   // Solo actualiza el estado si el texto es válido
@@ -148,7 +161,7 @@ const crearTipoPersona = async (tipo) => {
   }
 
   try {
-    const response = await fetch('http://localhost:4000/api/tipopersona/tipo-persona', {
+    const response = await fetch('http://localhost:4000/api/tiPopersona/crearTipoPersona', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -173,49 +186,55 @@ const crearTipoPersona = async (tipo) => {
     
   }
 };
-// Función para actualizar un tipo de persona
-const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
-  // Validar el nuevo tipo de persona antes de realizar la actualización
-  const tipoValido = validarTipoEnTiempoReal(nuevoTipo);
-  if (tipoValido !== nuevoTipo) {
-      return; // Si la validación falla, se detiene el proceso
+
+
+{/*************************************************************************************************************************************/}
+const handleUpdateTipoPersona = async () => {
+  const tipoCapitalizado = capitalizeWords(tipoPersonaToUpdate.Tipo_persona.trim().replace(/\s+/g, ' '));
+
+  if (!validarTipoEnTiempoReal(tipoCapitalizado)) {
+    return;
   }
 
   try {
-      const response = await fetch(`http://localhost:4000/api/tipopersona/tipo-persona/${codTipo}`, {
-          method: 'PUT',
-          headers: {
-              'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ Tipo: tipoValido }), // Usamos el tipo validado
-      });
+    const response = await fetch(`http://localhost:4000/api/tipoPersona/actualizarTipoPersona/${tipoPersonaToUpdate.Cod_tipo_persona}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Cod_tipo_persona: tipoPersonaToUpdate.Cod_tipo_persona,
+        Tipo_persona: tipoCapitalizado,
+        estado: tipoPersonaToUpdate.estado, // Mantener el estado actual
+      }),
+    });
 
-      if (response.ok) {
-          swal.fire({
-              title: 'Éxito',
-              text: `TIPO DE PERSONA "${tipoValido}" ACTUALIZADO EXITOSAMENTE.`,
-              icon: 'success',
-              confirmButtonColor: '#4B6251',
-          });
-          obtenerTiposPersona(); // Actualiza la lista de tipos de personas
-      } else {
-          const result = await response.json();
-          throw new Error(result.Mensaje || 'Error al actualizar el tipo de persona');
-      }
-  } catch (error) {
+    if (response.ok) {
+      obtenerTiposPersona(); // Actualizar la lista
+      setModalUpdateVisible(false); // Cerrar el modal sin advertencia
+      resetTipoPersonaToUpdate(); // Restablecer los valores del formulario
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
       swal.fire({
-          title: 'Error',
-          text: error.message,
-          icon: 'error',
-          confirmButtonColor: '#4B6251',
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: 'El tipo de persona ha sido actualizado correctamente.',
       });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar el tipo de persona.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al actualizar el tipo de persona:', error);
   }
 };
 
-
+{/***********************************************************************************************************************************/}
   const eliminarTipoPersona = async (codTipo) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/tipopersona/tipo-persona/${codTipo}`, {
+      const response = await fetch(`http://localhost:4000/api/tipoPersona/eliminarTipoPersona/${codTipo}`, {
         method: 'DELETE',
       });
 
@@ -240,6 +259,8 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
       });
     }
   };
+
+  {/**************************************************************************************************************************************/}
 
   const openAddModal = () => {
     setEditar(false);
@@ -294,6 +315,47 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
     });
   };
 
+  {/**********************************************************************************************************************************/}
+
+  const toggleEstado = async (tipoPersona) => {
+    const nuevoEstado = tipoPersona.estado ? 0 : 1;
+    
+    // Actualizar el estado inmediatamente para reflejar el cambio visualmente
+    setTiposPersona((prevTiposPersona) =>
+      prevTiposPersona.map((persona) =>
+        persona.Cod_tipo_persona === tipoPersona.Cod_tipo_persona
+          ? { ...persona, estado: nuevoEstado }
+          : persona
+      )
+    );
+  
+    try {
+      setLoading(true); // Indicar que está cargando
+  
+      // Realizamos la solicitud a la API para actualizar el estado del tipo de persona
+      const response = await axios.post('http://localhost:4000/api/tiPopersona/actualizarEstadoTipoPersona', {
+        cod_tipo_persona: tipoPersona.Cod_tipo_persona,
+        estado: nuevoEstado,
+      });
+
+    } catch (error) {
+      console.error('Error al realizar la solicitud:', error);
+      // Si hay un error, revertimos el estado
+      setTiposPersona((prevTiposPersona) =>
+        prevTiposPersona.map((persona) =>
+          persona.Cod_tipo_persona === tipoPersona.Cod_tipo_persona
+            ? { ...persona, estado: tipoPersona.estado }
+            : persona
+        )
+      );
+    } finally {
+      setLoading(false);
+      obtenerTiposPersona(true); // Terminar el estado de carga
+    }
+  };
+  
+  
+  {/**********************************************************************************************************************************/}
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
@@ -454,6 +516,8 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
 
   return (
     <CContainer>
+
+      
      <CRow className="justify-content-between align-items-center mb-4">
   <CCol xs={12} md={8}>
     <h3>Mantenimientos Tipos de Persona</h3>
@@ -523,30 +587,52 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
         </CCol>
       </CRow>
 
-      <CTable striped bordered hover>
+      <CTable striped>
   <CTableHead>
     <CTableRow>
-      <CTableHeaderCell>#</CTableHeaderCell>
-      <CTableHeaderCell>TIPO DE PERSONA</CTableHeaderCell>
-      <CTableHeaderCell>Acciones</CTableHeaderCell>
+      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> # </CTableHeaderCell>
+      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">TIPO DE PERSONA</CTableHeaderCell>
+      <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
     </CTableRow>
   </CTableHead>
   <CTableBody>
     {currentItems.map((tipo, índice) => (
       <CTableRow key={tipo.Cod_tipo_persona}>
-        <CTableDataCell>{indexOfFirstItem + índice + 1}</CTableDataCell>
-        <CTableDataCell>{tipo.Tipo.toUpperCase()}</CTableDataCell>
-        <CTableDataCell>
-          {/* Botón de editar con estilo amarillo (advertencia) */}
-          <CButton color="warning" size="sm" onClick={() => openEditModal(tipo)}>
-            <CIcon icon={cilPen} />
-          </CButton>{' '}
-          {/* El botón de eliminar solo aparece si el índice es mayor o igual a 4 dentro de la página actual */}
-          {indexOfFirstItem + índice >= 4 && (
-            <CButton color="danger" size="sm" onClick={() => confirmDelete(tipo.Cod_tipo_persona)}>
-              <CIcon icon={cilTrash} />
-            </CButton>
-          )}
+        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{indexOfFirstItem + índice + 1}</CTableDataCell>
+        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipo.Tipo_persona.toUpperCase()}</CTableDataCell>
+        <CTableDataCell className="text-center">
+          <div className="d-flex justify-content-center">
+            {canUpdate && (
+              <CButton
+                color="warning"
+                onClick={() => openEditModal(tipo)}
+                style={{ marginRight: '10px' }}
+                title="Editar tipo de persona"
+              >
+                <CIcon icon={cilPen} />
+              </CButton>
+            )}
+
+            {canDelete && (
+              <CButton color="danger" onClick={() => confirmDelete(tipo.Cod_tipo_persona)}>
+                <CIcon icon={cilTrash} />
+              </CButton>
+            )}
+
+            {/* Botón de Activar/Inactivar */}
+            <CButton
+  style={{
+    backgroundColor: tipo.estado === 1 ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+    color: 'white',
+    marginLeft: '10px',
+  }}
+  onClick={() => toggleEstado(tipo)} // Llamar a la función para cambiar el estado de Tipo Persona
+  disabled={loading} // Deshabilitar el botón mientras se está procesando
+>
+  {loading ? 'Cambiando...' : tipo.estado === 1 ? 'Activo' : 'Inactivo'} {/* Cambiar el texto según el estado */}
+</CButton>
+
+          </div>
         </CTableDataCell>
       </CTableRow>
     ))}
@@ -554,6 +640,8 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
 </CTable>
 
 
+
+{/*******************************************************************************************************************************/}
       <nav className="d-flex justify-content-center align-items-center mt-4">
         <CPagination className="mb-0" style={{ gap: '0.3cm' }}>
           <CButton
@@ -573,6 +661,9 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
         </CPagination>
         <span className="mx-2">Página {currentPage + 1} de {pageCount}</span>
       </nav>
+{/*******************************************************************************************************************************/}
+
+{/*******************************************************************************************************************************/}
 
       <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
         <CModalHeader closeButton>
@@ -600,6 +691,7 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
   </div>
 )}
 
+{/*******************************************************************************************************************************/}
             <CModalFooter>
               <CButton 
                 style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} 
@@ -618,6 +710,8 @@ const actualizarTipoPersona = async (codTipo, nuevoTipo) => {
           </CForm>
         </CModalBody>
       </CModal>
+
+{/*******************************************************************************************************************************/}
     </CContainer>
   );
 };
