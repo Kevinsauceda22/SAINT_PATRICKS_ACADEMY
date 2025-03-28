@@ -39,6 +39,7 @@ const ListaGrados = () => {
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Estado para el modal de actualizar grado
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Estado para el modal de eliminar grado
   const [nuevoGrado, setNuevoGrado] = useState(''); // Estado para el nuevo grado
+  const [nuevoprefijo, setnuevoprefijo] = useState(''); // Estado para el nuevo grado
   const [nuevoCiclo, setNuevoCiclo] = useState('');
   const [gradoToUpdate, setGradoToUpdate] = useState({}); // Estado para el grado a actualizar
   const [gradoToDelete, setGradoToDelete] = useState({}); // Estado para el grado a eliminar
@@ -99,10 +100,16 @@ const ListaGrados = () => {
     return true;
   };
 
+
   const validarGrado = () => {
     const nombreGrado = typeof nuevoGrado === 'string' ? nuevoGrado : nuevoGrado.Nombre_grado;
     if (!nombreGrado || nombreGrado.trim() === '') {
       Swal.fire('Error', 'El campo "Nombre Grado" no puede estar vacío', 'error');
+      return false;
+    }
+    const nombrePrefijo = typeof nuevoprefijo === 'string' ? nuevoprefijo : nuevoprefijo.Prefijo;
+    if (!nombrePrefijo || nombrePrefijo.trim() === '') {
+      Swal.fire('Error', 'El campo "Prefijo" no puede estar vacío', 'error');
       return false;
     }
 
@@ -116,12 +123,28 @@ const ListaGrados = () => {
       return false;
     }
 
+    // Verificar si el nombre del ciclo ya existe
+    const Prefijoexistente = grados.some(
+      (grado) => grado.Prefijo.toLowerCase() === nombrePrefijo.toLowerCase()
+    );
+
+    if (Prefijoexistente) {
+      Swal.fire('Error', `El Prefijo "${nombrePrefijo}" ya existe`, 'error');
+      return false;
+    }
+
     return true;
+
   };
+
 
   const validarGradoUpdate = () => {
     if (!gradoToUpdate.Nombre_grado) {
       Swal.fire('Error', 'El campo "Nombre Grado" no puede estar vacío', 'error');
+      return false;
+    }
+    if (!gradoToUpdate.Prefijo) {
+      Swal.fire('Error', 'El campo "Prefijo" no puede estar vacío', 'error');
       return false;
     }
     // Verificar si el nombre del ciclo ya existe (excluyendo el ciclo actual que se está editando)
@@ -135,6 +158,19 @@ const ListaGrados = () => {
       Swal.fire('Error', `El grado "${gradoToUpdate.Nombre_grado}" ya existe`, 'error');
       return false;
     }
+    // Verificar si el nombre del ciclo ya existe (excluyendo el ciclo actual que se está editando)
+    const PrefijoExistente = grados.some(
+      (grado) =>
+        grado.Prefijo.toLowerCase() === gradoToUpdate.Prefijo.toLowerCase() &&
+        grado.Cod_grado !== gradoToUpdate.Cod_grado
+    );
+
+    if (PrefijoExistente) {
+      Swal.fire('Error', `El Prefijo "${gradoToUpdate.Prefijo}" ya existe`, 'error');
+      return false;
+    }
+
+
 
     return true;
   };
@@ -250,6 +286,7 @@ const ListaGrados = () => {
         body: JSON.stringify({
           Cod_ciclo: nuevoCiclo, // O ajusta según lo que necesites enviar
           Nombre_grado: nuevoGrado,
+          Prefijo: nuevoprefijo,
         }),
       });
 
@@ -281,7 +318,7 @@ const ListaGrados = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Cod_grado: gradoToUpdate.Cod_grado, Cod_ciclo: gradoToUpdate.Cod_ciclo, Nombre_grado: gradoToUpdate.Nombre_grado }), // Envío del nombre actualizado y Cod_grado en el cuerpo
+        body: JSON.stringify({ Cod_grado: gradoToUpdate.Cod_grado, Cod_ciclo: gradoToUpdate.Cod_ciclo, Nombre_grado: gradoToUpdate.Nombre_grado, Prefijo: gradoToUpdate.Prefijo }), // Envío del nombre actualizado y Cod_grado en el cuerpo
       });
 
       if (response.ok) {
@@ -340,7 +377,7 @@ const ListaGrados = () => {
   const handleSearch = (event) => {
     const input = event.target.value.toUpperCase();
     const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
-    
+
     if (!regex.test(input)) {
       Swal.fire({
         icon: 'warning',
@@ -370,8 +407,8 @@ const ListaGrados = () => {
     }
   };
 
-   // Verificar permisos
-   if (!canSelect) {
+  // Verificar permisos
+  if (!canSelect) {
     return <AccessDenied />;
   }
 
@@ -475,6 +512,7 @@ const ListaGrados = () => {
               <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
               <CTableHeaderCell style={{ width: '50px' }}>Nombre Grado</CTableHeaderCell>
               <CTableHeaderCell style={{ width: '50px' }}>Nombre Ciclo</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '50px' }}>Prefijo</CTableHeaderCell>
               <CTableHeaderCell style={{ width: '50px' }}>Acciones</CTableHeaderCell>
             </CTableRow>
           </CTableHead>
@@ -484,6 +522,7 @@ const ListaGrados = () => {
                 <CTableDataCell>{grado.originalIndex}</CTableDataCell>
                 <CTableDataCell>{grado.Nombre_grado}</CTableDataCell>
                 <CTableDataCell>{getCicloName(grado.Cod_ciclo)}</CTableDataCell>
+                <CTableDataCell>{grado.Prefijo}</CTableDataCell>
                 <CTableDataCell>
                   <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(grado)}>
                     <CIcon icon={cilPen} />
@@ -557,12 +596,25 @@ const ListaGrados = () => {
                 onCopy={disableCopyPaste}
                 value={nuevoGrado}
                 onChange={(e) => handleInputChange(e, setNuevoGrado)}
-                />
+              />
+            </CInputGroup>
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Prefijo</CInputGroupText>
+              <CFormInput
+                ref={inputRef}
+                type="text"
+                placeholder="Ingrese Prefijo"
+                maxLength={10}
+                onPaste={disableCopyPaste}
+                onCopy={disableCopyPaste}
+                value={nuevoprefijo}
+                onChange={(e) => handleInputChange(e, setnuevoprefijo)}
+              />
             </CInputGroup>
           </CForm>
         </CModalBody>
         <CModalFooter>
-        <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoGrado)}>
+          <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoGrado)}>
             Cancelar
           </CButton>
           <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateGrado}>
@@ -573,7 +625,7 @@ const ListaGrados = () => {
 
       {/* Modal Actualizar Grado */}
       <CModal visible={modalUpdateVisible} backdrop="static">
-      <CModalHeader closeButton={false}>
+        <CModalHeader closeButton={false}>
           <CModalTitle>Actualizar Grado</CModalTitle>
           <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetGradotoUpdate)} />
         </CModalHeader>
@@ -609,11 +661,26 @@ const ListaGrados = () => {
                 }))}
               />
             </CInputGroup>
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Prefijo</CInputGroupText>
+              <CFormInput
+                ref={inputRef} // Asignar la referencia al input
+                maxLength={10}
+                onPaste={disableCopyPaste}
+                onCopy={disableCopyPaste}
+                placeholder="Ingrese el nuevo "
+                value={gradoToUpdate.Prefijo}
+                onChange={(e) => handleInputChange(e, (value) => setGradoToUpdate({
+                  ...gradoToUpdate,
+                  Prefijo: value,
+                }))}
+              />
+            </CInputGroup>
           </CForm>
         </CModalBody>
         <CModalFooter>
-        <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetGradotoUpdate)}>
-        Cancelar
+          <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetGradotoUpdate)}>
+            Cancelar
           </CButton>
           <CButton style={{ backgroundColor: '#F9B64E', color: 'white' }} onClick={handleUpdateGrado}>
             <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
