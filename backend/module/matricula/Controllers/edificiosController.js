@@ -76,6 +76,26 @@ export const actualizarEdificio = async (req, res) => {
     }
 };
 
+//Controlador para actualizar el estado
+// Controlador para actualizar el estado de un edificio
+export const actualizarEstadoEdificio = async (req, res) => {
+    const { Cod_edificio, Nuevo_estado } = req.body;
+
+    // Validar que el estado solo pueda ser 0 o 1
+    if (Nuevo_estado !== 0 && Nuevo_estado !== 1) {
+        return res.status(400).json({ mensaje: "El estado debe ser 0 (inactivo) o 1 (activo)." });
+    }
+
+    try {
+        // Llamar al procedimiento almacenado
+        await pool.query("CALL sp_actualizar_estado_edificio(?, ?)", [Cod_edificio, Nuevo_estado]);
+
+        res.json({ mensaje: `Edificio ${Nuevo_estado ? 'activado' : 'inactivado'} correctamente` });
+    } catch (error) {
+        console.error("Error al actualizar el estado del edificio:", error);
+        res.status(500).json({ mensaje: "Error en el servidor", error: error.message });
+    }
+};
 
 //Controlador para eliminar un edificio
 export const eliminarEdificio = async (req, res) => {

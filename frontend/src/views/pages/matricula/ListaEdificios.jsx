@@ -9,6 +9,7 @@ import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
 import logo from 'src/assets/brand/logo_saint_patrick.png'; // Ruta al logo de la academia
 import {
   CButton,
+  CCol,
   CContainer,
   CDropdown, // Para reportes
   CDropdownMenu,
@@ -24,6 +25,7 @@ import {
   CModalBody,
   CModalFooter,
   CPagination,
+  CRow,
   CTable,
   CTableHead,
   CTableRow,
@@ -140,6 +142,31 @@ const ListaEdificios = () => {
       console.error('Error al actualizar el edificio:', error);
     }
   };
+
+  // Función para actualizar el estado del edificio
+ const actualizarEstado = async (Cod_edificio, Nuevo_estado) => {
+  try {
+    // Realiza la solicitud PUT al backend
+    const response = await fetch('http://localhost:4000/api/edificio/actualizar_estado', {
+      method: 'PUT', // Especifica el método HTTP
+      headers: {
+        'Content-Type': 'application/json', // Indica que el cuerpo de la solicitud será JSON
+      },
+      body: JSON.stringify({
+        Cod_edificio, // El ID del edificio que se va a actualizar
+        Nuevo_estado, // El nuevo estado (0 o 1)
+      }),
+    });
+
+    if (response.ok) { // Si la respuesta es exitosa
+      fetchEdificios(); // Recargar los edificios después de la actualización
+    } else {
+      console.error('Error al actualizar el estado');
+    }
+  } catch (error) {
+    console.error('Error al actualizar el estado:', error); // Muestra el error en la consola si algo sale mal
+  }
+};
 
   // Función para eliminar un edificio
   const handleDeleteEdificio = async () => {
@@ -522,6 +549,8 @@ const ListaEdificios = () => {
       setCurrentPage(pageNumber);
     }
   };
+
+  
    // Verificar permisos
  if (!canSelect) {
   return <AccessDenied />;
@@ -529,10 +558,19 @@ const ListaEdificios = () => {
 
   return (
     <CContainer>
-      <h1>Mantenimiento Edificios</h1>
+      <CRow className="align-items-center mb-5">
+                <CCol xs="8" md="9">
+                  {/* Título de la página */}
+                  <h1 className="mb-0">Mantenimiento Edificios</h1>
+                </CCol>
+                <CCol
+                  xs="4"
+                  md="3"
+                  className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center"
+                >
 
       {/* Botones "Nuevo" y "Reporte" alineados arriba */}
-      <div className="d-flex justify-content-end mb-3">
+      
         <CButton
           style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '10px' }}
           onClick={() => {
@@ -570,85 +608,125 @@ const ListaEdificios = () => {
     </CDropdownItem>
   </CDropdownMenu>
 </CDropdown>
-      </div>
+
+          </CCol>
+        </CRow>
 
       {/* Filtro de búsqueda y selección de registros */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <CInputGroup style={{ maxWidth: '400px' }}>
-          <CInputGroupText>Buscar</CInputGroupText>
-          <CFormInput placeholder="Buscar por nombre" onChange={handleSearch} value={searchTerm} />
-          <CButton
-            style={{ backgroundColor: '#cccccc', color: 'black' }}
-            onClick={() => {
-              setSearchTerm('');
-              setCurrentPage(1);
-            }}
-          >
-            Limpiar
-          </CButton>
-        </CInputGroup>
-        <div className="d-flex align-items-center">
-          <label htmlFor="recordsPerPageSelect" className="mr-2">Mostrar</label>
-          <select
-            id="recordsPerPageSelect"
-            value={recordsPerPage}
-            onChange={(e) => {
-              setRecordsPerPage(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-            <option value={20}>20</option>
-          </select>
-          <span style={{ marginLeft: '10px' }}>registros</span>
-        </div>
-      </div>
+<div className="d-flex justify-content-between align-items-center mb-3">
+  <CInputGroup style={{ maxWidth: '400px' }}>
+    <CInputGroupText>Buscar</CInputGroupText>
+    <CFormInput
+      placeholder="Buscar por nombre"
+      value={searchTerm}
+      onChange={(e) => {
+        let value = e.target.value.toUpperCase(); // Convertir a mayúsculas
+        value = value.replace(/[^A-Z\s]/g, ''); // Eliminar caracteres especiales y números
+        if (/(.)\1\1/.test(value)) return; // Evitar tres letras iguales seguidas
+        if (value.length > 50) return; // Limitar a 50 caracteres
+        setSearchTerm(value);
+      }}
+    />
+    <CButton
+      style={{ backgroundColor: '#cccccc', color: 'black' }}
+      onClick={() => {
+        setSearchTerm('');
+        setCurrentPage(1);
+      }}
+    >
+      Limpiar
+    </CButton>
+  </CInputGroup>
+  <div className="d-flex align-items-center">
+    <label htmlFor="recordsPerPageSelect" className="mr-2">Mostrar</label>
+    <select
+      id="recordsPerPageSelect"
+      value={recordsPerPage}
+      onChange={(e) => {
+        setRecordsPerPage(Number(e.target.value));
+        setCurrentPage(1);
+      }}
+    >
+      <option value={5}>5</option>
+      <option value={10}>10</option>
+      <option value={15}>15</option>
+      <option value={20}>20</option>
+    </select>
+    <span style={{ marginLeft: '10px' }}>registros</span>
+  </div>
+</div>
+
 
       {/* Tabla de edificios con tamaño fijo */}
-      <div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
-        <CTable striped>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
-              <CTableHeaderCell style={{ width: '40%' }}>Nombre del Edificio</CTableHeaderCell>
-              <CTableHeaderCell className="text-center" style={{ width: '20%' }}>Número de Pisos</CTableHeaderCell>
-              <CTableHeaderCell className="text-center" style={{ width: '20%' }}>Aulas Integradas</CTableHeaderCell>
-              <CTableHeaderCell className="text-center" style={{ width: '15%' }}>Acciones</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {currentRecords.map((edificio) => (
-              <CTableRow key={edificio.Cod_edificio}>
-                <CTableDataCell className="text-center">{edificio.originalIndex}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{edificio.Nombre_edificios}</CTableDataCell>
-                <CTableDataCell className="text-center">{edificio.Numero_pisos}</CTableDataCell>
-                <CTableDataCell className="text-center">{edificio.Aulas_disponibles}</CTableDataCell>
-                <CTableDataCell className="text-center">
-                  <div className="d-flex justify-content-center">
-
-{canUpdate &&(
+<div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
+        <CTableHeaderCell style={{ width: '30%' }}>Nombre del Edificio</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: '15%' }}>Número de Pisos</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: '15%' }}>Aulas Integradas</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: '10%' }}>Estado</CTableHeaderCell>
+        <CTableHeaderCell className="text-center" style={{ width: '25%' }}>Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords.map((edificio) => (
+        <CTableRow key={edificio.Cod_edificio}>
+          <CTableDataCell className="text-center">{edificio.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ textTransform: 'uppercase' }}>{edificio.Nombre_edificios}</CTableDataCell>
+          <CTableDataCell className="text-center">{edificio.Numero_pisos}</CTableDataCell>
+          <CTableDataCell className="text-center">{edificio.Aulas_disponibles}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            {edificio.Estado ? "Activo" : "Inactivo"}
+          </CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(edificio)}
+                  style={{ marginRight: '10px' }}
+                  disabled={edificio.Estado === 0} // Deshabilita el botón si el edificio está desactivado
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
+              
+              {/* Botón Activar/Inactivar */}
+              {edificio.Estado ? (
                     <CButton
-                      color="warning"
-                      onClick={() => openUpdateModal(edificio)}
+                      color="danger"
+                      onClick={() => actualizarEstado(edificio.Cod_edificio, 0)} // Cambiar a inactivo (0)
                       style={{ marginRight: '10px' }}
                     >
-                      <CIcon icon={cilPen} />
+                      Desactivar
                     </CButton>
-)}
-                    {canDelete && (
-                    <CButton color="danger" onClick={() => openDeleteModal(edificio)}>
-                      <CIcon icon={cilTrash} />
+                  ) : (
+                    <CButton
+                      color="success"
+                      onClick={() => actualizarEstado(edificio.Cod_edificio, 1)} // Cambiar a activo (1)
+                      style={{ marginRight: '10px' }}
+                    >
+                      Activar
                     </CButton>
-                    )}
-                  </div>
-                </CTableDataCell>
-              </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
-      </div>
+                )}
+                {canDelete && (
+                <CButton
+                  color="danger"
+                  onClick={() => openDeleteModal(edificio)}
+                >
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
+
       {/* Paginación */}
       <CPagination
         align="center"
