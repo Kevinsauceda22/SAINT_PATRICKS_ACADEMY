@@ -622,6 +622,7 @@ const ListaEdificios = () => {
       onChange={(e) => {
         let value = e.target.value.toUpperCase(); // Convertir a mayúsculas
         value = value.replace(/[^A-Z\s]/g, ''); // Eliminar caracteres especiales y números
+        value = value.replace(/\s{2,}/g, ' '); // Reemplazar múltiples espacios por uno solo
         if (/(.)\1\1/.test(value)) return; // Evitar tres letras iguales seguidas
         if (value.length > 50) return; // Limitar a 50 caracteres
         setSearchTerm(value);

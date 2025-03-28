@@ -530,41 +530,50 @@ const ListaAulas = () => {
         </CRow>
         {/* Contenedor de la barra de búsqueda y el selector dinámico */}
         <CRow className="align-items-center mt-4 mb-2">
+          
         {/* Barra de búsqueda  */}
-        <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
-          <CInputGroup className="me-3" style={{ width: '400px' }}>
-            <CInputGroupText>
-              <CIcon icon={cilSearch} />
-            </CInputGroupText>
-            <CFormInput
-              placeholder="Buscar número de aula.."
-              onChange={handleSearch}
-              value={searchTerm}
-            />
-            <CButton
-              style={{
-                border: '1px solid #ccc',
-                transition: 'all 0.1s ease-in-out', // Duración de la transición
-                backgroundColor: '#F3F4F7', // Color por defecto
-                color: '#343a40', // Color de texto por defecto
-              }}
-              onClick={() => {
-                setSearchTerm('')
-                setCurrentPage(1)
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#E0E0E0' // Color cuando el mouse sobre el boton "limpiar"
-                e.currentTarget.style.color = 'black' // Color del texto cuando el mouse sobre el boton "limpiar"
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#F3F4F7' // Color cuando el mouse no está sobre el boton "limpiar"
-                e.currentTarget.style.color = '#343a40' // Color de texto cuando el mouse no está sobre el boton "limpiar"
-              }}
-            >
-              <CIcon icon={cilBrushAlt} /> Limpiar
-            </CButton>
-          </CInputGroup>
-        </CCol>
+<CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+  <CInputGroup className="me-3" style={{ width: '400px' }}>
+    <CInputGroupText>
+      <CIcon icon={cilSearch} />
+    </CInputGroupText>
+    <CFormInput
+      placeholder="Buscar número de aula.."
+      value={searchTerm}
+      onChange={(e) => {
+        let value = e.target.value.toUpperCase(); // Convertir a mayúsculas
+        value = value.replace(/[^A-Z0-9\s]/g, ''); // Eliminar caracteres especiales (permitir solo letras y números)
+        value = value.replace(/\s{2,}/g, ' '); // Reemplazar múltiples espacios por uno solo
+        if (/(.)\1\1/.test(value)) return; // Evitar tres letras iguales seguidas
+        if (value.length > 50) return; // Limitar a 50 caracteres
+        setSearchTerm(value);
+      }}
+    />
+    <CButton
+      style={{
+        border: '1px solid #ccc',
+        transition: 'all 0.1s ease-in-out',
+        backgroundColor: '#F3F4F7',
+        color: '#343a40',
+      }}
+      onClick={() => {
+        setSearchTerm('');
+        setCurrentPage(1);
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#E0E0E0';
+        e.currentTarget.style.color = 'black';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = '#F3F4F7';
+        e.currentTarget.style.color = '#343a40';
+      }}
+    >
+      <CIcon icon={cilBrushAlt} /> Limpiar
+    </CButton>
+  </CInputGroup>
+</CCol>
+
 
         {/* Selector dinámico a la par de la barra de búsqueda */}
         <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
@@ -619,10 +628,10 @@ const ListaAulas = () => {
                 <CTableDataCell>{aula.Secciones_disponibles}</CTableDataCell>
                 <CTableDataCell>{aula.Secciones_ocupadas}</CTableDataCell>
                 <CTableDataCell>
-                    <CButton color="warning" onClick={() => openUpdateModal(aula)} className="mr-2">
+                    <CButton color="warning" onClick={() => openUpdateModal(aula)} style={{ marginRight: '10px' }} className="mr-2">
                     <CIcon icon={cilPen} />
                     </CButton>
-                    <CButton color="danger" onClick={() => openDeleteModal(aula)}>
+                    <CButton color="danger" onClick={() => openDeleteModal(aula)} style={{ marginRight: '10px' }}>
                     <CIcon icon={cilTrash} />
                     </CButton>
                 </CTableDataCell>
