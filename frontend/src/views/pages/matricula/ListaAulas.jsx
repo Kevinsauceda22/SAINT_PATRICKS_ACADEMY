@@ -419,6 +419,8 @@ const ListaAulas = () => {
       });
     }
   };
+
+  
   
   const handleDeleteAula = async () => {
     try {
@@ -530,7 +532,6 @@ const ListaAulas = () => {
         </CRow>
         {/* Contenedor de la barra de búsqueda y el selector dinámico */}
         <CRow className="align-items-center mt-4 mb-2">
-          
         {/* Barra de búsqueda  */}
 <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
   <CInputGroup className="me-3" style={{ width: '400px' }}>

@@ -149,7 +149,25 @@ export const actualizarAula = async (req, res) => {
     }
 };
 
+// Función para actualizar el estado del aula
+export const actualizarEstadoAula = async (req, res) => {
+    const { Cod_aula, Nuevo_estado } = req.body;
 
+    // Validar que el estado solo pueda ser 0 o 1
+    if (Nuevo_estado !== 0 && Nuevo_estado !== 1) {
+        return res.status(400).json({ mensaje: "El estado debe ser 0 (inactivo) o 1 (activo)." });
+    }
+
+    try {
+        // Llamar al procedimiento almacenado
+        await pool.query("CALL sp_actualizar_estado_aula(?, ?)", [Cod_aula, Nuevo_estado]);
+
+        res.json({ mensaje: `Aula ${Nuevo_estado ? 'activada' : 'inactivada'} correctamente` });
+    } catch (error) {
+        console.error("Error al actualizar el estado del aula:", error);
+        res.status(500).json({ mensaje: "Error en el servidor", error: error.message });
+    }
+};
 
 
 // Controlador para eliminar un aula

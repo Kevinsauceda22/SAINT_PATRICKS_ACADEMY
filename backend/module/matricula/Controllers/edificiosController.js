@@ -76,7 +76,6 @@ export const actualizarEdificio = async (req, res) => {
     }
 };
 
-//Controlador para actualizar el estado
 // Controlador para actualizar el estado de un edificio
 export const actualizarEstadoEdificio = async (req, res) => {
     const { Cod_edificio, Nuevo_estado } = req.body;

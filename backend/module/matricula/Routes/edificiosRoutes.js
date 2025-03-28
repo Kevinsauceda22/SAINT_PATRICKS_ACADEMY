@@ -20,7 +20,7 @@ router.post('/crear_edificio', crearEdificio);
 router.put('/actualizar_edificio', actualizarEdificio);
 
 //Ruta para actualizar el estado de un edificio
-router.put("/actualizar_estado", actualizarEstadoEdificio);
+router.put("actualizar_estado/", actualizarEstadoEdificio);
 
 //Ruta para eliminar un edificio
 router.delete('/:Cod_edificio', eliminarEdificio);
