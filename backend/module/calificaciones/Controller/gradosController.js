@@ -19,12 +19,13 @@ export const obtenerGrados = async (req, res) => {
 
 // Crear un nuevo grado
 export const crearGrado = async (req, res) => {
-    const { Cod_ciclo, Nombre_grado } = req.body;
+    const { Cod_ciclo, Nombre_grado, Prefijo } = req.body;
 
     try {
-        await pool.query('CALL insert_grados(?, ?)', [
+        await pool.query('CALL insert_grados(?, ?, ?)', [
             Cod_ciclo,
-            Nombre_grado
+            Nombre_grado,
+            Prefijo
         ]);
 
         res.status(201).json({ Mensaje: 'Grado creado exitosamente' });
@@ -36,15 +37,16 @@ export const crearGrado = async (req, res) => {
 
 // Actualizar un grado
 export const actualizarGrado = async (req, res) => {
-    const { Cod_grado, Cod_ciclo, Nombre_grado } = req.body;
+    const { Cod_grado, Cod_ciclo, Nombre_grado, Prefijo } = req.body;
 
   //  console.log('Datos recibidos para actualizar el grado:', req.body); 
 
     try {
-        await pool.query('CALL update_grados(?, ?, ?)', [
+        await pool.query('CALL update_grados(?, ?, ?, ?)', [
             Cod_grado,
             Cod_ciclo,
-            Nombre_grado
+            Nombre_grado,
+            Prefijo
         ]);
 
         res.status(200).json({ Mensaje: 'Grado actualizado exitosamente' });
