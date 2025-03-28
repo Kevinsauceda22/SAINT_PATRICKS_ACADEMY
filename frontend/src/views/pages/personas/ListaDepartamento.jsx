@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilFile  } from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import { jsPDF } from 'jspdf';
-
+import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 
 import 'jspdf-autotable';
 
@@ -50,26 +50,21 @@ const DepartamentoMantenimiento = () => {
   const [editar, setEditar] = useState(false);
   const [departamentoActual, setDepartamentoActual] = useState({ codDepartamento: null, nombreDepartamento: '' });
   
+
+
+
+
   const obtenerDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamentos');
+      const response = await fetch('http://localhost:4000/api/departamentos/verTodoDepartamento');
       const data = await response.json();
       if (response.ok) {
         // Convertir todos los nombres de los departamentos a mayúsculas
         const departamentosConMayusculas = data.map(departamento => ({
           ...departamento,
-          nombre_departamento: departamento.nombre_departamento.toUpperCase(),
+          Nombre_departamento: departamento.Nombre_departamento.toUpperCase(),
         }));
   
-        // Filtrar departamentos únicos basados en cod_departamento
-        const departamentosUnicos = departamentosConMayusculas.reduce((acc, current) => {
-          const x = acc.find(item => item.cod_departamento === current.cod_departamento);
-          if (!x) {
-            return acc.concat([current]);
-          } else {
-            return acc;
-          }
-        }, []);
   
         // No ordenar los departamentos, mantener el orden de creación
         setDepartamentos(departamentosUnicos);
@@ -89,13 +84,16 @@ const DepartamentoMantenimiento = () => {
     setErrorMensaje('');  // Limpia el estado del mensaje de error en el UI
   };
 
+
+
+{/*********************************************************************************************************************************** */}
   const crearDepartamento = async () => {
     limpiarErrores();
     const { nombreDepartamento } = departamentoActual;
   
  
     // Validar si el departamento ya existe en la tabla
-    const departamentoExistente = departamentos.find(departamento => departamento.nombre_departamento.toLowerCase() === nombreDepartamento.toLowerCase());
+    const departamentoExistente = departamentos.find(departamento => departamento.Nombre_departamento.toLowerCase() === NombreDepartamento.toLowerCase());
 
     if (departamentoExistente) {
       // Si el departamento ya existe, muestra el error y detiene la ejecución
@@ -545,7 +543,7 @@ const generatePDFDepartments = () => {
     {currentItems.map((departamento, index) => (
       <CTableRow key={departamento.cod_departamento}>
         <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
-        <CTableDataCell>{departamento.nombre_departamento.toUpperCase()}</CTableDataCell>
+        <CTableDataCell>{departamento.Nombre_departamento.toUpperCase()}</CTableDataCell>
         <CTableDataCell className="text-end">
           
           {canUpdate && (

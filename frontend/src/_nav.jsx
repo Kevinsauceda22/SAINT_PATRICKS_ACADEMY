@@ -322,27 +322,21 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Telefonos',
-        to: '/telefonos',
-        nameobject: 'telefonos',
-      },
-      {
-        component: CNavItem,
-        name: 'tipo Documentos',
+        name: 'Tipo de Documentos',
         to: '/ListaTipoDocumentos',
         nameobject: 'ListaTipoDocumentos',
       },
       {
         component: CNavItem,
-        name: 'Departamento',
-        to: '/departamento',
-        nameobject: 'departamento',
+        name: 'Departamentos',
+        to: '/ListaDepartamentos',
+        nameobject: 'ListaDepartamentos',
       },
       {
         component: CNavItem,
         name: 'Municipios',
-        to: '/municipios',
-        nameobject: 'Municipios',
+        to: '/ListaMunicipios',
+        nameobject: 'ListaMunicipios',
       },
       {
         component: CNavItem,

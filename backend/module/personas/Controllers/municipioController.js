@@ -1,89 +1,95 @@
 import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
 
-// Controlador para obtener los municipios
-export const obtenerMunicipios = async (req, res) => {
-  try {
-    const pool = await conectarDB();
-    
-    // Ejecutar el procedimiento almacenado P_Get_Municipios
-    const [rows] = await pool.query('CALL P_Get_Municipios()');
+// Controlador para obtener todos los municipios
+export const obtenerTodoMunicipio = async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL P_Get_Municipio()');
 
-    if (rows.length > 0) {
-      res.status(200).json(rows[0]); // Los resultados se encuentran en rows[0]
-    } else {
-      res.status(404).json({ message: 'No se encontraron municipios' });
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontraron municipios' });
+        }
+    } catch (error) {
+        console.error('Error al obtener la lista de municipios:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
-  } catch (error) {
-    console.error('Error al obtener municipios:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
-  }
 };
-
 
 // Controlador para crear un municipio
 export const crearMunicipio = async (req, res) => {
-  const { nombre_municipio, cod_departamento } = req.body;
+    const { nombre_municipio, cod_departamento, estado } = req.body;
 
-  try {
-    const pool = await conectarDB();
+    try {
+        await pool.query('CALL P_Post_Municipio(?, ?, ?)', [nombre_municipio, cod_departamento, estado]);
 
-    // Ejecutar el procedimiento almacenado P_Post_Municipios
-    const [result] = await pool.query('CALL P_Post_Municipios(?, ?)', [nombre_municipio, cod_departamento]);
-
-    if (result.affectedRows > 0) {
-      res.status(201).json({ message: 'Municipio creado exitosamente', cod_municipio: result.insertId });
-    } else {
-      res.status(400).json({ message: 'Error al crear el municipio' });
+        res.status(201).json({ mensaje: 'Municipio creado exitosamente' });
+    } catch (error) {
+        console.error('Error al crear municipio:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
-  } catch (error) {
-    console.error('Error al crear el municipio:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
-  }
 };
 
+// Controlador para actualizar un municipio
+export const actualizarMunicipio = async (req, res) => {
+    const { cod_municipio } = req.params;
+    const { nombre_municipio, cod_departamento, estado } = req.body;
 
-// Controlador para editar un municipio
-export const editarMunicipio = async (req, res) => {
-  const { cod_municipio } = req.params;
-  const { nombre_municipio, cod_departamento } = req.body;
+    try {
+        await pool.query('CALL P_Put_Municipio(?, ?, ?, ?)', [
+            cod_municipio,
+            nombre_municipio,
+            cod_departamento,
+            estado
+        ]);
 
-  try {
-    const pool = await conectarDB();
-
-    // Ejecutar el procedimiento almacenado P_Put_Municipios
-    const [result] = await pool.query('CALL P_Put_Municipios(?, ?, ?)', [cod_municipio, nombre_municipio, cod_departamento]);
-
-    if (result.affectedRows > 0) {
-      res.status(200).json({ message: 'Municipio actualizado exitosamente' });
-    } else {
-      res.status(404).json({ message: 'No se encontró el municipio' });
+        res.status(200).json({ mensaje: 'Municipio actualizado exitosamente' });
+    } catch (error) {
+        console.error('Error al actualizar municipio:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
-  } catch (error) {
-    console.error('Error al editar el municipio:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
-  }
 };
 
+// Controlador para actualizar el estado de un municipio
+export const actualizarEstadoMunicipio = async (req, res) => {
+    const { cod_municipio, estado } = req.body;
+
+    // Validar parámetros
+    if (!cod_municipio || estado === undefined) {
+        return res.status(400).json({ mensaje: 'Faltan parámetros' });
+    }
+
+    try {
+        // Llamar al procedimiento almacenado
+        const [results] = await pool.query('CALL P_Put_EstadoMunicipio(?, ?)', [cod_municipio, estado]);
+
+        // Obtener el mensaje devuelto por el procedimiento
+        const mensaje = results[0][0].mensaje;
+
+        console.log(`Estado actualizado para municipio ${cod_municipio}: ${estado}`); // Debug en consola
+        res.json({ mensaje, cod_municipio, estado }); // Respuesta al frontend
+    } catch (error) {
+        console.error('Error al ejecutar el procedimiento almacenado:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor' });
+    }
+};
 
 // Controlador para eliminar un municipio
 export const eliminarMunicipio = async (req, res) => {
-  const { cod_municipio } = req.params;
+    const { cod_municipio } = req.params;
 
-  try {
-    const pool = await conectarDB();
-
-    // Ejecutar el procedimiento almacenado P_Delete_Municipios
-    const [result] = await pool.query('CALL P_Delete_Municipios(?)', [cod_municipio]);
-
-    if (result.affectedRows > 0) {
-      res.status(200).json({ message: 'Municipio eliminado correctamente' });
-    } else {
-      res.status(404).json({ message: 'No se encontró el municipio' });
+    if (!cod_municipio) {
+        return res.status(400).json({ Mensaje: 'cod_municipio es requerido' });
     }
-  } catch (error) {
-    console.error('Error al eliminar el municipio:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
-  }
+
+    try {
+        await pool.query('CALL P_Delete_Municipio(?)', [cod_municipio]);
+        res.status(200).json({ Mensaje: 'Municipio eliminado exitosamente' });
+    } catch (error) {
+        console.error('Error al eliminar municipio:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
 };
 
 

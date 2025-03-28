@@ -52,7 +52,7 @@ const ListaGeneroPersona = () => {
 
   const fetchGeneros = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/generoPersona/obtenerGeneroPersona');
+      const response = await fetch('http://localhost:4000/api/generoPersona/verTodoGeneroPersona');
       if (!response.ok) {
         throw new Error(`Error en la solicitud: ${response.statusText}`);
       }
@@ -151,89 +151,7 @@ const ListaGeneroPersona = () => {
     };
   };
   
-  
-  const exportToPDFIndividual = (genero) => {
-    const doc = new jsPDF();
-    const img = new Image();
-    img.src = logo; // Usa el logo importado
-  
-    img.onload = () => {
-      // Encabezado
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-  
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51); // Verde oscuro
-      doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
-  
-      doc.setFontSize(14);
-      doc.text(
-        `Reporte Individual de Tipo de Género: ${genero.Tipo_genero.toUpperCase()}`,
-        doc.internal.pageSize.width / 2,
-        30,
-        { align: 'center' }
-      );
-  
-      doc.setFontSize(10);
-      doc.setTextColor(100); // Gris oscuro
-      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-  
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51); // Verde oscuro
-      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-  
-      // Tabla
-      doc.autoTable({
-        startY: 60,
-        head: [['#', 'Tipo de Género']],
-        body: [[1, genero.Tipo_genero]],
-        headStyles: {
-          fillColor: [0, 102, 51], // Verde oscuro
-          textColor: [255, 255, 255], // Blanco
-          fontSize: 10,
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro para filas alternas
-      });
-  
-      // Pie de página
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-  
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
-  
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51); // Verde
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
-      }
-  
-      doc.save(`Reporte_Individual_${genero.Tipo_genero}.pdf`);
-      window.open(doc.output('bloburl'));
-    };
-  
-    img.onerror = () => {
-      alert('No se pudo cargar el logo. El PDF no se generará.');
-    };
-  };
-  
+
  
   const handleCreateOrUpdate = async () => {
     if (isSubmitting) return;
@@ -511,17 +429,6 @@ const ListaGeneroPersona = () => {
         >
           <CIcon icon={cilTrash} />
         </CButton>
-
-        <CButton
-  color="info" // Define el color del botón como 'info' (azul)
-  size="sm"
-  style={{ marginLeft: '5px' }}
-  onClick={() => exportToPDFIndividual(genero)} // Llama a la función correcta con el parámetro 'genero'
->
-  <CIcon icon={cilDescription} style={{ marginRight: '5px' }} /> {/* Ícono antes del texto */}
-  Descargar PDF
-</CButton>
-
       </CTableDataCell>
     </CTableRow>
   ))}

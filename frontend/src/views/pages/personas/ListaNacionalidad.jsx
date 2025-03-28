@@ -521,16 +521,6 @@ const ListaNacionalidad = () => {
 >
   <CIcon icon={cilTrash} />
 </CButton>
-
-            <CButton
-              color="info"
-              size="sm"
-              className="ms-2"
-              onClick={() => exportIndividualToPDF(nac)} // Función de reporte individual
-            >
-              <CIcon icon={cilDescription} style={{ color: "black", marginRight: "5px" }} />
-              Descargar PDF
-            </CButton>
           </CTableDataCell>
         </CTableRow>
       ))}

@@ -62,8 +62,7 @@ const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/
 
 const Tipomatricula = React.lazy(() => import('./views/pages/matricula/tipomatricula'));
 const Periodomatricula = React.lazy(() => import('./views/pages/matricula/periodomatricula'));
-const Departamento = React.lazy(() => import('./views/pages/matricula/departamento'));
-const Municipios = React.lazy(() => import('./views/pages/matricula/municipios'));
+
 
 const Estadomatricula = React.lazy(() => import('./views/pages/matricula/estadomatricula'));
 const Conceptopago = React.lazy(() => import('./views/pages/matricula/conceptopago'));
@@ -77,6 +76,8 @@ const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
+const ListaDepartamentos = React.lazy(() => import('./views/pages/personas/ListaDepartamento'));
+const ListaMunicipios = React.lazy(() => import('./views/pages/personas/ListaMunicipios'));
 const ListaProcedenciaEstudiante = React.lazy(() => import('./views/pages/personas/ListaProcedenciaEstudiante')); 
 const ListaTelefonos = React.lazy(() => import('./views/pages/personas/ListaTelefonos'));
 const ListaTipoDocumentos = React.lazy(() => import('./views/pages/personas/ListaTipoDocumentos'));
@@ -189,8 +190,8 @@ const App = () => {
                
                 <Route path="/tipomatricula" element={<Tipomatricula />} />
                 <Route path="/periodomatricula" element={<Periodomatricula />} />
-                <Route path="/departamento" element={<Departamento />} />
-                <Route path="/municipios" element={<Municipios />} />
+                <Route path="/ListaDepartamentos" element={<ListaDepartamentos />} />
+                <Route path="/ListaMunicipios" element={<ListaMunicipios />} />
 
                 <Route path="/estadomatricula" element={<Estadomatricula />} />
                 <Route path="/conceptopago" element={<Conceptopago />} />

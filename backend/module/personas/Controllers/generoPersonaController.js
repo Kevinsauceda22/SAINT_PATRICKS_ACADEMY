@@ -1,96 +1,92 @@
 import conectarDB from '../../../config/db.js';
+const pool = await conectarDB();
+
+// Controlador para obtener todos los géneros de persona
+export const obtenerTodoGeneroPersona = async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL P_Get_GeneroPersona()');
+
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontraron géneros de persona' });
+        }
+    } catch (error) {
+        console.error('Error al obtener la lista de géneros de persona:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
 
 // Controlador para crear un género de persona
 export const crearGeneroPersona = async (req, res) => {
-    const { Tipo_genero } = req.body;
-    const pool = await conectarDB();
-  
-    try {
-      // Ejecuta la consulta de inserción
-      const [result] = await pool.query('CALL P_Insert_Genero_Persona(?)', [Tipo_genero]);
-  
-      // Obtiene el Cod_genero del nuevo registro (ID autogenerado)
-      const newCodGenero = result.insertId;
-  
-      // Devuelve una respuesta de éxito incluyendo el Cod_genero recién creado
-      res.status(201).json({ Cod_genero: newCodGenero, Mensaje: 'Género de persona creado exitosamente' });
-    } catch (error) {
-      console.error('Error al crear el género de persona:', error);
-      res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
-    }
-  };
-
-// Controlador para obtener uno o todos los géneros de persona
-export const obtenerGeneroPersona = async (req, res) => {
-    const { Cod_genero } = req.params;
-    const pool = await conectarDB();
+    const { tipo_genero, estado } = req.body;
 
     try {
-        let query = 'CALL P_Get_Genero_Persona()';
-        const [results] = await pool.query(query);
+        await pool.query('CALL P_Post_GeneroPersona(?, ?)', [tipo_genero, estado]);
 
-        let generoPersona = results[0];
-
-        // Determinamos la consulta en función de si hay un Cod_genero proporcionado
-        if (Cod_genero) {
-            generoPersona = generoPersona.find(item => item.Cod_genero === parseInt(Cod_genero));
-            if (!generoPersona) {
-                return res.status(404).json({ 
-                    Mensaje: 'Genero no encontrado',
-                    data: []
-                });
-            }
-        }
-        res.status(200).json(Cod_genero ? generoPersona : results[0]);
+        res.status(201).json({ mensaje: 'Género de persona creado exitosamente' });
     } catch (error) {
-        console.error('Error al obtener los generos:', error);
-        res.status(500).json({ 
-            Mensaje: 'Error en el servidor', 
-            error: error.message 
-        });
+        console.error('Error al crear género de persona:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
 // Controlador para actualizar un género de persona
 export const actualizarGeneroPersona = async (req, res) => {
-    const { Tipo_genero } = req.body;
-    const { Cod_genero } = req.params;
-    const pool = await conectarDB();
+    const { cod_genero } = req.params;
+    const { tipo_genero, estado } = req.body;
 
     try {
-        // Verificar si el género existe antes de actualizar
-        const [existingGenero] = await pool.query('CALL P_Get_Genero_Persona_Por_Codigo(?)', [Cod_genero]);
-        if (!existingGenero[0]) {
-            return res.status(404).json({ Mensaje: 'Género de persona no encontrado' });
-        }
+        await pool.query('CALL P_Put_GeneroPersona(?, ?, ?)', [
+            cod_genero,
+            tipo_genero,
+            estado
+        ]);
 
-        // Si el género existe, procedemos a actualizarlo
-        await pool.query('CALL P_Update_Genero_Persona(?, ?)', [Tipo_genero, Cod_genero]);
-
-        res.status(200).json({ Mensaje: 'Género de persona actualizado exitosamente' });
+        res.status(200).json({ mensaje: 'Género de persona actualizado exitosamente' });
     } catch (error) {
-        console.error('Error al actualizar el género de persona:', error);
-        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+        console.error('Error al actualizar género de persona:', error);
+        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+// Controlador para actualizar el estado de un género de persona
+export const actualizarEstadoGeneroPersona = async (req, res) => {
+    const { cod_genero, estado } = req.body;
+
+    // Validar parámetros
+    if (!cod_genero || estado === undefined) {
+        return res.status(400).json({ mensaje: 'Faltan parámetros' });
+    }
+
+    try {
+        // Llamar al procedimiento almacenado
+        const [results] = await pool.query('CALL P_Put_EstadoGeneroPersona(?, ?)', [cod_genero, estado]);
+
+        // Obtener el mensaje devuelto por el procedimiento
+        const mensaje = results[0][0].mensaje;
+
+        console.log(`Estado actualizado para género ${cod_genero}: ${estado}`); // Debug en consola
+        res.json({ mensaje, cod_genero, estado }); // Respuesta al frontend
+    } catch (error) {
+        console.error('Error al ejecutar el procedimiento almacenado:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 };
 
 // Controlador para eliminar un género de persona
 export const eliminarGeneroPersona = async (req, res) => {
-    const { Cod_genero } = req.params;
-    const pool = await conectarDB();
+    const { cod_genero } = req.params;
+
+    if (!cod_genero) {
+        return res.status(400).json({ Mensaje: 'cod_genero es requerido' });
+    }
 
     try {
-        // Verificar si el género existe antes de eliminar
-        const [existingGenero] = await pool.query('CALL P_Get_Genero_Persona_Por_Codigo(?)', [Cod_genero]);
-        if (!existingGenero[0]) {
-            return res.status(404).json({ Mensaje: 'Género de persona no encontrado' });
-        }
-
-        // Si el género existe, procedemos a eliminarlo
-        await pool.query('CALL P_Delete_Genero_Persona(?)', [Cod_genero]);
-
+        await pool.query('CALL P_Delete_GeneroPersona(?)', [cod_genero]);
         res.status(200).json({ Mensaje: 'Género de persona eliminado exitosamente' });
     } catch (error) {
-        console.error('Error al eliminar el género de persona:', error);
+        console.error('Error al eliminar género de persona:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };

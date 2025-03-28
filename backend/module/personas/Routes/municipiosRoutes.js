@@ -1,28 +1,27 @@
 import express from 'express';
 import {
-    obtenerMunicipios,
-    crearMunicipio,
-    editarMunicipio,
-    eliminarMunicipio,
-    obtenerMunicipiosPorDepartamento
-
+        obtenerTodoMunicipio,
+        crearMunicipio,
+        actualizarMunicipio,
+        actualizarEstadoMunicipio,
+        eliminarMunicipio
 } from '../Controllers/municipioController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
 
-// Ruta para obtener 
-router.get('/verMunicipios', obtenerMunicipios);
+// Ruta para obtener todos los municipios
+router.get('/verTodoMunicipio', obtenerTodoMunicipio);
 
-// Ruta para obtener 
-router.get('/verMunicipioPorDepartamento', obtenerMunicipiosPorDepartamento);
+// Ruta para crear un municipio
+router.post('/crearMunicipio', crearMunicipio);
 
-//Ruta para crear 
-router.post('/crearMunicipio', crearMunicipio)
+// Ruta para actualizar un municipio
+router.put('/actualizarMunicipio/:cod_municipio', actualizarMunicipio);
 
-// Ruta para actualizar 
-router.put('/actualizarMunicipios/:Cod_municipio', editarMunicipio);
+// Ruta para actualizar el estado de un municipio
+router.post('/actualizarEstadoMunicipio', actualizarEstadoMunicipio);
 
-// Ruta para eliminar 
-router.delete('/eliminarEstructuraFamiliar/:Cod_municipio', eliminarMunicipio);
+// Ruta para eliminar un municipio
+router.delete('/eliminarMunicipio/:cod_municipio', eliminarMunicipio);
 
 export default router;

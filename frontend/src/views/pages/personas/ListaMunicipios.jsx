@@ -29,6 +29,8 @@ import {
   CTableDataCell,
   CSpinner,
 } from '@coreui/react';
+import '@fortawesome/fontawesome-free/css/all.min.css';
+import 'react-phone-number-input/style.css';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
@@ -55,7 +57,7 @@ const MunicipioMantenimiento = () => {
 
   const obtenerMunicipios = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/municipios');
+      const response = await fetch('http://localhost:4000/api/departamento/verMunicipios');
       const data = await response.json();
       if (response.ok) {
         // Convertir los nombres de los municipios a mayúsculas de manera segura

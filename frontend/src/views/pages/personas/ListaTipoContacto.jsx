@@ -53,7 +53,7 @@ const ListaTipoContacto = () => {
 
   const fetchTiposContacto = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
+      const response = await fetch('http://localhost:4000/api/tipoContacto/verTodoTipoContacto');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
   
@@ -477,14 +477,6 @@ const currentRecords = filteredTiposContacto.slice(indexOfFirstRecord, indexOfLa
                   >
                     <CIcon icon={cilTrash} />
                   </CButton>
-
-                  <CButton
-  color="info"
-  onClick={() => exportIndividualToPDF(item, index)}
->
-  <CIcon icon={cilDescription} style={{ marginRight: '5px' }} />
-  Descargar PDF
-</CButton>
 
                 </CTableDataCell>
               </CTableRow>
