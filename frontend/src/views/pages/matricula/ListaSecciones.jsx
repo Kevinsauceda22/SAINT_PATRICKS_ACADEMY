@@ -2,10 +2,12 @@
 import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
 import { useLocation } from 'react-router-dom';
-import { cilSearch,  cilPen, cilTrash, cilBrushAlt, cilFile, cilPlus, cilDescription, cilArrowLeft, cilSettings, } from '@coreui/icons';
+import { cilSearch,  cilSpreadsheet, cilPen, cilTrash, cilBrushAlt, cilFile, cilPlus, cilDescription, cilArrowLeft, cilSettings, } from '@coreui/icons';
 import swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import logo from 'src/assets/brand/logo_saint_patrick.png'
 import {
   CButton, CContainer, CForm, CDropdown, CDropdownMenu, CDropdownToggle, CDropdownItem, CFormInput, CFormSelect, CInputGroup, CInputGroupText, CModal, CModalHeader, CModalTitle, CModalBody, CModalFooter, CPagination, CTable, CTableHead, CTableRow, CTableHeaderCell, CTableBody, CTableDataCell, CRow, CCol,
@@ -540,6 +542,80 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     };
   };
 
+
+  // Función para exportar datos de Secciones a Excel
+  const exportToExcel = () => {
+    if (!filteredSecciones || filteredSecciones.length === 0) {
+      alert('No hay datos para exportar.');
+      return;
+    }
+  
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Secciones');
+
+     // Obtener el periodo académico
+     const periodoAcademico = getPeriodoAcademico(filteredSecciones[0].Cod_periodo_matricula) || 'SIN PERIODO';
+
+  
+    // Título del documento
+    worksheet.mergeCells('A1:E1');
+    worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+    worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    worksheet.mergeCells('A2:E2');
+    worksheet.getCell('A2').value = 'LISTADO DE SECCIONES';
+    worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // Fila para el periodo académico
+    worksheet.mergeCells('A3:E3');
+    worksheet.getCell('A3').value = `Año Académico: ${periodoAcademico}`;
+    worksheet.getCell('A3').font = { bold: true, size: 14, color: { argb: '006633' } };
+    worksheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+    
+    // Encabezados de la tabla
+    const headerRow = worksheet.addRow(['#', 'Sección', 'Aula', 'Grado', 'Maestro guía']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+  
+    // Datos de la tabla
+    filteredSecciones.forEach((seccion, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        seccion.Nombre_seccion?.toUpperCase() || 'SIN NOMBRE',
+        seccion.Numero_aula?.toString() || 'SIN AULA',
+        seccion.Nombre_grado?.toUpperCase() || 'SIN GRADO',
+        getProfesorFullName(seccion.Cod_Profesor) || 'SIN PROFESOR',
+      ]);
+  
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    });
+  
+    // Ajustar el ancho de las columnas
+    worksheet.columns.forEach((column) => {
+      column.width = 40;
+    });
+  
+    // Crear archivo Excel
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'Reporte_Secciones.xlsx');
+    });
+  };
+  
+
   // Funciones CRUD
 
   // Funcion para abrir el modal de crear
@@ -849,34 +925,75 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       )}
 
       {/* Botón de Reporte */}
-      <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-            <CDropdownToggle
-               style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease', }}
-               onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
-               onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
-               <CIcon icon={cilDescription}/> Reporte
-            </CDropdownToggle>
-            <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
-          <CDropdownItem
-            onClick={() => generateSeccionesPDF(filteredSecciones)}
-            style={{
-                  cursor: 'pointer',
-                  outline: 'none',
-                  backgroundColor: 'transparent',
-                  padding: '0.5rem 1rem',
-                  fontSize: '0.85rem',
-                  color: '#333',
-                  borderBottom: '1px solid #eaeaea',
-                  transition: 'background-color 0.3s',
-                  }}
-                  onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
-                  onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
-                  >
-                  <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-                </CDropdownItem>
-                {/*Reporte excel"*/}
-        </CDropdownMenu>
-      </CDropdown>
+<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#6C8E58',
+      color: 'white',
+      fontSize: '0.85rem',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#5A784C';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#6C8E58';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reporte
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={() => generateSeccionesPDF(filteredSecciones)}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+    </CDropdownItem>
+
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={exportToExcel}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Exportar a Excel
+    </CDropdownItem>
+
+  </CDropdownMenu>
+</CDropdown>
     </CCol>
   </CRow>
 
@@ -1242,28 +1359,23 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
       </CInputGroup>
 
       {/* Nombre de la Sección */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Nombre de la Sección</CInputGroupText>
-        <CFormInput
-          value={seccionToUpdate.p_Nombre_seccion || ''}
-          readOnly
-        />
-      </CInputGroup>
-      {/* Grado */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Grado</CInputGroupText>
-        <CFormSelect
-          value={seccionToUpdate.p_Nombre_grado || ''}
-          disabled // Esto hace que el selector sea de solo lectura
-        >
-          <option value="">Seleccione un Grado</option>
-          {grados.map((grado) => (
-            <option key={grado.Cod_grado} value={grado.Nombre_grado}>
-              {grado.Nombre_grado.toUpperCase()}
-            </option>
-          ))}
-        </CFormSelect>
-      </CInputGroup>
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Nombre de la Sección</CInputGroupText>
+          <CFormInput
+            value={seccionToUpdate.p_Nombre_seccion || ''}
+            readOnly
+          />
+        </CInputGroup>
+
+        {/* Grado */}
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Grado</CInputGroupText>
+          <CFormInput
+            value={seccionToUpdate.p_Nombre_grado || ''}
+            readOnly
+          />
+        </CInputGroup>
+
 
       {/* Selección de Edificio */}
       <CInputGroup className="mb-3">

@@ -13,6 +13,8 @@ import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch,cilBrush
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import "jspdf-autotable";
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import { useNavigate } from 'react-router-dom';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import AccessDenied from "../AccessDenied/AccessDenied"
@@ -342,6 +344,73 @@ const ListaGestion_Academica = () => {
     };
   
     //REPORTE EN EXCEL
+    const exportToExcel = () => {
+      if (!currentRecords || currentRecords.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+    
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Gestión Académica');
+    
+      // Título del documento
+      worksheet.mergeCells('A1:E1');
+      worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+      worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+      worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+    
+      worksheet.mergeCells('A2:E2');
+      worksheet.getCell('A2').value = 'REPORTE DE GESTIÓN ACADÉMICA';
+      worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+      worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+    
+      // Encabezados de la tabla
+      const headerRow = worksheet.addRow(['#', 'Total Secciones', 'Año Académico', 'Fecha de Creación', 'Estado']);
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+    
+      // Datos de la tabla
+      currentRecords.forEach((agrupador, index) => {
+        const row = worksheet.addRow([
+          index + 1,
+          agrupador.Total_secciones.toString(),
+          agrupador.Anio_academico.toString(),
+          new Date(agrupador.Fecha_agrupacion).toLocaleDateString(),
+          agrupador.Estado
+        ]);
+    
+        row.eachCell((cell) => {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin', color: { argb: '000000' } },
+            left: { style: 'thin', color: { argb: '000000' } },
+            bottom: { style: 'thin', color: { argb: '000000' } },
+            right: { style: 'thin', color: { argb: '000000' } },
+          };
+          // Cambiar color de celda dependiendo de estado
+          if (cell.value === 'Activo') {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'A7F3D0' } }; // Color verde para activo
+          } else if (cell.value === 'Inactivo') {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FCA5A5' } }; // Color rojo para inactivo
+          }
+        });
+      });
+    
+      // Ajustar el ancho de las columnas
+      worksheet.columns.forEach((column) => {
+        column.width = 20;
+      });
+    
+      // Crear archivo Excel
+      workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        saveAs(blob, 'Reporte_Gestion_Academica.xlsx');
+      });
+    };
+    
   
 
   // Función para alternar la visibilidad del modal
@@ -413,7 +482,7 @@ const ListaGestion_Academica = () => {
       }
   
       Swal.fire('Éxito', 'Agrupador creado exitosamente.', 'success');
-      fetchAgrupadores(); // Recargar los datos
+      fetchAgrupadores(); // RecargaTr los datos
       toggleModal(); // Cerrar el modal
     } catch (error) {
       console.error('Error al crear agrupador:', error); // Registro detallado
@@ -460,37 +529,76 @@ const ListaGestion_Academica = () => {
       )}
     
     {/* Botón "Generar PDF" */}
-    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-      <CDropdownToggle
-         style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease', }}
-         onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
-         onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}>
-         <CIcon icon={cilDescription}/> Reporte
-      </CDropdownToggle>
-      <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
-    <CDropdownItem
-      onClick={handleGenerarPDFVista}
-      style={{
-      cursor: 'pointer',
-      outline: 'none',
-      backgroundColor: 'transparent',
-      padding: '0.5rem 1rem',
+<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#6C8E58',
+      color: 'white',
       fontSize: '0.85rem',
-      color: '#333',
-      borderBottom: '1px solid #eaeaea',
-      transition: 'background-color 0.3s',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#5A784C';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#6C8E58';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reporte
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050,
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={handleGenerarPDFVista} // Asegúrate de tener esta función para generar PDF
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
       }}
       onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
       onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
-      >
+    >
       <CIcon icon={cilFile} size="sm" /> Abrir en PDF
     </CDropdownItem>
 
-    {/*Reporte excel"*/}
-    
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={exportToExcel} // Llama a la función que generará el Excel
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Abrir en Excel
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
 
-    </CDropdownMenu>
-    </CDropdown>
     
     </CCol>
   </CRow>
