@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
 import { useLocation } from 'react-router-dom';
-import { cilSearch,  cilPen, cilTrash, cilBrushAlt, cilFile, cilPlus, cilDescription, cilArrowLeft, cilSettings } from '@coreui/icons';
+import { cilSearch,  cilPen, cilTrash, cilBrushAlt, cilFile, cilPlus, cilDescription, cilArrowLeft, cilSettings, } from '@coreui/icons';
 import swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -1039,41 +1039,30 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     </CTable>
   </div>
 
-  {/* Paginación Fija */}
-  <div
-        className="pagination-container"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          marginTop: '20px',
-        }}
-      >
-  {/* Botones de Paginación */}
-  <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+  {/* Paginación Mejorada */}
+<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
+  <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
     <CButton
       style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
-      disabled={currentPage === 1}
+      disabled={currentPage === 1} // Deshabilitar si estás en la primera página
       onClick={() => paginate(currentPage - 1)}
     >
       Anterior
     </CButton>
-
     <CButton
-      style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
-      disabled={currentPage === Math.ceil(filteredSecciones.length / recordsPerPage)}
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(filteredSecciones.length / recordsPerPage)} // Deshabilitar si estás en la última página
       onClick={() => paginate(currentPage + 1)}
     >
       Siguiente
     </CButton>
-  </div>
+  </CPagination>
+  {/* Mostrar total de páginas */}
+  <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: '#6f8173' }}>
+    Página {currentPage} de {Math.ceil(filteredSecciones.length / recordsPerPage)}
+  </span>
+</div>
 
-    {/* Indicador de Página Actual */}
-    <span style={{ fontSize: '0.9rem', color: '#6f8173' }}>
-      Página {currentPage} de {Math.ceil(filteredSecciones.length / recordsPerPage)}
-    </span>
-  </div>
 
       {/* Modal Crear Sección */}
      <CModal
@@ -1084,7 +1073,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
           resetNuevaSeccion(); // Limpia los datos
         }}
         backdrop="static"
-        size="md"
+        size="lg"
       >
       <CModalHeader closeButton={false}>
         <CModalTitle>Crear Nueva Sección - Paso {step}</CModalTitle>
@@ -1162,7 +1151,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
 
   {step === 2 && (
         <div>
-          <h5>Profesor y Período de Matrícula</h5>
+          <h5>Selecciona un Profesor</h5>
           <hr />
           <div>
   
@@ -1224,15 +1213,16 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   <CModalFooter>
     {step > 1 && <CButton color="secondary" onClick={prevStep}>Atrás</CButton>}
     {step < 2 ? (
-      <CButton color="primary" onClick={nextStep}>Siguiente</CButton>
+      <CButton style={{backgroundColor: '#4B6251', color: 'white' }} onClick={nextStep}>Siguiente</CButton>
     ) : (
-      <CButton color="success" onClick={handleCreateSeccion}>Finalizar y Guardar</CButton>
+      <CButton style={{backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateSeccion}>Guardar</CButton>
     )}
   </CModalFooter>
 </CModal>
 
      {/* Modal Actualizar Sección */}
-     <CModal visible={modalUpdateVisible} backdrop="static" size="lg">
+     <CModal 
+        visible={modalUpdateVisible} backdrop="static" size="lg">
      <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Sección</CModalTitle>
     <CButton
@@ -1350,8 +1340,8 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     >
       Cancelar
     </CButton>
-    <CButton color="success" onClick={handleUpdateSeccion}>
-      Guardar Cambios
+    <CButton style={{backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateSeccion}>
+      Guardar
     </CButton>
   </CModalFooter>
 </CModal>

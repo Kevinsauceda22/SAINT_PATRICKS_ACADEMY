@@ -420,7 +420,26 @@ const ListaAulas = () => {
     }
   };
 
-  
+  const actualizarEstadoAula = async (Cod_aula, Nuevo_estado) => {
+    try {
+        const response = await fetch('http://localhost:4000/api/aula/actualizar_estado', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ Cod_aula, Nuevo_estado }),
+        });
+
+        if (response.ok) {
+            fetchAulas(); // Vuelve a cargar la lista de aulas
+        } else {
+            console.error('Error al actualizar el estado del aula');
+        }
+    } catch (error) {
+        console.error('Error al actualizar el estado del aula:', error);
+    }
+};
+
   
   const handleDeleteAula = async () => {
     try {

@@ -5,7 +5,8 @@ import {
   CDropdownItem,
   CDropdownMenu,
   CDropdownToggle,
-  //CPagination,CSpinner,utils, writeFile,
+  CPagination,
+  //CSpinner,utils, writeFile,
 } from '@coreui/react';
 import { CIcon } from '@coreui/icons-react';
 import { cilBook, cilPlus, cilSettings, cilArrowCircleBottom, cilSearch,cilBrushAlt, cilFile, cilSpreadsheet, cilPen, cilTrash, cilSave, cilX, cilCheck, cilInfo, cilDescription } from '@coreui/icons';
@@ -656,10 +657,12 @@ const ListaGestion_Academica = () => {
                     <CIcon icon={cilSettings} />
                   </CButton>
                   <CButton 
-                    color="warning"
                     onClick={() => handleDescargarPDF(agrupador.Cod_periodo_matricula)}
                     className="d-flex align-items-center"
                     title="PDF de Todas las Secciones"
+                    style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease', }}
+                    onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
+                    onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
                     <CIcon icon={cilArrowCircleBottom} className="me-1" /> PDF
                   </CButton>
@@ -680,37 +683,29 @@ const ListaGestion_Academica = () => {
   </div>
 
   {/* Paginación */}
-  <div
-    className="pagination-container"
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: '20px',
-    }}
-  >
-    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-      <CButton
-        style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
-        disabled={currentPage === 1}
-        onClick={() => paginate(currentPage - 1)}
-      >
-        Anterior
-      </CButton>
+<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
+  <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
+    <CButton
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === 1} // Deshabilitar si estás en la primera página
+      onClick={() => paginate(currentPage - 1)}
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(filteredAgrupadores.length / recordsPerPage)} // Deshabilitar si estás en la última página
+      onClick={() => paginate(currentPage + 1)}
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  {/* Mostrar total de páginas */}
+  <span style={{ marginLeft: '10px', fontSize: '0.9rem', color: '#6f8173' }}>
+    Página {currentPage} de {Math.ceil(filteredAgrupadores.length / recordsPerPage)}
+  </span>
+</div>
 
-      <CButton
-        style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
-        disabled={currentPage === Math.ceil(filteredAgrupadores.length / recordsPerPage)}
-        onClick={() => paginate(currentPage + 1)}
-      >
-        Siguiente
-      </CButton>
-    </div>
-    <span style={{ fontSize: '0.9rem', color: '#6f8173' }}>
-      Página {currentPage} de {Math.ceil(filteredAgrupadores.length / recordsPerPage)}
-    </span>
-  </div>
 
   {/* Modal para crear un nuevo agrupador */}
   <CModal visible={showModal} onClose={handleCloseModal}  backdrop="static">
@@ -725,8 +720,10 @@ const ListaGestion_Academica = () => {
       </p>
     </CModalBody>
     <CModalFooter>
-      <CButton color="secondary" onClick={handleCloseModal}>
-        Cancelar
+      <CButton c
+      color="secondary" 
+      onClick={handleCloseModal}>
+      Cancelar
       </CButton>
       <CButton style={{backgroundColor: '#4B6251', color: 'white' }} onClick={handleGuardarAgrupador}>
        <CIcon icon={cilSave} style={{ marginRight: '5px' }} />Guardar
