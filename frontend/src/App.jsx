@@ -79,7 +79,6 @@ const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaN
 const ListaDepartamentos = React.lazy(() => import('./views/pages/personas/ListaDepartamento'));
 const ListaMunicipios = React.lazy(() => import('./views/pages/personas/ListaMunicipios'));
 const ListaProcedenciaEstudiante = React.lazy(() => import('./views/pages/personas/ListaProcedenciaEstudiante')); 
-const ListaTelefonos = React.lazy(() => import('./views/pages/personas/ListaTelefonos'));
 const ListaTipoDocumentos = React.lazy(() => import('./views/pages/personas/ListaTipoDocumentos'));
 const ListaTipoPersona = React.lazy(() => import('./views/pages/personas/ListaTipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
@@ -210,7 +209,6 @@ const App = () => {
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />
                 <Route path="/ListaPersonas" element={<ListaPersonas />} />
                 <Route path="/ListaTipoDocumentos" element={<ListaTipoDocumentos />} />
-                <Route path="/ListaTelefonos" element={<ListaTelefonos />} />
                 <Route path="/ListaProcedenciaEstudiante" element={<ListaProcedenciaEstudiante />} />
                 <Route path="/ListaRelacion" element={<ListaTipoRelacion />} />
                 <Route path="/Solicitud_admin" element={<Solicitud_admin />} />

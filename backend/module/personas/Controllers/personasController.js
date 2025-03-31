@@ -59,7 +59,7 @@ export const obtenerMunicipiosConDepartamento = async (req, res) => {
 //CONTROLADOR PARA OBTENER TIPO DE PERSONA
 export const obtenerTipoPersona = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL P_Get_Tipo_Persona()');
+        const [rows] = await pool.query('CALL P_Get_TipoPersona()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
@@ -75,7 +75,7 @@ export const obtenerTipoPersona = async (req, res) => {
 //CONTROLADOR PARA OBTENER GENEROS
 export const obtenerGeneros= async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL P_Get_Genero_Persona()');
+        const [rows] = await pool.query('CALL P_Get_GeneroPersona()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
@@ -91,20 +91,20 @@ export const obtenerGeneros= async (req, res) => {
 //CONTROLADOR PARA CREAR UNA PERSONA
 export const crearPersona = async (req, res) => {
     const { 
+        tipo_documento,
         dni_persona,
         Nombre,
         Segundo_nombre,
         Primer_apellido,
         Segundo_apellido,
-        direccion_persona,
         fecha_nacimiento,
-        Estado_Persona,
-        principal,
-        cod_tipo_persona,
+        direccion_persona,
         cod_nacionalidad,
         cod_departamento,
         cod_municipio,
+        cod_tipo_persona,
         cod_genero,
+        principal
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -122,37 +122,38 @@ export const crearPersona = async (req, res) => {
             });
         }
 
-        // Crear la nueva persona con el procedimiento almacenado
+        // Llamar al procedimiento almacenado con el nuevo orden de parámetros
         await connection.query(
             "CALL P_Post_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", 
             [
+                tipo_documento,
                 dni_persona,
                 Nombre,
                 Segundo_nombre,
                 Primer_apellido,
                 Segundo_apellido,
-                direccion_persona,
                 fecha_nacimiento,
-                Estado_Persona,
-                principal,
-                cod_tipo_persona,
-                cod_genero,
+                direccion_persona,
                 cod_nacionalidad,
                 cod_departamento,
-                cod_municipio
+                cod_municipio,
+                cod_tipo_persona,
+                cod_genero,
+                principal
             ]
         );
 
         res.status(201).json({ mensaje: 'Persona creada exitosamente' });
     } catch (error) {
         console.error('Error al crear la persona:', error);
-        if (!res.headersSent) { // Verifica si los encabezados ya han sido enviados
+        if (!res.headersSent) {
             res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
         }
     } finally {
-        connection.release();
+        if (connection) connection.release();
     }   
 };
+
 
 
 //CONTROLADOR PARA ACTUALIZAR UNA PERSONA
@@ -167,7 +168,6 @@ export const actualizarPersona = async (req, res) => {
         Segundo_apellido,
         direccion_persona,
         fecha_nacimiento,   
-        Estado_Persona,
         principal,
         cod_tipo_persona,
         cod_genero,
@@ -192,7 +192,7 @@ export const actualizarPersona = async (req, res) => {
         }
 
         // Llamada al procedimiento almacenado para actualizar
-        await connection.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        await connection.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             cod_persona,
             dni_persona,
             Nombre,
@@ -201,7 +201,6 @@ export const actualizarPersona = async (req, res) => {
             Segundo_apellido,
             direccion_persona,
             fecha_nacimiento,
-            Estado_Persona,
             principal,
             cod_tipo_persona,
             cod_genero,
@@ -219,8 +218,29 @@ export const actualizarPersona = async (req, res) => {
         connection.release();
     }
 };
-    
 
+export const actualizarEstadoPersona = async (req, res) => {
+    const { cod_persona, estado } = req.body;
+
+    // Validar parámetros
+    if (!cod_persona || estado === undefined) {
+        return res.status(400).json({ mensaje: 'Faltan parámetros' });
+    }
+
+    try {
+        // Llamar al procedimiento almacenado
+        const [results] = await pool.query('CALL P_Put_EstadoPersona(?, ?)', [cod_persona, estado]);
+
+        // Obtener el mensaje devuelto por el procedimiento
+        const mensaje = results[0][0].mensaje;
+
+        console.log(`Estado actualizado para persona ${cod_persona}: ${estado}`); // Debug en consola
+        res.json({ mensaje, cod_persona, estado }); // Respuesta al frontend
+    } catch (error) {
+        console.error('Error al ejecutar el procedimiento almacenado:', error);
+        res.status(500).json({ mensaje: 'Error interno del servidor' });
+    }
+};
 
 
 

@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilFile } from '@coreui/icons';
 import { CIcon } from '@coreui/icons-react';
+import ExcelJS from 'exceljs';
 import swal from 'sweetalert2';
+import { saveAs } from 'file-saver';
 import {
   CButton,
   CContainer,
@@ -41,17 +43,20 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 const TipoPersona = () => {
   const {canSelect, canUpdate, canDelete, canInsert } = usePermission('tipopersona');
 
-  const [tiposPersona, setTiposPersona] = useState([]);
-   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [tipoPersona, setTipoPersona] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [tipoPersonaError, setTipoPersonaError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTipos, setFilteredTipos] = useState([]);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editar, setEditar] = useState(false);
-  const [estadoActual, setEstadoActual] = useState({ Tipo: '' });
+  const [nuevoTipoPersona, setNuevoTipoPersona] = useState({ Cod_tipo_persona: '', Tipo_persona: '', estado: 1 });
+  const [tipoPersonaToUpdate, setTipoPersonaToUpdate] = useState({});
+  const [tipoPersonaToDelete, setTipoPersonaToDelete] = useState({});
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false); 
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [recordsPerPage, setRecordsPerPage] = useState(5);
 
 
 
@@ -63,17 +68,17 @@ const TipoPersona = () => {
     obtenerTiposPersona();
   }, []);
 
-  const [errorMensaje, setErrorMensaje] = useState(''); // Estado para el mensaje de error
+  
 
 
-
+{/*************************************************************************************************************************************/}
 // Función para obtener los tipos de persona
 const obtenerTiposPersona = async () => {
   try {
     const response = await fetch('http://localhost:4000/api/tipoPersona/verTodoTipoPersona');
     const data = await response.json();
     if (response.ok) {
-      setTiposPersona(data);
+      setTipoPersona(data);
       setFilteredTipos(data);
     } else {
       throw new Error(data.message || 'Error al obtener los tipos de persona');
@@ -85,116 +90,224 @@ const obtenerTiposPersona = async () => {
   }
 };
 
+{/*************************************************************************************************************************************/}
 
-const handleTipoChange = (e) => {
-  const textoValido = validarTipoEnTiempoReal(e.target.value);
-  // Solo actualiza el estado si el texto es válido
-  if (textoValido !== e.target.value) {
-    setEstadoActual({ ...estadoActual, Tipo: textoValido });
+
+{/*************************************************************************************************************************************/}
+const validateTipoPersona = (tipoPersona) => {
+  const regex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]*$/;
+  const noMultipleSpaces = !/\s{2,}/.test(tipoPersona); // No permite más de un espacio consecutivo
+  const trimmedTipoPersona = tipoPersona.trim().replace(/\s+/g, ' ');
+
+  if (!regex.test(trimmedTipoPersona)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Tipo de Persona Inválido',
+      text: 'El tipo de persona solo puede contener letras y espacios.',
+    });
+    return false;
+  }
+
+  if (!noMultipleSpaces) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Espacios múltiples',
+      text: 'No se permite más de un espacio entre palabras.',
+    });
+    return false;
+  }
+
+  // Validar que ninguna letra se repita más de 4 veces seguidas
+  const words = trimmedTipoPersona.split(' ');
+  for (let word of words) {
+    const letterCounts = {};
+    for (let letter of word) {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+      if (letterCounts[letter] > 4) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Repetición de letras',
+          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+        });
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+{/*************************************************************************************************************************************/}
+
+const capitalizeWords = (str) => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+
+{/*************************************************************************************************************************************/}
+
+const isDuplicateTipoPersona = () => {
+  const { Tipo_persona } = nuevoTipoPersona; // Cambiado a Tipo_persona
+  const existingTipoPersona = tipoPersona.find(
+    (tipo) =>
+      tipo.Tipo_persona.toLowerCase() === Tipo_persona.toLowerCase()
+  );
+
+  if (existingTipoPersona) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Tipo de Persona Duplicado',
+      text: 'Ya existe un tipo de persona con el mismo nombre.',
+    });
+
+    // Actualizar el estado de error si hay duplicados
+    setTipoPersonaError('Ya existe un tipo de persona con el mismo nombre');
+    return true;
+  }
+
+  // Limpiar errores si no hay duplicados
+  setTipoPersonaError('');
+  return false;
+};
+
+
+
+{/*************************************************************************************************************************************/}
+
+const handleTipoPersonaInputChange = (e, setFunction) => {
+  let value = e.target.value;
+
+  // No permitir más de un espacio consecutivo
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // No permitir que una letra se repita más de 4 veces consecutivamente
+  const wordArray = value.split(' ');
+  const isValid = wordArray.every(word => !/(.)\1{2,}/.test(word));
+
+  if (!isValid) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+    });
+    setTipoPersonaError('Repetición de letras no permitida.');
+    return;
+  }
+
+  // Validar que el valor tenga más de 2 letras
+  if (value.length <= 2) {
+    setTipoPersonaError('El tipo de persona debe tener más de 2 letras.');
   } else {
-    setEstadoActual({ ...estadoActual, Tipo: e.target.value });
+    setTipoPersonaError(''); // No hay error
   }
-};
 
-const validarTipoEnTiempoReal = (texto) => { 
-  texto = texto.toUpperCase(); // Convertir el texto a mayúsculas
+  // Actualizar el estado con el valor modificado
+  setFunction((prevState) => ({
+    ...prevState,
+    Tipo_persona: value,
+  }));
 
-  
-  // Validación: No permitir números
-  const tieneNumeros = /\d/;
-  if (tieneNumeros.test(texto)) {
-    setErrorMensaje('No se permiten números.');
-    setTimeout(() => setErrorMensaje(''), 5000);
-    return texto.slice(0, texto.length - 1); // Elimina el último carácter inválido
-  }
-  const tieneCaracteresEspeciales = /[^a-zA-Z0-9\s]/; // Detecta cualquier cosa que no sea alfanumérico ni espacio
-  if (tieneCaracteresEspeciales.test(texto)) {
-    setErrorMensaje('No se permiten caracteres especiales.');
-    setTimeout(() => setErrorMensaje(''), 5000);
-    return texto.slice(0, texto.length - 1); // Elimina el último carácter inválido
-  }
-  // Validar si el tipo de persona ya existe
-  const tipoExistente = tiposPersona.some(tipo => tipo.Tipo.toUpperCase() === texto); 
-  if (tipoExistente) {
-    setErrorMensaje('Ya existe un tipo de persona con ese nombre.');
-    setTimeout(() => setErrorMensaje(''), 5000);
-    return texto.slice(0, texto.length - 1); // Elimina el último carácter inválido
-  }
-// Validación: No permitir más de 2 letras seguidas iguales
-const letrasSeguidas = /([a-zA-Z])\1{2,}/; // Solo letras consecutivas
-if (letrasSeguidas.test(texto)) {
-  setErrorMensaje('No se permiten más de 2 letras consecutivas iguales.');
-  setTimeout(() => setErrorMensaje(''), 5000);
-  return texto.slice(0, texto.length - 1); // Elimina el último carácter inválido
-}
-
-// Validación: No permitir más de 2 espacios consecutivos
-const tieneEspaciosConsecutivos = (texto) => {
-  const regex = /\s{2,}/; // Detecta más de dos espacios consecutivos
-  return regex.test(texto);
-};
-
-if (tieneEspaciosConsecutivos(texto)) {
-  setErrorMensaje('No se permiten más de 2 espacios consecutivos.');
-  setTimeout(() => setErrorMensaje(''), 6000);
-  return texto.slice(0, texto.length - 1); // Elimina el último carácter inválido
-}
-
-  // Si todo está bien, limpia el error
-  setErrorMensaje('');
-  return texto; 
+  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
 };
 
 
-const disableCopyPaste = (e) => {
-  e.preventDefault();
-  setErrorMensaje('Copiar y pegar no está permitido.');
-  setTimeout(() => setErrorMensaje(''), 6000); // Eliminar mensaje después de 5 segundos
+{/*************************************************************************************************************************************/}
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
+  };
+
+const resetNuevoTipoPersona = () => {
+  setNuevoTipoPersona({ Tipo_persona: '' });
 };
 
-// Función para crear un nuevo tipo de persona
-const crearTipoPersona = async (tipo) => {
-  // Validar el tipo de persona antes de enviarlo
-  const tipoValido = validarTipoEnTiempoReal(tipo);
-  if (tipoValido !== tipo) {
-    return; // Si la validación falla, se detiene el proceso
+const resetTipoPersonaToUpdate = () => {
+  setTipoPersonaToUpdate({
+    Cod_tipo_persona: '', // Reinicia el código del tipo de persona
+    Tipo_persona: '', // Limpia el campo Tipo_persona
+    estado: 1, // Puedes ajustar si el estado requiere reinicio (por ejemplo, 1 para activo)
+  });
+};
+
+
+{/**************************************************************************************************************************************/}
+const handleCreateTipoPersona = async () => {
+  // Normalizar y validar el tipo de persona antes de enviarlo
+  const tipoCapitalizado = capitalizeWords(nuevoTipoPersona.Tipo_persona.trim().replace(/\s+/g, ' '));
+
+  // Validaciones antes de crear
+  if (!validateTipoPersona(tipoCapitalizado)) {
+    return;
+  }
+
+  if (!validateEmptyFields()) {
+    return;
   }
 
   try {
-    const response = await fetch('http://localhost:4000/api/tiPopersona/crearTipoPersona', {
+    const response = await fetch('http://localhost:4000/api/tipoPersona/crearTipoPersona', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ Tipo: tipoValido }), // Usamos el tipo validado
+      body: JSON.stringify({
+        tipo_persona: tipoCapitalizado, // Usamos el tipo validado
+        estado: 1, // Activo por defecto
+      }),
     });
 
     if (response.ok) {
+      let result;
+      try {
+        result = await response.json(); // Intentamos obtener el JSON de la respuesta
+      } catch (error) {
+        console.warn("La API no devolvió JSON, pero el tipo de persona fue creado.");
+        result = { Tipo_persona: tipoCapitalizado }; // Asumimos que se creó correctamente
+      }
+
+      // Actualiza la lista sin recargar la página
+      obtenerTiposPersona(); 
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevoTipoPersona(); // Reiniciar el estado del nuevo tipo de persona
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+
       swal.fire({
-        title: 'Éxito',
-        text: `Tipo de persona "${tipoValido}" creado correctamente.`,
         icon: 'success',
-        confirmButtonColor: '#4B6251',
-    });
-      obtenerTiposPersona(); // Actualiza la lista de tipos de personas
+        title: 'Creación exitosa',
+        text: `El tipo de persona ha sido creado correctamente.`,
+      });
+
     } else {
-      const result = await response.json();
-      throw new Error(result.Mensaje || 'Error al crear el tipo de persona');
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo crear el tipo de persona.',
+      });
     }
   } catch (error) {
-    swal.fire(error.message); // Mostrar mensaje de error
-    
+    console.error('Error al crear el tipo de persona:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar crear el tipo de persona.',
+    });
   }
 };
+
 
 
 {/*************************************************************************************************************************************/}
 const handleUpdateTipoPersona = async () => {
   const tipoCapitalizado = capitalizeWords(tipoPersonaToUpdate.Tipo_persona.trim().replace(/\s+/g, ' '));
 
-  if (!validarTipoEnTiempoReal(tipoCapitalizado)) {
-    return;
-  }
+    // Validaciones antes de crear
+    if (!validateTipoPersona(tipoCapitalizado)) {
+      return;
+    }
 
   try {
     const response = await fetch(`http://localhost:4000/api/tipoPersona/actualizarTipoPersona/${tipoPersonaToUpdate.Cod_tipo_persona}`, {
@@ -205,7 +318,7 @@ const handleUpdateTipoPersona = async () => {
       body: JSON.stringify({
         Cod_tipo_persona: tipoPersonaToUpdate.Cod_tipo_persona,
         Tipo_persona: tipoCapitalizado,
-        estado: tipoPersonaToUpdate.estado, // Mantener el estado actual
+        estado: tipoPersonaToUpdate.estado,
       }),
     });
 
@@ -232,88 +345,81 @@ const handleUpdateTipoPersona = async () => {
 };
 
 {/***********************************************************************************************************************************/}
-  const eliminarTipoPersona = async (codTipo) => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/tipoPersona/eliminarTipoPersona/${codTipo}`, {
+const handleDeleteTipoPersona = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/tipoPersona/eliminarTipoPersona/${encodeURIComponent(tipoPersonaToDelete.Cod_tipo_persona)}`, // Actualizado para Tipo de Persona
+      {
         method: 'DELETE',
-      });
-
-      if (response.ok) {
-        swal.fire({
-          title: 'Éxito',
-          text: `Tipo de persona eliminado correctamente.`,
-          icon: 'success',
-          confirmButtonColor: '#4B6251',
-        });
-        obtenerTiposPersona();
-      } else {
-        const result = await response.json();
-        throw new Error(result.Mensaje || 'Error al eliminar el tipo de persona');
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }
-    } catch (error) {
+    );
+
+    if (response.ok) {
+      obtenerTiposPersona(); // Llama a la función para actualizar la lista de tipos de persona
+      setModalDeleteVisible(false); // Cierra el modal de eliminación
+      setTipoPersonaToDelete({}); // Limpia el estado de tipoPersonaToDelete
       swal.fire({
-        title: 'Error',
-        text: error.message,
+        icon: 'success',
+        title: 'Eliminación exitosa',
+        text: 'El tipo de persona ha sido eliminado correctamente.',
+      });
+    } else {
+      swal.fire({
         icon: 'error',
-        confirmButtonColor: '#4B6251',
+        title: 'Error',
+        text: 'No se pudo eliminar el tipo de persona.',
       });
     }
-  };
+  } catch (error) {
+    console.error('Error al eliminar el tipo de persona:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un problema al intentar eliminar el tipo de persona.',
+    });
+  }
+};
+
 
   {/**************************************************************************************************************************************/}
 
-  const openAddModal = () => {
-    setEditar(false);
-    setEstadoActual({ Tipo: '' });
-    setModalVisible(true);
-  };
- // Abre el modal de eliminación con los datos del registro seleccionado
- const openDeleteModal = (historico) => {
-  setHistoricoToDelete(historico);
-  setModalDeleteVisible(true);
+ const openUpdateModal = (tipoPersona) => {
+  setTipoPersonaToUpdate(tipoPersona); // Cambiado para TipoPersona
+  setModalUpdateVisible(true); // Abre el modal de actualización
 };
-  const openEditModal = (tipo) => {
-    setEditar(true);
-    setEstadoActual(tipo);
-    setModalVisible(true);
-  };
 
-  const handleModalSubmit = async (e) => {
-    e.preventDefault();
-    if (!estadoActual.Tipo) {
-      swal.fire({
-        title: 'Error',
-        text: 'El nombre del tipo no puede estar vacío ni contener caracteres especiales o tres letras iguales seguidas.',
-        icon: 'error',
-        confirmButtonColor: '#4B6251',
-      });
-      return;
-    }
+const openDeleteModal = (tipoPersona) => {
+  setTipoPersonaToDelete(tipoPersona); // Cambiado para TipoPersona
+  setModalDeleteVisible(true); // Abre el modal de eliminación
+};
 
-    if (editar) {
-      await actualizarTipoPersona(estadoActual.Cod_tipo_persona, estadoActual.Tipo);
-    } else {
-      await crearTipoPersona(estadoActual.Tipo);
-    }
-    setModalVisible(false);
-  };
 
-  const confirmDelete = (codTipo) => {
-    swal.fire({
-      title: '¿Estás seguro?',
-      text: 'No podrás revertir esta acción',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#4B6251',
-      cancelButtonColor: '#6c757d',
-      confirmButtonText: 'Eliminar',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        eliminarTipoPersona(codTipo);
+
+    const handleCloseModal = (closeFunction, resetFields) => {
+      if (hasUnsavedChanges) {
+        swal.fire({
+          title: '¿Estás seguro?',
+          text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cerrar',
+          cancelButtonText: 'Cancelar',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            closeFunction(false);
+            resetFields(); // Limpiar los campos al cerrar
+            setHasUnsavedChanges(false); // Resetear cambios no guardados
+          }
+        });
+      } else {
+        closeFunction(false);
+        resetFields();
       }
-    });
-  };
+    };
+
 
   {/**********************************************************************************************************************************/}
 
@@ -321,8 +427,8 @@ const handleUpdateTipoPersona = async () => {
     const nuevoEstado = tipoPersona.estado ? 0 : 1;
     
     // Actualizar el estado inmediatamente para reflejar el cambio visualmente
-    setTiposPersona((prevTiposPersona) =>
-      prevTiposPersona.map((persona) =>
+    setTipoPersona((prevTipoPersona) =>
+      prevTipoPersona.map((persona) =>
         persona.Cod_tipo_persona === tipoPersona.Cod_tipo_persona
           ? { ...persona, estado: nuevoEstado }
           : persona
@@ -356,27 +462,45 @@ const handleUpdateTipoPersona = async () => {
   
   
   {/**********************************************************************************************************************************/}
-  const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase();
-    setSearchTerm(value);
-
-    const filtered = tiposPersona.filter(tipo =>
-      tipo.Tipo.toLowerCase().includes(value)
-    );
-    setFilteredTipos(filtered);
-    setCurrentPage(0);
+  const handleSearch = (event) => {
+    setSearchTerm(event.target.value);
+    setCurrentPage(1);
   };
+  
+  const filteredTipoPersona = Array.isArray(tipoPersona) 
+  ? tipoPersona.filter((tipoPersona) =>
+      tipoPersona.Tipo_persona &&
+      tipoPersona.Tipo_persona.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+  : [];
+  
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredTipoPersona.slice(indexOfFirstRecord, indexOfLastRecord);
+  
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredTipoPersona.length / recordsPerPage)) {
+      setCurrentPage(pageNumber);
+    }
+  };
+
+  
+  
+  
+
+  {/***********************************************************************************************************************************/}
   const exportToPDF = () => {
     const doc = new jsPDF({
-      orientation: 'landscape',
+      orientation: 'portrait',  // Vertical
       unit: 'mm',
       format: 'a4',
     });
   
-    if (tiposPersona.length === 0) {
-      console.warn('No hay datos de tipos de persona para exportar.');
+    if (!filteredTipoPersona || filteredTipoPersona.length === 0) {
+      alert('No hay datos para exportar.');
       return;
     }
+  
     const img = new Image();
     img.src = logo;
   
@@ -409,65 +533,64 @@ const handleUpdateTipoPersona = async () => {
       doc.setDrawColor(0, 102, 51); // Verde
       doc.line(10, 55, pageWidth - 10, 55);
   
-      // Subtítulo
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-    
-  
-      // Tabla de datos
+      // Tabla de datos: Usar datos filtrados
       doc.autoTable({
-        startY: 70,
+        startY: 70, // Posición inicial vertical
         head: [['#', 'Tipo de Persona']],
-        body: tiposPersona.map((tipo, index) => [
-          { content: (index + 1).toString(), styles: { halign: 'center' } },
-          { content: tipo.Tipo.toUpperCase(), styles: { halign: 'left' } },
+        body: filteredTipoPersona.map((tipo, index) => [
+          { content: (index + 1).toString(), styles: { halign: 'center', valign: 'middle', fontSize: 10 } },
+          { content: tipo.Tipo_persona.toUpperCase(), styles: { halign: 'center', valign: 'middle', fontSize: 10 } },
         ]),
         headStyles: {
           fillColor: [0, 102, 51], // Verde
           textColor: [255, 255, 255], // Blanco
           fontSize: 10,
-          halign: 'center', // Centrado por defecto
+          halign: 'center', // Centrado
         },
         styles: {
           fontSize: 10,
           cellPadding: 3,
+          minCellWidth: 20,
         },
         alternateRowStyles: {
           fillColor: [240, 248, 255], // Azul claro
         },
         columnStyles: {
-          0: { halign: 'center' }, // Centro para el número
-          1: { halign: 'left' }, // Alineado a la izquierda para el tipo
+          0: { halign: 'center', cellWidth: 10 },
+          1: { halign: 'center', cellWidth: 50 },
         },
-        margin: { top: 10, bottom: 30 },
-        didDrawPage: function (data) {
-          const pageCount = doc.internal.getNumberOfPages();
-          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-  
-          // Pie de página
-          doc.setFontSize(10);
-          doc.setTextColor(0, 102, 51); // Verde
-          doc.text(
-            `Página ${pageCurrent} de ${pageCount}`,
-            pageWidth - 10,
-            pageHeight - 10,
-            { align: 'right' }
-          );
-  
-          const now = new Date();
-          const dateString = now.toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-          const timeString = now.toLocaleTimeString('es-HN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
-          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-        },
+        margin: { top: 70 }, // Ajustamos los márgenes para no interferir con otros elementos
+        tableWidth: 'wrap', // Hace que la tabla se ajuste a su contenido
       });
+  
+      const tablePosition = (pageWidth - doc.autoTable.previous.finalWidth) / 2;
+      doc.autoTable.previous.settings.margin.left = tablePosition; // Centramos la tabla en el eje X
+  
+      // Pie de página
+      const pageCount = doc.internal.getNumberOfPages();
+      const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+  
+      doc.setFontSize(10);
+      doc.setTextColor(0, 102, 51); // Verde
+      doc.text(
+        `Página ${pageCurrent} de ${pageCount}`,
+        pageWidth - 10,
+        pageHeight - 10,
+        { align: 'right' }
+      );
+  
+      const now = new Date();
+      const dateString = now.toLocaleDateString('es-HN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      const timeString = now.toLocaleTimeString('es-HN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+      doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
   
       // Convertir PDF en Blob
       const pdfBlob = doc.output('blob');
@@ -495,117 +618,194 @@ const handleUpdateTipoPersona = async () => {
     };
   };
   
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      tiposPersona.map((tipo, index) => ({
-        '#': index + 1,
-        'Tipo de Persona': tipo.Tipo.toUpperCase(),
-      }))
-    );
+  
+{/*************************************************************************************************************************************/}
+const exportToExcel = () => {
+  if (!filteredTipoPersona || filteredTipoPersona.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tipos de Persona');
-    XLSX.writeFile(workbook, 'Reporte_Tipos_Persona.xlsx');
-  };
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Tipos de Persona');
 
-  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredTipos.slice(indexOfFirstItem, indexOfLastItem);
+  // Título del documento
+  worksheet.mergeCells('A1:B1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  const pageCount = Math.ceil(filteredTipos.length / itemsPerPage);
+  worksheet.mergeCells('A2:B2');
+  worksheet.getCell('A2').value = 'TIPOS DE PERSONA';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
 
+  // Encabezados de la tabla
+  const headerRow = worksheet.addRow(['#', 'Tipo de Persona']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Datos de la tabla - Usar `filteredTipoPersona`
+  filteredTipoPersona.forEach((tipo, index) => {
+    const row = worksheet.addRow([
+      index + 1, // Número de fila
+      typeof tipo.Tipo_persona === 'string' ? tipo.Tipo_persona.toUpperCase() : tipo.Tipo_persona // Tipo de Persona en mayúsculas
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // Ajustar el ancho de las columnas
+  worksheet.columns.forEach((column) => {
+    column.width = 20;
+  });
+
+  // Crear archivo Excel
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_Tipos_Persona.xlsx'); // Descargar archivo con nombre
+  });
+};
+
+
+
+{/***************************************************************************************************************************************/}
   return (
     <CContainer>
 
       
-     <CRow className="justify-content-between align-items-center mb-4">
-  <CCol xs={12} md={8}>
-    <h3>Mantenimientos Tipos de Persona</h3>
+{/* Contenedor del h1 y botón "Nuevo" */}
+<CRow className="align-items-center mb-5">
+  <CCol xs="8" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Mantenimiento de Tipos de Persona</h1>
   </CCol>
-  <CCol xs={12} md={4} className="text-end">
-    <CButton
-      style={{ backgroundColor: '#4B6251', color: 'white', width: 'auto', height: '38px' }}
-      onClick={openAddModal}
-    >
-      <CIcon icon={cilPlus} /> Nuevo
-    </CButton>
-    {/* Botón para generar el reporte PDF directamente */}
-    <CButton
-      style={{ backgroundColor: '#6C8E58', color: 'white', width: 'auto', height: '38px' }}
-      onClick={exportToPDF} // Llamamos directamente a la función exportToPDF
-    >
-      <CIcon icon={cilFile} /> Reporte
-    </CButton>
+  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+    {/* Botón Nuevo para abrir el modal */}
+    {canInsert && (
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white' }}
+        className="mb-3 mb-md-0 me-md-3"
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+    )}
+    {/* Botón de Reporte */}
+    <CDropdown>
+      <CDropdownToggle
+        style={{ backgroundColor: '#6C8E58', color: 'white' }}
+      >
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
   </CCol>
 </CRow>
 
+{/* Contenedor de la barra de búsqueda y el selector dinámico */}
+<CRow className="align-items-center mt-4 mb-2">
+  {/* Barra de búsqueda */}
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar tipo de persona"
+        onChange={handleSearch}
+        value={searchTerm}
+        style={{ fontSize: '0.9rem' }}
+      />
+      <CButton
+        style={{
+          border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out',
+          backgroundColor: '#F3F4F7',
+          color: '#343a40',
+          fontSize: '0.9rem',
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
 
-      <CRow className="align-items-center mb-3">
-        <CCol md={6}>
-          <CInputGroup size="sm">
-            <CInputGroupText>
-              <CIcon icon={cilSearch} />
-            </CInputGroupText>
-            <CFormInput
-              placeholder="Buscar tipo de persona"
-              value={searchTerm}
-              onChange={handleSearch}
-              style={{ fontSize: '0.9rem' }}
-            />
-            <CButton
-              style={{
-                border: '1px solid #ccc',
-                backgroundColor: '#F3F4F7',
-                color: '#343a40',
-                fontSize: '0.9rem'
-              }}
-              onClick={() => setSearchTerm('')}
-            >
-              <CIcon icon={cilBrushAlt} /> Limpiar
-            </CButton>
-          </CInputGroup>
-        </CCol>
+  {/* Selector dinámico a la par de la barra de búsqueda */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span>Mostrar&nbsp;</span>
+        <CFormSelect
+          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1);
+          }}
+          value={recordsPerPage}
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </CFormSelect>
+        <span>&nbsp;registros</span>
+      </div>
+    </CInputGroup>
+  </CCol>
+</CRow>
 
-        <CCol md={6} className="text-end">
-          <div className="d-flex align-items-center justify-content-end">
-            <span className="me-2">Mostrar&nbsp;</span>
-            <CFormSelect
-              size="sm"
-              style={{ width: '80px' }}
-              value={itemsPerPage}
-              onChange={(e) => {
-                setItemsPerPage(Number(e.target.value));
-                setCurrentPage(0);
-              }}
-            >
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="20">20</option>
-            </CFormSelect>
-            <span>&nbsp;registros</span>
-          </div>
-        </CCol>
-      </CRow>
-
-      <CTable striped>
+<div  style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px', }}>
+<CTable striped>
   <CTableHead>
     <CTableRow>
       <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> # </CTableHeaderCell>
-      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">TIPO DE PERSONA</CTableHeaderCell>
+      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Persona</CTableHeaderCell>
       <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
     </CTableRow>
   </CTableHead>
+
   <CTableBody>
-    {currentItems.map((tipo, índice) => (
-      <CTableRow key={tipo.Cod_tipo_persona}>
-        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{indexOfFirstItem + índice + 1}</CTableDataCell>
-        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipo.Tipo_persona.toUpperCase()}</CTableDataCell>
+    {currentRecords.map((tipoPersona, índice) => (
+      <CTableRow key={tipoPersona.Cod_tipo_persona}>
+        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+          {indexOfFirstRecord + índice + 1}
+        </CTableDataCell>
+        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+          {tipoPersona.Tipo_persona.toUpperCase()}
+        </CTableDataCell>
         <CTableDataCell className="text-center">
           <div className="d-flex justify-content-center">
             {canUpdate && (
               <CButton
                 color="warning"
-                onClick={() => openEditModal(tipo)}
+                onClick={() => openUpdateModal(tipoPersona)}
                 style={{ marginRight: '10px' }}
                 title="Editar tipo de persona"
               >
@@ -614,104 +814,181 @@ const handleUpdateTipoPersona = async () => {
             )}
 
             {canDelete && (
-              <CButton color="danger" onClick={() => confirmDelete(tipo.Cod_tipo_persona)}>
+              <CButton
+                color="danger"
+                onClick={() => openDeleteModal(tipoPersona)}
+              >
                 <CIcon icon={cilTrash} />
               </CButton>
             )}
 
             {/* Botón de Activar/Inactivar */}
             <CButton
-  style={{
-    backgroundColor: tipo.estado === 1 ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
-    color: 'white',
-    marginLeft: '10px',
-  }}
-  onClick={() => toggleEstado(tipo)} // Llamar a la función para cambiar el estado de Tipo Persona
-  disabled={loading} // Deshabilitar el botón mientras se está procesando
->
-  {loading ? 'Cambiando...' : tipo.estado === 1 ? 'Activo' : 'Inactivo'} {/* Cambiar el texto según el estado */}
-</CButton>
-
+              style={{
+                backgroundColor: tipoPersona.estado === 1 ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                color: 'white',
+                marginLeft: '10px',
+              }}
+              onClick={() => toggleEstado(tipoPersona)} // Cambia el estado de Tipo Persona
+              disabled={loading} // Deshabilitar mientras se procesa
+            >
+              {loading ? 'Cambiando...' : tipoPersona.estado === 1 ? 'Activo' : 'Inactivo'}
+            </CButton>
           </div>
         </CTableDataCell>
       </CTableRow>
     ))}
   </CTableBody>
 </CTable>
+</div>
 
 
 
 {/*******************************************************************************************************************************/}
-      <nav className="d-flex justify-content-center align-items-center mt-4">
-        <CPagination className="mb-0" style={{ gap: '0.3cm' }}>
-          <CButton
-            style={{ backgroundColor: 'gray', color: 'white', marginRight: '0.3cm' }}
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage(currentPage - 1)}
-          >
-            Anterior
-          </CButton>
-          <CButton
-            style={{ backgroundColor: 'gray', color: 'white' }}
-            disabled={currentPage === pageCount - 1}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Siguiente
-          </CButton>
-        </CPagination>
-        <span className="mx-2">Página {currentPage + 1} de {pageCount}</span>
-      </nav>
-{/*******************************************************************************************************************************/}
+<div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+  <CPagination aria-label="Page navigation">
+    <CButton
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === 1} // Desactiva si es la primera página
+      onClick={() => paginate(currentPage - 1)} // Ir a la página anterior
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(filteredTipoPersona.length / recordsPerPage)} // Desactiva si es la última página
+      onClick={() => paginate(currentPage + 1)} // Ir a la página siguiente
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  <span style={{ marginLeft: '10px' }}>
+    Página {currentPage} de {Math.ceil(filteredTipoPersona.length / recordsPerPage)}
+  </span>
+</div>
 
 {/*******************************************************************************************************************************/}
 
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
-        <CModalHeader closeButton>
-          <CModalTitle>{editar ? 'Editar Tipo de Persona' : 'Agregar Tipo de Persona'}</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <CForm onSubmit={handleModalSubmit}>
-          <CInputGroup className="mb-3">
-  <CInputGroupText>Nombre del Tipo</CInputGroupText>
-  <CFormInput
-    type="text"
-    placeholder="Nombre del tipo"
-    onPaste={disableCopyPaste}
-    onCopy={disableCopyPaste}
-    value={estadoActual.Tipo || ''}
-    onChange={handleTipoChange}
-    required
-  />
-</CInputGroup>
+<CModal visible={modalVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Ingresar Nuevo Tipo de Persona</CModalTitle>
+    <CButton
+      className="btn-close"
+      aria-label="Close"
+      onClick={() => handleCloseModal(setModalVisible, resetNuevoTipoPersona)} // Cambia si tienes una función específica para tipo persona
+    />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Persona</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese un nuevo tipo de persona"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={setNuevoTipoPersona.Tipo_persona} // Actualizado para Tipo_persona
+          onChange={(e) =>
+            handleTipoPersonaInputChange(e, setNuevoTipoPersona) // Adaptado a Tipo Persona
+          }
+          onBlur={isDuplicateTipoPersona} // Adaptado a Tipo Persona
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {tipoPersonaError && (
+        <p style={{ color: 'red', fontSize: '0.9em' }}>{tipoPersonaError}</p> // Usamos tipoPersonaError
+      )}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton
+      color="secondary"
+      onClick={() => handleCloseModal(setModalVisible, resetNuevoTipoPersona)} // Adaptado si tienes una función específica
+    >
+      Cancelar
+    </CButton>
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white' }}
+      onClick={handleCreateTipoPersona} // Cambiado a Tipo Persona
+      disabled={!!tipoPersonaError} // Validación para errores
+    >
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
 
-{/* Mostrar mensaje de error si existe */}
-{errorMensaje && (
-  <div className="text-danger mt-2">
-    {errorMensaje}
-  </div>
-)}
 
 {/*******************************************************************************************************************************/}
-            <CModalFooter>
-              <CButton 
-                style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} 
-                onClick={() => setModalVisible(false)}
-              >
-                Cancelar
-              </CButton>
-              <CButton 
-                style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} 
-                type="submit"
-              >
-                <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
-              </CButton>
-            </CModalFooter>
-            
-          </CForm>
-        </CModalBody>
-      </CModal>
+<CModal visible={modalUpdateVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Actualizar Tipo de Persona</CModalTitle>
+    <CButton
+      className="btn-close"
+      aria-label="Close"
+      onClick={() => handleCloseModal(setModalUpdateVisible, resetTipoPersonaToUpdate)} // Cambiado para Tipo de Persona
+    />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Persona</CInputGroupText> {/* Cambiado para "Tipo Persona" */}
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el tipo de persona" // Ajustado para Tipo Persona
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={tipoPersonaToUpdate.Tipo_persona} // Cambiado para Tipo_persona
+          onChange={(e) =>
+            handleTipoPersonaInputChange(e, setTipoPersonaToUpdate) // Adaptado para Tipo Persona
+          }
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {tipoPersonaError.Tipo_persona && <p style={{ color: 'red' }}>{tipoPersonaError.Tipo_persona}</p>} {/* Ajustado para Tipo_persona */}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton
+      color="secondary"
+      onClick={() =>
+        handleCloseModal(setModalUpdateVisible, resetTipoPersonaToUpdate) // Cambiado para Tipo Persona
+      }
+    >
+      Cancelar
+    </CButton>
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white' }}
+      onClick={handleUpdateTipoPersona} // Cambiado para Tipo Persona
+      disabled={tipoPersonaError.Tipo_persona} // Validación para errores de Tipo Persona
+    >
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
 
 {/*******************************************************************************************************************************/}
+{/* Modal Eliminar Tipo de Persona */}
+<CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+  <CModalHeader>
+    <CModalTitle>Eliminar Tipo de Persona</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    ¿Estás seguro de que deseas eliminar el tipo de persona "{tipoPersonaToDelete.Tipo_persona}"?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton color="danger" onClick={handleDeleteTipoPersona}>
+      Eliminar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+{/*************************************************************************************************************************************/}
     </CContainer>
   );
 };

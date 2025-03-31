@@ -21,12 +21,10 @@ export const obtenerTodoTipoPersona = async (req, res) => {
 export const crearTipoPersona = async (req, res) => {
     const { tipo_persona, estado } = req.body;
 
-    if (!tipo_persona || estado === undefined) {
-        return res.status(400).json({ mensaje: 'Faltan parámetros' });
-    }
-
     try {
+        // Llamada al procedimiento almacenado para crear el tipo de persona
         await pool.query('CALL P_Post_TipoPersona(?, ?)', [tipo_persona, estado]);
+
         res.status(201).json({ mensaje: 'Tipo de persona creado exitosamente' });
     } catch (error) {
         console.error('Error al crear tipo de persona:', error);
@@ -34,19 +32,17 @@ export const crearTipoPersona = async (req, res) => {
     }
 };
 
+
 // Controlador para actualizar un tipo de persona
 export const actualizarTipoPersona = async (req, res) => {
     const { Cod_tipo_persona } = req.params;
-    const { tipo_persona, estado } = req.body;
+    const { Tipo_persona, estado } = req.body;
 
-    if (!tipo_persona || estado === undefined) {
-        return res.status(400).json({ mensaje: 'Faltan parámetros' });
-    }
 
     try {
         await pool.query('CALL P_Put_TipoPersona(?, ?, ?)', [
             Cod_tipo_persona,
-            tipo_persona,
+            Tipo_persona,
             estado
         ]);
         res.status(200).json({ mensaje: 'Tipo de persona actualizado exitosamente' });

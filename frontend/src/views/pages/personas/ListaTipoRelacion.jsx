@@ -3,9 +3,9 @@ import { CIcon } from '@coreui/icons-react';
 import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilInfo, cilDescription} from '@coreui/icons';
 import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 import swal from 'sweetalert2'; // Importar SweetAlert
+import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';       // Para generar archivos PDF
 import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
-import * as XLSX from 'xlsx';        // Para generar archivos Excel
 import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
 import {
   CContainer,
@@ -43,113 +43,104 @@ const ListaTipoRelacion = () => {
   const {canSelect, canUpdate, canDelete, canInsert } = usePermission('ListaRelacion');
 
   const [tipoRelacion, setTipoRelacion] = useState([]);
-  const [errors, setErrors] = useState({ tipo_relacion: ''});
   const [relacionError, setRelacionError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
-  const [nuevaRelacion, setNuevaRelacion] = useState({ tipo_relacion: ''});
+  const [nuevaRelacion, setNuevaRelacion] = useState({ Tipo_relacion: ''});
   const [tipoRelacionToUpdate, setTipoRelacionToUpdate] = useState({});
   const [tipoRelacionToDelete, setTipoRelacionToDelete] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
   const [recordsPerPage, setRecordsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
 
-
-
-  
-  const [tipo_relacion, setTipo_relacion] = useState('');
-    const [loading, setLoading] = useState(false);
-
-
-
-  useEffect(() => {
-    fetchTipoRelacion();
-  }, []);
-
- const fetchTipoRelacion = async () => {
-  try {
-    const response = await fetch(`http://localhost:4000/api/tipoRelacion/verTodoTipoRelacion`);
-    const data = await response.json();
-    console.log('Datos obtenidos:', data); // Agrega este log para depurar
-    const dataWithIndex = data.map((tipoRelacion, index) => ({
-      ...tipoRelacion,
-      originalIndex: index + 1,
-    }));
-    setTipoRelacion(dataWithIndex);
-  } catch (error) {
-    console.error('Error al obtener tipo relacion:', error);
-  }
-};
-
-const handleChange = (event) => {
-  // Convertimos el valor a mayúsculas y lo guardamos en el estado
-  setDescripcion(event.target.value.toUpperCase());
-};
-
-  // Validación de tipo relacion
-  const validateTiporelacion = (relacion) => {
-    const regex = /^[a-zA-Z\s]*$/; // Solo letras y espacios
-    const noMultipleSpaces = !/\s{2,}/.test(relacion); // No permite más de un espacio consecutivo
-    const trimmedRelacion = relacion.trim().replace(/\s+/g, ' ');
-
-    if (!regex.test(trimmedRelacion)) {
-      swal.fire({
-        icon: 'warning',
-        title: 'Relación inválida',
-        text: 'La relación solo puede contener letras y espacios.',
-      });
-      return false;
+{/****************************************************************************************************************************************/}
+  const fetchTipoRelacion = async () => {
+    try {
+      const response = await fetch(`http://localhost:4000/api/tipoRelacion/verTodoTipoRelacion`);
+      const data = await response.json();
+      console.log('Datos obtenidos:', data); // Agrega este log para depurar
+      const dataWithIndex = data.map((tipoRelacion, index) => ({
+        ...tipoRelacion,
+        originalIndex: index + 1,
+      }));
+      setTipoRelacion(dataWithIndex);
+    } catch (error) {
+      console.error('Error al obtener tipo relacion:', error);
     }
-
-    if (!noMultipleSpaces) {
-      swal.fire({
-        icon: 'warning',
-        title: 'Espacios múltiples',
-        text: 'No se permite más de un espacio entre palabras.',
-      });
-      return false;
-    }
-
-    // Validar que ninguna letra se repita más de 4 veces seguidas
-    const words = trimmedRelacion.split(' ');
-    for (let word of words) {
-      const letterCounts = {};
-      for (let letter of word) {
-        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-        if (letterCounts[letter] > 4) {
-          swal.fire({
-            icon: 'warning',
-            title: 'Repetición de letras',
-            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
-          });
-          return false;
-        }
-      }
-    }
-
-    return true;
   };
 
-    // Capitalizar la primera letra de cada palabra
-    const capitalizeWords = (str) => {
-      return str.replace(/\b\w/g, (char) => char.toUpperCase());
-    };
+{/**************************************************************************************************************************************/}
 
-      // Validar que ningún campo esté vacío
-    const validateEmptyFields = () => {
-      const { tipo_relacion} = nuevaRelacion;
-      if (!tipo_relacion) {
+{/***************************************************************************************************************************************/}
+    // Validación de tipo relacion
+    const validateTiporelacion = (relacion) => {
+      const regex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]*$/;
+      const noMultipleSpaces = !/\s{2,}/.test(relacion); // No permite más de un espacio consecutivo
+      const trimmedRelacion = relacion.trim().replace(/\s+/g, ' ');
+
+      if (!regex.test(trimmedRelacion)) {
         swal.fire({
           icon: 'warning',
-          title: 'Campos vacíos',
-          text: 'Todos los campos deben estar llenos para poder crear una relación.',
+          title: 'Relación inválida',
+          text: 'La relación solo puede contener letras y espacios.',
         });
         return false;
       }
+
+      if (!noMultipleSpaces) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Espacios múltiples',
+          text: 'No se permite más de un espacio entre palabras.',
+        });
+        return false;
+      }
+
+      // Validar que ninguna letra se repita más de 4 veces seguidas
+      const words = trimmedRelacion.split(' ');
+      for (let word of words) {
+        const letterCounts = {};
+        for (let letter of word) {
+          letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+          if (letterCounts[letter] > 4) {
+            swal.fire({
+              icon: 'warning',
+              title: 'Repetición de letras',
+              text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+            });
+            return false;
+          }
+        }
+      }
+
       return true;
     };
+
+  {/**********************************************************************************************************************************/}
+// Capitalizar la primera letra de cada palabra
+const capitalizeWords = (str) => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+// Validar que ningún campo esté vacío
+const validateEmptyFields = () => {
+  const { tipo_contacto } = nuevoContacto; // Ajuste al campo tipo_contacto
+  if (!tipo_contacto) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Campos vacíos',
+      text: 'Todos los campos deben estar llenos para poder crear un tipo de contacto.',
+    });
+    return false;
+  }
+  return true;
+};
+
+
+{/************************************************************************************************************************************/}
 
       // Validar si la relacion ya existe
   const isDuplicateRelacion = () => {
@@ -175,6 +166,9 @@ const handleChange = (event) => {
     }
     return false;
   };
+
+  {/***********************************************************************************************************************************/}
+
 
     // Función para controlar la entrada de texto en los campos
     const handleTipoRelacionInputChange = (e, setFunction) => {
@@ -210,6 +204,8 @@ const handleChange = (event) => {
       setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
     };
 
+{/*************************************************************************************************************************************/}
+
       // Deshabilitar copiar y pegar
   const disableCopyPaste = (e) => {
     e.preventDefault();
@@ -219,6 +215,8 @@ const handleChange = (event) => {
       text: 'Copiar y pegar no está permitido.',
     });
   };
+
+{/*************************************************************************************************************************************/}
 
     // Función para cerrar el modal con advertencia si hay cambios sin guardar
     const handleCloseModal = (closeFunction, resetFields) => {
@@ -243,13 +241,16 @@ const handleChange = (event) => {
       }
     };
 
-    const resetNuevaRelacion = () => {
-      setNuevaRelacion({ tipo_relacion: ''});
-    };
-  
-    const resetRelacionToUpdate = () => {
-      setTipoRelacionToUpdate({ tipo_relacion: ''});
-    };
+
+{/***************************************************************************************************************************************/}
+
+      const resetNuevaRelacion = () => {
+        setNuevaRelacion({ tipo_relacion: ''});
+      };
+    
+      const resetRelacionToUpdate = () => {
+        setTipoRelacionToUpdate({ tipo_relacion: ''});
+      };
 
 {/********************************************FUNCION PARA CREAR RELACION**************************************************************/}
 const handleCreateRelacion = async () => {
@@ -258,9 +259,6 @@ const handleCreateRelacion = async () => {
 
   // Validaciones antes de crear
   if (!validateTiporelacion(relacionCapitalizado)) {
-    return;
-  }
-  if (!validateEmptyFields()) {
     return;
   }
 
@@ -277,28 +275,26 @@ const handleCreateRelacion = async () => {
     });
 
     if (response.ok) {
-      // Respuesta esperada
-      const result = await response.json();
-
-      // Verificar que la respuesta tiene la estructura correcta
-      if (result.Cod_tipo_relacion && result.tipo_relacion && result.estado !== undefined) {
-        // Actualiza la lista de tipos de relaciones
-        fetchTipoRelacion();
-        setModalVisible(false); // Cerrar el modal sin advertencia al guardar
-        resetNuevaRelacion(); // Reiniciar el estado de la nueva relación
-        setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
-        swal.fire({
-          icon: 'success',
-          title: 'Creación exitosa',
-          text: `La relación "${result.tipo_relacion}" ha sido creada correctamente.`,
-        });
-      } else {
-        swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: 'La respuesta de la API no contiene los datos esperados.',
-        });
+      let result;
+      try {
+        result = await response.json(); // Intentamos obtener el JSON de la respuesta
+      } catch (error) {
+        console.warn("La API no devolvió JSON, pero la relación fue creada.");
+        result = { tipo_relacion: relacionCapitalizado }; // Asumimos que se creó correctamente
       }
+
+      // Actualiza la lista sin recargar la página
+      fetchTipoRelacion(); 
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevaRelacion(); // Reiniciar el estado de la nueva relación
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+
+      swal.fire({
+        icon: 'success',
+        title: 'Creación exitosa',
+        text: `La relación ha sido creada correctamente.`,
+      });
+
     } else {
       swal.fire({
         icon: 'error',
@@ -315,8 +311,6 @@ const handleCreateRelacion = async () => {
     });
   }
 };
-
-
 
   {/*******************************************FUNCION PARA ACTUALIZAR*********************************************************/}
   const handleUpdateRelacion = async () => {
@@ -395,11 +389,11 @@ const handleCreateRelacion = async () => {
         console.error('Error al eliminar la relación:', error);
       }
     };
-  
+
+{/*************************************************************************************************************************************/}
 
   const openUpdateModal = (tipoRelacion) => {
     setTipoRelacionToUpdate(tipoRelacion);
-    setTipo_relacion(tipoRelacion.tipo_relacion);
     setModalUpdateVisible(true);
   };
 
@@ -410,24 +404,24 @@ const handleCreateRelacion = async () => {
 
 
   {/***********************************************************************************************************************************/}
-  const toggleEstado = async (tipoRelacion) => {
-    const nuevoEstado = tipoRelacion.estado ? 0 : 1;
+  const toggleEstado = async (departamento) => {
+    const nuevoEstado = departamento.estado ? 0 : 1;
   
     try {
       setLoading(true);
   
-      const response = await axios.post('http://localhost:4000/api/tipoRelacion/actualizarEstadoTipoRelacion', {
-        cod_tipo_relacion: tipoRelacion.Cod_tipo_relacion,
+      const response = await axios.post('http://localhost:4000/api/departamentos/actualizarEstadoDepartamento', {
+        cod_departamento: departamento.Cod_departamento,
         estado: nuevoEstado,
       });
   
       if (response.data.mensaje === 'Estado actualizado exitosamente') {
         // Actualizar el estado correctamente
-        setTipoRelacion((prevRelaciones) =>
-          prevRelaciones.map((relacion) =>
-            relacion.Cod_tipo_relacion === tipoRelacion.Cod_tipo_relacion
-              ? { ...relacion, estado: nuevoEstado }
-              : relacion
+        setDepartamentos((prevDepartamentos) =>
+          prevDepartamentos.map((dep) =>
+            dep.Cod_departamento === departamento.Cod_departamento
+              ? { ...dep, estado: nuevoEstado }
+              : dep
           )
         );
       } else {
@@ -440,12 +434,10 @@ const handleCreateRelacion = async () => {
     }
   };
   
-  
-  
-  
 
     {/***********************************************************************************************************************************/}
 
+    
   {/**************************************************FILTRADO Y BUSQUEDA DE DATOS********************************************************/}
 
 /**************************************************BUSCADOR********************************************************/
@@ -506,17 +498,19 @@ const ReporteRelacionesPDF = () => {
     doc.setDrawColor(0, 102, 51);
     doc.line(10, 60, pageWidth - 10, 60);
 
-    // **Usar filteredTipoRelacion en lugar de tipoRelacion**
+    // **Usar filteredTipoRelacion con estado**
     const tableRows = filteredTipoRelacion.map((tipo, index) => ({
       index: (index + 1).toString(),
       tipo_relacion: tipo.tipo_relacion?.toUpperCase() || 'N/D',
+      estado: tipo.estado === 1 ? 'Activo' : 'Inactivo',
     }));
 
     const columnWidths = {
-      index: 20, // Ancho de la columna #
-      tipo_relacion: 100 // Ancho de la columna "Tipo Relación"
+      index: 20,           // Ancho de la columna #
+      tipo_relacion: 70,   // Ancho de la columna "Tipo Relación"
+      estado: 30           // Ancho de la columna "Estado"
     };
-    const tableWidth = columnWidths.index + columnWidths.tipo_relacion;
+    const tableWidth = columnWidths.index + columnWidths.tipo_relacion + columnWidths.estado;
 
     doc.autoTable({
       startY: 65,
@@ -524,21 +518,23 @@ const ReporteRelacionesPDF = () => {
       columns: [
         { header: '#', dataKey: 'index' },
         { header: 'Tipo de Relación', dataKey: 'tipo_relacion' },
+        { header: 'Estado', dataKey: 'estado' },
       ],
       body: tableRows,
       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
-        fontSize: 9, 
+        fontSize: 9,
         halign: 'center',
       },
       styles: {
-        fontSize: 7, 
-        cellPadding: 4, 
+        fontSize: 7,
+        cellPadding: 4,
       },
       columnStyles: {
-        index: { cellWidth: 10 },
-        tipo_relacion: { cellWidth: 90 },
+        index: { cellWidth: columnWidths.index },
+        tipo_relacion: { cellWidth: columnWidths.tipo_relacion },
+        estado: { cellWidth: columnWidths.estado },
       },
       alternateRowStyles: {
         fillColor: [240, 248, 255],
@@ -595,26 +591,67 @@ const ReporteRelacionesPDF = () => {
   };
 };
 
-  const exportToExcel = () => {
-    // Convierte los datos de tipoRelacion a formato de hoja de cálculo
-    // Transforma los datos: convierte nombres de tipo relacion a mayúsculas y solo incluye # y tipo relacion
-    const tipoRelacionConFormato = tipoRelacion.map((tipo, index) => ({
-      '#': index + 1, // Índice personalizado
-      'Tipo Relación': typeof tipo.tipo_relacion === 'string' ? tipo.tipo_relacion.toUpperCase() : tipo.tipo_relacion // Convierte a mayúsculas
-    }));
-  
-    const worksheet = XLSX.utils.json_to_sheet(tipoRelacionConFormato); 
-    const workbook = XLSX.utils.book_new(); // Crea un nuevo libro de trabajo
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tipo Relación'); // Añade la hoja
-    
-    // Genera el archivo Excel en formato binario
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-  
-    // Crea un Blob para descargar el archivo con file-saver
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, 'reporte_relacion.xlsx'); // Descarga el archivo Excel
-  };
-  
+
+{/*********************************************************************************************************************************** */}
+const exportToExcel = () => {
+  if (!filteredTipoRelacion || filteredTipoRelacion.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Tipo Relación');
+
+  // Título del documento
+  worksheet.mergeCells('A1:B1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:B2');
+  worksheet.getCell('A2').value = 'TIPOS DE RELACIÓN';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados de la tabla
+  const headerRow = worksheet.addRow(['#', 'Tipo Relación']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Datos de la tabla (Usamos filteredTipoRelacion en lugar de tipoRelacion)
+  filteredTipoRelacion.forEach((tipo, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      typeof tipo.tipo_relacion === 'string' ? tipo.tipo_relacion.toUpperCase() : tipo.tipo_relacion
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // Ajustar el ancho de las columnas
+  worksheet.columns.forEach((column) => {
+    column.width = 20;
+  });
+
+  // Crear archivo Excel
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_TipoRelacion.xlsx');
+  });
+};
+
+  {/***********************************************************************************************************************************/}
     
     // Verificar permisos
     if (!canSelect) {
@@ -719,12 +756,13 @@ const ReporteRelacionesPDF = () => {
      </CCol>
     </CRow>
 
+{/*************************************************************************************************************************************/}
       <div  style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px', }}>
       <CTable striped>
   <CTableHead>
     <CTableRow>
       <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
-      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
+      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Relación</CTableHeaderCell>
       <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
     </CTableRow>
   </CTableHead>
@@ -772,11 +810,9 @@ const ReporteRelacionesPDF = () => {
     ))}
   </CTableBody>
 </CTable>
-
-
-
       </div>
 
+{/*************************************************************************************************************************************/}
                 {/* Paginación Fija */}
     <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
       <CPagination aria-label="Page navigation">
@@ -816,8 +852,8 @@ const ReporteRelacionesPDF = () => {
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
-          value={nuevaRelacion.tipo_relacion}
-          onChange={(e) => handleTipoRelacionInputChange(e, setNuevaRelacion, handleChange, setRelacionError)}
+          value={nuevaRelacion.Tipo_relacion}
+          onChange={(e) => handleTipoRelacionInputChange(e, setNuevaRelacion, setRelacionError)}
           onBlur={isDuplicateRelacion}
           style={{ textTransform: 'uppercase' }}
         />
@@ -837,7 +873,7 @@ const ReporteRelacionesPDF = () => {
   </CModalFooter>
 </CModal>
 
-{/** /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/}
+{/**************************************************************************************************************************************/}
 <CModal visible={modalUpdateVisible} backdrop="static">
   <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Tipo Relación</CModalTitle>
@@ -854,25 +890,25 @@ const ReporteRelacionesPDF = () => {
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={tipoRelacionToUpdate.tipo_relacion}
-          onChange={(e) => handleTipoRelacionInputChange(e, setTipoRelacionToUpdate, handleChange)}
+          onChange={(e) => handleTipoRelacionInputChange(e, setTipoRelacionToUpdate)}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
-      {errors.tipo_relacion && <p style={{ color: 'red' }}>{errors.tipo_relacion}</p>}
+      {relacionError.tipo_relacion && <p style={{ color: 'red' }}>{relacionError.tipo_relacion}</p>}
     </CForm>
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)}>
       Cancelar
     </CButton>
-    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateRelacion} disabled={errors.tipo_relacion}>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateRelacion} disabled={relacionError.tipo_relacion}>
       <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
     </CButton>
   </CModalFooter>
 </CModal>
 
 
-
+{/**************************************************************************************************************************************/}
       {/* Modal Eliminar Relacion*/}
       <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
         <CModalHeader>
@@ -890,6 +926,7 @@ const ReporteRelacionesPDF = () => {
           </CButton>
         </CModalFooter>
       </CModal>
+{/**************************************************************************************************************************************/}
     </CContainer>
   )
 };

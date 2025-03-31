@@ -1,36 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilFile  } from '@coreui/icons';
-import CIcon from '@coreui/icons-react';
-import { jsPDF } from 'jspdf';
+import { CIcon } from '@coreui/icons-react';
+import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilInfo, cilDescription} from '@coreui/icons';
 import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
-
-import 'jspdf-autotable';
-
+import swal from 'sweetalert2'; // Importar SweetAlert
+import ExcelJS from 'exceljs';
+import { jsPDF } from 'jspdf';       // Para generar archivos PDF
+import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
+import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
 import {
-  CButton,
   CContainer,
-  CForm,
-  CFormInput,
   CInputGroup,
   CInputGroupText,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
-  CPagination,
+  CFormInput,
+  CButton,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
-  CRow,
-  
-  CFormSelect ,
-  CCol,
   CTableDataCell,
-  CSpinner,
+  CPagination,
+  CModal,
+  CModalBody,
+  CModalFooter,
+  CModalHeader,
+  CModalTitle,
+  CForm,
+  CFormLabel,
+  CFormSelect,
+  CRow,
+  CCol,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem
 } from '@coreui/react';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
@@ -39,367 +42,497 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 const DepartamentoMantenimiento = () => {
   const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('departamento');
 
-  const [departamentos, setDepartamentos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredDepartamentos, setFilteredDepartamentos] = useState([]);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [editar, setEditar] = useState(false);
-  const [departamentoActual, setDepartamentoActual] = useState({ codDepartamento: null, nombreDepartamento: '' });
+  const [departamentos, setDepartamentos] = useState([]); // Lista de departamentos
+  const [departamentoError, setDepartamentoError] = useState(''); // Estado para errores
+  const [modalVisible, setModalVisible] = useState(false); // Modal para nuevo departamento
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Modal de edición
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Modal de eliminación
+  const [nuevoDepartamento, setNuevoDepartamento] = useState({ Nombre_departamento: '' }); // Nuevo departamento
+  const [departamentoToUpdate, setDepartamentoToUpdate] = useState({}); // Departamento a actualizar
+  const [departamentoToDelete, setDepartamentoToDelete] = useState({}); // Departamento a eliminar
+  const [searchTerm, setSearchTerm] = useState(''); // Término de búsqueda
+  const [currentPage, setCurrentPage] = useState(1); // Página actual para paginación
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Detectar cambios sin guardar
+  const [recordsPerPage, setRecordsPerPage] = useState(10); // Registros por página
+  const [loading, setLoading] = useState(false); // Cargando
+  
   
 
 
 
 
-  const obtenerDepartamentos = async () => {
+  const fetchDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamentos/verTodoDepartamento');
+      const response = await fetch(`http://localhost:4000/api/departamentos/verTodoDepartamento`);
       const data = await response.json();
-      if (response.ok) {
-        // Convertir todos los nombres de los departamentos a mayúsculas
-        const departamentosConMayusculas = data.map(departamento => ({
-          ...departamento,
-          Nombre_departamento: departamento.Nombre_departamento.toUpperCase(),
-        }));
+      console.log('Datos obtenidos:', data); // Agrega este log para depurar
   
+      const dataWithIndex = data.map((departamentos, index) => ({
+        ...departamentos,
+        originalIndex: index + 1, // Índice basado en el orden de obtención
+      }));
   
-        // No ordenar los departamentos, mantener el orden de creación
-        setDepartamentos(departamentosUnicos);
-        setFilteredDepartamentos(departamentosUnicos);
-      } else {
-        throw new Error(data.message || 'Error al obtener los departamentos');
-      }
+      setDepartamentos(dataWithIndex); // Actualiza el estado principal
     } catch (error) {
-      setError(error.message);
-      Swal.fire('Error', error.message, 'error');
-    } finally {
-      setLoading(false);
+      console.error('Error al obtener departamentos:', error);
     }
   };
   
-  const limpiarErrores = () => {
-    setErrorMensaje('');  // Limpia el estado del mensaje de error en el UI
-  };
-
-
 
 {/*********************************************************************************************************************************** */}
-  const crearDepartamento = async () => {
-    limpiarErrores();
-    const { nombreDepartamento } = departamentoActual;
-  
- 
-    // Validar si el departamento ya existe en la tabla
-    const departamentoExistente = departamentos.find(departamento => departamento.Nombre_departamento.toLowerCase() === NombreDepartamento.toLowerCase());
+const validateDepartamento = (departamento) => {
+  const regex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]*$/; // Solo permite letras y espacios
+  const noMultipleSpaces = !/\s{2,}/.test(departamento); // No permite más de un espacio consecutivo
+  const trimmedDepartamento = departamento.trim().replace(/\s+/g, ' '); // Elimina espacios innecesarios
 
-    if (departamentoExistente) {
-      // Si el departamento ya existe, muestra el error y detiene la ejecución
-      setErrorMensaje('Ya existe un Departamento con ese nombre.');
-      setTimeout(() => setErrorMensaje(''), 5000); // Eliminar mensaje después de 5 segundos
-      return nombreDepartamento.slice(0, nombreDepartamento.length - 1); // Elimina el último carácter inválido
-    } else {
-      // Si no existe un departamento con el mismo nombre, resetea cualquier mensaje de error
-      setErrorMensaje('');
-    }
-  
-    // Aquí iría el código para crear el departamento si pasa las validaciones
-    try {
-      // Simulación de llamada a la API o proceso de creación
-      Swal.fire('Éxito', 'Departamento creado exitosamente', 'success');
-    } catch (error) {
-      Swal.fire('Error', 'Ocurrió un problema al crear el departamento', 'error');
-    }
-  
-    try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamentos', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre_departamento: nombreDepartamento }),
-      });
-  
-      if (response.ok) {
-        Swal.fire('Éxito', 'Departamento creado exitosamente', 'success');
-        obtenerDepartamentos();
-      } else {
-        const result = await response.json();
-        throw new Error(result.message || 'Error al crear el departamento');
-      }
-    } catch (error) {
-      Swal.fire('Error', error.message, 'error');
-    } finally {
-      setModalVisible(false);
-    }
-  
-  };
- 
-  
-  const actualizarDepartamento = async () => {
-    limpiarErrores();
-    const { codDepartamento, nombreDepartamento } = departamentoActual;
-    if (!nombreDepartamento) {
-      Swal.fire('Error', 'El nombre del departamento es requerido', 'error');
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://localhost:4000/api/departamento/departamentos/${codDepartamento}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre_departamento: nombreDepartamento }),
-      });
-
-      if (response.ok) {
-        Swal.fire('Éxito', 'Departamento actualizado exitosamente', 'success');
-        obtenerDepartamentos();
-      } else {
-        const result = await response.json();
-        throw new Error(result.message || 'Error al actualizar el departamento');
-      }
-    } catch (error) {
-      Swal.fire('Error', error.message, 'error');
-    } finally {
-      setModalVisible(false);
-    }
-  };
-
-  const eliminarDepartamento = async (codDepartamento) => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/departamento/departamentos/${codDepartamento}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        Swal.fire('Éxito', 'Departamento eliminado correctamente', 'success');
-        obtenerDepartamentos();
-      } else {
-        throw new Error('Error al eliminar el departamento');
-      }
-    } catch (error) {
-      Swal.fire('Error', error.message, 'error');
-    }
-  };
-
-  const confirmDelete = (codDepartamento) => {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: 'No podrás revertir esta acción',
+  // Validar que solo contenga letras y espacios
+  if (!regex.test(trimmedDepartamento)) {
+    swal.fire({
       icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Eliminar',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        eliminarDepartamento(codDepartamento);
-      }
+      title: 'Departamento inválido',
+      text: 'El nombre del departamento solo puede contener letras y espacios.',
     });
-  };
-
-  const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase();
-    setSearchTerm(value);
-    const filtered = departamentos.filter((departamento) =>
-      departamento.nombre_departamento.toLowerCase().includes(value)
-    );
-    setFilteredDepartamentos(filtered);
-    setCurrentPage(0);
-  };
-
-  const handleAddModal = () => {
-    setDepartamentoActual({ codDepartamento: null, nombreDepartamento: '' });
-    setEditar(false);
-    setModalVisible(true);
-  };
-
-  const handleEditModal = (departamento) => {
-    setDepartamentoActual({
-      codDepartamento: departamento.cod_departamento,
-      nombreDepartamento: departamento.nombre_departamento,
-    });
-    setEditar(true);
-    setModalVisible(true);
-  };
-// Bloquear copiar y pegar en campos
-const disableCopyPaste = (e) => {
-  e.preventDefault();
-
-  setErrorMensaje('Copiar y pegar no está permitido.');
-  setTimeout(() => setErrorMensaje(''), 5000); // Eliminar mensaje después de 5 segundos
-};
-  const [errorMensaje, setErrorMensaje] = useState(''); // Estado para el mensaje de error
-
-  // Función para verificar letras consecutivas repetidas
-  const tieneLetrasRepetidas = (texto) => {
-    const regex = /(.)\1\1/;
-    return regex.test(texto); // Verifica letras consecutivas repetidas
-  };
-  
-  const permitirCaracteresValidos = (texto) => {
-    const regex = /^[a-zA-Z0-9\s]*$/; // Permite letras, números y espacios
-    return regex.test(texto); // Solo permite caracteres válidos
-  };
-  
-    const tieneEspaciosConsecutivos = (texto) => {
-    const regex = /\s{3,}/; // Busca más de dos espacios consecutivos
-    return regex.test(texto);
-  };
-   
-  
-  const contieneNumeros = (texto) => {
-    const regex = /\d/; // Busca cualquier número
-    return regex.test(texto); // Devuelve true si contiene números
-  };
-  
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    const upperCaseValue = value.toUpperCase(); // Convierte el texto a mayúsculas
-  
-    // Limpiar el mensaje de error cada vez que el valor cambia
-    setErrorMensaje('');
-  
-    // Si el campo está vacío, no se deben aplicar validaciones
-    if (upperCaseValue.trim() === '') {
-      // Si el campo está vacío, solo actualizamos el valor sin hacer ninguna validación
-      setDepartamentoActual((prev) => ({ ...prev, [name]: upperCaseValue }));
-      return;
-    }
-      // Verifica si hay más de dos espacios consecutivos
-  if (tieneEspaciosConsecutivos(upperCaseValue)) {
-    setErrorMensaje('No se permiten más de 2 espacios consecutivos');
-    setTimeout(() => setErrorMensaje(''), 5000); // Borra el mensaje después de 5 segundos
-    return; // No actualiza el estado si hay más de dos espacios consecutivos
+    return false;
   }
-    // Verifica si el texto contiene tres letras consecutivas iguales
-    if (tieneLetrasRepetidas(upperCaseValue)) {
-      setErrorMensaje('No se permiten mas de 2 letras consecutivas iguales');
-      setTimeout(() => setErrorMensaje(''), 5000);
-      return; // No actualiza el estado si hay letras repetidas
-    }
-  
-  
-    if (!permitirCaracteresValidos(upperCaseValue)) {
-      setErrorMensaje('No se permiten caracteres especiales');
-      setTimeout(() => setErrorMensaje(''), 5000); // Después de 5 segundos, se borra el mensaje
-      return; // Detiene la ejecución si hay caracteres no permitidos
-    }
-    
-    // Verifica si el texto contiene números
-    if (contieneNumeros(upperCaseValue)) {
-      setErrorMensaje('No se permiten números.');
-      setTimeout(() => setErrorMensaje(''), 5000);
-      return; // No actualiza el estado si hay números
-    }
-    
-   
-    // Si no hay errores, limpia el mensaje de error y actualiza el estado
-    setDepartamentoActual((prev) => ({ ...prev, [name]: upperCaseValue }));
-  };
 
- 
+  // Validar que no tenga espacios múltiples
+  if (!noMultipleSpaces) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Espacios múltiples',
+      text: 'No se permite más de un espacio entre palabras.',
+    });
+    return false;
+  }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editar) {
-      actualizarDepartamento();
+  // Validar que ninguna letra se repita más de 4 veces seguidas
+  const words = trimmedDepartamento.split(' ');
+  for (let word of words) {
+    const letterCounts = {};
+    for (let letter of word) {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+      if (letterCounts[letter] > 4) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Repetición de letras',
+          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+        });
+        return false;
+      }
+    }
+  }
+
+  return true; // Validación exitosa
+};
+
+{/***************************************************************************************************************************************/}
+
+// Capitalizar la primera letra de cada palabra
+const capitalizeWords = (str) => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+// Validar que ningún campo esté vacío
+const validateEmptyFields = () => {
+  const { Nombre_departamento } = nuevoDepartamento; // Ajuste para departamentos
+  if (!Nombre_departamento) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Campos vacíos',
+      text: 'Todos los campos deben estar llenos para poder crear un departamento.',
+    });
+    return false;
+  }
+  return true;
+};
+
+
+{/****************************************************************************************************************************************/}
+
+// Validar si el departamento ya existe
+const isDuplicateDepartamento = () => {
+  const { Nombre_departamento } = nuevoDepartamento;
+  const existingDepartamento = departamentos.find(
+    (departamento) =>
+      departamento.Nombre_departamento.toLowerCase() === Nombre_departamento.toLowerCase()
+  );
+
+  if (existingDepartamento) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Departamento duplicado',
+      text: 'Ya existe un departamento con el mismo nombre.',
+    });
+
+    if (existingDepartamento) {
+      setDepartamentoError('Ya existe un departamento con el mismo nombre');
     } else {
-      crearDepartamento();
+      setDepartamentoError(''); // No hay error
     }
-  };
-  
+    return true; // Indica que el departamento ya existe
+  }
+  return false; // No hay duplicado
+};
 
-// Función para generar el reporte de departamentos
-const generatePDFDepartments = () => {
-  const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4',
-  });
+{/***************************************************************************************************************************************/}
+
+const handleDepartamentoInputChange = (e, setFunction) => {
+  let value = e.target.value;
+
+  // No permitir más de un espacio consecutivo
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // No permitir que una letra se repita más de 4 veces consecutivamente
+  const wordArray = value.split(' ');
+  const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
+
+  if (!isValid) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+    });
+    return;
+  }
+
+  if (value.length <= 2) {
+    setDepartamentoError('El nombre del departamento debe tener más de 2 letras.');
+  } else {
+    setDepartamentoError(''); // No hay error
+  }
+
+  setFunction((prevState) => ({
+    ...prevState,
+    Nombre_departamento: value,
+  }));
+
+  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+};
+
+{/**************************************************************************************************************************************/}
+
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
+  };
+
+{/****************************************************************************************************************************************/}
+
+    const handleCloseModal = (closeFunction, resetFields) => {
+      if (hasUnsavedChanges) {
+        swal.fire({
+          title: '¿Estás seguro?',
+          text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cerrar',
+          cancelButtonText: 'Cancelar',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            closeFunction(false);
+            resetFields(); // Limpiar los campos al cerrar
+            setHasUnsavedChanges(false); // Resetear cambios no guardados
+          }
+        });
+      } else {
+        closeFunction(false);
+        resetFields();
+      }
+    };
+
+    const resetNuevoDepartamento = () => {
+      setNuevoDepartamento({ Nombre_departamento: '' });
+    };
+    
+    const resetDepartamentoToUpdate = () => {
+      setDepartamentoToUpdate({ Nombre_departamento: '' });
+    };
+    
+
+{/***************************************************************************************************************************************/}
+
+const handleCreateDepartamento = async () => {
+  // Validar el nombre del departamento antes de enviarlo
+  const departamentoCapitalizado = capitalizeWords(
+    nuevoDepartamento.Nombre_departamento.trim().replace(/\s+/g, ' ')
+  );
+
+  // Validaciones antes de crear
+  if (!validateDepartamento(departamentoCapitalizado)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:4000/api/departamentos/crearDepartamento`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Nombre_departamento: departamentoCapitalizado, // Usamos el nombre del departamento validado
+        estado: 1, // Departamento activo por defecto
+      }),
+    });
+
+    if (response.ok) {
+      let result;
+      try {
+        result = await response.json(); // Intentamos obtener el JSON de la respuesta
+      } catch (error) {
+        console.warn("La API no devolvió JSON, pero el departamento fue creado.");
+        result = { Nombre_departamento: departamentoCapitalizado }; // Asumimos que se creó correctamente
+      }
+
+      // Actualiza la lista sin recargar la página
+      fetchDepartamentos();
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevoDepartamento(); // Reiniciar el estado del nuevo departamento
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+
+      swal.fire({
+        icon: 'success',
+        title: 'Creación exitosa',
+        text: `El departamento ha sido creado correctamente.`,
+      });
+
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo crear el departamento.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al crear el departamento:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar crear el departamento.',
+    });
+  }
+};
+
+{/***************************************************************************************************************************************/}
+
+const handleUpdateDepartamento = async () => {
+  const departamentoCapitalizado = capitalizeWords(
+    departamentoToUpdate.Nombre_departamento.trim().replace(/\s+/g, ' ')
+  );
+
+  if (!validateDepartamento(departamentoCapitalizado)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/departamentos/actualizarDepartamento/${departamentoToUpdate.Cod_departamento}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Cod_departamento: departamentoToUpdate.Cod_departamento,
+          Nombre_departamento: departamentoCapitalizado,
+          estado: departamentoToUpdate.estado, // Mantener el estado o modificarlo
+        }),
+      }
+    );
+
+    if (response.ok) {
+      fetchDepartamentos(); // Actualiza la lista sin recargar la página
+      setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetDepartamentoToUpdate(); // Reiniciar el estado del departamento a actualizar
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+      swal.fire({
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: 'El departamento ha sido actualizado correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar el departamento.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al actualizar el departamento:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar actualizar el departamento.',
+    });
+  }
+};
+
+{/**************************************************************************************************************************************/}
+
+const handleDeleteDepartamento = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/departamentos/eliminarDepartamento/${encodeURIComponent(departamentoToDelete.Cod_departamento)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.ok) {
+      fetchDepartamentos(); // Actualiza la lista sin recargar la página
+      setModalDeleteVisible(false); // Cierra el modal
+      setDepartamentoToDelete({}); // Reinicia el estado del departamento a eliminar
+      swal.fire({
+        icon: 'success',
+        title: 'Eliminación exitosa',
+        text: 'El departamento ha sido eliminado correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo eliminar el departamento.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al eliminar el departamento:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar eliminar el departamento.',
+    });
+  }
+};
+
+{/***************************************************************************************************************************************/}
+
+const openUpdateModal = (departamento) => {
+  setDepartamentoToUpdate(departamento);
+  setModalUpdateVisible(true);
+};
+
+const openDeleteModal = (departamento) => {
+  setDepartamentoToDelete(departamento);
+  setModalDeleteVisible(true);
+};
+
+{/**************************************************************************************************************************************/}
+
+// Manejar la búsqueda
+const handleSearch = (event) => {
+  setSearchTerm(event.target.value); // Actualizar el término de búsqueda
+  setCurrentPage(1); // Reiniciar la paginación a la primera página
+};
+
+// Filtrar departamentos según el término de búsqueda
+const filteredDepartamentos = departamentos.filter((departamento) => 
+  departamento.Nombre_departamento &&
+  departamento.Nombre_departamento.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+// Calcular los índices para la paginación
+const indexOfLastRecord = currentPage * recordsPerPage;
+const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+
+// Obtener los registros actuales que se mostrarán en la página actual
+const currentRecords = filteredDepartamentos.slice(indexOfFirstRecord, indexOfLastRecord);
+
+// Cambiar de página en la paginación
+const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredDepartamentos.length / recordsPerPage)) {
+    setCurrentPage(pageNumber); // Cambiar a la página seleccionada
+  }
+};
+
+
+{/********************************************************************************************************************************/}
+
+const ReporteDepartamentosPDF = () => {
+  const doc = new jsPDF('p', 'mm', 'letter'); 
+  
+  if (!filteredDepartamentos || filteredDepartamentos.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
 
   const img = new Image();
-  img.src = logo; // Ruta válida del logo
+  img.src = logo;
 
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
-    const pageHeight = doc.internal.pageSize.height;
 
-    // Logo
+    // Encabezado
     doc.addImage(img, 'PNG', 10, 10, 45, 45);
-
-    // Encabezado principal
     doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51); // Verde
+    doc.setTextColor(0, 102, 51);
     doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
 
-    // Información de contacto
     doc.setFontSize(10);
-    doc.setTextColor(100); // Gris
+    doc.setTextColor(100);
     doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
     doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
     doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
 
-    // Título del reporte
+    // Subtítulo
     doc.setFontSize(14);
-    doc.setTextColor(0, 102, 51); // Verde
+    doc.setTextColor(0, 102, 51);
     doc.text('Reporte de Departamentos', pageWidth / 2, 50, { align: 'center' });
 
-    // Línea divisoria
     doc.setLineWidth(0.5);
-    doc.setDrawColor(0, 102, 51); // Verde
-    doc.line(10, 55, pageWidth - 10, 55);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
 
-    // Subtítulo
-    doc.setFontSize(12);
-    doc.setTextColor(0);
-    doc.text('Listado de Departamentos', pageWidth / 2, 65, { align: 'center' });
+    // **Usar filteredDepartamentos en lugar de tipoRelacion**
+    const tableRows = filteredDepartamentos.map((departamento, index) => ({
+      index: (index + 1).toString(),
+      Nombre_departamento: departamento.Nombre_departamento?.toUpperCase() || 'N/D',
+    }));
 
-    // Tabla de datos
-    const tableColumn = [
-      '#',
-      'Departamento',
-     
-    ];
-    const tableRows = departamentos.map((departamento, index) => [
-      { content: (index + 1).toString(), styles: { halign: 'center' } }, // Centrado
-      { content: (departamento.nombre_departamento || 'Sin nombre').toUpperCase(), styles: { halign: 'left' } }, // Centrado
-      
-    ]);
+    const columnWidths = {
+      index: 20, // Ancho de la columna #
+      Nombre_departamento: 100, // Ancho de la columna "Nombre Departamento"
+    };
+    const tableWidth = columnWidths.index + columnWidths.Nombre_departamento;
 
     doc.autoTable({
-      startY: 75,
-      head: [tableColumn],
+      startY: 65,
+      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrado de la tabla
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Nombre del Departamento', dataKey: 'Nombre_departamento' },
+      ],
       body: tableRows,
       headStyles: {
-        fillColor: [0, 102, 51], // Verde
-        textColor: [255, 255, 255], // Blanco
-        fontSize: 10,
-        halign: 'center', // Centrado por defecto
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9, 
+        halign: 'center',
       },
       styles: {
-        fontSize: 10,
-        cellPadding: 3,
-      },
-      alternateRowStyles: {
-        fillColor: [240, 248, 255], // Azul claro
+        fontSize: 7, 
+        cellPadding: 4, 
       },
       columnStyles: {
-        1: { halign: 'center' }, // Nombre de departamento centrado
+        index: { cellWidth: 10 },
+        Nombre_departamento: { cellWidth: 90 },
       },
-      margin: { top: 10, bottom: 30 },
-      didDrawPage: function (data) {
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+      didDrawPage: (data) => {
         const pageCount = doc.internal.getNumberOfPages();
         const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
 
-        // Pie de página
+        const footerY = doc.internal.pageSize.height - 10;
         doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51); // Verde
-        doc.text(
-          `Página ${pageCurrent} de ${pageCount}`,
-          pageWidth - 10,
-          pageHeight - 10,
-          { align: 'right' }
-        );
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
 
         const now = new Date();
         const dateString = now.toLocaleDateString('es-HN', {
@@ -412,70 +545,103 @@ const generatePDFDepartments = () => {
           minute: '2-digit',
           second: '2-digit',
         });
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
       },
     });
 
-    // Convertir PDF en Blob
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
 
-    // Crear una nueva ventana con visor personalizado
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
         <head><title>Reporte de Departamentos</title></head>
         <body style="margin:0;">
           <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:200px;">
+          <div style="position:fixed;top:10px;right:20px;">
             <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_de_Departamentos.pdf'; a.click();">
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Departamentos.pdf'; a.click();">
               Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
             </button>
           </div>
         </body>
       </html>`);
   };
+
   img.onerror = () => {
-    swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    alert('No se pudo cargar el logo.');
   };
 };
 
-  useEffect(() => {
-    obtenerDepartamentos();
-  }, []);
+{/***************************************************************************************************************************************/}
 
-  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredDepartamentos.slice(indexOfFirstItem, indexOfLastItem);
-  if (loading) {
-    return (
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol xs={12} md={6}>
-            <CSpinner color="primary" />
-            <p>Cargando departamentos...</p>
-          </CCol>
-        </CRow>
-      </CContainer>
-    );
+const exportDepartamentosToExcel = () => {
+  if (!filteredDepartamentos || filteredDepartamentos.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
   }
 
-  if (error) {
-    return (
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol xs={12} md={6}>
-            <p>Error: {error}</p>
-          </CCol>
-        </CRow>
-      </CContainer>
-    );
-  }
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Departamentos');
 
-  const pageCount = Math.ceil(filteredDepartamentos.length / itemsPerPage);
+  // Título del documento
+  worksheet.mergeCells('A1:B1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:B2');
+  worksheet.getCell('A2').value = 'LISTA DE DEPARTAMENTOS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados de la tabla
+  const headerRow = worksheet.addRow(['#', 'Nombre del Departamento']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Datos de la tabla (Usamos filteredDepartamentos en lugar de tipoRelacion)
+  filteredDepartamentos.forEach((departamento, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      typeof departamento.Nombre_departamento === 'string'
+        ? departamento.Nombre_departamento.toUpperCase()
+        : departamento.Nombre_departamento,
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // Ajustar el ancho de las columnas
+  worksheet.columns.forEach((column) => {
+    column.width = 20;
+  });
+
+  // Crear archivo Excel
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_Departamentos.xlsx');
+  });
+};
 
 
+
+{/**************************************************************************************************************************************/}
     // Verificar permisos
  if (!canSelect) {
   return <AccessDenied />;
@@ -483,175 +649,278 @@ const generatePDFDepartments = () => {
 
   return (
     <CContainer>
-      <CRow className="justify-content-between align-items-center mb-3 sticky-header">
-        <CCol xs={12} md={8}>
-          <h3>Mantenimiento de Departamentos</h3>
-        </CCol>
-        <CCol xs="4" md="3" className="text-end">
-          {canInsert && ( 
-          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
-            <CIcon icon={cilPlus} /> Nuevo
-          </CButton>
-          )}
-          <CButton color="primary" onClick={generatePDFDepartments} style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
-            <CIcon icon={cilFile} /> Generar Reporte
-          </CButton>
-        </CCol>
-      </CRow>
+{/* Contenedor del h1 y botón "Nuevo" */}
+<CRow className="align-items-center mb-5">
+  <CCol xs="8" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Mantenimiento de Departamentos</h1>
+  </CCol>
+  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+    {/* Botón Nuevo para abrir el modal */}
 
-      <CRow className="align-items-center my-3 sticky-header">
-        <CCol md={5}>
-          <CInputGroup size="sm">
-            <CInputGroupText>
-              <CIcon icon={cilSearch} />
-            </CInputGroupText>
-            <CFormInput placeholder="Buscar departamento" value={searchTerm} onChange={handleSearch} />
-          </CInputGroup>
-        </CCol>
-        <CCol xs="12" md="7" className="text-md-end mt-2 mt-md-0">
-          <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
-            <div className="d-inline-flex align-items-center">
-              <span>Mostrar&nbsp;</span>
-              <CFormSelect
-                style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(0);
-                }}
-                value={itemsPerPage}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-              </CFormSelect>
-              <span>&nbsp;registros</span>
-            </div>
-          </CInputGroup>
-        </CCol>
-      </CRow>
-
-      <div className="table-container">
-      <CTable striped bordered hover>
-  <CTableHead>
-    <CTableRow>
-      <CTableHeaderCell>#</CTableHeaderCell>
-      <CTableHeaderCell>Nombre del Departamento</CTableHeaderCell>
-      <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
-    </CTableRow>
-  </CTableHead>
-  <CTableBody>
-    {currentItems.map((departamento, index) => (
-      <CTableRow key={departamento.cod_departamento}>
-        <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
-        <CTableDataCell>{departamento.Nombre_departamento.toUpperCase()}</CTableDataCell>
-        <CTableDataCell className="text-end">
-          
-          {canUpdate && (
-            <CButton
-              color="warning"
-              size="sm"
-              style={{ opacity: 0.8 }}
-              onClick={() => handleEditModal(departamento)}
-            >
-              <CIcon icon={cilPen} />
-            </CButton>
-          )}{' '}
-
-          {/* Solo mostrar el botón de eliminar si el índice es 18 o mayor */}
-          {canDelete && index + 1 + currentPage * itemsPerPage >= 19 && (
-            <CButton
-              color="danger"
-              size="sm"
-              style={{ opacity: 0.8 }}
-              onClick={() => confirmDelete(departamento.cod_departamento)}
-            >
-              <CIcon icon={cilTrash} />
-            </CButton>
-          )}
-        </CTableDataCell>
-      </CTableRow>
-    ))}
-  </CTableBody>
-</CTable>
-
-
-      </div>
-
-      <nav className="d-flex justify-content-center align-items-center mt-4">
-        <CPagination className="mb-0" style={{ gap: '0.3cm' }}>
-          <CButton
-            style={{ backgroundColor: 'gray', color: 'white', marginRight: '0.3cm' }}
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage(currentPage - 1)}
-          >
-            Anterior
-          </CButton>
-          <CButton
-            style={{ backgroundColor: 'gray', color: 'white' }}
-            disabled={currentPage === pageCount - 1}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Siguiente
-          </CButton>
-        </CPagination>
-        <span className="mx-2">Página {currentPage + 1} de {pageCount}</span>
-      </nav>
-
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
-        <CModalHeader closeButton>
-          <CModalTitle>{editar ? 'Editar Departamento' : 'Agregar Departamento'}</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-        <CForm onSubmit={handleSubmit}>
-  <CInputGroup className="mb-3">
-    <CInputGroupText>Nombre del Departamento</CInputGroupText>
-    <CFormInput
-      type="text"
-      name="nombreDepartamento"
-      onPaste={disableCopyPaste}
-      onCopy={disableCopyPaste}
-      placeholder="Nombre del departamento"
-      value={departamentoActual.nombreDepartamento}
-      onChange={handleInputChange}
-      required
-    />
-  </CInputGroup>
-
-  {/* Mostrar el mensaje de error debajo del input si existe */}
-  {errorMensaje && (
-    <div 
-      style={{
-        color: 'red',
-        fontSize: '14px',
-        marginTop: '8px',  // Aumenté el margen para asegurar que esté debajo del input
-        marginLeft: '5px', // Alinea el mensaje con el texto de entrada
-        display: 'block', // Asegura que ocupe toda la línea debajo del input
-      }}
+    {canInsert && (
+    <CButton 
+      style={{ backgroundColor: '#4B6251', color: 'white' }} 
+      className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+      onClick={() => setModalVisible(true)}
     >
-      {errorMensaje}
-    </div>
-  )}
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
+    )}
 
+    {/* Botón de Reporte */}
+    <CDropdown>
+      <CDropdownToggle
+        style={{ backgroundColor: '#6C8E58', color: 'white' }}
+      >
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportDepartamentosToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReporteDepartamentosPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
+
+{/* Contenedor de la barra de búsqueda y el selector dinámico */}
+<CRow className="align-items-center mt-4 mb-2">
+  {/* Barra de búsqueda  */}
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar departamento..."
+        onChange={handleSearch}
+        value={searchTerm}
+      />
+      <CButton
+        style={{border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out', // Duración de la transición
+          backgroundColor: '#F3F4F7', // Color por defecto
+          color: '#343a40' // Color de texto por defecto
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
+          e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
+          e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+   </CCol>
+
+  {/* Selector dinámico a la par de la barra de búsqueda */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span>Mostrar&nbsp;</span>
+          <CFormSelect
+            style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+            onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+          }}
+            value={recordsPerPage}
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="20">20</option>
+          </CFormSelect>
+        <span>&nbsp;registros</span>
+      </div>       
+   </CInputGroup>
+ </CCol>
+</CRow>
+
+
+
+
+<div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Nombre del Departamento</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+
+    <CTableBody>
+      {currentRecords.map((departamento) => (
+        <CTableRow key={departamento.Cod_departamento}>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{departamento.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{departamento.Nombre_departamento.toUpperCase()}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(departamento)}
+                  style={{ marginRight: '10px' }}
+                  disabled={departamento.estado === 0} // Deshabilitado si está inactivo
+                  title={departamento.estado ? 'Editar departamento' : 'Departamento inactivo'}
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
+
+              {canDelete && (
+                <CButton color="danger" onClick={() => openDeleteModal(departamento)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+
+              {/* Botón de Activar/Inactivar */}
+              <CButton
+                style={{
+                  backgroundColor: departamento.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                  color: 'white',
+                  marginLeft: '10px',
+                }}
+                onClick={() => toggleEstado(departamento)} // Función para cambiar estado
+                disabled={loading} // Deshabilitar mientras carga
+              >
+                {loading ? 'Cambiando...' : departamento.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
+{/************************************************************************************************************************************/}
+
+{/* Paginación Fija */}
+<div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+  <CPagination aria-label="Page navigation">
+    <CButton
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === 1} // Desactiva si es la primera página
+      onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(filteredDepartamentos.length / recordsPerPage)} // Desactiva si es la última página
+      onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  <span style={{ marginLeft: '10px' }}>
+    Página {currentPage} de {Math.ceil(filteredDepartamentos.length / recordsPerPage)}
+  </span>
+</div>
+
+{/*************************************************************************************************************************************/}
+
+<CModal visible={modalVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Ingresar Nuevo Departamento</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoDepartamento)} />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Nombre del Departamento</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese un nuevo nombre de departamento"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevoDepartamento.Nombre_departamento}
+          onChange={(e) => handleDepartamentoInputChange(e, setNuevoDepartamento, setDepartamentoError)}
+          onBlur={isDuplicateDepartamento}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {departamentoError && (
+        <p style={{ color: 'red', fontSize: '0.9em' }}>{departamentoError}</p>
+      )}
+    </CForm>
+  </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalVisible(false)}>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoDepartamento)}>
       Cancelar
     </CButton>
-    <CButton style={{ backgroundColor: '#617341', color: 'white' }} type="submit">
-      <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateDepartamento} disabled={!!departamentoError}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
     </CButton>
   </CModalFooter>
-</CForm>
+</CModal>
+{/***************************************************************************************************************************************/}
 
-        </CModalBody>
-      </CModal>
+<CModal visible={modalUpdateVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Actualizar Departamento</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetDepartamentoToUpdate)} />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Nombre del Departamento</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el nombre del departamento"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={departamentoToUpdate.Nombre_departamento}
+          onChange={(e) => handleDepartamentoInputChange(e, setDepartamentoToUpdate)}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {departamentoError.Nombre_departamento && <p style={{ color: 'red' }}>{departamentoError.Nombre_departamento}</p>}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetDepartamentoToUpdate)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateDepartamento} disabled={departamentoError.Nombre_departamento}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
 
-      <style jsx>{`
-        .table-container {
-          max-height: 400px;
-          overflow-y: ${filteredDepartamentos.length >= 5 ? 'auto' : 'hidden'};
-          overflow-x: hidden;
-        }
-      `}</style>
+{/***************************************************************************************************************************************/}
+
+{/* Modal Eliminar Departamento */}
+<CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+  <CModalHeader>
+    <CModalTitle>Eliminar Departamento</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    ¿Estás seguro de que deseas eliminar el departamento "{departamentoToDelete.Nombre_departamento}"?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton color="danger" onClick={handleDeleteDepartamento}>
+      Eliminar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+{/****************************************************************************************************************************************/}
+
     </CContainer>
   );
 };

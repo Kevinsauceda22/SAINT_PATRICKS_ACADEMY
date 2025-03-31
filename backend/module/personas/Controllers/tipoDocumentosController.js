@@ -4,7 +4,7 @@ const pool = await conectarDB();
 // Controlador para obtener todos los tipos de documentos
 export const obtenerTodoTipoDocumentos = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL P_Get_TipoDocumentos()');
+        const [rows] = await pool.query('CALL P_Get_TipoDocumento()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);

@@ -46,11 +46,18 @@ export const createPersona = async (req, res) => {
 
 export const updatePersona = async (req, res) => {
   const { cod_persona } = req.params;
-  const { dni_persona, nombre, primer_apellido, segundo_apellido, nacionalidad, direccion_persona, fecha_nacimiento } = req.body;
+  const { dni_persona, nombre, primer_apellido, segundo_apellido, nacionalidad, direccion_persona, fecha_nacimiento, email, telefono } = req.body;
+
+  // Validar que el cod_persona sea un número o un valor adecuado
+  if (isNaN(cod_persona)) {
+    return res.status(400).json({ message: 'El código de persona debe ser un número válido' });
+  }
 
   try {
-    const result = await pool.query('UPDATE tbl_personas SET dni_persona = ?, nombre = ?, primer_apellido = ?, segundo_apellido = ?, nacionalidad = ?, direccion_persona = ?, fecha_nacimiento = ? WHERE cod_persona = ?', 
-      [dni_persona, nombre, primer_apellido, segundo_apellido, nacionalidad, direccion_persona, fecha_nacimiento, cod_persona]);
+    const result = await pool.query(
+      'UPDATE tbl_personas SET dni_persona = ?, nombre = ?, primer_apellido = ?, segundo_apellido = ?, nacionalidad = ?, direccion_persona = ?, fecha_nacimiento = ?, email = ?, telefono = ? WHERE cod_persona = ?', 
+      [dni_persona, nombre, primer_apellido, segundo_apellido, nacionalidad, direccion_persona, fecha_nacimiento, email, telefono, cod_persona]
+    );
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: 'Persona no encontrada' });
@@ -62,6 +69,7 @@ export const updatePersona = async (req, res) => {
     res.status(500).json({ message: 'Error del servidor' });
   }
 };
+
 
 export const deletePersona = async (req, res) => {
   const { cod_persona } = req.params;

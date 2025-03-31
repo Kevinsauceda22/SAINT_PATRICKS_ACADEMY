@@ -3,6 +3,7 @@ import { CIcon } from '@coreui/icons-react'
 import { cilXCircle, cilCheckCircle } from '@coreui/icons';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 import {
   cilSearch,
   cilBrushAlt,
@@ -17,7 +18,6 @@ import {
 } from '@coreui/icons'
 import { useNavigate } from 'react-router-dom'
 import swal from 'sweetalert2' // Importar SweetAlert
-import axios from 'axios'
 import 'jspdf-autotable' // Para crear tablas en los archivos PDF
 import * as XLSX from 'xlsx' // Para generar archivos Excel
 import { saveAs } from 'file-saver' // Para descargar archivos en el navegador
@@ -107,9 +107,6 @@ const ListaPersonas = () => {
   const [isDropdownOpenMunicipio, setIsDropdownOpenMunicipio] = useState(false); // Control del dropdown
   const [selectedMunicipio, setSelectedMunicipio] = useState(null); // Guardar el municipio seleccionado
 
-
-
-
   const [nacionalidad, setNacionalidad] = useState([]); // Estado para todas las nacionalidades
   const [buscadorNacionalidad, setBuscadorNacionalidad] = useState(''); // Valor del input de búsqueda
   const [nacionalidadesFiltradas, setNacionalidadesFiltradas] = useState([]); // Resultados filtrados
@@ -143,6 +140,8 @@ const ListaPersonas = () => {
 
   const [showDetailModal, setShowDetailModal] = useState(false) // Estado para abrir/cerrar el modal
   const [selectedPersona, setSelectedPersona] = useState(null) // Estado para la persona seleccionada
+
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate()
 
@@ -527,7 +526,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
   const fetchNacionalidad = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/nacionalidad/verNacionalidades')
+      const response = await fetch('http://localhost:4000/api/nacionalidad/verTodoNacionalidad')
       const data = await response.json()
       console.log('Datos recibidos de nacionalidad:', data)
       setNacionalidad(data)
@@ -949,6 +948,35 @@ const handleCreatePersona = async () => {
       console.error('Error al eliminar la persona:', error)
     }
   }
+{/*********************************************************************************************************************************/}
+
+const toggleEstado = async (persona) => {
+  const nuevoEstado = persona.estado ? 0 : 1;
+
+  try {
+    setLoading(true);
+
+    const response = await axios.post('http://localhost:4000/api/personas/actualizarEstadoPersona', {
+      cod_persona: persona.cod_persona,
+      estado: nuevoEstado,
+    });
+
+    if (response.data.mensaje === 'Estado actualizado exitosamente') {
+      // Actualizar el estado correctamente
+      setPersonas((prevPersonas) =>
+        prevPersonas.map((p) =>
+          p.cod_persona === persona.cod_persona ? { ...p, estado: nuevoEstado } : p
+        )
+      );
+    } else {
+      console.error('Error al cambiar el estado:', response.data.mensaje);
+    }
+  } catch (error) {
+    console.error('Error al realizar la solicitud:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   {/********************************FUNCIONES DE REPORTERIA Y BÚSQUEDA****************************************/}
   const handleSearch = (event) => {
@@ -963,7 +991,7 @@ const searchPersonas = (searchTerm) => {
     originalIndex: index + 1, // Agregar índice original para ordenar
   })).filter((persona) => {
     // Lógica de filtro
-    const tipoPersonaTexto = tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D';
+    const tipoPersonaTexto = tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D';
     const generoTexto = generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D';
     const nacionalidadTexto = nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D';
     const departamentoTexto = departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D';
@@ -974,7 +1002,7 @@ const searchPersonas = (searchTerm) => {
     return (
       (persona.dni_persona && persona.dni_persona.toUpperCase().includes(searchTerm.toUpperCase())) ||
       (persona.Nombre && persona.Nombre.toUpperCase().includes(searchTerm.toUpperCase())) ||
-      (persona.Segundo_nombre && persona.Segundo_nombre.toUpperCase().includes(searchTerm.toUpperCase())) ||
+      (persona.Segundo_nombre && persona.Segundo_nombre.toUpperCase().includes(searchTerm.toUpperCase())) ||  
       (persona.Primer_apellido && persona.Primer_apellido.toUpperCase().includes(searchTerm.toUpperCase())) ||
       (persona.Segundo_apellido && persona.Segundo_apellido.toUpperCase().includes(searchTerm.toUpperCase())) ||
       (persona.direccion_persona && persona.direccion_persona.toUpperCase().includes(searchTerm.toUpperCase())) ||
@@ -1327,93 +1355,84 @@ return (
 
       <div className="table-container">
       <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
-{/* Tabla adaptada con letras más pequeñas y columnas reorganizadas */}
-<CTable striped bordered hover>
-  <CTableHead>
-    <CTableRow>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>DNI</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Primer Nombre</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Segundo Nombre</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Primer Apellido</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Segundo Apellido</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Fecha de Nacimiento</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Estado</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Dirección</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Nacionalidad</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Departamento</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Municipio</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Tipo de Persona</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem' }}>Género</CTableHeaderCell>
-      <CTableHeaderCell style={{ fontSize: '0.85rem', textAlign: 'end' }}>Acciones</CTableHeaderCell>
-    </CTableRow>
-  </CTableHead>
-  <CTableBody>
-    {console.log('currentRecords:', currentRecords)}{/* Verifica el contenido de currentRecords */}
-    {currentRecords.length > 0 ? (
-      currentRecords.map((persona) => (
-        <CTableRow key={persona.cod_persona}>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.dni_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Segundo_nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Primer_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.Segundo_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
-            {persona.Estado_Persona === 'A' ? (
-              <span className="badge bg-success">Activo</span>
-            ) : (
-              <span className="badge bg-warning text-dark">Suspendido</span>
-            )}
-          </CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{persona.direccion_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{municipio.find((municipio) => municipio.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell style={{ fontSize: '0.85rem' }}>{generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}</CTableDataCell>
-          <CTableDataCell className="text-center">
-            <div className="d-flex justify-content-center">
-              <CButton
-                color="warning"
-                onClick={() => openUpdateModal(persona)}
-                style={{ marginRight: '10px', fontSize: '0.75rem' }}
-              >
-                <CIcon icon={cilPen} />
-              </CButton>
-              <CButton
-                color="danger"
-                onClick={() => openDeleteModal(persona)}
-                style={{ marginRight: '10px', fontSize: '0.75rem' }}
-              >
-                <CIcon icon={cilTrash} />
-              </CButton>
-              <CButton
-                color="secondary"
-                onClick={() => abrirEstructuraFamiliarModal(persona)}
-                style={{ marginLeft: '10px', fontSize: '0.75rem' }}
-              >
-                <CIcon icon={cilPeople} />
-              </CButton>
-              <CButton
-                color="primary"
-                onClick={() => abrirContactoModal(persona)}
-                style={{ marginLeft: '10px', fontSize: '0.75rem' }}
-              >
-                <CIcon icon={cilContact} />
-              </CButton>
-            </div>
+  <CTable striped bordered hover>
+    <CTableHead>
+      <CTableRow>
+        {['Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha de Nacimiento', 'Dirección', 'Nacionalidad', 'Departamento', 'Municipio', 'Tipo de Persona', 'Género', 'Acciones'].map((header, index) => (
+          <CTableHeaderCell key={index} style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+            {header}
+          </CTableHeaderCell>
+        ))}
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords.length > 0 ? (
+        currentRecords.map((persona) => (
+          <CTableRow key={persona.cod_persona}>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.tipo_documento?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.dni_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Segundo_nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Primer_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Segundo_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.direccion_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+              {nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}
+            </CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+              {departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D'}
+            </CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+              {municipio.find((mun) => mun.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}
+            </CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+              {tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D'}
+            </CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+              {generos.find((gen) => gen.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}
+            </CTableDataCell>
+            <CTableDataCell className="text-center">
+              <div className="d-flex justify-content-between" style={{ gap: '10px' }}>
+                <CButton color="warning" onClick={() => openUpdateModal(persona)} style={{ fontSize: '0.75rem' }}>
+                  <CIcon icon={cilPen} />
+                </CButton>
+                <CButton color="danger" onClick={() => openDeleteModal(persona)} style={{ fontSize: '0.75rem' }}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+                <CButton color="secondary" onClick={() => abrirEstructuraFamiliarModal(persona)} style={{ fontSize: '0.75rem' }}>
+                  <CIcon icon={cilPeople} />
+                </CButton>
+                <CButton color="primary" onClick={() => abrirContactoModal(persona)} style={{ fontSize: '0.75rem' }}>
+                  <CIcon icon={cilContact} />
+                </CButton>
+                <CButton
+                  style={{
+                    backgroundColor: persona.estado ? '#4CAF50' : '#F44336',
+                    color: 'white',
+                    fontSize: '0.75rem',
+                  }}
+                  onClick={() => toggleEstado(persona)}
+                  disabled={loading}
+                >
+                  {loading ? 'Cambiando...' : persona.estado ? 'Activo' : 'Inactivo'}
+                </CButton>
+              </div>
+            </CTableDataCell>
+          </CTableRow>
+        ))
+      ) : (
+        <CTableRow>
+          <CTableDataCell colSpan="14" className="text-center" style={{ fontSize: '0.85rem' }}>
+            No hay registros
           </CTableDataCell>
         </CTableRow>
-      ))
-    ) : (
-      <CTableRow>
-        <CTableDataCell colSpan="13" className="text-center" style={{ fontSize: '0.85rem' }}>No hay registros</CTableDataCell>
-      </CTableRow>
-    )}
-  </CTableBody>
-</CTable>
-
+      )}
+    </CTableBody>
+  </CTable>
 </div>
+
+
       </div>
 {/****************************************************PAGINACION*****************************************************************/}
       <div
@@ -1975,7 +1994,7 @@ return (
             {tipoPersona &&
               tipoPersona.map((tipo) => (
                 <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                  {tipo.Tipo.toUpperCase()}
+                  {tipo.Tipo_persona.toUpperCase()}
                 </option>
               ))}
           </CFormSelect>
@@ -2765,7 +2784,7 @@ return (
             {tipoPersona &&
               tipoPersona.map((tipo) => (
                 <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                  {tipo.Tipo.toUpperCase()}
+                  {tipo.Tipo_persona.toUpperCase()}
                 </option>
               ))}
           </CFormSelect>

@@ -1,129 +1,573 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilWarning } from '@coreui/icons';
-import swal from 'sweetalert2';
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilInfo, cilDescription} from '@coreui/icons';
+import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
+import swal from 'sweetalert2'; // Importar SweetAlert
+import ExcelJS from 'exceljs';
+import { jsPDF } from 'jspdf';       // Para generar archivos PDF
+import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
+import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
 import {
-  CButton,
   CContainer,
   CInputGroup,
   CInputGroupText,
   CFormInput,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
-  CPagination,
+  CButton,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CPagination,
+  CModal,
+  CModalBody,
+  CModalFooter,
+  CModalHeader,
+  CModalTitle,
+  CForm,
+  CFormLabel,
+  CFormSelect,
   CRow,
   CCol,
   CDropdown,
-  CDropdownMenu,
   CDropdownToggle,
-  CDropdownItem,
-  CFormSelect,
+  CDropdownMenu,
+  CDropdownItem
 } from '@coreui/react';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaGeneroPersona = () => {
-  const [generos, setGeneros] = useState([]);
+  const {canSelect, canUpdate, canDelete, canInsert } = usePermission('ListaGeneroPersona');
+
+  const [generoPersona, setGeneroPersona] = useState([]);
+  const [generoError, setGeneroError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [nuevoGenero, setNuevoGenero] = useState({ Cod_genero: '', Tipo_genero: '' });
-  const [generoToUpdate, setGeneroToUpdate] = useState(null);
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
+  const [nuevoGenero, setNuevoGenero] = useState({ tipo_genero: '' });
+  const [generoToUpdate, setGeneroToUpdate] = useState({});
+  const [generoToDelete, setGeneroToDelete] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [recordsPerPage, setRecordsPerPage] = useState(5);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState({ tipo_genero: '' });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+  const [recordsPerPage, setRecordsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  
 
 
+
+{/***************************************************************************************************************************************/}
+const fetchGeneroPersona = async () => {
+  try {
+    const response = await fetch(`http://localhost:4000/api/generoPersona/verTodoGeneroPersona`);
+    const data = await response.json();
+    console.log('Datos obtenidos:', data); // Agrega este log para depurar
+    const dataWithIndex = data.map((generoPersona, index) => ({
+      ...generoPersona,
+      originalIndex: index + 1,
+    }));
+    setGeneroPersona(dataWithIndex);
+  } catch (error) {
+    console.error('Error al obtener género persona:', error);
+  }
+};
 
   useEffect(() => {
-    fetchGeneros();
+    fetchGeneroPersona();
   }, []);
 
-  const fetchGeneros = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/generoPersona/verTodoGeneroPersona');
-      if (!response.ok) {
-        throw new Error(`Error en la solicitud: ${response.statusText}`);
+{/**************************************************************************************************************************************/}
+
+// Validación de tipo género
+const validateTipoGenero = (genero) => {
+  const regex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]*$/;
+  const noMultipleSpaces = !/\s{2,}/.test(genero); // No permite más de un espacio consecutivo
+  const trimmedGenero = genero.trim().replace(/\s+/g, ' ');
+
+  if (!regex.test(trimmedGenero)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Género inválido',
+      text: 'El género solo puede contener letras y espacios.',
+    });
+    return false;
+  }
+
+  if (!noMultipleSpaces) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Espacios múltiples',
+      text: 'No se permite más de un espacio entre palabras.',
+    });
+    return false;
+  }
+
+  // Validar que ninguna letra se repita más de 4 veces seguidas
+  const words = trimmedGenero.split(' ');
+  for (let word of words) {
+    const letterCounts = {};
+    for (let letter of word) {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+      if (letterCounts[letter] > 4) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Repetición de letras',
+          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+        });
+        return false;
       }
-      const data = await response.json();
-  
-      // Ordenar alfabéticamente por 'Tipo_genero'
-      const sortedData = data.sort((a, b) =>
-        a.Tipo_genero.localeCompare(b.Tipo_genero, 'es', { sensitivity: 'base' }) // Comparación alfabética
-      );
-  
-      setGeneros(sortedData); // Asignar datos ordenados al estado
-    } catch (error) {
-      console.error('Error fetching generos:', error);
+    }
+  }
+
+  return true;
+};
+
+
+{/**************************************************************************************************************************************/}
+
+// Capitalizar la primera letra de cada palabra
+const capitalizeWords = (str) => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+// Validar que ningún campo esté vacío
+const validateEmptyFields = () => {
+  const { tipo_genero } = nuevoGenero; // Ajuste al campo tipo_genero
+  if (!tipo_genero) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Campos vacíos',
+      text: 'Todos los campos deben estar llenos para poder crear un género.',
+    });
+    return false;
+  }
+  return true;
+};
+
+{/**************************************************************************************************************************************/}
+
+// Validar si el género ya existe
+const isDuplicateGenero = () => {
+  const { tipo_genero } = nuevoGenero;
+  const existingGenero = generoPersona.find(
+    (genero) =>
+      genero.tipo_genero.toLowerCase() === tipo_genero.toLowerCase()
+  );
+
+  if (existingGenero) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Género duplicado',
+      text: 'Ya existe un género con el mismo nombre.',
+    });
+
+    if (existingGenero) {
+      setGeneroError('Ya existe un género con el mismo nombre');
+    } else {
+      setGeneroError(''); // No hay error
+    }
+
+    return true;
+  }
+
+  return false;
+};
+
+
+{/**************************************************************************************************************************************/}
+
+// Función para controlar la entrada de texto en los campos
+const handleTipoGeneroInputChange = (e, setFunction) => {
+  let value = e.target.value;
+
+  // No permitir más de un espacio consecutivo
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // No permitir que una letra se repita más de 4 veces consecutivamente
+  const wordArray = value.split(' ');
+  const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
+
+  if (!isValid) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+    });
+    return;
+  }
+
+  if (value.length <= 2) {
+    setGeneroError('El género debe tener más de 2 letras.');
+  } else {
+    setGeneroError(''); // No hay error
+  }
+
+  setFunction((prevState) => ({
+    ...prevState,
+    tipo_genero: value,
+  }));
+
+  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+};
+
+{/**************************************************************************************************************************************/}
+
+      // Deshabilitar copiar y pegar
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
+  };
+
+{/**************************************************************************************************************************************/}
+
+// Función para cerrar el modal con advertencia si hay cambios sin guardar
+const handleCloseModal = (closeFunction, resetFields) => {
+  if (hasUnsavedChanges) {
+    swal.fire({
+      title: '¿Estás seguro?',
+      text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, cerrar',
+      cancelButtonText: 'Cancelar',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        closeFunction(false);
+        resetFields(); // Limpiar los campos al cerrar
+        setHasUnsavedChanges(false); // Resetear cambios no guardados
+      }
+    });
+  } else {
+    closeFunction(false);
+    resetFields();
+  }
+};
+
+
+{/**************************************************************************************************************************************/}
+
+const resetNuevoGenero = () => {
+  setNuevoGenero({ tipo_genero: '' });
+};
+
+const resetGeneroToUpdate = () => {
+  setGeneroToUpdate({ tipo_genero: '' });
+};
+
+
+{/**************************************************************************************************************************************/}
+
+const handleCreateGenero = async () => {
+  // Validar el tipo de género antes de enviarlo
+  const generoCapitalizado = capitalizeWords(nuevoGenero.tipo_genero.trim().replace(/\s+/g, ' '));
+
+  // Validaciones antes de crear
+  if (!validateTipoGenero(generoCapitalizado)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:4000/api/generoPersona/crearGeneroPersona`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tipo_genero: generoCapitalizado,  // Usamos el género validado
+        estado: 1, // Género activo por defecto
+      }),
+    });
+
+    if (response.ok) {
+      let result;
+      try {
+        result = await response.json(); // Intentamos obtener el JSON de la respuesta
+      } catch (error) {
+        console.warn("La API no devolvió JSON, pero el género fue creado.");
+        result = { tipo_genero: generoCapitalizado }; // Asumimos que se creó correctamente
+      }
+
+      // Actualiza la lista sin recargar la página
+      fetchGeneroPersona(); 
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevoGenero(); // Reiniciar el estado del nuevo género
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+
+      swal.fire({
+        icon: 'success',
+        title: 'Creación exitosa',
+        text: `El género ha sido creado correctamente.`,
+      });
+
+    } else {
       swal.fire({
         icon: 'error',
         title: 'Error',
-        text: 'No se pudo cargar la lista de géneros. Intenta más tarde.',
+        text: 'No se pudo crear el género.',
       });
     }
-  };
-  
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    const img = new Image();
-    img.src = logo; // Usa el logo importado
-  
-    img.onload = () => {
-      // Encabezado
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
-  
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51); // Verde oscuro
-      doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
-  
-      doc.setFontSize(14);
-      doc.text('Reporte de Géneros', doc.internal.pageSize.width / 2, 30, { align: 'center' });
-  
-      doc.setFontSize(10);
-      doc.setTextColor(100); // Gris oscuro
-      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-  
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51); // Verde oscuro
-      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-  
-      // Tabla
-      doc.autoTable({
-        startY: 60,
-        head: [['#', 'Tipo de Género']],
-        body: currentRecords.map((genero, index) => [index + 1, genero.Tipo_genero]),
-        headStyles: {
-          fillColor: [0, 102, 51], // Verde oscuro
-          textColor: [255, 255, 255], // Blanco
-          fontSize: 10,
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro para filas alternas
+  } catch (error) {
+    console.error('Error al crear el género:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar crear el género.',
+    });
+  }
+};
+
+{/**************************************************************************************************************************************/}
+const handleUpdateGenero = async () => {
+  const generoCapitalizado = capitalizeWords(generoToUpdate.tipo_genero.trim().replace(/\s+/g, ' '));
+
+  if (!validateTipoGenero(generoCapitalizado)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:4000/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Cod_genero: generoToUpdate.Cod_genero,
+        tipo_genero: generoCapitalizado,
+        estado: generoToUpdate.estado,  // Mantener el estado o modificarlo
+      }),
+    });
+
+    if (response.ok) {
+      fetchGeneroPersona();
+      setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetGeneroToUpdate();
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+      swal.fire({
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: 'El género ha sido actualizado correctamente.',
       });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar el género.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al actualizar el género:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar actualizar el género.',
+    });
+  }
+};
+
+{/**************************************************************************************************************************************/}
+
+const handleDeleteGenero = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/generoPersona/eliminarGeneroPersona/${encodeURIComponent(generoToDelete.Cod_genero)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.ok) {
+      fetchGeneroPersona();
+      setModalDeleteVisible(false);
+      setGeneroToDelete({});
+      swal.fire({
+        icon: 'success',
+        title: 'Eliminación exitosa',
+        text: 'El género ha sido eliminado correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo eliminar el género.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al eliminar el género:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar eliminar el género.',
+    });
+  }
+};
+
+
+{/**************************************************************************************************************************************/}
+
+const openUpdateModal = (generoPersona) => {
+  setGeneroToUpdate(generoPersona);
+  setModalUpdateVisible(true);
+};
+
+const openDeleteModal = (generoPersona) => {
+  setGeneroToDelete(generoPersona);
+  setModalDeleteVisible(true);
+};
+
+
+{/**************************************************************************************************************************************/}
+
+const toggleEstado = async (generoPersona) => {
+  const nuevoEstado = generoPersona.estado ? 0 : 1;
+
+  try {
+    setLoading(true);
+
+    const response = await axios.post('http://localhost:4000/api/generoPersona/actualizarEstadoGenero', {
+      cod_genero: generoPersona.Cod_genero,
+      estado: nuevoEstado,
+    });
+
+    if (response.data.mensaje === 'Estado actualizado exitosamente') {
+      // Actualizar el estado correctamente
+      setGeneroPersona((prevGeneros) =>
+        prevGeneros.map((genero) =>
+          genero.Cod_genero === generoPersona.Cod_genero
+            ? { ...genero, estado: nuevoEstado }
+            : genero
+        )
+      );
+    } else {
+      console.error('Error al cambiar el estado:', response.data.mensaje);
+    }
+  } catch (error) {
+    console.error('Error al realizar la solicitud:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+{/**************************************************************************************************************************************/}
+
+const handleSearch = (event) => {
+  setSearchTerm(event.target.value);
+  setCurrentPage(1);
+};
+
+const filteredGeneroPersona = generoPersona.filter((generoPersona) => 
+  generoPersona.tipo_genero &&
+  generoPersona.tipo_genero.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+const indexOfLastRecord = currentPage * recordsPerPage;
+const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+const currentRecords = filteredGeneroPersona.slice(indexOfFirstRecord, indexOfLastRecord);
+
+const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredGeneroPersona.length / recordsPerPage)) {
+    setCurrentPage(pageNumber);
+  }
+};
+
+
+
+{/**************************************************************************************************************************************/}
+const ReporteGenerosPDF = () => {
+  const doc = new jsPDF('p', 'mm', 'letter'); 
   
-      // Pie de página
-      const pageCount = doc.internal.getNumberOfPages();
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-  
+  if (!filteredGeneroPersona || filteredGeneroPersona.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Géneros', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
+
+    // Generar filas de la tabla (incluye estado)
+    const tableRows = filteredGeneroPersona.map((genero, index) => ({
+      index: (index + 1).toString(),
+      tipo_genero: genero.tipo_genero?.toUpperCase() || 'N/D',
+      estado: genero.estado === 1 ? 'Activo' : 'Inactivo',
+    }));
+
+    const columnWidths = {
+      index: 20,          // Ancho de la columna #
+      tipo_genero: 70,    // Ancho de la columna "Tipo Género"
+      estado: 30,         // Ancho de la columna "Estado"
+    };
+    const tableWidth = columnWidths.index + columnWidths.tipo_genero + columnWidths.estado;
+
+    doc.autoTable({
+      startY: 65,
+      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrar la tabla
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Tipo de Género', dataKey: 'tipo_genero' },
+        { header: 'Estado', dataKey: 'estado' },
+      ],
+      body: tableRows,
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        halign: 'center',
+      },
+      styles: {
+        fontSize: 7,
+        cellPadding: 4,
+      },
+      columnStyles: {
+        index: { cellWidth: columnWidths.index },
+        tipo_genero: { cellWidth: columnWidths.tipo_genero },
+        estado: { cellWidth: columnWidths.estado },
+      },
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        const footerY = doc.internal.pageSize.height - 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
         const now = new Date();
         const dateString = now.toLocaleDateString('es-HN', {
           year: 'numeric',
@@ -135,418 +579,346 @@ const ListaGeneroPersona = () => {
           minute: '2-digit',
           second: '2-digit',
         });
-  
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51); // Verde
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
-      }
-  
-      doc.save('Reporte_Generos.pdf');
-      window.open(doc.output('bloburl'));
-    };
-  
-    img.onerror = () => {
-      alert('No se pudo cargar el logo. El PDF no se generará.');
-    };
-  };
-  
-
- 
-  const handleCreateOrUpdate = async () => {
-    if (isSubmitting) return;
-
-    console.log('Datos enviados:', {
-      Cod_genero: generoToUpdate?.Cod_genero, // Esto debe ser un número
-      Tipo_genero: nuevoGenero.Tipo_genero,
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      },
     });
-    const errorsTemp = {};
 
-    // Validar si el campo está vacío
-    if (!nuevoGenero.Tipo_genero.trim()) {
-        errorsTemp.tipo_genero = 'El campo "Tipo de Género" no puede estar vacío.';
-    }
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
 
-    // Validar si contiene al menos una vocal
-    const vocalRegex = /[AEIOUÁÉÍÓÚÜÑ]/i;
-    if (nuevoGenero.Tipo_genero.trim() && !vocalRegex.test(nuevoGenero.Tipo_genero)) {
-        errorsTemp.tipo_genero = 'El "Tipo de Género" debe contener al menos una vocal.';
-    }
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Géneros</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:20px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Generos.pdf'; a.click();">
+              Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
+  };
 
-    // Si hay errores, mostrar y detener la ejecución
-    if (Object.keys(errorsTemp).length > 0) {
-        setErrors(errorsTemp);
-        setTimeout(() => setErrors({}), 5000); // Limpiar errores tras 5 segundos
-        return;
-    }
-
-    // Validar duplicados
-    const isDuplicate = generos.some(
-        (item) =>
-            item.Tipo_genero.toUpperCase() === nuevoGenero.Tipo_genero.trim().toUpperCase() &&
-            (!generoToUpdate || item.Cod_genero !== generoToUpdate.Cod_genero)
-    );
-
-    if (isDuplicate) {
-        swal.fire({
-            icon: 'error',
-            html: `<b>El tipo de género "${nuevoGenero.Tipo_genero.trim()}" ya existe.</b>`,
-            timer: 3000,
-            showConfirmButton: false,
-        });
-        return;
-    }
-
-    // Si no hay errores, proceder con la operación
-    setErrors({});
-    setIsSubmitting(true);
-
-    const url = generoToUpdate
-        ? `http://localhost:4000/api/generoPersona/actualizarGeneroPersona/${generoToUpdate.Cod_genero}`
-        : 'http://localhost:4000/api/generoPersona/crearGeneroPersona';
-    const method = generoToUpdate ? 'PUT' : 'POST';
-    const body = JSON.stringify({ Tipo_genero: nuevoGenero.Tipo_genero.trim() });
-
-    try {
-        const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
-        const result = await response.json();
-
-        if (response.ok) {
-            if (generoToUpdate) {
-                // Actualizar género en la lista existente
-                setGeneros((prevGeneros) =>
-                    prevGeneros.map((item) =>
-                        item.Cod_genero === generoToUpdate.Cod_genero
-                            ? { ...item, Tipo_genero: nuevoGenero.Tipo_genero.trim() }
-                            : item
-                    )
-                );
-                console.log('Respuesta del backend:', result); // Verifica la respuesta
-                swal.fire({
-                    icon: 'success',
-                    html: '<b>Tipo de género actualizado exitosamente.</b>',
-                    timer: 3000,
-                    showConfirmButton: false,
-                });
-            } else {
-                // Agregar un nuevo género a la lista
-                setGeneros((prevGeneros) => [
-                    ...prevGeneros,
-                    { Cod_genero: result.Cod_genero, Tipo_genero: nuevoGenero.Tipo_genero.trim() },
-                ]);
-                swal.fire({
-                    icon: 'success',
-                    html: '<b>Tipo de género creado exitosamente.</b>',
-                    timer: 3000,
-                    showConfirmButton: false,
-                });
-            }
-
-            // Resetear estados y cerrar modal
-            setModalVisible(false);
-            setNuevoGenero({ Cod_genero: '', Tipo_genero: '' });
-            setGeneroToUpdate(null);
-        } else {
-            throw new Error(result.Mensaje || 'Error en el servidor.');
-        }
-        fetchGeneros(); // Recargar la lista
-    setModalVisible(false); // Cerrar el modal
-    } catch (error) {
-        swal.fire({
-            icon: 'error',
-            html: `<b>${error.message}</b>`,
-            timer: 3000,
-            showConfirmButton: false,
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
 };
 
-  
-  const handleDeleteGenero = async (Cod_genero, Tipo_genero) => {
-    try {
-      console.log('Intentando eliminar género:', Cod_genero, Tipo_genero);
-  
-      const confirmResult = await swal.fire({
-        title: 'Confirmar Eliminación',
-        html: `¿Estás seguro de que deseas eliminar el género: <strong>${Tipo_genero || 'N/A'}</strong>?`,
-        showCancelButton: true,
-        confirmButtonColor: '#FF6B6B',
-        cancelButtonColor: '#6C757D',
-        cancelButtonText: 'Cancelar',
-        confirmButtonText: '<i class="fa fa-trash"></i> Eliminar',
-        reverseButtons: true,
-        focusCancel: true,
-      });
-  
-      if (!confirmResult.isConfirmed) return;
-  
-      // Log para confirmar URL generada
-  
-      const response = await fetch(
-        `http://localhost:4000/api/generoPersona/eliminarGeneroPersona/${encodeURIComponent(Cod_genero)}`,{ 
-          method: 'DELETE' }
-      );
-  
-      console.log('Respuesta del servidor:', response);
-  
-      const result = await response.json();
-      console.log('Resultado del servidor:', result);
-  
-      if (response.ok) {
-        setGeneros((prevGeneros) =>
-          prevGeneros.filter((item) => item.Cod_genero !== Cod_genero)
-        );
-        swal.fire({
-          icon: 'success',
-          html: '<b>Género eliminado exitosamente</b>',
-          timer: 3000,
-          showConfirmButton: false,
-        });
-      } else {
-        throw new Error(result.Mensaje || 'Error al eliminar');
-      }
-    } catch (error) {
-      console.error('Error eliminando el género:', error);
-      swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'No se pudo eliminar el género.',
-        timer: 3000,
-        showConfirmButton: false,
-      });
-    }
-  };
-  
+{/**************************************************************************************************************************************/}
+
+const exportToExcel = () => {
+  if (!filteredGeneroPersona || filteredGeneroPersona.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Géneros');
+
+  // Título del documento
+  worksheet.mergeCells('A1:C1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:C2');
+  worksheet.getCell('A2').value = 'GÉNEROS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados de la tabla
+  const headerRow = worksheet.addRow(['#', 'Tipo de Género', 'Estado']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Datos de la tabla (Usamos filteredGeneroPersona)
+  filteredGeneroPersona.forEach((genero, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      typeof genero.tipo_genero === 'string' ? genero.tipo_genero.toUpperCase() : genero.tipo_genero,
+      genero.estado === 1 ? 'Activo' : 'Inactivo' // Estado en texto
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // Ajustar el ancho de las columnas
+  worksheet.columns = [
+    { width: 10 }, // Ancho de la columna #
+    { width: 30 }, // Ancho de la columna "Tipo de Género"
+    { width: 15 }, // Ancho de la columna "Estado"
+  ];
+
+  // Crear archivo Excel
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_Generos.xlsx');
+  });
+};
 
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1);
-  };
-
-  const handleRecordsPerPageChange = (e) => {
-    setRecordsPerPage(Number(e.target.value));
-    setCurrentPage(1);
-  };
-
-  const filteredGeneros = generos.filter((genero) =>
-    genero.Tipo_genero ? genero.Tipo_genero.toLowerCase().includes(searchTerm.toLowerCase()) : false
-  );
-
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredGeneros
-  .slice(indexOfFirstRecord, indexOfLastRecord); // Obtener los registros actuales según la paginación
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
+{/**************************************************************************************************************************************/}
   return (
     <CContainer>
-      <CRow className="align-items-center mb-5">
-        <CCol xs="8" md="9"><h1>Mantenimieno Géneros</h1></CCol>
-        <CCol xs="4" md="3" className="text-end">
-          <CButton style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '15px'}} onClick={() => {
-            setModalVisible(true);
-            setGeneroToUpdate(null);
-          }}>
-            <CIcon icon={cilPlus} /> Nuevo
-          </CButton>
-          <CButton
-  style={{ backgroundColor: '#6C8E58', color: 'white', marginRight: '10px' }}
-  onClick={exportToPDF} // Llama a la función que genera el reporte general
->
-  <CIcon icon={cilDescription} /> Descargar PDF
-</CButton>
-
-          <div className="mt-2" style={{ textAlign: 'right' }}>
-            <span>Mostrar </span>
-            <CFormSelect
-              value={recordsPerPage}
-              onChange={handleRecordsPerPageChange}
-              style={{ maxWidth: '70px', display: 'inline-block', margin: '0 5px' }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-            </CFormSelect>
-            <span> registros</span>
-          </div>
-        </CCol>
-      </CRow>
-
-      <CInputGroup className="mb-3" style={{ maxWidth: '400px' }}>
-        <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
-        <CFormInput placeholder="Buscar género persona...." onChange={handleSearch} value={searchTerm} />
-        <CButton
-          onClick={() => setSearchTerm('')}
-          style={{
-            border: '2px solid #d3d3d3',
-            color: '#4B6251',
-            backgroundColor: '#f0f0f0',
-          }}
-        >
-          <i className="fa fa-broom" style={{ marginRight: '5px' }}></i> Limpiar
-        </CButton>
-      </CInputGroup>
-
-      <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-      <CTable striped bordered hover>
-        <CTableHead>
-          <CTableRow>
-            <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>Tipo de Género</CTableHeaderCell>
-            <CTableHeaderCell>Acciones</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-        <CTableBody>
-  {currentRecords.map((genero, index) => (
-    <CTableRow key={genero.Cod_genero}>
-      <CTableDataCell>{index + 1 + (currentPage - 1) * recordsPerPage}</CTableDataCell>
-      <CTableDataCell>{genero.Tipo_genero}</CTableDataCell>
-      <CTableDataCell>
-        {/* Botón de editar */}
-        <CButton
-  color="warning"
-  size="sm"
-  onClick={() => {
-    console.log('Editar registro:', genero); // Agrega un log para verificar
-    setGeneroToUpdate(genero); // Guarda el registro que estás editando
-    setNuevoGenero({ ...genero }); // Carga los datos del registro en el formulario
-    setModalVisible(true); // Abre el modal
-  }}
->
-  <CIcon icon={cilPen} />
-</CButton>
-
-        {/* Botón de eliminar */}
-        <CButton
-          color="danger"
-          size="sm"
-          style={{ marginLeft: '5px' }}
-          onClick={() => handleDeleteGenero(genero.Cod_genero, genero.Tipo_genero)}
-        >
-          <CIcon icon={cilTrash} />
-        </CButton>
-      </CTableDataCell>
-    </CTableRow>
-  ))}
-</CTableBody>
-
-      </CTable>
-    </div>
-      <CPagination align="center" className="my-3">
-  <CButton
-    style={{
-      backgroundColor: '#7fa573', // Verde claro
-      color: 'white',
-      padding: '10px 20px',
-      marginRight: '10px',
-      border: 'none',
-      borderRadius: '5px',
-    }}
-    onClick={() => paginate(currentPage - 1)}
-    disabled={currentPage === 1}
-  >
-    Anterior
-  </CButton>
-  <CButton
-    style={{
-      backgroundColor: '#7fa573', // Verde claro
-      color: 'white',
-      padding: '10px 20px',
-      border: 'none',
-      borderRadius: '5px',
-    }}
-    onClick={() => paginate(currentPage + 1)}
-    disabled={indexOfLastRecord >= filteredGeneros.length}
-  >
-    Siguiente
-  </CButton>
-  <span
-    style={{
-      marginLeft: '15px',
-      fontSize: '16px',
-      color: '#333', // Texto gris oscuro
-    }}
-  >
-    Página {currentPage} de {Math.ceil(filteredGeneros.length / recordsPerPage)}
-  </span>
-</CPagination>
-
-
-<CModal
-  visible={modalVisible}
-  onClose={() => {
-    setModalVisible(false); // Cerrar el modal
-    setGeneroToUpdate(null); // Limpiar el estado de edición
-    setNuevoGenero({ Cod_genero: '', Tipo_genero: '' }); // Limpiar los datos del formulario
-  }}
->
-        <CModalHeader>
-          <CModalTitle>{generoToUpdate ? 'Actualizar Género' : 'Crear Nuevo Género'}</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-    <CInputGroup className="mb-3">
-        <CInputGroupText style={{ backgroundColor: '#f0f0f0', color: 'black' }}>Tipo Género</CInputGroupText>
-        <CFormInput
-            placeholder="Tipo de Género"
-            value={nuevoGenero.Tipo_genero}
-            onChange={(e) => {
-                let value = e.target.value
-                    .replace(/[^A-ZÁÉÍÓÚÜÑ ]/gi, '')
-                    .replace(/^\s+/, '')
-                    .replace(/\s{2,}/g, ' ')
-                    .toUpperCase();
-
-                if (value.length <= 50 || value.length < nuevoGenero.Tipo_genero.length) {
-                    setNuevoGenero({ ...nuevoGenero, Tipo_genero: value });
-                }
-            }}
-            onKeyDown={(e) => {
-                if (e.key === ' ' && (!nuevoGenero.Tipo_genero || nuevoGenero.Tipo_genero.endsWith(' '))) {
-                    e.preventDefault();
-                }
-            }}
-        />
-    </CInputGroup>
-    {errors.tipo_genero && (
-        <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px', fontSize: '0.9rem' }}>
-            <CIcon
-                icon={cilWarning}
-                style={{ color: '#FFC107', marginRight: '5px', fontSize: '1.2rem' }}
-            />
-            <span style={{ fontWeight: 'bold', color: '#000000' }}>{errors.tipo_genero}</span>
-        </div>
+<CRow className="align-items-center mb-5">
+  <CCol xs="8" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Mantenimiento de Géneros</h1>
+  </CCol>
+  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+    {/* Botón Nuevo para abrir el modal */}
+    {canInsert && (
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white' }}
+        className="mb-3 mb-md-0 me-md-3"
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
     )}
-</CModalBody>
+
+    {/* Botón de Reporte */}
+    <CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReporteGenerosPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
+
+{/* Contenedor de la barra de búsqueda y el selector dinámico */}
+<CRow className="align-items-center mt-4 mb-2">
+  {/* Barra de búsqueda */}
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar género..."
+        onChange={handleSearch}
+        value={searchTerm}
+      />
+      <CButton
+        style={{
+          border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out',
+          backgroundColor: '#F3F4F7',
+          color: '#343a40',
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
+
+  {/* Selector dinámico a la par de la barra de búsqueda */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span>Mostrar&nbsp;</span>
+        <CFormSelect
+          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1);
+          }}
+          value={recordsPerPage}
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </CFormSelect>
+        <span>&nbsp;registros</span>
+      </div>
+    </CInputGroup>
+  </CCol>
+</CRow>
 
 
-<CModalFooter>
-  <CButton
-    color="secondary"
-    onClick={() => {
-      setModalVisible(false); // Cerrar el modal
-      setGeneroToUpdate(null); // Limpiar el estado de edición
-      setNuevoGenero({ Cod_genero: '', Tipo_genero: '' }); // Limpiar el formulario
-    }}
-  >
-    Cancelar
-  </CButton>
-  <CButton
-    style={generoToUpdate
-      ? { backgroundColor: '#FFD700', color: 'white' } // Estilo para actualizar
-      : { backgroundColor: '#4B6251', color: 'white' } // Estilo para guardar
-    }
-    onClick={handleCreateOrUpdate} // Llama a la función unificada
-  >
-    <CIcon icon={generoToUpdate ? cilPen : cilSave} /> {/* Icono dinámico */}
-    {generoToUpdate ? 'Actualizar' : 'Guardar'} {/* Texto dinámico */}
-  </CButton>
-</CModalFooter>
+{/*************************************************************************************************************************************/}
 
-      </CModal>
+<div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Género</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+
+    <CTableBody>
+      {currentRecords.map((generoPersona) => (
+        <CTableRow key={generoPersona.Cod_genero}>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{generoPersona.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{generoPersona.tipo_genero.toUpperCase()}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(generoPersona)}
+                  style={{ marginRight: '10px' }}
+                  disabled={generoPersona.estado === 0} // Deshabilitado si está inactivo
+                  title={generoPersona.estado ? 'Editar género' : 'Género inactivo'}
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
+
+              {canDelete && (
+                <CButton color="danger" onClick={() => openDeleteModal(generoPersona)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+
+              {/* Botón de Activar/Inactivar */}
+              <CButton
+                style={{
+                  backgroundColor: generoPersona.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                  color: 'white',
+                  marginLeft: '10px',
+                }}
+                onClick={() => toggleEstado(generoPersona)} // Función para cambiar estado
+                disabled={loading} // Deshabilitar mientras carga
+              >
+                {loading ? 'Cambiando...' : generoPersona.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
+
+{/**************************************************************************************************************************************/}
+
+                {/* Paginación Fija */}
+{/* Paginación Fija */}
+<div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+  <CPagination aria-label="Page navigation">
+    <CButton
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === 1} // Desactiva si es la primera página
+      onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(filteredGeneroPersona.length / recordsPerPage)} // Desactiva si es la última página
+      onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  <span style={{ marginLeft: '10px' }}>
+    Página {currentPage} de {Math.ceil(filteredGeneroPersona.length / recordsPerPage)}
+  </span>
+</div>
+
+  
+
+{/**************************************************************************************************************************************/}
+
+<CModal visible={modalUpdateVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Actualizar Género</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetGeneroToUpdate)} />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Género</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el tipo de género"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={generoToUpdate.tipo_genero}
+          onChange={(e) => handleTipoGeneroInputChange(e, setGeneroToUpdate)}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {generoError.tipo_genero && <p style={{ color: 'red' }}>{generoError.tipo_genero}</p>}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetGeneroToUpdate)}>
+      Cancelar
+    </CButton>
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white' }}
+      onClick={handleUpdateGenero}
+      disabled={generoError.tipo_genero}
+    >
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+{/**************************************************************************************************************************************/}
+
+<CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+  <CModalHeader>
+    <CModalTitle>Eliminar Género</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    ¿Estás seguro de que deseas eliminar el género "{generoToDelete.tipo_genero}"?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton color="danger" onClick={handleDeleteGenero}>
+      Eliminar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+{/**************************************************************************************************************************************/}
+
+{/**************************************************************************************************************************************/}
     </CContainer>
   );
 };

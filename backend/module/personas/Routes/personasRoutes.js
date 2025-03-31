@@ -7,6 +7,7 @@ import {
         obtenerGeneros,
         crearPersona,
         actualizarPersona,
+        actualizarEstadoPersona,
         eliminarPersona,
 
 } from '../Controllers/personasController.js'; // Asegúrate de que esta ruta sea correcta
@@ -34,6 +35,10 @@ router.post('/crearPersona', crearPersona);
 
 //Ruta para obtener las personas por rol 
 router.put('/actualizarPersona/:cod_persona', actualizarPersona);
+
+
+router.post('/actualizarEstadoPersona', actualizarEstadoPersona);
+
 
 //Ruta paar obtener las tipo de relaciones 
 router.delete('/eliminarPersona/:cod_persona', eliminarPersona);

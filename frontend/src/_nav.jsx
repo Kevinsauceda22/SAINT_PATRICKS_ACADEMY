@@ -316,7 +316,7 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Tipo persona',
+        name: 'Tipo de Persona',
         to: '/ListaTipoPersona',
         nameobject: 'ListaTipoPersona',
       },

@@ -1,576 +1,926 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilWarning } from '@coreui/icons';
-import swal from 'sweetalert2';
-import '@fortawesome/fontawesome-free/css/all.min.css';
+import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilInfo, cilDescription} from '@coreui/icons';
+import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
+import swal from 'sweetalert2'; // Importar SweetAlert
+import ExcelJS from 'exceljs';
+import { jsPDF } from 'jspdf';       // Para generar archivos PDF
+import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
+import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
 import {
-  CButton,
   CContainer,
   CInputGroup,
   CInputGroupText,
   CFormInput,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
-  CPagination,
+  CButton,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
   CTableDataCell,
+  CPagination,
+  CModal,
+  CModalBody,
+  CModalFooter,
+  CModalHeader,
+  CModalTitle,
+  CForm,
+  CFormLabel,
+  CFormSelect,
   CRow,
   CCol,
   CDropdown,
-  CDropdownMenu,
   CDropdownToggle,
-  CDropdownItem,
-  CFormSelect,
+  CDropdownMenu,
+  CDropdownItem
 } from '@coreui/react';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaTipoContacto = () => {
-  const [tiposContacto, setTiposContacto] = useState([]);
+
+  const {canSelect, canUpdate, canDelete, canInsert } = usePermission('TipoContacto');
+  const [tipoContacto, setTipoContacto] = useState([]);
+  const [contactoError, setContactoError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [tipoContactoToUpdate, setTipoContactoToUpdate] = useState(null);
-  const [nuevoTipoContacto, setNuevoTipoContacto] = useState({ tipo_contacto: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
+  const [nuevoContacto, setNuevoContacto] = useState({ tipo_contacto: '' });
+  const [tipoContactoToUpdate, setTipoContactoToUpdate] = useState({});
+  const [tipoContactoToDelete, setTipoContactoToDelete] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [recordsPerPage, setRecordsPerPage] = useState(5);
-  const [errors, setErrors] = useState({
-  tipo_contacto: '',
-});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+  const [recordsPerPage, setRecordsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  
+
+{/**************************************************************************************************************************************/}
+
+const fetchTipoContacto = async () => {
+  try {
+    const response = await fetch(`http://localhost:4000/api/tipoContacto/verTodoTipoContacto`);
+    const data = await response.json();
+    console.log('Datos obtenidos:', data); // Agrega este log para depurar
+    const dataWithIndex = data.map((tipoContacto, index) => ({
+      ...tipoContacto,
+      originalIndex: index + 1,
+    }));
+    setTipoContacto(dataWithIndex);
+  } catch (error) {
+    console.error('Error al obtener tipo contacto:', error);
+  }
+};
 
 
   useEffect(() => {
-    fetchTiposContacto();
+    fetchTipoContacto();
   }, []);
 
-  const fetchTiposContacto = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/tipoContacto/verTodoTipoContacto');
-      if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
-      const data = await response.json();
-  
-      console.log('Datos recibidos del backend:', data);
-  
-      // Ordenar alfabéticamente por "tipo_contacto"
-      const sortedData = data
-        .map((item) => ({
-          cod_tipo_contacto: item.cod_tipo_contacto,
-          tipo_contacto: item.tipo_contacto || 'N/A',
-        }))
-        .sort((a, b) => a.tipo_contacto.localeCompare(b.tipo_contacto));
-  
-      setTiposContacto(sortedData);
-    } catch (error) {
-      console.error('Error fetching tipos de contacto:', error);
-      swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo cargar la lista de tipos de contacto.' });
-    }
-  };
-  
-  const exportToPDF = () => {
-    const doc = new jsPDF();
+{/**************************************************************************************************************************************/}
 
-    // Agregar logo usando la imagen importada
-    doc.addImage(logo, 'PNG', 10, 10, 30, 30);
+// Validación de tipo contacto
+const validateTipoContacto = (contacto) => {
+  const regex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]*$/;
+  const noMultipleSpaces = !/\s{2,}/.test(contacto); // No permite más de un espacio consecutivo
+  const trimmedContacto = contacto.trim().replace(/\s+/g, ' ');
 
-    // Título principal
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51); // Verde oscuro
-    doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
-
-    // Subtítulo
-    doc.setFontSize(14);
-    doc.text('Reporte de Tipos de Contacto', doc.internal.pageSize.width / 2, 30, { align: 'center' });
-
-    // Información adicional
-    doc.setFontSize(10);
-    doc.setTextColor(100); // Gris oscuro
-    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-
-    // Línea divisoria
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(0, 102, 51); // Verde oscuro
-    doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-
-    // Tabla con encabezados personalizados y estilos
-    doc.autoTable({
-        startY: 60, // Ajuste de posición inicial
-        head: [['#', 'Tipo de Contacto']], // Encabezados
-        body: filteredTiposContacto.map((item, index) => [index + 1, item.tipo_contacto.toUpperCase()]), // Datos
-        headStyles: {
-            fillColor: [0, 102, 51], // Verde oscuro
-            textColor: [255, 255, 255], // Blanco
-            fontSize: 10,
-        },
-        styles: {
-            fontSize: 10,
-            cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro para filas alternas
-    });
-
-    // Pie de página
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-
-        // Fecha y hora de generación
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51); // Verde
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-
-        // Número de página
-        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
-    }
-
-    // Guardar archivo y abrir automáticamente
-    const fileName = 'Reporte_TiposContacto.pdf'; // Nombre predefinido
-    doc.save(fileName);
-    window.open(doc.output('bloburl')); // Abre el archivo automáticamente
-};
-
-  const exportIndividualToPDF = (item, index) => {
-    const doc = new jsPDF();
-
-    // Agregar logo usando la imagen importada
-    doc.addImage(logo, 'PNG', 10, 10, 30, 30);
-
-    // Título principal
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51); // Verde oscuro
-    doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
-
-    // Subtítulo con el nombre del tipo de contacto
-    doc.setFontSize(14);
-    doc.text(
-        `Reporte Individual de Tipo de Contacto: ${item.tipo_contacto.toUpperCase()}`,
-        doc.internal.pageSize.width / 2,
-        30,
-        { align: 'center' }
-    );
-
-    // Información adicional
-    doc.setFontSize(10);
-    doc.setTextColor(100); // Gris oscuro
-    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871 | Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-
-    // Línea divisoria
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(0, 102, 51); // Verde oscuro
-    doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-
-    // Tabla con los datos individuales
-    doc.autoTable({
-        startY: 60, // Ajuste de posición inicial
-        head: [['#', 'Tipo de Contacto']], // Encabezados
-        body: [[index + 1, item.tipo_contacto.toUpperCase()]], // Datos individuales
-        headStyles: {
-            fillColor: [0, 102, 51], // Verde oscuro
-            textColor: [255, 255, 255], // Blanco
-            fontSize: 10,
-        },
-        styles: {
-            fontSize: 10,
-            cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro para filas alternas
-    });
-
-    // Pie de página
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        const pageWidth = doc.internal.pageSize.width;
-        const pageHeight = doc.internal.pageSize.height;
-
-        // Fecha y hora de generación
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-        });
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51); // Verde
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-
-        // Número de página
-        doc.text(`Página ${i} de ${pageCount}`, pageWidth - 10, pageHeight - 10, { align: 'right' });
-    }
-
-    // Guardar archivo y abrir automáticamente
-    const fileName = `Reporte_TipoContacto_${item.tipo_contacto}.pdf`; // Nombre predefinido
-    doc.save(fileName);
-    window.open(doc.output('bloburl')); // Abre el archivo automáticamente
-};
-
-  
-const handleCreateOrUpdate = async () => {
-  if (isSubmitting) return;
-
-  const errorsTemp = {};
-
-  // Validar si el campo está vacío
-  if (!nuevoTipoContacto.tipo_contacto.trim()) {
-    errorsTemp.tipo_contacto = 'El campo "Tipo de Contacto" no puede estar vacío.';
-  }
-
-  // Validar si contiene al menos una vocal
-  const vocalRegex = /[AEIOUÁÉÍÓÚÜÑ]/i;
-  if (nuevoTipoContacto.tipo_contacto.trim() && !vocalRegex.test(nuevoTipoContacto.tipo_contacto)) {
-    errorsTemp.tipo_contacto = 'El "Tipo de Contacto" debe contener al menos una vocal.';
-  }
-
-  // Si hay errores, establecerlos y salir
-  if (Object.keys(errorsTemp).length > 0) {
-    setErrors(errorsTemp);
-
-    // Limpiar los errores automáticamente después de 3 segundos
-    setTimeout(() => {
-      setErrors({});
-    }, 5000);
-
-    return;
-  }
-
-  // Validar duplicados
-  const isDuplicate = tiposContacto.some(
-    (item) =>
-      item.tipo_contacto.toUpperCase() === nuevoTipoContacto.tipo_contacto.trim().toUpperCase() &&
-      (!tipoContactoToUpdate || item.cod_tipo_contacto !== tipoContactoToUpdate.cod_tipo_contacto)
-  );
-
-  if (isDuplicate) {
+  if (!regex.test(trimmedContacto)) {
     swal.fire({
-      icon: 'error',
-      html: `<b>El tipo de contacto "${nuevoTipoContacto.tipo_contacto.trim()}" ya existe</b>`,
-      timer: 3000,
-      showConfirmButton: false,
+      icon: 'warning',
+      title: 'Tipo de contacto inválido',
+      text: 'El tipo de contacto solo puede contener letras y espacios.',
+    });
+    return false;
+  }
+
+  if (!noMultipleSpaces) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Espacios múltiples',
+      text: 'No se permite más de un espacio entre palabras.',
+    });
+    return false;
+  }
+
+  // Validar que ninguna letra se repita más de 4 veces seguidas
+  const words = trimmedContacto.split(' ');
+  for (let word of words) {
+    const letterCounts = {};
+    for (let letter of word) {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+      if (letterCounts[letter] > 4) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Repetición de letras',
+          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+        });
+        return false;
+      }
+    }
+  }
+
+  return true;
+};
+
+
+{/**************************************************************************************************************************************/}
+
+// Validar si el tipo contacto ya existe
+const isDuplicateTipoContacto = () => {
+  const { tipo_contacto } = nuevoContacto;
+  const existingContacto = tipoContacto.find(
+    (contacto) =>
+      contacto.tipo_contacto.toLowerCase() === tipo_contacto.toLowerCase()
+  );
+  if (existingContacto) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Tipo de contacto duplicado',
+      text: 'Ya existe un tipo de contacto con el mismo nombre.',
+    });
+
+    if (existingContacto) {
+      setContactoError('Ya existe un tipo de contacto con el mismo nombre');
+    } else {
+      setContactoError(''); // No hay error
+    }
+    return true; // Indica que el tipo contacto ya existe
+  }
+  return false; // No hay duplicado
+};
+
+
+{/**************************************************************************************************************************************/}
+
+// Función para controlar la entrada de texto en los campos
+const handleTipoContactoInputChange = (e, setFunction) => {
+  let value = e.target.value;
+
+  // No permitir más de un espacio consecutivo
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // No permitir que una letra se repita más de 4 veces consecutivamente
+  const wordArray = value.split(' ');
+  const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
+
+  if (!isValid) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
     });
     return;
   }
 
-  // Si no hay errores, limpiar mensajes y proceder
-  setErrors({});
-  setIsSubmitting(true);
+  if (value.length <= 2) {
+    setContactoError('El tipo de contacto debe tener más de 2 letras.');
+  } else {
+    setContactoError(''); // No hay error
+  }
 
-  const url = tipoContactoToUpdate
-    ? `http://localhost:4000/api/tipoContacto/actualizarTipoContacto/${tipoContactoToUpdate.cod_tipo_contacto}`
-    : 'http://localhost:4000/api/tipoContacto/crearTipoContacto';
-  const method = tipoContactoToUpdate ? 'PUT' : 'POST';
-  const body = JSON.stringify({ tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() });
+  setFunction((prevState) => ({
+    ...prevState,
+    tipo_contacto: value, // Actualizamos el campo tipo_contacto
+  }));
+
+  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+};
+
+
+{/**************************************************************************************************************************************/}
+
+      // Deshabilitar copiar y pegar
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
+  };
+{/**************************************************************************************************************************************/}
+
+    // Función para cerrar el modal con advertencia si hay cambios sin guardar
+    const handleCloseModal = (closeFunction, resetFields) => {
+      if (hasUnsavedChanges) {
+        swal.fire({
+          title: '¿Estás seguro?',
+          text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cerrar',
+          cancelButtonText: 'Cancelar',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            closeFunction(false);
+            resetFields(); // Limpiar los campos al cerrar
+            setHasUnsavedChanges(false); // Resetear cambios no guardados
+          }
+        });
+      } else {
+        closeFunction(false);
+        resetFields();
+      }
+    };
+
+    const resetNuevoContacto = () => {
+      setNuevoContacto({ tipo_contacto: '' });
+    };
+    
+    const resetContactoToUpdate = () => {
+      setTipoContactoToUpdate({ tipo_contacto: '' });
+    };
+    
+{/**************************************************************************************************************************************/}
+
+const handleCreateContacto = async () => {
+  // Validar el tipo de contacto antes de enviarlo
+  const contactoCapitalizado = capitalizeWords(nuevoContacto.tipo_contacto.trim().replace(/\s+/g, ' '));
+
+  // Validaciones antes de crear
+  if (!validateTipoContacto(contactoCapitalizado)) {
+    return;
+  }
 
   try {
-    const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body });
-    const result = await response.json();
+    const response = await fetch(`http://localhost:4000/api/tipoContacto/crearTipoContacto`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tipo_contacto: contactoCapitalizado,  // Usamos el tipo de contacto validado
+        estado: 1, // Tipo de contacto activo por defecto
+      }),
+    });
 
     if (response.ok) {
-      const updatedList = tipoContactoToUpdate
-        ? tiposContacto.map((item) =>
-            item.cod_tipo_contacto === tipoContactoToUpdate.cod_tipo_contacto
-              ? { ...item, tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() }
-              : item
-          )
-        : [...tiposContacto, { cod_tipo_contacto: result.cod_tipo_contacto, tipo_contacto: nuevoTipoContacto.tipo_contacto.trim() }];
+      let result;
+      try {
+        result = await response.json(); // Intentamos obtener el JSON de la respuesta
+      } catch (error) {
+        console.warn("La API no devolvió JSON, pero el tipo de contacto fue creado.");
+        result = { tipo_contacto: contactoCapitalizado }; // Asumimos que se creó correctamente
+      }
 
-      setTiposContacto(updatedList.sort((a, b) => a.tipo_contacto.localeCompare(b.tipo_contacto)));
+      // Actualiza la lista sin recargar la página
+      fetchTipoContacto();
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevoContacto(); // Reiniciar el estado del nuevo contacto
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+
       swal.fire({
         icon: 'success',
-        html: tipoContactoToUpdate
-          ? '<b>Tipo de contacto actualizado exitosamente</b>'
-          : '<b>Tipo de contacto creado exitosamente</b>',
-        timer: 3000,
-        showConfirmButton: false,
+        title: 'Creación exitosa',
+        text: `El tipo de contacto ha sido creado correctamente.`,
       });
 
-      setModalVisible(false);
-      setNuevoTipoContacto({ tipo_contacto: '' });
-      setTipoContactoToUpdate(null);
     } else {
       swal.fire({
         icon: 'error',
-        html: `<b>${result.Mensaje}</b>`,
-        timer: 3000,
-        showConfirmButton: false,
+        title: 'Error',
+        text: 'No se pudo crear el tipo de contacto.',
       });
     }
   } catch (error) {
-    console.error('Error:', error);
-    swal.fire({
-      icon: 'error',
-      html: '<b>Error en el servidor.</b>',
-      timer: 3000,
-      showConfirmButton: false,
-    });
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-
-const handleDeleteTipoContacto = async (cod_tipo_contacto, tipo_contacto) => {
-  try {
-    const confirmResult = await swal.fire({
-      title: 'Confirmar Eliminación',
-      html: `¿Estás seguro de que deseas eliminar el tipo de contacto: <strong>${tipo_contacto || 'N/A'}</strong>?`,
-      showCancelButton: true,
-      confirmButtonColor: '#FF6B6B',
-      cancelButtonColor: '#6C757D',
-      cancelButtonText: 'Cancelar',
-      confirmButtonText: '<i class="fa fa-trash"></i> Eliminar',
-      reverseButtons: true,
-      focusCancel: true,
-    });
-
-    if (!confirmResult.isConfirmed) return;
-
-    const response = await fetch(`http://localhost:4000/api/tipoContacto/eliminarTipoContacto/${encodeURIComponent(cod_tipo_contacto)}`, {
-      method: 'DELETE',
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      setTiposContacto((prevTipos) =>
-        prevTipos.filter((item) => item.cod_tipo_contacto !== cod_tipo_contacto)
-      );
-      swal.fire({
-        icon: 'success',
-        html: '<b>Tipo de contacto eliminado exitosamente</b>',
-        timer: 3000,
-        showConfirmButton: false,
-      });
-    } else {
-      throw new Error(result.Mensaje || 'Error al eliminar');
-    }
-  } catch (error) {
-    console.error('Error eliminando el tipo de contacto:', error);
+    console.error('Error al crear el tipo de contacto:', error);
     swal.fire({
       icon: 'error',
       title: 'Error',
-      text: error.message || 'No se pudo eliminar el tipo de contacto.',
-      timer: 3000,
-      showConfirmButton: false,
+      text: 'Ocurrió un error al intentar crear el tipo de contacto.',
     });
   }
 };
 
-  const handleRecordsPerPageChange = (e) => {
-    setRecordsPerPage(Number(e.target.value));
-    setCurrentPage(1);
+
+{/**************************************************************************************************************************************/}
+
+const handleUpdateContacto = async () => {
+  const contactoCapitalizado = capitalizeWords(tipoContactoToUpdate.tipo_contacto.trim().replace(/\s+/g, ' '));
+
+  if (!validateTipoContacto(contactoCapitalizado)) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:4000/api/tipoContacto/actualizarTipoContacto/${tipoContactoToUpdate.cod_tipo_contacto}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        cod_tipo_contacto: tipoContactoToUpdate.cod_tipo_contacto,
+        tipo_contacto: contactoCapitalizado,
+        estado: tipoContactoToUpdate.estado, // Mantener el estado o modificarlo
+      }),
+    });
+
+    if (response.ok) {
+      fetchTipoContacto();
+      setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetContactoToUpdate();
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+      swal.fire({
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: 'El tipo de contacto ha sido actualizado correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar el tipo de contacto.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al actualizar el tipo de contacto:', error);
+  }
+};
+
+
+{/**************************************************************************************************************************************/}
+
+const handleDeleteContacto = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/tipoContacto/eliminarTipoContacto/${encodeURIComponent(tipoContactoToDelete.cod_tipo_contacto)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.ok) {
+      fetchTipoContacto();
+      setModalDeleteVisible(false);
+      setTipoContactoToDelete({});
+      swal.fire({
+        icon: 'success',
+        title: 'Eliminación exitosa',
+        text: 'El tipo de contacto ha sido eliminado correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo eliminar el tipo de contacto.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al eliminar el tipo de contacto:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar eliminar el tipo de contacto.',
+    });
+  }
+};
+
+{/**************************************************************************************************************************************/}
+
+const openUpdateModal = (tipoContacto) => {
+  setTipoContactoToUpdate(tipoContacto);
+  setModalUpdateVisible(true);
+};
+
+const openDeleteModal = (tipoContacto) => {
+  setTipoContactoToDelete(tipoContacto);
+  setModalDeleteVisible(true);
+};
+
+
+{/**************************************************************************************************************************************/}
+
+const toggleEstadoContacto = async (tipoContacto) => {
+  const nuevoEstado = tipoContacto.estado ? 0 : 1;
+
+  try {
+    setLoading(true);
+
+    const response = await axios.post('http://localhost:4000/api/tipoContacto/actualizarEstadoTipoContacto', {
+      cod_tipo_contacto: tipoContacto.cod_tipo_contacto,
+      estado: nuevoEstado,
+    });
+
+    if (response.data.mensaje === 'Estado actualizado exitosamente') {
+      // Actualizar el estado correctamente
+      setTipoContacto((prevTipoContacto) =>
+        prevTipoContacto.map((contacto) =>
+          contacto.cod_tipo_contacto === tipoContacto.cod_tipo_contacto
+            ? { ...contacto, estado: nuevoEstado }
+            : contacto
+        )
+      );
+    } else {
+      console.error('Error al cambiar el estado:', response.data.mensaje);
+    }
+  } catch (error) {
+    console.error('Error al realizar la solicitud:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+{/**************************************************************************************************************************************/}
+
+
+const handleSearch = (event) => {
+  setSearchTerm(event.target.value);
+  setCurrentPage(1);
+};
+
+const filteredTipoContacto = tipoContacto.filter((tipoContacto) => 
+  tipoContacto.tipo_contacto &&
+  tipoContacto.tipo_contacto.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+const indexOfLastRecord = currentPage * recordsPerPage;
+const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+const currentRecords = filteredTipoContacto.slice(indexOfFirstRecord, indexOfLastRecord);
+
+const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredTipoContacto.length / recordsPerPage)) {
+    setCurrentPage(pageNumber);
+  }
+};
+
+{/**************************************************************************************************************************************/}
+
+const ReporteTipoContactoPDF = () => {
+  const doc = new jsPDF('p', 'mm', 'letter'); 
+  
+  if (!filteredTipoContacto || filteredTipoContacto.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Tipo Contacto', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
+
+    // Usar filteredTipoContacto en lugar de tipoRelacion
+    const tableRows = filteredTipoContacto.map((contacto, index) => ({
+      index: (index + 1).toString(),
+      tipo_contacto: contacto.tipo_contacto?.toUpperCase() || 'N/D',
+    }));
+
+    const columnWidths = {
+      index: 20, // Ancho de la columna #
+      tipo_contacto: 100 // Ancho de la columna "Tipo Contacto"
+    };
+    const tableWidth = columnWidths.index + columnWidths.tipo_contacto;
+
+    doc.autoTable({
+      startY: 65,
+      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrado de la tabla
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Tipo de Contacto', dataKey: 'tipo_contacto' },
+      ],
+      body: tableRows,
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9, 
+        halign: 'center',
+      },
+      styles: {
+        fontSize: 7, 
+        cellPadding: 4, 
+      },
+      columnStyles: {
+        index: { cellWidth: 10 },
+        tipo_contacto: { cellWidth: 90 },
+      },
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        const footerY = doc.internal.pageSize.height - 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      },
+    });
+
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Tipo Contacto</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:20px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_TipoContacto.pdf'; a.click();">
+              Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
   };
 
-  const handleSearch = (e) => setSearchTerm(e.target.value);
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
+};
 
-  const filteredTiposContacto = tiposContacto.filter((item) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      item.tipo_contacto?.toLowerCase().includes(term) || // Asegura que no sea undefined
-      item.cod_tipo_contacto?.toString().includes(term)   // Verifica el código también
-    );
+
+{/**************************************************************************************************************************************/}
+
+const exportToExcel = () => {
+  if (!filteredTipoContacto || filteredTipoContacto.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Tipo Contacto');
+
+  // Título del documento
+  worksheet.mergeCells('A1:B1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:B2');
+  worksheet.getCell('A2').value = 'TIPOS DE CONTACTO';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados de la tabla
+  const headerRow = worksheet.addRow(['#', 'Tipo Contacto']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
   });
-  
 
-  const indexOfLastRecord = currentPage * recordsPerPage;
-const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-const currentRecords = filteredTiposContacto.slice(indexOfFirstRecord, indexOfLastRecord);
-  const totalPages = Math.ceil(filteredTiposContacto.length / recordsPerPage);
+  // Datos de la tabla (Usamos filteredTipoContacto en lugar de filteredTipoRelacion)
+  filteredTipoContacto.forEach((contacto, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      typeof contacto.tipo_contacto === 'string' ? contacto.tipo_contacto.toUpperCase() : contacto.tipo_contacto
+    ]);
 
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // Ajustar el ancho de las columnas
+  worksheet.columns.forEach((column) => {
+    column.width = 20;
+  });
+
+  // Crear archivo Excel
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_TipoContacto.xlsx');
+  });
+};
+
+
+{/**************************************************************************************************************************************/}
+
+{/**************************************************************************************************************************************/}
+
+{/**************************************************************************************************************************************/}
+
+{/**************************************************************************************************************************************/}
+
+{/**************************************************************************************************************************************/}
 
   return (
     <CContainer>
-      <CRow className="align-items-center mb-5">
-        <CCol xs="8" md="9"><h1>Mantenimiento de Tipos de Contacto</h1></CCol>
-        <CCol xs="4" md="3" className="text-end">
-          <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={() => { setModalVisible(true); setTipoContactoToUpdate(null); setNuevoTipoContacto({ tipo_contacto: '' }); }}>
-            <CIcon icon={cilPlus} /> Nuevo
-          </CButton>
-          <CButton
-  style={{ backgroundColor: '#6C8E58', color: 'white', marginLeft: '10px' }}
-  onClick={exportToPDF}
->
-  <CIcon icon={cilDescription} style={{ marginRight: '5px' }} />
-  Descargar PDF
-</CButton>
+<CRow className="align-items-center mb-5">
+  <CCol xs="8" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Mantenimiento de Tipo Contactos</h1>
+  </CCol>
+  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+    {/* Botón Nuevo para abrir el modal */}
+    {canInsert && (
+      <CButton 
+        style={{ backgroundColor: '#4B6251', color: 'white' }} 
+        className="mb-3 mb-md-0 me-md-3" 
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+    )}
 
-          <div className="mt-2" style={{ textAlign: 'right' }}>
-            <span>Mostrar </span>
-            <CFormSelect
-              value={recordsPerPage}
-              onChange={handleRecordsPerPageChange}
-              style={{ maxWidth: '70px', display: 'inline-block', margin: '0 5px' }}
-            >
-              <option value={5}>5</option>
-              <option value={10}>10</option>
-              <option value={20}>20</option>
-            </CFormSelect>
-            <span> registros</span>
-          </div>
-        </CCol>
-      </CRow>
+    {/* Botón de Reporte */}
+    <CDropdown>
+      <CDropdownToggle
+        style={{ backgroundColor: '#6C8E58', color: 'white' }}
+      >
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReporteTipoContactoPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
 
-      <CInputGroup className="mb-3" style={{ maxWidth: '400px' }}>
-        <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
-        <CFormInput placeholder="Buscar tipo contacto...." onChange={handleSearch} value={searchTerm} />
-        <CButton
-          onClick={() => setSearchTerm('')}
-          style={{
-            border: '2px solid #d3d3d3',
-            color: '#4B6251',
-            backgroundColor: '#f0f0f0',
-          }}
-        >
-          <i className="fa fa-broom" style={{ marginRight: '5px' }}></i> Limpiar
-        </CButton>
-      </CInputGroup>
-
-      <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-        <CTable striped bordered hover>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
-              <CTableHeaderCell>Acciones</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {currentRecords.map((item, index) => (
-              <CTableRow key={item.cod_tipo_contacto}>
-                <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-                <CTableDataCell>{item.tipo_contacto}</CTableDataCell>
-                <CTableDataCell>
-                  <CButton color="warning" onClick={() => { setTipoContactoToUpdate(item); setModalVisible(true); setNuevoTipoContacto({ tipo_contacto: item.tipo_contacto }); }}>
-                    <CIcon icon={cilPen} />
-                  </CButton>
-                  <CButton
-                    color="danger"
-                    onClick={() => handleDeleteTipoContacto(item.cod_tipo_contacto, item.tipo_contacto)}
-                    className="ms-2"
-                  >
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-
-                </CTableDataCell>
-              </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
-      </div>
-
-      <CPagination align="center" className="my-3">
-        <CButton
-          style={{
-            backgroundColor: '#7fa573',
-            color: 'white',
-            marginRight: '20px',
-          }}
-          onClick={() => paginate(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
-          Anterior
-        </CButton>
-        <CButton
-          style={{
-            backgroundColor: '#7fa573',
-            color: 'white',
-          }}
-          onClick={() => paginate(currentPage + 1)}
-          disabled={currentPage === totalPages || filteredTiposContacto.length === 0}
-        >
-          Siguiente
-        </CButton>
-        <span style={{ marginLeft: '10px', color: 'black', fontSize: '16px' }}>
-          Página {currentPage} de {totalPages}
-        </span>
-      </CPagination>
-
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
-        <CModalHeader><CModalTitle>{tipoContactoToUpdate ? 'Actualizar Tipo de Contacto' : 'Crear Nuevo Tipo de Contacto'}</CModalTitle></CModalHeader>
-        <CModalBody>
-  <CInputGroup className="mb-3">
-    <CInputGroupText style={{ backgroundColor: '#f0f0f0', color: 'black' }}>Tipo Contacto</CInputGroupText>
-    <CFormInput
-      placeholder="Tipo de Contacto"
-      value={nuevoTipoContacto.tipo_contacto}
-      onChange={(e) => {
-        let value = e.target.value
-          .replace(/[^A-ZÁÉÍÓÚÜÑ ]/gi, '') // Permitir solo letras y espacios
-          .replace(/^\s+/, '') // Eliminar espacios al inicio
-          .replace(/\s{2,}/g, ' ') // Reemplazar múltiples espacios por uno
-          .toUpperCase(); // Convertir a mayúsculas
-
-        // Permitir eliminar caracteres aunque esté en el límite
-        if (value.length <= 50 || value.length < nuevoTipoContacto.tipo_contacto.length) {
-          setNuevoTipoContacto({ tipo_contacto: value });
-        }
-      }}
-      onKeyDown={(e) => {
-        const inputValue = nuevoTipoContacto.tipo_contacto;
-
-        // Prevenir espacios iniciales o múltiples espacios
-        if (e.key === ' ' && (inputValue === '' || inputValue.endsWith(' '))) {
-          e.preventDefault();
-        }
-      }}
-      onCopy={(e) => e.preventDefault()} // Bloquear copiar
-      onCut={(e) => e.preventDefault()}  // Bloquear cortar
-      onPaste={(e) => e.preventDefault()} // Bloquear pegar
-    />
-  </CInputGroup>
-  {/* Mostrar mensaje de error */}
-  {errors.tipo_contacto && (
-    <div style={{ display: 'flex', alignItems: 'center', marginTop: '5px', fontSize: '0.9rem' }}>
-      <CIcon
-        icon={cilWarning}
-        style={{ color: '#FFC107', marginRight: '5px', fontSize: '1.2rem' }}
+{/* Contenedor de la barra de búsqueda y el selector dinámico */}
+<CRow className="align-items-center mt-4 mb-2">
+  {/* Barra de búsqueda */}
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar tipo contacto..."
+        onChange={handleSearch}
+        value={searchTerm}
       />
-      <span style={{ fontWeight: 'bold', color: '#000000' }}>{errors.tipo_contacto}</span>
-    </div>
-  )}
-</CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
-          <CButton
-            onClick={handleCreateOrUpdate}
-            style={tipoContactoToUpdate
-              ? { backgroundColor: '#FFD700', color: 'white' }
-              : { backgroundColor: '#4B6251', color: 'white' }
-            }
-          >
-            <CIcon icon={tipoContactoToUpdate ? cilPen : cilSave} />
-            &nbsp;
-            {tipoContactoToUpdate ? 'Actualizar' : 'Guardar'}
-          </CButton>
-        </CModalFooter>
-      </CModal>
+      <CButton
+        style={{
+          border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out',
+          backgroundColor: '#F3F4F7',
+          color: '#343a40'
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
+
+  {/* Selector dinámico a la par de la barra de búsqueda */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span>Mostrar&nbsp;</span>
+        <CFormSelect
+          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1);
+          }}
+          value={recordsPerPage}
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </CFormSelect>
+        <span>&nbsp;registros</span>
+      </div>       
+    </CInputGroup>
+  </CCol>
+</CRow>
+
+{/**************************************************************************************************************************************/}
+<div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Contacto</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+
+    <CTableBody>
+      {currentRecords.map((tipoContacto) => (
+        <CTableRow key={tipoContacto.cod_tipo_contacto}>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoContacto.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoContacto.tipo_contacto.toUpperCase()}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(tipoContacto)}
+                  style={{ marginRight: '10px' }}
+                  disabled={tipoContacto.estado === 0} // Deshabilitado si está inactivo
+                  title={tipoContacto.estado ? 'Editar contacto' : 'Contacto inactivo'}
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
+
+              {canDelete && (
+                <CButton color="danger" onClick={() => openDeleteModal(tipoContacto)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+
+              {/* Botón de Activar/Inactivar */}
+              <CButton
+                style={{
+                  backgroundColor: tipoContacto.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                  color: 'white',
+                  marginLeft: '10px',
+                }}
+                onClick={() => toggleEstadoContacto(tipoContacto)} // Función para cambiar estado
+                disabled={loading} // Deshabilitar mientras carga
+              >
+                {loading ? 'Cambiando...' : tipoContacto.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
+
+
+{/**************************************************************************************************************************************/}
+{/* Paginación Fija */}
+<div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+  <CPagination aria-label="Page navigation">
+    <CButton
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === 1} // Desactiva si es la primera página
+      onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(filteredTipoContacto.length / recordsPerPage)} // Desactiva si es la última página
+      onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  <span style={{ marginLeft: '10px' }}>
+    Página {currentPage} de {Math.ceil(filteredTipoContacto.length / recordsPerPage)}
+  </span>
+</div>
+
+{/**************************************************************************************************************************************/}
+<CModal visible={modalVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Ingresar Nuevo Tipo de Contacto</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoContacto)} />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Contacto</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese un nuevo tipo de contacto"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevoContacto.tipo_contacto}
+          onChange={(e) => handleTipoContactoInputChange(e, setNuevoContacto, setContactoError)}
+          onBlur={isDuplicateTipoContacto}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {contactoError && (
+        <p style={{ color: 'red', fontSize: '0.9em' }}>{contactoError}</p>
+      )}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoContacto)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateContacto} disabled={!!contactoError}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+{/**************************************************************************************************************************************/}
+
+<CModal visible={modalUpdateVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Actualizar Tipo de Contacto</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetContactoToUpdate)} />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Contacto</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el tipo de contacto"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={tipoContactoToUpdate.tipo_contacto}
+          onChange={(e) => handleTipoContactoInputChange(e, setTipoContactoToUpdate)}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {contactoError.tipo_contacto && <p style={{ color: 'red' }}>{contactoError.tipo_contacto}</p>}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetContactoToUpdate)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateContacto} disabled={contactoError.tipo_contacto}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+{/**************************************************************************************************************************************/}
+
+{/* Modal Eliminar Contacto */}
+<CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+  <CModalHeader>
+    <CModalTitle>Eliminar Tipo de Contacto</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    ¿Estás seguro de que deseas eliminar el tipo de contacto "{tipoContactoToDelete.tipo_contacto}"?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton color="danger" onClick={handleDeleteContacto}>
+      Eliminar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+{/**************************************************************************************************************************************/}
+
     </CContainer>
   );
 };

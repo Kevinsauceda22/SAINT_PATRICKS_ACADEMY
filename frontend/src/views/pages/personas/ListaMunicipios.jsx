@@ -1,36 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import Swal from 'sweetalert2';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilFile } from '@coreui/icons';
-import CIcon from '@coreui/icons-react';
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-
+import { CIcon } from '@coreui/icons-react';
+import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilInfo, cilDescription} from '@coreui/icons';
+import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
+import swal from 'sweetalert2'; // Importar SweetAlert
+import ExcelJS from 'exceljs';
+import { jsPDF } from 'jspdf';       // Para generar archivos PDF
+import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
+import { saveAs } from 'file-saver'; // Para descargar archivos en el navegador
 import {
-  CButton,
   CContainer,
-  CForm,
-  CFormInput,
   CInputGroup,
   CInputGroupText,
-  CModal,
-  CModalHeader,
-  CModalTitle,
-  CModalBody,
-  CModalFooter,
-  CPagination,
+  CFormInput,
+  CButton,
   CTable,
   CTableHead,
   CTableRow,
   CTableHeaderCell,
   CTableBody,
-  CRow,
-  CFormSelect,
-  CCol,
   CTableDataCell,
-  CSpinner,
+  CPagination,
+  CModal,
+  CModalBody,
+  CModalFooter,
+  CModalHeader,
+  CModalTitle,
+  CForm,
+  CFormLabel,
+  CFormSelect,
+  CRow,
+  CCol,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem
 } from '@coreui/react';
-import '@fortawesome/fontawesome-free/css/all.min.css';
-import 'react-phone-number-input/style.css';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
@@ -40,447 +44,639 @@ const MunicipioMantenimiento = () => {
   const { canSelect, canUpdate, canDelete, canInsert  } = usePermission('Municipios');
 
   const [municipios, setMunicipios] = useState([]);
-  const [departamentos, setDepartamentos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredMunicipios, setFilteredMunicipios] = useState([]);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [municipioError, setMunicipioError] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
-  const [editar, setEditar] = useState(false);
-  const [municipioActual, setMunicipioActual] = useState({ 
-    codMunicipio: null, 
-    nombreMunicipio: '',
-    codDepartamento: ''
-  });
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
+  const [nuevoMunicipio, setNuevoMunicipio] = useState({ Nombre_municipio: '' });
+  const [municipioToUpdate, setMunicipioToUpdate] = useState({});
+  const [municipioToDelete, setMunicipioToDelete] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+  const [recordsPerPage, setRecordsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  
 
-  const obtenerMunicipios = async () => {
+
+
+
+  const fetchMunicipios = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/departamento/verMunicipios');
+      const response = await fetch(`http://localhost:4000/api/municipio/verTodoMunicipio`);
       const data = await response.json();
-      if (response.ok) {
-        // Convertir los nombres de los municipios a mayúsculas de manera segura
-        const municipiosEnMayusculas = data.map(municipio => ({
-          ...municipio, // Mantener los otros atributos
-          nombre: municipio.nombre ? municipio.nombre.toUpperCase() : municipio.nombre // Verificar que 'nombre' no sea undefined
-        }));
-        setMunicipios(municipiosEnMayusculas);
-        setFilteredMunicipios(municipiosEnMayusculas);
-      } else {
-        throw new Error(data.message || 'Error al obtener los municipios');
-      }
+      console.log('Datos obtenidos:', data); // Agrega este log para depurar
+      const dataWithIndex = data.map((municipio, index) => ({
+        ...municipio,
+        originalIndex: index + 1,
+      }));
+      setMunicipios(dataWithIndex);
     } catch (error) {
-      setError(error.message);
-      Swal.fire('Error', error.message, 'error');
-    } finally {
-      setLoading(false);
+      console.error('Error al obtener municipios:', error);
     }
   };
   
-  const obtenerDepartamentos = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/departamento/departamentos');
-      const data = await response.json();
-      if (response.ok) {
-        // Convertir los nombres de los departamentos a mayúsculas de manera segura
-        const departamentosEnMayusculas = data.map(departamento => ({
-          ...departamento, // Mantener los otros atributos
-          nombre: departamento.nombre ? departamento.nombre.toUpperCase() : departamento.nombre // Verificar que 'nombre' no sea undefined
-        }));
-        setDepartamentos(departamentosEnMayusculas);
-      } else {
-        throw new Error('Error al obtener los departamentos');
+  useEffect(() => {
+    fetchMunicipios(); // Llama a la función para obtener los municipios
+  }, []);
+  
+{/**************************************************************************************************************************************/}
+
+  //OBTENER DEPARTAMENTOS 
+
+
+
+{/****************************************************************************************************************************************/}
+// Validación de municipio
+const validateMunicipio = (municipio) => {
+  const regex = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]*$/; // Solo permite letras y espacios
+  const noMultipleSpaces = !/\s{2,}/.test(municipio); // No permite más de un espacio consecutivo
+  const trimmedMunicipio = municipio.trim().replace(/\s+/g, ' '); // Elimina espacios innecesarios
+
+  // Validar que solo contenga letras y espacios
+  if (!regex.test(trimmedMunicipio)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Municipio inválido',
+      text: 'El nombre del municipio solo puede contener letras y espacios.',
+    });
+    return false;
+  }
+
+  // Validar que no tenga espacios múltiples
+  if (!noMultipleSpaces) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Espacios múltiples',
+      text: 'No se permite más de un espacio entre palabras.',
+    });
+    return false;
+  }
+
+  // Validar que ninguna letra se repita más de 4 veces seguidas
+  const words = trimmedMunicipio.split(' ');
+  for (let word of words) {
+    const letterCounts = {};
+    for (let letter of word) {
+      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+      if (letterCounts[letter] > 4) {
+        swal.fire({
+          icon: 'warning',
+          title: 'Repetición de letras',
+          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+        });
+        return false;
       }
-    } catch (error) {
-      console.error('Error:', error);
-      Swal.fire('Error', 'Error al cargar los departamentos', 'error');
     }
-  };  
+  }
+
+  return true; // Validación exitosa
+};
+
+{/****************************************************************************************************************************************/}
+
+// Capitalizar la primera letra de cada palabra
+const capitalizeWords = (str) => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+// Validar que ningún campo esté vacío
+const validateEmptyFields = () => {
+  const { Nombre_municipio } = nuevoMunicipio; // Ajuste a Nombre_municipio
+  if (!Nombre_municipio) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Campos vacíos',
+      text: 'Todos los campos deben estar llenos para poder crear un municipio.',
+    });
+    return false;
+  }
+  return true;
+};
 
 
-const [errorMensaje, setErrorMensaje] = useState(''); // Estado para el mensaje de error
+{/****************************************************************************************************************************************/}
 
-const crearMunicipio = async () => {
-  const { nombreMunicipio, codDepartamento } = municipioActual;
+// Validar si el municipio ya existe
+const isDuplicateMunicipio = () => {
+  const { Nombre_municipio } = nuevoMunicipio;
+  const existingMunicipio = municipios.find(
+    (municipio) =>
+      municipio.Nombre_municipio.toLowerCase() === Nombre_municipio.toLowerCase()
+  );
+  if (existingMunicipio) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Municipio duplicado',
+      text: 'Ya existe un municipio con el mismo nombre.',
+    });
 
-  // Validar si todos los campos están completos
-  if (!nombreMunicipio || !codDepartamento) {
-    setErrorMensaje('Todos los campos son requeridos');
+    if (existingMunicipio) {
+      setMunicipioError('Ya existe un municipio con el mismo nombre');
+    } else {
+      setMunicipioError(''); // No hay error
+    }
+    return true; // Indica que el municipio ya existe
+  }
+  return false; // No hay duplicado
+};
+
+
+{/****************************************************************************************************************************************/}
+
+// Función para controlar la entrada de texto en los campos
+const handleMunicipioInputChange = (e, setFunction) => {
+  let value = e.target.value;
+
+  // No permitir más de un espacio consecutivo
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // No permitir que una letra se repita más de 4 veces consecutivamente
+  const wordArray = value.split(' ');
+  const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
+
+  if (!isValid) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+    });
     return;
   }
 
-  // Validar si el municipio ya existe
-  const municipioExistente = municipios.some(municipio => municipio.nombre_municipio.toLowerCase() === nombreMunicipio.toLowerCase());
-
-  if (municipioExistente) {
-    setErrorMensaje('Ya existe un municipio con ese nombre');
-    return; // Evita continuar con la creación si el municipio ya existe
+  if (value.length <= 2) {
+    setMunicipioError('El municipio debe tener más de 2 letras.');
   } else {
-    setErrorMensaje(''); // Limpiar el mensaje de error si el municipio no existe
+    setMunicipioError(''); // No hay error
   }
 
-  // Realizar la creación del municipio
+  setFunction((prevState) => ({
+    ...prevState,
+    Nombre_municipio: value,
+  }));
+
+  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+};
+
+
+{/****************************************************************************************************************************************/}
+
+      // Deshabilitar copiar y pegar
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
+  };
+{/****************************************************************************************************************************************/}
+    // Función para cerrar el modal con advertencia si hay cambios sin guardar
+    const handleCloseModal = (closeFunction, resetFields) => {
+      if (hasUnsavedChanges) {
+        swal.fire({
+          title: '¿Estás seguro?',
+          text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cerrar',
+          cancelButtonText: 'Cancelar',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            closeFunction(false);
+            resetFields(); // Limpiar los campos al cerrar
+            setHasUnsavedChanges(false); // Resetear cambios no guardados
+          }
+        });
+      } else {
+        closeFunction(false);
+        resetFields();
+      }
+    };
+
+
+    const resetNuevoMunicipio = () => {
+      setNuevoMunicipio({ Nombre_municipio: '' });
+    };
+    
+    const resetMunicipioToUpdate = () => {
+      setMunicipioToUpdate({ Nombre_municipio: '' });
+    };
+    
+
+{/****************************************************************************************************************************************/}
+
+const handleCreateMunicipio = async () => {
+  // Validar el nombre del municipio antes de enviarlo
+  const municipioCapitalizado = capitalizeWords(
+    nuevoMunicipio.Nombre_municipio.trim().replace(/\s+/g, ' ')
+  );
+
+  // Validaciones antes de crear
+  if (!validateMunicipio(municipioCapitalizado)) {
+    return;
+  }
+
   try {
-    const response = await fetch('http://localhost:4000/api/departamento/municipios', {
+    const response = await fetch(`http://localhost:4000/api/municipios/crearMunicipio`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nombre_municipio: nombreMunicipio, cod_departamento: codDepartamento }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Nombre_municipio: municipioCapitalizado, // Usamos el nombre del municipio validado
+        estado: 1, // Municipio activo por defecto
+      }),
     });
 
     if (response.ok) {
-      Swal.fire('Éxito', 'Municipio creado exitosamente', 'success');
-      obtenerMunicipios(); // Actualizar la lista de municipios
+      let result;
+      try {
+        result = await response.json(); // Intentamos obtener el JSON de la respuesta
+      } catch (error) {
+        console.warn("La API no devolvió JSON, pero el municipio fue creado.");
+        result = { Nombre_municipio: municipioCapitalizado }; // Asumimos que se creó correctamente
+      }
+
+      // Actualiza la lista sin recargar la página
+      fetchMunicipios();
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevoMunicipio(); // Reiniciar el estado del nuevo municipio
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+
+      swal.fire({
+        icon: 'success',
+        title: 'Creación exitosa',
+        text: `El municipio ha sido creado correctamente.`,
+      });
+
     } else {
-      const result = await response.json();
-      throw new Error(result.message || 'Error al crear el municipio');
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo crear el municipio.',
+      });
     }
   } catch (error) {
-    Swal.fire('Error', error.message, 'error');
-  } finally {
-    setModalVisible(false);
-    setErrorMensaje(''); // Limpiar mensaje de error
+    console.error('Error al crear el municipio:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar crear el municipio.',
+    });
   }
 };
 
-// Bloquear copiar y pegar en campos
-const disableCopyPaste = (e) => {
-  e.preventDefault();
-  setErrorMensaje('Copiar y pegar no está permitido.');
-  setTimeout(() => setErrorMensaje(''), 5000); // Eliminar mensaje después de 5 segundos
-};
+{/****************************************************************************************************************************************/}
 
-const tieneLetrasRepetidas = (texto) => /([a-zA-Z])\1\1/.test(texto);
+const handleUpdateMunicipio = async () => {
+  const municipioCapitalizado = capitalizeWords(
+    municipioToUpdate.Nombre_municipio.trim().replace(/\s+/g, ' ')
+  );
 
-// Verificar si contiene caracteres válidos
-const permitirCaracteresValidos = (texto) => /^[a-zA-Z0-9\s]*$/.test(texto);
-// Verificar si contiene números
-const contieneNumeros = (texto) => /\d/.test(texto);
-
-const tieneEspaciosConsecutivos = (texto) => {
-  const regex = /\s{3,}/; // Busca más de dos espacios consecutivos
-  return regex.test(texto);
-};
- 
-// Manejo de cambio en los campos de entrada
-const handleInputChange = (e) => {
-  const { name, value } = e.target;
-  const upperCaseValue = value.toUpperCase(); // Convertir a mayúsculas
-
-  setErrorMensaje(''); // Limpiar el mensaje de error al cambiar el texto
-
-  // Validación para el campo 'nombreMunicipio'
-  if (name === 'nombreMunicipio') {
-    if (!upperCaseValue.trim()) {
-      setMunicipioActual((prev) => ({ ...prev, [name]: upperCaseValue }));
-      return;
-    }
-
-    // Validaciones de formato
-    if (tieneLetrasRepetidas(upperCaseValue.replace(/\s/g, ''))) {
-      setErrorMensaje('No se permiten más de 2 letras consecutivas iguales');
-      setTimeout(() => setErrorMensaje(''), 5000);
-      return;
-    }
-
-    if (!permitirCaracteresValidos(upperCaseValue)) {
-      setErrorMensaje('No se permiten caracteres especiales');
-      setTimeout(() => setErrorMensaje(''), 5000);
-      return;
-    }
-   // Validación para asegurar que no haya más de dos espacios consecutivos
-   
-    if (contieneNumeros(upperCaseValue)) {
-      setErrorMensaje('No se permiten números.');
-      setTimeout(() => setErrorMensaje(''), 5000);
-      return;
-    }
-    if (tieneEspaciosConsecutivos(upperCaseValue)) {
-      setErrorMensaje('No se permiten más de 2 espacios consecutivos');
-      setTimeout(() => setErrorMensaje(''), 5000); // Borra el mensaje después de 5 segundos
-      return; // No actualiza el estado si hay más de dos espacios consecutivos
-    }
+  if (!validateMunicipio(municipioCapitalizado)) {
+    return;
   }
 
-  // Actualizar el estado con el valor del campo
-  setMunicipioActual((prev) => ({ ...prev, [name]: upperCaseValue }));
-};
-  
-  const actualizarMunicipio = async () => {
-    const { codMunicipio, nombreMunicipio, codDepartamento } = municipioActual;
-    if (!nombreMunicipio || !codDepartamento) {
-      Swal.fire('Error', 'Todos los campos son requeridos', 'error');
-      return;
-    }
-
-    try {
-      const response = await fetch(`http://localhost:4000/api/departamento/municipios/${codMunicipio}`, {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/municipios/actualizarMunicipio/${municipioToUpdate.Cod_municipio}`,
+      {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          nombre_municipio: nombreMunicipio,
-          cod_departamento: codDepartamento 
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Cod_municipio: municipioToUpdate.Cod_municipio,
+          Nombre_municipio: municipioCapitalizado,
+          estado: municipioToUpdate.estado, // Mantener el estado o modificarlo
         }),
-      });
-
-      if (response.ok) {
-        Swal.fire('Éxito', 'Municipio actualizado exitosamente', 'success');
-        obtenerMunicipios();
-      } else {
-        const result = await response.json();
-        throw new Error(result.message || 'Error al actualizar el municipio');
       }
-    } catch (error) {
-      Swal.fire('Error', error.message, 'error');
-    } finally {
-      setModalVisible(false);
-    }
-  };
-
-  const eliminarMunicipio = async (codMunicipio) => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/departamento/municipios/${codMunicipio}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        Swal.fire('Éxito', 'Municipio eliminado correctamente', 'success');
-        obtenerMunicipios();
-      } else {
-        throw new Error('Error al eliminar el municipio');
-      }
-    } catch (error) {
-      Swal.fire('Error', error.message, 'error');
-    }
-  };
-
-  const confirmDelete = (codMunicipio) => {
-    Swal.fire({
-      title: '¿Estás seguro?',
-      text: 'No podrás revertir esta acción',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Eliminar',
-      cancelButtonText: 'Cancelar',
-    }).then((result) => {
-      if (result.isConfirmed) {
-        eliminarMunicipio(codMunicipio);
-      }
-    });
-  };
-
-  const handleSearch = (e) => {
-    const value = e.target.value.toLowerCase();
-    setSearchTerm(value);
-    const filtered = municipios.filter((municipio) =>
-      municipio.nombre_municipio.toLowerCase().includes(value) ||
-      municipio.nombre_departamento.toLowerCase().includes(value)
     );
-    setFilteredMunicipios(filtered);
-    setCurrentPage(0);
-  };
 
-  const handleAddModal = () => {
-    setMunicipioActual({ codMunicipio: null, nombreMunicipio: '', codDepartamento: '' });
-    setEditar(false);
-    setModalVisible(true);
-  };
-
-  const handleEditModal = (municipio) => {
-    setMunicipioActual({
-      codMunicipio: municipio.cod_municipio,
-      nombreMunicipio: municipio.nombre_municipio,
-      codDepartamento: municipio.cod_departamento,
-    });
-    setEditar(true);
-    setModalVisible(true);
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editar) {
-      actualizarMunicipio();
+    if (response.ok) {
+      fetchMunicipios();
+      setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetMunicipioToUpdate(); // Reiniciar el estado del municipio a actualizar
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+      swal.fire({
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: 'El municipio ha sido actualizado correctamente.',
+      });
     } else {
-      crearMunicipio();
-    }
-  };
-  const generatePDFMunicipios = () => {
-    const doc = new jsPDF({
-      orientation: 'landscape',
-      unit: 'mm',
-      format: 'a4',
-    });
-  
-    const img = new Image();
-    img.src = logo; // Ruta válida del logo
-  
-    img.onload = () => {
-      const pageWidth = doc.internal.pageSize.width;
-      const pageHeight = doc.internal.pageSize.height;
-  
-      // Logo
-      doc.addImage(img, 'PNG', 10, 10, 45, 45);
-  
-      // Encabezado principal
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-  
-      // Información de contacto
-      doc.setFontSize(10);
-      doc.setTextColor(100); // Gris
-      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-  
-      // Título del reporte
-      doc.setFontSize(14);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text('Reporte de Municipios', pageWidth / 2, 50, { align: 'center' });
-  
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51); // Verde
-      doc.line(10, 55, pageWidth - 10, 55);
-  
-      // Subtítulo
-      doc.setFontSize(12);
-      doc.setTextColor(0);
-      doc.text('Listado de Municipios', pageWidth / 2, 65, { align: 'center' });
-  
-      // Filtrado de municipios por el departamento, si se busca por uno
-      let filteredMunicipios = municipios;
-      if (searchTerm && searchTerm.trim() !== '') {
-        filteredMunicipios = municipios.filter(municipio =>
-          municipio.nombre_departamento.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-  
-      // Tabla de datos
-      const tableColumn = [
-        '#',
-        'Municipio',
-        'Departamento',
-      ];
-      const tableRows = filteredMunicipios.map((municipio, index) => [
-        { content: (index + 1).toString(), styles: { halign: 'center' } }, // Centrado
-        { content: municipio.nombre_municipio.toUpperCase(), styles: { halign: 'left' } }, // Centrado
-        { content: municipio.nombre_departamento.toUpperCase(), styles: { halign: 'center' } }, // Centrado
-      ]);
-  
-      doc.autoTable({
-        startY: 75,
-        head: [tableColumn],
-        body: tableRows,
-        headStyles: {
-          fillColor: [0, 102, 51], // Verde
-          textColor: [255, 255, 255], // Blanco
-          fontSize: 10,
-          halign: 'center', // Centrado por defecto
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: {
-          fillColor: [240, 248, 255], // Azul claro
-        },
-        columnStyles: {
-          0: { halign: 'center' }, // Municipio centrado
-          1: { halign: 'center' }, // Departamento centrado
-        },
-        margin: { top: 10, bottom: 30 },
-        didDrawPage: function (data) {
-          const pageCount = doc.internal.getNumberOfPages();
-          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-  
-          // Pie de página
-          doc.setFontSize(10);
-          doc.setTextColor(0, 102, 51); // Verde
-          doc.text(
-            `Página ${pageCurrent} de ${pageCount}`,
-            pageWidth - 10,
-            pageHeight - 10,
-            { align: 'right' }
-          );
-  
-          const now = new Date();
-          const dateString = now.toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-          const timeString = now.toLocaleTimeString('es-HN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
-          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-        },
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar el municipio.',
       });
+    }
+  } catch (error) {
+    console.error('Error al actualizar el municipio:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar actualizar el municipio.',
+    });
+  }
+};
+
+
+{/****************************************************************************************************************************************/}
+const handleDeleteMunicipio = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/municipios/eliminarMunicipio/${encodeURIComponent(municipioToDelete.Cod_municipio)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (response.ok) {
+      fetchMunicipios();
+      setModalDeleteVisible(false);
+      setMunicipioToDelete({});
+      swal.fire({
+        icon: 'success',
+        title: 'Eliminación exitosa',
+        text: 'El municipio ha sido eliminado correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo eliminar el municipio.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al eliminar el municipio:', error);
+  }
+};
+
+
+{/****************************************************************************************************************************************/}
+
+const openUpdateModal = (municipio) => {
+  setMunicipioToUpdate(municipio);
+  setModalUpdateVisible(true);
+};
+
+const openDeleteModal = (municipio) => {
+  setMunicipioToDelete(municipio);
+  setModalDeleteVisible(true);
+};
+
+
+{/****************************************************************************************************************************************/}
+const toggleEstado = async (municipio) => {
+  const nuevoEstado = municipio.estado ? 0 : 1;
+
+  try {
+    setLoading(true);
+
+    const response = await axios.post('http://localhost:4000/api/municipios/actualizarEstadoMunicipio', {
+      cod_municipio: municipio.Cod_municipio,
+      estado: nuevoEstado,
+    });
+
+    if (response.data.mensaje === 'Estado actualizado exitosamente') {
+      // Actualizar el estado correctamente
+      setMunicipios((prevMunicipios) =>
+        prevMunicipios.map((mun) =>
+          mun.Cod_municipio === municipio.Cod_municipio
+            ? { ...mun, estado: nuevoEstado }
+            : mun
+        )
+      );
+    } else {
+      console.error('Error al cambiar el estado:', response.data.mensaje);
+    }
+  } catch (error) {
+    console.error('Error al realizar la solicitud:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+{/****************************************************************************************************************************************/}
+
+const handleSearch = (event) => {
+  setSearchTerm(event.target.value);
+  setCurrentPage(1);
+};
+
+const filteredMunicipios = municipios.filter((municipio) => 
+  municipio.Nombre_municipio &&
+  municipio.Nombre_municipio.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
+const indexOfLastRecord = currentPage * recordsPerPage;
+const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+const currentRecords = filteredMunicipios.slice(indexOfFirstRecord, indexOfLastRecord);
+
+const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredMunicipios.length / recordsPerPage)) {
+    setCurrentPage(pageNumber);
+  }
+};
+
+{/****************************************************************************************************************************************/}
+
+const ReporteMunicipiosPDF = () => {
+  const doc = new jsPDF('p', 'mm', 'letter'); 
   
-      // Convertir PDF en Blob
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
-  
-      // Crear una nueva ventana con visor personalizado
-      const newWindow = window.open('', '_blank');
-      newWindow.document.write(`
-        <html>
-          <head><title>Reporte de Municipios</title></head>
-          <body style="margin:0;">
-            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-            <div style="position:fixed;top:10px;right:200px;">
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_de_Municipios.pdf'; a.click();">
-                Descargar PDF
-              </button>
-            </div>
-          </body>
-        </html>`);
+  if (!filteredMunicipios || filteredMunicipios.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Municipios', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
+
+    // **Usar filteredMunicipios en lugar de filteredTipoRelacion**
+    const tableRows = filteredMunicipios.map((municipio, index) => ({
+      index: (index + 1).toString(),
+      Nombre_municipio: municipio.Nombre_municipio?.toUpperCase() || 'N/D',
+    }));
+
+    const columnWidths = {
+      index: 20, // Ancho de la columna #
+      Nombre_municipio: 100 // Ancho de la columna "Nombre Municipio"
     };
-  
-    img.onerror = () => {
-      swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-    };
+    const tableWidth = columnWidths.index + columnWidths.Nombre_municipio;
+
+    doc.autoTable({
+      startY: 65,
+      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrado de la tabla
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Nombre del Municipio', dataKey: 'Nombre_municipio' },
+      ],
+      body: tableRows,
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9, 
+        halign: 'center',
+      },
+      styles: {
+        fontSize: 7, 
+        cellPadding: 4, 
+      },
+      columnStyles: {
+        index: { cellWidth: 10 },
+        Nombre_municipio: { cellWidth: 90 },
+      },
+      alternateRowStyles: {
+        fillColor: [240, 248, 255],
+      },
+      didDrawPage: (data) => {
+        const pageCount = doc.internal.getNumberOfPages();
+        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+        const footerY = doc.internal.pageSize.height - 10;
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+        const timeString = now.toLocaleTimeString('es-HN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      },
+    });
+
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Municipios</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:20px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Municipios.pdf'; a.click();">
+              Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
   };
-  
-  
-  useEffect(() => {
-    obtenerMunicipios();
-    obtenerDepartamentos();
-  }, []);
 
-  const indexOfLastItem = (currentPage + 1) * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredMunicipios.slice(indexOfFirstItem, indexOfLastItem);
-  
-  if (loading) {
-    return (
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol xs={12} md={6}>
-            <CSpinner color="primary" />
-            <p>Cargando municipios...</p>
-          </CCol>
-        </CRow>
-      </CContainer>
-    );
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
+};
+
+
+{/****************************************************************************************************************************************/}
+
+const exportMunicipiosToExcel = () => {
+  if (!filteredMunicipios || filteredMunicipios.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
   }
 
-  if (error) {
-    return (
-      <CContainer>
-        <CRow className="justify-content-center">
-          <CCol xs={12} md={6}>
-            <p>Error: {error}</p>
-          </CCol>
-        </CRow>
-      </CContainer>
-    );
-  }
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Municipios');
 
-  const pageCount = Math.ceil(filteredMunicipios.length / itemsPerPage);
+  // Título del documento
+  worksheet.mergeCells('A1:B1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:B2');
+  worksheet.getCell('A2').value = 'LISTA DE MUNICIPIOS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados de la tabla
+  const headerRow = worksheet.addRow(['#', 'Nombre del Municipio']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Datos de la tabla (Usamos filteredMunicipios en lugar de tipoRelacion)
+  filteredMunicipios.forEach((municipio, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      typeof municipio.Nombre_municipio === 'string' ? municipio.Nombre_municipio.toUpperCase() : municipio.Nombre_municipio
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // Ajustar el ancho de las columnas
+  worksheet.columns.forEach((column) => {
+    column.width = 20;
+  });
+
+  // Crear archivo Excel
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_Municipios.xlsx');
+  });
+};
+
+
+{/****************************************************************************************************************************************/}
+{/****************************************************************************************************************************************/}
+{/****************************************************************************************************************************************/}
+
+  
 
 
       // Verificar permisos
@@ -489,195 +685,280 @@ const handleInputChange = (e) => {
 }
   return (
     <CContainer>
-      <CRow className="justify-content-between align-items-center mb-3 sticky-header">
-        <CCol xs={12} md={8}>
-          <h3>Mantenimiento de Municipios</h3>
-        </CCol>
+<CRow className="align-items-center mb-5">
+  <CCol xs="8" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Mantenimiento de Municipios</h1>
+  </CCol>
+  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
+    {/* Botón Nuevo para abrir el modal */}
+    {canInsert && (
+      <CButton 
+        style={{ backgroundColor: '#4B6251', color: 'white' }} 
+        className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+    )}
 
-        <CCol xs="4" md="3" className="text-end">
-          {canInsert &&(
-          <CButton color="dark" onClick={handleAddModal} className="me-2" style={{ backgroundColor: '#4B6251', borderColor: '#0F463A' }}>
-          <CIcon icon={cilPlus} /> Nuevo
-          </CButton>
-          )}
-          <CButton color="primary" onClick={generatePDFMunicipios} style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
-            <CIcon icon={cilFile} /> Generar Reporte
-          </CButton>
-        </CCol>
-      </CRow>
+    {/* Botón de Reporte */}
+    <CDropdown>
+      <CDropdownToggle
+        style={{ backgroundColor: '#6C8E58', color: 'white' }}
+      >
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportMunicipiosToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReporteMunicipiosPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
 
-      <CRow className="align-items-center my-3 sticky-header">
-        <CCol md={5}>
-          <CInputGroup size="sm">
-            <CInputGroupText>
-              <CIcon icon={cilSearch} />
-            </CInputGroupText>
-            <CFormInput placeholder="Buscar municipio" value={searchTerm} onChange={handleSearch} />
-          </CInputGroup>
-        </CCol>
-        <CCol xs="12" md="7" className="text-md-end mt-2 mt-md-0">
-          <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
-            <div className="d-inline-flex align-items-center">
-              <span>Mostrar&nbsp;</span>
-              <CFormSelect
-                style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(0);
-                }}
-                value={itemsPerPage}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-              </CFormSelect>
-              <span>&nbsp;registros</span>
-            </div>
-          </CInputGroup>
-        </CCol>
-      </CRow>
+{/* Contenedor de la barra de búsqueda y el selector dinámico */}
+<CRow className="align-items-center mt-4 mb-2">
+  {/* Barra de búsqueda  */}
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar municipio..."
+        onChange={handleSearch}
+        value={searchTerm}
+      />
+      <CButton
+        style={{border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out', // Duración de la transición
+          backgroundColor: '#F3F4F7', // Color por defecto
+          color: '#343a40' // Color de texto por defecto
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el botón "limpiar"
+          e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el botón "limpiar"
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el botón "limpiar"
+          e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el botón "limpiar"
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
 
-      <div className="table-container">
-        <CTable striped bordered hover>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>Nombre del Municipio</CTableHeaderCell>
-              <CTableHeaderCell>Departamento</CTableHeaderCell>
-              <CTableHeaderCell className="text-end">Acciones</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {currentItems.map((municipio, index) => (
-              <CTableRow key={municipio.cod_municipio}>
-                <CTableDataCell>{index + 1 + currentPage * itemsPerPage}</CTableDataCell>
-                <CTableDataCell>{municipio.nombre_municipio.toUpperCase()}</CTableDataCell>
-                <CTableDataCell>{municipio.nombre_departamento.toUpperCase()}</CTableDataCell>
-                <CTableDataCell className="text-end">
-
-                  {canUpdate && (
-                  <CButton
-                    color="warning"
-                    size="sm"
-                    style={{ opacity: 0.8 }}
-                    onClick={() => handleEditModal(municipio)}
-                  >
-                    <CIcon icon={cilPen} />
-                  </CButton>)}{' '}
-
-                  {canDelete && (
-                  <CButton
-                    color="danger"
-                    size="sm"
-                    style={{ opacity: 0.8 }}
-                    onClick={() => confirmDelete(municipio.cod_municipio)}
-                  >
-                    <CIcon icon={cilTrash} />
-                  </CButton>
-                  )}
-                </CTableDataCell>
-              </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
-      </div>
-
-      <nav className="d-flex justify-content-center align-items-center mt-4">
-        <CPagination className="mb-0" style={{ gap: '0.3cm' }}>
-          <CButton
-            style={{ backgroundColor: 'gray', color: 'white', marginRight: '0.3cm' }}
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage(currentPage - 1)}
-          >
-            Anterior
-          </CButton>
-          <CButton
-            style={{ backgroundColor: 'gray', color: 'white' }}
-            disabled={currentPage === pageCount - 1}
-            onClick={() => setCurrentPage(currentPage + 1)}
-          >
-            Siguiente
-          </CButton>
-        </CPagination>
-        <span className="mx-2">Página {currentPage + 1} de {pageCount}</span>
-      </nav>
-
-      <CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
-        <CModalHeader closeButton>
-          <CModalTitle>{editar ? 'Editar Municipio' : 'Agregar Municipio'}</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <CForm onSubmit={handleSubmit}>
-          <CInputGroup className="mb-3">
-          <CInputGroup>
-  <CInputGroupText>Nombre del Municipio</CInputGroupText>
-  <CFormInput
-    type="text"
-    name="nombreMunicipio"
-    onPaste={disableCopyPaste}  // Detecta el evento de pegar
-    onCopy={disableCopyPaste}   // Detecta el evento de copiar
-    placeholder="Nombre del municipio"
-    value={municipioActual.nombreMunicipio || ''} 
-    onChange={handleInputChange}
-    required
-    style={{ width: '50%', padding: '8px' }}  // Añadido estilo de ancho completo y relleno
-  />
-
-  {/* Mostrar el mensaje de error debajo del input si existe */}
-  {errorMensaje && (
-    <div style={{ color: 'red', fontSize: '14px', marginTop: '5px' }}>
-      {errorMensaje}
-    </div>
-  )}
-</CInputGroup>
-
-</CInputGroup>
-
-            <CInputGroup className="mb-3">
-  <CInputGroupText>Departamento</CInputGroupText>
-  <CFormSelect
-    name="codDepartamento"
-    value={municipioActual.codDepartamento}
-    onChange={handleInputChange}
-    required
-  >
-    <option value="">Seleccione un departamento</option>
-    {departamentos
-      // Filtrar departamentos únicos por cod_departamento
-      .filter((departamento, index, self) => 
-        index === self.findIndex((d) => d.cod_departamento === departamento.cod_departamento)
-      )
-      // Ordenar alfabéticamente
-      .sort((a, b) => a.nombre_departamento.localeCompare(b.nombre_departamento))
-      .map((departamento) => (
-        <option 
-          key={`select-dept-${departamento.cod_departamento}-${departamento.nombre_departamento}`} 
-          value={departamento.cod_departamento}
+  {/* Selector dinámico a la par de la barra de búsqueda */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span>Mostrar&nbsp;</span>
+        <CFormSelect
+          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+          }}
+          value={recordsPerPage}
         >
-          {departamento.nombre_departamento.toUpperCase()}
-        </option>
-      ))}
-  </CFormSelect>
-</CInputGroup>
-            <CModalFooter>
-              <CButton color="secondary" onClick={() => setModalVisible(false)}>
-                Cancelar
-              </CButton>
-              <CButton style={{ backgroundColor: '#617341', color: 'white' }} type="submit">
-                <CIcon icon={cilSave} /> {editar ? 'Guardar' : 'Guardar'}
-              </CButton>
-            </CModalFooter>
-          </CForm>
-        </CModalBody>
-      </CModal>
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </CFormSelect>
+        <span>&nbsp;registros</span>
+      </div>       
+    </CInputGroup>
+  </CCol>
+</CRow>
 
-      <style jsx>{`
-        .table-container {
-          max-height: 400px;
-          overflow-y: ${filteredMunicipios.length >= 5 ? 'auto' : 'hidden'};
-          overflow-x: hidden;
-        }
-      `}</style>
+{/************************************************************************************************************************************/}
+<div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> # </CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Nombre del Municipio</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+
+    <CTableBody>
+      {currentRecords.map((municipio) => (
+        <CTableRow key={municipio.Cod_municipio}>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{municipio.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{municipio.Nombre_municipio.toUpperCase()}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(municipio)}
+                  style={{ marginRight: '10px' }}
+                  disabled={municipio.estado === 0} // Deshabilitado si está inactivo
+                  title={municipio.estado ? 'Editar municipio' : 'Municipio inactivo'}
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
+
+              {canDelete && (
+                <CButton color="danger" onClick={() => openDeleteModal(municipio)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+
+              {/* Botón de Activar/Inactivar */}
+              <CButton
+                style={{
+                  backgroundColor: municipio.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                  color: 'white',
+                  marginLeft: '10px',
+                }}
+                onClick={() => toggleEstado(municipio)} // Función para cambiar estado
+                disabled={loading} // Deshabilitar mientras carga
+              >
+                {loading ? 'Cambiando...' : municipio.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
+
+
+{/*************************************************************************************************************************************/}
+                {/* Paginación Fija */}
+    <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <CPagination aria-label="Page navigation">
+        <CButton
+          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+          disabled={currentPage === 1} // Desactiva si es la primera página
+          onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+        >
+          Anterior
+        </CButton>
+        <CButton
+          style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+          disabled={currentPage === Math.ceil(filteredMunicipios.length / recordsPerPage)} // Desactiva si es la última página
+          onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+        >
+          Siguiente
+        </CButton>
+      </CPagination>
+      <span style={{ marginLeft: '10px' }}>
+        Página {currentPage} de {Math.ceil(filteredMunicipios.length / recordsPerPage)}
+      </span>
+    </div>
+
+{/************************************************************************************************************************************/}
+<CModal visible={modalVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Ingresar Nuevo Municipio</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoMunicipio)} />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Nombre del Municipio</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese un nuevo nombre de municipio"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevoMunicipio.Nombre_municipio}
+          onChange={(e) => handleMunicipioInputChange(e, setNuevoMunicipio, setMunicipioError)}
+          onBlur={isDuplicateMunicipio}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {municipioError && (
+        <p style={{ color: 'red', fontSize: '0.9em' }}>{municipioError}</p>
+      )}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoMunicipio)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateMunicipio} disabled={!!municipioError}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+    
+{/************************************************************************************************************************************/}
+
+<CModal visible={modalUpdateVisible} backdrop="static">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Actualizar Municipio</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetMunicipioToUpdate)} />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Nombre del Municipio</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el nombre del municipio"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={municipioToUpdate.Nombre_municipio}
+          onChange={(e) => handleMunicipioInputChange(e, setMunicipioToUpdate)}
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {municipioError && <p style={{ color: 'red', fontSize: '0.9em' }}>{municipioError}</p>}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetMunicipioToUpdate)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateMunicipio} disabled={!!municipioError}>
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+    
+{/************************************************************************************************************************************/}
+
+{/* Modal Eliminar Municipio */}
+<CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+  <CModalHeader>
+    <CModalTitle>Eliminar Municipio</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    ¿Estás seguro de que deseas eliminar el municipio "{municipioToDelete.Nombre_municipio}"?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton color="danger" onClick={handleDeleteMunicipio}>
+      Eliminar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+{/************************************************************************************************************************************/}
+
+
+
+
     </CContainer>
   );
 };
