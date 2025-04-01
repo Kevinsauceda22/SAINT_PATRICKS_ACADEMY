@@ -22,7 +22,7 @@ export const obtenerPersonas = async (req, res) => {
 //CONTROLADOR PARA OBTENER DEPARTAMENTOS
 export const obtenerDepartamentos = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL P_Get_Departamento()');
+        const [rows] = await pool.query('CALL P_Get_Departamentos()');
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
@@ -222,25 +222,39 @@ export const actualizarPersona = async (req, res) => {
 export const actualizarEstadoPersona = async (req, res) => {
     const { cod_persona, estado } = req.body;
 
+    // Verifica lo que está llegando
+    console.log('cod_persona recibido:', cod_persona);
+    console.log('estado recibido:', estado);
+
     // Validar parámetros
     if (!cod_persona || estado === undefined) {
         return res.status(400).json({ mensaje: 'Faltan parámetros' });
     }
 
+    // Asegurarnos de que cod_persona sea un número
+    const codPersonaNumber = Number(cod_persona);
+    console.log('cod_persona convertido a número:', codPersonaNumber);  // Debugging
+
+    if (isNaN(codPersonaNumber)) {
+        return res.status(400).json({ mensaje: 'El código de persona debe ser un número válido' });
+    }
+
     try {
         // Llamar al procedimiento almacenado
-        const [results] = await pool.query('CALL P_Put_EstadoPersona(?, ?)', [cod_persona, estado]);
+        const [results] = await pool.query('CALL P_Put_EstadoPersona(?, ?)', [codPersonaNumber, estado]);
 
         // Obtener el mensaje devuelto por el procedimiento
         const mensaje = results[0][0].mensaje;
 
-        console.log(`Estado actualizado para persona ${cod_persona}: ${estado}`); // Debug en consola
-        res.json({ mensaje, cod_persona, estado }); // Respuesta al frontend
+        console.log(`Estado actualizado para persona ${codPersonaNumber}: ${estado}`); // Debug en consola
+        res.json({ mensaje, cod_persona: codPersonaNumber, estado }); // Respuesta al frontend
     } catch (error) {
         console.error('Error al ejecutar el procedimiento almacenado:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor' });
     }
 };
+
+
 
 
 

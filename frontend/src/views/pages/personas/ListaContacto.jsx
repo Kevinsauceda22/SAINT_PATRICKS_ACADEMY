@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'; 
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilPrint, cilSave, cilArrowLeft } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilXCircle, cilCheckCircle,  cilSave, cilArrowLeft } from '@coreui/icons';
 import swal from 'sweetalert2';
+import axios from 'axios'; 
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom'
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -13,6 +14,7 @@ import {
   CInputGroup,
   CInputGroupText,
   CFormInput,
+  CFormCheck,
   CModal,
   CModalHeader,
   CModalTitle,
@@ -53,6 +55,7 @@ const ListaContacto = () => {
   const [personasFiltradas, setPersonasFiltradas] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [personas, setPersonas] = useState([]);
+    const [loading, setLoading] = useState(false);
 
   
 
@@ -143,7 +146,7 @@ const handleSeleccionarCodPersona = (persona) => {
   
   const fetchContactos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/contacto/obtenerContacto');
+      const response = await fetch('http://localhost:4000/api/contacto/verTodosContactos');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verifica la respuesta de la API
@@ -156,7 +159,7 @@ const handleSeleccionarCodPersona = (persona) => {
   
   const fetchTiposContacto = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/tipoContacto/obtenerTipoContacto');
+      const response = await fetch('http://localhost:4000/api/tipoContacto/verTodoTipoContacto');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
       const data = await response.json();
       
@@ -333,6 +336,38 @@ const handleSeleccionarCodPersona = (persona) => {
       });
     }
   };  
+
+  {/*****************************************************************************************************************************************/}
+const toggleEstado = async (contacto) => {
+    const nuevoEstado = contacto.estado ? 0 : 1;
+  
+    try {
+      setLoading(true);
+  
+      const response = await axios.post('http://localhost:4000/api/contacto/actualizarEstadoContacto', {
+        cod_contacto: contacto.cod_contacto,
+        estado: nuevoEstado,
+      });
+  
+      if (response.data.mensaje === 'Estado actualizado exitosamente') {
+        // Actualizar el estado correctamente en la lista de contactos
+        setContacto((prevContactos) =>
+          prevContactos.map((cont) =>
+            cont.cod_contacto === contacto.cod_contacto
+              ? { ...cont, estado: nuevoEstado }
+              : cont
+          )
+        );
+      } else {
+        console.error('Error al cambiar el estado:', response.data.mensaje);
+      }
+    } catch (error) {
+      console.error('Error al realizar la solicitud:', error);
+    } finally {
+      setLoading(false);
+      fetchContactos();
+    }
+  };
 
 
    {/***********************************************************FUNCIONES DE BUSQUEDA Y FILTRADO ******************************************/}
@@ -631,45 +666,63 @@ const handleSeleccionarCodPersona = (persona) => {
   </CButton>
 </CInputGroup>
 
+{/**************************************************************************************************************************************/}
+<div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+  <CTable striped bordered hover>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell>#</CTableHeaderCell>
+        <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
+        <CTableHeaderCell>Valor</CTableHeaderCell>
+        <CTableHeaderCell>Principal</CTableHeaderCell>
+        <CTableHeaderCell>Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords.map((item, index) => (
+        <CTableRow key={item.cod_contacto}>
+          <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
+          <CTableDataCell>
+            {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
+          </CTableDataCell>
+          <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
+          {/* Nuevo diseño para la columna principal */}
+          <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+            {item.principal ? (
+              <CIcon icon={cilCheckCircle} style={{ fontSize: '2em', color: '#28a745' }} />
+            ) : (
+              <CIcon icon={cilXCircle} style={{ fontSize: '2em', color: '#dc3545' }} />
+            )}
+          </CTableDataCell>
+          {/* Acciones incluyendo botón de estado */}
+          <CTableDataCell>
+            <div className="d-flex justify-content-center">
+              <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
+                <CIcon icon={cilPen} />
+              </CButton>
+              <CButton color="danger" onClick={() => handleDeleteContacto(item.cod_contacto, item.Valor)} className="ms-2">
+                <CIcon icon={cilTrash} />
+              </CButton>
+              {/* Botón de estado ahora dentro de acciones */}
+              <CButton
+                style={{
+                  backgroundColor: item.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                  color: 'white',
+                  marginLeft: '10px',
+                }}
+                onClick={() => toggleEstado(item)} // Función para cambiar estado
+                disabled={loading} // Deshabilitado mientras carga
+              >
+                {loading ? 'Cambiando...' : item.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
 
-    {/* Tabla de datos filtrados */}
-    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-      <CTable striped bordered hover>
-        <CTableHead>
-          <CTableRow>
-            <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>Nombre</CTableHeaderCell>
-            <CTableHeaderCell>Tipo de Contacto</CTableHeaderCell>
-            <CTableHeaderCell>Valor</CTableHeaderCell>
-            <CTableHeaderCell>Acciones</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-        <CTableBody>
-          {currentRecords.map((item, index) => (
-            <CTableRow key={item.cod_contacto}>
-              <CTableDataCell>{index + 1 + indexOfFirstRecord}</CTableDataCell>
-              <CTableDataCell>
-                {personaSeleccionada
-                  ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre.toUpperCase()} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido.toUpperCase()}`
-                  : 'Información no disponible'}
-              </CTableDataCell>
-              <CTableDataCell>
-                {tiposContacto.find(tc => tc.cod_tipo_contacto === item.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido'}
-              </CTableDataCell>
-              <CTableDataCell>{item.Valor.toUpperCase()}</CTableDataCell>
-              <CTableDataCell>
-                <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
-                  <CIcon icon={cilPen} />
-                </CButton>
-                <CButton color="danger" onClick={() => handleDeleteContacto(item.cod_contacto, item.Valor)} className="ms-2">
-                  <CIcon icon={cilTrash} />
-                </CButton>
-              </CTableDataCell>
-            </CTableRow>
-          ))}
-        </CTableBody>
-      </CTable>
-    </div>
 
 {/***********************************************************PAGINACION*******************************************************************/}
       <CPagination align="center" className="my-3">
@@ -700,6 +753,7 @@ const handleSeleccionarCodPersona = (persona) => {
           </span>
         )}
       </CPagination>
+
 
 {/********************************************MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
 <CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
@@ -785,6 +839,26 @@ const handleSeleccionarCodPersona = (persona) => {
     />
   )}
 </div>
+
+  {/* Campo de Principal */}
+  <div className="col-md-6">
+    <CInputGroup className="mb-3 align-items-center">
+      <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>Principal</span>
+        <CFormCheck
+          type="checkbox"
+          label=""
+          checked={contactoToUpdate ? contactoToUpdate.principal : nuevoContacto.principal}
+          onChange={(e) => {
+            contactoToUpdate
+              ? setContactoToUpdate({ ...contactoToUpdate, principal: e.target.checked })
+              : setNuevoContacto({ ...nuevoContacto, principal: e.target.checked });
+          }}
+          style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+        />
+      </CInputGroupText>
+    </CInputGroup>
+  </div>
 
   </CModalBody>
   <CModalFooter>

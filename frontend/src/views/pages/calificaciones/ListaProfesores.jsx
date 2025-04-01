@@ -85,7 +85,7 @@ const ListaProfesores = () => {
 
   const fetchListaPersonas = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verpersonas');
+      const response = await fetch('http://localhost:4000/api/personas/verPersonas');
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verificar estructura de la respuesta
   

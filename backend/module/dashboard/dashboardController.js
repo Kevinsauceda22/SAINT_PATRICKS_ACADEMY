@@ -18,7 +18,7 @@ const obtenerEstadisticas = async (req, res) => {
       FROM tbl_matricula m
       JOIN tbl_personas p ON m.cod_persona = p.cod_persona
       WHERE m.fecha_matricula >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
-      AND p.Estado_Persona = 'A'
+      AND p.estado = '1'
     `);
 
     // Obtener total de profesores activos

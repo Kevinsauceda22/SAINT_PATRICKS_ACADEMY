@@ -68,7 +68,7 @@ const ListaTipoDocumentos = () => {
             ...tipoDocumento,
             originalIndex: index + 1,
           }));
-          setTipoDocumentos(dataWithIndex);
+          setTipoDocumento(dataWithIndex);
         } catch (error) {
           console.error('Error al obtener los tipos de documento:', error);
         }

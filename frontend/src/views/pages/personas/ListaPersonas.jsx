@@ -504,7 +504,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
     const fetchPersonas = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/persona/verPersonas')
+        const response = await fetch('http://localhost:4000/api/personas/verPersonas')
         const data = await response.json()
   
         // Agrega un console.log aquí para ver los datos originales
@@ -537,7 +537,7 @@ const handleSeleccionarMunicipio = (municipio) => {
 
 const fetchMunicipio = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/persona/verMunicipios');
+    const response = await fetch('http://localhost:4000/api/personas/verMunicipios');
     const data = await response.json();
     console.log('Datos recibidos de la API:', data);
 
@@ -557,7 +557,7 @@ const fetchMunicipio = async () => {
 
   const fetchDepartamentos = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verDepartamentos')
+      const response = await fetch('http://localhost:4000/api/personas/verDepartamentos')
       const data = await response.json()
       console.log('Datos recibidos de departamentos:', data)
       setDepartamentos(data)
@@ -568,7 +568,7 @@ const fetchMunicipio = async () => {
 
   const fetchTipoPersona = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verTipoPersona')
+      const response = await fetch('http://localhost:4000/api/personas/verTipoPersona')
       const data = await response.json()
       console.log('Datos recibidos de tipo de persona:', data)
       setTipoPersona(data)
@@ -579,7 +579,7 @@ const fetchMunicipio = async () => {
 
   const fetchGeneros = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/persona/verGeneros')
+      const response = await fetch('http://localhost:4000/api/personas/verGeneros')
       const data = await response.json()
       console.log('Datos recibidos de géneros:', data)
       setGeneros(data)
@@ -1358,7 +1358,7 @@ return (
   <CTable striped bordered hover>
     <CTableHead>
       <CTableRow>
-        {['Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha de Nacimiento', 'Dirección', 'Nacionalidad', 'Departamento', 'Municipio', 'Tipo de Persona', 'Género', 'Acciones'].map((header, index) => (
+        {['Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha de Nacimiento', 'Dirección', 'Nacionalidad', 'Departamento', 'Municipio', 'Tipo de Persona', 'Género', 'Principal', 'Acciones'].map((header, index) => (
           <CTableHeaderCell key={index} style={{ fontSize: '0.85rem', textAlign: 'center' }}>
             {header}
           </CTableHeaderCell>
@@ -1392,6 +1392,11 @@ return (
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
               {generos.find((gen) => gen.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}
             </CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+              {persona.principal ? (<CIcon icon={cilCheckCircle} style={{ fontSize: '2em', color: '#28a745' }}/>) : ( 
+              <CIcon icon={cilXCircle} style={{ fontSize: '2em', color: '#dc3545' }}/> )} 
+            </CTableDataCell>
+
             <CTableDataCell className="text-center">
               <div className="d-flex justify-content-between" style={{ gap: '10px' }}>
                 <CButton color="warning" onClick={() => openUpdateModal(persona)} style={{ fontSize: '0.75rem' }}>
@@ -1403,9 +1408,12 @@ return (
                 <CButton color="secondary" onClick={() => abrirEstructuraFamiliarModal(persona)} style={{ fontSize: '0.75rem' }}>
                   <CIcon icon={cilPeople} />
                 </CButton>
-                <CButton color="primary" onClick={() => abrirContactoModal(persona)} style={{ fontSize: '0.75rem' }}>
-                  <CIcon icon={cilContact} />
-                </CButton>
+                
+                {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() !== 'ESTUDIANTE' && (
+                  <CButton color="primary" onClick={() => abrirContactoModal(persona)} style={{ fontSize: '0.75rem' }}>
+                    <CIcon icon={cilContact} />
+                  </CButton>
+                )}
                 <CButton
                   style={{
                     backgroundColor: persona.estado ? '#4CAF50' : '#F44336',

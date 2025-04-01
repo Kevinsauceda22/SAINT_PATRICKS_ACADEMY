@@ -1,19 +1,27 @@
 import express from 'express';
 import {
-    crearContacto,
-    obtenerContacto,
-    actualizarContacto,
-    eliminarContacto,
-} from '../Controllers/contactoController.js';
+        obtenerTodosContactos,
+        crearContacto,
+        actualizarContacto,
+        actualizarEstadoContacto,
+        eliminarContacto
+} from '../Controllers/contactoController.js'; // Asegúrate de que esta ruta sea correcta
 
 const router = express.Router();
 
-// Definir rutas para CRUD de contactos
-router.post('/crearContacto', crearContacto); // Crear contacto
-router.get('/obtenerContacto/personas/:cod_persona', obtenerContacto); // Obtener contactos por persona (más específico)
-router.get('/obtenerContacto/:cod_contacto', obtenerContacto); // Obtener un contacto por ID (general)
-router.get('/obtenerContacto', obtenerContacto); // Obtener todos los contactos (sin parámetros)
-router.put('/actualizarContacto/:cod_contacto', actualizarContacto); // Actualizar contacto
-router.delete('/eliminarContacto/:cod_contacto', eliminarContacto); // Eliminar contacto
+// Ruta para obtener todos los contactos
+router.get('/verTodosContactos', obtenerTodosContactos);
+
+// Ruta para crear un contacto
+router.post('/crearContacto', crearContacto);
+
+// Ruta para actualizar un contacto
+router.put('/actualizarContacto/:cod_contacto', actualizarContacto);
+
+// Ruta para actualizar el estado de un contacto
+router.post('/actualizarEstadoContacto', actualizarEstadoContacto);
+
+// Ruta para eliminar un contacto
+router.delete('/eliminarContacto/:cod_contacto', eliminarContacto);
 
 export default router;
