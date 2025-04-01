@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
-import { cilXCircle, cilCheckCircle } from '@coreui/icons';
+import { cilXCircle, cilCheckCircle, cilHistory } from '@coreui/icons';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
@@ -155,6 +155,10 @@ const ListaPersonas = () => {
     navigate('/contacto', { state: { personaSeleccionada: personas } });
   };
 
+  const abrirProcedenciaEstudianteModal = (personas) => {
+    console.log('Persona seleccionada en el componente origen:', personas); // Verifica que los datos estén presentes
+    navigate('/ListaProcedenciaEstudiante', { state: { personaSeleccionada: personas } });
+  };
 
   {/* ***********************************************************FUNCIONES DE VALIDACION*****************************************************/}
   
@@ -1398,35 +1402,45 @@ return (
             </CTableDataCell>
 
             <CTableDataCell className="text-center">
-              <div className="d-flex justify-content-between" style={{ gap: '10px' }}>
-                <CButton color="warning" onClick={() => openUpdateModal(persona)} style={{ fontSize: '0.75rem' }}>
-                  <CIcon icon={cilPen} />
+            <div className="d-flex justify-content-center align-items-center" style={{ gap: '10px', flexWrap: 'nowrap' }}>
+              <CButton color="warning" onClick={() => openUpdateModal(persona)} style={{ fontSize: '0.75rem' }}>
+                <CIcon icon={cilPen} />
+              </CButton>
+              <CButton color="danger" onClick={() => openDeleteModal(persona)} style={{ fontSize: '0.75rem' }}>
+                <CIcon icon={cilTrash} />
+              </CButton>
+              <CButton color="secondary" onClick={() => abrirEstructuraFamiliarModal(persona)} style={{ fontSize: '0.75rem' }}>
+                <CIcon icon={cilPeople} />
+              </CButton>
+
+              {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() !== 'ESTUDIANTE' && (
+                <CButton color="primary" onClick={() => abrirContactoModal(persona)} style={{ fontSize: '0.75rem' }}>
+                  <CIcon icon={cilContact} />
                 </CButton>
-                <CButton color="danger" onClick={() => openDeleteModal(persona)} style={{ fontSize: '0.75rem' }}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
-                <CButton color="secondary" onClick={() => abrirEstructuraFamiliarModal(persona)} style={{ fontSize: '0.75rem' }}>
-                  <CIcon icon={cilPeople} />
-                </CButton>
-                
-                {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() !== 'ESTUDIANTE' && (
-                  <CButton color="primary" onClick={() => abrirContactoModal(persona)} style={{ fontSize: '0.75rem' }}>
-                    <CIcon icon={cilContact} />
-                  </CButton>
-                )}
+              )}
+              {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() === 'ESTUDIANTE' && (
                 <CButton
-                  style={{
-                    backgroundColor: persona.estado ? '#4CAF50' : '#F44336',
-                    color: 'white',
-                    fontSize: '0.75rem',
-                  }}
-                  onClick={() => toggleEstado(persona)}
-                  disabled={loading}
+                  onClick={() => abrirProcedenciaEstudianteModal(persona)}
+                  style={{ backgroundColor: '#90EE90', borderColor: '#90EE90', fontSize: '0.75rem' }}
                 >
-                  {loading ? 'Cambiando...' : persona.estado ? 'Activo' : 'Inactivo'}
+                  <CIcon icon={cilHistory} />
                 </CButton>
-              </div>
-            </CTableDataCell>
+              )}
+              <CButton
+                style={{
+                  backgroundColor: persona.estado ? '#4CAF50' : '#F44336',
+                  color: 'white',
+                  fontSize: '0.75rem',
+                }}
+                onClick={() => toggleEstado(persona)}
+                disabled={loading}
+              >
+                {loading ? 'Cambiando...' : persona.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+
+
           </CTableRow>
         ))
       ) : (

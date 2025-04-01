@@ -78,6 +78,7 @@ const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPerso
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
 const ListaDepartamentos = React.lazy(() => import('./views/pages/personas/ListaDepartamento'));
 const ListaMunicipios = React.lazy(() => import('./views/pages/personas/ListaMunicipios'));
+const ListaFichaEstudiante = React.lazy(() => import('./views/pages/personas/ListaFichaEstudiante')); 
 const ListaProcedenciaEstudiante = React.lazy(() => import('./views/pages/personas/ListaProcedenciaEstudiante')); 
 const ListaTipoDocumentos = React.lazy(() => import('./views/pages/personas/ListaTipoDocumentos'));
 const ListaTipoPersona = React.lazy(() => import('./views/pages/personas/ListaTipopersona'));
@@ -201,9 +202,9 @@ const App = () => {
                 <Route path="/gestion_academica"  element={<ListaGestion_Academica />} />
                 <Route exact path="/lista-secciones" element={<ListaSecciones />} /> 
 
-                <Route path="/actividades" element={<ListaActivex />} />
+                <Route path="/actividades" element={<ListaActivex />} />ListaFichaEstudiante
                  <Route path="/dias"  element={<ListaDias />} />
-                
+                 <Route path="/ListaFichaEstudiante" element={<ListaFichaEstudiante/>} />
                  <Route path="/ListaTipoPersona" element={<ListaTipoPersona />} />
                  <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />

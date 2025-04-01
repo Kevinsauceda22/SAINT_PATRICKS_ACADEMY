@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilDescription } from '@coreui/icons';
+import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilArrowLeft,cilUser  } from '@coreui/icons';
 import swal from 'sweetalert2'; // Importar SweetAlert para mostrar mensajes de advertencia y éxito
 import * as XLSX from 'xlsx';        // Para generar archivos Excel
 import { saveAs } from 'file-saver';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import ExcelJS from 'exceljs';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
-
+import { useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 
 import {
   CButton,
@@ -41,481 +43,668 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 
-const ListaHistoricoProc = () => {
+const ListaProcedenciaEstudiante = () => {
 
   const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaHistoricoProc');
 
-   // Estados de la aplicación
-  const [historicoProcedencia, setHistoricoProcedencia] = useState([]); // Estado que almacena la lista de histórico de procedencia
-  const [errors, setErrors] = useState({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' }); // Estado para gestionar los errores de validación
-  const [modalVisible, setModalVisible] = useState(false); // Controla la visibilidad del modal de creación
-  const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // Controla la visibilidad del modal de actualización
-  const [modalDeleteVisible, setModalDeleteVisible] = useState(false); // Controla la visibilidad del modal de eliminación
-  const [nuevoHistorico, setNuevoHistorico] = useState({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' }); // Estado del nuevo registro
-  const [historicoToUpdate, setHistoricoToUpdate] = useState({}); // Estado para el registro que se va a actualizar
-  const [historicoToDelete, setHistoricoToDelete] = useState({}); // Estado para el registro que se va a eliminar
-  const [searchTerm, setSearchTerm] = useState(''); // Estado del término de búsqueda
-  const [currentPage, setCurrentPage] = useState(1); // Estado de la página actual para la paginación
-  const [recordsPerPage, setRecordsPerPage] = useState(5); // Controla cuántos registros se muestran por página
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Controla si hay cambios sin guardar
-  const [errorMensaje, setErrorMensaje] = useState(""); // Estado para almacenar el mensaje de error
+  const [procedenciaEstudiante, setProcedenciaEstudiante] = useState([]);
+  const [procedenciaError, setProcedenciaError] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
+  const [nuevaProcedencia, setNuevaProcedencia] = useState({
+    nombre_instituto: '',
+    descripcion: '',
+    año_desde: '',
+    año_hasta: ''
+  });
+  const [procedenciaEstudianteToUpdate, setProcedenciaEstudianteToUpdate] = useState({});
+  const [procedenciaEstudianteToDelete, setProcedenciaEstudianteToDelete] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+  const [recordsPerPage, setRecordsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  
 
-    // useEffect para cargar el histórico de procedencia al montar el componente
-    useEffect(() => {
-        fetchHistoricoProcedencia(); // Llama a la función para obtener el histórico de procedencia desde el backend
-    }, []);
+    const location = useLocation();
+    const navigate = useNavigate();
+  
 
+    const { personaSeleccionada } = location.state || {};
+
+    // Manejo de error si personaSeleccionada no está definida
+    if (!personaSeleccionada) {
+      console.warn('No se ha proporcionado una persona seleccionada. Redirigiendo...');
+      navigate('/'); // O a donde desees redirigir en caso de error
+      return null; // No renderizar nada mientras se redirige
+    }
+
+      const volverAListaPersonas = () => {
+        navigate('/ListaPersonas');
+      };
+
+      const abrirFichaEstudiante = (persona) => {
+        if (!persona || Object.keys(persona).length === 0) {
+          console.error('Error: No hay persona seleccionada.');
+          return;
+        }
+      
+        console.log('Persona seleccionada para ficha de estudiante:', persona); // Verificación correcta
+        navigate('/ListaFichaEstudiante', { state: { personaSeleccionada: persona } });
+      };
+      
+      
+    
+      useEffect(() => {
+        console.log(personaSeleccionada);
+      }, [personaSeleccionada]);
+    
+  
+
+{/***************************************************************************************************************************************/}
   // Función para obtener el histórico de procedencia desde la API
-  const fetchHistoricoProcedencia = async () => {
+  const fetchProcedenciaEstudiante = async () => {
     try {
-      const response = await fetch('http://localhost:4000/api/historial_proc/historico_procedencia'); // Realiza la petición al backend
+      const response = await fetch('http://localhost:4000/api/procedenciaEstudiante/verTodoProcedenciaEstudiante'); // Realiza la petición al backend
       const data = await response.json(); // Convierte la respuesta a JSON
-      const dataWithIndex = data.map((historico, index) => ({
-        ...historico,
+      console.log('Datos obtenidos:', data); // Agrega un log para depuración
+  
+      const dataWithIndex = data.map((procedencia, index) => ({
+        ...procedencia,
         originalIndex: index + 1, // Añade un índice basado en la posición del registro en la lista
       }));
-      setHistoricoProcedencia(dataWithIndex); // Actualiza el estado con los datos obtenidos
+  
+      setProcedenciaEstudiante(dataWithIndex); // Actualiza el estado con los datos obtenidos
     } catch (error) {
-      console.error('Error al obtener el histórico de procedencia:', error); // Muestra el error en la consola si la petición falla
-    }
-  };
-
-
-  const exportToExcel = () => {
-    // Transforma los datos: convierte los campos de texto a mayúsculas y excluye `cod_procedencia`
-    const historicoConFormato = historicoProcedencia.map((item, index) => ({
-        '#': index + 1, // Índice personalizado
-        Nombre_procedencia: item.Nombre_procedencia.toUpperCase(),
-        Lugar_procedencia: item.Lugar_procedencia.toUpperCase(),
-        Instituto: item.Instituto.toUpperCase()
-    }));
-
-    // Convierte los datos a formato de hoja de cálculo
-    const worksheet = XLSX.utils.json_to_sheet(historicoConFormato); 
-    const workbook = XLSX.utils.book_new(); // Crea un nuevo libro de trabajo
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Historial Procedencia'); // Añade la hoja
-
-    // Genera el archivo Excel en formato binario
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-
-    // Crea un Blob para descargar el archivo con file-saver
-    const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, 'reporte_historial_procedencia.xlsx'); // Descarga el archivo Excel
-};
-const exportToPDF = () => {
-  const doc = new jsPDF();
-
-  // Cargar el logo
-  const img = new Image();
-  img.src = logo; // Ruta de tu logo
-
-  img.onload = () => {
-      const pageWidth = doc.internal.pageSize.width;
-
-      // Agregar el logo
-      doc.addImage(img, 'PNG', 10, 10, 45, 45);
-
-      // Cabecera principal
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
-      // Información de contacto
-      doc.setFontSize(10);
-      doc.setTextColor(100); // Gris
-      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
-      // Título del reporte
-      doc.setFontSize(14);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text('Reporte de Historial Procedencia', pageWidth / 2, 50, { align: 'center' });
-
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51); // Verde
-      doc.line(10, 55, pageWidth - 10, 55);
-
-      // Preparar los datos
-      const historicoConFormato = historicoProcedencia.map((item, index) => ({
-          '#': index + 1,
-          Nombre_procedencia: item.Nombre_procedencia.toUpperCase(),
-          Lugar_procedencia: item.Lugar_procedencia.toUpperCase(),
-          Instituto: item.Instituto.toUpperCase()
-      }));
-
-      // Generar la tabla
-      doc.autoTable({
-          head: [['#', 'Nombre Procedencia', 'Lugar Procedencia', 'Instituto']],
-          body: historicoConFormato.map(item => [
-              item['#'], 
-              item.Nombre_procedencia, 
-              item.Lugar_procedencia, 
-              item.Instituto
-          ]),
-          headStyles: {
-              fillColor: [0, 102, 51], // Verde
-              textColor: [255, 255, 255], // Blanco
-              fontSize: 10,
-              halign: 'center', // Centrado por defecto
-          },
-          styles: {
-              fontSize: 10,
-              cellPadding: 3,
-          },
-          alternateRowStyles: {
-              fillColor: [240, 248, 255], // Azul claro
-          },
-          columnStyles: {
-              0: { halign: 'center' }, // Centro para el número
-              1: { halign: 'left' }, // Alineado a la izquierda para el texto
-          },
-          margin: { top: 70, bottom: 30 },
-          didDrawPage: function (data) {
-              const pageHeight = doc.internal.pageSize.height;
-              const pageCount = doc.internal.getNumberOfPages();
-              const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-              // Pie de página
-              doc.setFontSize(10);
-              doc.setTextColor(0, 102, 51); // Verde
-              doc.text(
-                  `Página ${pageCurrent} de ${pageCount}`,
-                  pageWidth - 10,
-                  pageHeight - 10,
-                  { align: 'right' }
-              );
-
-              const now = new Date();
-              const dateString = now.toLocaleDateString('es-HN', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-              });
-              const timeString = now.toLocaleTimeString('es-HN', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  second: '2-digit',
-              });
-              doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-          }
-      });
-
-      // Mostrar el PDF en una nueva ventana
-      const pdfData = doc.output('bloburl');
-      window.open(pdfData);
-  };
-
-  img.onerror = () => {
-      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
-  };
-};
-
-
-  // Estado para los mensajes de error por campo
-  const [errorCampos, setErrorCampos] = useState({
-    Nombre_procedencia: '',
-    Lugar_procedencia: '',
-    Instituto: ''
-  });
-  
-  // Función para manejar el cambio en los campos de texto
-  const handleNombreInputChange = (e, setState) => {
-    const { name, value } = e.target;
-    
-    // Limpiamos el mensaje de error previo del campo correspondiente
-    setErrorCampos(prevErrors => ({
-      ...prevErrors,
-      [name]: ''
-    }));
-  
-    // Validaciones
-    const isValid = validateNombre(value, name, setErrorCampos);
-  
-    if (isValid) {
-      setState(prevState => ({ ...prevState, [name]: value }));
+      console.error('Error al obtener la procedencia del estudiante:', error); // Muestra el error en la consola si la petición falla
     }
   };
   
-  // Función de validación
-  const validateNombre = (value, campo, setErrorCampos) => {
-    
- 
 
-// 1. No permitir caracteres especiales (solo letras, números y espacios)
-const permitirCaracteresValidos = (texto) => /^[a-zA-Z0-9\s]*$/.test(texto);
-if (!permitirCaracteresValidos(value)) {
-  setErrorCampos(prevErrors => ({
-    ...prevErrors,
-    [campo]: 'No se permiten caracteres especiales.'
-  }));
-  setTimeout(() => setErrorCampos(prevErrors => ({ ...prevErrors, [campo]: '' })), 3000); // El mensaje desaparece después de 3 segundos
-  return false; // Retorna false si hay un error
-}
+  useEffect(() => {
+    fetchProcedenciaEstudiante(); // Llama a la función para obtener el histórico de procedencia desde el backend
+}, []);
 
-// 2. No permitir números
-const contieneNumeros = (texto) => /\d/.test(texto);
-if (contieneNumeros(value)) {
-  setErrorCampos(prevErrors => ({
-    ...prevErrors,
-    [campo]: 'No se permiten números.'
-  }));
-  setTimeout(() => setErrorCampos(prevErrors => ({ ...prevErrors, [campo]: '' })), 3000); // El mensaje desaparece después de 3 segundos
-  return false; // Retorna false si hay un error
-}
 
-// 3. No permitir más de 2 letras consecutivas iguales
-const tieneLetrasRepetidas = (texto) => /([a-zA-Z])\1\1/.test(texto);
-if (tieneLetrasRepetidas(value)) {
-  setErrorCampos(prevErrors => ({
-    ...prevErrors,
-    [campo]: 'No se permiten más de 2 letras consecutivas iguales.'
-  }));
-  setTimeout(() => setErrorCampos(prevErrors => ({ ...prevErrors, [campo]: '' })), 3000); // El mensaje desaparece después de 3 segundos
-  return false; // Retorna false si hay un error
-}
+{/***************************************************************************************************************************************/}
+const validateProcedenciaEstudiante = (procedencia) => {
+  const regexTexto = /^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s'.-]*$/; // Solo letras, espacios, '.', '-' y apostrofe
+  const currentYear = new Date().getFullYear();
+  const minYear = currentYear - 100;
 
-// 4. No permitir más de 3 espacios consecutivos
-const tieneEspaciosConsecutivos = (texto) => /\s{3,}/.test(texto); // Verifica más de 2 espacios consecutivos
-if (tieneEspaciosConsecutivos(value)) {
-  setErrorCampos(prevErrors => ({
-    ...prevErrors,
-    [campo]: 'No se permiten más de 2 espacios consecutivos.'
-  }));
-  setTimeout(() => setErrorCampos(prevErrors => ({ ...prevErrors, [campo]: '' })), 3000); // El mensaje desaparece después de 3 segundos
-  return false; // Retorna false si hay un error
-}
+  // Asegurar que los valores existen antes de usarlos
+  const trimmedInstituto = (procedencia.nombre_instituto || '').trim().replace(/\s+/g, ' ');
+  const trimmedDescripcion = (procedencia.descripcion || '').trim().replace(/\s+/g, ' ');
 
-return true; // Si pasa todas las validaciones
-
-  };
-  
-  // Bloquear copiar y pegar en campos
-const disableCopyPaste = (e) => {
-  e.preventDefault();
-  setErrorMensaje('Copiar y pegar no está permitido.');
-  setTimeout(() => setErrorMensaje(''), 5000); // Eliminar mensaje después de 5 segundos
-};
-  // Maneja el cierre de los modales con advertencia si hay cambios sin guardar
-  const handleCloseModal = () => {
+  // Validación de caracteres especiales
+  if (!regexTexto.test(trimmedInstituto)) {
     swal.fire({
-        title: '¿Estás seguro?',
-        text: 'Tienes cambios sin guardar. ¿Deseas cerrar el modal?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: 'Sí, cerrar',
-        cancelButtonText: 'Cancelar',
-      }).then((result) => {
-        if (result.isConfirmed) {
-          setModalVisible(false);
-          resetNuevoHistorico();
-          setModalUpdateVisible(false);
-          setModalDeleteVisible(false);
-        }
-      }); 
+      icon: 'warning',
+      title: 'Instituto inválido',
+      text: 'Solo se permiten letras, espacios, ".", "-", y apostrofe.',
+    });
+    return false;
+  }
+
+  if (!regexTexto.test(trimmedDescripcion)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Descripción inválida',
+      text: 'Solo se permiten letras, espacios, ".", "-", y apostrofe.',
+    });
+    return false;
+  }
+
+  // Validación de espacios múltiples
+  if (/\s{2,}/.test(trimmedInstituto) || /\s{2,}/.test(trimmedDescripcion)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Espacios múltiples',
+      text: 'No se permite más de un espacio consecutivo entre palabras.',
+    });
+    return false;
+  }
+
+  // Validación de repetición excesiva de letras (más de 3 veces seguidas)
+  if (/(.)\1{2,}/.test(trimmedInstituto) || /(.)\1{2,}/.test(trimmedDescripcion)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición excesiva de letras',
+      text: 'No se permite que una misma letra se repita más de 3 veces seguidas.',
+    });
+    return false;
+  }
+
+  // Validación de `año_desde` solo si se ha ingresado un valor completo
+  if (procedencia.año_desde && (procedencia.año_desde.toString().length !== 4 || isNaN(procedencia.año_desde) || procedencia.año_desde < minYear || procedencia.año_desde > currentYear)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Año desde inválido',
+      text: `El año de inicio debe estar entre ${minYear} y ${currentYear}.`,
+    });
+    return false;
+  }
+
+  // Validación de `año_hasta` solo si se ha ingresado un valor completo
+  if (procedencia.año_hasta && (procedencia.año_hasta.toString().length !== 4 || isNaN(procedencia.año_hasta) || procedencia.año_hasta < minYear || procedencia.año_hasta > currentYear)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Año hasta inválido',
+      text: `El año de finalización debe estar entre ${minYear} y ${currentYear}.`,
+    });
+    return false;
+  }
+
+  // Validación de relación entre años solo si ambos tienen valores
+  if (procedencia.año_desde && procedencia.año_hasta && procedencia.año_hasta < procedencia.año_desde) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Rango de años inválido',
+      text: 'El año de finalización no puede ser anterior al año de inicio.',
+    });
+    return false;
+  }
+
+  return true;
+};
+
+
+
+{/***************************************************************************************************************************************/}
+
+const capitalizeWords = (str) => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+// Validar que ningún campo esté vacío
+const validateEmptyFields = () => {
+  const { nombre_instituto, descripcion, año_desde, año_hasta } = nuevaProcedencia; // Ajuste al objeto nuevaProcedencia
+
+  if (!nombre_instituto || !descripcion || !año_desde || !año_hasta) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Campos vacíos',
+      text: 'Todos los campos deben estar llenos para poder registrar la procedencia del estudiante.',
+    });
+    return false;
+  }
+
+  return true;
+};
+
+
+{/***************************************************************************************************************************************/}
+
+// Función para controlar la entrada de texto en los campos
+const handleProcedenciaEstudianteInputChange = (e, field, setFunction) => {
+  let value = e.target.value;
+
+  // No permitir más de un espacio consecutivo
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // No permitir que una letra se repita más de 4 veces consecutivamente
+  const wordArray = value.split(' ');
+  const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
+
+  if (!isValid) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+    });
+    return;
+  }
+
+  // Validación específica para `nombre_instituto` y `descripcion`
+  if ((field === 'nombre_instituto' || field === 'descripcion') && value.length <= 2) {
+    setProcedenciaError(`El campo "${field.replace('_', ' ')}" debe tener más de 2 letras.`);
+  } else {
+    setProcedenciaError('');
+  }
+
+  // Validación específica para `año_desde` y `año_hasta`
+  const currentYear = new Date().getFullYear();
+  const minYear = currentYear - 100;
+
+  if ((field === 'año_desde' || field === 'año_hasta') && (isNaN(value) || value < minYear || value > currentYear)) {
+    swal.fire({
+      icon: 'warning',
+      title: `Año inválido en ${field.replace('_', ' ')}`,
+      text: `El año debe estar entre ${minYear} y ${currentYear}.`,
+    });
+    return;
+  }
+
+  // Evita que `año_hasta` sea menor que `año_desde`
+  if (field === 'año_hasta' && value < setFunction.año_desde) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Rango de años inválido',
+      text: 'El año hasta no puede ser menor al año desde.',
+    });
+    return;
+  }
+
+  setFunction((prevState) => ({
+    ...prevState,
+    [field]: value,
+  }));
+
+  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+};
+
+
+{/***************************************************************************************************************************************/}
+      // Deshabilitar copiar y pegar
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    swal.fire({
+      icon: 'warning',
+      title: 'Acción bloqueada',
+      text: 'Copiar y pegar no está permitido.',
+    });
   };
 
-  // Reiniciar el formulario de nuevo registro
-  const resetNuevoHistorico = () => {
-    setNuevoHistorico({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' });
-  };
+{/***************************************************************************************************************************************/}
 
-  // Reiniciar el formulario de actualización de registro
-  const resetHistoricoToUpdate = () => {
-    setHistoricoToUpdate({ Nombre_procedencia: '', Lugar_procedencia: '', Instituto: '' });
-  };
-
-
-  const handleCreateHistorico = async () => {
-    console.log('Valor a enviar:', nuevoHistorico.Nombre_procedencia); // Verifica el valor
-    console.log('Valor a enviar:', nuevoHistorico.Lugar_procedencia); // Verifica el valor
-    console.log('Valor a enviar:', nuevoHistorico.Instituto); // Verifica el valor
-  
-    // Verificar si ya existe una procedencia con el mismo nombre y lugar
-    const procedenciaExistente = historicoProcedencia.some(historico =>
-      historico.Nombre_procedencia === nuevoHistorico.Nombre_procedencia &&
-      historico.Lugar_procedencia === nuevoHistorico.Lugar_procedencia
-    );
-  
-    if (procedenciaExistente) {
-      // Actualizar el estado del errorMensaje para mostrar el mensaje de inmediato
-      setErrorMensaje(`La procedencia con el nombre "${nuevoHistorico.Nombre_procedencia}" y lugar "${nuevoHistorico.Lugar_procedencia}" ya existe.`);
-      return; // Detener el proceso si ya existe
-    }
-  
-    try {
-      const response = await fetch('http://localhost:4000/api/historial_proc/crear_historico', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p_Nombre_procedencia: nuevoHistorico.Nombre_procedencia,
-          p_Lugar_procedencia: nuevoHistorico.Lugar_procedencia,
-          p_Instituto: nuevoHistorico.Instituto,
-        }),
-      });
-      const errorData = await response.json(); // Captura el cuerpo de la respuesta
-      if (response.ok) {
-        fetchHistoricoProcedencia(); // Recargar la lista de registros
-        setModalVisible(false); // Cerrar el modal
-        resetNuevoHistorico(); // Resetear los campos
-        setNuevoHistorico({Nombre_procedencia: '', Lugar_procedencia: '', Instituto: ''});
-  
-        // Mostrar mensaje de éxito
+    // Función para cerrar el modal con advertencia si hay cambios sin guardar
+    const handleCloseModal = (closeFunction, resetFields) => {
+      if (hasUnsavedChanges) {
         swal.fire({
-          icon: 'success',
-          title: 'Creación exitosa',
-          text: `La procedencia "${nuevoHistorico.Nombre_procedencia}" ha sido creada correctamente.`,
+          title: '¿Estás seguro?',
+          text: 'Si cierras este formulario, perderás todos los datos ingresados.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sí, cerrar',
+          cancelButtonText: 'Cancelar',
+        }).then((result) => {
+          if (result.isConfirmed) {
+            closeFunction(false);
+            resetFields(); // Limpiar los campos al cerrar
+            setHasUnsavedChanges(false); // Resetear cambios no guardados
+          }
         });
       } else {
-        swal.fire({ icon: 'error', title: 'Error', text: `${errorData.mensaje || 'Error desconocido'}` });
-        console.error('Hubo un error al crear la procedencia', response.statusText, errorData); 
+        closeFunction(false);
+        resetFields();
       }
-    } catch (error) {
-      console.error('Error al crear la procedencia:', error);
-      swal.fire({
-        icon: 'error',
-        title: 'Error de conexión',
-        text: 'Ocurrió un problema al conectarse con el servidor.',
-      });
-    }
-  };
-  
+    };
 
-// Función para actualizar un registro en el histórico de procedencia
-const handleUpdateHistorico = async () => {
-  console.log('Valor a enviar para actualización:', historicoToUpdate.Nombre_procedencia);
-  console.log('Valor a enviar para actualización:', historicoToUpdate.Lugar_procedencia);
-  console.log('Valor a enviar para actualización:', historicoToUpdate.Instituto);
+{/***************************************************************************************************************************************/}
+
+const resetNuevaProcedencia = () => {
+  setNuevaProcedencia({ nombre_instituto: '', descripcion: '', año_desde: '', año_hasta: '' });
+};
+
+const resetProcedenciaToUpdate = () => {
+  setProcedenciaEstudianteToUpdate({ nombre_instituto: '', descripcion: '', año_desde: '', año_hasta: '' });
+};
+
+
+{/***************************************************************************************************************************************/}
+
+const handleCreateProcedenciaEstudiante = async () => {
+  // Capitalizar el nombre del instituto y limpiar espacios excesivos
+  const institutoCapitalizado = capitalizeWords(nuevaProcedencia.nombre_instituto.trim().replace(/\s+/g, ' '));
+  const descripcionCapitalizada = capitalizeWords(nuevaProcedencia.descripcion.trim().replace(/\s+/g, ' '));
+
+  // Validaciones antes de crear
+  if (!validateProcedenciaEstudiante({ 
+    nombre_instituto: institutoCapitalizado, 
+    descripcion: descripcionCapitalizada, 
+    año_desde: nuevaProcedencia.año_desde, 
+    año_hasta: nuevaProcedencia.año_hasta 
+  })) {
+    return;
+  }
 
   try {
-    const response = await fetch('http://localhost:4000/api/historial_proc/actualizar_historico', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+    const response = await fetch(`http://localhost:4000/api/procedenciaEstudiante/crearProcedenciaEstudiante`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        p_cod_procedencia: historicoToUpdate.cod_procedencia,
-        p_Nombre_procedencia: historicoToUpdate.Nombre_procedencia,
-        p_Lugar_procedencia: historicoToUpdate.Lugar_procedencia,
-        p_Instituto: historicoToUpdate.Instituto,
+        nombre_instituto: institutoCapitalizado,  // Se usa el nombre validado
+        descripcion: descripcionCapitalizada,  // Se usa la descripción validada
+        año_desde: nuevaProcedencia.año_desde, 
+        año_hasta: nuevaProcedencia.año_hasta,
+        estado: 1, // Activo por defecto
       }),
     });
 
-    const errorData = await response.json();
     if (response.ok) {
-      fetchHistoricoProcedencia(); // Recargar la lista de registros
-      setModalUpdateVisible(false); // Cerrar el modal
-      resetHistoricoToUpdate(); // Resetear los campos
-      setHasUnsavedChanges(false); // Resetear cambios no guardados
+      let result;
+      try {
+        result = await response.json(); // Intentamos obtener el JSON de la respuesta
+      } catch (error) {
+        console.warn("La API no devolvió JSON, pero la procedencia fue creada.");
+        result = { nombre_instituto: institutoCapitalizado, descripcion: descripcionCapitalizada }; // Asumimos que se creó correctamente
+      }
 
-      // Usamos el nombre de la procedencia que se actualizó
-      const ProcedenciaCompleto = historicoToUpdate.Nombre_procedencia.toUpperCase();
+      // Actualiza la lista sin recargar la página
+      fetchProcedenciaEstudiante(); 
+      setModalVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetNuevaProcedencia(); // Reiniciar el estado de la nueva procedencia
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
 
-      swal.fire({ 
-        icon: 'success', 
-        title: 'Actualización exitosa', 
-        text: `Se ha actualizado correctamente la procedencia: ${ProcedenciaCompleto}.` 
+      swal.fire({
+        icon: 'success',
+        title: 'Creación exitosa',
+        text: `La procedencia del estudiante ha sido registrada correctamente.`,
+      });
+
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo registrar la procedencia del estudiante.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al registrar la procedencia del estudiante:', error);
+    swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'Ocurrió un error al intentar registrar la procedencia del estudiante.',
+    });
+  }
+};
+
+
+{/***************************************************************************************************************************************/}
+
+const handleUpdateProcedenciaEstudiante = async () => {
+  // Capitalizar y limpiar espacios excesivos
+  const institutoCapitalizado = capitalizeWords(procedenciaEstudianteToUpdate.nombre_instituto.trim().replace(/\s+/g, ' '));
+  const descripcionCapitalizada = capitalizeWords(procedenciaEstudianteToUpdate.descripcion.trim().replace(/\s+/g, ' '));
+
+  // Validaciones antes de actualizar
+  if (!validateProcedenciaEstudiante({ 
+    nombre_instituto: institutoCapitalizado, 
+    descripcion: descripcionCapitalizada, 
+    año_desde: procedenciaEstudianteToUpdate.año_desde, 
+    año_hasta: procedenciaEstudianteToUpdate.año_hasta 
+  })) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:4000/api/procedenciaEstudiante/actualizarProcedenciaEstudiante/${procedenciaEstudianteToUpdate.Cod_procedencia_estudiante}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Cod_procedencia_estudiante: procedenciaEstudianteToUpdate.Cod_procedencia_estudiante,
+        nombre_instituto: institutoCapitalizado,
+        descripcion: descripcionCapitalizada,
+        año_desde: procedenciaEstudianteToUpdate.año_desde,
+        año_hasta: procedenciaEstudianteToUpdate.año_hasta,
+        estado: procedenciaEstudianteToUpdate.estado,  // Mantener el estado o modificarlo
+      }),
+    });
+
+    if (response.ok) {
+      fetchProcedenciaEstudiante();
+      setModalUpdateVisible(false); // Cerrar el modal sin advertencia al guardar
+      resetProcedenciaToUpdate();
+      setHasUnsavedChanges(false); // Reiniciar el estado de cambios no guardados
+      swal.fire({
+        icon: 'success',
+        title: 'Actualización exitosa',
+        text: 'La procedencia del estudiante ha sido actualizada correctamente.',
       });
     } else {
-      swal.fire({ 
-        icon: 'error', 
-        title: 'Error', 
-        text: errorData?.mensaje || 'Hubo un error al actualizar la procedencia.',
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo actualizar la procedencia del estudiante.',
       });
     }
   } catch (error) {
-    console.error('Error al actualizar el registro de procedencia:', error);
-    setMensajeError('Error en la conexión. Intente nuevamente.');
+    console.error('Error al actualizar la procedencia del estudiante:', error);
     swal.fire({
       icon: 'error',
       title: 'Error',
-      text: 'Hubo un error en el servidor.',
+      text: 'Ocurrió un error al intentar actualizar la procedencia del estudiante.',
     });
   }
 };
-const eliminarHistoricoProcedencia = async (historico) => {
-  try {
-    // Muestra un cuadro de confirmación antes de eliminar
-    const confirmDelete = await swal.fire({
-      title: '¿Estás seguro?',
-      text: `¿Deseas eliminar la procedencia "${historico.Nombre_procedencia}"?`,
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonColor: '#4B6251',
-      cancelButtonColor: '#d33',
-      confirmButtonText: 'Eliminar',
-      cancelButtonText: 'Cancelar',
-    });
 
-    // Si el usuario confirma, se ejecuta la eliminación
-    if (confirmDelete.isConfirmed) {
-      const response = await fetch(`http://localhost:4000/api/historial_proc/eliminar_historico/${encodeURIComponent(historico.cod_procedencia)}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-      });
 
-      const result = await response.json();
+{/***************************************************************************************************************************************/}
 
-      if (response.ok) {
-        // Recargar la lista de registros y mostrar mensaje de éxito
-        fetchHistoricoProcedencia();
-        
-        // Mostrar mensaje de éxito con el nombre de la procedencia eliminada
-        swal.fire({
-          title: 'Éxito',
-          text: `La procedencia "${historico.Nombre_procedencia}" ha sido eliminada correctamente.`,
-          icon: 'success',
-          confirmButtonColor: '#4B6251',
-        });
-      } else {
-        throw new Error(result.Mensaje || 'Hubo un error al eliminar el registro.');
+    const handleDeleteRelacion = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:4000/api/tipoRelacion/eliminarTipoRelacion/${encodeURIComponent(tipoRelacionToDelete.Cod_tipo_relacion)}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+  
+        if (response.ok) {
+          fetchTipoRelacion();
+          setModalDeleteVisible(false);
+          setTipoRelacionToDelete({});
+          swal.fire({
+            icon: 'success',
+            title: 'Eliminación exitosa',
+            text: 'La relación ha sido eliminado correctamente.',
+          });
+        } else {
+          swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'No se pudo eliminar la relación.',
+          });
+        }
+      } catch (error) {
+        console.error('Error al eliminar la relación:', error);
       }
-    }
-  } catch (error) {
-    // Mostrar mensaje de error si algo sale mal
-    swal.fire({
-      title: 'Error',
-      text: error.message || 'Hubo un error al eliminar el registro.',
-      icon: 'error',
-      confirmButtonColor: '#4B6251',
-    });
+    };
+{/***************************************************************************************************************************************/}
+
+const openUpdateModal = (procedenciaEstudiante) => {
+  setProcedenciaEstudianteToUpdate(procedenciaEstudiante);
+  setModalUpdateVisible(true);
+};
+
+const openDeleteModal = (procedenciaEstudiante) => {
+  setProcedenciaEstudianteToDelete(procedenciaEstudiante);
+  setModalDeleteVisible(true);
+};
+
+{/***************************************************************************************************************************************/}
+
+const handleSearch = (event) => {
+  setSearchTerm(event.target.value);
+  setCurrentPage(1);
+};
+
+const filteredProcedenciaEstudiante = procedenciaEstudiante.filter((procedencia) =>
+  personaSeleccionada && 
+  procedencia.cod_persona === personaSeleccionada.cod_persona && // Filtrar por persona seleccionada
+  (
+    (procedencia.nombre_instituto || '').toLowerCase().includes(searchTerm.toLowerCase()) || // Filtrar por instituto
+    (procedencia.descripcion || '').toLowerCase().includes(searchTerm.toLowerCase()) || // Filtrar por descripción
+    procedencia.año_desde?.toString().includes(searchTerm) || // Filtrar por año desde
+    procedencia.año_hasta?.toString().includes(searchTerm) // Filtrar por año hasta
+  )
+);
+
+
+const indexOfLastRecord = currentPage * recordsPerPage;
+const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+const currentRecords = filteredProcedenciaEstudiante.slice(indexOfFirstRecord, indexOfLastRecord);
+
+const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredProcedenciaEstudiante.length / recordsPerPage)) {
+    setCurrentPage(pageNumber);
   }
 };
 
+{/***************************************************************************************************************************************/}
+
+const ReporteProcedenciaEstudiantePDF = () => {
+  const doc = new jsPDF('p', 'mm', 'letter'); 
   
-  // Abre el modal de actualización con los datos del registro seleccionado
-  const openUpdateModal = (historico) => {
-    setHistoricoToUpdate(historico);
-    setModalUpdateVisible(true);
-    setHasUnsavedChanges(false); // Resetear el estado de cambios no guardados
-  };
-  
-  // Abre el modal de eliminación con los datos del registro seleccionado
-  const openDeleteModal = (historico) => {
-    setHistoricoToDelete(historico);
-    setModalDeleteVisible(true);
-  };
-// Maneja la búsqueda filtrando por nombre del edificio
-    const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-    setCurrentPage(1); // Reinicia a la primera página al buscar
+  if (!filteredProcedenciaEstudiante || filteredProcedenciaEstudiante.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const img = new Image();
+  img.src = logo;
+
+  img.onload = () => {
+    const pageWidth = doc.internal.pageSize.width;
+
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 45, 45);
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+    // Subtítulo
+    doc.setFontSize(14);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Procedencia Estudiante', pageWidth / 2, 50, { align: 'center' });
+
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, 60, pageWidth - 10, 60);
+
+    // Filtrar datos y formatear para la tabla
+    const tableRows = filteredProcedenciaEstudiante.map((procedencia, index) => ({
+      index: (index + 1).toString(),
+      nombre_instituto: procedencia.nombre_instituto?.toUpperCase() || 'N/D',
+      descripcion: procedencia.descripcion?.toUpperCase() || 'N/D',
+      año_desde: procedencia.año_desde?.toString() || 'N/D',
+      año_hasta: procedencia.año_hasta?.toString() || 'N/D',
+      estado: procedencia.estado === 1 ? 'Activo' : 'Inactivo',
+    }));
+
+    const columnWidths = {
+      index: 15,           
+      nombre_instituto: 60,
+      descripcion: 60,   
+      año_desde: 20,     
+      año_hasta: 20,
+      estado: 25      
+    };
+    const tableWidth = Object.values(columnWidths).reduce((acc, width) => acc + width, 0);
+
+    doc.autoTable({
+      startY: 65,
+      margin: { left: (pageWidth - tableWidth) / 2 }, 
+      columns: [
+        { header: '#', dataKey: 'index' },
+        { header: 'Instituto', dataKey: 'nombre_instituto' },
+        { header: 'Descripción', dataKey: 'descripcion' },
+        { header: 'Desde', dataKey: 'año_desde' },
+        { header: 'Hasta', dataKey: 'año_hasta' },
+        { header: 'Estado', dataKey: 'estado' },
+      ],
+      body: tableRows,
+      styles: { fontSize: 7, cellPadding: 4 },
+      columnStyles: columnWidths,
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+    });
+
+    doc.save("Reporte_Procedencia_Estudiante.pdf");
   };
 
-  // Filtra los edificios según el término de búsqueda
-  const filteredHistoricos = historicoProcedencia.filter((historicop) =>
-    historicop.Nombre_procedencia.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Cálculo de la paginación
-  const indexOfLastRecord = currentPage * recordsPerPage;
-  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-  const currentRecords = filteredHistoricos.slice(indexOfFirstRecord, indexOfLastRecord);
-
-  // Función para cambiar de página en la paginación
-  const paginate = (pageNumber) => {
-    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredHistoricos.length / recordsPerPage)) {
-      setCurrentPage(pageNumber);
-    }
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
   };
+};
+
+{/***************************************************************************************************************************************/}
+
+const exportProcedenciaEstudianteToExcel = () => {
+  if (!filteredProcedenciaEstudiante || filteredProcedenciaEstudiante.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Procedencia Estudiante');
+
+  // Título del documento
+  worksheet.mergeCells('A1:D1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:D2');
+  worksheet.getCell('A2').value = 'PROCEDENCIA ESTUDIANTE';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados de la tabla
+  const headerRow = worksheet.addRow(['#', 'Instituto', 'Descripción', 'Desde', 'Hasta']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // Datos de la tabla
+  filteredProcedenciaEstudiante.forEach((procedencia, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      typeof procedencia.nombre_instituto === 'string' ? procedencia.nombre_instituto.toUpperCase() : procedencia.nombre_instituto,
+      typeof procedencia.descripcion === 'string' ? procedencia.descripcion.toUpperCase() : procedencia.descripcion,
+      procedencia.año_desde,
+      procedencia.año_hasta
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // Ajustar el ancho de las columnas
+  worksheet.columns.forEach((column) => {
+    column.width = 20;
+  });
+
+  // Crear archivo Excel
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_ProcedenciaEstudiante.xlsx');
+  });
+};
+
+
+{/***************************************************************************************************************************************/}
+
+
+{/***************************************************************************************************************************************/}
+
+
+{/***************************************************************************************************************************************/}
+
+
+{/***************************************************************************************************************************************/}
 
 
     
@@ -529,310 +718,434 @@ const eliminarHistoricoProcedencia = async (historico) => {
         <CContainer>
   
   <CRow className="align-items-center mb-5">
-      <CCol xs="8" md="9">
-        <h2 className="mb-0">Mantenimiento Historial Procedencia</h2>
-      </CCol>
-      <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
-        <CButton 
-          style={{ backgroundColor: '#4B6251', color: 'white' }} 
-          className="mb-3 mb-md-0 me-md-3" 
-          onClick={() => setModalVisible(true)} // Si necesitas la funcionalidad para "Nuevo"
-        >
-          <CIcon icon={cilPlus} /> Nuevo
-        </CButton>
+  <CCol xs="8" md="9">
+    {/* Título de la página */}
+    <h1 className="mb-0">Procedencia Estudiante</h1>
+    {personaSeleccionada ? (
+          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+            <strong>Procedencia Histórica de:</strong> {personaSeleccionada 
+              ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+              : 'Información no disponible'}
+          </div>
+        ) : (
+          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+            <strong>Persona Seleccionada:</strong> Información no disponible
+          </div>
+        )}
+  </CCol>
+  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-3">
+  {/* Botón Personas */}
+  <CButton
+    color="secondary"
+    onClick={volverAListaPersonas}
+    style={{ minWidth: '160px', height: '38px' }} // Más largo
+  >
+    <CIcon icon={cilArrowLeft} /> Personas
+  </CButton>
 
-        {/* Botón "Reporte" que genera y descarga el PDF automáticamente */}
-        <CButton
-          style={{ backgroundColor: '#6C8E58', color: 'white' }}
-          onClick={exportToPDF} // Genera y descarga el PDF
-        >
-          <CIcon icon={cilDescription} /> Reporte
-        </CButton>
-      </CCol>
-    </CRow>
-      {/* Filtro de búsqueda y selección de registros */}
-      <CRow className="align-items-center mt-4 mb-2">
-            {/* Barra de búsqueda  */}
-            <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
-              <CInputGroup className="me-3" style={{ width: '400px' }}>
-                <CInputGroupText>
-                  <CIcon icon={cilSearch} />
-                </CInputGroupText>
-                <CFormInput
-                  placeholder="Buscar procedencia"
-                  onChange={handleSearch}
-                  value={searchTerm}
-                />
-                <CButton
-                  style={{border: '1px solid #ccc',
-                    transition: 'all 0.1s ease-in-out', // Duración de la transición
-                    backgroundColor: '#F3F4F7', // Color por defecto
-                    color: '#343a40' // Color de texto por defecto
-                  }}
-                  onClick={() => {
-                    setSearchTerm('');
-                    setCurrentPage(1);
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
-                    e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
-                    e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
-                  }}
-                >
-                  <CIcon icon={cilBrushAlt} /> Limpiar
-                </CButton>
-              </CInputGroup>
-          </CCol>
+  {/* Botón Nuevo */}
+  {canInsert && (
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '160px', height: '38px' }} // Más largo
+      onClick={() => setModalVisible(true)}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
+  )}
 
-      {/* Selector dinámico a la par de la barra de búsqueda */}
-      <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
-        <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
-          <div className="d-inline-flex align-items-center">
-            <span>Mostrar&nbsp;</span>
-              <CFormSelect
-                style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
-                onChange={(e) => {
-                const value = Number(e.target.value);
-                setRecordsPerPage(value);
-                setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
-              }}
-                value={recordsPerPage}
-              >
-                <option value="5">5</option>
-                <option value="10">10</option>
-                <option value="20">20</option>
-              </CFormSelect>
-            <span>&nbsp;registros</span>
-          </div>       
-       </CInputGroup>
-     </CCol>
-    </CRow>
-      {/* Tabla de histórico de procedencia con tamaño fijo */}
-        <div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
-        <CTable striped>
-            <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
-            <CTableRow>
-                <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '40%' }}>Nombre de Procedencia</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '40%' }}>Lugar de Procedencia</CTableHeaderCell>
-                <CTableHeaderCell style={{ width: '40%' }}>Instituto</CTableHeaderCell>
-                <CTableHeaderCell  style={{ width: '45%' }}>Acciones</CTableHeaderCell>
-            </CTableRow>
-            </CTableHead>
-            <CTableBody>
-            {currentRecords.map((historico) => (
-                <CTableRow key={historico.cod_procedencia}>
-                <CTableDataCell className="text-center">{historico.originalIndex}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Nombre_procedencia}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Lugar_procedencia}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>{historico.Instituto}</CTableDataCell>
-                <CTableDataCell className="text-center">
-                    <div className="d-flex justify-content-center">
-                    <CButton
-                        color="warning"
-                        onClick={() => openUpdateModal(historico)}
-                        style={{ marginRight: '10px' }}
-                    >
-                        <CIcon icon={cilPen} />
-                    </CButton>
-                    <CButton color="danger"size="sm" onClick={() => eliminarHistoricoProcedencia(historico)}>
-                    <CIcon icon={cilTrash} />
-            </CButton>
-                    </div>
-                </CTableDataCell>
-                </CTableRow>
-            ))}
-            </CTableBody>
-        </CTable>
-        </div>
+  {/* Botón Ficha Estudiante */}
+  <CButton
+  style={{ backgroundColor: '#346B93', color: 'white', minWidth: '160px', height: '38px' }}
+  onClick={() => abrirFichaEstudiante(personaSeleccionada)} // Ahora pasa la persona correctamente
+>
+  <CIcon icon={cilUser} /> Ficha 
+</CButton>
 
-          {/* Paginación */}
-      <CPagination
-        align="center"
-        aria-label="Page navigation example"
-        activePage={currentPage}
-        pages={Math.ceil(filteredHistoricos.length / recordsPerPage)}
-        onActivePageChange={paginate}
+  {/* Botón de Reportes */}
+  <CDropdown>
+    <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '160px', height: '38px' }}>
+      Reportes
+    </CDropdownToggle>
+    <CDropdownMenu>
+      <CDropdownItem onClick={exportProcedenciaEstudianteToExcel}>Descargar en Excel</CDropdownItem>
+      <CDropdownItem onClick={ReporteProcedenciaEstudiantePDF}>Descargar en PDF</CDropdownItem>
+    </CDropdownMenu>
+  </CDropdown>
+</CCol>
+
+
+
+</CRow>
+
+{/* Contenedor de la barra de búsqueda y el selector dinámico */}
+<CRow className="align-items-center mt-4 mb-2">
+  {/* Barra de búsqueda  */}
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar procedencia estudiante..."
+        onChange={handleSearch}
+        value={searchTerm}
       />
+      <CButton
+        style={{
+          border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out',
+          backgroundColor: '#F3F4F7',
+          color: '#343a40'
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
 
-      {/* Botones de paginación "Anterior" y "Siguiente" */}
-      <div className="d-flex justify-content-center align-items-center mt-3">
-        <CButton
-          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === 1}
-          onClick={() => paginate(currentPage - 1)}
+  {/* Selector dinámico a la par de la barra de búsqueda */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span>Mostrar&nbsp;</span>
+        <CFormSelect
+          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1);
+          }}
+          value={recordsPerPage}
         >
-          Anterior
-        </CButton>
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+        </CFormSelect>
+        <span>&nbsp;registros</span>
+      </div>       
+    </CInputGroup>
+  </CCol>
+</CRow>
 
-        <CButton
-          style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === Math.ceil(filteredHistoricos.length / recordsPerPage)}
-          onClick={() => paginate(currentPage + 1)}
-        >
-          Siguiente
-        </CButton>
+      {/* Tabla de histórico de procedencia con tamaño fijo */}
+      <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Instituto</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Desde</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Hasta</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
 
-        <div style={{ marginLeft: '10px' }}>
-          Página {currentPage} de {Math.ceil(filteredHistoricos.length / recordsPerPage)}
-        </div>
-      </div>
+    <CTableBody>
+      {currentRecords.map((procedencia) => (
+        <CTableRow key={procedencia.Cod_procedencia_estudiante}>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.nombre_instituto.toUpperCase()}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.descripcion.toUpperCase()}</CTableDataCell>
+          <CTableDataCell className="text-center">{procedencia.año_desde}</CTableDataCell>
+          <CTableDataCell className="text-center">{procedencia.año_hasta}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(procedencia)}
+                  style={{ marginRight: '10px' }}
+                  title="Editar procedencia"
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
 
-
-        {/* Modal Crear Procedencia */}
-    <CModal visible={modalVisible} backdrop="static">
-    <CModalHeader closeButton={false}>
-        <CModalTitle>Ingresar Procedencia</CModalTitle>
-        <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoHistorico)}/>
-    </CModalHeader>
-    <CModalBody>
-   
-  <CForm>
-    <CFormInput
-      label="Nombre de Procedencia"
-      name="Nombre_procedencia"
-      value={nuevoHistorico.Nombre_procedencia}
-      maxLength={80}
-      onPaste={disableCopyPaste}
-      onCopy={disableCopyPaste}
-      style={{ textTransform: 'uppercase' }}
-      onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
-    />
-    {errorCampos.Nombre_procedencia && (
-      <div style={{ color: 'red', marginTop: '5px' }}>
-        {errorCampos.Nombre_procedencia}
-      </div>
-    )}
-
-    <CFormInput
-      label="Lugar de Procedencia"
-      name="Lugar_procedencia"
-      value={nuevoHistorico.Lugar_procedencia}
-      maxLength={80}
-      onPaste={disableCopyPaste}
-      onCopy={disableCopyPaste}
-      style={{ textTransform: 'uppercase' }}
-      onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
-    />
-    {errorCampos.Lugar_procedencia && (
-      <div style={{ color: 'red', marginTop: '5px' }}>
-        {errorCampos.Lugar_procedencia}
-      </div>
-    )}
-
-    <CFormInput
-      label="Instituto"
-      name="Instituto"
-      value={nuevoHistorico.Instituto}
-      maxLength={80}
-      onPaste={disableCopyPaste}
-      onCopy={disableCopyPaste}
-      style={{ textTransform: 'uppercase' }}
-      onChange={(e) => handleNombreInputChange(e, setNuevoHistorico)}
-    />
-    {errorCampos.Instituto && (
-      <div style={{ color: 'red', marginTop: '5px' }}>
-        {errorCampos.Instituto}
-      </div>
-    )}
-  </CForm>
+              {canDelete && (
+                <CButton color="danger" onClick={() => openDeleteModal(procedencia)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
 
 
-    </CModalBody>
 
-    {/* Mostrar mensaje de error si existe */}
-{errorMensaje && (
-  <div className="text-danger mt-2">
-    {errorMensaje}
-  </div>
-)}
-    <CModalFooter>
-        <CButton color="secondary" onClick={handleCloseModal}>
-        Cancelar
-        </CButton>
-        <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white' }}
-        onClick={handleCreateHistorico}
-        disabled={errors.Nombre_procedencia || errors.Lugar_procedencia || errors.Instituto}
-        >
-        Guardar
-        </CButton>
-    </CModalFooter>
-    </CModal>
+{/*******************************************************************************************************************************************************/}
+{/* Paginación Fija */}
+<div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+  <CPagination aria-label="Page navigation">
+    <CButton
+      style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === 1} // Desactiva si es la primera página
+      onClick={() => paginate(currentPage - 1)} // Páginas anteriores
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{ marginLeft: '10px', backgroundColor: '#6f8173', color: '#D9EAD3' }}
+      disabled={currentPage === Math.ceil(filteredProcedenciaEstudiante.length / recordsPerPage)} // Desactiva si es la última página
+      onClick={() => paginate(currentPage + 1)} // Páginas siguientes
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  <span style={{ marginLeft: '10px' }}>
+    Página {currentPage} de {Math.ceil(filteredProcedenciaEstudiante.length / recordsPerPage)}
+  </span>
+</div>
 
-
-    {/* Modal Actualizar Procedencia */}
-<CModal visible={modalUpdateVisible} backdrop="static">
+{/******************************************************************************************************************************************************/}
+<CModal visible={modalVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
-    <CModalTitle>Actualizar Procedencia</CModalTitle>
-    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetHistoricoToUpdate)} />
+    <CModalTitle>Ingresar Nueva Procedencia del Estudiante</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevaProcedencia)} />
   </CModalHeader>
   <CModalBody>
+    <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
+      <strong>Estudiante:</strong> {personaSeleccionada 
+        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+        : 'Información no disponible'}
+    </div>
     <CForm>
-      <CFormInput
-        label="Identificador"
-        value={historicoToUpdate.cod_procedencia}
-        readOnly
-      />
-      <CFormInput
-        label="Nombre de Procedencia"
-        value={historicoToUpdate.Nombre_procedencia || ''}
-        maxLength={80}
-        name="Nombre_procedencia"
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        style={{ textTransform: 'uppercase' }}
-        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
-      />
-      <CFormInput
-        label="Lugar de Procedencia"
-        value={historicoToUpdate.Lugar_procedencia || ''}
-        maxLength={80}
-        name="Lugar_procedencia"
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        style={{ textTransform: 'uppercase' }}
-        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
-      />
-      <CFormInput
-        label="Instituto"
-        value={historicoToUpdate.Instituto || ''}
-        maxLength={80}
-        name="Instituto"
-        onPaste={disableCopyPaste}
-        onCopy={disableCopyPaste}
-        style={{ textTransform: 'uppercase' }}
-        onChange={(e) => handleNombreInputChange(e, setHistoricoToUpdate)}
-      />
+      {/* Nombre del Instituto */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Instituto</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el nombre del instituto"
+          maxLength={100}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevaProcedencia.nombre_instituto}
+          onChange={(e) => {
+            let value = e.target.value.replace(/\s{2,}/g, ' '); // Bloquear más de un espacio
+            value = value.replace(/(.)\1{2,}/g, '$1$1'); // Bloquear más de 3 letras repetidas
+            value = value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñ0-9\s'.,-]/g, ''); // Permitir caracteres válidos
+
+            setNuevaProcedencia(prev => ({ ...prev, nombre_instituto: value.toUpperCase() }));
+          }}
+        />
+      </CInputGroup>
+
+      {/* Descripción */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Descripción</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese una descripción"
+          maxLength={200}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevaProcedencia.descripcion}
+          onChange={(e) => {
+            let value = e.target.value.replace(/\s{2,}/g, ' '); // Bloquear más de un espacio
+            value = value.replace(/(.)\1{2,}/g, '$1$1'); // Bloquear más de 3 letras repetidas
+            value = value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñ0-9\s'.,-]/g, ''); // Permitir caracteres válidos + comas
+
+            setNuevaProcedencia(prev => ({ ...prev, descripcion: value.toUpperCase() }));
+          }}
+        />
+      </CInputGroup>
+
+{/* Año Desde */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Año Desde</CInputGroupText>
+  <CFormInput
+    type="text"
+    placeholder="Ingrese el año de inicio"
+    onPaste={disableCopyPaste}
+    onCopy={disableCopyPaste}
+    value={nuevaProcedencia.año_desde}
+    onChange={(e) => {
+      const value = e.target.value.replace(/[^0-9]/g, ''); // Solo permitir números
+      if (value.length <= 4) { // Limitar a 4 dígitos
+        setNuevaProcedencia(prev => ({ ...prev, año_desde: value }));
+      }
+    }}
+  />
+</CInputGroup>
+
+{/* Año Hasta */}
+<CInputGroup className="mb-3">
+  <CInputGroupText>Año Hasta</CInputGroupText>
+  <CFormInput
+    type="text"
+    placeholder="Ingrese el año de finalización"
+    onPaste={disableCopyPaste}
+    onCopy={disableCopyPaste}
+    value={nuevaProcedencia.año_hasta}
+    onChange={(e) => {
+      const value = e.target.value.replace(/[^0-9]/g, ''); // Solo permitir números
+      if (value.length <= 4) { // Limitar a 4 dígitos
+        setNuevaProcedencia(prev => ({ ...prev, año_hasta: value }));
+      }
+    }}
+  />
+</CInputGroup>
+
     </CForm>
   </CModalBody>
 
-  {/* Mostrar mensaje de error si existe */}
-{errorMensaje && (
-  <div className="text-danger mt-2">
-    {errorMensaje}
-  </div>
-)}
   <CModalFooter>
-    <CButton color="secondary" onClick={handleCloseModal}>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevaProcedencia)}>
       Cancelar
     </CButton>
-    <CButton
-      style={{ backgroundColor: '#F9B64E', color: 'white' }}
-      onClick={handleUpdateHistorico}
+    <CButton 
+      style={{ backgroundColor: '#4B6251', color: 'white' }} 
+      onClick={() => {
+        if (validateProcedenciaEstudiante(nuevaProcedencia)) {
+          handleCreateProcedenciaEstudiante();
+        }
+      }}
     >
-      <CIcon icon={cilPen} style={{ marginRight: '5px' }} /> Actualizar
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
     </CButton>
   </CModalFooter>
 </CModal>
 
 
 
+{/********************************************************************************************************************************************************/}
+<CModal visible={modalUpdateVisible} backdrop="static" size="lg">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Actualizar Procedencia del Estudiante</CModalTitle>
+    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetProcedenciaToUpdate)} />
+  </CModalHeader>
+  <CModalBody>
+  <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
+      <strong>Estudiante:</strong> {personaSeleccionada 
+        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+        : 'Información no disponible'}
+    </div>
+    <CForm>
+      {/* Nombre del Instituto */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Instituto</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el nombre del instituto"
+          maxLength={100}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={procedenciaEstudianteToUpdate.nombre_instituto || ''}
+          onChange={(e) => {
+            let value = e.target.value.replace(/\s{2,}/g, ' '); // Bloquear más de un espacio
+            value = value.replace(/(.)\1{2,}/g, '$1$1'); // Bloquear más de 3 letras repetidas
+            value = value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñ0-9\s'.,-]/g, ''); // Permitir caracteres válidos
+
+            setProcedenciaEstudianteToUpdate(prev => ({ ...prev, nombre_instituto: value.toUpperCase() }));
+          }}
+        />
+      </CInputGroup>
+
+      {/* Descripción */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Descripción</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese una descripción"
+          maxLength={200}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={procedenciaEstudianteToUpdate.descripcion || ''}
+          onChange={(e) => {
+            let value = e.target.value.replace(/\s{2,}/g, ' '); // Bloquear más de un espacio
+            value = value.replace(/(.)\1{2,}/g, '$1$1'); // Bloquear más de 3 letras repetidas
+            value = value.replace(/[^a-zA-ZÁÉÍÓÚáéíóúÑñ0-9\s'.,-]/g, ''); // Permitir caracteres válidos + comas
+
+            setProcedenciaEstudianteToUpdate(prev => ({ ...prev, descripcion: value.toUpperCase() }));
+          }}
+        />
+      </CInputGroup>
+
+      {/* Año Desde */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Año Desde</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el año de inicio"
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={procedenciaEstudianteToUpdate.año_desde}
+          onChange={(e) => {
+            const value = e.target.value.replace(/[^0-9]/g, ''); // Solo permitir números
+            if (value.length <= 4) { // Limitar a 4 dígitos
+              setProcedenciaEstudianteToUpdate(prev => ({ ...prev, año_desde: value }));
+            }
+          }}
+        />
+      </CInputGroup>
+
+      {/* Año Hasta */}
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Año Hasta</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el año de finalización"
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={procedenciaEstudianteToUpdate.año_hasta}
+          onChange={(e) => {
+            const value = e.target.value.replace(/[^0-9]/g, ''); // Solo permitir números
+            if (value.length <= 4) { // Limitar a 4 dígitos
+              setProcedenciaEstudianteToUpdate(prev => ({ ...prev, año_hasta: value }));
+            }
+          }}
+        />
+      </CInputGroup>
+    </CForm>
+  </CModalBody>
+
+  {/* Mostrar mensaje de error si existe */}
+  {procedenciaError && (
+    <div className="text-danger mt-2">
+      {procedenciaError}
+    </div>
+  )}
+
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetProcedenciaToUpdate)}>
+      Cancelar
+    </CButton>
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white' }} // Ahora el botón de actualizar es verde oscuro
+      onClick={() => {
+        if (validateProcedenciaEstudiante(procedenciaEstudianteToUpdate)) {
+          handleUpdateProcedenciaEstudiante();
+        }
+      }}
+    >
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Actualizar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
+
+
+{/********************************************************************************************************************************************************/}
+
+
       </CContainer>
     );
 };
 
-export default ListaHistoricoProc;
+export default ListaProcedenciaEstudiante;

@@ -193,7 +193,8 @@ app.use('/api/gestion_academica', gestion_academicaRoutes);
 
 
 
-app.use('/api/personas', personaRoutes); // Añadir ruta para personas
+
+app.use('/api/personas', personaRoutes);
 app.use('/api/tipoPersona', tipoPersonaRoutes);
 app.use('/api/departamentos', departamentosRoutes);
 app.use('/api/procedenciaEstudiante', procedenciaEstudianteRoutes);

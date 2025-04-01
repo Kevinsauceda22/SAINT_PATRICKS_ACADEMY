@@ -42,7 +42,7 @@ const obtenerEstadisticas = async (req, res) => {
       FROM tbl_matricula m
       JOIN tbl_estado_matricula em ON m.Cod_estado_matricula = em.Cod_estado_matricula
       JOIN tbl_personas p ON m.cod_persona = p.cod_persona
-      WHERE p.Estado_Persona = 'A'
+      WHERE p.estado = '1'
     `);
 
     // Calcular ingresos mensuales

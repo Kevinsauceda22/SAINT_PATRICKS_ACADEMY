@@ -19,6 +19,29 @@ export const obtenerPersonas = async (req, res) => {
 };
 
 
+export const obtenerFichaEstudiante = async (req, res) => {
+    try {
+        const { cod_persona } = req.params; // Obtener el parámetro desde la URL
+
+        if (!cod_persona) {
+            return res.status(400).json({ Mensaje: 'Debe proporcionar un código de persona válido' });
+        }
+
+        const [rows] = await pool.query('CALL P_Get_FichaEstudiante(?)', [cod_persona]);
+
+        if (rows[0].length > 0) {
+            res.status(200).json(rows[0]);
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontró ficha de estudiante para el código proporcionado' });
+        }
+    } catch (error) {
+        console.error('Error al obtener ficha de estudiante:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+
+
 //CONTROLADOR PARA OBTENER DEPARTAMENTOS
 export const obtenerDepartamentos = async (req, res) => {
     try {
