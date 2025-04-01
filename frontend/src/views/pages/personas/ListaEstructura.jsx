@@ -974,58 +974,64 @@ return (
 
 
 
-{/* Modal para agregar estructura familiar */}
-<CModal visible={modalVisible} onClose={() => setModalVisible(false)} backdrop="static">
+<CModal 
+  visible={modalVisible} 
+  onClose={() => setModalVisible(false)} 
+  backdrop="static" 
+  size="lg" // ✅ Aumenta el tamaño del modal
+>
   <CModalHeader closeButton>
     <CModalTitle>Nueva Estructura Familiar</CModalTitle>
   </CModalHeader>
   <CModalBody>
-        {/* Mostrar el nombre de la persona seleccionada */}
-        <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
+    {/* Mostrar el nombre de la persona seleccionada */}
+    <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
       <strong>PERSONA:</strong> {personaSeleccionada 
         ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
         : 'Información no disponible'}
     </div>
+
     <CForm>
+      {/* Campo de búsqueda con lista de resultados dentro del input */}
+      <div className="mb-3" style={{ position: 'relative' }}>
+        <CInputGroup className="mb-3">
+          <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
+          <CFormInput
+            type="text"
+            value={buscadorRelacion}
+            onChange={handleBuscarRelacion}
+            placeholder={`Buscar por DNI o nombre (${rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'})`}
+            autoComplete="off" // ✅ Evita sugerencias automáticas del navegador
+            style={{ position: 'relative' }}
+          />
+        </CInputGroup>
 
-      {/* Campo oculto para cod_persona_estudiante */}
-      <input type="hidden" name="cod_persona_estudiante" value={codPersonaEstudiante} />
-
-      {/* Campo oculto para cod_persona_padre */}
-      <input type="hidden" name="cod_persona_padre" value={codPersonaPadre} />
-
- {/* Campo de búsqueda para persona */}
-
- <div className="mb-3">
-            <CInputGroup className="mb-3">
-              <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
-              <CFormInput
-                type="text"
-                value={buscadorRelacion}
-                onChange={handleBuscarRelacion}
-                placeholder={`Buscar por DNI o nombre (${rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'})`}
-              />
-              <CButton type="button">
-                <CIcon icon={cilSearch} />
-              </CButton>
-            </CInputGroup>
-
-            {isDropdownOpen && personasFiltradas.length > 0 && (
-              <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
-                {personasFiltradas.map(persona => (
-                  <div
-                    key={persona.cod_persona}
-                    className="dropdown-item"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleSeleccionarPersona(persona)}
-                  >
-                    {persona.dni_persona} - {persona.fullName}
-                  </div>
-                ))}
+        {/* Lista de búsqueda dentro del input */}
+        {isDropdownOpen && personasFiltradas.length > 0 && (
+          <div className="lista-personas" style={{ 
+            position: 'absolute', 
+            top: '100%', 
+            left: 0, 
+            width: '100%', 
+            backgroundColor: 'white', 
+            border: '1px solid #ccc', 
+            zIndex: 999, 
+            maxHeight: '200px', 
+            overflowY: 'auto' 
+          }}>
+            {personasFiltradas.map(persona => (
+              <div
+                key={persona.cod_persona}
+                className="lista-item"
+                style={{ padding: '8px', cursor: 'pointer' }}
+                onClick={() => handleSeleccionarPersona(persona)}
+              >
+                {persona.dni_persona} - {persona.fullName}
               </div>
-            )}
+            ))}
           </div>
-
+        )}
+      </div>
 
       {/* Selector de Tipo Relación */}
       <CInputGroup className="mt-3">
@@ -1046,106 +1052,75 @@ return (
         </CFormSelect>
       </CInputGroup>
 
-{/* Campo de Descripción */}
-<CInputGroup className="mt-3">
-  <CInputGroupText>Descripción</CInputGroupText>
-  <CFormInput
-    type="text"
-    value={nuevaEstructura.descripcion}
-    onChange={(e) => {
-      const value = e.target.value.toUpperCase(); // Convertir a mayúsculas
+      {/* Campo de Descripción con validaciones */}
+      <CInputGroup className="mt-3">
+        <CInputGroupText>Descripción</CInputGroupText>
+        <CFormInput
+          type="text"
+          value={nuevaEstructura.descripcion}
+          onChange={(e) => {
+            const value = e.target.value.toUpperCase();
+            if (/(.)\1{2,}/.test(value)) {
+              setErrorMessages(prev => ({
+                ...prev,
+                descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
+              }));
+              return;
+            }
+            if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
+              setErrorMessages(prev => ({
+                ...prev,
+                descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
+              }));
+              return;
+            }
+            if (/\s{2,}/.test(value)) {
+              setErrorMessages(prev => ({
+                ...prev,
+                descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
+              }));
+              return;
+            }
+            setNuevaEstructuraFamiliar(prev => ({
+              ...prev,
+              descripcion: value,
+            }));
+            setErrorMessages(prev => ({ ...prev, descripcion: '' }));
+          }}
+          placeholder="Descripción de la relación"
+          required
+        />
+      </CInputGroup>
 
-      // Bloquear secuencias de más de tres letras repetidas
-      if (/(.)\1{2,}/.test(value)) {
-        setErrorMessages((prevErrors) => ({
-          ...prevErrors,
-          descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
-        }));
-        return;
-      }
-
-      // Bloquear caracteres especiales, solo letras, números, espacios, guiones y puntos permitidos
-      if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
-        setErrorMessages((prevErrors) => ({
-          ...prevErrors,
-          descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
-        }));
-        return;
-      }
-
-      // Bloquear más de un espacio consecutivo
-      if (/\s{2,}/.test(value)) {
-        setErrorMessages((prevErrors) => ({
-          ...prevErrors,
-          descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
-        }));
-        return;
-      }
-
-      // Validar longitud mínima y campo vacío
-      const erroresTemp = { ...errorMessages };
-      if (!value.trim()) {
-        erroresTemp.descripcion = 'La descripción no puede estar vacía.';
-      } else if (value.length < 2) {
-        erroresTemp.descripcion = 'La descripción debe tener al menos 2 caracteres.';
-      } else {
-        erroresTemp.descripcion = '';
-      }
-
-      // Actualizar estado con el valor en mayúsculas
-      setNuevaEstructuraFamiliar((prev) => ({
-        ...prev,
-        descripcion: value,
-      }));
-      setErrorMessages(erroresTemp);
-    }}
-    placeholder="Descripción de la relación"
-    required
-  />
-</CInputGroup>
-{errorMessages.descripcion && (
-  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-    {errorMessages.descripcion}
-  </div>
-)}
-<style jsx>{`
-  .error-message {
-    color: red;
-    font-size: 12px;  /* Tamaño de texto más pequeño */
-    margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-    margin-bottom: 0;
-    margin-left: 12px;  /* Para alinearlo con el texto del input */
-  }
-`}</style>
-
-
-
+      {/* Mensaje de error en descripción */}
+      {errorMessages.descripcion && (
+        <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+          {errorMessages.descripcion}
+        </div>
+      )}
     </CForm>
   </CModalBody>
+
   <CModalFooter>
-          <CButton
-            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
-            onClick={() => setModalVisible(false)}
-          >
-            Cancelar
-          </CButton>
-          <CButton
-            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
-            onClick={handleCreateEstructura} // Llamar a la función para actualizar los datos
-          >
-            <CIcon icon={cilSave} /> Guardar
-          </CButton>
+    <CButton style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} onClick={() => setModalVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} onClick={handleCreateEstructura}>
+      <CIcon icon={cilSave} /> Guardar
+    </CButton>
   </CModalFooter>
 </CModal>
-{/* Fin del modal de agregar estructura familiar */}
-
 
 
 
 {/********************************* MODAL PARA ACTUALIZAR ESTRUCTURA ***************************************************/}
 
-{/* Modal para actualizar estructura familiar */}
-<CModal visible={modalUpdateVisible} onClose={() => setModalUpdateVisible(false)} backdrop="static">
+<CModal 
+  visible={modalUpdateVisible} 
+  onClose={() => setModalUpdateVisible(false)} 
+  backdrop="static" 
+  size="lg" // ✅ Aumenta el tamaño del modal
+>
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
   </CModalHeader>
@@ -1156,58 +1131,44 @@ return (
         ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
         : 'Información no disponible'}
     </div>
+
     <CForm>
       {/* Campo oculto para cod_persona */}
       <input type="hidden" name="cod_persona" value={personaSeleccionada?.cod_persona} />
 
-      {/* Campo de búsqueda para persona */}
-      <div className="mb-3">
+      {/* Campo de búsqueda con lista dentro del input */}
+      <div className="mb-3" style={{ position: 'relative' }}>
         <CInputGroup className="mb-3">
-        <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
+          <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
           <CFormInput
             type="text"
-            value={buscadorRelacion} // Asegura que use este estado
+            value={buscadorRelacion}
             onChange={(e) => setBuscadorRelacion(e.target.value)}
             placeholder="Buscar por DNI o nombre"
+            autoComplete="off"
           />
-          <CButton type="button">
-            <CIcon icon={cilSearch} />
-          </CButton>
         </CInputGroup>
 
-        {/* Dropdown con resultados */}
+        {/* ✅ Lista de búsqueda aparece solo debajo del input */}
         {isDropdownOpen && personasFiltradas.length > 0 && (
-          <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: 0, width: '100%' }}>
+          <div className="lista-personas" style={{ 
+            position: 'absolute', 
+            top: '100%',  
+            left: 0,  
+            width: '100%',  
+            backgroundColor: 'white',  
+            border: '1px solid #ccc',  
+            zIndex: 999,  
+            maxHeight: '200px',  
+            overflowY: 'auto',  
+            boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',  
+          }}>
             {personasFiltradas.map(persona => (
               <div
                 key={persona.cod_persona}
-                className="dropdown-item"
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                  const nombreCompleto = [
-                    persona.Nombre,
-                    persona.Segundo_nombre,
-                    persona.Primer_apellido,
-                    persona.Segundo_apellido,
-                  ].filter(Boolean).join(' '); // Combina nombre completo
-
-                  // Actualiza el estado basado en el rol
-                  if (rolActual === 'ESTUDIANTE') {
-                    setEstructuraToUpdate(prev => ({
-                      ...prev,
-                      cod_persona_padre: persona.cod_persona, // Actualiza solo el campo cod_persona_padre
-                    }));
-                  } else {
-                    setEstructuraToUpdate(prev => ({
-                      ...prev,
-                      cod_persona_estudiante: persona.cod_persona, // Actualiza solo el campo cod_persona_estudiante
-                    }));
-                  }
-
-                  // Actualiza el valor del buscador sin que se limpie
-                  setBuscadorRelacion(nombreCompleto);
-                  setIsDropdownOpen(false);
-                }}
+                className="lista-item"
+                style={{ padding: '8px', cursor: 'pointer' }}
+                onClick={() => handleSeleccionarPersona(persona)}
               >
                 {persona.dni_persona} - {persona.fullName}
               </div>
@@ -1235,36 +1196,66 @@ return (
         </CFormSelect>
       </CInputGroup>
 
+      {/* Campo de Descripción */}
       <CInputGroup className="mt-3">
         <CInputGroupText>Descripción</CInputGroupText>
         <CFormInput
           type="text"
           value={estructuraToUpdate.descripcion}
-          onChange={e => setEstructuraToUpdate(prev => ({
-            ...prev,
-            descripcion: e.target.value.toUpperCase(),
-          }))}
+          onChange={(e) => {
+            const value = e.target.value.toUpperCase();
+            if (/(.)\1{2,}/.test(value)) {
+              setErrorMessages(prev => ({
+                ...prev,
+                descripcion: 'La descripción no puede contener más de tres letras repetidas consecutivas.',
+              }));
+              return;
+            }
+            if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-.,]/.test(value)) {
+              setErrorMessages(prev => ({
+                ...prev,
+                descripcion: 'La descripción solo puede contener letras, números, acentos, espacios, guiones y puntos.',
+              }));
+              return;
+            }
+            if (/\s{2,}/.test(value)) {
+              setErrorMessages(prev => ({
+                ...prev,
+                descripcion: 'La descripción no puede contener más de un espacio consecutivo.',
+              }));
+              return;
+            }
+            setEstructuraToUpdate(prev => ({
+              ...prev,
+              descripcion: value,
+            }));
+            setErrorMessages(prev => ({ ...prev, descripcion: '' }));
+          }}
           placeholder="Descripción de la relación"
           required
         />
       </CInputGroup>
+
+      {/* Mensaje de error en descripción */}
+      {errorMessages.descripcion && (
+        <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+          {errorMessages.descripcion}
+        </div>
+      )}
     </CForm>
   </CModalBody>
+
   <CModalFooter>
-         <CButton
-            style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }}
-            onClick={() => setModalUpdateVisible(false)}
-          >
-            Cancelar
-          </CButton>
-          <CButton
-            style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }}
-            onClick={handleUpdateEstructura} // Llamar a la función para actualizar los datos
-          >
-            <CIcon icon={cilPen} /> Actualizar
-          </CButton>
+    <CButton style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} onClick={() => setModalUpdateVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} onClick={handleUpdateEstructura}>
+      <CIcon icon={cilPen} /> Actualizar
+    </CButton>
   </CModalFooter>
 </CModal>
+
+
 
 {/****************************************FIN DEL MODAL DE ACTUALIZAR********************************************************/}
 

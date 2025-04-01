@@ -54,29 +54,11 @@ const ListaFichaEstudiante = () => {
 
     const { personaSeleccionada } = location.state || {};
 
-    // Manejo de error si personaSeleccionada no está definida
-    if (!personaSeleccionada) {
-      console.warn('No se ha proporcionado una persona seleccionada. Redirigiendo...');
-      navigate('/'); // O a donde desees redirigir en caso de error
-      return null; // No renderizar nada mientras se redirige
-    }
 
-
-
-
-    const volverAListaProcedenciaEstudiante = () => {
-      
-        if (!personaSeleccionada) {
-          console.warn("Esperando datos antes de redirigir...");
-          setTimeout(() => {
-            if (!personaSeleccionada) {
-              console.warn("No se obtuvo una persona seleccionada. Redirigiendo...");
-              navigate('/ListaProcedenciaEstudiante');
-            }
-          }, 2000); // Espera 2 segundos antes de redirigir
-        } else {
-          navigate('/ListaProcedenciaEstudiante'); // Redirige normalmente si hay datos
-        }
+      const volverAListaProcedenciaEstudiante = () => {
+        navigate('/ListaProcedenciaEstudiante', {
+          state: { personaSeleccionada }
+        });
       };
     
 

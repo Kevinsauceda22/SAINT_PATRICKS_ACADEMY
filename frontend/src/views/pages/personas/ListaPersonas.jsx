@@ -96,6 +96,7 @@ const ListaPersonas = () => {
   const [tipoPersona, setTipoPersona] = useState([])
   const [generos, setGeneros] = useState([])
   const [departamentos, setDepartamentos] = useState([])
+  const [tipoDocumento, setTipoDocumento] = useState([]); 
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   
 
@@ -437,8 +438,8 @@ const handleSeleccionarNacionalidad = (nacionalidad) => {
   setSelectedNacionalidad(nacionalidad.pais_nacionalidad.toUpperCase()); // Guardar solo pais_nacionalidad para la inserción
   setIsDropdownOpenNacionalidad(false);
   setNuevaPersona(prev => ({ ...prev, cod_nacionalidad: nacionalidad.Cod_nacionalidad }));
-  console.log('Nacionalidad seleccionada:', nacionalidadSeleccionada); // Esto es solo para ver qué se seleccionó
 
+  console.log('Nacionalidad seleccionada:', nacionalidad.pais_nacionalidad.toUpperCase()); // ✅ Imprimir la variable correcta
 };
 
 const handleKeyPress = (e) => {
@@ -506,27 +507,29 @@ const handleSeleccionarMunicipio = (municipio) => {
 
 {/******************************************************TABLAS RELACIONADAS***************************************************************/}
 
-    const fetchPersonas = async () => {
-      try {
-        const response = await fetch('http://localhost:4000/api/personas/verPersonas')
-        const data = await response.json()
-  
-        // Agrega un console.log aquí para ver los datos originales
-        console.log('Datos recibidos del servidor:', data)
-  
-        const dataWithIndex = data.map((persona, index) => ({
-          ...persona,
-          originalIndex: index + 1,
-        }))
-  
-        // Agrega otro console.log aquí para ver los datos con el índice adicional
-        console.log('Datos con índice añadido:', dataWithIndex)
-  
-        setPersonas(dataWithIndex)
-      } catch (error) {
-        console.error('Error al obtener las personas:', error)
-      }
-    }
+const fetchPersonas = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/personas/verPersonas')
+    const data = await response.json()
+
+    console.log('Datos recibidos del servidor:', data)
+
+    // Agregar índice y ordenar de forma descendente (último creado primero)
+    const dataWithIndex = data
+      .map((persona, index) => ({
+        ...persona,
+        originalIndex: index + 1,
+      }))
+      .reverse() // Invierte el orden para que el último creado aparezca primero
+
+    console.log('Datos con índice añadido y ordenados:', dataWithIndex)
+
+    setPersonas(dataWithIndex)
+  } catch (error) {
+    console.error('Error al obtener las personas:', error)
+  }
+}
+
 
   const fetchNacionalidad = async () => {
     try {
@@ -556,6 +559,22 @@ const fetchMunicipio = async () => {
   }
 };
 
+      const fetchTipoDocumento = async () => {
+        try {
+          const response = await fetch('http://localhost:4000/api/tipoDocumento/verTodoTipoDocumentos');
+          const data = await response.json();
+          const dataWithIndex = data.map((tipoDocumento, index) => ({
+            ...tipoDocumento,
+            originalIndex: index + 1,
+          }));
+          setTipoDocumento(dataWithIndex);
+        } catch (error) {
+          console.error('Error al obtener los tipos de documento:', error);
+        }
+      };
+      useEffect(() => {
+        fetchTipoDocumento();
+      }, []);
 
   
 
@@ -604,110 +623,74 @@ const fetchMunicipio = async () => {
 {/********************************************FUNCION PARA CREAR UNA PERSONA*****************************************************/}
 
 const handleCreatePersona = async () => {
-  
-  const dniSinGuiones = nuevaPersona.dni_persona.replace(/-/g, '');
-
   const errores = {};
 
-  if (!/^\d{13}$/.test(dniSinGuiones)) {
-    errores.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
+
+  // ✅ Validación de Fecha de Nacimiento
+  const fechaIngresada = new Date(nuevaPersona.fecha_nacimiento);
+  const añoNacimiento = fechaIngresada.getFullYear();
+  const añoActual = new Date().getFullYear();
+
+  if (añoNacimiento < añoActual - 100 || añoNacimiento > añoActual) {
+    errores.fecha_nacimiento = `La fecha debe estar entre ${añoActual - 100} y ${añoActual}.`;
   }
 
-  const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
-  if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
-    errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
+  // ✅ Nueva validación de DNI
+  if (/\s/.test(nuevaPersona.dni_persona)) {
+    errores.dni_persona = 'El documento no debe contener espacios.';
+  }
+  if (/[^A-Za-z0-9]/.test(nuevaPersona.dni_persona)) {
+    errores.dni_persona = 'Solo se permiten letras y números.';
+  }
+  if (/(.)\1{10,}/.test(nuevaPersona.dni_persona)) {
+    errores.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
   }
 
-  const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
-  if (añoNacimientoDNI < 1930 || añoNacimientoDNI > 2020) {
-    errores.dni_persona = 'Ingrese un DNI válido. El año debe estar entre 1920 y 2020.';
-  }
-
-
-
+  // ✅ Validaciones de nombres y apellidos
   const campos = [
     { campo: nuevaPersona.Nombre, nombreCampo: 'Nombre' },
-    { campo: nuevaPersona.Primer_apellido, nombreCampo: 'Primer apellido' },
+    { campo: nuevaPersona.Segundo_nombre, nombreCampo: 'Segundo_nombre' },
+    { campo: nuevaPersona.Primer_apellido, nombreCampo: 'Primer_apellido' },
+    { campo: nuevaPersona.Segundo_apellido, nombreCampo: 'Segundo_apellido' },
   ];
-
   campos.forEach(({ campo, nombreCampo }) => {
     if (!campo || campo.length < 2 || campo.length > 50) {
-      errores[nombreCampo] = `${nombreCampo} debe tener entre 2 y 50 caracteres.`;
+      errores[nombreCampo] = `${nombreCampo.replace('_', ' ')} debe tener entre 2 y 50 caracteres.`;
     }
   });
 
-
-  if (!nuevaPersona.cod_genero || nuevaPersona.cod_genero === '') {
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      cod_genero: 'Debe seleccionar un género.',
-    }));
-    return;
-  }
-  
-  if (!nuevaPersona.cod_tipo_persona || nuevaPersona.cod_tipo_persona === '') {
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      cod_tipo_persona: 'Debe seleccionar un tipo de persona.',
-    }));
-    return;
-  }
-  
-  if (!nuevaPersona.Estado_Persona || nuevaPersona.Estado_Persona === '') {
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      Estado_Persona: 'Debe seleccionar un estado',
-    }));
-    return;
-  }
-   
-  if (!nuevaPersona.cod_nacionalidad || nuevaPersona.cod_nacionalidad === '') {
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      cod_nacionalidad: 'Debe seleccionar una nacionalidad.',
-    }));
-    return;
-  }
-  
-  if (!nuevaPersona.cod_departamento || nuevaPersona.cod_departamento === '') {
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      cod_departamento: 'Debe seleccionar un departamento.',
-    }));
-    return;
-  }
-  
-  if (!nuevaPersona.cod_municipio || nuevaPersona.cod_municipio === '') {
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      cod_municipio: 'Debe seleccionar un municipio.',
-    }));
-    return;
-  }
-  
-  if (!nuevaPersona.fecha_nacimiento || nuevaPersona.fecha_nacimiento === '') {
-    setErrorMessages((prevErrors) => ({
-      ...prevErrors,
-      fecha_nacimiento: 'Debe ingresar una fecha de nacimiento válida.',
-    }));
-    return;
-  }  
+  // ✅ Validación de otros campos
+  const camposRequeridos = [
+    { campo: nuevaPersona.tipo_documento, nombreCampo: 'tipo_documento' },
+    { campo: nuevaPersona.cod_genero, nombreCampo: 'cod_genero' },
+    { campo: nuevaPersona.cod_tipo_persona, nombreCampo: 'cod_tipo_persona' },
+    { campo: nuevaPersona.estado, nombreCampo: 'estado' },
+    { campo: nuevaPersona.cod_nacionalidad, nombreCampo: 'cod_nacionalidad' },
+    { campo: nuevaPersona.cod_departamento, nombreCampo: 'cod_departamento' },
+    { campo: nuevaPersona.cod_municipio, nombreCampo: 'cod_municipio' },
+    { campo: nuevaPersona.fecha_nacimiento, nombreCampo: 'fecha_nacimiento' },
+  ];
+  camposRequeridos.forEach(({ campo, nombreCampo }) => {
+    if (!campo || campo === '') {
+      errores[nombreCampo] = `Debe seleccionar ${nombreCampo.replace('_', ' ')}.`;
+    }
+  });
 
   if (Object.keys(errores).length > 0) {
     setErrorMessages(errores);
     return;
   }
 
-  // Log para verificar los datos antes de enviar
   console.log('Datos a enviar:', {
-    dni_persona: dniSinGuiones,
+    dni_persona: nuevaPersona.dni_persona,
+    tipo_documento: nuevaPersona.tipo_documento,
     Nombre: nuevaPersona.Nombre,
     Segundo_nombre: nuevaPersona.Segundo_nombre,
     Primer_apellido: nuevaPersona.Primer_apellido,
     Segundo_apellido: nuevaPersona.Segundo_apellido,
     direccion_persona: nuevaPersona.direccion_persona,
     fecha_nacimiento: nuevaPersona.fecha_nacimiento,
-    Estado_Persona: nuevaPersona.Estado_Persona,
+    estado: nuevaPersona.estado,
     principal: nuevaPersona.principal,
     cod_tipo_persona: nuevaPersona.cod_tipo_persona,
     cod_nacionalidad: nuevaPersona.cod_nacionalidad,
@@ -717,18 +700,19 @@ const handleCreatePersona = async () => {
   });
 
   try {
-    const response = await fetch('http://localhost:4000/api/persona/crearPersona', {
+    const response = await fetch('http://localhost:4000/api/personas/crearPersona', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        dni_persona: dniSinGuiones,
+        dni_persona: nuevaPersona.dni_persona,
+        tipo_documento: nuevaPersona.tipo_documento,
         Nombre: nuevaPersona.Nombre,
         Segundo_nombre: nuevaPersona.Segundo_nombre,
         Primer_apellido: nuevaPersona.Primer_apellido,
         Segundo_apellido: nuevaPersona.Segundo_apellido,
         direccion_persona: nuevaPersona.direccion_persona,
         fecha_nacimiento: nuevaPersona.fecha_nacimiento,
-        Estado_Persona: nuevaPersona.Estado_Persona,
+        estado: nuevaPersona.estado,
         principal: nuevaPersona.principal,
         cod_tipo_persona: nuevaPersona.cod_tipo_persona,
         cod_nacionalidad: nuevaPersona.cod_nacionalidad,
@@ -750,15 +734,12 @@ const handleCreatePersona = async () => {
       setErrorMessages({});
     } else {
       const errorData = await response.json();
-      if (errorData.errores) {
-        setErrorMessages(errorData.errores);
-      } else {
-        swal.fire({
-          icon: 'error',
-          title: 'Error',
-          text: `No se pudo crear la persona. Detalle: ${errorData.mensaje}`,
-        });
-      }
+      setErrorMessages(errorData.errores || {});
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: `No se pudo crear la persona. Detalle: ${errorData.mensaje}`,
+      });
     }
   } catch (error) {
     console.error('Error al crear la persona:', error);
@@ -1373,7 +1354,9 @@ return (
       {currentRecords.length > 0 ? (
         currentRecords.map((persona) => (
           <CTableRow key={persona.cod_persona}>
-            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.tipo_documento?.toUpperCase() || 'N/D'}</CTableDataCell>
+            <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
+              {tipoDocumento.find((tipo) => tipo.Cod_tipo_documento === persona.tipo_documento)?.tipo_documento.toUpperCase() || 'N/D'}
+            </CTableDataCell>
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.dni_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Segundo_nombre?.toUpperCase() || 'N/D'}</CTableDataCell>
@@ -1495,58 +1478,131 @@ return (
         </CModalHeader>
         <CModalBody>
           <CForm>
+
+
             <div className="row">
 {/************************************************************COLUMNA-1*******************************************************************/}
 {/***************************************************************DNI**********************************************************************/}
       <div className="col-md-6">
-      <style jsx>{`
-        .error-message { color: red;
-          font-size: 12px;  /* Tamaño de texto más pequeño */
-          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px;  /* Para alinearlo con el texto del input */
-        }
-      `}</style>
-    <div className="col-md-12"> {errorMessages.dni_persona && (
-    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}> {errorMessages.dni_persona}
+
+
+
+        
+      <div className="col-md-12">
+  <div className="col-md-12">
+    {errorMessages.cod_tipo_documento && (
+      <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+        {errorMessages.cod_tipo_documento}
+      </div>
+    )}
+    <CInputGroup className="mb-3">
+      <CInputGroupText>Tipo de Documento</CInputGroupText>
+      <CFormSelect
+        value={nuevaPersona.cod_tipo_documento || ''}
+        onChange={(e) => {
+          const value = e.target.value;
+
+          // Validación en tiempo real
+          let erroresTemp = { ...errorMessages };
+          if (!value) {
+            erroresTemp.cod_tipo_documento = 'Debe seleccionar un tipo de documento.';
+          } else {
+            erroresTemp.cod_tipo_documento = '';
+          }
+
+          setErrorMessages(erroresTemp);
+          setNuevaPersona({ ...nuevaPersona, cod_tipo_documento: value });
+        }}
+        required
+        style={{ color: '#6c757d' }}
+      >
+        <option value="">Seleccione un tipo de documento</option>
+        {tipoDocumento &&
+          tipoDocumento.map((doc) => (
+            <option key={doc.Cod_tipo_documento} value={doc.Cod_tipo_documento}>
+              {doc.tipo_documento.toUpperCase()}
+            </option>
+          ))}
+      </CFormSelect>
+    </CInputGroup>
+  </div>
+  <style jsx>{`
+    .error-message {
+      color: red;
+      font-size: 0.850rem;
+      margin-top: 4px;
+      margin-bottom: 0;
+      margin-left: 12px;
+    }
+  `}</style>
+</div>
+
+{/********************************************************************************************************************************************/}
+<div className="col-md-12">
+  {errorMessages.dni_persona && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.dni_persona}
     </div>
   )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>DNI</CInputGroupText>
-          <CFormInput
-            type="text"
-            placeholder="DNI de la persona"
-            value={nuevaPersona.dni_persona}
-            onChange={(e) => {
-              const formattedDNI = formatDNI(e.target.value);
-              setNuevaPersona({ ...nuevaPersona, dni_persona: formattedDNI });
-              // Validaciones específicas para el DNI
-              const erroresTemp = {};
-              const dniSinGuiones = formattedDNI.replace(/-/g, '');
-              if (!/^\d{13}$/.test(dniSinGuiones)) {
-                erroresTemp.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
-              } else {
-                const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
-                if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
-                  erroresTemp.dni_persona = 'Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
-                }
-                const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
-                const yearNow = new Date().getFullYear();
-                if (añoNacimientoDNI < yearNow - 100 || añoNacimientoDNI > yearNow) {
-                  erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 100} y ${yearNow}.`;
-                }
-              }
-              setErrorMessages((prevErrors) => ({
-                ...prevErrors,
-                dni_persona: erroresTemp.dni_persona || '',
-              }));
-            }}
-            onCopy={disableCopyPaste}
-            onPaste={disableCopyPaste}
-            required
-          />
-        </CInputGroup>
-        </div>
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Documentación</CInputGroupText>
+    <CFormInput
+      type="text"
+      placeholder="Documento de la persona"
+      value={nuevaPersona.dni_persona}
+      onChange={(e) => {
+        let value = e.target.value.toUpperCase();
+        let erroresTemp = {};
+
+        // ✅ Bloquear espacios
+        if (/\s/.test(value)) {
+          erroresTemp.dni_persona = 'El documento no debe contener espacios.';
+        }
+
+        // ✅ Bloquear caracteres especiales (solo permitir alfanuméricos)
+        if (/[^A-Za-z0-9]/.test(value)) {
+          erroresTemp.dni_persona = 'Solo se permiten letras y números.';
+        }
+
+        // ✅ Bloquear más de 10 repeticiones del mismo carácter en tiempo real
+        if (value.match(/(.)\1{10,}/)) {
+          erroresTemp.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
+          value = nuevaPersona.dni_persona; // ✅ No permite seguir ingresando caracteres inválidos
+        }
+
+        setNuevaPersona({ ...nuevaPersona, dni_persona: value });
+        setErrorMessages({ ...errorMessages, dni_persona: erroresTemp.dni_persona || '' });
+      }}
+      onCopy={(e) => e.preventDefault()} // ✅ Bloquear copiado
+      onPaste={(e) => e.preventDefault()} // ✅ Bloquear pegado
+      onKeyDown={(e) => {
+        // ✅ Bloquear Ctrl+C, Ctrl+V, espacios y caracteres especiales
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
+          e.preventDefault();
+        }
+        if (e.key === ' ') {
+          e.preventDefault();
+        }
+        if (!/^[A-Za-z0-9]$/.test(e.key) && e.key.length === 1) {
+          e.preventDefault();
+        }
+
+        // ✅ Validar desde el teclado si ya hay 10 caracteres repetidos
+        const currentValue = nuevaPersona.dni_persona + e.key;
+        if (currentValue.match(/(.)\1{10,}/)) {
+          e.preventDefault(); // ✅ Bloquear desde el teclado
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            dni_persona: 'No se pueden repetir más de 10 veces un mismo carácter.',
+          }));
+        }
+      }}
+      required
+    />
+  </CInputGroup>
+</div>
+
+
 {/*******************************************************PRIMER NOMBRE********************************************************************/}
         <div className="col-md-12">
           {errorMessages.Nombre && (
@@ -1931,49 +1987,54 @@ return (
 {/***************************************************************ESTADO**********************************************************************/}
 {/************************************************************COLUMNA 2************************************************************************/}
       <div className="col-md-6">
-      <div className="col-md-12">
-      <div className="col-md-12">
-        {errorMessages.Estado_Persona && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.Estado_Persona}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Estado</CInputGroupText>
-          <CFormSelect
-            value={nuevaPersona.Estado_Persona || ''}
-            onChange={(e) => {
-              const value = e.target.value;
 
-              // Validación en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.Estado_Persona = 'Debe seleccionar un estado.';
-              } else {
-                erroresTemp.Estado_Persona = '';
-              }
 
-              setErrorMessages(erroresTemp);
-              setNuevaPersona({ ...nuevaPersona, Estado_Persona: value });
-            }}
-            required
-            style={{ color: '#6c757d' }}
-          >
-            <option value="">Seleccione un estado</option>
-            <option value="A">ACTIVO</option>
-            <option value="S">SUSPENDIDO</option>
-          </CFormSelect>
-        </CInputGroup>
-      </div>
-      <style jsx>{`
-        .error-message {
-          color: red;
-          font-size: 0.850rem;  /* Tamaño de texto más pequeño */
-          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px;  /* Para alinearlo con el texto del input */
+
+      <div className="col-md-12">
+     <div className="col-md-12">
+  {errorMessages.Estado_Persona && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.Estado_Persona}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Estado</CInputGroupText>
+    <CFormSelect
+      value={nuevaPersona.Estado_Persona ?? ''}
+      onChange={(e) => {
+        const value = e.target.value === 'true'; // ✅ Convierte el valor a booleano
+
+        // ✅ Validación en tiempo real
+        let erroresTemp = { ...errorMessages };
+        if (value === '') {
+          erroresTemp.Estado_Persona = 'Debe seleccionar un estado.';
+        } else {
+          erroresTemp.Estado_Persona = '';
         }
-      `}</style>
+
+        setErrorMessages(erroresTemp);
+        setNuevaPersona({ ...nuevaPersona, Estado_Persona: value });
+      }}
+      required
+      style={{ color: '#6c757d' }}
+    >
+      <option value="">Seleccione un estado</option>
+      <option value="true">ACTIVO</option> {/* ✅ Ahora representa `true` */}
+      <option value="false">INACTIVO</option> {/* ✅ Ahora representa `false` */}
+    </CFormSelect>
+  </CInputGroup>
+</div>
+
+<style jsx>{`
+  .error-message {
+    color: red;
+    font-size: 0.850rem;
+    margin-top: 4px;
+    margin-bottom: 0;
+    margin-left: 12px;
+  }
+`}</style>
+
     </div>
 
 {/********************************************************TIPO PERSONA**********************************************************************/}
