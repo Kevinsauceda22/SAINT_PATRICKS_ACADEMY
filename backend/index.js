@@ -193,19 +193,31 @@ app.use('/api/gestion_academica', gestion_academicaRoutes);
 
 
 
-
+// Ruta para gestión de personas (registro, actualización, eliminación, etc.)
 app.use('/api/personas', personaRoutes);
+// Ruta para administración de tipos de personas (Ejemplo: Estudiante, Docente, Administrador)
 app.use('/api/tipoPersona', tipoPersonaRoutes);
+// Ruta para obtener y gestionar los departamentos disponibles
 app.use('/api/departamentos', departamentosRoutes);
+// Ruta para registrar y gestionar la procedencia académica de los estudiantes
 app.use('/api/procedenciaEstudiante', procedenciaEstudianteRoutes);
+// Ruta para definir y consultar los diferentes tipos de documentos de identidad
 app.use('/api/tipoDocumento', tipoDocumento);
+// Ruta para administrar relaciones entre personas (Ejemplo: Padre-Hijo, Tutor-Estudiante)
 app.use('/api/tipoRelacion', tipoRelacionRoutes);
+// Ruta para gestionar la estructura familiar de los estudiantes (Ejemplo: Tutor legal)
 app.use('/api/estructuraFamiliar', estructuraFamiliarRoutes);
+// Ruta para obtener y administrar nacionalidades
 app.use('/api/nacionalidad', nacionalidadRoutes);
+// Ruta para gestionar municipios dentro de los departamentos
 app.use('/api/municipio', municipioRoutes);
+// Ruta para administrar los géneros de las personas (Ejemplo: Masculino, Femenino, No Binario)
 app.use('/api/generoPersona', generoPersonaRoutes);
+// Ruta para gestión de contactos (Ejemplo: Teléfono, Email, Dirección)
 app.use('/api/contacto', contactoRoutes);
+// Ruta para definir y administrar los distintos tipos de contacto (Ejemplo: Personal, Laboral, Emergencia)
 app.use('/api/tipoContacto', tipoContactoRoutes);
+
 
 
 //contabilidad

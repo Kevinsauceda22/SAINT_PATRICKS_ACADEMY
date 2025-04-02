@@ -107,7 +107,7 @@ const ListaFichaEstudiante = () => {
   {/************************************************************************************************************************************/}
 
   const ReporteFichaEstudiantePDF = () => {
-    const doc = new jsPDF('p', 'mm', 'letter'); 
+    const doc = new jsPDF('p', 'mm', 'letter');
   
     if (!fichaEstudiante || Object.keys(fichaEstudiante).length === 0) {
       alert('No hay datos para exportar.');
@@ -120,10 +120,10 @@ const ListaFichaEstudiante = () => {
     img.onload = () => {
       const pageWidth = doc.internal.pageSize.width;
   
-      // **Encabezado con logo e información institucional**
+      // **Encabezado**
       doc.addImage(img, 'PNG', 10, 10, 45, 45);
       doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
+      doc.setTextColor(0, 102, 51); // Color verde
       doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
   
       doc.setFontSize(10);
@@ -134,68 +134,112 @@ const ListaFichaEstudiante = () => {
   
       // **Título del reporte**
       doc.setFontSize(14);
-      doc.setTextColor(0, 102, 51);
+      doc.setTextColor(0, 102, 51); // Color verde
       doc.text('Ficha del Estudiante', pageWidth / 2, 50, { align: 'center' });
   
       doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
+      doc.setDrawColor(0, 102, 51); // Línea verde
       doc.line(10, 60, pageWidth - 10, 60);
   
-      // **Etiquetas de columnas**
+      // **Filas de la tabla**
       const tableRows = [
-        ["Información", "Valor"],
-        ["Nombre Completo", fichaEstudiante.Nombre_Completo],
-        ["Tipo de Documento", fichaEstudiante.Tipo_Documento ?? "No disponible"],
-        ["DNI", fichaEstudiante.DNI],
-        ["Fecha de Nacimiento", new Date(fichaEstudiante.Fecha_Nacimiento).toLocaleDateString()],
-        ["Género", fichaEstudiante.Genero === 1 ? "Masculino" : fichaEstudiante.Genero === 2 ? "Femenino" : "No especificado"],
-        ["Nacionalidad", fichaEstudiante.Nacionalidad ?? "No disponible"],
-        ["Estado", fichaEstudiante.Estado ? "Activo" : "Inactivo"],
-        ["Dirección", fichaEstudiante.Direccion ?? "No disponible"],
-        ["Departamento", fichaEstudiante.Departamento ?? "No disponible"],
-        ["Municipio", fichaEstudiante.Municipio ?? "No disponible"],
-        ["Nombre del Padre/Tutor", fichaEstudiante.Nombre_Padre_Tutor ?? "No disponible"],
-        ["Teléfono Móvil Tutor", fichaEstudiante.Telefono_Movil_Tutor ?? "No disponible"],
-        ["Teléfono Fijo Tutor", fichaEstudiante.Telefono_Fijo_Tutor ?? "No disponible"],
-        ["Correo Tutor", fichaEstudiante.Correo_Tutor ?? "No disponible"]
+        { label: "Nombre Completo", value: fichaEstudiante.Nombre_Completo?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Tipo de Documento", value: fichaEstudiante.Tipo_Documento?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "DNI", value: fichaEstudiante.DNI?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Fecha de Nacimiento", value: new Date(fichaEstudiante.Fecha_Nacimiento).toLocaleDateString('es-ES').toUpperCase() },
+        { label: "Género", value: fichaEstudiante.Genero?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Nacionalidad", value: fichaEstudiante.Nacionalidad?.toUpperCase() ?? "NO DISPONIBLE" },
       ];
   
-      // **Tabla con los datos**
+      const direccionUbicacionRows = [
+        { label: "Dirección", value: fichaEstudiante.Direccion?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Departamento", value: fichaEstudiante.Departamento?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Municipio", value: fichaEstudiante.Municipio?.toUpperCase() ?? "NO DISPONIBLE" },
+      ];
+  
+      const padreRows = [
+        { label: "Nombre", value: fichaEstudiante.Nombre_Padre_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Teléfono", value: fichaEstudiante.Telefono_Movil_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Correo Electrónico", value: fichaEstudiante.Correo_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },
+      ];
+  
+      // ✅ Secciones del PDF
+      const addSectionTitle = (title, y) => {
+        doc.setFontSize(12); // Reducido el tamaño del subtítulo
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 102, 51); // Color verde
+        doc.text(title, 15, y);
+        doc.setFontSize(10); // Vuelvo al tamaño normal para el contenido
+        doc.setFont('helvetica', 'normal');
+      };
+  
+      let yPosition = 65; // Ajustado para que no tape el logo
+  
+      addSectionTitle('DATOS DEL ESTUDIANTE', yPosition);
+      yPosition += 5;
       doc.autoTable({
-        startY: 65,
+        startY: yPosition,
         margin: { left: 15 },
+        columns: [{ header: "Información", dataKey: "label" }, { header: "Valor", dataKey: "value" }],
         body: tableRows,
+        styles: { fontSize: 10 },
+        columnStyles: { label: { fontStyle: "bold", cellWidth: 60 }, value: { halign: 'left', cellWidth: 80 } },
         headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
+          fillColor: [0, 102, 51], // Fondo verde para el encabezado de la tabla
+          textColor: [255, 255, 255], // Texto blanco
           fontSize: 9,
           halign: 'center',
         },
-        styles: {
-          fontSize: 7,
-          cellPadding: 4,
+      });
+  
+      yPosition = doc.lastAutoTable.finalY + 10;
+      addSectionTitle('DIRECCIÓN Y UBICACIÓN', yPosition);
+      yPosition += 5;
+      doc.autoTable({
+        startY: yPosition,
+        margin: { left: 15 },
+        columns: [{ header: "Información", dataKey: "label" }, { header: "Valor", dataKey: "value" }],
+        body: direccionUbicacionRows,
+        styles: { fontSize: 10 },
+        columnStyles: { label: { fontStyle: "bold", cellWidth: 60 }, value: { halign: 'left', cellWidth: 80 } },
+        headStyles: {
+          fillColor: [0, 102, 51], // Fondo verde para el encabezado de la tabla
+          textColor: [255, 255, 255], // Texto blanco
+          fontSize: 9,
+          halign: 'center',
         },
-        columnStyles: {
-          0: { fontStyle: "bold" },
-          1: { halign: 'left' }
+      });
+  
+      yPosition = doc.lastAutoTable.finalY + 10;
+      addSectionTitle('INFORMACIÓN DEL PADRE', yPosition);
+      yPosition += 5;
+      doc.autoTable({
+        startY: yPosition,
+        margin: { left: 15 },
+        columns: [{ header: "Información", dataKey: "label" }, { header: "Valor", dataKey: "value" }],
+        body: padreRows,
+        styles: { fontSize: 10 },
+        columnStyles: { label: { fontStyle: "bold", cellWidth: 60 }, value: { halign: 'left', cellWidth: 80 } },
+        headStyles: {
+          fillColor: [0, 102, 51], // Fondo verde para el encabezado de la tabla
+          textColor: [255, 255, 255], // Texto blanco
+          fontSize: 9,
+          halign: 'center',
         },
       });
   
       // **Pie de página**
       const footerY = doc.internal.pageSize.height - 10;
       doc.setFontSize(10);
-      doc.setTextColor(0, 102, 51);
+      doc.setTextColor(0, 102, 51); // Color verde
       const now = new Date();
-      const dateString = now.toLocaleDateString();
-      const timeString = now.toLocaleTimeString();
-      doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+      doc.text(`Fecha de generación: ${now.toLocaleDateString()} Hora: ${now.toLocaleTimeString()}`, 10, footerY);
       doc.text(`Página 1 de 1`, pageWidth - 10, footerY, { align: 'right' });
   
       // **Exportación y vista previa en ventana emergente**
       const pdfBlob = doc.output('blob');
       const pdfURL = URL.createObjectURL(pdfBlob);
       const newWindow = window.open('', '_blank');
-  
       newWindow.document.write(`
         <html>
           <head><title>Ficha del Estudiante</title></head>
@@ -317,91 +361,99 @@ const ListaFichaEstudiante = () => {
 <div className="profile-container ficha-estudiante-container">
   {/* Encabezado de la Ficha */}
   <div className="profile-header">
-    <div className="profile-info d-flex justify-content-between align-items-center">
-      <h1 className="profile-name">Ficha del Estudiante</h1>
-
-      {/* Botones de Acción alineados a la derecha debajo del título */}
-      <div className="botones-container d-flex gap-3 mt-3 justify-content-end">
-        <CButton className="btn-volver" onClick={volverAListaProcedenciaEstudiante} style={{ backgroundColor: '#6c757d', color: 'white', minWidth: '160px', height: '38px' }}>
-          <CIcon icon={cilArrowLeft} /> Procedencia
-        </CButton>
-        <CDropdown>
-          <CDropdownToggle className="btn-reportes" style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '160px', height: '38px' }}>
-            Reportes
-          </CDropdownToggle>
-          <CDropdownMenu>
-            <CDropdownItem onClick={exportFichaEstudianteToExcel}>Descargar en Excel</CDropdownItem>
-            <CDropdownItem onClick={ReporteFichaEstudiantePDF}>Descargar en PDF</CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
-      </div>
+  <div className="profile-info d-flex justify-content-center align-items-center flex-column">
+    {/* Título centrado */}
+    <div style={{ display: 'inline-block', position: 'relative' }}>
+      <h1 className="profile-name" style={{ fontSize: '26px' }}>Ficha del Estudiante</h1>
+      {/* Línea verde debajo del título */}
+      <div style={{ height: '2px', backgroundColor: '#6C8E58', position: 'absolute', bottom: '-5px', left: '0', width: '100%' }}></div>
     </div>
   </div>
 
+  {/* Botones organizados */}
+  <div className="botones-container d-flex gap-3 mt-3 justify-content-between">
+    {/* Botón Procedencia alineado a la izquierda */}
+    <CButton 
+      className="btn-volver" 
+      onClick={volverAListaProcedenciaEstudiante} 
+      style={{ backgroundColor: '#6c757d', color: 'white', minWidth: '160px', height: '38px' }}
+    >
+      <CIcon icon={cilArrowLeft} /> Procedencia
+    </CButton>
 
+    {/* Botón Reportes alineado a la derecha */}
+    <CDropdown>
+      <CDropdownToggle 
+        className="btn-reportes" 
+        style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '160px', height: '38px' }}
+      >
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportFichaEstudianteToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReporteFichaEstudiantePDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </div>
+</div>
 
-
-  {/* Información de la Ficha */}
-  {fichaEstudiante ? (
-    <div className="info-card">
-      {/* Datos del Estudiante */}
-      <h2 className="info-title">Datos del Estudiante</h2>
-      <div className="info-grid">
-        {[
-          ['Nombre Completo', fichaEstudiante?.Nombre_Completo],
-          ['Tipo Documento', fichaEstudiante?.Tipo_Documento],
-          ['DNI', fichaEstudiante?.DNI],
-          ['Fecha de Nacimiento', fichaEstudiante?.Fecha_Nacimiento],
-          ['Género', fichaEstudiante?.Genero],
-          ['Nacionalidad', fichaEstudiante?.Nacionalidad],
-        ].map(([campo, valor], index) => (
-          <div key={index} className="info-item">
-            <div className="info-details">
-              <label>{campo}</label>
-              <p>{valor ?? 'No disponible'}</p>
-            </div>
+{/* Información de la Ficha */}
+  <div className="info-card">
+    {/* Datos del Estudiante */}
+    <h2 className="info-title">Datos del Estudiante</h2>
+    <div className="info-grid">
+      {[
+        ['Nombre Completo', fichaEstudiante?.Nombre_Completo],
+        ['Tipo Documento', fichaEstudiante?.Tipo_Documento],
+        ['Documentación', fichaEstudiante?.DNI],
+        ['Fecha de Nacimiento', new Date(fichaEstudiante?.Fecha_Nacimiento).toLocaleDateString('es-ES')],
+        ['Género', fichaEstudiante?.Genero],
+        ['Nacionalidad', fichaEstudiante?.Nacionalidad],
+      ].map(([campo, valor], index) => (
+        <div key={index} className="info-item">
+          <div className="info-details">
+            <label>{campo}</label>
+            <p>{valor ? valor.toString().toUpperCase() : 'NO DISPONIBLE'}</p> {/* ✅ Convierte a mayúsculas */}
           </div>
-        ))}
-      </div>
-
-      {/* Dirección y Ubicación */}
-      <h2 className="info-title">Dirección y Ubicación</h2>
-      <div className="info-grid">
-        {[
-          ['Dirección', fichaEstudiante?.Direccion],
-          ['Departamento', fichaEstudiante?.Departamento],
-          ['Municipio', fichaEstudiante?.Municipio],
-        ].map(([campo, valor], index) => (
-          <div key={index} className="info-item">
-            <div className="info-details">
-              <label>{campo}</label>
-              <p>{valor ?? 'No disponible'}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Información del Padre */}
-      <h2 className="info-title">Información del Padre/Tutor</h2>
-      <div className="info-grid">
-        {[
-          ['Nombre', fichaEstudiante?.Nombre_Padre_Tutor],
-          ['Teléfono Móvil', fichaEstudiante?.Telefono_Movil_Tutor],
-          ['Teléfono Fijo', fichaEstudiante?.Telefono_Fijo_Tutor],
-          ['Correo Electrónico', fichaEstudiante?.Correo_Tutor],
-        ].map(([campo, valor], index) => (
-          <div key={index} className="info-item">
-            <div className="info-details">
-              <label>{campo}</label>
-              <p>{valor ?? 'No disponible'}</p>
-            </div>
-          </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
-  ) : (
-    <p className="mensaje-vacio">No hay información disponible para la ficha del estudiante.</p>
-  )}
+
+    {/* Dirección y Ubicación */}
+    <h2 className="info-title">Dirección y Ubicación</h2>
+    <div className="info-grid">
+      {[
+        ['Dirección', fichaEstudiante?.Direccion],
+        ['Departamento', fichaEstudiante?.Departamento],
+        ['Municipio', fichaEstudiante?.Municipio],
+      ].map(([campo, valor], index) => (
+        <div key={index} className="info-item">
+          <div className="info-details">
+            <label>{campo}</label>
+            <p>{valor ? valor.toString().toUpperCase() : 'NO DISPONIBLE'}</p> {/* ✅ Convierte a mayúsculas */}
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Información del Padre */}
+    <h2 className="info-title">Información del Padre</h2>
+    <div className="info-grid">
+      {[
+        ['Nombre', fichaEstudiante?.Nombre_Padre_Tutor],
+        ['Teléfono Móvil', fichaEstudiante?.Telefono_Movil_Tutor],
+        ['Teléfono Fijo', fichaEstudiante?.Telefono_Fijo_Tutor],
+        ['Correo Electrónico', fichaEstudiante?.Correo_Tutor],
+      ].map(([campo, valor], index) => (
+        <div key={index} className="info-item">
+          <div className="info-details">
+            <label>{campo}</label>
+            <p>{valor ? valor.toString().toUpperCase() : 'NO DISPONIBLE'}</p> {/* ✅ Convierte a mayúsculas */}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
 <style>
     {`
 
@@ -420,8 +472,8 @@ const ListaFichaEstudiante = () => {
       }
 
       .profile-container {
-        max-width: 1024px;
-        margin: 2rem auto;
+        max-width: 2000px;
+        margin: 0.1rem auto;
         padding: 1.5rem;
       }
 
@@ -475,13 +527,13 @@ const ListaFichaEstudiante = () => {
       .info-card {
         background: var(--background);
         border-radius: var(--radius-lg);
-        padding: 1.5rem;
+        padding: 1rem;
         box-shadow: var(--shadow);
       }
 
       .info-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         gap: 1.5rem;
       }
 
@@ -555,10 +607,6 @@ const ListaFichaEstudiante = () => {
     `}
   </style>
 </div>
-
-
-
-
 
         </CContainer>
 

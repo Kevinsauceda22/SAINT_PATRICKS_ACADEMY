@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'; 
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilDescription, cilXCircle, cilCheckCircle,  cilSave, cilArrowLeft } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilBrushAlt , cilXCircle, cilCheckCircle,  cilSave, cilArrowLeft } from '@coreui/icons';
 import swal from 'sweetalert2';
 import axios from 'axios'; 
 import { useNavigate } from 'react-router-dom';
@@ -99,34 +99,6 @@ useEffect(() => {
   cargarPersonas();
 }, []);
 
-
-const handleBuscarCodPersona = (e) => {
-  const filtro = e.target.value.toLowerCase();
-  setBuscadorCodPersona(filtro);
-
-  if (filtro.trim() === '') {
-    setPersonasFiltradas([]);
-    setIsDropdownOpen(false);
-    return;
-  }
-
-  const filtradas = personas.filter(persona =>
-    (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
-    (persona.dni_persona && persona.dni_persona.includes(filtro))
-  );
-
-  setPersonasFiltradas(filtradas);
-  setIsDropdownOpen(filtradas.length > 0);
-};
-
-const handleSeleccionarCodPersona = (persona) => {
-  const nombreCompleto = `${persona.fullName}`;
-  contactoToUpdate
-    ? setContactoToUpdate({ ...contactoToUpdate, cod_persona: persona.cod_persona, nombrePersona: nombreCompleto })
-    : setNuevoContacto({ ...nuevoContacto, cod_persona: persona.cod_persona, nombrePersona: nombreCompleto });
-  setBuscadorCodPersona(nombreCompleto);
-  setIsDropdownOpen(false);
-};
 
 {/*******************************************************************************************************************/}
   useEffect(() => {
@@ -565,106 +537,116 @@ const toggleEstado = async (contacto) => {
 
   return (
     <CContainer>
-       <CRow className="align-items-center mb-5">
-      {/* Título */}
-      <CCol xs="12">
-        <h1>Contactos</h1>
-        {/* Nombre de la persona seleccionada */}
-        {personaSeleccionada ? (
-          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
-            <strong>CONTACTOS DE:</strong> {personaSeleccionada 
-              ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
-              : 'Información no disponible'}
-          </div>
-        ) : (
-          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
-            <strong>Persona Seleccionada:</strong> Información no disponible
-          </div>
-        )}
-      </CCol>
+<CRow className="align-items-center mb-3">
+  <CCol xs="12" className="text-center">
+    {/* Título con línea verde debajo */}
+    <div style={{ display: 'inline-block', textAlign: 'center', position: 'relative' }}>
+      <h3 className="mb-0" style={{ fontSize: '1.5rem' }}>Lista de Contactos</h3>
+      <div style={{ height: '3px', backgroundColor: '#4CAF50', width: '100%', marginTop: '5px' }}></div>
+    </div>
 
-      {/* Selector de registros */}
-      <CCol xs="12" className="d-flex justify-content-end align-items-center mb-3">
-        <span>Mostrar </span>
+    {/* Persona seleccionada */}
+    {personaSeleccionada ? (
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>CONTACTOS DE:</strong> {`${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}`}
+      </div>
+    ) : (
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>Persona Seleccionada:</strong> Información no disponible
+      </div>
+    )}
+  </CCol>
+</CRow>
+
+<CRow className="align-items-center mt-2 mb-3">
+  {/* Botón Personas alineado a la izquierda */}
+  <CCol xs="12" md="3" className="d-flex justify-content-start mb-3 mb-md-0">
+    <CButton
+      color="secondary"
+      onClick={volverAListaPersonas}
+      style={{ minWidth: '120px', height: '38px' }}
+    >
+      <CIcon icon={cilArrowLeft} /> Personas
+    </CButton>
+  </CCol>
+
+  {/* Botones alineados a la derecha */}
+  <CCol xs="12" md="9" className="d-flex justify-content-end gap-3">
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px', height: '38px' }}
+      onClick={() => {
+        setModalVisible(true);
+        setContactoToUpdate(null);
+      }}
+    >
+      <CIcon icon={cilPlus} /> Nuevo
+    </CButton>
+
+    <CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
+        Reporte
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={ReporteContactoPDF}>Descargar en PDF</CDropdownItem>
+        <CDropdownItem onClick={ReporteContactoExcel}>Descargar en Excel</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
+
+{/* Barra de búsqueda */}
+<CRow className="align-items-center mt-3 mb-2">
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar contactos..."
+        onChange={handleSearch}
+        value={searchTerm}
+      />
+      <CButton
+        style={{ border: '1px solid #ccc', transition: 'all 0.1s ease-in-out', backgroundColor: '#F3F4F7', color: '#343a40' }}
+        onClick={() => setSearchTerm('')}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
+
+  {/* Selector de registros */}
+  <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+      <div className="d-inline-flex align-items-center">
+        <span>Mostrar&nbsp;</span>
         <CFormSelect
+          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+          onChange={(e) => {
+            const value = Number(e.target.value);
+            setRecordsPerPage(value);
+            setCurrentPage(1);
+          }}
           value={recordsPerPage}
-          onChange={handleRecordsPerPageChange}
-          style={{
-            maxWidth: '100px',
-            display: 'inline-block',
-            margin: '0 5px',
-            textAlign: 'right',
-          }}
         >
-          <option value={5}>5</option>
-          <option value={10}>10</option>
-          <option value={20}>20</option>
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
         </CFormSelect>
-        <span> registros</span>
-      </CCol>
+        <span>&nbsp;registros</span>
+      </div>       
+    </CInputGroup>
+  </CCol>
+</CRow>
 
-      {/* Botones */}
-      <CCol xs="12" md="12" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-2">
-        {/* Botón Personas */}
-        <CButton
-          color="secondary"
-          onClick={volverAListaPersonas}
-          style={{
-            minWidth: '120px', // Asegura un ancho mínimo consistente
-          }}
-        >
-          <CIcon icon={cilArrowLeft} /> Personas
-        </CButton>
-
-        {/* Botón Nuevo */}
-        <CButton
-          style={{
-            backgroundColor: '#4B6251', // Color personalizado
-            color: 'white',
-            minWidth: '120px', // Asegura un ancho consistente
-            borderRadius: '5px', // Bordes redondeados para apariencia moderna
-          }}
-          onClick={() => {
-            setModalVisible(true);
-            setContactoToUpdate(null);
-          }}
-        >
-          <CIcon icon={cilPlus} /> Nuevo
-        </CButton>
-
-        {/* Dropdown Reporte */}
-        <CDropdown>
-          <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-            <CIcon icon={cilDescription} /> Reporte
-          </CDropdownToggle>
-          <CDropdownMenu>
-          <CDropdownItem onClick={ReporteContactoPDF}>
-              <i className="fa fa-file-pdf-o" style={{ marginRight: '5px' }}></i> Descargar en PDF
-            </CDropdownItem>
-            <CDropdownItem onClick={ReporteContactoExcel}>
-              <i className="fa fa-file-excel-o" style={{ marginRight: '5px' }}></i> Descargar en Excel
-            </CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
-      </CCol>
-    </CRow>
-
-    {/* Input de búsqueda */}
-
-<CInputGroup className="mb-3" style={{ maxWidth: '400px', marginTop: '-70px' }}>
-  <CInputGroupText><CIcon icon={cilSearch} /></CInputGroupText>
-  <CFormInput placeholder="Buscar" onChange={handleSearch} value={searchTerm} />
-  <CButton
-    onClick={() => setSearchTerm('')}
-    style={{
-      border: '2px solid #d3d3d3',
-      color: '#4B6251',
-      backgroundColor: '#f0f0f0',
-    }}
-  >
-    <i className="fa fa-broom" style={{ marginRight: '5px' }}></i> Limpiar
-  </CButton>
-</CInputGroup>
 
 {/**************************************************************************************************************************************/}
 <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
@@ -756,7 +738,7 @@ const toggleEstado = async (contacto) => {
 
 
 {/********************************************MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
-<CModal visible={modalVisible} onClose={() => setModalVisible(false)}>
+<CModal visible={modalVisible} onClose={() => setModalVisible(false)} size="lg"> {/* ✅ Solo se agranda el modal */}
   <CModalHeader>
     <CModalTitle>{contactoToUpdate ? 'Actualizar Contacto' : 'Crear Nuevo Contacto'}</CModalTitle>
   </CModalHeader>
@@ -864,12 +846,8 @@ const toggleEstado = async (contacto) => {
   <CModalFooter>
     <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
     <CButton
-      onClick={handleCreateOrUpdate}
-      style={
-        contactoToUpdate
-          ? { backgroundColor: '#FFD700', color: 'white' } // Color amarillo con letras blancas
-          : { backgroundColor: '#4B6251', color: 'white' } // Mantener el estilo actual del botón "Guardar"
-      }
+      onClick={handleCreateOrUpdate}  
+        style={{ backgroundColor: '#28a745', color: 'white' }}
     >
       <CIcon icon={contactoToUpdate ? cilPen : cilSave} />
       &nbsp;

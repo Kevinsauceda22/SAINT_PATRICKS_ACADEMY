@@ -64,7 +64,7 @@ const ListaProcedenciaEstudiante = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
   const [recordsPerPage, setRecordsPerPage] = useState(10);
-  const [loading, setLoading] = useState(false);
+
   
 
     const location = useLocation();
@@ -99,6 +99,12 @@ const ListaProcedenciaEstudiante = () => {
       useEffect(() => {
         console.log(personaSeleccionada);
       }, [personaSeleccionada]);
+
+      useEffect(() => {
+        const cambiosDetectados = Object.values(nuevaProcedencia).some(valor => valor !== '');
+        setHasUnsavedChanges(cambiosDetectados);
+      }, [nuevaProcedencia]);
+      
     
   
 
@@ -308,8 +314,10 @@ const handleProcedenciaEstudianteInputChange = (e, field, setFunction) => {
 
 {/***************************************************************************************************************************************/}
 
-    // Función para cerrar el modal con advertencia si hay cambios sin guardar
+
     const handleCloseModal = (closeFunction, resetFields) => {
+      console.log("¿Hay cambios sin guardar?", hasUnsavedChanges); 
+    
       if (hasUnsavedChanges) {
         swal.fire({
           title: '¿Estás seguro?',
@@ -321,8 +329,8 @@ const handleProcedenciaEstudianteInputChange = (e, field, setFunction) => {
         }).then((result) => {
           if (result.isConfirmed) {
             closeFunction(false);
-            resetFields(); // Limpiar los campos al cerrar
-            setHasUnsavedChanges(false); // Resetear cambios no guardados
+            resetFields();
+            setHasUnsavedChanges(false);
           }
         });
       } else {
@@ -330,6 +338,7 @@ const handleProcedenciaEstudianteInputChange = (e, field, setFunction) => {
         resetFields();
       }
     };
+    
 
 {/***************************************************************************************************************************************/}
 
@@ -349,8 +358,11 @@ const handleCreateProcedenciaEstudiante = async () => {
   const institutoCapitalizado = capitalizeWords(nuevaProcedencia.nombre_instituto.trim().replace(/\s+/g, ' '));
   const descripcionCapitalizada = capitalizeWords(nuevaProcedencia.descripcion.trim().replace(/\s+/g, ' '));
 
+  const codPersonaSeleccionada = personaSeleccionada.cod_persona;
+
   // Validaciones antes de crear
   if (!validateProcedenciaEstudiante({ 
+    cod_persona: codPersonaSeleccionada,
     nombre_instituto: institutoCapitalizado, 
     descripcion: descripcionCapitalizada, 
     año_desde: nuevaProcedencia.año_desde, 
@@ -366,8 +378,9 @@ const handleCreateProcedenciaEstudiante = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        nombre_instituto: institutoCapitalizado,  // Se usa el nombre validado
-        descripcion: descripcionCapitalizada,  // Se usa la descripción validada
+        cod_persona: codPersonaSeleccionada, // ✅ Ahora solo envía `cod_persona`
+        nombre_instituto: institutoCapitalizado,  
+        descripcion: descripcionCapitalizada,  
         año_desde: nuevaProcedencia.año_desde, 
         año_hasta: nuevaProcedencia.año_hasta,
         estado: 1, // Activo por defecto
@@ -422,6 +435,7 @@ const handleUpdateProcedenciaEstudiante = async () => {
 
   // Validaciones antes de actualizar
   if (!validateProcedenciaEstudiante({ 
+    cod_persona: personaSeleccionada,
     nombre_instituto: institutoCapitalizado, 
     descripcion: descripcionCapitalizada, 
     año_desde: procedenciaEstudianteToUpdate.año_desde, 
@@ -438,6 +452,7 @@ const handleUpdateProcedenciaEstudiante = async () => {
       },
       body: JSON.stringify({
         Cod_procedencia_estudiante: procedenciaEstudianteToUpdate.Cod_procedencia_estudiante,
+        cod_persona: personaSeleccionada,
         nombre_instituto: institutoCapitalizado,
         descripcion: descripcionCapitalizada,
         año_desde: procedenciaEstudianteToUpdate.año_desde,
@@ -565,7 +580,7 @@ const ReporteProcedenciaEstudiantePDF = () => {
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
 
-    // Encabezado
+    // ✅ Encabezado
     doc.addImage(img, 'PNG', 10, 10, 45, 45);
     doc.setFontSize(18);
     doc.setTextColor(0, 102, 51);
@@ -577,7 +592,7 @@ const ReporteProcedenciaEstudiantePDF = () => {
     doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
     doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
 
-    // Subtítulo
+    // ✅ Subtítulo
     doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
     doc.text('Reporte de Procedencia Estudiante', pageWidth / 2, 50, { align: 'center' });
@@ -586,29 +601,17 @@ const ReporteProcedenciaEstudiantePDF = () => {
     doc.setDrawColor(0, 102, 51);
     doc.line(10, 60, pageWidth - 10, 60);
 
-    // Filtrar datos y formatear para la tabla
+    // ✅ Filtrar datos y formatear para la tabla
     const tableRows = filteredProcedenciaEstudiante.map((procedencia, index) => ({
       index: (index + 1).toString(),
       nombre_instituto: procedencia.nombre_instituto?.toUpperCase() || 'N/D',
       descripcion: procedencia.descripcion?.toUpperCase() || 'N/D',
       año_desde: procedencia.año_desde?.toString() || 'N/D',
       año_hasta: procedencia.año_hasta?.toString() || 'N/D',
-      estado: procedencia.estado === 1 ? 'Activo' : 'Inactivo',
     }));
-
-    const columnWidths = {
-      index: 15,           
-      nombre_instituto: 60,
-      descripcion: 60,   
-      año_desde: 20,     
-      año_hasta: 20,
-      estado: 25      
-    };
-    const tableWidth = Object.values(columnWidths).reduce((acc, width) => acc + width, 0);
 
     doc.autoTable({
       startY: 65,
-      margin: { left: (pageWidth - tableWidth) / 2 }, 
       columns: [
         { header: '#', dataKey: 'index' },
         { header: 'Instituto', dataKey: 'nombre_instituto' },
@@ -619,17 +622,40 @@ const ReporteProcedenciaEstudiantePDF = () => {
       ],
       body: tableRows,
       styles: { fontSize: 7, cellPadding: 4 },
-      columnStyles: columnWidths,
+      headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255] },
       alternateRowStyles: { fillColor: [240, 248, 255] },
     });
 
-    doc.save("Reporte_Procedencia_Estudiante.pdf");
+    // ✅ Generar Blob y URL del PDF
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
+
+    // ✅ Abrir en nueva ventana con botones de descarga e impresión
+    const newWindow = window.open('', '_blank');
+    newWindow.document.write(`
+      <html>
+        <head><title>Reporte de Procedencia Estudiante</title></head>
+        <body style="margin:0;">
+          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
+          <div style="position:fixed;top:10px;right:20px;">
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Procedencia_Estudiante.pdf'; a.click();">
+              Descargar PDF
+            </button>
+            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
+              onclick="window.print();">
+              Imprimir PDF
+            </button>
+          </div>
+        </body>
+      </html>`);
   };
 
   img.onerror = () => {
     alert('No se pudo cargar el logo.');
   };
 };
+
 
 {/***************************************************************************************************************************************/}
 
@@ -717,103 +743,133 @@ const exportProcedenciaEstudianteToExcel = () => {
     return(
         <CContainer>
   
-  <CRow className="align-items-center mb-5">
-  <CCol xs="8" md="9">
-    {/* Título de la página */}
-    <h1 className="mb-0">Procedencia Estudiante</h1>
+  <CRow className="align-items-center mb-3">
+  <CCol xs="12" className="text-center">
+    {/* Título con contenedor para ajustar la línea verde */}
+    <div style={{ display: 'inline-block', textAlign: 'center', position: 'relative' }}>
+      <h3 className="mb-0" style={{ fontSize: '1.5rem' }}>Procedencia Estudiante</h3>
+      {/* ✅ Línea verde ajustada al ancho del título */}
+      <div style={{
+        height: '3px',
+        backgroundColor: '#4CAF50',
+        width: '100%',
+        marginTop: '5px'
+      }}></div>
+    </div>
+
+    {/* Persona seleccionada */}
     {personaSeleccionada ? (
-          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
-            <strong>Procedencia Histórica de:</strong> {personaSeleccionada 
-              ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
-              : 'Información no disponible'}
-          </div>
-        ) : (
-          <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
-            <strong>Persona Seleccionada:</strong> Información no disponible
-          </div>
-        )}
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>Procedencia Histórica de:</strong> {personaSeleccionada 
+          ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}` 
+          : 'Información no disponible'}
+      </div>
+    ) : (
+      <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
+        <strong>Persona Seleccionada:</strong> Información no disponible
+      </div>
+    )}
   </CCol>
-  <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center gap-3">
-  {/* Botón Personas */}
-  <CButton
-    color="secondary"
-    onClick={volverAListaPersonas}
-    style={{ minWidth: '160px', height: '38px' }} // Más largo
-  >
-    <CIcon icon={cilArrowLeft} /> Personas
-  </CButton>
-
-  {/* Botón Nuevo */}
-  {canInsert && (
-    <CButton
-      style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '160px', height: '38px' }} // Más largo
-      onClick={() => setModalVisible(true)}
-    >
-      <CIcon icon={cilPlus} /> Nuevo
-    </CButton>
-  )}
-
-  {/* Botón Ficha Estudiante */}
-  <CButton
-  style={{ backgroundColor: '#346B93', color: 'white', minWidth: '160px', height: '38px' }}
-  onClick={() => abrirFichaEstudiante(personaSeleccionada)} // Ahora pasa la persona correctamente
->
-  <CIcon icon={cilUser} /> Ficha 
-</CButton>
-
-  {/* Botón de Reportes */}
-  <CDropdown>
-    <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '160px', height: '38px' }}>
-      Reportes
-    </CDropdownToggle>
-    <CDropdownMenu>
-      <CDropdownItem onClick={exportProcedenciaEstudianteToExcel}>Descargar en Excel</CDropdownItem>
-      <CDropdownItem onClick={ReporteProcedenciaEstudiantePDF}>Descargar en PDF</CDropdownItem>
-    </CDropdownMenu>
-  </CDropdown>
-</CCol>
-
-
-
 </CRow>
 
-{/* Contenedor de la barra de búsqueda y el selector dinámico */}
-<CRow className="align-items-center mt-4 mb-2">
-  {/* Barra de búsqueda  */}
-  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
-    <CInputGroup className="me-3" style={{ width: '400px' }}>
-      <CInputGroupText>
-        <CIcon icon={cilSearch} />
-      </CInputGroupText>
-      <CFormInput
-        placeholder="Buscar procedencia estudiante..."
-        onChange={handleSearch}
-        value={searchTerm}
-      />
-      <CButton
-        style={{
-          border: '1px solid #ccc',
-          transition: 'all 0.1s ease-in-out',
-          backgroundColor: '#F3F4F7',
-          color: '#343a40'
-        }}
-        onClick={() => {
-          setSearchTerm('');
-          setCurrentPage(1);
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#E0E0E0';
-          e.currentTarget.style.color = 'black';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#F3F4F7';
-          e.currentTarget.style.color = '#343a40';
-        }}
-      >
-        <CIcon icon={cilBrushAlt} /> Limpiar
-      </CButton>
-    </CInputGroup>
+<CRow className="align-items-center mt-2 mb-3">
+  {/* Botón Personas alineado a la izquierda */}
+  <CCol xs="12" md="3" className="d-flex justify-content-start mb-3 mb-md-0">
+    <CButton
+      color="secondary"
+      onClick={volverAListaPersonas}
+      style={{ minWidth: '120px', height: '38px' }} // Botón menos ancho
+    >
+      <CIcon icon={cilArrowLeft} /> Personas
+    </CButton>
   </CCol>
+
+  {/* Botones alineados a la derecha */}
+  <CCol xs="12" md="9" className="d-flex justify-content-end gap-3">
+    {canInsert && (
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px', height: '38px' }} // Botón menos ancho
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+    )}
+
+    <CButton
+      style={{ backgroundColor: '#346B93', color: 'white', minWidth: '120px', height: '38px' }}
+      onClick={() => abrirFichaEstudiante(personaSeleccionada)} // Ahora pasa la persona correctamente
+    >
+      <CIcon icon={cilUser} /> Ficha 
+    </CButton>
+
+    <CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={exportProcedenciaEstudianteToExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReporteProcedenciaEstudiantePDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
+
+{/* Contenedor de la barra de búsqueda y el selector dinámico debajo de los botones */}
+<CRow className="align-items-center mt-3 mb-2">
+<CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+  {/* Barra de búsqueda con validaciones */}
+  <CInputGroup className="me-3" style={{ width: '400px' }}>
+    <CInputGroupText>
+      <CIcon icon={cilSearch} />
+    </CInputGroupText>
+    <CFormInput
+      placeholder="Buscar procedencia estudiante..."
+      value={searchTerm}
+      onChange={(e) => {
+        let value = e.target.value;
+
+        // Bloquear más de un espacio consecutivo
+        value = value.replace(/\s{2,}/g, ' ');
+
+        // Bloquear más de tres letras repetidas consecutivamente
+        value = value.replace(/([A-Za-z])\1{2,}/g, '$1$1');
+
+        // Bloquear más de tres números repetidos consecutivamente
+        value = value.replace(/([0-9])\1{2,}/g, '$1$1');
+
+        // Bloquear caracteres especiales
+        value = value.replace(/[^A-Za-z0-9\s]/g, '');
+
+        setSearchTerm(value);
+      }}
+      onPaste={(e) => e.preventDefault()} // 
+      onCopy={(e) => e.preventDefault()} // 
+    />
+    <CButton
+      style={{
+        border: '1px solid #ccc',
+        transition: 'all 0.1s ease-in-out',
+        backgroundColor: '#F3F4F7',
+        color: '#343a40'
+      }}
+      onClick={() => {
+        setSearchTerm('');
+        setCurrentPage(1);
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#E0E0E0';
+        e.currentTarget.style.color = 'black';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = '#F3F4F7';
+        e.currentTarget.style.color = '#343a40';
+      }}
+    >
+      <CIcon icon={cilBrushAlt} /> Limpiar
+    </CButton>
+  </CInputGroup>
+</CCol>
+
 
   {/* Selector dinámico a la par de la barra de búsqueda */}
   <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
@@ -841,14 +897,14 @@ const exportProcedenciaEstudianteToExcel = () => {
 
       {/* Tabla de histórico de procedencia con tamaño fijo */}
       <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
-  <CTable striped>
+  <CTable striped style={{ borderCollapse: 'collapse' }}> {/* ✅ Asegura que los bordes se mantengan visibles */}
     <CTableHead>
       <CTableRow>
         <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
         <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Instituto</CTableHeaderCell>
         <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Desde</CTableHeaderCell>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Hasta</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Desde</CTableHeaderCell> {/* ✅ Agregado */}
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Hasta</CTableHeaderCell> {/* ✅ Agregado */}
         <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
@@ -859,8 +915,8 @@ const exportProcedenciaEstudianteToExcel = () => {
           <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.originalIndex}</CTableDataCell>
           <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.nombre_instituto.toUpperCase()}</CTableDataCell>
           <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.descripcion.toUpperCase()}</CTableDataCell>
-          <CTableDataCell className="text-center">{procedencia.año_desde}</CTableDataCell>
-          <CTableDataCell className="text-center">{procedencia.año_hasta}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.año_desde}</CTableDataCell> {/* ✅ Corregido */}
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.año_hasta}</CTableDataCell> {/* ✅ Corregido */}
           <CTableDataCell className="text-center">
             <div className="d-flex justify-content-center">
               {canUpdate && (

@@ -625,8 +625,6 @@ const fetchMunicipio = async () => {
 const handleCreatePersona = async () => {
   const errores = {};
 
-
-  // ✅ Validación de Fecha de Nacimiento
   const fechaIngresada = new Date(nuevaPersona.fecha_nacimiento);
   const añoNacimiento = fechaIngresada.getFullYear();
   const añoActual = new Date().getFullYear();
@@ -659,12 +657,10 @@ const handleCreatePersona = async () => {
     }
   });
 
-  // ✅ Validación de otros campos
   const camposRequeridos = [
     { campo: nuevaPersona.tipo_documento, nombreCampo: 'tipo_documento' },
     { campo: nuevaPersona.cod_genero, nombreCampo: 'cod_genero' },
     { campo: nuevaPersona.cod_tipo_persona, nombreCampo: 'cod_tipo_persona' },
-    { campo: nuevaPersona.estado, nombreCampo: 'estado' },
     { campo: nuevaPersona.cod_nacionalidad, nombreCampo: 'cod_nacionalidad' },
     { campo: nuevaPersona.cod_departamento, nombreCampo: 'cod_departamento' },
     { campo: nuevaPersona.cod_municipio, nombreCampo: 'cod_municipio' },
@@ -690,8 +686,7 @@ const handleCreatePersona = async () => {
     Segundo_apellido: nuevaPersona.Segundo_apellido,
     direccion_persona: nuevaPersona.direccion_persona,
     fecha_nacimiento: nuevaPersona.fecha_nacimiento,
-    estado: nuevaPersona.estado,
-    principal: nuevaPersona.principal,
+    principal: false,
     cod_tipo_persona: nuevaPersona.cod_tipo_persona,
     cod_nacionalidad: nuevaPersona.cod_nacionalidad,
     cod_departamento: nuevaPersona.cod_departamento,
@@ -712,8 +707,7 @@ const handleCreatePersona = async () => {
         Segundo_apellido: nuevaPersona.Segundo_apellido,
         direccion_persona: nuevaPersona.direccion_persona,
         fecha_nacimiento: nuevaPersona.fecha_nacimiento,
-        estado: nuevaPersona.estado,
-        principal: nuevaPersona.principal,
+        principal: false,
         cod_tipo_persona: nuevaPersona.cod_tipo_persona,
         cod_nacionalidad: nuevaPersona.cod_nacionalidad,
         cod_departamento: nuevaPersona.cod_departamento,
@@ -750,7 +744,6 @@ const handleCreatePersona = async () => {
     });
   }
 };
-
 
   {/***************************************************FUNCION PARA ACTUALIZAR**************************************************************/}
   
@@ -1478,40 +1471,34 @@ return (
         </CModalHeader>
         <CModalBody>
           <CForm>
-
-
             <div className="row">
 {/************************************************************COLUMNA-1*******************************************************************/}
 {/***************************************************************DNI**********************************************************************/}
       <div className="col-md-6">
-
-
-
-        
       <div className="col-md-12">
   <div className="col-md-12">
-    {errorMessages.cod_tipo_documento && (
+    {errorMessages.tipo_documento && (
       <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-        {errorMessages.cod_tipo_documento}
+        {errorMessages.tipo_documento}
       </div>
     )}
     <CInputGroup className="mb-3">
       <CInputGroupText>Tipo de Documento</CInputGroupText>
       <CFormSelect
-        value={nuevaPersona.cod_tipo_documento || ''}
+        value={nuevaPersona.tipo_documento || ''}
         onChange={(e) => {
           const value = e.target.value;
 
           // Validación en tiempo real
           let erroresTemp = { ...errorMessages };
           if (!value) {
-            erroresTemp.cod_tipo_documento = 'Debe seleccionar un tipo de documento.';
+            erroresTemp.tipo_documento = 'Debe seleccionar un tipo de documento.';
           } else {
-            erroresTemp.cod_tipo_documento = '';
+            erroresTemp.tipo_documento = '';
           }
 
           setErrorMessages(erroresTemp);
-          setNuevaPersona({ ...nuevaPersona, cod_tipo_documento: value });
+          setNuevaPersona({ ...nuevaPersona, tipo_documento: value });
         }}
         required
         style={{ color: '#6c757d' }}
@@ -1526,15 +1513,6 @@ return (
       </CFormSelect>
     </CInputGroup>
   </div>
-  <style jsx>{`
-    .error-message {
-      color: red;
-      font-size: 0.850rem;
-      margin-top: 4px;
-      margin-bottom: 0;
-      margin-left: 12px;
-    }
-  `}</style>
 </div>
 
 {/********************************************************************************************************************************************/}
@@ -1554,29 +1532,29 @@ return (
         let value = e.target.value.toUpperCase();
         let erroresTemp = {};
 
-        // ✅ Bloquear espacios
+        // Bloquear espacios
         if (/\s/.test(value)) {
           erroresTemp.dni_persona = 'El documento no debe contener espacios.';
         }
 
-        // ✅ Bloquear caracteres especiales (solo permitir alfanuméricos)
+        // Bloquear caracteres especiales (solo permitir alfanuméricos)
         if (/[^A-Za-z0-9]/.test(value)) {
           erroresTemp.dni_persona = 'Solo se permiten letras y números.';
         }
 
-        // ✅ Bloquear más de 10 repeticiones del mismo carácter en tiempo real
+        // Bloquear más de 10 repeticiones del mismo carácter en tiempo real
         if (value.match(/(.)\1{10,}/)) {
           erroresTemp.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
-          value = nuevaPersona.dni_persona; // ✅ No permite seguir ingresando caracteres inválidos
+          value = nuevaPersona.dni_persona; //No permite seguir ingresando caracteres inválidos
         }
 
         setNuevaPersona({ ...nuevaPersona, dni_persona: value });
         setErrorMessages({ ...errorMessages, dni_persona: erroresTemp.dni_persona || '' });
       }}
-      onCopy={(e) => e.preventDefault()} // ✅ Bloquear copiado
-      onPaste={(e) => e.preventDefault()} // ✅ Bloquear pegado
+      onCopy={(e) => e.preventDefault()}
+      onPaste={(e) => e.preventDefault()} 
       onKeyDown={(e) => {
-        // ✅ Bloquear Ctrl+C, Ctrl+V, espacios y caracteres especiales
+        //Bloquear Ctrl+C, Ctrl+V, espacios y caracteres especiales
         if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
           e.preventDefault();
         }
@@ -1587,10 +1565,10 @@ return (
           e.preventDefault();
         }
 
-        // ✅ Validar desde el teclado si ya hay 10 caracteres repetidos
+        //Validar desde el teclado si ya hay 10 caracteres repetidos
         const currentValue = nuevaPersona.dni_persona + e.key;
         if (currentValue.match(/(.)\1{10,}/)) {
-          e.preventDefault(); // ✅ Bloquear desde el teclado
+          e.preventDefault(); 
           setErrorMessages((prevErrors) => ({
             ...prevErrors,
             dni_persona: 'No se pueden repetir más de 10 veces un mismo carácter.',
@@ -1659,15 +1637,6 @@ return (
               required
             />
           </CInputGroup>
-          <style jsx>{`
-            .error-message {
-              color: red;
-              font-size: 12px;  /* Tamaño de texto más pequeño */
-              margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-              margin-bottom: 0;
-              margin-left: 12px;  /* Para alinearlo con el texto del input */
-            }
-          `}</style>
         </div>
 {/*********************************************************SEGUNDO NOMBRE****************************************************************/}
       <div className="col-md-12">
@@ -1726,15 +1695,6 @@ return (
             onPaste={disableCopyPaste}
           />
         </CInputGroup>
-        <style jsx>{`
-          .error-message {
-            color: red;
-            font-size: 12px;  /* Tamaño de texto más pequeño */
-            margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-            margin-bottom: 0;
-            margin-left: 12px;  /* Para alinearlo con el texto del input */
-          }
-        `}</style>
       </div>
 {/*****************************************************PRIMER APELLLIDO******************************************************************/}
       <div className="col-md-12">
@@ -1794,15 +1754,6 @@ return (
             required
           />
         </CInputGroup>
-        <style jsx>{`
-          .error-message {
-            color: red;
-            font-size: 12px;  /* Tamaño de texto más pequeño */
-            margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-            margin-bottom: 0;
-            margin-left: 12px;  /* Para alinearlo con el texto del input */
-          }
-        `}</style>
       </div>
 {/*******************************************************SEGUNDO APELLIDO****************************************************************/}
       <div className="col-md-12">
@@ -1861,15 +1812,6 @@ return (
             required
           />
         </CInputGroup>
-        <style jsx>{`
-          .error-message {
-            color: red;
-            font-size: 12px;  /* Tamaño de texto más pequeño */
-            margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-            margin-bottom: 0;
-            margin-left: 12px;  /* Para alinearlo con el texto del input */
-          }
-        `}</style>
       </div>
 {/*****************************************************FECHA NACIMIENTO*****************************************************************/}
       <div className="col-md-12">
@@ -1909,16 +1851,13 @@ return (
             required
           />
         </CInputGroup>
-        <style jsx>{`
-          .error-message {
-            color: red;
-            font-size: 12px;  /* Tamaño de texto más pequeño */
-            margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-            margin-bottom: 0;
-            margin-left: 12px;  /* Para alinearlo con el texto del input */
-          }
-        `}</style>
       </div>
+      </div>
+{/***************************************************************ESTADO**********************************************************************/}
+{/************************************************************COLUMNA 2************************************************************************/}
+      <div className="col-md-6">
+        <div className="col-md-12">
+
 {/*************************************************************DIRECCIÓN*******************************************************************/}
       <div className="col-md-12">
         {errorMessages.direccion_persona && (
@@ -1934,7 +1873,6 @@ return (
             value={nuevaPersona.direccion_persona}
             onChange={(e) => {
               const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
-              // Bloquear secuencias de más de tres letras repetidas en toda la cadena
               if (/(.)\1{2,}/.test(value)) {
                 setErrorMessages((prevErrors) => ({
                   ...prevErrors,
@@ -1973,198 +1911,9 @@ return (
             required
           />
         </CInputGroup>
-        <style jsx>{`
-          .error-message {
-            color: red;
-            font-size: 12px;  /* Tamaño de texto más pequeño */
-            margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-            margin-bottom: 0;
-            margin-left: 12px;  /* Para alinearlo con el texto del input */
-          }
-        `}</style>
       </div>
-      </div>
-{/***************************************************************ESTADO**********************************************************************/}
-{/************************************************************COLUMNA 2************************************************************************/}
-      <div className="col-md-6">
-
-
-
-      <div className="col-md-12">
-     <div className="col-md-12">
-  {errorMessages.Estado_Persona && (
-    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-      {errorMessages.Estado_Persona}
-    </div>
-  )}
-  <CInputGroup className="mb-3">
-    <CInputGroupText>Estado</CInputGroupText>
-    <CFormSelect
-      value={nuevaPersona.Estado_Persona ?? ''}
-      onChange={(e) => {
-        const value = e.target.value === 'true'; // ✅ Convierte el valor a booleano
-
-        // ✅ Validación en tiempo real
-        let erroresTemp = { ...errorMessages };
-        if (value === '') {
-          erroresTemp.Estado_Persona = 'Debe seleccionar un estado.';
-        } else {
-          erroresTemp.Estado_Persona = '';
-        }
-
-        setErrorMessages(erroresTemp);
-        setNuevaPersona({ ...nuevaPersona, Estado_Persona: value });
-      }}
-      required
-      style={{ color: '#6c757d' }}
-    >
-      <option value="">Seleccione un estado</option>
-      <option value="true">ACTIVO</option> {/* ✅ Ahora representa `true` */}
-      <option value="false">INACTIVO</option> {/* ✅ Ahora representa `false` */}
-    </CFormSelect>
-  </CInputGroup>
-</div>
-
-<style jsx>{`
-  .error-message {
-    color: red;
-    font-size: 0.850rem;
-    margin-top: 4px;
-    margin-bottom: 0;
-    margin-left: 12px;
-  }
-`}</style>
-
     </div>
 
-{/********************************************************TIPO PERSONA**********************************************************************/}
-<div>
-      <div className="col-md-12">
-        {errorMessages.cod_tipo_persona && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.cod_tipo_persona}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Tipo Persona</CInputGroupText>
-          <CFormSelect
-            value={nuevaPersona.cod_tipo_persona || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-
-              // Validación en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.cod_tipo_persona = 'Debe seleccionar un tipo de persona.';
-              } else {
-                erroresTemp.cod_tipo_persona = '';
-              }
-
-              // Desactivar el checkbox "Principal" si el tipo de persona es "ESTUDIANTE"
-              const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(value, 10));
-              if (tipoSeleccionado && tipoSeleccionado.Tipo === 'ESTUDIANTE') {
-                setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: value, principal: false });
-              } else {
-                setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: value });
-              }
-
-              setErrorMessages(erroresTemp);
-            }}
-            required
-            style={{ color: '#6c757d' }}
-          >
-            <option value="">Seleccione un tipo persona</option>
-            {tipoPersona &&
-              tipoPersona.map((tipo) => (
-                <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                  {tipo.Tipo_persona.toUpperCase()}
-                </option>
-              ))}
-          </CFormSelect>
-        </CInputGroup>
-      </div>
-
-{/***************************************************PRINCIPAL*********************************************************/}
-      <div className="col-md-6">
-        <CInputGroup className="mb-3 align-items-center">
-          <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>Principal</span>
-            <CFormCheck
-              type="checkbox"
-              label=""
-              checked={nuevaPersona.principal}
-              onChange={(e) => {
-                const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10));
-                if (tipoSeleccionado && tipoSeleccionado.Tipo !== 'ESTUDIANTE') {
-                  setNuevaPersona({ ...nuevaPersona, principal: e.target.checked });
-                }
-              }}
-              style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
-              disabled={tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10))?.Tipo === 'ESTUDIANTE'}
-            />
-          </CInputGroupText>
-        </CInputGroup>
-      </div>
-
-      <style jsx>{`
-        .error-message {
-          color: red;
-          font-size: 0.850rem;  /* Tamaño de texto más pequeño */
-          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px;  /* Para alinearlo con el texto del input */
-        }
-      `}</style>
-    </div>
-{/****************************************************************GÉNERO*******************************************************************/}
-    <div className="col-md-12">
-      <div className="col-md-12">
-        {errorMessages.cod_genero && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.cod_genero}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Género</CInputGroupText>
-          <CFormSelect
-            value={nuevaPersona.cod_genero || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-
-              // Validación en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.cod_genero = 'Debe seleccionar un género.';
-              } else {
-                erroresTemp.cod_genero = '';
-              }
-
-              setErrorMessages(erroresTemp);
-              setNuevaPersona({ ...nuevaPersona, cod_genero: value });
-            }}
-            required
-            style={{ color: '#6c757d' }}
-          >
-            <option value="">Seleccione un género</option>
-            {generos &&
-              generos.map((genero) => (
-                <option key={genero.Cod_genero} value={genero.Cod_genero}>
-                  {genero.Tipo_genero.toUpperCase()}
-                </option>
-              ))}
-          </CFormSelect>
-        </CInputGroup>
-      </div>
-      <style jsx>{`
-        .error-message {
-          color: red;
-          font-size: 0.850rem;  /* Tamaño de texto más pequeño */
-          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px;  /* Para alinearlo con el texto del input */
-        }
-      `}</style>
-    </div>
 {/**********************************************************NACIONALIDAD*****************************************************************/}
           <div className="mb-3">
       {errorMessages.nacionalidad && (
@@ -2203,15 +1952,6 @@ return (
                       </div>
                     ))}
                   </div>
-                          <style jsx>{`
-                .error-message {
-                  color: red;
-                  font-size: 0.850rem; /* Tamaño de texto más pequeño */
-                  margin-top: 4px; /* Menor distancia entre el input y el mensaje de error */
-                  margin-bottom: 0;
-                  margin-left: 12px; /* Para alinearlo con el texto del input */
-                }
-              `}</style>
                 </div>
               )}
             </div>
@@ -2303,17 +2043,118 @@ return (
               </div>
             </div>
           )}
-        <style jsx>{`
-          .error-message {
-          color: red;
-          font-size: 0.850rem; /* Tamaño de texto más pequeño */
-          margin-top: 4px; /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px; /* Para alinearlo con el texto del input */
-        }
-      `}</style>
         </div>
+
+        {/****************************************************************GÉNERO*******************************************************************/}
+    <div className="col-md-12">
+      <div className="col-md-12">
+        {errorMessages.cod_genero && (
+          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+            {errorMessages.cod_genero}
+          </div>
+        )}
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Género</CInputGroupText>
+          <CFormSelect
+            value={nuevaPersona.cod_genero || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              // Validación en tiempo real
+              let erroresTemp = { ...errorMessages };
+              if (!value) {
+                erroresTemp.cod_genero = 'Debe seleccionar un género.';
+              } else {
+                erroresTemp.cod_genero = '';
+              }
+
+              setErrorMessages(erroresTemp);
+              setNuevaPersona({ ...nuevaPersona, cod_genero: value });
+            }}
+            required
+            style={{ color: '#6c757d' }}
+          >
+            <option value="">Seleccione un género</option>
+            {generos &&
+              generos.map((genero) => (
+                <option key={genero.Cod_genero} value={genero.Cod_genero}>
+                  {genero.Tipo_genero.toUpperCase()}
+                </option>
+              ))}
+          </CFormSelect>
+        </CInputGroup>
+      </div>
+    </div>
 {/**********************************************************************************************************************************************/}
+
+<div className="col-md-12">
+        {errorMessages.cod_tipo_persona && (
+          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+            {errorMessages.cod_tipo_persona}
+          </div>
+        )}
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Tipo Persona</CInputGroupText>
+          <CFormSelect
+            value={nuevaPersona.cod_tipo_persona || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+
+              // Validación en tiempo real
+              let erroresTemp = { ...errorMessages };
+              if (!value) {
+                erroresTemp.cod_tipo_persona = 'Debe seleccionar un tipo de persona.';
+              } else {
+                erroresTemp.cod_tipo_persona = '';
+              }
+
+              // Desactivar el checkbox "Principal" si el tipo de persona es "ESTUDIANTE"
+              const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(value, 10));
+              if (tipoSeleccionado && tipoSeleccionado.Tipo === 'ESTUDIANTE') {
+                setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: value, principal: false });
+              } else {
+                setNuevaPersona({ ...nuevaPersona, cod_tipo_persona: value });
+              }
+
+              setErrorMessages(erroresTemp);
+            }}
+            required
+            style={{ color: '#6c757d' }}
+          >
+            <option value="">Seleccione un tipo persona</option>
+            {tipoPersona &&
+              tipoPersona.map((tipo) => (
+                <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
+                  {tipo.Tipo_persona.toUpperCase()}
+                </option>
+              ))}
+          </CFormSelect>
+        </CInputGroup>
+      </div>
+
+{/***************************************************PRINCIPAL*********************************************************/}
+      <div className="col-md-6">
+        <CInputGroup className="mb-3 align-items-center">
+          <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>Principal</span>
+            <CFormCheck
+              type="checkbox"
+              label=""
+              checked={nuevaPersona.principal}
+              onChange={(e) => {
+                const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10));
+                if (tipoSeleccionado && tipoSeleccionado.Tipo !== 'ESTUDIANTE') {
+                  setNuevaPersona({ ...nuevaPersona, principal: e.target.checked });
+                }
+              }}
+              style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+              disabled={tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10))?.Tipo === 'ESTUDIANTE'}
+            />
+          </CInputGroupText>
+        </CInputGroup>
+      </div>
+
+      {/*****************************************************************************************************************************/}
                   </div>
                 </div>
               </CForm>
