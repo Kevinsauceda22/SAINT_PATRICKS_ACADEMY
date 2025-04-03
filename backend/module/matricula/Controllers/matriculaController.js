@@ -66,21 +66,30 @@ export const obtenerMatriculas = async (req, res) => {
   const { Cod_matricula } = req.params;
 
   try {
-    const [results] = await pool.query('CALL ObtenerTodasLasMatriculasSaintPatrick(?)', [Cod_matricula || null]);
+    const [results] = await pool.query(
+      'CALL ObtenerTodasLasMatriculasSaintPatrick(?)',
+      [Cod_matricula || null]
+    );
 
     if (!results || results[0].length === 0) {
       return res.status(404).json({ message: 'Matrícula no encontrada' });
     }
 
-    // Eliminar duplicados en los resultados de la matrícula
+    // Eliminar duplicados
     const uniqueResults = [...new Map(results[0].map((item) => [item.Cod_matricula, item])).values()];
 
-    res.status(200).json({ data: uniqueResults });
+    // Ordenar por fecha_matricula de más nueva a más antigua
+    const ordenadas = uniqueResults.sort(
+      (a, b) => new Date(b.fecha_matricula) - new Date(a.fecha_matricula)
+    );
+
+    res.status(200).json({ data: ordenadas });
   } catch (error) {
     console.error('Error al obtener las matrículas:', error);
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
+
 
 export const obtenerOpcionesMatricula = async (req, res) => {
   try {
@@ -150,50 +159,61 @@ export const obtenerOpcionesMatricula = async (req, res) => {
   }
 };
 
-// Controlador para obtener el nombre y apellido del padre junto con los hijos asociados, usando el DNI del padre
 export const obtenerHijosPorDniPadre = async (req, res) => {
   const { dni_padre } = req.params;
 
   try {
-    // Buscar al padre en la tabla `tbl_personas` usando el DNI
-    const [[padre]] = await pool.query(
-      'SELECT cod_persona, Nombre, Primer_apellido FROM tbl_personas WHERE dni_persona = ?',
-      [dni_padre]
-    );
+    let padre;
 
-    // Validar si el padre existe en la base de datos
-    if (!padre) {
-      return res.status(404).json({ message: 'No se encontró un padre con el DNI proporcionado.' });
+    // Buscar por DNI exacto si es un número de 13 dígitos
+    if (/^\d{13}$/.test(dni_padre)) {
+      [[padre]] = await pool.query(
+        'SELECT cod_persona, Nombre, Primer_apellido, dni_persona FROM tbl_personas WHERE dni_persona = ?',
+        [dni_padre]
+      );
+    } else {
+      // Buscar por nombre parcial si no es un DNI válido
+      const [resultados] = await pool.query(
+        `SELECT cod_persona, Nombre, Primer_apellido, dni_persona
+         FROM tbl_personas p
+         JOIN tbl_estructura_familiar ef ON p.cod_persona = ef.Cod_persona_padre
+         WHERE CONCAT(p.Nombre, ' ', p.Primer_apellido) LIKE ?`,
+        [`%${dni_padre}%`]
+      );
+      padre = resultados[0]; // Tomar el primer padre coincidente
     }
 
-    // Obtener los hijos asociados al padre usando la relación en `tbl_estructura_familiar`
+    // Validar si se encontró un padre
+    if (!padre) {
+      return res.status(404).json({ message: 'No se encontró un padre con el dato proporcionado.' });
+    }
+
+    // Obtener los hijos usando cod_persona del padre
     const cod_padre = padre.cod_persona;
     const [hijos] = await pool.query(
-      `
-      SELECT ef.Cod_persona_estudiante AS Cod_persona, 
-             p.Nombre AS Primer_nombre, 
-             p.Segundo_nombre, 
-             p.Primer_apellido, 
-             p.Segundo_apellido, 
-             p.fecha_nacimiento,
-             p.dni_persona -- Incluir el DNI del hijo
-      FROM tbl_estructura_familiar AS ef
-      JOIN tbl_personas AS p ON ef.Cod_persona_estudiante = p.cod_persona
-      WHERE ef.Cod_persona_padre = ?
-    `,
+      `SELECT ef.Cod_persona_estudiante AS Cod_persona, 
+              p.Nombre AS Primer_nombre, 
+              p.Segundo_nombre, 
+              p.Primer_apellido, 
+              p.Segundo_apellido, 
+              p.fecha_nacimiento,
+              p.dni_persona
+       FROM tbl_estructura_familiar ef
+       JOIN tbl_personas p ON ef.Cod_persona_estudiante = p.cod_persona
+       WHERE ef.Cod_persona_padre = ?`,
       [cod_padre]
     );
 
-    // Si no hay hijos asociados, enviar un mensaje adecuado
-    if (hijos.length === 0) {
+    if (!hijos || hijos.length === 0) {
       return res.status(404).json({ message: 'No se encontraron hijos asociados al padre proporcionado.' });
     }
 
-    // Enviar la respuesta con la información del padre y los hijos
+    // Responder con los datos del padre y sus hijos
     res.status(200).json({
       padre: {
         Nombre_Padre: padre.Nombre || null,
         Apellido_Padre: padre.Primer_apellido || null,
+        dni_persona: padre.dni_persona || null,
       },
       hijos: hijos.map((hijo) => ({
         Cod_persona: hijo.Cod_persona,
@@ -206,24 +226,28 @@ export const obtenerHijosPorDniPadre = async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error('Error al obtener hijos por DNI del padre:', error);
+    console.error('Error al obtener hijos por DNI o nombre del padre:', error);
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
 
 export const obtenerSeccionesPorGrado = async (req, res) => {
-  const { cod_grado } = req.params; // Captura el grado desde la ruta
-  const { cod_periodo_matricula } = req.query; // Captura el período activo desde la query
+  const { cod_grado } = req.params;
+  const { cod_periodo_matricula } = req.query;
 
-  // Validación inicial
   if (!cod_grado || !cod_periodo_matricula) {
     return res.status(400).json({
       message: 'El código del grado y el período de matrícula son requeridos.',
     });
   }
 
+  if (isNaN(Number(cod_grado)) || isNaN(Number(cod_periodo_matricula))) {
+    return res.status(400).json({
+      message: 'Parámetros inválidos: deben ser numéricos.',
+    });
+  }
+
   try {
-    // Ejecuta la consulta SQL con los parámetros cod_grado y cod_periodo_matricula
     const [secciones] = await pool.query(
       `
       SELECT 
@@ -232,7 +256,8 @@ export const obtenerSeccionesPorGrado = async (req, res) => {
         a.Numero_aula, 
         e.Nombre_edificios, 
         p.Nombre AS Nombre_profesor, 
-        p.Primer_apellido AS Apellido_profesor 
+        p.Primer_apellido AS Apellido_profesor,
+        COUNT(sm.Cod_matricula) AS Cantidad_matriculados
       FROM 
         tbl_secciones AS s
       LEFT JOIN 
@@ -243,25 +268,28 @@ export const obtenerSeccionesPorGrado = async (req, res) => {
         tbl_profesores AS pr ON s.Cod_profesor = pr.Cod_profesor
       LEFT JOIN 
         tbl_personas AS p ON pr.Cod_persona = p.Cod_persona
+      LEFT JOIN 
+        tbl_secciones_matricula AS sm ON sm.Cod_seccion = s.Cod_secciones
       WHERE 
         s.Cod_grado = ?
         AND s.Cod_periodo_matricula = ?
+      GROUP BY 
+        s.Cod_secciones, s.Nombre_seccion, a.Numero_aula, e.Nombre_edificios, 
+        p.Nombre, p.Primer_apellido
       `,
-      [cod_grado, cod_periodo_matricula] // Parámetros para la consulta
+      [cod_grado, cod_periodo_matricula]
     );
 
-    // Verifica si se encontraron datos
     if (secciones.length === 0) {
-      return res.status(200).json({ data: [] }); // Retorna un arreglo vacío si no hay resultados
+      return res.status(200).json({ data: [] });
     }
 
-    // Retorna las secciones encontradas
     res.status(200).json({ data: secciones });
   } catch (error) {
     console.error('Error al obtener secciones por grado y período:', error);
     res.status(500).json({
       message: 'Error en el servidor al obtener las secciones.',
-      error: error.message,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };
@@ -467,6 +495,39 @@ export const obtenerSeccionesConDetalles = async (req, res) => {
     res.status(200).json({ data: secciones });
   } catch (error) {
     console.error('Error al obtener secciones por grado:', error);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};
+
+export const buscarPadrePorNombre = async (req, res) => {
+  const { nombre } = req.query;
+
+  if (!nombre || nombre.trim() === '') {
+    return res.status(400).json({ message: 'Debe proporcionar un nombre para buscar.' });
+  }
+
+  try {
+    const [result] = await pool.query(
+      `
+      SELECT DISTINCT 
+        p.cod_persona, 
+        CONCAT(p.Nombre, ' ', p.Primer_apellido) AS nombre_completo, 
+        p.dni_persona
+      FROM tbl_personas p
+      JOIN tbl_estructura_familiar ef 
+        ON p.cod_persona = ef.Cod_persona_padre
+      WHERE CONCAT(p.Nombre, ' ', p.Primer_apellido) LIKE ?
+      `,
+      [`%${nombre}%`]
+    );
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: 'No se encontraron padres con ese nombre.' });
+    }
+
+    res.status(200).json({ data: result });
+  } catch (error) {
+    console.error('Error al buscar padre por nombre:', error);
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
