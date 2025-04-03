@@ -370,7 +370,7 @@ const exportFichaPadreToExcel = () => {
             onClick={volverAListaContacto} 
             style={{ backgroundColor: '#6c757d', color: 'white', minWidth: '160px', height: '38px' }}
           >
-            <CIcon icon={cilArrowLeft} /> Procedencia
+            <CIcon icon={cilArrowLeft} /> Contacto
           </CButton>
 
           <CDropdown>

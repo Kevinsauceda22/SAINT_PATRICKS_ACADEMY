@@ -80,7 +80,7 @@ const ListaEstructura = () => {
   const [filterEstructuraFamiliar, setFilterEstructuraFamiliar] = useState([]);
 
 
-
+  const [tipoPersona, setTipoPersona] = useState([]);
 
 
   const [codPersona, setCodPersona] = useState('');
@@ -107,6 +107,17 @@ const ListaEstructura = () => {
 
 
 {/* ------------------------------------------------------------------------------------------------------------------------------------------------- */}
+
+const fetchTipoPersona = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/personas/verTipoPersona')
+    const data = await response.json()
+    console.log('Datos recibidos de tipo de persona:', data)
+    setTipoPersona(data)
+  } catch (error) {
+    console.error('Error al obtener los tipos de persona:', error)
+  }
+}
 
   useEffect(() => {
     if (personaSeleccionada) {

@@ -898,7 +898,7 @@ const exportToExcel = () => {
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)}>
+      <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)}>
       Cancelar
     </CButton>
     <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateRelacion} disabled={relacionError.tipo_relacion}>

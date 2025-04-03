@@ -53,19 +53,10 @@ const ListaContacto = () => {
   const [recordsPerPage, setRecordsPerPage] = useState(5);
   const [nuevoContacto, setNuevoContacto] = useState({ cod_persona: '', cod_tipo_contacto: '', Valor: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [buscadorCodPersona, setBuscadorCodPersona] = useState('');
-  const [personasFiltradas, setPersonasFiltradas] = useState([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [personas, setPersonas] = useState([]);
-    const [loading, setLoading] = useState(false);
-
-    const [errorMessages, setErrorMessages] = useState({});
-
-
-  
-
-// Filtrar contactos por cod_persona
-
+  const [loading, setLoading] = useState(false);
+  const [errorMessages, setErrorMessages] = useState({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
 
   const location = useLocation();
@@ -116,16 +107,6 @@ useEffect(() => {
 
 
 {/********************************************************************************************************************************************/}
-function validarTelefono(value, country) {
-  if (!value || !country) return false;
-
-  try {
-    return isValidNumber(value, country); // Verifica si el número es válido según el país
-  } catch {
-    return false;
-  }
-}
-
 
 {/*******************************************************************************************************************/}
   useEffect(() => {
@@ -172,14 +153,102 @@ function validarTelefono(value, country) {
       console.error('Error fetching tipos de contacto:', error);
     }
   };
+
+{/*********************************************************************************************************************************************/}
   
+const handleCloseModal = (closeFunction, resetFields, initialValues, currentValues) => {
+  const cambiosSinGuardar = JSON.stringify(initialValues) !== JSON.stringify(currentValues);
+
+  console.log("¿Hay cambios sin guardar?", cambiosSinGuardar);
+
+  if (cambiosSinGuardar) {
+    swal.fire({
+      title: "¿Estás seguro?",
+      text: "Si cierras este formulario, perderás todos los datos ingresados.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sí, cerrar",
+      cancelButtonText: "Cancelar",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        resetFields(); // Limpia los campos antes de cerrar
+        closeFunction(false); // Cierra el modal
+      }
+    });
+  } else {
+    resetFields();
+    closeFunction(false);
+  }
+};
+
+
+
+{/****************************************************************************************************************************************/}
+
+const resetNuevoContacto = () => {
+  setNuevoContacto({
+    cod_contacto: null, // Si es un nuevo contacto, el código aún no existe
+    cod_persona: null,
+    cod_tipo_contacto: '',
+    Valor: '',
+    principal: false, // Como en la API es un número (0 o 1), aquí se maneja con booleano
+    estado: 1, // Por defecto activo
+  });
+};
+
+const resetContactoToUpdate = () => {
+  setContactoToUpdate({
+    cod_contacto: null, // Se limpiará para evitar conflictos en edición
+    cod_persona: null,
+    cod_tipo_contacto: '',
+    Valor: '',
+    principal: false, // Convertir 0 en false y 1 en true
+    estado: 1, // Por defecto activo
+  });
+};
+
 
 {/*******************************************************FUNCION PARA CREAR Y ACTUALIZAR**************************************************/}
   const handleCreateOrUpdate = async () => {
     if (isSubmitting) return;
   
     const errors = [];
-    const contactoActual = contactoToUpdate ? { ...contactoToUpdate } : { ...nuevoContacto };
+    
+    if (errorMessages.email) {
+      errors.push("Corrige los errores antes de guardar.");
+    }
+    
+    // 🔥 Evaluar correctamente si estamos en modo edición
+    const contactoActual = contactoToUpdate ?? nuevoContacto;
+    
+    if (!contactoActual.Valor || (contactoActual.cod_tipo_contacto === "EMAIL" && !contactoActual.Valor.includes("@"))) {
+      errors.push("El correo debe contener '@' y un dominio válido.");
+    }
+    
+    if (contactoActual.cod_tipo_contacto === "EMAIL") {
+      const dominiosPermitidos = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "protonmail.com"];
+      const [, domain] = contactoActual.Valor.split("@") ?? [];
+    
+      if (!dominiosPermitidos.includes(domain)) {
+        errors.push(`Dominio no permitido. Usa: ${dominiosPermitidos.join(", ")}`);
+      }
+    }
+    
+    // **Si hay errores, mostrar Swal.fire() con los mensajes acumulados**
+    if (errors.length > 0) {
+      swal.fire({
+        icon: "warning",
+        title: "Errores en el formulario",
+        html: errors.join("<br/>"),
+      });
+      return;
+    }
+    
+  
+    // 🔹 Si todo es válido, proceder con la creación o actualización
+    console.log("Contacto guardado correctamente:", nuevoContacto);
+
+  
   
     // Asignar automáticamente el código de la persona seleccionada
     contactoActual.cod_persona = personaSeleccionada?.cod_persona;
@@ -812,10 +881,11 @@ const ReporteContactoExcel = () => {
 
 
 {/********************************************MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
-<CModal visible={modalVisible} onClose={() => setModalVisible(false)} size="lg"> {/* ✅ Solo se agranda el modal */}
-  <CModalHeader>
+<CModal visible={modalVisible} backdrop="static" onClose={() => handleCloseModal(setModalVisible, contactoToUpdate ? resetContactoToUpdate : resetNuevoContacto)} size="lg">
+  <CModalHeader closeButton>
     <CModalTitle>{contactoToUpdate ? 'Actualizar Contacto' : 'Crear Nuevo Contacto'}</CModalTitle>
   </CModalHeader>
+
   <CModalBody>
     {/* Mostrar el nombre de la persona seleccionada */}
     <div style={{ marginBottom: '10px', border: '1px solid #dcdcdc', padding: '10px', backgroundColor: '#f9f9f9' }}>
@@ -858,61 +928,101 @@ const ReporteContactoExcel = () => {
     Valor
   </div>
 
-  {/* Usar react-phone-number-input solo para tipos de teléfono */}
-  {Number(nuevoContacto.cod_tipo_contacto) === 1 || Number(nuevoContacto.cod_tipo_contacto) === 2 ? (
-    <PhoneInput
-      international
-      defaultCountry="HN"
-      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor}
-      onChange={(value) => {
-        const phoneDigits = value.replace(/\D/g, '');
-        
-        // **Bloquear más de 15 dígitos sin contar código de país**
-        if (phoneDigits.length > 15) return;
+{/* Validar si es teléfono */}
+{Number(contactoToUpdate?.cod_tipo_contacto ?? nuevoContacto.cod_tipo_contacto) === 1 || 
+ Number(contactoToUpdate?.cod_tipo_contacto ?? nuevoContacto.cod_tipo_contacto) === 2 ? (
 
-        if (contactoToUpdate) {
-          setContactoToUpdate((prev) => ({ ...prev, Valor: value }));
-        } else {
-          setNuevoContacto((prev) => ({ ...prev, Valor: value }));
-        }
-      }}
-      className="border-0"
-    />
+  <PhoneInput
+    international
+    defaultCountry="HN"
+    value={contactoToUpdate?.Valor ?? nuevoContacto.Valor}
+    onChange={(value) => {
+      if (!value) return; // Evitar valores undefined
+
+      const phoneDigits = value.replace(/\D/g, '');
+
+      // **Bloquear la entrada de más de 15 dígitos**
+      if (phoneDigits.length > 15) return;
+
+      if (contactoToUpdate) {
+        setContactoToUpdate((prev) => ({ ...prev, Valor: value }));
+      } else {
+        setNuevoContacto((prev) => ({ ...prev, Valor: value }));
+      }
+    }}
+    onKeyDown={(e) => {
+      const phoneDigits = (contactoToUpdate?.Valor ?? nuevoContacto.Valor)?.replace(/\D/g, '') ?? '';
+
+      // **Bloquear la entrada de más números después de 15 dígitos**
+      if (phoneDigits.length >= 15 && /\d/.test(e.key)) {
+        e.preventDefault();
+      }
+    }}
+    className="border-0"
+    style={{ width: "100%" }}
+  />
+
   ) : (
-    <CFormInput
-      placeholder={nuevoContacto.cod_tipo_contacto === 'EMAIL' ? 'EMAIL' : 'Valor'}
-      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor}
-      onChange={(e) => {
-        let value = e.target.value.slice(0, 50).trim();
+    <div style={{ display: 'flex', flexDirection: 'column', width: "100%" }}>
+      <CFormInput
+        placeholder="EMAIL"
+        value={contactoToUpdate?.Valor ?? nuevoContacto.Valor}
+        onChange={(e) => {
+          let value = e.target.value?.slice(0, 50).trim() ?? '';
 
-        // **Si el tipo de contacto cambia a EMAIL, limpiar el campo**
-        if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && contactoToUpdate?.Valor?.startsWith('+')) {
-          setContactoToUpdate((prev) => ({ ...prev, Valor: '' }));
-          setNuevoContacto((prev) => ({ ...prev, Valor: '' }));
-          return;
-        }
+          // **Lista de dominios válidos**
+          const dominiosPermitidos = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "icloud.com", "protonmail.com"];
+          const emailRegex = /^[a-zA-Z0-9._%+-]{4,}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
-        if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/^[a-zA-Z0-9]{4,}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
-          setErrorMessages((prevErrors) => ({
-            ...prevErrors,
-            email: 'El correo debe tener al menos 4 caracteres antes del "@", sin caracteres especiales y con un dominio válido.'
-          }));
-          return;
-        } else {
-          setErrorMessages((prevErrors) => ({
-            ...prevErrors,
-            email: ''
-          }));
-        }
+          // **Validación en tiempo real**
+          if (value.length > 0) {
+            if (!value.includes("@")) {
+              setErrorMessages((prevErrors) => ({
+                ...prevErrors,
+                email: 'El correo debe contener "@" seguido de un dominio válido.'
+              }));
+            } else {
+              const [localPart, domain] = value.split("@");
 
-        if (contactoToUpdate) {
-          setContactoToUpdate((prev) => ({ ...prev, Valor: value }));
-        } else {
-          setNuevoContacto((prev) => ({ ...prev, Valor: value }));
-        }
-      }}
-      className="border-0"
-    />
+              if (localPart.length < 4) {
+                setErrorMessages((prevErrors) => ({
+                  ...prevErrors,
+                  email: 'El correo debe tener al menos 4 caracteres antes del "@".'
+                }));
+              } else if (!emailRegex.test(value) || !dominiosPermitidos.includes(domain)) {
+                setErrorMessages((prevErrors) => ({
+                  ...prevErrors,
+                  email: `Dominio no permitido. Usa: ${dominiosPermitidos.join(", ")}`
+                }));
+              } else {
+                setErrorMessages((prevErrors) => ({
+                  ...prevErrors,
+                  email: ''
+                }));
+              }
+            }
+          } else {
+            setErrorMessages((prevErrors) => ({
+              ...prevErrors,
+              email: ''
+            }));
+          }
+
+          if (contactoToUpdate) {
+            setContactoToUpdate((prev) => ({ ...prev, Valor: value }));
+          } else {
+            setNuevoContacto((prev) => ({ ...prev, Valor: value }));
+          }
+        }}
+        className="border-0"
+        style={{ width: "100%" }}
+      />
+      {errorMessages.email && (
+        <div className="error-message">
+          {errorMessages.email}
+        </div>
+      )}
+    </div>
   )}
 </div>
 
@@ -925,6 +1035,7 @@ const ReporteContactoExcel = () => {
     margin-left: 12px;
   }
 `}</style>
+
 
   {/* Campo de Principal */}
   <div className="col-md-6">
@@ -948,16 +1059,15 @@ const ReporteContactoExcel = () => {
 
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancelar</CButton>
-    <CButton
-      onClick={handleCreateOrUpdate}  
-        style={{ backgroundColor: '#28a745', color: 'white' }}
-    >
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, contactoToUpdate ? resetContactoToUpdate : resetNuevoContacto)}>
+      Cancelar
+    </CButton>
+    <CButton onClick={handleCreateOrUpdate} style={{ backgroundColor: '#28a745', color: 'white' }}>
       <CIcon icon={contactoToUpdate ? cilPen : cilSave} />
       &nbsp;
       {contactoToUpdate ? 'Actualizar' : 'Guardar'}
     </CButton>
-  </CModalFooter>
+  </CModalFooter> 
 </CModal>
 
 {/********************************************FIN MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
