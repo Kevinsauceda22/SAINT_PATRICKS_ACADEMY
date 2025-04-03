@@ -1336,7 +1336,7 @@ return (
   <CTable striped bordered hover>
     <CTableHead>
       <CTableRow>
-        {['Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha de Nacimiento', 'Dirección', 'Nacionalidad', 'Departamento', 'Municipio', 'Tipo de Persona', 'Género', 'Principal', 'Acciones'].map((header, index) => (
+        {['Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha de Nacimiento','Tipo de Persona', 'Principal', 'Acciones'].map((header, index) => (
           <CTableHeaderCell key={index} style={{ fontSize: '0.85rem', textAlign: 'center' }}>
             {header}
           </CTableHeaderCell>
@@ -1356,6 +1356,8 @@ return (
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Primer_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.Segundo_apellido?.toUpperCase() || 'N/D'}</CTableDataCell>
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA')}</CTableDataCell>
+
+{/*
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>{persona.direccion_persona?.toUpperCase() || 'N/D'}</CTableDataCell>
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
               {nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D'}
@@ -1366,12 +1368,16 @@ return (
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
               {municipio.find((mun) => mun.Cod_municipio === persona.cod_municipio)?.Nombre_municipio.toUpperCase() || 'N/D'}
             </CTableDataCell>
+*/}
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
               {tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D'}
             </CTableDataCell>
+
+{/*
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
               {generos.find((gen) => gen.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D'}
             </CTableDataCell>
+*/}
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
               {persona.principal ? (<CIcon icon={cilCheckCircle} style={{ fontSize: '2em', color: '#28a745' }}/>) : ( 
               <CIcon icon={cilXCircle} style={{ fontSize: '2em', color: '#dc3545' }}/> )} 

@@ -80,6 +80,7 @@ const ListaDepartamentos = React.lazy(() => import('./views/pages/personas/Lista
 const ListaMunicipios = React.lazy(() => import('./views/pages/personas/ListaMunicipios'));
 const ListaFichaEstudiante = React.lazy(() => import('./views/pages/personas/ListaFichaEstudiante')); 
 const ListaProcedenciaEstudiante = React.lazy(() => import('./views/pages/personas/ListaProcedenciaEstudiante')); 
+const ListaFichaPadre = React.lazy(() => import('./views/pages/personas/ListaFichaPadre')); 
 const ListaTipoDocumentos = React.lazy(() => import('./views/pages/personas/ListaTipoDocumentos'));
 const ListaTipoPersona = React.lazy(() => import('./views/pages/personas/ListaTipopersona'));
 const ListaTipoRelacion = React.lazy(() => import('./views/pages/personas/ListaTipoRelacion')) 
@@ -202,9 +203,10 @@ const App = () => {
                 <Route path="/gestion_academica"  element={<ListaGestion_Academica />} />
                 <Route exact path="/lista-secciones" element={<ListaSecciones />} /> 
 
-                <Route path="/actividades" element={<ListaActivex />} />ListaFichaEstudiante
+                <Route path="/actividades" element={<ListaActivex />} />
                  <Route path="/dias"  element={<ListaDias />} />
                  <Route path="/ListaFichaEstudiante" element={<ListaFichaEstudiante/>} />
+                 <Route path="/ListaFichaPadre" element={<ListaFichaPadre/>} />
                  <Route path="/ListaTipoPersona" element={<ListaTipoPersona />} />
                  <Route path="/nacionalidad" element={<ListaNacionalidad />} />
                 <Route path="/ListaEstructura" element={<ListaEstructura />} />

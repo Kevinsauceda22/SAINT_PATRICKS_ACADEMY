@@ -40,6 +40,36 @@ export const obtenerFichaEstudiante = async (req, res) => {
     }
 };
 
+export const obtenerFichaPadre = async (req, res) => {
+    try {
+        const { cod_persona } = req.params;
+
+        if (!cod_persona) {
+            return res.status(400).json({ Mensaje: 'Debe proporcionar un código de persona válido' });
+        }
+
+        const [results] = await pool.query('CALL P_Get_FichaPadre(?)', [cod_persona]);
+
+        if (results.length > 0) {
+            const fichaPadre = results[0]?.length > 0 ? results[0][0] : null;
+            const hijos = results[1] || []; // Segundo conjunto de resultados contiene los hijos
+
+            if (fichaPadre) {
+                fichaPadre.hijos = hijos; // Agregamos los hijos al objeto del padre
+                res.status(200).json(fichaPadre);
+            } else {
+                res.status(404).json({ Mensaje: 'No se encontró ficha de padre para el código proporcionado' });
+            }
+        } else {
+            res.status(404).json({ Mensaje: 'No se encontraron datos en la consulta' });
+        }
+    } catch (error) {
+        console.error('Error al obtener ficha del padre:', error);
+        res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
+    }
+};
+
+
 
 
 //CONTROLADOR PARA OBTENER DEPARTAMENTOS

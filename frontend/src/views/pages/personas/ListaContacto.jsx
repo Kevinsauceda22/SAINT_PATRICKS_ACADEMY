@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react'; 
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilBrushAlt , cilXCircle, cilCheckCircle,  cilSave, cilArrowLeft } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilBrushAlt , cilXCircle, cilCheckCircle, cilUser,  cilSave, cilArrowLeft } from '@coreui/icons';
 import swal from 'sweetalert2';
 import axios from 'axios'; 
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom'
 import '@fortawesome/fontawesome-free/css/all.min.css';
-import 'react-phone-number-input/style.css';
-import PhoneInput from 'react-phone-number-input';
+import ExcelJS from 'exceljs';
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
+import { getCountryCallingCode, isValidNumber } from "libphonenumber-js";
 import {
   CButton,
   CContainer,
@@ -57,6 +59,9 @@ const ListaContacto = () => {
   const [personas, setPersonas] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const [errorMessages, setErrorMessages] = useState({});
+
+
   
 
 // Filtrar contactos por cod_persona
@@ -85,6 +90,16 @@ const ListaContacto = () => {
     navigate('/ListaPersonas');
   };
 
+  const abrirFichaPadre = (persona) => {
+    if (!persona || Object.keys(persona).length === 0) {
+      console.error('Error: No hay persona seleccionada.');
+      return;
+    }
+  
+    console.log('Persona seleccionada para ficha de estudiante:', persona); // Verificación correcta
+    navigate('/ListaFichaPadre', { state: { personaSeleccionada: persona } });
+  };
+
   useEffect(() => {
     console.log(personaSeleccionada);
   }, [personaSeleccionada]);
@@ -100,11 +115,25 @@ useEffect(() => {
 }, []);
 
 
+{/********************************************************************************************************************************************/}
+function validarTelefono(value, country) {
+  if (!value || !country) return false;
+
+  try {
+    return isValidNumber(value, country); // Verifica si el número es válido según el país
+  } catch {
+    return false;
+  }
+}
+
+
 {/*******************************************************************************************************************/}
   useEffect(() => {
     fetchContactos();
     fetchTiposContacto(); // Llamar a la función para cargar los tipos de contacto al montar el componente
   }, []);
+
+  {/*********************************************************************************************************************************************/}
 
   useEffect(() => {
     if (!modalVisible) { // Cuando el modal se cierra (modalVisible = false)
@@ -128,7 +157,9 @@ useEffect(() => {
       console.error('Error fetching contactos:', error);
     }
   };
-  
+
+
+  {/********************************************************************************************************************************************/}
   const fetchTiposContacto = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/tipoContacto/verTodoTipoContacto');
@@ -504,35 +535,70 @@ const toggleEstado = async (contacto) => {
     };
   };
   
-
-  const ReporteContactoExcel = () => {
-    if (!filteredContacto || filteredContacto.length === 0) {
+{/***********************************************************************************************************************************************/}
+const ReporteContactoExcel = () => {
+  if (!filteredContacto || filteredContacto.length === 0) {
       alert('No hay datos para exportar.');
       return;
-    }
-  
-    // Crear los datos de la tabla en formato de objeto
-    const tableRows = filteredContacto.map((contacto, index) => ({
-      '#': (index + 1).toString(),
-      'NOMBRE': personaSeleccionada && personaSeleccionada.cod_persona === contacto.cod_persona
-        ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}`
-        : 'Información no disponible',
-      'TIPO DE CONTACTO': tiposContacto.find(tc => tc.cod_tipo_contacto === contacto.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido',
-      'VALOR': contacto.Valor || 'N/D',
-    }));
-  
-    // Crear un libro de trabajo (workbook)
-    const wb = XLSX.utils.book_new();
-  
-    // Convertir los datos en una hoja de trabajo (worksheet)
-    const ws = XLSX.utils.json_to_sheet(tableRows);
-  
-    // Agregar la hoja de trabajo al libro
-    XLSX.utils.book_append_sheet(wb, ws, 'Reporte de Contactos');
-  
-    // Exportar el archivo Excel
-    XLSX.writeFile(wb, 'Reporte_Contactos.xlsx');
-  };
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Reporte de Contactos');
+
+  // **Título del documento**
+  worksheet.mergeCells('A1:D1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:D2');
+  worksheet.getCell('A2').value = 'LISTA DE CONTACTOS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // **Encabezados de la tabla**
+  const headerRow = worksheet.addRow(['#', 'Nombre', 'Tipo de Contacto', 'Valor']);
+  headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // **Datos de la tabla**
+  filteredContacto.forEach((contacto, index) => {
+      const row = worksheet.addRow([
+          index + 1,
+          personaSeleccionada && personaSeleccionada.cod_persona === contacto.cod_persona
+              ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}`
+              : 'Información no disponible',
+          tiposContacto.find(tc => tc.cod_tipo_contacto === contacto.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido',
+          contacto.Valor || 'N/D'
+      ]);
+
+      row.eachCell((cell) => {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+              top: { style: 'thin', color: { argb: '000000' } },
+              left: { style: 'thin', color: { argb: '000000' } },
+              bottom: { style: 'thin', color: { argb: '000000' } },
+              right: { style: 'thin', color: { argb: '000000' } }
+          };
+      });
+  });
+
+  // **Ajustar el ancho de las columnas**
+  worksheet.columns.forEach((column) => {
+      column.width = 25;
+  });
+
+  // **Crear archivo Excel**
+  workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'Reporte_Contactos.xlsx');
+  });
+};
+
+  {/***********************************************************************************************************************************************/}
   
 
   return (
@@ -570,8 +636,15 @@ const toggleEstado = async (contacto) => {
     </CButton>
   </CCol>
 
-  {/* Botones alineados a la derecha */}
+  {/* Botones alineados a la derecha: Ficha, Nuevo y Reporte */}
   <CCol xs="12" md="9" className="d-flex justify-content-end gap-3">
+    <CButton
+      style={{ backgroundColor: '#346B93', color: 'white', minWidth: '120px', height: '38px' }}
+      onClick={() => abrirFichaPadre(personaSeleccionada)}
+    >
+      <CIcon icon={cilUser} /> Ficha
+    </CButton>
+
     <CButton
       style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px', height: '38px' }}
       onClick={() => {
@@ -593,6 +666,7 @@ const toggleEstado = async (contacto) => {
     </CDropdown>
   </CCol>
 </CRow>
+
 
 {/* Barra de búsqueda */}
 <CRow className="align-items-center mt-3 mb-2">
@@ -788,13 +862,18 @@ const toggleEstado = async (contacto) => {
   {Number(nuevoContacto.cod_tipo_contacto) === 1 || Number(nuevoContacto.cod_tipo_contacto) === 2 ? (
     <PhoneInput
       international
-      defaultCountry="HN"  // Asegúrate de poner el país adecuado como predeterminado
-      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor} // Usar ?? en lugar de ||
+      defaultCountry="HN"
+      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor}
       onChange={(value) => {
+        const phoneDigits = value.replace(/\D/g, '');
+        
+        // **Bloquear más de 15 dígitos sin contar código de país**
+        if (phoneDigits.length > 15) return;
+
         if (contactoToUpdate) {
-          setContactoToUpdate((prev) => ({ ...prev, Valor: value })); // Usar función actualizadora
+          setContactoToUpdate((prev) => ({ ...prev, Valor: value }));
         } else {
-          setNuevoContacto((prev) => ({ ...prev, Valor: value })); // Usar función actualizadora
+          setNuevoContacto((prev) => ({ ...prev, Valor: value }));
         }
       }}
       className="border-0"
@@ -802,13 +881,28 @@ const toggleEstado = async (contacto) => {
   ) : (
     <CFormInput
       placeholder={nuevoContacto.cod_tipo_contacto === 'EMAIL' ? 'EMAIL' : 'Valor'}
-      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor} // Usar ?? en lugar de ||
+      value={contactoToUpdate?.Valor ?? nuevoContacto.Valor}
       onChange={(e) => {
-        let value = e.target.value.slice(0, 50);
-        if (/(\s{2,})/.test(value)) return;
+        let value = e.target.value.slice(0, 50).trim();
 
-        if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/\S+@\S+\.\S+/.test(value)) {
+        // **Si el tipo de contacto cambia a EMAIL, limpiar el campo**
+        if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && contactoToUpdate?.Valor?.startsWith('+')) {
+          setContactoToUpdate((prev) => ({ ...prev, Valor: '' }));
+          setNuevoContacto((prev) => ({ ...prev, Valor: '' }));
           return;
+        }
+
+        if (nuevoContacto.cod_tipo_contacto === 'EMAIL' && !/^[a-zA-Z0-9]{4,}@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            email: 'El correo debe tener al menos 4 caracteres antes del "@", sin caracteres especiales y con un dominio válido.'
+          }));
+          return;
+        } else {
+          setErrorMessages((prevErrors) => ({
+            ...prevErrors,
+            email: ''
+          }));
         }
 
         if (contactoToUpdate) {
@@ -821,6 +915,16 @@ const toggleEstado = async (contacto) => {
     />
   )}
 </div>
+
+<style jsx>{`
+  .error-message {
+    color: red;
+    font-size: 12px;
+    margin-top: 4px;
+    margin-bottom: 0;
+    margin-left: 12px;
+  }
+`}</style>
 
   {/* Campo de Principal */}
   <div className="col-md-6">

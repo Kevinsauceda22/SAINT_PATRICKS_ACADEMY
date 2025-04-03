@@ -2,6 +2,7 @@ import express from 'express';
 import {
         obtenerPersonas,
         obtenerFichaEstudiante,
+        obtenerFichaPadre,
         obtenerDepartamentos,
         obtenerMunicipiosConDepartamento,
         obtenerTipoPersona,
@@ -18,8 +19,11 @@ const router = express.Router();
 //Ruta para obtener todas las personas
 router.get('/verPersonas', obtenerPersonas);
 
-//Ruta para obtener todas las personas
+//Ruta para obtener Ficha de estudiante
 router.get('/verFichaEstudiante/:cod_persona', obtenerFichaEstudiante);
+
+//Ruta para obtener Ficha de padre
+router.get('/verFichaPadre/:cod_persona', obtenerFichaPadre);
 
 //Ruta para obtener todos los departamentos
 router.get('/verDepartamentos', obtenerDepartamentos);
