@@ -10,7 +10,7 @@ import {
 const router = express.Router();
 
 // Ruta para obtener todos los contactos
-router.get('/verTodosContactos', obtenerTodosContactos);
+router.get('/verTodosContactos', obtenerTodosContactos);        
 
 // Ruta para crear un contacto
 router.post('/crearContacto', crearContacto);
@@ -24,4 +24,4 @@ router.post('/actualizarEstadoContacto', actualizarEstadoContacto);
 // Ruta para eliminar un contacto
 router.delete('/eliminarContacto/:cod_contacto', eliminarContacto);
 
-export default router;
+export default router;  

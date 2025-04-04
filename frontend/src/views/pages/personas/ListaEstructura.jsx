@@ -79,6 +79,12 @@ const ListaEstructura = () => {
   const [codPersonaSeleccionada, setCodPersonaSeleccionada] = useState('');
   const [filterEstructuraFamiliar, setFilterEstructuraFamiliar] = useState([]);
 
+  // Nuevo estado para evitar que el dropdown se abra al cargar el modal
+  const [userHasTyped, setUserHasTyped] = useState(false);
+
+
+
+
 
   const [tipoPersona, setTipoPersona] = useState([]);
 
@@ -86,8 +92,6 @@ const ListaEstructura = () => {
   const [codPersona, setCodPersona] = useState('');
 
 
-
-  
   // Navegación y ubicación
 
   const volverAListaPersonas = () => {
@@ -97,8 +101,9 @@ const ListaEstructura = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { personaSeleccionada } = location?.state || {};
+  const esEstudiante = personaSeleccionada?.cod_tipo_persona === 1;
 
-  // Asignar rol basado en persona seleccionada
+
   useEffect(() => {
     if (personaSeleccionada) {
       setRolActual(personaSeleccionada.cod_tipo_persona === 1 ? 'ESTUDIANTE' : 'PADRE');
@@ -108,148 +113,96 @@ const ListaEstructura = () => {
 
 {/* ------------------------------------------------------------------------------------------------------------------------------------------------- */}
 
-const fetchTipoPersona = async () => {
+
+// Función para refrescar las estructuras familiares
+const refreshEstructurasFamiliares = async () => {
+  if (!personaSeleccionada) return;
   try {
-    const response = await fetch('http://localhost:4000/api/personas/verTipoPersona')
-    const data = await response.json()
-    console.log('Datos recibidos de tipo de persona:', data)
-    setTipoPersona(data)
+    // Puedes ajustar este endpoint
+    const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
+    const datos = await response.json();
+
+    if (Array.isArray(datos)) {
+      setEstructurasFamiliares(datos);
+    } else {
+      setEstructurasFamiliares([]);
+    }
   } catch (error) {
-    console.error('Error al obtener los tipos de persona:', error)
+    console.error("Error al cargar estructuras familiares:", error);
   }
-}
+};
 
-  useEffect(() => {
-    if (personaSeleccionada) {
-      const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructurasFamiliares/${personaSeleccionada.cod_persona}`);
-        const datos = await respuesta.json();
-        setEstructurasFamiliares(datos);
-      };
-      cargarEstructurasFamiliares();
-    }
-  }, [personaSeleccionada]);
+// Efecto para cargar inicialmente y actualizar al cerrar modales
+useEffect(() => {
+  // Solo se refresca cuando la persona está seleccionada y todos los modales están cerrados
+  if (personaSeleccionada && !modalUpdateVisible && !modalVisible && !modalDeleteVisible) {
+    refreshEstructurasFamiliares();
+  }
+}, [personaSeleccionada, modalUpdateVisible, modalVisible, modalDeleteVisible]);
 
-
-
-  useEffect(() => {
-    if (modalUpdateVisible === false && personaSeleccionada) {
-      const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
-        const datos = await respuesta.json();
-  
-
-        if (Array.isArray(datos)) {
-
-          setEstructurasFamiliares(datos);
-        } else {
-
-          setEstructurasFamiliares([]);
-        }
-      };
-      cargarEstructurasFamiliares();
-    }
-  }, [modalUpdateVisible, personaSeleccionada]);
-
-
-
-  useEffect(() => {
-    if (modalVisible === false && personaSeleccionada) {
-      const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
-        const datos = await respuesta.json();
-  
-
-        if (Array.isArray(datos)) {
-
-          setEstructurasFamiliares(datos);
-        } else {
-
-          setEstructurasFamiliares([]);
-        }
-      };
-      cargarEstructurasFamiliares();
-    }
-  }, [modalVisible, personaSeleccionada]);
-
-
-  useEffect(() => {
-    if (modalDeleteVisible === false && personaSeleccionada) {
-      const cargarEstructurasFamiliares = async () => {
-        const respuesta = await fetch(`http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar/${personaSeleccionada.cod_persona}`);
-        const datos = await respuesta.json();
-  
-
-        if (Array.isArray(datos)) {
-
-          setEstructurasFamiliares(datos);
-        } else {
-
-          setEstructurasFamiliares([]);
-        }
-      };
-      cargarEstructurasFamiliares();
-    }
-  }, [modalDeleteVisible, personaSeleccionada]);
-  
-  
-  
   
 {/* -------------------------------------------------------------------------------------------------------------------------------------------- */}
 
 
-  // Cargar datos iniciales
-  useEffect(() => {
-    const cargarPersonas = async () => {
+// Carga inicial de personas desde la API
+useEffect(() => {
+  const cargarPersonas = async () => {
+    try {
       const respuesta = await fetch('http://localhost:4000/api/estructuraFamiliar/verPersonas');
       const datos = await respuesta.json();
       setPersonas(datos);
-    };
-    cargarPersonas();
-  }, []);
+    } catch (error) {
+      console.error("Error al cargar las personas:", error);
+    }
+  };
+  cargarPersonas();
+}, []);
 
-  // Filtrar personas para el buscador
-  useEffect(() => {
-    const resultados = personas.filter(
-      (persona) =>
-        persona.fullName?.toUpperCase().includes(buscadorRelacion.toUpperCase()) ||
-        persona.dni_persona?.includes(buscadorRelacion)
-    );
-    setPersonasFiltradas(resultados);
-    setIsDropdownOpen(buscadorRelacion.length > 0 && resultados.length > 0);
-  }, [buscadorRelacion, personas]);
-
-  
-{/* ------------------------------------------------------------------------------------------------------------------------------------- */}
-const handleBuscarRelacion = (e) => {
-  const filtro = e.target.value.toLowerCase();
-  setBuscadorRelacion(filtro);
-
-  if (filtro.trim() === '') {
+// Filtrado automático de personas basado en el valor del buscador
+useEffect(() => {
+  // Si el campo está vacío, se limpia la lista y se cierra el dropdown
+  if (!buscadorRelacion.trim()) {
     setPersonasFiltradas([]);
     setIsDropdownOpen(false);
     return;
   }
 
-  const filtradas = personas.filter(persona =>
-    (persona.fullName && persona.fullName.toLowerCase().includes(filtro)) ||
-    (persona.dni_persona && persona.dni_persona.includes(filtro))
-  );
+  // Si el usuario aún no ha interactuado, no se abre el dropdown
+  if (!userHasTyped) {
+    setIsDropdownOpen(false);
+    return;
+  }
 
-  setPersonasFiltradas(filtradas);
-  setIsDropdownOpen(filtradas.length > 0);
+  // Filtrar la lista de personas en función del input
+  const resultados = personas.filter((persona) =>
+    persona.fullName?.toUpperCase().includes(buscadorRelacion.toUpperCase()) ||
+    persona.dni_persona?.includes(buscadorRelacion)
+  );
+  setPersonasFiltradas(resultados);
+  setIsDropdownOpen(resultados.length > 0);
+}, [buscadorRelacion, personas, userHasTyped]);
+
+
+
+// Manejador del input de búsqueda (actualiza el estado y deja que el useEffect se encargue del filtrado)
+const handleBuscarRelacion = (e) => {
+  setUserHasTyped(true); // El usuario ya está escribiendo
+  setBuscadorRelacion(e.target.value);
 };
 
+
+// Función para seleccionar la persona del dropdown
 const handleSeleccionarPersona = (persona) => {
   setCodPersonaSeleccionada(persona.cod_persona);
+  // Actualizamos el input con el DNI y nombre completo de la persona seleccionada
   setBuscadorRelacion(`${persona.dni_persona} - ${persona.fullName}`);
+  // Dependiendo del rol, se asigna el cod_persona a la propiedad correspondiente
   setNuevaEstructuraFamiliar(prev => ({
     ...prev,
     [rolActual === 'ESTUDIANTE' ? 'cod_persona_padre' : 'cod_persona_estudiante']: persona.cod_persona,
   }));
   setIsDropdownOpen(false);
 };
-
 
 
 {/* ----------------------------------------------------------------------------------------------------------------------------------------*/}
@@ -413,27 +366,37 @@ const handleSeleccionarPersona = (persona) => {
 
 {/*************************************************Función para actualizar estructura*******************************************************/}
 const handleUpdateEstructura = async () => {
-
-
   try {
-    const response = await fetch(`http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        descripcion: estructuraToUpdate.descripcion,
-        cod_persona_padre: estructuraToUpdate.cod_persona_padre,
-        cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante,
-        cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion,
-      }),
-    });
+    const response = await fetch(
+      `http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          descripcion: estructuraToUpdate.descripcion,
+          cod_persona_padre: estructuraToUpdate.cod_persona_padre,
+          cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante,
+          cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion,
+        }),
+      }
+    );
 
     if (response.ok) {
-      fetchEstructuraFamiliar();
+      // Actualizamos la lista de estructuras familiares
+      await fetchEstructuraFamiliar();
+
+      // Cerramos el modal y reseteamos los estados relacionados
       setModalUpdateVisible(false);
       resetEstructuraToUpdate();
       setHasUnsavedChanges(false);
+
+      // Limpiamos el input de búsqueda y reiniciamos la bandera de interacción
+      setBuscadorRelacion('');
+      setUserHasTyped(false);
+      fetchEstructuraFamiliar();
+
       swal.fire({
         icon: 'success',
         title: 'Actualización exitosa',
@@ -456,15 +419,6 @@ const handleUpdateEstructura = async () => {
     });
   }
 };
-
-
-  {/* Fin de la función para actualizar estructura */}
-
-  useEffect(() => {
-    fetchEstructuraFamiliar();
-  }, []);
-
-
 
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -531,21 +485,42 @@ const handleCloseModal = (closeFunction, resetFields) => {
 
 
 const handleOpenUpdateModal = (estructura) => {
-  // Configurar la estructura a actualizar
+  if (!personas || personas.length === 0) {
+    console.error("La lista de personas está vacía o no cargó correctamente.");
+    return;
+  }
+
+  // Buscar datos de la persona estudiante y del padre en la lista
+  const estudianteEncontrado = personas.find(
+    (persona) => persona.cod_persona === estructura.cod_persona_estudiante
+  );
+  const padreEncontrado = personas.find(
+    (persona) => persona.cod_persona === estructura.cod_persona_padre
+  );
+
+  // Dependiendo del rol actual se muestra el nombre correspondiente:
+  const displayName =
+    rolActual === "ESTUDIANTE"
+      ? (padreEncontrado ? padreEncontrado.fullName : "No encontrado")
+      : (estudianteEncontrado ? estudianteEncontrado.fullName : "No encontrado");
+
   setEstructuraToUpdate({
     ...estructura,
-    descripcion: estructura.descripcion || '',
-    cod_persona_padre: estructura.cod_persona_padre || '',
-    cod_persona_estudiante: estructura.cod_persona_estudiante || '',
-    cod_tipo_relacion: estructura.cod_tipo_relacion || '',
-    Cod_genealogia: estructura.Cod_genealogia || '',
-    nombreEstudiante: personas.find(persona => persona.cod_persona === estructura.cod_persona_estudiante)?.fullName || '',
-    nombrePadre: personas.find(persona => persona.cod_persona === estructura.cod_persona_padre)?.fullName || '',
+    descripcion: estructura.descripcion || "",
+    cod_persona_padre: estructura.cod_persona_padre || "",
+    cod_persona_estudiante: estructura.cod_persona_estudiante || "",
+    cod_tipo_relacion: estructura.cod_tipo_relacion || "",
+    Cod_genealogia: estructura.Cod_genealogia || "",
+    nombreEstudiante: estudianteEncontrado ? estudianteEncontrado.fullName : "No encontrado",
+    nombrePadre: padreEncontrado ? padreEncontrado.fullName : "No encontrado",
   });
 
-  // Mostrar el modal de actualización
+  // Asigna el nombre al input sin activar el dropdown
+  setBuscadorRelacion(displayName);
+  setUserHasTyped(false); // Este valor se mantendrá hasta que el usuario comience a escribir
   setModalUpdateVisible(true);
 };
+
 
 
 
@@ -782,11 +757,20 @@ const ReporteEstructuraPDF = () => {
 
 return (
     <CContainer>
-      <CRow className="align-items-center mb-5">
-      <CCol xs="8" md="9">
-    {/* Título de la página */}
-    <h1 className="mb-0">Estructura Familiar</h1>
-    {/* Nombre de la persona seleccionada */}
+<CRow className="align-items-center mb-3">
+  <CCol xs="12" className="text-center">
+    {/* Título con línea verde alineada */}
+    <div style={{ display: 'inline-block', textAlign: 'center', position: 'relative' }}>
+      <h3 className="mb-0" style={{ fontSize: '1.5rem' }}>Estructura Familiar</h3>
+      <div style={{
+        height: '3px',
+        backgroundColor: '#4CAF50',
+        width: '100%',
+        marginTop: '5px'
+      }}></div>
+    </div>
+
+    {/* Persona seleccionada */}
     {personaSeleccionada ? (
       <div style={{ marginTop: '10px', fontSize: '16px', color: '#555' }}>
         <strong>RELACIONES DE:</strong> {personaSeleccionada 
@@ -799,70 +783,117 @@ return (
       </div>
     )}
   </CCol>
-        
-        <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
-  <CButton color="secondary" onClick={volverAListaPersonas} style={{ marginRight: '10px', minWidth: '120px' }}>
-    <CIcon icon={cilArrowLeft} /> Personas 
-  </CButton>
-  <CButton
-        style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px' }}
-        className="mb-3 mb-md-0 me-md-3"
-        onClick={handleModalOpen} // Abre el modal al hacer clic
+</CRow>
+
+<CRow className="align-items-center mt-2 mb-3">
+  {/* Botón Personas alineado a la izquierda */}
+  <CCol xs="12" md="3" className="d-flex justify-content-start mb-3 mb-md-0">
+    <CButton
+      color="secondary"
+      onClick={volverAListaPersonas}
+      style={{ minWidth: '120px', height: '38px' }}
+    >
+      <CIcon icon={cilArrowLeft} /> Personas
+    </CButton>
+  </CCol>
+
+  {/* Botones alineados a la derecha */}
+  <CCol xs="12" md="9" className="d-flex justify-content-end gap-3">
+    {esEstudiante && (
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px', height: '38px' }}
+        onClick={handleModalOpen}
       >
         <CIcon icon={cilPlus} /> Nuevo
       </CButton>
-        <CDropdown>
-          <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-            Reporte
-          </CDropdownToggle>
-          <CDropdownMenu>
-          <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
-          <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
-</CCol>
+    )}
 
-      </CRow>
-      {/* Filtro de búsqueda y selección de registros */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <CInputGroup style={{ maxWidth: '400px' }}>
-          <CInputGroupText>Buscar</CInputGroupText>
-          <CFormInput
-            placeholder="Buscar"
-            onChange={handleSearch}
-            value={searchTerm}
-          />
-          <CButton
-            style={{ backgroundColor: '#cccccc', color: 'black' }}
-            onClick={() => {
-              setSearchTerm('')
-              setCurrentPage(1)
-            }}
-          >
-            Limpiar
-          </CButton>
-        </CInputGroup>
-        <div className="d-flex align-items-center">
-          <label htmlFor="recordsPerPageSelect" className="mr-2">
-            Mostrar
-          </label>
-          <select
-            id="recordsPerPageSelect"
-            value={recordsPerPage}
-            onChange={(e) => {
-              setRecordsPerPage(Number(e.target.value))
-              setCurrentPage(1)
-            }}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={15}>15</option>
-            <option value={20}>20</option>
-          </select>
-          <span style={{ marginLeft: '10px' }}>registros</span>
-        </div>
-      </div>
-      
+    <CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
+
+{/* Filtro de búsqueda */}
+<div className="d-flex justify-content-between align-items-center mb-3">
+<CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+  {/* Barra de búsqueda con validaciones */}
+  <CInputGroup className="me-3" style={{ width: '400px' }}>
+    <CInputGroupText>
+      <CIcon icon={cilSearch} />
+    </CInputGroupText>
+    <CFormInput
+      placeholder="Buscar..."
+      value={searchTerm}
+      onChange={(e) => {
+        let value = e.target.value;
+
+        // Bloquear más de un espacio consecutivo
+        value = value.replace(/\s{2,}/g, ' ');
+
+        // Bloquear más de tres letras repetidas consecutivamente
+        value = value.replace(/([A-Za-z])\1{2,}/g, '$1$1');
+
+        // Bloquear más de tres números repetidos consecutivamente
+        value = value.replace(/([0-9])\1{2,}/g, '$1$1');
+
+        // Bloquear caracteres especiales
+        value = value.replace(/[^A-Za-z0-9\s]/g, '');
+
+        setSearchTerm(value);
+      }}
+      onPaste={(e) => e.preventDefault()} // 
+      onCopy={(e) => e.preventDefault()} // 
+    />
+    <CButton
+      style={{
+        border: '1px solid #ccc',
+        transition: 'all 0.1s ease-in-out',
+        backgroundColor: '#F3F4F7',
+        color: '#343a40'
+      }}
+      onClick={() => {
+        setSearchTerm('');
+        setCurrentPage(1);
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = '#E0E0E0';
+        e.currentTarget.style.color = 'black';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = '#F3F4F7';
+        e.currentTarget.style.color = '#343a40';
+      }}
+    >
+      <CIcon icon={cilBrushAlt} /> Limpiar
+    </CButton>
+  </CInputGroup>
+</CCol>
+  <div className="d-flex align-items-center">
+    <label htmlFor="recordsPerPageSelect">Mostrar</label>
+    <select
+      id="recordsPerPageSelect"
+      value={recordsPerPage}
+      onChange={(e) => {
+        setRecordsPerPage(Number(e.target.value))
+        setCurrentPage(1)
+      }}
+    >
+      <option value={5}>5</option>
+      <option value={10}>10</option>
+      <option value={15}>15</option>
+      <option value={20}>20</option>
+    </select>
+    <span style={{ marginLeft: '10px' }}>registros</span>
+  </div>
+</div>
+
       <div className="table-container">
         <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
           <CTable striped>
@@ -882,7 +913,10 @@ return (
                 )}
                 <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo Relación</CTableHeaderCell>
                 <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
-                <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+                {esEstudiante && (
+                  <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+                )}
+
               </CTableRow>
             </CTableHead>
 
@@ -923,23 +957,23 @@ return (
                     </CTableDataCell>
 
                     <CTableDataCell className="text-center">
-                      <div className="d-flex justify-content-center">
-                        {canUpdate && (
-                          <CButton
-                            color="warning"
-                            onClick={() => handleOpenUpdateModal(estructura)}
-                            style={{ marginRight: '10px' }}
-                          >
-                            <CIcon icon={cilPen} />
-                          </CButton>
-                        )}
-                        {canDelete && (
-                          <CButton color="danger" onClick={() => openDeleteModal(estructura)}>
-                            <CIcon icon={cilTrash} />
-                          </CButton>
-                        )}
-                      </div>
-                    </CTableDataCell>
+  <div className="d-flex justify-content-center">
+    {esEstudiante && canUpdate && (
+      <CButton
+        color="warning"
+        onClick={() => handleOpenUpdateModal(estructura)}
+        style={{ marginRight: '10px' }}
+      >
+        <CIcon icon={cilPen} />
+      </CButton>
+    )}
+    {esEstudiante && canDelete && (
+      <CButton color="danger" onClick={() => openDeleteModal(estructura)}>
+        <CIcon icon={cilTrash} />
+      </CButton>
+    )}
+  </div>
+</CTableDataCell>
                   </CTableRow>
                 ))
               ) : (
@@ -1149,45 +1183,44 @@ return (
 
       {/* Campo de búsqueda con lista dentro del input */}
       <div className="mb-3" style={{ position: 'relative' }}>
-        <CInputGroup className="mb-3">
-          <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
-          <CFormInput
-            type="text"
-            value={buscadorRelacion}
-            onChange={(e) => setBuscadorRelacion(e.target.value)}
-            placeholder="Buscar por DNI o nombre"
-            autoComplete="off"
-          />
-        </CInputGroup>
+  <CInputGroup className="mb-3">
+    <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
+    <CFormInput
+      type="text"
+      value={buscadorRelacion}
+      onChange={handleBuscarRelacion}  // Se utiliza el handler para activar userHasTyped
+      placeholder="Buscar por DNI o nombre"
+      autoComplete="off"
+    />
+  </CInputGroup>
 
-        {/* ✅ Lista de búsqueda aparece solo debajo del input */}
-        {isDropdownOpen && personasFiltradas.length > 0 && (
-          <div className="lista-personas" style={{ 
-            position: 'absolute', 
-            top: '100%',  
-            left: 0,  
-            width: '100%',  
-            backgroundColor: 'white',  
-            border: '1px solid #ccc',  
-            zIndex: 999,  
-            maxHeight: '200px',  
-            overflowY: 'auto',  
-            boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',  
-          }}>
-            {personasFiltradas.map(persona => (
-              <div
-                key={persona.cod_persona}
-                className="lista-item"
-                style={{ padding: '8px', cursor: 'pointer' }}
-                onClick={() => handleSeleccionarPersona(persona)}
-              >
-                {persona.dni_persona} - {persona.fullName}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
+  {/* Lista de búsqueda aparece solo debajo del input */}
+  {isDropdownOpen && personasFiltradas.length > 0 && (
+    <div className="lista-personas" style={{
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      width: '100%',
+      backgroundColor: 'white',
+      border: '1px solid #ccc',
+      zIndex: 999,
+      maxHeight: '200px',
+      overflowY: 'auto',
+      boxShadow: '0px 4px 6px rgba(0,0,0,0.1)',
+    }}>
+      {personasFiltradas.map(persona => (
+        <div
+          key={persona.cod_persona}
+          className="lista-item"
+          style={{ padding: '8px', cursor: 'pointer' }}
+          onClick={() => handleSeleccionarPersona(persona)}
+        >
+          {persona.dni_persona} - {persona.fullName}
+        </div>
+      ))}
+    </div>
+  )}
+</div>
       {/* Resto del formulario */}
       <CInputGroup className="mt-3">
         <CInputGroupText>Tipo Relación</CInputGroupText>

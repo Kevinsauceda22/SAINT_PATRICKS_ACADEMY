@@ -491,38 +491,39 @@ const handleUpdateProcedenciaEstudiante = async () => {
 
 {/***************************************************************************************************************************************/}
 
-    const handleDeleteRelacion = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:4000/api/tipoRelacion/eliminarTipoRelacion/${encodeURIComponent(tipoRelacionToDelete.Cod_tipo_relacion)}`,
-          {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-  
-        if (response.ok) {
-          fetchTipoRelacion();
-          setModalDeleteVisible(false);
-          setTipoRelacionToDelete({});
-          swal.fire({
-            icon: 'success',
-            title: 'Eliminación exitosa',
-            text: 'La relación ha sido eliminado correctamente.',
-          });
-        } else {
-          swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: 'No se pudo eliminar la relación.',
-          });
-        }
-      } catch (error) {
-        console.error('Error al eliminar la relación:', error);
+const handleDeleteProcedenciaEstudiante = async () => {
+  try {
+    const response = await fetch(
+      `http://localhost:4000/api/procedenciaEstudiante/eliminarProcedenciaEstudiante/${encodeURIComponent(procedenciaEstudianteToDelete.Cod_procedencia_estudiante)}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       }
-    };
+    );
+
+    if (response.ok) {
+      fetchProcedenciaEstudiante(); // Refresca los datos después de eliminar
+      setModalDeleteVisible(false);
+      setProcedenciaEstudianteToDelete({});
+      swal.fire({
+        icon: 'success',
+        title: 'Eliminación exitosa',
+        text: 'La procedencia del estudiante ha sido eliminada correctamente.',
+      });
+    } else {
+      swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'No se pudo eliminar la procedencia del estudiante.',
+      });
+    }
+  } catch (error) {
+    console.error('Error al eliminar la procedencia:', error);
+  }
+};
+
 {/***************************************************************************************************************************************/}
 
 const openUpdateModal = (procedenciaEstudiante) => {
@@ -897,7 +898,7 @@ const exportProcedenciaEstudianteToExcel = () => {
 
       {/* Tabla de histórico de procedencia con tamaño fijo */}
       <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
-  <CTable striped style={{ borderCollapse: 'collapse' }}> {/* ✅ Asegura que los bordes se mantengan visibles */}
+  <CTable striped style={{ borderCollapse: 'collapse' }}> 
     <CTableHead>
       <CTableRow>
         <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
@@ -915,8 +916,8 @@ const exportProcedenciaEstudianteToExcel = () => {
           <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.originalIndex}</CTableDataCell>
           <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.nombre_instituto.toUpperCase()}</CTableDataCell>
           <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.descripcion.toUpperCase()}</CTableDataCell>
-          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.año_desde}</CTableDataCell> {/* ✅ Corregido */}
-          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.año_hasta}</CTableDataCell> {/* ✅ Corregido */}
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.año_desde}</CTableDataCell> 
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{procedencia.año_hasta}</CTableDataCell>
           <CTableDataCell className="text-center">
             <div className="d-flex justify-content-center">
               {canUpdate && (
@@ -1198,7 +1199,26 @@ const exportProcedenciaEstudianteToExcel = () => {
 
 
 {/********************************************************************************************************************************************************/}
+{/* Modal Eliminar Procedencia Estudiante */}
+<CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+  <CModalHeader>
+    <CModalTitle>Eliminar Procedencia Estudiante</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    ¿Estás seguro de que deseas eliminar la procedencia "{procedenciaEstudianteToDelete.nombre_instituto}"?
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+      Cancelar
+    </CButton>
+    <CButton color="danger" onClick={handleDeleteProcedenciaEstudiante}>
+      Eliminar
+    </CButton>
+  </CModalFooter>
+</CModal>
 
+
+{/*****************************************************************************************************************************************************/}
 
       </CContainer>
     );

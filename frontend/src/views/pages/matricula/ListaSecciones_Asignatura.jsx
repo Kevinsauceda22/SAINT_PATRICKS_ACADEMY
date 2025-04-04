@@ -300,7 +300,7 @@ const handleInsertModalOpen = () => {
     ]);
   };
   
-
+{/*********************************************************************************************************************************************/}
   const handleEditClick = (horarios) => {
     if (!Array.isArray(horarios) || horarios.length === 0) {
       console.error('No se pasaron horarios válidos:', horarios);
@@ -327,7 +327,7 @@ const handleInsertModalOpen = () => {
     setModalUpdateVisible(true);
   };
   
-
+{/************************************************************************************************************************************************/}
   const handleUpdateChange = (rowIndex, field, value) => {
     setHorarioToUpdate((prevHorarios) => {
       const updatedHorarios = [...prevHorarios];

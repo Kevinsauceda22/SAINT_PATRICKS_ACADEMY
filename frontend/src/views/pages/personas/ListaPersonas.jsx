@@ -1233,52 +1233,76 @@ const ReportePersonasPDF = () => {
 
 return (
     <CContainer>
-      <h1>Personas</h1>
-      {/* Botones "Nuevo" y "Reporte" alineados arriba */}
-      <div className="d-flex justify-content-end mb-3">
-        <CButton
-          style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '10px' }}
-          onClick={() => {
-            openAddModal(true)
-          }}
-        >
-          + Nueva
-        </CButton>
-        <CDropdown>
-          <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-            Reporte
-          </CDropdownToggle>
-          <CDropdownMenu>
-          <CDropdownItem onClick={ReportePersonasPDF}>Descargar en PDF</CDropdownItem>
-          <CDropdownItem onClick={ReportePersonasExcel}>Descargar en Excel</CDropdownItem>
-          </CDropdownMenu>
-        </CDropdown>
-      </div>
-{/* Contenedor de la barra de búsqueda y el selector dinámico */}
-<CRow className="align-items-center mt-4 mb-2">
-  {/* Barra de búsqueda */}
+<CRow className="align-items-center mb-3">
+  <CCol xs="12" className="text-center">
+    {/* Título con contenedor para ajustar la línea verde */}
+    <div style={{ display: 'inline-block', textAlign: 'center', position: 'relative' }}>
+      <h3 className="mb-0" style={{ fontSize: '2rem' }}>Gestión de Personas</h3>
+      {/* ✅ Línea verde ajustada al ancho del título */}
+      <div style={{
+        height: '3px',
+        backgroundColor: '#4CAF50',
+        width: '100%',
+        marginTop: '5px'
+      }}></div>
+    </div>
+  </CCol>
+</CRow>
+
+
+<CRow className="align-items-center mt-2 mb-3">
+  {/* Botones "Nuevo" y "Reportes" alineados a la derecha */}
+  <CCol xs="12" md="12" className="d-flex justify-content-end gap-3">
+    {canInsert && (
+      <CButton
+        style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px', height: '38px' }}
+        onClick={() => setModalVisible(true)}
+      >
+        <CIcon icon={cilPlus} /> Nuevo
+      </CButton>
+    )}
+    <CDropdown>
+      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
+        Reportes
+      </CDropdownToggle>
+      <CDropdownMenu>
+        <CDropdownItem onClick={ReportePersonasExcel}>Descargar en Excel</CDropdownItem>
+        <CDropdownItem onClick={ReportePersonasPDF}>Descargar en PDF</CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+  </CCol>
+</CRow>
+
+{/* Barra de búsqueda y selector dinámico */}
+<CRow className="align-items-center mt-3 mb-2">
   <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
     <CInputGroup className="me-3" style={{ width: '400px' }}>
-      <CInputGroupText style={{ backgroundColor: '#F3F4F7', color: '#343a40' }}>
+      <CInputGroupText>
         <CIcon icon={cilSearch} />
       </CInputGroupText>
       <CFormInput
         placeholder="Buscar persona..."
-        onChange={handleSearch}
         value={searchTerm}
-        style={{
-          fontSize: '0.85rem',
-          backgroundColor: '#ffffff', // Fondo blanco para la entrada
-          color: '#343a40',
+        onChange={(e) => {
+          let value = e.target.value;
+
+          // Bloqueo de caracteres y espacios consecutivos
+          value = value.replace(/\s{2,}/g, ' ');
+          value = value.replace(/([A-Za-z])\1{2,}/g, '$1$1');
+          value = value.replace(/([0-9])\1{2,}/g, '$1$1');
+          value = value.replace(/[^A-Za-z0-9\s]/g, '');
+
+          setSearchTerm(value);
         }}
+        onPaste={(e) => e.preventDefault()}
+        onCopy={(e) => e.preventDefault()}
       />
       <CButton
         style={{
           border: '1px solid #ccc',
           transition: 'all 0.1s ease-in-out',
-          backgroundColor: '#F3F4F7', // Fondo gris uniforme
-          color: '#343a40',
-          fontSize: '0.85rem',
+          backgroundColor: '#F3F4F7',
+          color: '#343a40'
         }}
         onClick={() => {
           setSearchTerm('');
@@ -1297,20 +1321,12 @@ return (
       </CButton>
     </CInputGroup>
   </CCol>
-
-  {/* Selector dinámico a la par de la barra de búsqueda */}
   <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
-    <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
+    <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
       <div className="d-inline-flex align-items-center">
-        <span style={{ fontSize: '0.85rem' }}>Mostrar&nbsp;</span>
+        <span>Mostrar&nbsp;</span>
         <CFormSelect
-          style={{
-            width: '80px',
-            display: 'inline-block',
-            textAlign: 'center',
-            fontSize: '0.85rem',
-            backgroundColor: '#ffffff', // Fondo blanco también aquí
-          }}
+          style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
           onChange={(e) => {
             const value = Number(e.target.value);
             setRecordsPerPage(value);
@@ -1320,15 +1336,13 @@ return (
         >
           <option value="5">5</option>
           <option value="10">10</option>
-          <option value="15">15</option>
           <option value="20">20</option>
         </CFormSelect>
-        <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
-      </div>
+        <span>&nbsp;registros</span>
+      </div>       
     </CInputGroup>
   </CCol>
 </CRow>
-
 
 
       <div className="table-container">
@@ -1336,7 +1350,7 @@ return (
   <CTable striped bordered hover>
     <CTableHead>
       <CTableRow>
-        {['Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha de Nacimiento','Tipo de Persona', 'Principal', 'Acciones'].map((header, index) => (
+        {['Tipo Documento', 'Documentación', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha de Nacimiento','Tipo de Persona', 'Principal', 'Acciones'].map((header, index) => (
           <CTableHeaderCell key={index} style={{ fontSize: '0.85rem', textAlign: 'center' }}>
             {header}
           </CTableHeaderCell>
