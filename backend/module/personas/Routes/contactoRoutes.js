@@ -22,6 +22,7 @@ router.put('/actualizarContacto/:cod_contacto', actualizarContacto);
 router.post('/actualizarEstadoContacto', actualizarEstadoContacto);
 
 // Ruta para eliminar un contacto
-router.delete('/eliminarContacto/:cod_contacto', eliminarContacto);
+router.delete('/eliminarContacto/:cod_contacto', eliminarContacto);     
 
 export default router;  
+        

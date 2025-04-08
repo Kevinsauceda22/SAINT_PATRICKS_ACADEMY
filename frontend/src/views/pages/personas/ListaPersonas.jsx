@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
 import { cilXCircle, cilCheckCircle, cilHistory } from '@coreui/icons';
 import { jsPDF } from 'jspdf';
+import ExcelJS from 'exceljs';
 import 'jspdf-autotable';
 import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 import {
@@ -80,10 +81,7 @@ const ListaPersonas = () => {
     cod_genero: '',
 
   })
-  const [personaToUpdate, setPersonaToUpdate] = useState({
-    cod_persona: '', dni_persona: '', Nombre: '', Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '', 
-    direccion_persona: '', fecha_nacimiento: '', Estado_Persona: '', cod_tipo_persona: '', principal: '', cod_nacionalidad: '', cod_departamento: '', cod_municipio: '', cod_genero: '', 
-  });
+  const [personaToUpdate, setPersonaToUpdate] = useState({});
   const [formData, setFormData] = useState({ dni_persona: '',    Nombre: '',Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '',
      direccion_persona: '', fecha_nacimiento: '', Estado_Persona: '', cod_tipo_persona: '', cod_departamento: '',
     cod_municipio: '', cod_genero: '', principal: '',})
@@ -101,19 +99,37 @@ const ListaPersonas = () => {
   
 
 
+
+
   
   const [municipio, setMunicipio] = useState([])
+
+    //Funciones para busqueda, seleccion y edición 
   const [buscadorMunicipio, setBuscadorMunicipio] = useState(''); // Valor del input de búsqueda
   const [municipiosFiltrados, setMunicipiosFiltrados] = useState([]); // Resultados filtrados
   const [isDropdownOpenMunicipio, setIsDropdownOpenMunicipio] = useState(false); // Control del dropdown
-  const [selectedMunicipio, setSelectedMunicipio] = useState(null); // Guardar el municipio seleccionado
+
+  
+  //Funciones para busqueda, seleccion e inserción 
+  const [buscadorMunicipioNuevo, setBuscadorMunicipioNuevo] = useState(''); // Input de búsqueda para agregar
+  const [municipiosFiltradosNuevo, setMunicipiosFiltradosNuevo] = useState([]); // Resultados filtrados para agregar
+  const [isDropdownOpenMunicipioNuevo, setIsDropdownOpenMunicipioNuevo] = useState(false); // Estado del dropdown en agregar
 
   const [nacionalidad, setNacionalidad] = useState([]); // Estado para todas las nacionalidades
+
+  //Funciones para busqueda, seleccion y edición 
   const [buscadorNacionalidad, setBuscadorNacionalidad] = useState(''); // Valor del input de búsqueda
   const [nacionalidadesFiltradas, setNacionalidadesFiltradas] = useState([]); // Resultados filtrados
   const [isDropdownOpenNacionalidad, setIsDropdownOpenNacionalidad] = useState(false); // Control del dropdown
-  const [selectedNacionalidad, setSelectedNacionalidad] = useState(null); // Guardar la nacionalidad seleccionada
 
+  //Funciones para busqueda, seleccion e inserción 
+  const [buscadorNacionalidadNuevo, setBuscadorNacionalidadNuevo] = useState(''); // Input de búsqueda de nacionalidad en agregar
+  const [nacionalidadesFiltradasNuevo, setNacionalidadesFiltradasNuevo] = useState([]); // Nacionalidades filtradas en agregar
+  const [isDropdownOpenNacionalidadNuevo, setIsDropdownOpenNacionalidadNuevo] = useState(false); // Dropdown de nacionalidad en agregar
+
+  const [departamentoSeleccionado, setDepartamentoSeleccionado] = useState(null);
+
+  
   
   const currentYear = new Date().getFullYear();
   const minYear = currentYear - 90;
@@ -162,75 +178,8 @@ const ListaPersonas = () => {
   };
 
   {/* ***********************************************************FUNCIONES DE VALIDACION*****************************************************/}
-  
-
-  const handleTipoPersonaChange = (e) => {
-    const value = e.target.value;
-    setNuevaPersona((prevState) => ({ ...prevState, cod_tipo_persona: value }));
-
-    // Validación para no aceptar vacío
-    let erroresTemp = { ...errorMessages };
-    if (!value) {
-      erroresTemp.cod_tipo_persona = 'Debe seleccionar un tipo de persona.';
-    } else {
-      erroresTemp.cod_tipo_persona = '';
-    }
-    setErrorMessages(erroresTemp);
-
-    // Buscar el tipo de persona seleccionado
-    const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(value, 10));
-    
-    // Desactivar "Principal" si se selecciona "ESTUDIANTE"
-    if (tipoSeleccionado && tipoSeleccionado.Tipo === 'ESTUDIANTE') {
-      setNuevaPersona((prevState) => ({ ...prevState, principal: false }));
-    }
-  };
-
-// Expresión regular para validar solo letras y espacios
-const soloLetrasYEspaciosRegex = /^[a-zA-ZÀ-ÿ\u00f1\u00d1\s]+$/;
-// Expresión regular para detectar caracteres especiales
-const caracteresEspecialesRegex = /[^a-zA-ZÀ-ÿ\u00f1\u00d1\s]/g;
-// Expresión regular para detectar más de un espacio consecutivo
-const espacioMultiplesRegex = /\s{2,}/g;
-
-const validarCampo = (nombreCampo, valorCampo) => {
-  let errorMessage = '';
-
-  // Filtramos caracteres no permitidos (caracteres especiales)
-  let valorFiltrado = valorCampo.replace(caracteresEspecialesRegex, '');
-  
-  // Filtramos espacios consecutivos
-  valorFiltrado = valorFiltrado.replace(espacioMultiplesRegex, ' ');
-
-  // Si el valor ha cambiado, lo actualizamos en el estado
-  if (valorFiltrado !== valorCampo) {
-    setNuevaPersona((prevState) => ({
-      ...prevState,
-      [nombreCampo]: valorFiltrado,  // Actualizamos el campo con el valor filtrado
-    }));
-  }
 
   
-
-  // Limpiar el mensaje de error después de un tiempo (3 segundos)
-  if (errorMessage) {
-    setTimeout(() => {
-      setErrorMessages((prevErrors) => {
-        const newErrors = { ...prevErrors };
-        delete newErrors[nombreCampo]; // Elimina el error después del tiempo
-        return newErrors;
-      });
-    }, 3000); // Tiempo en milisegundos (3 segundos)
-  }
-};
-
-// Manejo de cambios en el formulario
-const handleChange = (e) => {
-  const { name, value } = e.target;
-  validarCampo(name, value);
-};
-
-
 // Restante del código sigue igual...
 
 // Formateo de fechas
@@ -243,18 +192,7 @@ const formatearFecha = (fecha_nacimiento) => {
   return `${year}-${month}-${day}`;
 };
 
-// Formateo y manejo de DNI
-const formatDNI = (value) => {
-  value = value.replace(/\D/g, '');
-  if (value.length <= 4) {
-    return value;
-  } else if (value.length <= 8) {
-    return `${value.slice(0, 4)}-${value.slice(4)}`;
-  } else {
-    return `${value.slice(0, 4)}-${value.slice(4, 8)}-${value.slice(8, 13)}`;
-  }
-};
-
+{/********************************************************************************************************************************************/}
 // Deshabilitar copiar y pegar
 const disableCopyPaste = (e) => {
   e.preventDefault();
@@ -265,7 +203,8 @@ const disableCopyPaste = (e) => {
   });
 };
 
-// useEffect para actualizar personaToUpdate
+{/********************************************************************************************************************************************/}
+
 useEffect(() => {
   if (personas.length > 0) {
     const fechaFormateada = formatearFecha(personas[0]?.fecha_nacimiento);
@@ -277,6 +216,77 @@ useEffect(() => {
     setFechaNacimiento(fechaFormateada);
   }
 }, [personas]);
+
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (!event.target.closest('.dropdown-container')) {
+      setIsDropdownOpenMunicipioNuevo(false);
+      setIsDropdownOpenMunicipio(false);
+      setIsDropdownOpenNacionalidadNuevo(false);
+      setIsDropdownOpenNacionalidad(false);
+    }
+  };
+
+  document.addEventListener('click', handleClickOutside);
+  
+  return () => {
+    document.removeEventListener('click', handleClickOutside);
+  };
+}, []);
+
+
+useEffect(() => {
+  setMunicipiosFiltradosNuevo(
+    departamentoSeleccionado 
+      ? municipio.filter(mun => mun.Cod_departamento === departamentoSeleccionado)
+      : municipio // ✅ Si no hay departamento, aseguramos que tenga todos los municipios
+  );
+}, [departamentoSeleccionado]);
+
+useEffect(() => {
+  setMunicipiosFiltrados(
+    personaToUpdate.cod_departamento 
+      ? municipio.filter(mun => mun.Cod_departamento === parseInt(personaToUpdate.cod_departamento)) 
+      : municipio // ✅ Si no hay departamento, usamos todos los municipios
+  );
+}, [personaToUpdate.cod_departamento]);
+
+
+
+
+useEffect(() => {
+  if (!departamentoSeleccionado) {
+    setMunicipiosFiltradosNuevo(municipio); // ✅ Si no hay departamento, usar todos los municipios
+  } else {
+    setMunicipiosFiltradosNuevo(municipio.filter(mun => mun.Cod_departamento === departamentoSeleccionado));
+  }
+}, [departamentoSeleccionado]);
+
+
+
+useEffect(() => {
+  if (nuevaPersona.cod_departamento) {
+    const municipiosFiltrados = municipio.filter(
+      (mun) => mun.Cod_departamento === parseInt(nuevaPersona.cod_departamento) // 💡 Aseguramos que el valor es un número
+    );
+
+    setMunicipiosFiltradosNuevo(municipiosFiltrados);
+    setBuscadorMunicipioNuevo(''); // 🔄 Limpiar el buscador de municipio al cambiar de departamento
+
+    console.log("🛠 Municipios filtrados según departamento:", municipiosFiltrados);
+  }
+}, [nuevaPersona.cod_departamento]); // 🔄 Se ejecuta cada vez que cambia el departamento
+
+
+useEffect(() => {
+  const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10));
+  
+  if (tipoSeleccionado && tipoSeleccionado.Tipo_persona === 'ESTUDIANTE') {
+    setNuevaPersona(prevState => ({ ...prevState, principal: false }));
+  }
+}, [nuevaPersona.cod_tipo_persona]);
+
+
 
 {/****************************************************RESETEAR FORMULARIO Y CERRAR MODAL*************************************************/}
 
@@ -294,6 +304,7 @@ const resetPersonaToUpdate = () => {
   });
 };
 
+{/**********************************************************************************************************************************************/}
 const handleCloseModal = (setModalVisible, resetData, formData = {}) => {
   const { 
     dni_persona = '', 
@@ -335,32 +346,51 @@ const handleCloseModal = (setModalVisible, resetData, formData = {}) => {
   }
 };
 
+{/********************************************************************************************************************************************/}
 
 const openUpdateModal = (persona) => {
 
-
-  console.log('Cod_nacionalidad de persona:', persona.cod_nacionalidad);
-
-  
-  // Asegúrate de que la fecha esté en el formato yyyy-MM-dd para el campo de fecha
   const fechaFormateada = persona.fecha_nacimiento ? formatearFecha(persona.fecha_nacimiento) : '';
+
+  // Obtener la nacionalidad y municipio en formato correcto
   const nacionalidadSeleccionada = nacionalidad.find(nac => nac.Cod_nacionalidad === persona.cod_nacionalidad);
-  console.log('Nacionalidad seleccionada:', nacionalidadSeleccionada);
-  setPersonaToUpdate({
-      ...persona,
-      fecha_nacimiento: fechaFormateada,
-      buscadorNacionalidad: nacionalidadSeleccionada ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}` : '',
-  
-  
-    });
-    
-  setModalUpdateVisible(true);
+  const municipioSeleccionado = municipio.find(mun => mun.Cod_municipio === persona.cod_municipio);
+
+  console.log("Nacionalidad seleccionada en el input:", nacionalidadSeleccionada);
+  console.log("Municipio seleccionado en el input:", municipioSeleccionado);
+
+  // Armar el objeto actualizado para editar
+  const updatedPersona = {
+    ...persona,
+    fecha_nacimiento: fechaFormateada,
+    buscadorNacionalidad: nacionalidadSeleccionada 
+      ? `${nacionalidadSeleccionada.Id_nacionalidad.toUpperCase()} - ${nacionalidadSeleccionada.pais_nacionalidad.toUpperCase()}` 
+      : persona.buscadorNacionalidad || '',
+    buscadorMunicipio: municipioSeleccionado 
+      ? `${municipioSeleccionado.Nombre_departamento.toUpperCase()} - ${municipioSeleccionado.Nombre_municipio.toUpperCase()}` 
+      : persona.buscadorMunicipio || '',
+  };
+
+  console.log("personaToUpdate después de inicialización:", updatedPersona);
+
+  // Actualizamos el objeto global con los datos a editar
+  setPersonaToUpdate(updatedPersona);
+
+  // ********** NUEVO **********
+  // Sincronizamos los estados locales de los inputs con los datos que se van a editar
+  setBuscadorNacionalidad(updatedPersona.buscadorNacionalidad);
+  setBuscadorMunicipio(updatedPersona.buscadorMunicipio);
+  // *****************************
+
+  // Espera un poco para que React procese los cambios, luego abre el modal
+  setTimeout(() => {
+    setModalUpdateVisible(true);
+  }, 100);
 };
 
-useEffect(() => {
-  console.log('buscadorNacionalidad:', buscadorNacionalidad);
-}, [buscadorNacionalidad]);
 
+
+{/******************************************************************************************************************************************* */}
 
 const closeUpdateModal = () => {
   handleCloseModal(setModalUpdateVisible, resetPersonaToUpdate, personaToUpdate);
@@ -385,62 +415,199 @@ const closeDetailModal = () => {
 };
 
 
-
-
-
-
 {/***********************************FUNCION PARA BUSQUEDA Y SELECCION DE NACIONALIDAD CON VALIDACIONES**************************************/}
 
 const handleBuscarNacionalidad = (e) => {
-  const filtro = e.target.value.toUpperCase(); 
-  setBuscadorNacionalidad(filtro); 
+  const filtro = e.target.value.toUpperCase();
+  setBuscadorNacionalidad(filtro);
 
-  let erroresTemp = { ...errorMessages };
-
-  // Validaciones
-  if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(filtro)) {
-    erroresTemp.nacionalidad = 'La nacionalidad solo puede contener letras, acentos y espacios.';
-  } else if (/(.)\1{2,}/.test(filtro)) { // Bloquear más de dos letras repetidas consecutivas
-    erroresTemp.nacionalidad = 'La nacionalidad no puede contener más de dos letras repetidas consecutivas.';
-  } else if (/\s{2,}/.test(filtro)) { // Bloquear más de dos espacios consecutivos
-    erroresTemp.nacionalidad = 'La nacionalidad no puede contener más de dos espacios consecutivos.';
-  } else if (!filtro.trim()) { // Bloquear valores vacíos
-    erroresTemp.nacionalidad = 'La nacionalidad no puede estar vacía.';
-    setNacionalidadesFiltradas([]); // Limpiar resultados si el filtro está vacío
-    setIsDropdownOpenNacionalidad(false); // Cerrar el dropdown
-    setErrorMessages(erroresTemp);
-    return;
-  } else {
-    erroresTemp.nacionalidad = '';
-  }
-
-  setErrorMessages(erroresTemp);
-
-  if (filtro.trim() === '') {
-    setNacionalidadesFiltradas([]); // Limpiar resultados si el filtro está vacío
-    setIsDropdownOpenNacionalidad(false); // Cerrar el dropdown
-    return;
-  }
-
-  // Filtrar las nacionalidades que coincidan con el texto en cualquier parte del id o país
-  const filtradas = nacionalidad.filter((nacionalidad) =>
-    (nacionalidad.pais_nacionalidad && nacionalidad.pais_nacionalidad.toUpperCase().includes(filtro)) ||
-    (nacionalidad.Id_nacionalidad && nacionalidad.Id_nacionalidad.toUpperCase().includes(filtro))
+  const filtradas = nacionalidad.filter((nac) =>
+    (nac.pais_nacionalidad && nac.pais_nacionalidad.toUpperCase().includes(filtro)) ||
+    (nac.Id_nacionalidad && nac.Id_nacionalidad.toUpperCase().includes(filtro))
   );
 
-  setNacionalidadesFiltradas(filtradas); // Actualizar el estado con los resultados filtrados
-  setIsDropdownOpenNacionalidad(filtradas.length > 0); // Mostrar el dropdown solo si hay resultados
+  setNacionalidadesFiltradas(filtradas);
+  setIsDropdownOpenNacionalidad(filtradas.length > 0);
+
+  console.log("Filtro aplicado:", filtro);
+  console.log("Nacionalidades filtradas:", filtradas);
 };
 
-// Función para manejar la selección de una nacionalidad
+{/********************************************************************************************************************************************/}
 const handleSeleccionarNacionalidad = (nacionalidad) => {
-  setBuscadorNacionalidad(`${nacionalidad.Id_nacionalidad.toUpperCase()} - ${nacionalidad.pais_nacionalidad.toUpperCase()}`); // Mostrar en el input
-  setSelectedNacionalidad(nacionalidad.pais_nacionalidad.toUpperCase()); // Guardar solo pais_nacionalidad para la inserción
-  setIsDropdownOpenNacionalidad(false);
-  setNuevaPersona(prev => ({ ...prev, cod_nacionalidad: nacionalidad.Cod_nacionalidad }));
+  const nuevoValor = `${nacionalidad.Id_nacionalidad.toUpperCase()} - ${nacionalidad.pais_nacionalidad.toUpperCase()}`;
 
-  console.log('Nacionalidad seleccionada:', nacionalidad.pais_nacionalidad.toUpperCase()); // ✅ Imprimir la variable correcta
+  setPersonaToUpdate(prev => {
+    const updatedPersona = {
+      ...prev,
+      cod_nacionalidad: nacionalidad.Cod_nacionalidad,
+      buscadorNacionalidad: nuevoValor,
+    };
+    
+    console.log("Persona actualizada correctamente:", updatedPersona);
+    return updatedPersona;
+  });
+
+  setBuscadorNacionalidad(nuevoValor);
+  setIsDropdownOpenNacionalidad(false);
 };
+
+{/*********************************************************************************************************************************************/}
+const handleBuscarNacionalidadNuevo = (e) => {
+  const filtro = e.target.value.toUpperCase();
+  setBuscadorNacionalidadNuevo(filtro);
+
+  const filtradas = nacionalidad.filter((nac) =>
+    (nac.pais_nacionalidad && nac.pais_nacionalidad.toUpperCase().includes(filtro)) ||
+    (nac.Id_nacionalidad && nac.Id_nacionalidad.toUpperCase().includes(filtro))
+  );
+
+  setNacionalidadesFiltradasNuevo(filtradas);
+  setIsDropdownOpenNacionalidadNuevo(filtradas.length > 0);
+
+  console.log("Filtro aplicado (agregar):", filtro);
+  console.log("Nacionalidades filtradas (agregar):", filtradas);
+};
+
+{/******************************************************************************************************************************************/}
+const handleSeleccionarNacionalidadNuevo = (nacionalidad) => {
+  const nuevoValor = `${nacionalidad.Id_nacionalidad.toUpperCase()} - ${nacionalidad.pais_nacionalidad.toUpperCase()}`;
+
+  setNuevaPersona(prev => ({
+    ...prev,
+    cod_nacionalidad: nacionalidad.Cod_nacionalidad,
+    buscadorNacionalidad: nuevoValor,
+  }));
+
+  setBuscadorNacionalidadNuevo(nuevoValor);
+  setIsDropdownOpenNacionalidadNuevo(false);
+
+  console.log("Nacionalidad asignada correctamente en agregar:", nuevoValor);
+};
+
+
+{/******************************************************************************************************************************************/}
+
+const handleSeleccionarDepartamento = (departamento) => {
+  setDepartamentoSeleccionado(departamento.Cod_departamento);
+
+  // ✅ Filtramos los municipios al cambiar el departamento y garantizamos que la lista no quede vacía
+  const municipiosFiltrados = municipio.filter(mun => mun.Cod_departamento === departamento.Cod_departamento);
+  setMunicipiosFiltrados(municipiosFiltrados);
+  setBuscadorMunicipio('');
+
+  console.log("🛠 Departamento seleccionado:", departamento.Nombre_departamento);
+  console.log("🛠 Municipios disponibles después de filtrar:", municipiosFiltrados);
+};
+
+{/*********************************************************************************************************************************************/}
+const handleSeleccionarDepartamentoUpdate = (departamento) => {
+  setDepartamentoSeleccionado(departamento.Cod_departamento);
+
+  // Filtrar los municipios del departamento seleccionado
+  const municipiosFiltrados = municipio.filter(mun => mun.Cod_departamento === departamento.Cod_departamento);
+  setMunicipiosFiltrados(municipiosFiltrados); // ✅ Usamos `setMunicipiosFiltrados` para edición
+  setBuscadorMunicipio('');
+
+  console.log("Departamento seleccionado en edición:", departamento.Nombre_departamento);
+  console.log("Municipios disponibles después de filtrar:", municipiosFiltrados);
+};
+
+
+{/***********************************FUNCION PARA BUSQUEDA Y SELECCION DE MUNICIPIO CON VALIDACIONES**************************************/}
+
+const handleBuscarMunicipio = (e) => {
+  const filtro = e.target.value.toUpperCase();
+  setBuscadorMunicipio(filtro);
+
+  if (filtro === '') {
+    // ✅ Restauramos automáticamente los municipios del departamento seleccionado
+    setMunicipiosFiltrados(
+      personaToUpdate.cod_departamento 
+        ? municipio.filter(mun => mun.Cod_departamento === parseInt(personaToUpdate.cod_departamento))
+        : municipio // 🔄 Si no hay departamento, usar todos los municipios
+    );
+    
+    setIsDropdownOpenMunicipio(true);
+    console.log("🛠 Buscador vacío, restaurando municipios originales en edición.");
+  } else {
+    // 🔄 Filtrar dentro de los municipios del departamento seleccionado
+    const filtrados = municipiosFiltrados.filter(mun =>
+      mun.Nombre_municipio.toUpperCase().includes(filtro)
+    );
+
+    setMunicipiosFiltrados(filtrados);
+    setIsDropdownOpenMunicipio(filtrados.length > 0);
+
+    console.log("🛠 Municipios filtrados después de búsqueda en edición:", filtrados);
+  }
+};
+
+
+{/*********************************************************************************************************************************************/}
+const handleSeleccionarMunicipio = (municipio) => {
+  const nuevoValor = `${municipio.Nombre_departamento.toUpperCase()} - ${municipio.Nombre_municipio.toUpperCase()}`;
+
+  setPersonaToUpdate(prev => ({
+    ...prev,
+    cod_municipio: municipio.Cod_municipio,
+    buscadorMunicipio: nuevoValor,
+  }));
+
+  setBuscadorMunicipio(nuevoValor);
+  setIsDropdownOpenMunicipio(false);
+
+  console.log("Municipio asignado correctamente en edición:", nuevoValor);
+};
+
+{/*********************************************************************************************************************************************/}
+const handleBuscarMunicipioNuevo = (e) => {
+  const filtro = e.target.value.toUpperCase();
+  setBuscadorMunicipioNuevo(filtro);
+
+  if (filtro === '') {
+    // ✅ Restauramos automáticamente los municipios del departamento seleccionado al borrar la búsqueda
+    setMunicipiosFiltradosNuevo(
+      departamentoSeleccionado 
+        ? municipio.filter(mun => mun.Cod_departamento === departamentoSeleccionado)
+        : municipio // 🔄 Si no hay departamento, usar todos los municipios
+    );
+    
+    setIsDropdownOpenMunicipioNuevo(true); 
+    console.log("🛠 Buscador vacío, restaurando municipios originales.");
+  } else {
+    // 🔄 Filtrar dentro de los municipios del departamento seleccionado
+    const filtrados = municipiosFiltradosNuevo.filter(mun =>
+      mun.Nombre_municipio.toUpperCase().includes(filtro)
+    );
+
+    setMunicipiosFiltradosNuevo(filtrados);
+    setIsDropdownOpenMunicipioNuevo(filtrados.length > 0);
+
+    console.log("🛠 Municipios filtrados después de búsqueda:", filtrados);
+  }
+};
+
+
+
+{/************************************************************************************************************************************************/}
+const handleSeleccionarMunicipioNuevo = (municipio) => {
+  const nuevoValor = `${municipio.Nombre_departamento.toUpperCase()} - ${municipio.Nombre_municipio.toUpperCase()}`;
+
+  setNuevaPersona(prev => ({
+    ...prev,
+    cod_municipio: municipio.Cod_municipio,
+    buscadorMunicipio: nuevoValor,
+  }));
+
+  setBuscadorMunicipioNuevo(nuevoValor);
+  setIsDropdownOpenMunicipioNuevo(false);
+
+  console.log("Municipio asignado correctamente en agregar:", nuevoValor);
+};
+
+
+{/******************************************************TABLAS RELACIONADAS***************************************************************/}
 
 const handleKeyPress = (e) => {
   const char = String.fromCharCode(e.which);
@@ -454,59 +621,7 @@ const handleKeyPress = (e) => {
   }
 };
 
-
-{/***********************************FUNCION PARA BUSQUEDA Y SELECCION DE MUNICIPIO CON VALIDACIONES**************************************/}
-
-const handleBuscarMunicipio = (e) => {
-  const filtro = e.target.value.toUpperCase();
-  setBuscadorMunicipio(filtro);
-
-  if (filtro.trim() === '') {
-    setMunicipiosFiltrados([]);
-    setIsDropdownOpenMunicipio(false);
-    return;
-  }
-
-  let erroresTemp = { ...errorMessages };
-
-  // Validaciones
-  if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(filtro)) {
-    erroresTemp.municipio = 'El nombre del municipio solo puede contener letras, acentos y espacios.';
-  } else if (/(.)\1{2,}/.test(filtro)) { // Bloquear más de dos letras repetidas consecutivas
-    erroresTemp.municipio = 'El nombre del municipio no puede contener más de dos letras repetidas consecutivas.';
-  } else if (/\s{2,}/.test(filtro)) { // Bloquear más de dos espacios consecutivos
-    erroresTemp.municipio = 'El nombre del municipio no puede contener más de dos espacios consecutivos.';
-  } else if (!filtro.trim()) { // Bloquear valores vacíos
-    erroresTemp.municipio = 'El nombre del municipio no puede estar vacío.';
-    setMunicipiosFiltrados([]); // Limpiar resultados si el filtro está vacío
-    setIsDropdownOpenMunicipio(false); // Cerrar el dropdown
-    setErrorMessages(erroresTemp);
-    return;
-  } else {
-    erroresTemp.municipio = '';
-  }
-
-  setErrorMessages(erroresTemp);
-
-  const filtrados = municipio.filter((municipio) =>
-    (municipio.Nombre_municipio && municipio.Nombre_municipio.toUpperCase().includes(filtro)) ||
-    (municipio.Nombre_departamento && municipio.Nombre_departamento.toUpperCase().includes(filtro))
-  );
-
-  setMunicipiosFiltrados(filtrados);
-  setIsDropdownOpenMunicipio(filtrados.length > 0);
-};
-
-const handleSeleccionarMunicipio = (municipio) => {
-  setBuscadorMunicipio(`${municipio.Nombre_municipio.toUpperCase()} - ${municipio.Nombre_departamento.toUpperCase()}`);
-  setSelectedMunicipio(municipio.Cod_municipio);
-  setNuevaPersona(prev => ({ ...prev, cod_municipio: municipio.Cod_municipio }));
-  setIsDropdownOpenMunicipio(false);
-  console.log('Municipio seleccionado:', municipio);
-};
-
-{/******************************************************TABLAS RELACIONADAS***************************************************************/}
-
+{/***************************************************************************************************************************************************/}
 const fetchPersonas = async () => {
   try {
     const response = await fetch('http://localhost:4000/api/personas/verPersonas')
@@ -530,7 +645,7 @@ const fetchPersonas = async () => {
   }
 }
 
-
+{/********************************************************************************************************************************************/}
   const fetchNacionalidad = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/nacionalidad/verTodoNacionalidad')
@@ -542,11 +657,12 @@ const fetchPersonas = async () => {
     }
   }
 
+{/*********************************************************************************************************************************************/}
 const fetchMunicipio = async () => {
   try {
     const response = await fetch('http://localhost:4000/api/personas/verMunicipios');
     const data = await response.json();
-    console.log('Datos recibidos de la API:', data);
+    console.log('Datos recibidos de municipio:', data);
 
     if (Array.isArray(data) && Array.isArray(data[0])) {
       setMunicipio(data[0]); // Usar solo el primer elemento del resultado
@@ -559,6 +675,7 @@ const fetchMunicipio = async () => {
   }
 };
 
+{/**********************************************************************************************************************************************/}
       const fetchTipoDocumento = async () => {
         try {
           const response = await fetch('http://localhost:4000/api/tipoDocumento/verTodoTipoDocumentos');
@@ -577,7 +694,7 @@ const fetchMunicipio = async () => {
       }, []);
 
   
-
+{/*********************************************************************************************************************************************/}
   const fetchDepartamentos = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/personas/verDepartamentos')
@@ -589,6 +706,7 @@ const fetchMunicipio = async () => {
     }
   }
 
+{/********************************************************************************************************************************************/}
   const fetchTipoPersona = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/personas/verTipoPersona')
@@ -600,6 +718,7 @@ const fetchMunicipio = async () => {
     }
   }
 
+{/*******************************************************************************************************************************************/}
   const fetchGeneros = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/personas/verGeneros')
@@ -610,7 +729,7 @@ const fetchMunicipio = async () => {
       console.error('Error al obtener los géneros:', error)
     }
   }
-
+{/******************************************************************************************************************************************/}
   useEffect(() => {
     fetchPersonas()
     fetchDepartamentos()
@@ -620,7 +739,7 @@ const fetchMunicipio = async () => {
     fetchGeneros()
   }, [])
 
-{/********************************************FUNCION PARA CREAR UNA PERSONA*****************************************************/}
+{/**********************************************************FUNCION PARA CREAR UNA PERSONA*****************************************************/}
 
 const handleCreatePersona = async () => {
   const errores = {};
@@ -633,7 +752,7 @@ const handleCreatePersona = async () => {
     errores.fecha_nacimiento = `La fecha debe estar entre ${añoActual - 100} y ${añoActual}.`;
   }
 
-  // ✅ Nueva validación de DNI
+  // Nueva validación de DNI
   if (/\s/.test(nuevaPersona.dni_persona)) {
     errores.dni_persona = 'El documento no debe contener espacios.';
   }
@@ -644,7 +763,7 @@ const handleCreatePersona = async () => {
     errores.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
   }
 
-  // ✅ Validaciones de nombres y apellidos
+  // Validaciones de nombres y apellidos
   const campos = [
     { campo: nuevaPersona.Nombre, nombreCampo: 'Nombre' },
     { campo: nuevaPersona.Segundo_nombre, nombreCampo: 'Segundo_nombre' },
@@ -746,125 +865,100 @@ const handleCreatePersona = async () => {
 };
 
   {/***************************************************FUNCION PARA ACTUALIZAR**************************************************************/}
-  
   const handleUpdatePersona = async () => {
-    const dniSinGuiones = personaToUpdate.dni_persona.replace(/-/g, '');
-  
-    // Realizar las validaciones antes de enviar los datos
+    console.log("=== Inicia handleUpdatePersona ===");
+
+    // Espera un poco antes de leer el estado de `personaToUpdate`
+    setTimeout(() => {
+      console.log("personaToUpdate recibido:", personaToUpdate);
+      console.log("Nacionalidad actual:", personaToUpdate.cod_nacionalidad, "| BuscadorNacionalidad:", personaToUpdate.buscadorNacionalidad);
+      console.log("Municipio actual:", personaToUpdate.cod_municipio, "| BuscadorMunicipio:", personaToUpdate.buscadorMunicipio);
+    }, 100);
     const errores = {};
   
-    // Validación de DNI
-    if (!/^\d{13}$/.test(dniSinGuiones)) {
-      errores.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
+    // Validación de fecha de nacimiento
+    const fechaIngresada = new Date(personaToUpdate.fecha_nacimiento);
+    const añoNacimiento = fechaIngresada.getFullYear();
+    const añoActual = new Date().getFullYear();
+    if (añoNacimiento < añoActual - 100 || añoNacimiento > añoActual) {
+      errores.fecha_nacimiento = `La fecha debe estar entre ${añoActual - 100} y ${añoActual}.`;
     }
   
-    const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
-    if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
-      errores.dni_persona = 'Ingrese un DNI válido. Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
+    // Validaciones para DNI
+    if (/\s/.test(personaToUpdate.dni_persona)) {
+      errores.dni_persona = 'El documento no debe contener espacios.';
+    }
+    if (/[^A-Za-z0-9]/.test(personaToUpdate.dni_persona)) {
+      errores.dni_persona = 'Solo se permiten letras y números.';
+    }
+    if (/(.)\1{10,}/.test(personaToUpdate.dni_persona)) {
+      errores.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
     }
   
-    const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
-    const currentYear = new Date().getFullYear();
-    const minYear = currentYear - 90;
-    const maxYear = currentYear - 4;
-  
-    if (añoNacimientoDNI < minYear || añoNacimientoDNI > maxYear) {
-      errores.dni_persona = `Ingrese un DNI válido. El año debe estar entre ${minYear} y ${maxYear}.`;
-    }
-  
-    // Validaciones de campos de texto
+    // Validaciones de nombres y apellidos
     const campos = [
       { campo: personaToUpdate.Nombre, nombreCampo: 'Nombre' },
+      { campo: personaToUpdate.Segundo_nombre, nombreCampo: 'Segundo nombre' },
       { campo: personaToUpdate.Primer_apellido, nombreCampo: 'Primer apellido' },
-      // Añadir más campos si es necesario
+      { campo: personaToUpdate.Segundo_apellido, nombreCampo: 'Segundo apellido' },
     ];
-  
     campos.forEach(({ campo, nombreCampo }) => {
       if (!campo || campo.length < 2 || campo.length > 50) {
         errores[nombreCampo] = `${nombreCampo} debe tener entre 2 y 50 caracteres.`;
       }
     });
   
-    if (!personaToUpdate.fecha_nacimiento || personaToUpdate.fecha_nacimiento === '') {
-      errores.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
-    } else {
-      const fechaNacimiento = new Date(personaToUpdate.fecha_nacimiento);
-      const añoNacimiento = fechaNacimiento.getFullYear();
-      const mesNacimiento = ('0' + (fechaNacimiento.getMonth() + 1)).slice(-2);
-      const diaNacimiento = ('0' + fechaNacimiento.getDate()).slice(-2);
-      const fechaFormateada = `${añoNacimiento}-${mesNacimiento}-${diaNacimiento}`;
-  
-      personaToUpdate.fecha_nacimiento = fechaFormateada;
-  
-      if (añoNacimiento < minYear || añoNacimiento > maxYear) {
-        errores.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
-      }
-    }
-  
-    // Validaciones para campos de selección
-    const selectFields = [
-      { field: personaToUpdate.cod_genero, fieldName: 'cod_genero', errorMessage: 'Debe seleccionar un género.' },
-      { field: personaToUpdate.cod_tipo_persona, fieldName: 'cod_tipo_persona', errorMessage: 'Debe seleccionar un tipo de persona.' },
-      { field: personaToUpdate.cod_nacionalidad, fieldName: 'cod_nacionalidad', errorMessage: 'Debe seleccionar una nacionalidad.' },
-      { field: personaToUpdate.cod_departamento, fieldName: 'cod_departamento', errorMessage: 'Debe seleccionar un departamento.' },
-      { field: personaToUpdate.cod_municipio, fieldName: 'cod_municipio', errorMessage: 'Debe seleccionar un municipio.' },
+    // Validaciones de campos requeridos
+    const camposRequeridos = [
+      { campo: personaToUpdate.tipo_documento, nombreCampo: 'tipo_documento' },
+      { campo: personaToUpdate.cod_genero, nombreCampo: 'cod_genero' },
+      { campo: personaToUpdate.cod_tipo_persona, nombreCampo: 'cod_tipo_persona' },
+      { campo: personaToUpdate.cod_nacionalidad, nombreCampo: 'cod_nacionalidad' },
+      { campo: personaToUpdate.cod_departamento, nombreCampo: 'cod_departamento' },
+      { campo: personaToUpdate.cod_municipio, nombreCampo: 'cod_municipio' },
+      { campo: personaToUpdate.fecha_nacimiento, nombreCampo: 'fecha_nacimiento' },
     ];
-  
-    selectFields.forEach(({ field, fieldName, errorMessage }) => {
-      if (!field || field === '') {
-        errores[fieldName] = errorMessage;
+    camposRequeridos.forEach(({ campo, nombreCampo }) => {
+      if (!campo || campo === '') {
+        errores[nombreCampo] = `Debe seleccionar ${nombreCampo.replace('_', ' ')}.`;
       }
     });
   
     if (Object.keys(errores).length > 0) {
-      setErrorMessages(errores);  // Actualizar el estado de errores
-      setIsSubmitting(false);
-      return;  // Si hay errores, no continuar con la solicitud
+      console.log("Errores de validación:", errores);
+      setErrorMessages(errores);
+      return;
     }
   
-    // Log para verificar los datos antes de enviar
-    console.log('Datos a enviar:', {
+    const datosEnviar = {
       cod_persona: personaToUpdate.cod_persona,
-      dni_persona: dniSinGuiones,
+      dni_persona: personaToUpdate.dni_persona,
+      tipo_documento: personaToUpdate.tipo_documento,
       Nombre: personaToUpdate.Nombre,
       Segundo_nombre: personaToUpdate.Segundo_nombre,
       Primer_apellido: personaToUpdate.Primer_apellido,
       Segundo_apellido: personaToUpdate.Segundo_apellido,
       direccion_persona: personaToUpdate.direccion_persona,
       fecha_nacimiento: personaToUpdate.fecha_nacimiento,
-      Estado_Persona: personaToUpdate.Estado_Persona,
+      principal: personaToUpdate.principal,
       cod_tipo_persona: personaToUpdate.cod_tipo_persona,
       cod_nacionalidad: personaToUpdate.cod_nacionalidad,
       cod_departamento: personaToUpdate.cod_departamento,
       cod_municipio: personaToUpdate.cod_municipio,
       cod_genero: personaToUpdate.cod_genero,
-      principal: personaToUpdate.principal,
-    });
+    };
+  
+    console.log("Datos a enviar para actualizar :", datosEnviar);
   
     try {
-      const response = await fetch(`http://localhost:4000/api/persona/actualizarPersona/${personaToUpdate.cod_persona}`, {
+      const response = await fetch(`http://localhost:4000/api/personas/actualizarPersona/${personaToUpdate.cod_persona}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          cod_persona: personaToUpdate.cod_persona,
-          dni_persona: dniSinGuiones,
-          Nombre: personaToUpdate.Nombre,
-          Segundo_nombre: personaToUpdate.Segundo_nombre,
-          Primer_apellido: personaToUpdate.Primer_apellido,
-          Segundo_apellido: personaToUpdate.Segundo_apellido,
-          direccion_persona: personaToUpdate.direccion_persona,
-          fecha_nacimiento: personaToUpdate.fecha_nacimiento,
-          Estado_Persona: personaToUpdate.Estado_Persona,
-          cod_tipo_persona: personaToUpdate.cod_tipo_persona,
-          cod_nacionalidad: personaToUpdate.cod_nacionalidad,
-          cod_departamento: personaToUpdate.cod_departamento,
-          cod_municipio: personaToUpdate.cod_municipio,
-          cod_genero: personaToUpdate.cod_genero,
-          principal: personaToUpdate.principal,
-        }),
+        body: JSON.stringify(datosEnviar),
       });
   
       if (response.ok) {
+        console.log("Respuesta exitosa del servidor.");
         swal.fire({
           icon: 'success',
           title: 'Actualización exitosa',
@@ -876,15 +970,13 @@ const handleCreatePersona = async () => {
         setErrorMessages({});
       } else {
         const errorData = await response.json();
-        if (errorData.errores) {
-          setErrorMessages(errorData.errores);
-        } else {
-          swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: `No se pudo actualizar la persona. Detalle: ${errorData.mensaje}`,
-          });
-        }
+        console.log("Error en la respuesta del servidor:", errorData);
+        setErrorMessages(errorData.errores || {});
+        swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: `No se pudo actualizar la persona. Detalle: ${errorData.mensaje}`,
+        });
       }
     } catch (error) {
       console.error('Error al actualizar la persona:', error);
@@ -893,18 +985,17 @@ const handleCreatePersona = async () => {
         title: 'Error',
         text: 'Ocurrió un error al intentar actualizar la persona.',
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
   
   
   
-{/****************************************FUNCION PARA ELIMINAR ***************************************************************/}
+  
+{/*******************************************************FUNCION PARA ELIMINAR ***************************************************************/}
   const handleDeletePersona = async () => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/persona/eliminarPersona/${encodeURIComponent(personaToDelete.cod_persona)}`,
+        `http://localhost:4000/api/personas/eliminarPersona/${encodeURIComponent(personaToDelete.cod_persona)}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
@@ -914,7 +1005,7 @@ const handleCreatePersona = async () => {
       if (response.ok) {
         fetchPersonas() // Cambia esto para que recargue las personas
         setModalDeleteVisible(false)
-        swal.fire({
+        swal.fire({ 
           icon: 'success',
           title: 'Eliminación exitosa',
           text: 'La persona ha sido eliminada correctamente.',
@@ -956,7 +1047,7 @@ const toggleEstado = async (persona) => {
   }
 };
 
-  {/********************************FUNCIONES DE REPORTERIA Y BÚSQUEDA****************************************/}
+  {/***************************************************FUNCIONES DE REPORTERIA Y BÚSQUEDA******************************************************/}
   const handleSearch = (event) => {
     setSearchTerm(event.target.value)
     setCurrentPage(1)
@@ -1008,51 +1099,91 @@ const paginate = (pageNumber) => {
   }
 };
 
-  const ReportePersonasExcel = () => {
-    const datosExportar = personas.map(persona => ({
-      originalIndex: persona.originalIndex,
-      dni_persona: persona.dni_persona ? persona.dni_persona.toUpperCase() : 'N/D',
-      Nombre: persona.Nombre ? persona.Nombre.toUpperCase() : 'N/D',
-      Segundo_nombre: persona.Segundo_nombre ? persona.Segundo_nombre.toUpperCase() : 'N/D',
-      Primer_apellido: persona.Primer_apellido ? persona.Primer_apellido.toUpperCase() : 'N/D',
-      Segundo_apellido: persona.Segundo_apellido ? persona.Segundo_apellido.toUpperCase() : 'N/D',
-      direccion_persona: persona.direccion_persona ? persona.direccion_persona.toUpperCase() : 'N/D',
-      fecha_nacimiento: new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA'),
-      principal: persona.principal ? 'Sí' : 'No',
-      Estado_Persona: persona.Estado_Persona === 'A' ? 'Activo' : 'Suspendido',
-      nacionalidad: nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D',
-      departamento: departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D',
-      municipio: municipio.find((municipio) => municipio.cod_municipio === persona.cod_municipio)?.nombre_municipio.toUpperCase() || 'N/D',
-      tipo_persona: tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D',
-      genero: generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D',
-    }));
-  
-    const worksheet = XLSX.utils.json_to_sheet(datosExportar);
-  
-    // Aplicar estilos a las celdas
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    for (let col = range.s.c; col <= range.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_col(col) + "1"; // Primera fila (encabezados)
-      if (!worksheet[cellAddress]) continue;
-      worksheet[cellAddress].s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: "FFFF00" } }, // Fondo amarillo
-        alignment: { horizontal: "center", vertical: "center" },
+{/**********************************************************************************************************************************************/}
+const ReportePersonasExcel = () => {
+  if (!filteredPersonas || filteredPersonas.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Reporte de Personas');
+
+  // 🎯 **Título del documento**
+  worksheet.mergeCells('A1:K1');  
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:K2');
+  worksheet.getCell('A2').value = 'REPORTE DE PERSONAS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // 📌 **Encabezados de la tabla**
+  const headerRow = worksheet.addRow([
+    '#', 'Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 
+    'Primer Apellido', 'Segundo Apellido', 'Fecha Nacimiento', 'Tipo Persona', 'Principal', 'Estado'
+  ]);
+
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // 📊 **Datos de la tabla**
+  filteredPersonas.forEach((persona, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      tipoDocumento.find((tipo) => tipo.Cod_tipo_documento === persona.tipo_documento)?.tipo_documento.toUpperCase() || 'N/D',
+      persona.dni_persona?.toUpperCase() || 'N/D',
+      persona.Nombre?.toUpperCase() || 'N/D',
+      persona.Segundo_nombre?.toUpperCase() || 'N/D',
+      persona.Primer_apellido?.toUpperCase() || 'N/D',
+      persona.Segundo_apellido?.toUpperCase() || 'N/D',
+      new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA'),
+      tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D',
+      persona.principal ? 'SÍ' : 'NO',
+      persona.estado === 1 ? 'ACTIVO' : 'INACTIVO'
+    ]);
+
+    // 🎨 **Estilos para la columna de Estado**
+    const estadoCell = row.getCell(11);
+    estadoCell.font = {
+      bold: true,
+      color: { argb: persona.estado === 1 ? '008000' : 'FF0000' } // ✅ Verde para "ACTIVO", rojo para "INACTIVO"
+    };
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
       };
-    }
-  
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Personas');
-    const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([excelBuffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     });
-    saveAs(blob, 'reporte_personas.xlsx');
-  };
+  });
+
+  // 📏 **Ajustar el ancho de las columnas**
+  worksheet.columns.forEach((column) => {
+    column.width = 18;
+  });
+
+  // 📂 **Crear archivo Excel**
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_Personas.xlsx');
+  });
+};
+
   
+{/********************************************************************************************************************************************/}
+
 
 const ReportePersonasPDF = () => {
-  const doc = new jsPDF('l', 'mm', 'letter'); // Formato horizontal
+  const doc = new jsPDF('l', 'mm', 'letter'); // 📌 Formato horizontal
 
   if (!filteredPersonas || filteredPersonas.length === 0) {
     alert('No hay datos para exportar.');
@@ -1065,162 +1196,143 @@ const ReportePersonasPDF = () => {
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
 
-    // Encabezado
-    doc.addImage(img, 'PNG', 10, 10, 45, 45);
-    doc.setFontSize(18);
+    // 🏷️ Encabezado del documento
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
+    doc.setFontSize(14); // 📌 Reducí el tamaño del título
     doc.setTextColor(0, 102, 51);
-    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
 
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
-    // Subtítulo
-    doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
-    doc.text('Reporte de Personas', pageWidth / 2, 50, { align: 'center' });
+    doc.text('Reporte de Personas', pageWidth / 2, 40, { align: 'center' });
 
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 102, 51);
-    doc.line(10, 60, pageWidth - 10, 60);
+    doc.line(10, 45, pageWidth - 10, 45);
 
-    // Tabla de datos
-      const tableColumn = [
-        { header: '#', dataKey: 'index', width: 20 },
-        { header: 'DNI', dataKey: 'dni', width: 30 },
-        { header: 'Primer   Nombre', dataKey: 'nombre', width: 30 },
-        { header: 'Segundo Nombre', dataKey: 'segundo_nombre', width: 30 },
-        { header: 'Primer Apellido', dataKey: 'primer_apellido', width: 30 },
-        { header: 'Segundo Apellido', dataKey: 'segundo_apellido', width: 30 },
-        { header: 'Dirección', dataKey: 'direccion', width: 40 },
-        { header: 'Fecha Nacimiento', dataKey: 'fecha_nacimiento', width: 30 },
-        { header: 'Estado', dataKey: 'estado', width: 20 },
-        { header: 'Tipo Persona', dataKey: 'tipo_persona', width: 30 },
-        { header: 'Género', dataKey: 'genero', width: 25 },
-        { header: 'Principal', dataKey: 'principal', width: 20 },
-      ];
+    let startY = 50;
 
-    const tableRows = filteredPersonas.map((persona, index) => ({
-      index: (index + 1).toString(),
-      dni: persona.dni_persona?.toUpperCase() || 'N/D',
-      nombre: persona.Nombre?.toUpperCase() || 'N/D',
-      segundo_nombre: persona.Segundo_nombre?.toUpperCase() || 'N/D',
-      primer_apellido: persona.Primer_apellido?.toUpperCase() || 'N/D',
-      segundo_apellido: persona.Segundo_apellido?.toUpperCase() || 'N/D',
-      direccion: persona.direccion_persona?.toUpperCase() || 'N/D',
-      fecha_nacimiento: persona.fecha_nacimiento
-        ? new Date(persona.fecha_nacimiento).toLocaleDateString('es-ES')
-        : 'N/D',
-      estado: persona.Estado_Persona === 'A' ? 'ACTIVO' : 'SUSPENDIDO',
-      tipo_persona:
-        tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo.toUpperCase() || 'N/D',
-      genero:
-        generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D',
-      principal: persona.principal ? 'SÍ' : 'NO',
-    }));
-
+    // 🏷️ Tabla con encabezados más pequeños y columna "Estado"
     doc.autoTable({
-      startY: 65,
-      margin: { left: 3 }, // Ajusta márgenes si es necesario
-      columns: [
-        { header: '#', dataKey: 'index' },
-        { header: 'DNI', dataKey: 'dni' },
-        { header: 'Primer Nombre', dataKey: 'nombre' },
-        { header: 'Segundo Nombre', dataKey: 'segundo_nombre' },
-        { header: 'Primer Apellido', dataKey: 'primer_apellido' },
-        { header: 'Segundo Apellido', dataKey: 'segundo_apellido' },
-        { header: 'Dirección', dataKey: 'direccion' },
-        { header: 'Fecha Nacimiento', dataKey: 'fecha_nacimiento' },
-        { header: 'Estado', dataKey: 'estado' },
-        { header: 'Tipo Persona', dataKey: 'tipo_persona' },
-        { header: 'Género', dataKey: 'genero' },
-        { header: 'Principal', dataKey: 'principal' },
-      ],
-      body: tableRows,
-      headStyles: {
-        fillColor: [0, 102, 51],
-        textColor: [255, 255, 255],
-        fontSize: 7,
-        halign: 'center',
-      },
-      styles: {
-        fontSize: 6,
-        cellPadding: 3,
-      },
-      columnStyles: {
-        index: { cellWidth: 15 }, // Ajusta el ancho de cada columna aquí
-        dni: { cellWidth: 25 },
-        nombre: { cellWidth: 25 },
-        segundo_nombre: { cellWidth: 25 },
-        primer_apellido: { cellWidth: 25 },
-        segundo_apellido: { cellWidth: 25 },
-        direccion: { cellWidth: 30 },
-        fecha_nacimiento: { cellWidth: 20 },
-        estado: { cellWidth: 20 },
-        tipo_persona: { cellWidth: 25 },
-        genero: { cellWidth: 20 },
-        principal: { cellWidth: 17 },
-      },
-      alternateRowStyles: {
-        fillColor: [240, 248, 255],
-      },
-
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-        // Pie de página
-        const footerY = doc.internal.pageSize.height - 10;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51);
-        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-      },
+      startY: startY,
+      margin: { left: 10 },
+      head: [['#', 'Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha Nacimiento', 'Tipo Persona', 'Principal', 'Estado']],
+      body: filteredPersonas.map((persona, index) => [
+        { content: index + 1, styles: { halign: 'center' } }, // 🔄 Numeración
+        { content: tipoDocumento.find((tipo) => tipo.Cod_tipo_documento === persona.tipo_documento)?.tipo_documento.toUpperCase() || 'N/D', styles: { halign: 'center' } },
+        { content: persona.dni_persona?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
+        { content: persona.Nombre?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
+        { content: persona.Segundo_nombre?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
+        { content: persona.Primer_apellido?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
+        { content: persona.Segundo_apellido?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
+        { content: new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA'), styles: { halign: 'center' } },
+        { content: tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D', styles: { halign: 'center' } },
+        { content: persona.principal ? 'SÍ' : 'NO', styles: { halign: 'center' } },
+        {
+          content: persona.estado === 1 ? 'ACTIVO' : 'INACTIVO',
+          styles: {
+            halign: 'center',
+            textColor: persona.estado === 1 ? [0, 128, 0] : [255, 0, 0], // 🔄 Verde si activo, rojo si inactivo
+            fontStyle: persona.estado === 1 ? 'bold' : 'normal',
+          },
+        }
+        
+      ]),
+      headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' }, // 📌 Tamaño más pequeño
+      styles: { fontSize: 7, cellPadding: 2 }, // 📌 Filas más compactas
+      alternateRowStyles: { fillColor: [240, 248, 255] },
     });
 
-    // Convertir PDF en Blob
+    // 🎯 Pie de página con fecha y número de página
+    const now = new Date();
+    const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const pageCount = doc.internal.getNumberOfPages();
+
+    doc.setFontSize(7);
+    doc.setTextColor(0, 102, 51);
+    doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+    doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+
+    // 📄 Convertir PDF en Blob y mostrar visor
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
-
-    // Crear ventana con visor
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
-        <head><title>Reporte de Personas</title></head>
-        <body style="margin:0;">
-          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:20px;">
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Personas.pdf'; a.click();">
-              Descargar PDF
+        <head>
+          <title>Reporte de Personas</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100vw;
+              height: 100vh;
+            }
+            iframe {
+              width: 100vw;
+              height: 100vh;
+              border: none;
+            }
+            .icon-container {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              display: flex;
+              gap: 15px;
+              padding: 10px;
+              border-radius: 8px;
+            }
+            .icon-button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 22px;
+              color: white;
+              position: relative;
+              z-index: 9999; /* 🔄 Asegura que el botón esté encima */
+            }
+            /* 🔄 Eliminamos cualquier sombra que pueda interferir */
+            .icon-button:focus,
+            .icon-button:active {
+              outline: none;
+              box-shadow: none;
+            }
+          </style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+        </head>
+        <body>
+          <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+          <div class="icon-container">
+            <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Personas.pdf'; a.click();">
+              <i class="fas fa-download"></i>
             </button>
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="window.print();">
-              Imprimir PDF
+            <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+              <i class="fas fa-print"></i>
             </button>
           </div>
         </body>
-      </html>`);
+      </html>
+    `);
   };
 
   img.onerror = () => {
     alert('No se pudo cargar el logo.');
   };
 };
+
+
 
 
 {/* ************************************************************************************************************************************* */}
@@ -1402,13 +1514,9 @@ return (
               <CButton color="warning" onClick={() => openUpdateModal(persona)} style={{ fontSize: '0.75rem' }}>
                 <CIcon icon={cilPen} />
               </CButton>
-              <CButton color="danger" onClick={() => openDeleteModal(persona)} style={{ fontSize: '0.75rem' }}>
-                <CIcon icon={cilTrash} />
-              </CButton>
               <CButton color="secondary" onClick={() => abrirEstructuraFamiliarModal(persona)} style={{ fontSize: '0.75rem' }}>
                 <CIcon icon={cilPeople} />
               </CButton>
-
               {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() !== 'ESTUDIANTE' && (
                 <CButton color="primary" onClick={() => abrirContactoModal(persona)} style={{ fontSize: '0.75rem' }}>
                   <CIcon icon={cilContact} />
@@ -1433,6 +1541,9 @@ return (
               >
                 {loading ? 'Cambiando...' : persona.estado ? 'Activo' : 'Inactivo'}
               </CButton>
+              <CButton color="danger" onClick={() => openDeleteModal(persona)} style={{ fontSize: '0.75rem' }}>
+                <CIcon icon={cilTrash} />
+              </CButton>
             </div>
           </CTableDataCell>
 
@@ -1449,8 +1560,6 @@ return (
     </CTableBody>
   </CTable>
 </div>
-
-
       </div>
 {/****************************************************PAGINACION*****************************************************************/}
       <div
@@ -1487,118 +1596,122 @@ return (
         size="xl" 
       >
         <CModalHeader closeButton>
-          <CModalTitle>Agregar Persona</CModalTitle>
+          <CModalTitle>Agregar Nueva Persona</CModalTitle>
         </CModalHeader>
         <CModalBody>
           <CForm>
             <div className="row">
+            <div className="col-md-6">
 {/************************************************************COLUMNA-1*******************************************************************/}
 {/***************************************************************DNI**********************************************************************/}
-      <div className="col-md-6">
-      <div className="col-md-12">
-  <div className="col-md-12">
-    {errorMessages.tipo_documento && (
-      <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-        {errorMessages.tipo_documento}
-      </div>
-    )}
-    <CInputGroup className="mb-3">
-      <CInputGroupText>Tipo de Documento</CInputGroupText>
-      <CFormSelect
-        value={nuevaPersona.tipo_documento || ''}
-        onChange={(e) => {
-          const value = e.target.value;
 
-          // Validación en tiempo real
-          let erroresTemp = { ...errorMessages };
-          if (!value) {
-            erroresTemp.tipo_documento = 'Debe seleccionar un tipo de documento.';
-          } else {
-            erroresTemp.tipo_documento = '';
-          }
+                <div className="col-md-12">
+            <div className="col-md-12">
+              {errorMessages.tipo_documento && (
+                <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+                  {errorMessages.tipo_documento}
+                </div>
+              )}
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Tipo de Documento</CInputGroupText>
+          <CFormSelect
+            value={nuevaPersona.tipo_documento || ''}
+            onChange={(e) => {
+              const value = e.target.value;
 
-          setErrorMessages(erroresTemp);
-          setNuevaPersona({ ...nuevaPersona, tipo_documento: value });
-        }}
-        required
-        style={{ color: '#6c757d' }}
-      >
-        <option value="">Seleccione un tipo de documento</option>
-        {tipoDocumento &&
-          tipoDocumento.map((doc) => (
-            <option key={doc.Cod_tipo_documento} value={doc.Cod_tipo_documento}>
-              {doc.tipo_documento.toUpperCase()}
-            </option>
-          ))}
-      </CFormSelect>
-    </CInputGroup>
-  </div>
-</div>
+              // Validación en tiempo real
+              let erroresTemp = { ...errorMessages };
+              erroresTemp.tipo_documento = value ? '' : 'Debe seleccionar un tipo de documento.';
+
+              setErrorMessages(erroresTemp);
+              setNuevaPersona({ ...nuevaPersona, tipo_documento: value });
+            }}
+            required
+            style={{
+              color: nuevaPersona.tipo_documento ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+            }}
+          >
+            <option value="" style={{ color: '#6c757d' }}>Seleccione un tipo de documento</option>
+            {tipoDocumento &&
+              tipoDocumento.map((doc) => (
+                <option key={doc.Cod_tipo_documento} value={doc.Cod_tipo_documento} style={{ color: '#000' }}>
+                  {doc.tipo_documento.toUpperCase()}
+                </option>
+              ))}
+          </CFormSelect>
+
+              </CInputGroup>
+            </div>
+          </div>
 
 {/********************************************************************************************************************************************/}
-<div className="col-md-12">
-  {errorMessages.dni_persona && (
-    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-      {errorMessages.dni_persona}
-    </div>
-  )}
-  <CInputGroup className="mb-3">
-    <CInputGroupText>Documentación</CInputGroupText>
-    <CFormInput
-      type="text"
-      placeholder="Documento de la persona"
-      value={nuevaPersona.dni_persona}
-      onChange={(e) => {
-        let value = e.target.value.toUpperCase();
-        let erroresTemp = {};
+        <div className="col-md-12">
+          {errorMessages.dni_persona && (
+            <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+              {errorMessages.dni_persona}
+            </div>
+          )}
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Documentación</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Documento de la persona"
+          value={nuevaPersona.dni_persona || ''}
+          onChange={(e) => {
+            let value = e.target.value.toUpperCase();
+            let erroresTemp = {};
 
-        // Bloquear espacios
-        if (/\s/.test(value)) {
-          erroresTemp.dni_persona = 'El documento no debe contener espacios.';
-        }
+            // Bloquear espacios
+            if (/\s/.test(value)) {
+              erroresTemp.dni_persona = 'El documento no debe contener espacios.';
+            }
 
-        // Bloquear caracteres especiales (solo permitir alfanuméricos)
-        if (/[^A-Za-z0-9]/.test(value)) {
-          erroresTemp.dni_persona = 'Solo se permiten letras y números.';
-        }
+            // Bloquear caracteres especiales (solo permitir alfanuméricos)
+            if (/[^A-Za-z0-9]/.test(value)) {
+              erroresTemp.dni_persona = 'Solo se permiten letras y números.';
+            }
 
-        // Bloquear más de 10 repeticiones del mismo carácter en tiempo real
-        if (value.match(/(.)\1{10,}/)) {
-          erroresTemp.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
-          value = nuevaPersona.dni_persona; //No permite seguir ingresando caracteres inválidos
-        }
+            // Bloquear más de 10 repeticiones del mismo carácter en tiempo real
+            if (value.match(/(.)\1{10,}/)) {
+              erroresTemp.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
+              value = nuevaPersona.dni_persona; // No permite seguir ingresando caracteres inválidos
+            }
 
-        setNuevaPersona({ ...nuevaPersona, dni_persona: value });
-        setErrorMessages({ ...errorMessages, dni_persona: erroresTemp.dni_persona || '' });
-      }}
-      onCopy={(e) => e.preventDefault()}
-      onPaste={(e) => e.preventDefault()} 
-      onKeyDown={(e) => {
-        //Bloquear Ctrl+C, Ctrl+V, espacios y caracteres especiales
-        if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
-          e.preventDefault();
-        }
-        if (e.key === ' ') {
-          e.preventDefault();
-        }
-        if (!/^[A-Za-z0-9]$/.test(e.key) && e.key.length === 1) {
-          e.preventDefault();
-        }
+            setNuevaPersona({ ...nuevaPersona, dni_persona: value });
+            setErrorMessages({ ...errorMessages, dni_persona: erroresTemp.dni_persona || '' });
+          }}
+          style={{
+            color: nuevaPersona.dni_persona ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+          }}
+          onCopy={(e) => e.preventDefault()}
+          onPaste={(e) => e.preventDefault()} 
+          onKeyDown={(e) => {
+            // Bloquear Ctrl+C, Ctrl+V, espacios y caracteres especiales
+            if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
+              e.preventDefault();
+            }
+            if (e.key === ' ') {
+              e.preventDefault();
+            }
+            if (!/^[A-Za-z0-9]$/.test(e.key) && e.key.length === 1) {
+              e.preventDefault();
+            }
 
-        //Validar desde el teclado si ya hay 10 caracteres repetidos
-        const currentValue = nuevaPersona.dni_persona + e.key;
-        if (currentValue.match(/(.)\1{10,}/)) {
-          e.preventDefault(); 
-          setErrorMessages((prevErrors) => ({
-            ...prevErrors,
-            dni_persona: 'No se pueden repetir más de 10 veces un mismo carácter.',
-          }));
-        }
-      }}
-      required
-    />
-  </CInputGroup>
-</div>
+            // Validar desde el teclado si ya hay 10 caracteres repetidos
+            const currentValue = nuevaPersona.dni_persona + e.key;
+            if (currentValue.match(/(.)\1{10,}/)) {
+              e.preventDefault();
+              setErrorMessages((prevErrors) => ({
+                ...prevErrors,
+                dni_persona: 'No se pueden repetir más de 10 veces un mismo carácter.',
+              }));
+            }
+          }}
+          required
+        />
+
+          </CInputGroup>
+        </div>
 
 
 {/*******************************************************PRIMER NOMBRE********************************************************************/}
@@ -1613,35 +1726,33 @@ return (
             <CFormInput
               type="text"
               placeholder="Nombre"
-              value={nuevaPersona.Nombre}
+              value={nuevaPersona.Nombre || ''}
               onChange={(e) => {
                 const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+                let erroresTemp = { ...errorMessages };
+
                 // Bloquear secuencias de más de tres letras repetidas
                 if (/(.)\1{2,}/.test(value)) {
-                  setErrorMessages((prevErrors) => ({
-                    ...prevErrors,
-                    Nombre: 'El nombre no puede contener más de tres letras repetidas consecutivas.'
-                  }));
+                  erroresTemp.Nombre = 'El nombre no puede contener más de tres letras repetidas consecutivas.';
+                  setErrorMessages(erroresTemp);
                   return;
                 }
+
                 // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
                 if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                  setErrorMessages((prevErrors) => ({
-                    ...prevErrors,
-                    Nombre: 'El nombre solo puede contener letras, acentos y espacios.'
-                  }));
+                  erroresTemp.Nombre = 'El nombre solo puede contener letras, acentos y espacios.';
+                  setErrorMessages(erroresTemp);
                   return;
                 }
+
                 // Bloquear más de un espacio consecutivo
                 if (/\s{2,}/.test(value)) {
-                  setErrorMessages((prevErrors) => ({
-                    ...prevErrors,
-                    Nombre: 'El nombre no puede contener más de un espacio consecutivo.'
-                  }));
+                  erroresTemp.Nombre = 'El nombre no puede contener más de un espacio consecutivo.';
+                  setErrorMessages(erroresTemp);
                   return;
                 }
-                // Verifica si el campo está vacío
-                const erroresTemp = { ...errorMessages };
+
+                // Validación del campo vacío y tamaño mínimo
                 if (!value.trim()) {
                   erroresTemp.Nombre = 'El primer nombre no puede estar vacío.';
                 } else if (value.length < 2) {
@@ -1649,13 +1760,18 @@ return (
                 } else {
                   erroresTemp.Nombre = '';
                 }
+
                 setNuevaPersona({ ...nuevaPersona, Nombre: value });
                 setErrorMessages(erroresTemp);
+              }}
+              style={{
+                color: nuevaPersona.Nombre ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
               }}
               onCopy={disableCopyPaste}
               onPaste={disableCopyPaste}
               required
             />
+
           </CInputGroup>
         </div>
 {/*********************************************************SEGUNDO NOMBRE****************************************************************/}
@@ -1670,36 +1786,33 @@ return (
           <CFormInput
             type="text"
             placeholder="Segundo Nombre"
-            value={nuevaPersona.Segundo_nombre}
+            value={nuevaPersona.Segundo_nombre || ''}
             onChange={(e) => {
               const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+              let erroresTemp = { ...errorMessages };
 
               // Bloquear secuencias de más de tres letras repetidas
               if (/(.)\1{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Segundo_nombre: 'El segundo nombre no puede contener más de tres letras repetidas consecutivas.'
-                }));
+                erroresTemp.Segundo_nombre = 'El segundo nombre no puede contener más de tres letras repetidas consecutivas.';
+                setErrorMessages(erroresTemp);
                 return;
               }
+
               // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
               if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Segundo_nombre: 'El segundo nombre solo puede contener letras, acentos y espacios.'
-                }));
+                erroresTemp.Segundo_nombre = 'El segundo nombre solo puede contener letras, acentos y espacios.';
+                setErrorMessages(erroresTemp);
                 return;
               }
+
               // Bloquear más de un espacio consecutivo
               if (/\s{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Segundo_nombre: 'El segundo nombre no puede contener más de un espacio consecutivo.'
-                }));
+                erroresTemp.Segundo_nombre = 'El segundo nombre no puede contener más de un espacio consecutivo.';
+                setErrorMessages(erroresTemp);
                 return;
               }
-              // Verifica si el campo está vacío
-              const erroresTemp = { ...errorMessages };
+
+              // Validación del campo vacío y tamaño mínimo
               if (!value.trim()) {
                 erroresTemp.Segundo_nombre = 'El segundo nombre no puede estar vacío.';
               } else if (value.length < 2) {
@@ -1711,9 +1824,13 @@ return (
               setNuevaPersona({ ...nuevaPersona, Segundo_nombre: value });
               setErrorMessages(erroresTemp);
             }}
+            style={{
+              color: nuevaPersona.Segundo_nombre ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+            }}
             onCopy={disableCopyPaste}
             onPaste={disableCopyPaste}
           />
+
         </CInputGroup>
       </div>
 {/*****************************************************PRIMER APELLLIDO******************************************************************/}
@@ -1728,37 +1845,33 @@ return (
           <CFormInput
             type="text"
             placeholder="Primer Apellido"
-            value={nuevaPersona.Primer_apellido}
+            value={nuevaPersona.Primer_apellido || ''}
             onChange={(e) => {
               const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+              let erroresTemp = { ...errorMessages };
 
-              // Bloquear secuencias de más de tres letras repetidas en toda la cadena
+              // Bloquear secuencias de más de tres letras repetidas
               if (/(.)\1{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Primer_apellido: 'El primer apellido no puede contener más de tres letras repetidas consecutivas.'
-                }));
+                erroresTemp.Primer_apellido = 'El primer apellido no puede contener más de tres letras repetidas consecutivas.';
+                setErrorMessages(erroresTemp);
                 return;
               }
 
               // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
               if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Primer_apellido: 'El primer apellido solo puede contener letras, acentos y espacios.'
-                }));
+                erroresTemp.Primer_apellido = 'El primer apellido solo puede contener letras, acentos y espacios.';
+                setErrorMessages(erroresTemp);
                 return;
               }
+
               // Bloquear más de un espacio consecutivo
               if (/\s{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Primer_apellido: 'El primer apellido no puede contener más de un espacio consecutivo.'
-                }));
+                erroresTemp.Primer_apellido = 'El primer apellido no puede contener más de un espacio consecutivo.';
+                setErrorMessages(erroresTemp);
                 return;
               }
-              // Verifica si el campo está vacío
-              const erroresTemp = { ...errorMessages };
+
+              // Validación del campo vacío y tamaño mínimo
               if (!value.trim()) {
                 erroresTemp.Primer_apellido = 'El primer apellido no puede estar vacío.';
               } else if (value.length < 2) {
@@ -1766,73 +1879,79 @@ return (
               } else {
                 erroresTemp.Primer_apellido = '';
               }
+
               setNuevaPersona({ ...nuevaPersona, Primer_apellido: value });
               setErrorMessages(erroresTemp);
             }}
-            onCopy={disableCopyPaste}
-            onPaste={disableCopyPaste}
-            required
-          />
-        </CInputGroup>
-      </div>
-{/*******************************************************SEGUNDO APELLIDO****************************************************************/}
-      <div className="col-md-12">
-        {errorMessages.Segundo_apellido && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.Segundo_apellido}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Segundo Apellido</CInputGroupText>
-          <CFormInput
-            type="text"
-            placeholder="Segundo Apellido"
-            value={nuevaPersona.Segundo_apellido}
-            onChange={(e) => {
-              const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
-              // Bloquear secuencias de más de tres letras repetidas en toda la cadena
-              if (/(.)\1{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Segundo_apellido: 'El segundo apellido no puede contener más de tres letras repetidas consecutivas.'
-                }));
-                return;
-              }
-              // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
-              if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Segundo_apellido: 'El segundo apellido solo puede contener letras, acentos y espacios.'
-                }));
-                return;
-              }
-              // Bloquear más de un espacio consecutivo
-              if (/\s{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  Segundo_apellido: 'El segundo apellido no puede contener más de un espacio consecutivo.'
-                }));
-                return;
-              }
-              // Verifica si el campo está vacío
-              const erroresTemp = { ...errorMessages };
-              if (!value.trim()) {
-                erroresTemp.Segundo_apellido = 'El segundo apellido no puede estar vacío.';
-              } else if (value.length < 2) {
-                erroresTemp.Segundo_apellido = 'El segundo apellido debe tener al menos 2 caracteres.';
-              } else {
-                erroresTemp.Segundo_apellido = '';
-              }
-
-              setNuevaPersona({ ...nuevaPersona, Segundo_apellido: value });
-              setErrorMessages(erroresTemp);
+            style={{
+              color: nuevaPersona.Primer_apellido ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
             }}
             onCopy={disableCopyPaste}
             onPaste={disableCopyPaste}
             required
           />
+
         </CInputGroup>
       </div>
+{/*******************************************************SEGUNDO APELLIDO****************************************************************/}
+            <div className="col-md-12">
+              {errorMessages.Segundo_apellido && (
+                <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+                  {errorMessages.Segundo_apellido}
+                </div>
+              )}
+              <CInputGroup className="mb-3">
+                <CInputGroupText>Segundo Apellido</CInputGroupText>
+                <CFormInput
+                type="text"
+                placeholder="Segundo Apellido"
+                value={nuevaPersona.Segundo_apellido || ''}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+                  let erroresTemp = { ...errorMessages };
+
+                  // Bloquear secuencias de más de tres letras repetidas
+                  if (/(.)\1{2,}/.test(value)) {
+                    erroresTemp.Segundo_apellido = 'El segundo apellido no puede contener más de tres letras repetidas consecutivas.';
+                    setErrorMessages(erroresTemp);
+                    return;
+                  }
+
+                  // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+                  if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+                    erroresTemp.Segundo_apellido = 'El segundo apellido solo puede contener letras, acentos y espacios.';
+                    setErrorMessages(erroresTemp);
+                    return;
+                  }
+
+                  // Bloquear más de un espacio consecutivo
+                  if (/\s{2,}/.test(value)) {
+                    erroresTemp.Segundo_apellido = 'El segundo apellido no puede contener más de un espacio consecutivo.';
+                    setErrorMessages(erroresTemp);
+                    return;
+                  }
+
+                  // Validación del campo vacío y tamaño mínimo
+                  if (!value.trim()) {
+                    erroresTemp.Segundo_apellido = 'El segundo apellido no puede estar vacío.';
+                  } else if (value.length < 2) {
+                    erroresTemp.Segundo_apellido = 'El segundo apellido debe tener al menos 2 caracteres.';
+                  } else {
+                    erroresTemp.Segundo_apellido = '';
+                  }
+
+                  setNuevaPersona({ ...nuevaPersona, Segundo_apellido: value });
+                  setErrorMessages(erroresTemp);
+                }}
+                style={{
+                  color: nuevaPersona.Segundo_apellido ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+                }}
+                onCopy={disableCopyPaste}
+                onPaste={disableCopyPaste}
+                required
+              />
+              </CInputGroup>
+            </div>
 {/*****************************************************FECHA NACIMIENTO*****************************************************************/}
       <div className="col-md-12">
         {errorMessages.fecha_nacimiento && (
@@ -1843,33 +1962,37 @@ return (
         <CInputGroup className="mb-3">
           <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
           <CFormInput
-            type="date"
-            value={nuevaPersona.fecha_nacimiento}
-            onChange={(e) => {
-              const value = e.target.value;
-              setNuevaPersona((prevState) => ({ ...prevState, fecha_nacimiento: value }));
+          type="date"
+          value={nuevaPersona.fecha_nacimiento || ''}
+          onChange={(e) => {
+            const value = e.target.value;
+            setNuevaPersona((prevState) => ({ ...prevState, fecha_nacimiento: value }));
 
-              // Validación de la fecha de nacimiento en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value || value === '') {
-                erroresTemp.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+            // Validación de la fecha de nacimiento en tiempo real
+            let erroresTemp = { ...errorMessages };
+            if (!value || value === '') {
+              erroresTemp.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+            } else {
+              const currentYear = new Date().getFullYear();
+              const minYear = currentYear - 100;
+              const maxYear = currentYear - 4;
+              const fechaNacimiento = new Date(value);
+              const añoNacimiento = fechaNacimiento.getFullYear();
+              
+              if (añoNacimiento < minYear || añoNacimiento > maxYear) {
+                erroresTemp.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
               } else {
-                const currentYear = new Date().getFullYear();
-                const minYear = currentYear - 100;
-                const maxYear = currentYear - 4;
-                const fechaNacimiento = new Date(value);
-                const añoNacimiento = fechaNacimiento.getFullYear();
-                
-                if (añoNacimiento < minYear || añoNacimiento > maxYear) {
-                  erroresTemp.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
-                } else {
-                  erroresTemp.fecha_nacimiento = '';
-                }
+                erroresTemp.fecha_nacimiento = '';
               }
-              setErrorMessages(erroresTemp);
-            }}
-            required
-          />
+            }
+            setErrorMessages(erroresTemp);
+          }}
+          style={{
+            color: nuevaPersona.fecha_nacimiento ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+          }}
+          required
+        />
+
         </CInputGroup>
       </div>
       </div>
@@ -1888,245 +2011,289 @@ return (
         <CInputGroup className="mb-3">
           <CInputGroupText>Dirección</CInputGroupText>
           <CFormInput
-            type="text"
-            placeholder="Dirección"
-            value={nuevaPersona.direccion_persona}
-            onChange={(e) => {
-              const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
-              if (/(.)\1{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  direccion_persona: 'La dirección no puede contener más de tres letras repetidas consecutivas.'
-                }));
-                return;
-              }
-              // Permitir solo caracteres necesarios para direcciones (letras, números, guiones, espacios, puntos, comas)
-              if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-#.,]/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  direccion_persona: 'La dirección solo puede contener letras, números, acentos, espacios y caracteres como guiones, puntos y comas.'
-                }));
-                return;
-              }
-              // Bloquear más de un espacio consecutivo
-              if (/\s{2,}/.test(value)) {
-                setErrorMessages((prevErrors) => ({
-                  ...prevErrors,
-                  direccion_persona: 'La dirección no puede contener más de un espacio consecutivo.'
-                }));
-                return;
-              }
-              // Verifica si el campo está vacío
-              const erroresTemp = { ...errorMessages };
-              if (!value.trim()) {
-                erroresTemp.direccion_persona = 'La dirección no puede estar vacía.';
-              } else {
-                erroresTemp.direccion_persona = '';
-              }
-              setNuevaPersona({ ...nuevaPersona, direccion_persona: value });
+          type="text"
+          placeholder="Dirección"
+          value={nuevaPersona.direccion_persona || ''}
+          onChange={(e) => {
+            const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+            let erroresTemp = { ...errorMessages };
+
+            // Bloquear secuencias de más de tres letras repetidas
+            if (/(.)\1{2,}/.test(value)) {
+              erroresTemp.direccion_persona = 'La dirección no puede contener más de tres letras repetidas consecutivas.';
               setErrorMessages(erroresTemp);
-            }}
-            onCopy={disableCopyPaste}
-            onPaste={disableCopyPaste}
-            required
-          />
-        </CInputGroup>
-      </div>
-    </div>
+              return;
+            }
+
+            // Permitir solo caracteres necesarios para direcciones (letras, números, guiones, espacios, puntos, comas)
+            if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-#.,]/.test(value)) {
+              erroresTemp.direccion_persona = 'La dirección solo puede contener letras, números, acentos, espacios y caracteres como guiones, puntos y comas.';
+              setErrorMessages(erroresTemp);
+              return;
+            }
+
+            // Bloquear más de un espacio consecutivo
+            if (/\s{2,}/.test(value)) {
+              erroresTemp.direccion_persona = 'La dirección no puede contener más de un espacio consecutivo.';
+              setErrorMessages(erroresTemp);
+              return;
+            }
+
+            // Validación del campo vacío
+            if (!value.trim()) {
+              erroresTemp.direccion_persona = 'La dirección no puede estar vacía.';
+            } else {
+              erroresTemp.direccion_persona = '';
+            }
+
+            setNuevaPersona({ ...nuevaPersona, direccion_persona: value });
+            setErrorMessages(erroresTemp);
+          }}
+          style={{
+            color: nuevaPersona.direccion_persona ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+          }}
+          onCopy={disableCopyPaste}
+          onPaste={disableCopyPaste}
+          required
+        />
+
+                </CInputGroup>
+              </div>
+            </div>
 
 {/**********************************************************NACIONALIDAD*****************************************************************/}
-          <div className="mb-3">
-      {errorMessages.nacionalidad && (
-        <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-          {errorMessages.nacionalidad}
-        </div>
-      )}
-              <CInputGroup className="mb-3">
-                <CInputGroupText>
-                  Nacionalidad
-                </CInputGroupText>
-                <CFormInput
-                  type="text"
-                  value={buscadorNacionalidad}
-                  onKeyPress={handleKeyPress}
-                  onChange={handleBuscarNacionalidad}
-                  onCopy={disableCopyPaste}
-                  onPaste={disableCopyPaste}
-                  placeholder="Buscar por sigla de pais o letra"
-                />
-                <CButton type="button">
-                  <CIcon icon={cilSearch} />
-                </CButton>
-              </CInputGroup>
-              {isDropdownOpenNacionalidad && nacionalidadesFiltradas.length > 0 && (
-                <div className="dropdown-container" style={{ position: 'relative' }}>
-                  <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: '0', width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
-                    {nacionalidadesFiltradas.map((nacionalidad) => (
-                      <div
-                        key={nacionalidad.Cod_nacionalidad}
-                        className="dropdown-item"
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => handleSeleccionarNacionalidad(nacionalidad)}
-                      >
-                        {nacionalidad.Id_nacionalidad.toUpperCase()} - {nacionalidad.pais_nacionalidad.toUpperCase()}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+            <div className="mb-3">
+            {errorMessages.nacionalidad && (
+            <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+              {errorMessages.nacionalidad}
             </div>
-{/************************************************************DEPARTAMENTO*****************************************************************/}
-<div className="col-md-12">
-      <div className="col-md-12">
-        {errorMessages.cod_departamento && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.cod_departamento}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Departamento</CInputGroupText>
-          <CFormSelect
-            value={nuevaPersona.cod_departamento || ''}
-            onChange={(e) => {
-              const value = e.target.value;
+            )}
+            <CInputGroup className="mb-3">
+            <CInputGroupText>
+              Nacionalidad
+            </CInputGroupText>
+            <CFormInput
+              type="text"
+              value={buscadorNacionalidadNuevo || ''}
+              onKeyPress={handleKeyPress}
+              onChange={handleBuscarNacionalidadNuevo}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+              placeholder="Buscar por sigla de país o letra"
+              style={{
+                color: buscadorNacionalidadNuevo ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+              }}
+            />
+            <CButton type="button">
+              <CIcon icon={cilSearch} />
+            </CButton>
+            </CInputGroup>
 
-              // Validación en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.cod_departamento = 'Debe seleccionar un departamento.';
-              } else {
-                erroresTemp.cod_departamento = '';
-              }
-
-              setErrorMessages(erroresTemp);
-              setNuevaPersona({ ...nuevaPersona, cod_departamento: value });
-            }}
-            required
-            style={{ color: '#6c757d' }}
-          >
-            <option value="">Seleccione un departamento</option>
-            {departamentos &&
-              departamentos.map((depto) => (
-                <option key={depto.Cod_departamento} value={depto.Cod_departamento}>
-                  {depto.Nombre_departamento.toUpperCase()}
-                </option>
+            {isDropdownOpenNacionalidadNuevo && nacionalidadesFiltradasNuevo.length > 0 && (
+            <div className="dropdown-container" style={{ position: 'relative' }}>
+            <div 
+              className="dropdown-menu show" 
+              style={{
+                position: 'absolute',
+                zIndex: 999,
+                top: '100%',
+                left: '0',
+                width: '100%',
+                maxHeight: '180px',  // ✅ Limita la altura del dropdown
+                overflowY: 'auto',   // ✅ Habilita desplazamiento vertical
+                border: '1px solid #ccc',
+                borderRadius: '6px',
+                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              {nacionalidadesFiltradasNuevo.map((nacionalidad) => (
+                <div
+                  key={nacionalidad.Cod_nacionalidad}
+                  className="dropdown-item"
+                  style={{
+                    cursor: 'pointer',
+                    padding: '8px 12px', // ✅ Mejora el espacio entre elementos
+                    color: '#000', // 🔄 Ahora el texto se verá en negro
+                  }}
+                  onClick={() => handleSeleccionarNacionalidadNuevo(nacionalidad)}
+                >
+                  {nacionalidad.Id_nacionalidad.toUpperCase()} - {nacionalidad.pais_nacionalidad.toUpperCase()}
+                </div>
               ))}
-          </CFormSelect>
-        </CInputGroup>
-      </div>
-      <style jsx>{`
-        .error-message {
-          color: red;
-          font-size: 0.850rem;  /* Tamaño de texto más pequeño */
-          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px;  /* Para alinearlo con el texto del input */
-        }
-      `}</style>
-    </div>
+            </div>
+            </div>
+            )}
+            </div>
+
+
+{/************************************************************DEPARTAMENTO*****************************************************************/}
+        <div className="col-md-12">
+              <div className="col-md-12">
+                {errorMessages.cod_departamento && (
+                  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+                    {errorMessages.cod_departamento}
+                  </div>
+                )}
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>Departamento</CInputGroupText>
+                  <CFormSelect
+          value={nuevaPersona.cod_departamento || ''}
+          onChange={(e) => {
+            const value = e.target.value;
+
+            // Buscar el objeto completo del departamento seleccionado
+            const departamentoSeleccionado = departamentos.find(depto => depto.Cod_departamento === parseInt(value));
+
+            if (departamentoSeleccionado) {
+              handleSeleccionarDepartamento(departamentoSeleccionado);
+            }
+
+            // Validación en tiempo real
+            let erroresTemp = { ...errorMessages };
+            erroresTemp.cod_departamento = value ? '' : 'Debe seleccionar un departamento.';
+
+            setErrorMessages(erroresTemp);
+            setNuevaPersona({ ...nuevaPersona, cod_departamento: value });
+          }}
+          required
+          style={{
+            color: nuevaPersona.cod_departamento ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+          }}
+        >
+          <option value="" style={{ color: '#6c757d' }}>Seleccione un departamento</option>
+          {departamentos.map((depto) => (
+            <option key={depto.Cod_departamento} value={depto.Cod_departamento} style={{ color: '#000' }}>
+              {depto.Nombre_departamento.toUpperCase()}
+            </option>
+          ))}
+        </CFormSelect>
+
+
+                </CInputGroup>
+              </div>
+            </div>
 {/*****************************************************************MUNICIPIO*********************************************************************/}
         <div className="mb-3">
-        {errorMessages.municipio && (
-        <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-          {errorMessages.municipio}
-        </div>)}
+          {errorMessages.municipio && (
+            <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+              {errorMessages.municipio}
+            </div>
+          )}
           <CInputGroup className="mb-3">
             <CInputGroupText>
               Municipio
             </CInputGroupText>
             <CFormInput
               type="text"
-              value={buscadorMunicipio}
-              onChange={handleBuscarMunicipio}
+              value={buscadorMunicipioNuevo || ''}
+              onChange={handleBuscarMunicipioNuevo}
               onKeyPress={handleKeyPress}
               onCopy={disableCopyPaste}
               onPaste={disableCopyPaste}
               placeholder="Buscar por nombre del municipio"
+              style={{
+                color: buscadorMunicipioNuevo ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+              }}
             />
             <CButton type="button">
               <CIcon icon={cilSearch} />
             </CButton>
           </CInputGroup>
-          {isDropdownOpenMunicipio && municipiosFiltrados.length > 0 && (
-            <div className="dropdown-container" style={{ position: 'relative' }}>
-              <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: '0', width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
-                {municipiosFiltrados.map((municipio) => (
-                  <div
-                    key={municipio.Cod_municipio}
-                    className="dropdown-item"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleSeleccionarMunicipio(municipio)}
-                  >
-                    {municipio.Nombre_municipio.toUpperCase()} - {municipio.Nombre_departamento.toUpperCase()}
-                  </div>
-                ))}
-              </div>
+
+          {isDropdownOpenMunicipioNuevo && municipiosFiltradosNuevo.length > 0 && (
+          <div className="dropdown-container" style={{ position: 'relative' }}>
+            <div 
+              className="dropdown-menu show" 
+              style={{
+                position: 'absolute',
+                zIndex: 999,
+                top: '100%',
+                left: '0',
+                width: '100%',
+                maxHeight: '180px',  // ✅ Limita la altura del dropdown
+                overflowY: 'auto',   // ✅ Habilita desplazamiento vertical
+                border: '1px solid #ccc',
+                borderRadius: '6px',
+                boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              {municipiosFiltradosNuevo.map((municipio) => (
+                <div
+                  key={municipio.Cod_municipio}
+                  className="dropdown-item"
+                  style={{
+                    cursor: 'pointer',
+                    padding: '8px 12px', // ✅ Mejora el espacio entre elementos
+                    color: '#000', // 🔄 Ahora el texto se verá en negro
+                  }}
+                  onClick={() => handleSeleccionarMunicipioNuevo(municipio)}
+                >
+                  {municipio.Nombre_municipio.toUpperCase()} - {municipio.Nombre_departamento.toUpperCase()}
+                </div>
+              ))}
             </div>
-          )}
+          </div>
+        )}
         </div>
 
-        {/****************************************************************GÉNERO*******************************************************************/}
-    <div className="col-md-12">
-      <div className="col-md-12">
-        {errorMessages.cod_genero && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.cod_genero}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Género</CInputGroupText>
-          <CFormSelect
+
+
+{/****************************************************************GÉNERO*******************************************************************/}
+            <div className="col-md-12">
+              <div className="col-md-12">
+                {errorMessages.cod_genero && (
+                  <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+                    {errorMessages.cod_genero}
+                  </div>
+                )}
+                <CInputGroup className="mb-3">
+                  <CInputGroupText>Género</CInputGroupText>
+                  <CFormSelect
             value={nuevaPersona.cod_genero || ''}
             onChange={(e) => {
-              const value = e.target.value;
+            const value = e.target.value;
 
-              // Validación en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.cod_genero = 'Debe seleccionar un género.';
-              } else {
-                erroresTemp.cod_genero = '';
-              }
+            // Validación en tiempo real
+            let erroresTemp = { ...errorMessages };
+            erroresTemp.cod_genero = value ? '' : 'Debe seleccionar un género.';
 
-              setErrorMessages(erroresTemp);
-              setNuevaPersona({ ...nuevaPersona, cod_genero: value });
+            setErrorMessages(erroresTemp);
+            setNuevaPersona({ ...nuevaPersona, cod_genero: value });
             }}
             required
-            style={{ color: '#6c757d' }}
-          >
-            <option value="">Seleccione un género</option>
-            {generos &&
-              generos.map((genero) => (
-                <option key={genero.Cod_genero} value={genero.Cod_genero}>
-                  {genero.Tipo_genero.toUpperCase()}
-                </option>
-              ))}
-          </CFormSelect>
-        </CInputGroup>
-      </div>
-    </div>
+            style={{
+            color: nuevaPersona.cod_genero ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+            }}
+            >
+            <option value="" style={{ color: '#6c757d' }}>Seleccione un género</option>
+            {generos.map((genero) => (
+            <option key={genero.Cod_genero} value={genero.Cod_genero} style={{ color: '#000' }}>
+              {genero.Tipo_genero.toUpperCase()}
+            </option>
+            ))}
+            </CFormSelect>
+
+                </CInputGroup>
+              </div>
+            </div>
 {/**********************************************************************************************************************************************/}
 
-<div className="col-md-12">
-        {errorMessages.cod_tipo_persona && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.cod_tipo_persona}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Tipo Persona</CInputGroupText>
-          <CFormSelect
+          <div className="col-md-12">
+                  {errorMessages.cod_tipo_persona && (
+                    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+                      {errorMessages.cod_tipo_persona}
+                    </div>
+                  )}
+                  <CInputGroup className="mb-3">
+                    <CInputGroupText>Tipo Persona</CInputGroupText>
+                    <CFormSelect
             value={nuevaPersona.cod_tipo_persona || ''}
             onChange={(e) => {
               const value = e.target.value;
 
               // Validación en tiempo real
               let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.cod_tipo_persona = 'Debe seleccionar un tipo de persona.';
-              } else {
-                erroresTemp.cod_tipo_persona = '';
-              }
+              erroresTemp.cod_tipo_persona = value ? '' : 'Debe seleccionar un tipo de persona.';
 
               // Desactivar el checkbox "Principal" si el tipo de persona es "ESTUDIANTE"
               const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(value, 10));
@@ -2139,18 +2306,20 @@ return (
               setErrorMessages(erroresTemp);
             }}
             required
-            style={{ color: '#6c757d' }}
+            style={{
+              color: nuevaPersona.cod_tipo_persona ? '#000' : '#6c757d', //Negro para datos, gris para instrucciones
+            }}
           >
-            <option value="">Seleccione un tipo persona</option>
-            {tipoPersona &&
-              tipoPersona.map((tipo) => (
-                <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                  {tipo.Tipo_persona.toUpperCase()}
-                </option>
-              ))}
+            <option value="" style={{ color: '#6c757d' }}>Seleccione un tipo de persona</option>
+            {tipoPersona.map((tipo) => (
+              <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona} style={{ color: '#000' }}>
+                {tipo.Tipo_persona.toUpperCase()}
+              </option>
+            ))}
           </CFormSelect>
-        </CInputGroup>
-      </div>
+
+                  </CInputGroup>
+                </div>
 
 {/***************************************************PRINCIPAL*********************************************************/}
       <div className="col-md-6">
@@ -2158,23 +2327,24 @@ return (
           <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>Principal</span>
             <CFormCheck
-              type="checkbox"
-              label=""
-              checked={nuevaPersona.principal}
-              onChange={(e) => {
-                const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10));
-                if (tipoSeleccionado && tipoSeleccionado.Tipo !== 'ESTUDIANTE') {
-                  setNuevaPersona({ ...nuevaPersona, principal: e.target.checked });
-                }
-              }}
-              style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
-              disabled={tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10))?.Tipo === 'ESTUDIANTE'}
-            />
+            type="checkbox"
+            label=""
+            checked={nuevaPersona.principal}
+            onChange={(e) => {
+              const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10));
+              if (tipoSeleccionado && tipoSeleccionado.Tipo_persona !== 'ESTUDIANTE') {
+                setNuevaPersona(prevState => ({ ...prevState, principal: e.target.checked }));
+              }
+            }}
+            style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+            disabled={tipoPersona.some(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10) && tipo.Tipo_persona === 'ESTUDIANTE')}
+          />
+
           </CInputGroupText>
         </CInputGroup>
       </div>
 
-      {/*****************************************************************************************************************************/}
+{/*****************************************************************************************************************************/}
                   </div>
                 </div>
               </CForm>
@@ -2197,6 +2367,7 @@ return (
           </CModal>
 {/*********************************************FIN MODAL PARA AGREGAR UNA PERSONA****************************************************/}
 
+{/***********************************************************************************************************************************/}
 {/*////////////////////////////////////////////MODAL PARA ACTUALIZAR UNA PERSONA****************************************************/}
           <CModal visible={modalUpdateVisible} onClose={closeUpdateModal}
               backdrop="static"
@@ -2211,56 +2382,121 @@ return (
                     {/* Columna Izquierda */}
                     <CCol md={6}>
                     <div className="col-md-12">
-{/********************************************************DNI****************************************************************************/}
-          {errorMessages.dni_persona && (
-            <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-              {errorMessages.dni_persona}
-            </div>)}
+{/***************************************************************************************************************************************/}
+
+        <div className="col-md-12">
+          <div className="col-md-12">
+            {errorMessages.tipo_documento && (
+              <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+                {errorMessages.tipo_documento}
+              </div>
+            )}
             <CInputGroup className="mb-3">
-              <CInputGroupText>DNI</CInputGroupText>
-              <CFormInput
-                type="text"
-                placeholder="DNI de la persona"
-                value={personaToUpdate.dni_persona}
+              <CInputGroupText>Tipo de Documento</CInputGroupText>
+              <CFormSelect
+                value={personaToUpdate.tipo_documento || ''}
                 onChange={(e) => {
-                  const formattedDNI = formatDNI(e.target.value);
-                  setPersonaToUpdate({ ...personaToUpdate, dni_persona: formattedDNI });
-                  // Validaciones específicas para el DNI
-                  const erroresTemp = {};
-                  const dniSinGuiones = formattedDNI.replace(/-/g, '');
-                  if (!/^\d{13}$/.test(dniSinGuiones)) {
-                    erroresTemp.dni_persona = 'El DNI debe tener exactamente 13 dígitos.';
-                  } else {
-                    const primerCuatroDNI = parseInt(dniSinGuiones.substring(0, 4));
-                    if (primerCuatroDNI < 101 || primerCuatroDNI > 2000) {
-                      erroresTemp.dni_persona = 'Los primeros cuatro dígitos deben estar entre 0101 y 2000.';
-                    }
-                    const añoNacimientoDNI = parseInt(dniSinGuiones.substring(4, 8));
-                    const yearNow = new Date().getFullYear();
-                    if (añoNacimientoDNI < yearNow - 100 || añoNacimientoDNI > yearNow - 4) {
-                      erroresTemp.dni_persona = `El año debe estar entre ${yearNow - 100} y ${yearNow}.`;
-                    }
-                  }
-                  setErrorMessages((prevErrors) => ({
-                    ...prevErrors,
-                    dni_persona: erroresTemp.dni_persona || '',
+                  const value = e.target.value;
+
+                  // Validación en tiempo real
+                  let erroresTemp = { ...errorMessages };
+                  erroresTemp.tipo_documento = value ? '' : 'Debe seleccionar un tipo de documento.';
+
+                  setErrorMessages(erroresTemp);
+                  setPersonaToUpdate(prev => ({
+                    ...prev,
+                    tipo_documento: value, //  Se actualiza el estado con el nuevo tipo de documento
                   }));
                 }}
-                onCopy={disableCopyPaste}
-                onPaste={disableCopyPaste}
                 required
-              />
+                style={{
+                  color: personaToUpdate.tipo_documento ? '#000' : '#6c757d', //  Negro para datos, gris para instrucciones
+                }}
+              >
+                <option value="" style={{ color: '#6c757d' }}>Seleccione un tipo de documento</option>
+                {tipoDocumento.map((doc) => (
+                  <option key={doc.Cod_tipo_documento} value={doc.Cod_tipo_documento} style={{ color: '#000' }}>
+                    {doc.tipo_documento.toUpperCase()}
+                  </option>
+                ))}
+              </CFormSelect>
+
             </CInputGroup>
-            <style jsx>{`
-              .error-message {
-                color: red;
-                font-size: 12px;  /* Tamaño de texto más pequeño */
-                margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-                margin-bottom: 0;
-                margin-left: 12px;  /* Para alinearlo con el texto del input */
-              }
-            `}</style>
           </div>
+        </div>
+
+
+{/********************************************************DNI****************************************************************************/}
+        {errorMessages.dni_persona && (
+          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+            {errorMessages.dni_persona}
+          </div>
+        )}
+        <CInputGroup className="mb-3">
+          <CInputGroupText>Documentación</CInputGroupText>
+          <CFormInput
+        type="text"
+        placeholder="Documento de la persona"
+        value={personaToUpdate.dni_persona || ''}
+        onChange={(e) => {
+          let value = e.target.value.toUpperCase();
+          let erroresTemp = {};
+
+          // 🚫 Bloquear espacios
+          if (/\s/.test(value)) {
+            erroresTemp.dni_persona = 'El documento no debe contener espacios.';
+          }
+
+          // 🚫 Bloquear caracteres especiales (solo permitir alfanuméricos)
+          if (/[^A-Za-z0-9]/.test(value)) {
+            erroresTemp.dni_persona = 'Solo se permiten letras y números.';
+          }
+
+          // 🚫 Bloquear más de 10 repeticiones del mismo carácter
+          if (value.match(/(.)\1{10,}/)) {
+            erroresTemp.dni_persona = 'No se pueden repetir más de 10 veces un mismo carácter.';
+            value = personaToUpdate.dni_persona; // No permite seguir ingresando caracteres inválidos
+          }
+
+          setPersonaToUpdate(prev => ({
+            ...prev,
+            dni_persona: value,
+          }));
+          setErrorMessages({ ...errorMessages, dni_persona: erroresTemp.dni_persona || '' });
+        }}
+        style={{
+          color: personaToUpdate.dni_persona ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+        }}
+        onCopy={(e) => e.preventDefault()}
+        onPaste={(e) => e.preventDefault()} 
+        onKeyDown={(e) => {
+          // 🚫 Bloquear Ctrl+C, Ctrl+V, espacios y caracteres especiales
+          if (e.ctrlKey && (e.key === 'c' || e.key === 'v')) {
+            e.preventDefault();
+          }
+          if (e.key === ' ') {
+            e.preventDefault();
+          }
+          if (!/^[A-Za-z0-9]$/.test(e.key) && e.key.length === 1) {
+            e.preventDefault();
+          }
+
+          // 🔄 Validar desde el teclado si ya hay 10 caracteres repetidos
+          const currentValue = personaToUpdate.dni_persona + e.key;
+          if (currentValue.match(/(.)\1{10,}/)) {
+            e.preventDefault(); 
+            setErrorMessages((prevErrors) => ({
+              ...prevErrors,
+              dni_persona: 'No se pueden repetir más de 10 veces un mismo carácter.',
+            }));
+          }
+        }}
+        required
+      />
+
+        </CInputGroup>
+      </div>
+
 {/**********************************************************NOMBRE**********************************************************************/}
             <div className="col-md-12">
               {errorMessages.Nombre && (
@@ -2273,35 +2509,33 @@ return (
                 <CFormInput
                   type="text"
                   placeholder="Nombre"
-                  value={personaToUpdate.Nombre}
+                  value={personaToUpdate.Nombre || ''}
                   onChange={(e) => {
                     const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
-                    // Bloquear secuencias de más de tres letras repetidas
+                    let erroresTemp = { ...errorMessages };
+
+                    // 🚫 Bloquear secuencias de más de tres letras repetidas
                     if (/(.)\1{2,}/.test(value)) {
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        Nombre: 'El nombre no puede contener más de tres letras repetidas consecutivas.'
-                      }));
+                      erroresTemp.Nombre = 'El nombre no puede contener más de tres letras repetidas consecutivas.';
+                      setErrorMessages(erroresTemp);
                       return;
                     }
-                    // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+
+                    // 🚫 Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
                     if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        Nombre: 'El nombre solo puede contener letras, acentos y espacios.'
-                      }));
+                      erroresTemp.Nombre = 'El nombre solo puede contener letras, acentos y espacios.';
+                      setErrorMessages(erroresTemp);
                       return;
                     }
-                    // Bloquear más de un espacio consecutivo
+
+                    // 🚫 Bloquear más de un espacio consecutivo
                     if (/\s{2,}/.test(value)) {
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        Nombre: 'El nombre no puede contener más de un espacio consecutivo.'
-                      }));
+                      erroresTemp.Nombre = 'El nombre no puede contener más de un espacio consecutivo.';
+                      setErrorMessages(erroresTemp);
                       return;
                     }
-                    // Verifica si el campo está vacío
-                    const erroresTemp = { ...errorMessages };
+
+                    // ✅ Validación del campo vacío y tamaño mínimo
                     if (!value.trim()) {
                       erroresTemp.Nombre = 'El nombre no puede estar vacío.';
                     } else if (value.length < 2) {
@@ -2309,23 +2543,19 @@ return (
                     } else {
                       erroresTemp.Nombre = '';
                     }
+
                     setPersonaToUpdate({ ...personaToUpdate, Nombre: value });
                     setErrorMessages(erroresTemp);
+                  }}
+                  style={{
+                    color: personaToUpdate.Nombre ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
                   }}
                   onCopy={disableCopyPaste}
                   onPaste={disableCopyPaste}
                   required
                 />
+
               </CInputGroup>
-              <style jsx>{`
-                .error-message {
-                  color: red;
-                  font-size: 12px;  /* Tamaño de texto más pequeño */
-                  margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-                  margin-bottom: 0;
-                  margin-left: 12px;  /* Para alinearlo con el texto del input */
-                }
-              `}</style>
             </div>
 {/********************************************************SEGUNDO NOMBRE*****************************************************************/}
           <div className="col-md-12">
@@ -2339,35 +2569,33 @@ return (
               <CFormInput
                 type="text"
                 placeholder="Segundo Nombre"
-                value={personaToUpdate.Segundo_nombre}
+                value={personaToUpdate.Segundo_nombre || ''}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
-                  // Bloquear secuencias de más de tres letras repetidas
+                  let erroresTemp = { ...errorMessages };
+
+                  // 🚫 Bloquear secuencias de más de tres letras repetidas
                   if (/(.)\1{2,}/.test(value)) {
-                    setErrorMessages((prevErrors) => ({
-                      ...prevErrors,
-                      Segundo_nombre: 'El segundo nombre no puede contener más de tres letras repetidas consecutivas.'
-                    }));
+                    erroresTemp.Segundo_nombre = 'El segundo nombre no puede contener más de tres letras repetidas consecutivas.';
+                    setErrorMessages(erroresTemp);
                     return;
                   }
-                  // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+
+                  // 🚫 Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
                   if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                    setErrorMessages((prevErrors) => ({
-                      ...prevErrors,
-                      Segundo_nombre: 'El segundo nombre solo puede contener letras, acentos y espacios.'
-                    }));
+                    erroresTemp.Segundo_nombre = 'El segundo nombre solo puede contener letras, acentos y espacios.';
+                    setErrorMessages(erroresTemp);
                     return;
                   }
-                  // Bloquear más de un espacio consecutivo
+
+                  // 🚫 Bloquear más de un espacio consecutivo
                   if (/\s{2,}/.test(value)) {
-                    setErrorMessages((prevErrors) => ({
-                      ...prevErrors,
-                      Segundo_nombre: 'El segundo nombre no puede contener más de un espacio consecutivo.'
-                    }));
+                    erroresTemp.Segundo_nombre = 'El segundo nombre no puede contener más de un espacio consecutivo.';
+                    setErrorMessages(erroresTemp);
                     return;
                   }
-                  // Verifica si el campo está vacío
-                  const erroresTemp = { ...errorMessages };
+
+                  // ✅ Validación del campo vacío y tamaño mínimo
                   if (!value.trim()) {
                     erroresTemp.Segundo_nombre = 'El segundo nombre no puede estar vacío.';
                   } else if (value.length < 2) {
@@ -2375,22 +2603,19 @@ return (
                   } else {
                     erroresTemp.Segundo_nombre = '';
                   }
+
                   setPersonaToUpdate({ ...personaToUpdate, Segundo_nombre: value });
                   setErrorMessages(erroresTemp);
                 }}
+                style={{
+                  color: personaToUpdate.Segundo_nombre ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+                }}
                 onCopy={disableCopyPaste}
                 onPaste={disableCopyPaste}
-              />
+              required
+            />
+
             </CInputGroup>
-            <style jsx>{`
-              .error-message {
-                color: red;
-                font-size: 12px;  /* Tamaño de texto más pequeño */
-                margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-                margin-bottom: 0;
-                margin-left: 12px;  /* Para alinearlo con el texto del input */
-              }
-            `}</style>
           </div>
 {/****************************************************PRIMER APELLIDO*******************************************************************/}
         <div className="col-md-12">
@@ -2402,62 +2627,55 @@ return (
           <CInputGroup className="mb-3">
             <CInputGroupText>Primer Apellido</CInputGroupText>
             <CFormInput
-              type="text"
-              placeholder="Primer Apellido"
-              value={personaToUpdate.Primer_apellido}
-              onChange={(e) => {
-                const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+            type="text"
+            placeholder="Primer Apellido"
+            value={personaToUpdate.Primer_apellido || ''}
+            onChange={(e) => {
+              const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
+              let erroresTemp = { ...errorMessages };
 
-                // Bloquear secuencias de más de tres letras repetidas
-                if (/(.)\1{2,}/.test(value)) {
-                  setErrorMessages((prevErrors) => ({
-                    ...prevErrors,
-                    Primer_apellido: 'El primer apellido no puede contener más de tres letras repetidas consecutivas.'
-                  }));
-                  return;
-                }
-                // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
-                if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                  setErrorMessages((prevErrors) => ({
-                    ...prevErrors,
-                    Primer_apellido: 'El primer apellido solo puede contener letras, acentos y espacios.'
-                  }));
-                  return;
-                }
-                // Bloquear más de un espacio consecutivo
-                if (/\s{2,}/.test(value)) {
-                  setErrorMessages((prevErrors) => ({
-                    ...prevErrors,
-                    Primer_apellido: 'El primer apellido no puede contener más de un espacio consecutivo.'
-                  }));
-                  return;
-                }
-                // Verifica si el campo está vacío
-                const erroresTemp = { ...errorMessages };
-                if (!value.trim()) {
-                  erroresTemp.Primer_apellido = 'El primer apellido no puede estar vacío.';
-                } else if (value.length < 2) {
-                  erroresTemp.Primer_apellido = 'El primer apellido debe tener al menos 2 caracteres.';
-                } else {
-                  erroresTemp.Primer_apellido = '';
-                }
-                setPersonaToUpdate({ ...personaToUpdate, Primer_apellido: value });
+              // 🚫 Bloquear secuencias de más de tres letras repetidas
+              if (/(.)\1{2,}/.test(value)) {
+                erroresTemp.Primer_apellido = 'El primer apellido no puede contener más de tres letras repetidas consecutivas.';
                 setErrorMessages(erroresTemp);
-              }}
-              onCopy={disableCopyPaste}
-              onPaste={disableCopyPaste}
-              required
-            />
+                return;
+              }
+
+              // 🚫 Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+              if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
+                erroresTemp.Primer_apellido = 'El primer apellido solo puede contener letras, acentos y espacios.';
+                setErrorMessages(erroresTemp);
+                return;
+              }
+
+              // 🚫 Bloquear más de un espacio consecutivo
+              if (/\s{2,}/.test(value)) {
+                erroresTemp.Primer_apellido = 'El primer apellido no puede contener más de un espacio consecutivo.';
+                setErrorMessages(erroresTemp);
+                return;
+              }
+
+              // ✅ Validación del campo vacío y tamaño mínimo
+              if (!value.trim()) {
+                erroresTemp.Primer_apellido = 'El primer apellido no puede estar vacío.';
+              } else if (value.length < 2) {
+                erroresTemp.Primer_apellido = 'El primer apellido debe tener al menos 2 caracteres.';
+              } else {
+                erroresTemp.Primer_apellido = '';
+              }
+
+              setPersonaToUpdate({ ...personaToUpdate, Primer_apellido: value });
+              setErrorMessages(erroresTemp);
+            }}
+            style={{
+              color: personaToUpdate.Primer_apellido ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+            }}
+            onCopy={disableCopyPaste}
+            onPaste={disableCopyPaste}
+            required
+          />
+
           </CInputGroup>
-          <style jsx>{`
-            .error-message {
-              color: red;
-              font-size: 12px;  /* Tamaño de texto más pequeño */
-              margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-              margin-bottom: 0;
-              margin-left: 12px;  /* Para alinearlo con el texto del input */
-            }
-          `}</style>
         </div>
 {/****************************************************SEGUNDO APELLIDO******************************************************************/}
             <div className="col-md-12">
@@ -2471,35 +2689,33 @@ return (
                 <CFormInput
                   type="text"
                   placeholder="Segundo Apellido"
-                  value={personaToUpdate.Segundo_apellido}
+                  value={personaToUpdate.Segundo_apellido || ''}
                   onChange={(e) => {
                     const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
-                    // Bloquear secuencias de más de tres letras repetidas
+                    let erroresTemp = { ...errorMessages };
+
+                    // 🚫 Bloquear secuencias de más de tres letras repetidas
                     if (/(.)\1{2,}/.test(value)) {
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        Segundo_apellido: 'El segundo apellido no puede contener más de tres letras repetidas consecutivas.'
-                      }));
+                      erroresTemp.Segundo_apellido = 'El segundo apellido no puede contener más de tres letras repetidas consecutivas.';
+                      setErrorMessages(erroresTemp);
                       return;
                     }
-                    // Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
+
+                    // 🚫 Bloquear caracteres especiales, solo letras, acentos y espacios permitidos
                     if (/[^A-Za-záéíóúÁÉÍÓÚñÑ\s]/.test(value)) {
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        Segundo_apellido: 'El segundo apellido solo puede contener letras, acentos y espacios.'
-                      }));
+                      erroresTemp.Segundo_apellido = 'El segundo apellido solo puede contener letras, acentos y espacios.';
+                      setErrorMessages(erroresTemp);
                       return;
                     }
-                    // Bloquear más de un espacio consecutivo
+
+                    // 🚫 Bloquear más de un espacio consecutivo
                     if (/\s{2,}/.test(value)) {
-                      setErrorMessages((prevErrors) => ({
-                        ...prevErrors,
-                        Segundo_apellido: 'El segundo apellido no puede contener más de un espacio consecutivo.'
-                      }));
+                      erroresTemp.Segundo_apellido = 'El segundo apellido no puede contener más de un espacio consecutivo.';
+                      setErrorMessages(erroresTemp);
                       return;
                     }
-                    // Verifica si el campo está vacío
-                    const erroresTemp = { ...errorMessages };
+
+                    // ✅ Validación del campo vacío y tamaño mínimo
                     if (!value.trim()) {
                       erroresTemp.Segundo_apellido = 'El segundo apellido no puede estar vacío.';
                     } else if (value.length < 2) {
@@ -2507,25 +2723,21 @@ return (
                     } else {
                       erroresTemp.Segundo_apellido = '';
                     }
+
                     setPersonaToUpdate({ ...personaToUpdate, Segundo_apellido: value });
                     setErrorMessages(erroresTemp);
+                  }}
+                  style={{
+                    color: personaToUpdate.Segundo_apellido ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
                   }}
                   onCopy={disableCopyPaste}
                   onPaste={disableCopyPaste}
                 />
+
               </CInputGroup>
-              <style jsx>{`
-                .error-message {
-                  color: red;
-                  font-size: 12px;  /* Tamaño de texto más pequeño */
-                  margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-                  margin-bottom: 0;
-                  margin-left: 12px;  /* Para alinearlo con el texto del input */
-                }
-              `}</style>
             </div>
 {/*************************************************FECHA DE NACIMIENTO********************************************************************/}
-<div className="col-md-12">
+              <div className="col-md-12">
               {errorMessages.fecha_nacimiento && (
                 <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
                   {errorMessages.fecha_nacimiento}
@@ -2534,47 +2746,48 @@ return (
               <CInputGroup className="mb-3">
                 <CInputGroupText>Fecha de Nacimiento</CInputGroupText>
                 <CFormInput
-                  type="date"
-                  value={personaToUpdate.fecha_nacimiento}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setPersonaToUpdate((prevState) => ({
-                      ...prevState,
-                      fecha_nacimiento: value,
-                    }));
-                    // Validación de la fecha de nacimiento en tiempo real
-                    let erroresTemp = { ...errorMessages };
-                    if (!value || value === '') {
-                      erroresTemp.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+                type="date"
+                value={personaToUpdate.fecha_nacimiento || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setPersonaToUpdate((prevState) => ({
+                    ...prevState,
+                    fecha_nacimiento: value,
+                  }));
+
+                  // ✅ Validación de la fecha de nacimiento en tiempo real
+                  let erroresTemp = { ...errorMessages };
+                  if (!value || value === '') {
+                    erroresTemp.fecha_nacimiento = 'Debe ingresar una fecha de nacimiento válida.';
+                  } else {
+                    const currentYear = new Date().getFullYear();
+                    const minYear = currentYear - 100;
+                    const maxYear = currentYear - 4;
+                    const fechaNacimiento = new Date(value);
+                    const añoNacimiento = fechaNacimiento.getFullYear();
+                    if (añoNacimiento < minYear || añoNacimiento > maxYear) {
+                      erroresTemp.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
                     } else {
-                      const currentYear = new Date().getFullYear();
-                      const minYear = currentYear - 100;
-                      const maxYear = currentYear - 4;
-                      const fechaNacimiento = new Date(value);
-                      const añoNacimiento = fechaNacimiento.getFullYear();
-                      if (añoNacimiento < minYear || añoNacimiento > maxYear) {
-                        erroresTemp.fecha_nacimiento = `La fecha de nacimiento debe estar entre los años ${minYear} y ${maxYear}.`;
-                      } else {
-                        erroresTemp.fecha_nacimiento = '';
-                      }
+                      erroresTemp.fecha_nacimiento = '';
                     }
-                    setErrorMessages(erroresTemp);
-                  }}
-                  required
-                />
+                  }
+                  setErrorMessages(erroresTemp);
+                }}
+                style={{
+                  color: personaToUpdate.fecha_nacimiento ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+                }}
+                required
+              />
+
               </CInputGroup>
-              <style jsx>{`
-                .error-message {
-                  color: red;
-                  font-size: 12px;  /* Tamaño de texto más pequeño */
-                  margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-                  margin-bottom: 0;
-                  margin-left: 12px;  /* Para alinearlo con el texto del input */
-                }
-              `}</style>
             </div>
+
+{/*****************************************************COLUMNA DERECHA***************************************************************/}
+              </CCol>
+                <CCol md={6}>
+
 {/***********************************************************DIRECCION****************************************************************/}
-        <div className="col-md-12">
+<div className="col-md-12">
                 {errorMessages.direccion_persona && (
                   <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
                     {errorMessages.direccion_persona}
@@ -2585,42 +2798,44 @@ return (
                   <CFormInput
                     type="text"
                     placeholder="Dirección"
-                    value={personaToUpdate.direccion_persona}
+                    value={personaToUpdate.direccion_persona || ''}
                     onChange={(e) => {
                       const value = e.target.value.toUpperCase(); // Convertir a mayúsculas automáticamente
-                      // Bloquear secuencias de más de tres letras repetidas en toda la cadena
+                      let erroresTemp = { ...errorMessages };
+
+                      // 🚫 Bloquear secuencias de más de tres letras repetidas
                       if (/(.)\1{2,}/.test(value)) {
-                        setErrorMessages((prevErrors) => ({
-                          ...prevErrors,
-                          direccion_persona: 'La dirección no puede contener más de tres letras repetidas consecutivas.'
-                        }));
+                        erroresTemp.direccion_persona = 'La dirección no puede contener más de tres letras repetidas consecutivas.';
+                        setErrorMessages(erroresTemp);
                         return;
                       }
-                      // Permitir solo caracteres necesarios para direcciones (letras, números, guiones, espacios, puntos, comas)
+
+                      // 🚫 Permitir solo caracteres necesarios para direcciones (letras, números, guiones, espacios, puntos, comas)
                       if (/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9\s\-#.,]/.test(value)) {
-                        setErrorMessages((prevErrors) => ({
-                          ...prevErrors,
-                          direccion_persona: 'La dirección solo puede contener letras, números, acentos, espacios y caracteres como guiones, puntos y comas.'
-                        }));
+                        erroresTemp.direccion_persona = 'La dirección solo puede contener letras, números, acentos, espacios y caracteres como guiones, puntos y comas.';
+                        setErrorMessages(erroresTemp);
                         return;
                       }
-                      // Bloquear más de un espacio consecutivo
+
+                      // 🚫 Bloquear más de un espacio consecutivo
                       if (/\s{2,}/.test(value)) {
-                        setErrorMessages((prevErrors) => ({
-                          ...prevErrors,
-                          direccion_persona: 'La dirección no puede contener más de un espacio consecutivo.'
-                        }));
+                        erroresTemp.direccion_persona = 'La dirección no puede contener más de un espacio consecutivo.';
+                        setErrorMessages(erroresTemp);
                         return;
                       }
-                      // Verifica si el campo está vacío
-                      const erroresTemp = { ...errorMessages };
+
+                      // ✅ Validación del campo vacío
                       if (!value.trim()) {
                         erroresTemp.direccion_persona = 'La dirección no puede estar vacía.';
                       } else {
                         erroresTemp.direccion_persona = '';
                       }
+
                       setPersonaToUpdate({ ...personaToUpdate, direccion_persona: value });
                       setErrorMessages(erroresTemp);
+                    }}
+                    style={{
+                      color: personaToUpdate.direccion_persona ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
                     }}
                     onCopy={disableCopyPaste}
                     onPaste={disableCopyPaste}
@@ -2628,66 +2843,224 @@ return (
                   />
                 </CInputGroup>
                 {/* Estilos dentro del componente */}
-                <style jsx>{`
-                  .error-message {
-                    color: red;
-                    font-size: 12px;  /* Tamaño de texto más pequeño */
-                    margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-                    margin-bottom: 0;
-                    margin-left: 12px;  /* Para alinearlo con el texto del input */
-                  }
-                `}</style>
-              </div>
-{/*****************************************************COLUMNA DERECHA***************************************************************/}
-              </CCol>
-                <CCol md={6}>
+              </div>    
 
-{/************************************************************ESTADO**********************************************************************/}
+{/***************************************************************NACIONAL**********************************************************************/}
+<div className="mb-3">
+  {errorMessages.nacionalidad && (
+    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+      {errorMessages.nacionalidad}
+    </div>
+  )}
+  <CInputGroup className="mb-3">
+    <CInputGroupText>Nacionalidad</CInputGroupText>
+    <CFormInput
+  type="text"
+  value={buscadorNacionalidad || ''}
+  onKeyPress={handleKeyPress}
+  onChange={handleBuscarNacionalidad}
+  onCopy={disableCopyPaste}
+  onPaste={disableCopyPaste}
+  placeholder="Buscar por sigla de país o nombre"
+  style={{
+    color: buscadorNacionalidad ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+  }}
+/>
+    <CButton type="button">
+      <CIcon icon={cilSearch} />
+    </CButton>
+  </CInputGroup>
+  {isDropdownOpenNacionalidad && nacionalidadesFiltradas.length > 0 && (
+  <div className="dropdown-container" style={{ position: 'relative' }}>
+    <div 
+      className="dropdown-menu show" 
+      style={{
+        position: 'absolute',
+        zIndex: 999,
+        top: '100%',
+        left: '0',
+        width: '100%',
+        maxHeight: '200px',  // ✅ Limita la altura del dropdown
+        overflowY: 'auto',   // ✅ Habilita desplazamiento vertical
+        border: '1px solid #ccc',
+        borderRadius: '6px',
+        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      {nacionalidadesFiltradas.map((nacionalidad) => (
+        <div
+          key={nacionalidad.Cod_nacionalidad}
+          className="dropdown-item"
+          style={{
+            cursor: 'pointer',
+            padding: '8px 12px', // ✅ Mejora el espacio entre elementos
+            color: '#000', // 🔄 Ahora el texto se verá en negro
+          }}
+          onClick={() => {
+            handleSeleccionarNacionalidad(nacionalidad);
+            setPersonaToUpdate({
+              ...personaToUpdate,
+              cod_nacionalidad: nacionalidad.Cod_nacionalidad,
+              Id_nacionalidad: nacionalidad.Id_nacionalidad,
+            });
+          }}
+        >
+          {nacionalidad.Id_nacionalidad.toUpperCase()} - {nacionalidad.pais_nacionalidad.toUpperCase()}
+        </div>
+      ))}
+    </div>
+  </div>
+)}  
+</div>
+{/********************************************************DEPARTAMENTO**********************************************************************/}
+        <div className="col-md-12">
+          {errorMessages.cod_departamento && (
+            <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+              {errorMessages.cod_departamento}
+            </div>
+          )}
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Departamento</CInputGroupText>
+            <CFormSelect
+          value={personaToUpdate.cod_departamento || ''}
+          onChange={(e) => {
+            const value = parseInt(e.target.value, 10); // 💡 Convertimos el valor a número de manera segura
+
+            // Buscar el objeto completo del departamento seleccionado
+            const departamentoSeleccionado = departamentos.find(depto => depto.Cod_departamento === value);
+
+            if (departamentoSeleccionado) {
+              handleSeleccionarDepartamentoUpdate(departamentoSeleccionado); // ✅ Ahora ejecutamos el filtro de municipios aquí
+            }
+
+            // ✅ Validación en tiempo real
+            let erroresTemp = { ...errorMessages };
+            erroresTemp.cod_departamento = value ? '' : 'Debe seleccionar un departamento.';
+
+            setErrorMessages(erroresTemp);
+            setPersonaToUpdate(prev => ({ ...prev, cod_departamento: value }));
+          }}
+          required
+          style={{
+            color: personaToUpdate.cod_departamento ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+          }}
+        >
+          <option value="" style={{ color: '#6c757d' }}>Seleccione un departamento</option>
+          {departamentos.map((depto) => (
+            <option key={depto.Cod_departamento} value={depto.Cod_departamento} style={{ color: '#000' }}>
+              {depto.Nombre_departamento.toUpperCase()}
+            </option>
+          ))}
+        </CFormSelect>
+
+          </CInputGroup>
+        </div>
+
+{/*********************************************************MUNICIPIO**********************************************************************/}
+          <div className="mb-3">
+            {errorMessages.municipio && (
+              <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
+                {errorMessages.municipio}
+              </div>
+            )}
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Municipio</CInputGroupText>
+              <CFormInput
+              type="text"
+              value={buscadorMunicipio || ''}
+              onKeyPress={handleKeyPress}
+              onChange={handleBuscarMunicipio}
+              onCopy={disableCopyPaste}
+              onPaste={disableCopyPaste}
+              placeholder="Buscar por nombre del municipio"
+              style={{
+                color: buscadorMunicipio ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+              }}
+            />
+              <CButton type="button">
+                <CIcon icon={cilSearch} />
+              </CButton>
+            </CInputGroup>
+            {isDropdownOpenMunicipio && municipiosFiltrados.length > 0 && (
+  <div className="dropdown-container" style={{ position: 'relative' }}>
+    <div 
+      className="dropdown-menu show" 
+      style={{
+        position: 'absolute',
+        zIndex: 999,
+        top: '100%',
+        left: '0',
+        width: '100%',
+        maxHeight: '180px',  // ✅ Limita la altura del dropdown
+        overflowY: 'auto',   // ✅ Habilita desplazamiento vertical
+        border: '1px solid #ccc',
+        borderRadius: '6px',
+        boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      {municipiosFiltrados.map((municipio) => (
+        <div
+          key={municipio.cod_municipio}
+          className="dropdown-item"
+          style={{
+            cursor: 'pointer',
+            padding: '8px 12px', // ✅ Mejora el espacio entre elementos
+            color: '#000', // 🔄 Ahora el texto se verá en negro
+          }}
+          onClick={() => {
+            handleSeleccionarMunicipio(municipio);
+            setPersonaToUpdate(prev => ({
+              ...prev,
+              cod_municipio: municipio.Cod_municipio,
+              Nombre_municipio: municipio.Nombre_municipio,
+            }));
+          }}
+        >
+          {municipio.Nombre_municipio.toUpperCase()} - {municipio.Nombre_departamento.toUpperCase()}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
+</div>
+{/***********************************************************GÉNERO**********************************************************************/}
 <div className="col-md-12">
       <div className="col-md-12">
-        {errorMessages.Estado_Persona && (
+        {errorMessages.cod_genero && (
           <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.Estado_Persona}
+            {errorMessages.cod_genero}
           </div>
         )}
         <CInputGroup className="mb-3">
-          <CInputGroupText>Estado</CInputGroupText>
+          <CInputGroupText>Género</CInputGroupText>
           <CFormSelect
-            value={personaToUpdate.Estado_Persona || ''}
+            value={personaToUpdate.cod_genero || ''}
             onChange={(e) => {
               const value = e.target.value;
 
-              // Validación en tiempo real
+              // ✅ Validación en tiempo real
               let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.Estado_Persona = 'Debe seleccionar un estado.';
-              } else {
-                erroresTemp.Estado_Persona = '';
-              }
+              erroresTemp.cod_genero = value ? '' : 'Debe seleccionar un género.';
 
               setErrorMessages(erroresTemp);
-              setPersonaToUpdate({ ...personaToUpdate, Estado_Persona: value });
+              setPersonaToUpdate({ ...personaToUpdate, cod_genero: parseInt(value, 10) });
             }}
             required
-            style={{ color: '#6c757d' }}
+            style={{
+              color: personaToUpdate.cod_genero ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+            }}
           >
-            <option value="">Seleccione un estado</option>
-            <option value="A">ACTIVO</option>
-            <option value="S">SUSPENDIDO</option>
+            <option value="" style={{ color: '#6c757d' }}>Seleccione un género</option>
+            {generos.map((genero) => (
+              <option key={genero.Cod_genero} value={genero.Cod_genero} style={{ color: '#000' }}>
+                {genero.Tipo_genero.toUpperCase()}
+              </option>
+            ))}
           </CFormSelect>
         </CInputGroup>
       </div>
-      <style jsx>{`
-        .error-message {
-          color: red;
-          font-size: 0.850rem;  /* Tamaño de texto más pequeño */
-          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px;  /* Para alinearlo con el texto del input */
-        }
-      `}</style>
     </div>
-  
+
 {/************************************************************TIPO PERSONA**********************************************************************/}
 <div className="col-md-12">
       <div className="col-md-12">
@@ -2699,39 +3072,37 @@ return (
         <CInputGroup className="mb-3">
           <CInputGroupText>Tipo Persona</CInputGroupText>
           <CFormSelect
-            value={personaToUpdate.cod_tipo_persona || ''}
-            onChange={(e) => {
-              const value = e.target.value;
+  value={personaToUpdate.cod_tipo_persona || ''}
+  onChange={(e) => {
+    const value = e.target.value;
 
-              // Validación en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.cod_tipo_persona = 'Debe seleccionar un tipo de persona.';
-              } else {
-                erroresTemp.cod_tipo_persona = '';
-              }
+    // ✅ Validación en tiempo real
+    let erroresTemp = { ...errorMessages };
+    erroresTemp.cod_tipo_persona = value ? '' : 'Debe seleccionar un tipo de persona.';
 
-              // Desactivar el checkbox "Principal" si el tipo de persona es "ESTUDIANTE"
-              const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(value, 10));
-              if (tipoSeleccionado && tipoSeleccionado.Tipo === 'ESTUDIANTE') {
-                setPersonaToUpdate({ ...personaToUpdate, cod_tipo_persona: value, principal: false });
-              } else {
-                setPersonaToUpdate({ ...personaToUpdate, cod_tipo_persona: value });
-              }
+    // ✅ Desactivar el checkbox "Principal" si el tipo de persona es "ESTUDIANTE"
+    const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(value, 10));
+    setPersonaToUpdate({
+      ...personaToUpdate,
+      cod_tipo_persona: value,
+      principal: tipoSeleccionado && tipoSeleccionado.Tipo_persona === 'ESTUDIANTE' ? false : personaToUpdate.principal,
+    });
 
-              setErrorMessages(erroresTemp);
-            }}
-            required
-            style={{ color: '#6c757d' }}
-          >
-            <option value="">Seleccione un tipo persona</option>
-            {tipoPersona &&
-              tipoPersona.map((tipo) => (
-                <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona}>
-                  {tipo.Tipo_persona.toUpperCase()}
-                </option>
-              ))}
-          </CFormSelect>
+    setErrorMessages(erroresTemp);
+  }}
+  required
+  style={{
+    color: personaToUpdate.cod_tipo_persona ? '#000' : '#6c757d', // ✅ Negro para datos, gris para instrucciones
+  }}
+>
+  <option value="" style={{ color: '#6c757d' }}>Seleccione un tipo de persona</option>
+  {tipoPersona.map((tipo) => (
+    <option key={tipo.Cod_tipo_persona} value={tipo.Cod_tipo_persona} style={{ color: '#000' }}>
+      {tipo.Tipo_persona.toUpperCase()}
+    </option>
+  ))}
+</CFormSelect>
+
         </CInputGroup>
       </div>
 {/********************************************************PRINCIPAL**********************************************************************/}
@@ -2740,18 +3111,19 @@ return (
           <CInputGroupText style={{ width: '230px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>Principal</span>
             <CFormCheck
-              type="checkbox"
-              label=""
-              checked={personaToUpdate.principal}
-              onChange={(e) => {
-                const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(personaToUpdate.cod_tipo_persona, 10));
-                if (tipoSeleccionado && tipoSeleccionado.Tipo !== 'ESTUDIANTE') {
-                  setPersonaToUpdate({ ...personaToUpdate, principal: e.target.checked });
-                }
-              }}
-              style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
-              disabled={tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(personaToUpdate.cod_tipo_persona, 10))?.Tipo === 'ESTUDIANTE'}
-            />
+            type="checkbox"
+            label=""
+            checked={personaToUpdate.principal}
+            onChange={(e) => {
+              const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(personaToUpdate.cod_tipo_persona, 10));
+              if (tipoSeleccionado && tipoSeleccionado.Tipo_persona !== 'ESTUDIANTE') {
+                setPersonaToUpdate(prev => ({ ...prev, principal: e.target.checked }));
+              }
+            }}
+            style={{ transform: 'scale(1.3)', marginLeft: '10px' }}
+            disabled={tipoPersona.some(tipo => tipo.Cod_tipo_persona === parseInt(personaToUpdate.cod_tipo_persona, 10) && tipo.Tipo_persona === 'ESTUDIANTE')}
+          />
+
           </CInputGroupText>
         </CInputGroup>
       </div>
@@ -2768,212 +3140,6 @@ return (
     </div>
 {/***************************************************************TIPO PERSONA**********************************************************************/}
 
-{/***********************************************************GÉNERO**********************************************************************/}
-<div className="col-md-12">
-      <div className="col-md-12">
-        {errorMessages.cod_genero && (
-          <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-            {errorMessages.cod_genero}
-          </div>
-        )}
-        <CInputGroup className="mb-3">
-          <CInputGroupText>Género</CInputGroupText>
-          <CFormSelect
-            value={personaToUpdate.cod_genero || ''}
-            onChange={(e) => {
-              const value = e.target.value;
-
-              // Validación en tiempo real
-              let erroresTemp = { ...errorMessages };
-              if (!value) {
-                erroresTemp.cod_genero = 'Debe seleccionar un género.';
-              } else {
-                erroresTemp.cod_genero = '';
-              }
-
-              setErrorMessages(erroresTemp);
-              setPersonaToUpdate({ ...personaToUpdate, cod_genero: parseInt(value, 10) });
-            }}
-            required
-            style={{ color: '#6c757d' }}
-          >
-            <option value="">Seleccione un género</option>
-            {generos &&
-              generos.map((genero) => (
-                <option key={genero.Cod_genero} value={genero.Cod_genero}>
-                  {genero.Tipo_genero.toUpperCase()}
-                </option>
-              ))}
-          </CFormSelect>
-        </CInputGroup>
-      </div>
-      <style jsx>{`
-        .error-message {
-          color: red;
-          font-size: 0.850rem;  /* Tamaño de texto más pequeño */
-          margin-top: 4px;  /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px;  /* Para alinearlo con el texto del input */
-        }
-      `}</style>
-    </div>
-{/***************************************************************NACIONAL**********************************************************************/}
-<div className="mb-3">
-  {errorMessages.nacionalidad && (
-    <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-      {errorMessages.nacionalidad}
-    </div>
-  )}
-  <CInputGroup className="mb-3">
-    <CInputGroupText>Nacionalidad</CInputGroupText>
-    <CFormInput
-      type="text"
-      value={buscadorNacionalidad}
-      onChange={handleBuscarNacionalidad}
-      onKeyPress={handleKeyPress}
-      onCopy={disableCopyPaste}
-      onPaste={disableCopyPaste}
-      placeholder="Buscar por sigla de país o letra"
-    />
-    <CButton type="button">
-      <CIcon icon={cilSearch} />
-    </CButton>
-  </CInputGroup>
-  {isDropdownOpenNacionalidad && nacionalidadesFiltradas.length > 0 && (
-    <div className="dropdown-container" style={{ position: 'relative' }}>
-      <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: '0', width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
-        {nacionalidadesFiltradas.map((nacionalidad) => (
-          <div
-            key={nacionalidad.Cod_nacionalidad}
-            className="dropdown-item"
-            style={{ cursor: 'pointer' }}
-            onClick={() => {
-              handleSeleccionarNacionalidad(nacionalidad);
-              setPersonaToUpdate({
-                ...personaToUpdate,
-                Cod_nacionalidad: nacionalidad.Cod_nacionalidad,
-                Id_nacionalidad: nacionalidad.Id_nacionalidad,
-              });
-            }}
-          >
-            {nacionalidad.Id_nacionalidad.toUpperCase()} - {nacionalidad.pais_nacionalidad.toUpperCase()}
-          </div>
-        ))}
-      </div>
-    </div>
-  )}
-  <style jsx>{`
-    .error-message {
-      color: red;
-      font-size: 0.850rem; /* Tamaño de texto más pequeño */
-      margin-top: 4px; /* Menor distancia entre el input y el mensaje de error */
-      margin-bottom: 0;
-      margin-left: 12px; /* Para alinearlo con el texto del input */
-    }
-  `}</style>
-</div>
-{/********************************************************DEPARTAMENTO**********************************************************************/}
-<div className="col-md-12">
-      {errorMessages.cod_departamento && (
-        <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-          {errorMessages.cod_departamento}
-        </div>
-      )}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Departamento</CInputGroupText>
-        <CFormSelect
-          value={personaToUpdate.cod_departamento || ''}
-          onChange={(e) => {
-            const value = e.target.value;
-
-            // Validación en tiempo real
-            let erroresTemp = { ...errorMessages };
-            if (!value) {
-              erroresTemp.cod_departamento = 'Debe seleccionar un departamento.';
-            } else {
-              erroresTemp.cod_departamento = '';
-            }
-
-            setErrorMessages(erroresTemp);
-            setPersonaToUpdate({ ...personaToUpdate, cod_departamento: value });
-          }}
-          required
-          style={{ color: '#6c757d' }}
-        >
-          <option value="">Seleccione un departamento</option>
-          {departamentos &&
-            departamentos.map((depto) => (
-              <option key={depto.Cod_departamento} value={depto.Cod_departamento}>
-                {depto.Nombre_departamento.toUpperCase()}
-              </option>
-            ))}
-        </CFormSelect>
-      </CInputGroup>
-      <style jsx>{`
-        .error-message {
-          color: red;
-          font-size: 0.850rem; /* Tamaño de texto más pequeño */
-          margin-top: 4px; /* Menor distancia entre el input y el mensaje de error */
-          margin-bottom: 0;
-          margin-left: 12px; /* Para alinearlo con el texto del input */
-        }
-      `}</style>
-    </div>
-{/*********************************************************MUNICIPIO**********************************************************************/}
-          <div className="mb-3">
-            {errorMessages.municipio && (
-              <div className="error-message" style={{ marginBottom: '10px', color: 'red', fontSize: '0.850rem' }}>
-                {errorMessages.municipio}
-              </div>
-            )}
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Municipio</CInputGroupText>
-              <CFormInput
-                type="text"
-                value={buscadorMunicipio}
-                onChange={handleBuscarMunicipio}
-                onKeyPress={handleKeyPress}
-                onCopy={disableCopyPaste}
-                onPaste={disableCopyPaste}
-                placeholder="Buscar por nombre del municipio"
-              />
-              <CButton type="button">
-                <CIcon icon={cilSearch} />
-              </CButton>
-            </CInputGroup>
-            {isDropdownOpenMunicipio && municipiosFiltrados.length > 0 && (
-              <div className="dropdown-container" style={{ position: 'relative' }}>
-                <div className="dropdown-menu show" style={{ position: 'absolute', zIndex: 999, top: '100%', left: '0', width: '100%', maxHeight: '200px', overflowY: 'auto' }}>
-                  {municipiosFiltrados.map((municipio) => (
-                    <div
-                      key={municipio.cod_municipio}
-                      className="dropdown-item"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => {
-                        handleSeleccionarMunicipio(municipio);
-                        setPersonaToUpdate({
-                          ...personaToUpdate,
-                          cod_municipio: municipio.Cod_municipio,
-                          Nombre_municipio: municipio.Nombre_municipio,
-                        });
-                      }}
-                    >
-                      {municipio.Nombre_municipio.toUpperCase()} - {municipio.Nombre_departamento.toUpperCase()}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <style jsx>{`
-              .error-message {
-                color: red;
-                font-size: 0.850rem; /* Tamaño de texto más pequeño */
-                margin-top: 4px; /* Menor distancia entre el input y el mensaje de error */
-                margin-bottom: 0;
-                margin-left: 12px; /* Para alinearlo con el texto del input */
-              }
-            `}</style>
-          </div>
 
 {/*****************************************************************************************************************************************/}
               </CCol>

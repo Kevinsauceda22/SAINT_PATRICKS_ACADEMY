@@ -185,22 +185,7 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
     } = req.body;
 
     try {
-        // Verificar si el tipo de relación es "Padre" o "Madre"
-        if (cod_tipo_relacion === 'Padre' || cod_tipo_relacion === 'Madre') {
-            // Validar si ya existe ese tipo de relación para el estudiante, excluyendo el registro actual
-            const [resultado] = await pool.query(
-                'SELECT * FROM tbl_estructura_familiar WHERE cod_persona_estudiante = ? AND cod_tipo_relacion = ? AND Cod_genealogia != ?',
-                [cod_persona_estudiante, cod_tipo_relacion, Cod_genealogia]
-            );
-
-            if (resultado.length > 0) {
-                return res.status(400).json({
-                    mensaje: `El estudiante ya tiene registrado un ${cod_tipo_relacion}.`,
-                });
-            }
-        }
-
-        // Proceder con la actualización
+        // Ejecutar el procedimiento almacenado sin validaciones adicionales
         await pool.query('CALL P_Put_EstructuraFamiliar(?, ?, ?, ?, ?)', [
             Cod_genealogia,
             cod_persona_estudiante,
@@ -215,7 +200,6 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
         res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };
-
 
 
 

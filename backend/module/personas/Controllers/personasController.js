@@ -69,7 +69,7 @@ export const obtenerFichaPadre = async (req, res) => {
     }
 };
 
-
+    
 
 
 //CONTROLADOR PARA OBTENER DEPARTAMENTOS
@@ -214,19 +214,20 @@ export const actualizarPersona = async (req, res) => {
     const { cod_persona } = req.params; // Código de persona desde la URL
 
     const {
+        tipo_documento,
         dni_persona,
         Nombre,
         Segundo_nombre,
         Primer_apellido,
         Segundo_apellido,
+        fecha_nacimiento,
         direccion_persona,
-        fecha_nacimiento,   
-        principal,
-        cod_tipo_persona,
-        cod_genero,
         cod_nacionalidad,
         cod_departamento,
-        cod_municipio
+        cod_municipio,
+        cod_tipo_persona,
+        cod_genero,
+        principal
     } = req.body;
 
     const connection = await pool.getConnection();
@@ -245,21 +246,22 @@ export const actualizarPersona = async (req, res) => {
         }
 
         // Llamada al procedimiento almacenado para actualizar
-        await connection.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+        await connection.query('CALL P_Put_Personas(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             cod_persona,
+            tipo_documento,
             dni_persona,
             Nombre,
             Segundo_nombre,
             Primer_apellido,
             Segundo_apellido,
-            direccion_persona,
             fecha_nacimiento,
-            principal,
-            cod_tipo_persona,
-            cod_genero,
+            direccion_persona,
             cod_nacionalidad,
             cod_departamento,
-            cod_municipio
+            cod_municipio,
+            cod_tipo_persona,
+            cod_genero,
+            principal
         ]);
 
         res.status(200).json({ mensaje: 'Persona actualizada exitosamente' });

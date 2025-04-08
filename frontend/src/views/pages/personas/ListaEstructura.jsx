@@ -59,7 +59,12 @@ const ListaEstructura = () => {
     cod_tipo_relacion: '',
     descripcion: '',
   });
-  const [estructuraToUpdate, setEstructuraToUpdate] = useState({});
+  const [estructuraToUpdate, setEstructuraToUpdate] = useState({   
+    Cod_genealogia: '',
+    cod_persona_padre: '',
+    cod_persona_estudiante: '',
+    cod_tipo_relacion: '',
+    descripcion: '',});
   const [errorMessages, setErrorMessages] = useState({}); // Inicializar estado para mensajes de error
   const [estructuraToDelete, setEstructuraToDelete] = useState({});
   const [personas, setPersonas] = useState([]);
@@ -193,14 +198,31 @@ const handleBuscarRelacion = (e) => {
 
 // Función para seleccionar la persona del dropdown
 const handleSeleccionarPersona = (persona) => {
+  console.log("Persona seleccionada en buscador:", persona.cod_persona);
+
   setCodPersonaSeleccionada(persona.cod_persona);
-  // Actualizamos el input con el DNI y nombre completo de la persona seleccionada
   setBuscadorRelacion(`${persona.dni_persona} - ${persona.fullName}`);
-  // Dependiendo del rol, se asigna el cod_persona a la propiedad correspondiente
-  setNuevaEstructuraFamiliar(prev => ({
-    ...prev,
-    [rolActual === 'ESTUDIANTE' ? 'cod_persona_padre' : 'cod_persona_estudiante']: persona.cod_persona,
-  }));
+
+  // ✅ Detectamos si se está editando o agregando
+  if (estructuraToUpdate?.Cod_genealogia) {
+    console.log("🛠 Editando estructura existente...");
+    setEstructuraToUpdate(prev => {
+      const updatedStructure = {
+        ...prev,
+        cod_persona_padre: persona.cod_persona,
+      };
+      console.log("Nuevo cod_persona_padre en estructura actualizada:", updatedStructure.cod_persona_padre);
+      return updatedStructure;
+    });
+  } else {
+    console.log("➕ Agregando nueva estructura...");
+    setNuevaEstructuraFamiliar(prev => ({
+      ...prev,
+      cod_persona_padre: persona.cod_persona,
+    }));
+    console.log("Nuevo cod_persona_padre en nueva estructura:", persona.cod_persona);
+  }
+
   setIsDropdownOpen(false);
 };
 
@@ -255,33 +277,6 @@ const handleSeleccionarPersona = (persona) => {
 
   {/* ------------------------------------------------------------------------------------------------------------------------------------- */}
 
-  {/* Función para mostrar la estructura familiar  */}
-  const fetchEstructuraFamiliar = async () => {
-    try {
-      const response = await fetch(
-        'http://localhost:4000/api/estructuraFamiliar/verEstructuraFamiliar',
-      )
-      const data = await response.json()
-      console.log(data)
-
-      // Verifica que 'data' sea un array antes de intentar mapearlo
-      if (Array.isArray(data)) {
-        const dataWithIndex = data.map((estructura, index) => ({
-          ...estructura,
-          originalIndex: index + 1, // Agrega un índice original a cada estructura
-        }))
-        console.log(dataWithIndex)
-        setEstructuraFamiliar(dataWithIndex) // Actualiza el estado con los datos modificados
-      } else {
-        console.error('La respuesta no es un array:', data) 
-      }
-    } catch (error) {
-      console.error('Error al obtener la estructura familiar:', error)
-    }
-  }
-
-  {/* ------------------------------------------------------------------------------------------------------------------------------------------------ */}
- 
 
 {/* ----------------------------------------------------------------------------------------------------------------------------------------- */}
 
@@ -331,7 +326,7 @@ const handleSeleccionarPersona = (persona) => {
 
     if (response.ok) {
       // Éxito: Actualizar datos y cerrar el modal
-      fetchEstructuraFamiliar(); // Actualizar la lista de estructuras familiares
+     
       setModalVisible(false); // Cerrar el modal
       resetNuevaEstructuraFamiliar(); // Reiniciar formulario
       setHasUnsavedChanges(false); // Reiniciar control de cambios no guardados
@@ -365,8 +360,24 @@ const handleSeleccionarPersona = (persona) => {
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------- */}
 
 {/*************************************************Función para actualizar estructura*******************************************************/}
+
+
 const handleUpdateEstructura = async () => {
   try {
+    console.log("Cod_genealogia:", estructuraToUpdate.Cod_genealogia);
+    console.log("Persona seleccionada (estudiante):", personaSeleccionada?.cod_persona);
+    console.log("Persona buscada (nuevo padre, antes de enviar actualización):", estructuraToUpdate.cod_persona_padre);
+
+    const requestBody = {
+      descripcion: estructuraToUpdate.descripcion,
+      cod_persona_estudiante: personaSeleccionada?.cod_persona, 
+      cod_persona_padre: estructuraToUpdate.cod_persona_padre, 
+      cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion,
+      Cod_genealogia: estructuraToUpdate.Cod_genealogia,
+    };
+
+    console.log("Datos enviados al backend:", JSON.stringify(requestBody));
+
     const response = await fetch(
       `http://localhost:4000/api/estructuraFamiliar/actualizarEstructuraFamiliar/${estructuraToUpdate.Cod_genealogia}`,
       {
@@ -374,28 +385,23 @@ const handleUpdateEstructura = async () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          descripcion: estructuraToUpdate.descripcion,
-          cod_persona_padre: estructuraToUpdate.cod_persona_padre,
-          cod_persona_estudiante: estructuraToUpdate.cod_persona_estudiante,
-          cod_tipo_relacion: estructuraToUpdate.cod_tipo_relacion,
-        }),
+        body: JSON.stringify(requestBody),
       }
     );
 
     if (response.ok) {
-      // Actualizamos la lista de estructuras familiares
-      await fetchEstructuraFamiliar();
+      console.log("Actualización exitosa. Refrescando datos...");
 
-      // Cerramos el modal y reseteamos los estados relacionados
+      // ✅ Recarga los datos en la UI para reflejar los cambios
+      await refreshEstructurasFamiliares();
+      console.log("🔄 Datos después de refrescar:", estructuraFamiliar);
+
+      // ✅ Cerramos el modal y limpiamos estados
       setModalUpdateVisible(false);
       resetEstructuraToUpdate();
       setHasUnsavedChanges(false);
-
-      // Limpiamos el input de búsqueda y reiniciamos la bandera de interacción
       setBuscadorRelacion('');
       setUserHasTyped(false);
-      fetchEstructuraFamiliar();
 
       swal.fire({
         icon: 'success',
@@ -404,6 +410,7 @@ const handleUpdateEstructura = async () => {
       });
     } else {
       const errorMessage = await response.text();
+      console.error(" Error en la actualización:", errorMessage);
       swal.fire({
         icon: 'error',
         title: 'Error',
@@ -411,7 +418,7 @@ const handleUpdateEstructura = async () => {
       });
     }
   } catch (error) {
-    console.error('Error al actualizar la estructura familiar:', error);
+    console.error('🚨 Error inesperado al actualizar:', error);
     swal.fire({
       icon: 'error',
       title: 'Error inesperado',
@@ -419,6 +426,7 @@ const handleUpdateEstructura = async () => {
     });
   }
 };
+
 
 {/* ---------------------------------------------------------------------------------------------------------------------------------------------------- */}
   
@@ -436,7 +444,7 @@ const handleUpdateEstructura = async () => {
       );
 
       if (response.ok) {
-        fetchEstructuraFamiliar();
+        refreshEstructurasFamiliares();
         setModalDeleteVisible(false);
         setEstructuraToDelete({});
         swal.fire({
@@ -482,6 +490,7 @@ const handleCloseModal = (closeFunction, resetFields) => {
     resetFields();
   }
 };
+
 
 
 const handleOpenUpdateModal = (estructura) => {
@@ -1164,7 +1173,7 @@ return (
   visible={modalUpdateVisible} 
   onClose={() => setModalUpdateVisible(false)} 
   backdrop="static" 
-  size="lg" // ✅ Aumenta el tamaño del modal
+  size="lg" 
 >
   <CModalHeader closeButton>
     <CModalTitle>Actualizar Estructura Familiar</CModalTitle>
@@ -1181,20 +1190,20 @@ return (
       {/* Campo oculto para cod_persona */}
       <input type="hidden" name="cod_persona" value={personaSeleccionada?.cod_persona} />
 
-      {/* Campo de búsqueda con lista dentro del input */}
-      <div className="mb-3" style={{ position: 'relative' }}>
+{/* Campo de búsqueda sin dependencia de rol */}
+<div className="mb-3" style={{ position: 'relative' }}>
   <CInputGroup className="mb-3">
-    <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
+    <CInputGroupText>Persona Relacionada</CInputGroupText>
     <CFormInput
       type="text"
       value={buscadorRelacion}
-      onChange={handleBuscarRelacion}  // Se utiliza el handler para activar userHasTyped
+      onChange={handleBuscarRelacion}  
       placeholder="Buscar por DNI o nombre"
       autoComplete="off"
     />
   </CInputGroup>
 
-  {/* Lista de búsqueda aparece solo debajo del input */}
+  {/* Lista desplegable debajo del input */}
   {isDropdownOpen && personasFiltradas.length > 0 && (
     <div className="lista-personas" style={{
       position: 'absolute',
@@ -1221,6 +1230,7 @@ return (
     </div>
   )}
 </div>
+
       {/* Resto del formulario */}
       <CInputGroup className="mt-3">
         <CInputGroupText>Tipo Relación</CInputGroupText>
