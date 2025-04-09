@@ -27,7 +27,7 @@ const ListaCuadroProfesor = () => {
   const [selectedCodSeccion, setSelectedCodSeccion] = useState(null);
   const [gradoSeleccionado, setGradoSeleccionado] = useState('');
   const [nombreEstudiante, setNombreEstudiante] = useState("");  // Estado para almacenar el nombre del estudiante
-
+  const [identidadEstudiante, setIdentidadEstudiante] = useState("");
   //para paginacion y busqueda de la vista secciones
 const [recordsPerPage2, setRecordsPerPage2] = useState(5);
 const [searchTerm2, setSearchTerm2] = useState('');
@@ -75,14 +75,14 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       setEstudiantes(data);
     } catch (error) {
       console.error('Error:', error);
-      Swal.fire('Error', 'Hubo un problema al obtener los estudiantes', 'error');
     }
   };
   
 
-  const fetchCuadroNotas = async (Cod_seccion_matricula, nombreEstudiante) => {
+  const fetchCuadroNotas = async (Cod_seccion_matricula, nombreEstudiante, identidad) => {
     try {
       setNombreEstudiante(nombreEstudiante);
+      setIdentidadEstudiante(identidad);
       const response = await fetch(`http://localhost:4000/api/notas/notasypromedio/${Cod_seccion_matricula}`, {
         method: 'GET',
         headers: {
@@ -105,12 +105,12 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
   
   const generarReportePDF = () => {
     // Validar que haya datos en la tabla
-    if (!secciones || secciones.length === 0) {
+    if (!currentRecords2 || currentRecords2.length === 0) {
      Swal.fire({
        icon: 'info',
        title: 'Tabla vacía',
        text: 'No hay datos disponibles para generar el reporte.',
-       confirmButtonText: 'Entendido',
+       confirmButtonText: 'Aceptar',
      });
      return; // Salir de la función si no hay datos
    }
@@ -165,7 +165,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
      doc.autoTable({
        startY: yPosition + 4,
        head: [['#', 'Sección', 'Grado', 'Total Alumnos','Año Académico']],
-       body: secciones.map((seccion, index) => [
+       body: currentRecords2.map((seccion, index) => [
          index + 1,
          `${seccion.Seccion || ''}`.trim(),
          seccion.Grado,
@@ -216,12 +216,12 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
  const generarReporteExcel = () => {
   // Validar que haya datos en la tabla
-  if (!secciones || secciones.length === 0) {
+  if (!currentRecords2 || currentRecords2.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -233,7 +233,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
   ];
 
   // Crear filas con asistencias filtradas
-  const filas = secciones.map((seccion, index) => [
+  const filas = currentRecords2.map((seccion, index) => [
     index + 1,
     seccion.Seccion,
     seccion.Grado,
@@ -264,7 +264,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
   // Ajustar el ancho de columnas automáticamente
   const ajusteColumnas = [
-    { wpx: 100 }, 
+    { wpx: 40 }, 
     { wpx: 100 }, 
     { wpx: 100 }, 
     { wpx: 100 } ,
@@ -284,12 +284,12 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
 const generarReportealumnoPDF = () => {
   // Validar que haya datos en la tabla
- if (!estudiantes || estudiantes.length === 0) {
+ if (!currentRecords3 || currentRecords3.length === 0) {
    Swal.fire({
      icon: 'info',
      title: 'Tabla vacía',
      text: 'No hay datos disponibles para generar el reporte.',
-     confirmButtonText: 'Entendido',
+     confirmButtonText: 'Aceptar',
    });
    return; // Salir de la función si no hay datos
  }
@@ -319,16 +319,16 @@ const generarReportealumnoPDF = () => {
     // Detalles de la sección, asignatura y año
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-    if (nombreSeccionSeleccionada && gradoSeleccionado && anioSeccionSeleccionada ) {
+    if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada ) {
       doc.text(
-        `Sección: ${nombreSeccionSeleccionada}  | Grado: ${gradoSeleccionado} | Año: ${anioSeccionSeleccionada}`,
+        `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada}`,
         doc.internal.pageSize.width / 2,
         yPosition,
         { align: 'center' }
       );
-    } else if (nombreSeccionSeleccionada && gradoSeleccionado) {
+    } else if (gradoSeleccionado && nombreSeccionSeleccionada) {
       doc.text(
-        `Sección: ${nombreSeccionSeleccionada} | Grado: ${gradoSeleccionado}`,
+        `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada}`,
         doc.internal.pageSize.width / 2,
         yPosition,
         { align: 'center' }
@@ -364,10 +364,11 @@ const generarReportealumnoPDF = () => {
    // Agregar tabla con auto-paginación
    doc.autoTable({
      startY: yPosition + 4,
-     head: [['#', 'Nombre Estudiante']],
-     body: estudiantes.map((estudiante, index) => [
+    head: [['#','Identidad', 'Nombre Estudiante']],
+     body: currentRecords3.map((estudiante, index) => [
        index + 1,
-       `${estudiante.Nombre_Completo}`.trim(),
+       `${estudiante.Identidad}`.trim(),
+          estudiante.Nombre_Completo,
      ]),
      headStyles: {
        fillColor: [0, 102, 51],
@@ -381,7 +382,8 @@ const generarReportealumnoPDF = () => {
      },
      columnStyles: {
        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-       1: { cellWidth: 'auto' }, // Columna 'estudiante' se ajusta automáticamente
+       1: { cellWidth: 'auto' }, // Columna 'identidad' se ajusta automáticamente
+       2: { cellWidth: 'auto' }, // Columna 'estudiante' se ajusta automáticamente
      },
      alternateRowStyles: { fillColor: [240, 248, 255] },
      didDrawPage: (data) => {
@@ -409,22 +411,22 @@ const generarReportealumnoPDF = () => {
 };
 
 const generarReportealumnoExcel = () => {
-  if (!estudiantes || estudiantes.length === 0) {
+  if (!currentRecords3 || currentRecords3.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
 
   // Detalles de la sección, asignatura y año
   const detalles = [];
-  if (nombreSeccionSeleccionada  && gradoSeleccionado && anioSeccionSeleccionada) {
-    detalles.push([`Sección: ${nombreSeccionSeleccionada}  | Grado: ${gradoSeleccionado} | Año: ${anioSeccionSeleccionada}`]);
+  if (gradoSeleccionado && nombreSeccionSeleccionada && anioSeccionSeleccionada) {
+    detalles.push([`Grado: ${gradoSeleccionado}  | Sección: ${nombreSeccionSeleccionada}  | Año: ${anioSeccionSeleccionada}`]);
   } else if (nombreSeccionSeleccionada && gradoSeleccionado) {
-    detalles.push([`Sección: ${nombreSeccionSeleccionada} | Grado: ${gradoSeleccionado}`]);
+    detalles.push([`Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada}`]);
   }
 
   const encabezados = [
@@ -433,12 +435,13 @@ const generarReportealumnoExcel = () => {
     [], // Espacio en blanco
     ...detalles, // Agregar los detalles dinámicos
     [], // Espacio adicional después de los detalles
-    ["#", "Nombre Estudiante"],
+    ["#","Identidad", "Nombre Estudiante"],
   ];
 
   // Crear filas con asignaturas
-  const filas = estudiantes.map((estudiante, index) => [
+  const filas = currentRecords3.map((estudiante, index) => [
     index + 1,
+    estudiante.Identidad || "N/A",
     estudiante.Nombre_Completo || "N/A"
   ]);
 
@@ -451,6 +454,7 @@ const generarReportealumnoExcel = () => {
   // Ajustar el ancho de columnas automáticamente
   const ajusteColumnas = [
     { wpx: 40 }, // # (Número)
+   { wpx: 150 }, // Identidad
     { wpx: 300 }, // estudiante
   ];
 
@@ -474,6 +478,7 @@ const disableCopyPaste = (e) => {
     icon: 'warning',
     title: 'Acción bloqueada',
     text: 'Copiar y pegar no está permitido.',
+    confirmButtonText: 'Aceptar',
   });
 };
 //-------------------paginacion, buscador vista actual : secciones-----------------------------
@@ -491,6 +496,7 @@ const handleSearch2 = (event) => {
       icon: 'warning',
       title: 'Espacios múltiples',
       text: 'No se permite más de un espacio entre palabras.',
+      confirmButtonText: 'Aceptar',
     });
     value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
   }
@@ -501,6 +507,7 @@ const handleSearch2 = (event) => {
       icon: 'warning',
       title: 'Caracteres no permitidos',
       text: 'Solo se permiten letras, números y espacios.',
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
@@ -516,6 +523,7 @@ const handleSearch2 = (event) => {
           icon: 'warning',
           title: 'Repetición de letras',
           text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -572,6 +580,7 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
       icon: 'warning',
       title: 'Espacios múltiples',
       text: 'No se permite más de un espacio entre palabras.',
+      confirmButtonText: 'Aceptar',
     });
     value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
   }
@@ -582,6 +591,7 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
       icon: 'warning',
       title: 'Caracteres no permitidos',
       text: 'Solo se permiten letras, números y espacios.',
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
@@ -597,6 +607,7 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
           icon: 'warning',
           title: 'Repetición de letras',
           text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          confirmButtonText: 'Aceptar',
         });
         return;
       }
@@ -610,8 +621,9 @@ const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
 
 
 // Filtro de búsqueda
-const filteredEstudiantes= estudiantes.filter((estudiante) =>
-  estudiante.Nombre_Completo.toLowerCase().includes(searchTerm3.toLowerCase())
+const filteredEstudiantes = estudiantes.filter((estudiante) => 
+  (estudiante.Nombre_Completo && estudiante.Nombre_Completo.toLowerCase().includes(searchTerm3.toLowerCase())) ||
+  (estudiante.Identidad && estudiante.Identidad.toLowerCase().includes(searchTerm3.toLowerCase()))
 );
 
 // Lógica de paginación
@@ -979,6 +991,7 @@ return (
             <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
             <CTableRow>
               <CTableHeaderCell>#</CTableHeaderCell>
+              <CTableHeaderCell>IDENTIDAD</CTableHeaderCell>
               <CTableHeaderCell>ALUMNO</CTableHeaderCell>
               <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
               </CTableRow>
@@ -988,6 +1001,7 @@ return (
               currentRecords3.map((estudiante, index) => (
               <CTableRow key={estudiante.Cod_seccion_matricula}>
                 <CTableDataCell>{index + 1}</CTableDataCell>
+                <CTableDataCell>{estudiante.Identidad}</CTableDataCell>
                 <CTableDataCell>{estudiante.Nombre_Completo}</CTableDataCell>
                 <CTableDataCell>
                   <CButton
@@ -1002,7 +1016,7 @@ return (
                     size="sm"
                     onMouseEnter={(e) => (e.target.style.backgroundColor = "#dce3dc")}
                     onMouseLeave={(e) => (e.target.style.backgroundColor = "#F0F4F3")}
-                    onClick={() => fetchCuadroNotas(estudiante.Cod_seccion_matricula,estudiante.Nombre_Completo)}
+                    onClick={() => fetchCuadroNotas(estudiante.Cod_seccion_matricula,estudiante.Nombre_Completo, estudiante.Identidad)}
                   >
                     Cuadro Notas
                   </CButton>
@@ -1086,7 +1100,7 @@ return (
   onClick={exportarContenido} // Aquí está en la posición correcta
 >
   <CIcon icon={cilDescription} />
-  Abrir en PDF
+  Guardar PDF
 </CButton>
 
 </CCol>
@@ -1170,7 +1184,10 @@ return (
         </span>
       </span>
       <span style={{ display: 'flex', alignItems: 'center' }}>
-        <strong style={{ fontWeight: 'bold' }}>Student ID:</strong> _____________________
+        <strong style={{ fontWeight: 'bold' }}>Student ID:</strong>
+        <span style={{ borderBottom: '1px solid black', paddingBottom: '2px', display: 'inline-block', flex: '1', marginLeft: '5px', letterSpacing: '0.5px' }}>
+          {identidadEstudiante}
+        </span>
       </span>
     </div>
 
@@ -1180,7 +1197,8 @@ return (
         <span style={{ paddingBottom: '2px', display: 'inline-block', letterSpacing: '0.5px' }}> {gradoSeleccionado}</span>
       </span>
       <span style={{ marginLeft: '10px' }}><strong style={{ fontWeight: 'bold' }}>Section: </strong> {nombreSeccionSeleccionada}</span>
-      <span style={{ marginRight: '40px' }}><strong style={{ fontWeight: 'bold' }}>School year: </strong> 2024-2025</span>
+      <span style={{ marginRight: '40px' }}>
+      <strong style={{ fontWeight: 'bold' }}>School year: </strong> {new Date().getFullYear()}-{new Date().getFullYear() + 1}</span>
     </div>
 
 
@@ -1194,14 +1212,18 @@ return (
       style={{ backgroundColor: '#BFBFBF'}}  // Color de fondo agregado
     >
       <div className="d-flex flex-column align-items-center justify-content-center">
-        <span  style={{ marginBottom: '12px' }}>Áreas Curriculares/</span>
-        <span style={{ marginTop: '5px' }}>Campos del Conocimiento</span>
+        <span  style={{ marginBottom: '12px' }}>ÁREAS CURRICULARES/</span>
+        <span style={{ marginTop: '5px' }}>CAMPOS DEL CONOCIMIENTO</span>
       </div>
     </CTableHeaderCell>
 
     <CTableHeaderCell
-      rowSpan={1} // Esta celda solo ocupa la primera fila
-      colSpan={cuadroNotas.length > 0 ? cuadroNotas[0].NotasParciales.length : 0} // Define el número de columnas
+      rowSpan={1}
+      colSpan={
+        cuadroNotas.length > 0 
+        ? cuadroNotas[0].NotasParciales.filter(p => !p.Parcial.match(/recu/i)).length 
+        : 0
+      }
       className="text-center align-middle"
       style={{
         backgroundColor: '#BFBFBF',
@@ -1209,29 +1231,43 @@ return (
         padding: '10px',
       }}
     >
-      Parciales
+      PARCIALES
     </CTableHeaderCell>
 
-    <CTableHeaderCell 
+    {/* Aquí se muestra dinámicamente el nombre del parcial de recuperación si existe */}
+    {cuadroNotas.length > 0 && cuadroNotas[0].NotasParciales.some(p => p.Parcial.match(/recu/i)) && (
+          cuadroNotas[0].NotasParciales.filter(p => p.Parcial.match(/recu/i)).map((parcial, index) => (
+            <CTableHeaderCell 
+              key={index}
+              rowSpan={2}
+              className="text-center align-middle"
+              style={{ backgroundColor: '#BFBFBF', padding: '10px' }}
+            >
+              {parcial.Parcial} {/* Nombre dinámico del parcial de recuperación */}
+            </CTableHeaderCell>
+          ))
+        )}
+
+      <CTableHeaderCell 
       rowSpan={2} 
       className="text-center align-middle" 
-      style={{ backgroundColor: '#BFBFBF' }}  // Color de fondo agregado
+      style={{ backgroundColor: '#BFBFBF' }}
     >
       <div className="d-flex flex-column align-items-center justify-content-center">
-        <span style={{ marginBottom: '12px' }}>Nota</span>
-        <span style={{ marginTop: '5px' }}>Prom. Final (%)</span>
+        <span style={{ marginBottom: '12px' }}>NOTA</span>
+        <span style={{ marginTop: '5px' }}>PROM.FINAL (%)</span>
       </div>
     </CTableHeaderCell>
   </CTableRow>
 
   <CTableRow>
-    {/* Encabezados dinámicos para los parciales */}
-    {cuadroNotas.length > 0 &&
-      cuadroNotas[0].NotasParciales.map((parcial, index) => (
+     {/* Encabezados dinámicos para los parciales, excluyendo "Recuperación" */}
+     {cuadroNotas.length > 0 &&
+      cuadroNotas[0].NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, index) => (
         <CTableHeaderCell 
           key={index} 
           className="text-center" 
-          style={{ backgroundColor: '#BFBFBF' }}  // Color de fondo agregado
+          style={{ backgroundColor: '#BFBFBF' }}
         >
           {parcial.Parcial}
         </CTableHeaderCell>
@@ -1252,13 +1288,23 @@ return (
               </div>
             </CTableDataCell>
 
-            {/* Notas en columnas según los parciales */}
-            {nota.NotasParciales.map((parcial, i) => (
-              <CTableDataCell key={i} className="text-center bg-transparent" >{parcial.Nota}</CTableDataCell>
-            ))}
+            {/* Notas de parciales (sin "Recuperación" o palabras que contengan "recu") */}
+          {nota.NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, i) => (
+            <CTableDataCell key={i} className="text-center bg-transparent">
+              {parcial.Nota}
+            </CTableDataCell>
+          ))}
 
-            {/* Columna Promedio Final */}
-            <CTableDataCell className="text-center bg-transparent">{nota.PromedioFinal}</CTableDataCell>
+            {/* Columna de Recuperación */}
+        <CTableDataCell className="text-center bg-transparent">
+          {
+            nota.NotasParciales.find(p => p.Parcial.match(/recu/i))?.Nota || "-"
+          }
+        </CTableDataCell>
+           {/* Columna Promedio Final */}
+           <CTableDataCell className="text-center bg-transparent">
+            {nota.PromedioFinal}
+          </CTableDataCell>
           </CTableRow>
         ))
       ) : (

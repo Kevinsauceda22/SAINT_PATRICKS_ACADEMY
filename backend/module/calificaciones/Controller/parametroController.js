@@ -43,8 +43,8 @@ export const registrarParametro = async (req, res) => {
         }
 
         // Llama al procedimiento almacenado con los parámetros y cod_usuario
-        const query = 'CALL insert_parametro(?, ?, ?, ?, ?)';
-        const [resultado] = await pool.query(query, [codUsuario, Parametro, Valor, Fecha_Creacion, Fecha_Modificacion]);
+        const query = 'CALL insert_parametro(?, ?, ?, ?)';
+        const [resultado] = await pool.query(query, [Parametro, Valor, Fecha_Creacion, Fecha_Modificacion]);
 
         // Retorna la respuesta con el resultado
         return res.status(201).json({
