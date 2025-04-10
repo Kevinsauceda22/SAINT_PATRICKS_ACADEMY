@@ -1570,6 +1570,7 @@ const ListaAsistencia = () => {
                       <div style={{display: 'flex',gap: '10px',justifyContent: 'center',alignItems: 'center', }}>
                         {canUpdate && (
                           <CButton
+                            title="Clic para ver editar asistencias"
                             onClick={() => cargarDatosParaActualizar(fecha)}
                             onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
                             onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
@@ -1578,6 +1579,7 @@ const ListaAsistencia = () => {
                           </CButton>
                         )}
                         <CButton
+                          title="Clic para ver el detalle de asistencias"
                           onClick={() => fetchTodasAsistencias(fecha)}
                           onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0px 4px 10px rgba(93, 138, 168, 0.6)';e.currentTarget.style.color = '#000000'; }}
                           onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
