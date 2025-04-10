@@ -75,15 +75,15 @@ const ListaPonderacionesCiclos = () => {
             console.error('Error al decodificar el token:', error);
           }
         }
-      }, []); // Arreglo de dependencias vacío, solo se ejecuta al montar el componente
+   }, []); // Arreglo de dependencias vacío, solo se ejecuta al montar el componente
     
     
 
-    const fetchCiclos = async () => {
+   const fetchCiclos = async () => {
         try {
             const response = await fetch('http://localhost:4000/api/ciclos/verCiclos');
             const data = await response.json();
-            setCiclos(data);
+            setCiclos(data.map((item, index) => ({ ...item, originalIndex: index + 1 }))); // Paréntesis añadido aquí
         } catch (error) {
             console.error('Error al obtener los ciclos:', error);
         }
@@ -296,10 +296,10 @@ const ListaPonderacionesCiclos = () => {
             confirmButtonText: 'Aceptar' 
           });
         }
-      };
+   };
 
 
-      const handleSaveUpdate = async (ponderacionCiclo) => {
+    const handleSaveUpdate = async (ponderacionCiclo) => {
         try {
             // Obtener el token del almacenamiento local
             const token = localStorage.getItem('token');
@@ -396,8 +396,8 @@ const ListaPonderacionesCiclos = () => {
     
 
     const generarReporteCiclosPDF = () => {
-         // Validar que haya datos en la tabla
-        if (!ciclos || ciclos.length === 0) {
+        // Validar que haya datos en la tabla
+        if (!filteredCiclos || filteredCiclos.length === 0) {
             Swal.fire({
             icon: 'info',
             title: 'Tabla vacía',
@@ -455,8 +455,8 @@ const ListaPonderacionesCiclos = () => {
             doc.autoTable({
                 startY: yPosition + 4,
                 head: [['#', 'Nombre Ciclo', 'Grados Asignados']],
-                body: ciclos.map((ciclo, index) => [
-                    index + 1,
+                body: filteredCiclos.map((ciclo, index) => [
+                    ciclo.originalIndex || index + 1,
                     ciclo.Nombre_ciclo,
                     filtrarGradosPorCiclo(ciclo.Cod_ciclo) // Obtén los grados asignados al ciclo
                         .map((grado) => grado.Nombre_grado) // Obtén el nombre de cada grado
@@ -511,213 +511,224 @@ const ListaPonderacionesCiclos = () => {
         };
     };
 
-       const handleReporteClick = () => {
-        // Validar que haya datos en la tabla
-        if (!ponderacionesciclos || ponderacionesciclos.length === 0) {
-            Swal.fire({
-            icon: 'info',
-            title: 'Tabla vacía',
-            text: 'No hay datos disponibles para generar el reporte.',
-            confirmButtonText: 'Aceptar',
-            });
-            return; // Salir de la función si no hay datos
-        }
-            const doc = new jsPDF();
-            const img = new Image();
-            img.src = logo; // Asegúrate de importar el logo correctamente
-        
-            img.onload = () => {
-                // Agregar logo
-                doc.addImage(img, 'PNG', 10, 10, 30, 30);
-        
-                let yPosition = 20;
-        
-                // Título principal
-                doc.setFontSize(18);
-                doc.setTextColor(0, 102, 51);
-                doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-        
-                yPosition += 12;
-        
-                // Subtítulo
-                doc.setFontSize(16);
-                doc.text('Reporte de Ponderaciones por Ciclo', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-                yPosition += 10;
-
-                doc.setFontSize(12);
-                doc.setTextColor(0, 0, 0); // Negro para el texto informativo
-                if (selectedCiclo) {
-                    doc.text(
-                        `Ciclo: ${getCicloName(selectedCiclo)}`,
-                        doc.internal.pageSize.width / 2,
-                        yPosition,
-                        { align: 'center' }
-                    );
-                    yPosition += 8; // Espaciado entre líneas de detalle
-                } // Cierre del bloque if
-
-                // Información adicional
-                doc.setFontSize(10);
-                doc.setTextColor(100); // Gris para texto secundario
-                doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-                yPosition += 4;
-        
-                doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });       
-                yPosition += 4;
-            
-                doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-                yPosition += 6; // Espaciado antes de la línea divisoria
-                // Línea divisoria
-                doc.setLineWidth(0.5);
-                doc.setDrawColor(0, 102, 51);
-                doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
-        
-                // Configuración para la tabla
-                const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                let pageNumber = 1; // Página inicial
-
-                // Configuración de tabla
-                doc.autoTable({
-                    startY: yPosition + 4,
-                    head: [['#', 'Descripción de Ponderación', 'Valor']],
-                    body: ponderacionesciclos.map((ponderacionCiclo, index) => [
-                        index + 1,
-                        getPonderacionName(ponderacionCiclo.Cod_ponderacion), // Obtener descripción de la ponderación
-                        `${ponderacionCiclo.Valor}%`, // Valor con el símbolo de porcentaje
-                    ]),
-                    headStyles: {
-                        fillColor: [0, 102, 51],
-                        textColor: [255, 255, 255],
-                        fontSize: 10,
-                    },
-                    styles: {
-                        fontSize: 10,
-                        cellPadding: 3,
-                        halign: 'center',
-                    },
-                    columnStyles: {
-                        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-                        1: { cellWidth: 'auto' }, // Columna 'Nombre Ciclo' se ajusta automáticamente
-                        2: { cellWidth: 'auto' }, // Columna 'Grados Asignados' se ajusta automáticamente
-                        3: { cellWidth: 'auto' }, // Columna 'Grados Asignados' se ajusta automáticamente
-                      },
-                    alternateRowStyles: { fillColor: [240, 248, 255] },
-                    didDrawPage: (data) => {
-                        const currentDate = new Date();
-                        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                        const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                        doc.setFontSize(10);
-                        doc.setTextColor(100);
-                        // Fecha y hora en el pie de página
-                        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                    },
-                    });
-                    
-                    // Asegúrate de calcular el total de páginas al final
-                    const totalPages = doc.internal.getNumberOfPages();
-                    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                    
-                    for (let i = 1; i <= totalPages; i++) {
-                        doc.setPage(i); // Ve a cada página
-                        doc.setTextColor(100);
-                        const text = `Página ${i} de ${totalPages}`;
-                        // Agrega número de página en la posición correcta
-                        doc.text(text, pageWidth - 30, pageHeight - 10);
-                    }
-
-                // Agregar el total al final del reporte
-                const totalPonderaciones = calculateTotal(); // Calcula el total de los valores
-                yPosition = doc.lastAutoTable.finalY + 11; // Posición debajo de la tabla
-                doc.setFontSize(11);
-                doc.setTextColor(100);
-                doc.text(`Total : ${totalPonderaciones}%`, doc.internal.pageSize.width - 15, yPosition, { align: 'right' });
-        
-                // Abrir el PDF
-                window.open(doc.output('bloburl'), '_blank');
-            };
-        
-            img.onerror = () => {
-                console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
-                window.open(doc.output('bloburl'), '_blank');
-            };
-        };
-        
-
-        const handleReporteExcelClick = () => {
-             // Validar que haya datos en la tabla
-            if (!ponderacionesciclos || ponderacionesciclos.length === 0) {
-                Swal.fire({
-                icon: 'info',
-                title: 'Tabla vacía',
-                text: 'No hay datos disponibles para generar el reporte excel.',
-                confirmButtonText: 'Aceptar',
-                });
-                return; // Salir de la función si no hay datos
-            }
-            // Encabezados de la tabla
-            const encabezados = [
-                ["Saint Patrick Academy"],
-                ["Reporte de Ponderaciones por Ciclo"],
-                [`Fecha de generación: ${new Date().toLocaleDateString()}`],
-                [], // Espacio en blanco
-            ];
-        
-            // Agregar el ciclo seleccionado si está disponible
-            if (selectedCiclo) {
-                encabezados.push([`Ciclo: ${getCicloName(selectedCiclo)}`]);
-                encabezados.push([]); // Espaciado adicional
-            }
-        
-            // Encabezados de la tabla
-            encabezados.push(["#", "Descripción de Ponderación", "Valor"]);
-        
-            // Crear filas de la tabla con los datos de las ponderaciones
-            const filas = ponderacionesciclos.map((ponderacionCiclo, index) => [
-                index + 1,
-                getPonderacionName(ponderacionCiclo.Cod_ponderacion), // Obtener descripción de la ponderación
-                `${ponderacionCiclo.Valor}%`, // Valor con símbolo de porcentaje
-            ]);
-        
-            // Calcular el total y agregarlo como una fila separada
-            const totalPonderaciones = calculateTotal();
-            filas.push(["", "", "Total", `${totalPonderaciones}%`]);
-        
-            // Combinar encabezados y filas
-            const datos = [...encabezados, ...filas];
-        
-            // Crear una hoja de trabajo con los datos
-            const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
-        
-            // Ajustar el ancho de columnas automáticamente
-            const ajusteColumnas = [
-                { wpx: 50 },  // Número
-                { wpx: 280 }, // Descripción de Ponderación
-                { wpx: 100 }  // Valor
-            ];
-            hojaDeTrabajo['!cols'] = ajusteColumnas;
-        
-            // Crear un libro de trabajo y añadir la hoja
-            const libroDeTrabajo = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Ponderaciones por Ciclo");
-        
-            // Guardar el archivo Excel
-            const nombreArchivo = `reporte_ponderaciones_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`;
-            XLSX.writeFile(libroDeTrabajo, nombreArchivo);
-        };
-        
-        
-
-    const handleReporteExceacaiclolClick = () => {
-         // Validar que haya datos en la tabla
-    if (!ciclos || ciclos.length === 0) {
+    const handleReporteClick = () => {
+    // Validar que haya datos en la tabla
+    if (!ponderacionesciclos || ponderacionesciclos.length === 0) {
         Swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
-        text: 'No hay datos disponibles para generar el reporte excel.',
+        text: 'No hay datos disponibles para generar el reporte.',
         confirmButtonText: 'Aceptar',
         });
         return; // Salir de la función si no hay datos
     }
+        const doc = new jsPDF();
+        const img = new Image();
+        img.src = logo; // Asegúrate de importar el logo correctamente
+    
+        img.onload = () => {
+            // Agregar logo
+            doc.addImage(img, 'PNG', 10, 10, 30, 30);
+    
+            let yPosition = 20;
+    
+            // Título principal
+            doc.setFontSize(18);
+            doc.setTextColor(0, 102, 51);
+            doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    
+            yPosition += 12;
+    
+            // Subtítulo
+            doc.setFontSize(16);
+            doc.text('Reporte de Ponderaciones por Ciclo', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+            yPosition += 10;
+
+            doc.setFontSize(12);
+            doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+            if (selectedCiclo) {
+                doc.text(
+                    `Ciclo: ${getCicloName(selectedCiclo)}`,
+                    doc.internal.pageSize.width / 2,
+                    yPosition,
+                    { align: 'center' }
+                );
+                yPosition += 8; // Espaciado entre líneas de detalle
+            } // Cierre del bloque if
+
+            // Información adicional
+            doc.setFontSize(10);
+            doc.setTextColor(100); // Gris para texto secundario
+            doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+            yPosition += 4;
+    
+            doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });       
+            yPosition += 4;
+        
+            doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+            yPosition += 6; // Espaciado antes de la línea divisoria
+            // Línea divisoria
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(0, 102, 51);
+            doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+    
+            // Configuración para la tabla
+            const pageHeight = doc.internal.pageSize.height; // Altura de la página
+            let pageNumber = 1; // Página inicial
+
+            // Configuración de tabla
+            doc.autoTable({
+                startY: yPosition + 4,
+                head: [['#', 'Descripción de Ponderación', 'Valor']],
+                body: ponderacionesciclos.map((ponderacionCiclo, index) => [
+                    index + 1,
+                    getPonderacionName(ponderacionCiclo.Cod_ponderacion), // Obtener descripción de la ponderación
+                    `${ponderacionCiclo.Valor}%`, // Valor con el símbolo de porcentaje
+                ]),
+                headStyles: {
+                    fillColor: [0, 102, 51],
+                    textColor: [255, 255, 255],
+                    fontSize: 10,
+                },
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 3,
+                    halign: 'center',
+                },
+                columnStyles: {
+                    0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+                    1: { cellWidth: 'auto' }, // Columna 'Nombre Ciclo' se ajusta automáticamente
+                    2: { cellWidth: 'auto' }, // Columna 'Grados Asignados' se ajusta automáticamente
+                    3: { cellWidth: 'auto' }, // Columna 'Grados Asignados' se ajusta automáticamente
+                    },
+                alternateRowStyles: { fillColor: [240, 248, 255] },
+                didDrawPage: (data) => {
+                    const currentDate = new Date();
+                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
+                    doc.setFontSize(10);
+                    doc.setTextColor(100);
+                    // Fecha y hora en el pie de página
+                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+                },
+                });
+                
+                // Asegúrate de calcular el total de páginas al final
+                const totalPages = doc.internal.getNumberOfPages();
+                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+                
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i); // Ve a cada página
+                    doc.setTextColor(100);
+                    const text = `Página ${i} de ${totalPages}`;
+                    // Agrega número de página en la posición correcta
+                    doc.text(text, pageWidth - 30, pageHeight - 10);
+                }
+
+            // Agregar el total al final del reporte
+            const totalPonderaciones = calculateTotal(); // Calcula el total de los valores
+            yPosition = doc.lastAutoTable.finalY + 11; // Posición debajo de la tabla
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Total : ${totalPonderaciones}%`, doc.internal.pageSize.width - 15, yPosition, { align: 'right' });
+    
+            // Abrir el PDF
+            window.open(doc.output('bloburl'), '_blank');
+        };
+    
+        img.onerror = () => {
+            console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+            window.open(doc.output('bloburl'), '_blank');
+        };
+    };
+        
+
+    const handleReporteExcelClick = () => {
+        // Validar que haya datos en la tabla
+        if (!ponderacionesciclos || ponderacionesciclos.length === 0) {
+            Swal.fire({
+                icon: 'info',
+                title: 'Tabla vacía',
+                text: 'No hay datos disponibles para generar el reporte excel.',
+                confirmButtonText: 'Aceptar',
+            });
+            return;
+        }
+    
+        // Crear libro de trabajo
+        const wb = XLSX.utils.book_new();
+    
+        // Crear hoja de datos
+        const wsData = [
+            ["Saint Patrick Academy"],
+            ["Reporte de Ponderaciones por Ciclo"],
+            [`Fecha de generación: ${new Date().toLocaleDateString()}`],
+            [], // Espacio en blanco
+        ];
+    
+        // Agregar información del ciclo si está seleccionado
+        if (selectedCiclo) {
+            wsData.push([`Ciclo: ${getCicloName(selectedCiclo)}`]);
+            wsData.push([]); // Espacio adicional
+        }
+    
+        // Encabezados de la tabla
+        wsData.push(
+            ["#", "Descripción de Ponderación", "Valor (%)"],
+            ...ponderacionesciclos.map((ponderacionCiclo, index) => [
+                index + 1,
+                getPonderacionName(ponderacionCiclo.Cod_ponderacion),
+                ponderacionCiclo.Valor / 100 // Convertir a decimal para formato de porcentaje
+            ])
+        );
+    
+        // Agregar el total (también dividido por 100)
+        const totalPonderaciones = calculateTotal();
+        wsData.push(["", "Total:", totalPonderaciones / 100]);
+    
+        // Convertir datos a hoja de trabajo
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+        // Ajustar anchos de columnas
+        ws['!cols'] = [
+            { wch: 5 },   // Columna #
+            { wch: 40 },  // Descripción
+            { wch: 10 }   // Valor
+        ];
+    
+        // Aplicar formato numérico a la columna de valores
+        const range = XLSX.utils.decode_range(ws['!ref']);
+        for (let R = 5; R <= range.e.r; ++R) { // Desde fila 5 hasta el final
+            const cellAddress = XLSX.utils.encode_cell({ r: R, c: 2 }); // Columna C (índice 2)
+            if (ws[cellAddress]) {
+                ws[cellAddress].t = 'n'; // Tipo numérico
+                ws[cellAddress].z = '0.00%'; // Formato de porcentaje
+            }
+        }
+    
+        // Agregar hoja al libro
+        XLSX.utils.book_append_sheet(wb, ws, "Ponderaciones por Ciclo");
+    
+        // Generar nombre de archivo
+        const nombreArchivo = `Ponderaciones_Ciclo_${selectedCiclo ? getCicloName(selectedCiclo).replace(/\s+/g, '_') : ''}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    
+        // Descargar archivo
+        XLSX.writeFile(wb, nombreArchivo);
+    };
+        
+        
+
+    const handleReporteExceacaiclolClick = () => {
+        // Validar que haya datos en la tabla
+        if (!filteredCiclos || filteredCiclos.length === 0) {
+            Swal.fire({
+            icon: 'info',
+            title: 'Tabla vacía',
+            text: 'No hay datos disponibles para generar el reporte excel.',
+            confirmButtonText: 'Aceptar',
+            });
+            return; // Salir de la función si no hay datos
+        }
         // Encabezados de la tabla
         const encabezados = [
             ["Saint Patrick Academy"],
@@ -728,8 +739,8 @@ const ListaPonderacionesCiclos = () => {
         ];
 
         // Crear filas de la tabla con los datos de los ciclos
-        const filas = ciclos.map((ciclo, index) => [
-            index + 1,
+        const filas = filteredCiclos.map((ciclo, index) => [
+            ciclo.originalIndex || index + 1,
             ciclo.Nombre_ciclo,
             filtrarGradosPorCiclo(ciclo.Cod_ciclo) // Obtén los grados asignados al ciclo
             .map((grado) => grado.Nombre_grado) // Obtén el nombre de cada grado
@@ -775,7 +786,7 @@ const ListaPonderacionesCiclos = () => {
             const nombreCiclo = ciclo.Nombre_ciclo?.toUpperCase().trim() || ''; // Normaliza el texto
             return nombreCiclo.includes(searchTerm.trim().toUpperCase()); // Busca coincidencias
         })
-        : [];
+    : [];
 
 
     // Cambiar página
@@ -811,24 +822,24 @@ const ListaPonderacionesCiclos = () => {
             return; // Detener si la entrada no es válida
         }
          // Validación para letras repetidas más de 4 veces seguidas
-    const words = value.split(' ');
-    for (let word of words) {
-      const letterCounts = {};
-      for (let letter of word) {
-        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-        if (letterCounts[letter] > 4) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Repetición de letras',
-            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
-             confirmButtonText: 'Aceptar'
-          });
-          return;
+        const words = value.split(' ');
+        for (let word of words) {
+        const letterCounts = {};
+        for (let letter of word) {
+            letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+            if (letterCounts[letter] > 4) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Repetición de letras',
+                text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+                confirmButtonText: 'Aceptar'
+            });
+            return;
+            }
         }
-      }
-    }
-        setSearchTerm(value); // Actualizar el término de búsqueda
-        setCurrentPage(1); // Resetear a la primera página al buscar
+        }
+            setSearchTerm(value); // Actualizar el término de búsqueda
+            setCurrentPage(1); // Resetear a la primera página al buscar
     };
 
     useEffect(() => {
@@ -844,14 +855,11 @@ const ListaPonderacionesCiclos = () => {
     if (!canSelect) {
         return <AccessDenied />;
     }
+
     return (
         <div className="container mt-1">
-            <CRow className='align-items-center mb-5'>
-        
-                    {/* Titulo de la pagina */}
-                   
-                
-
+            <CRow className='align-items-center mb-5'>       
+                {/* Titulo de la pagina */}
                 <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                     <div className="flex-grow-1 text-center">
                         <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Gestión de Ponderaciones a Ciclos</h4>
@@ -904,7 +912,6 @@ const ListaPonderacionesCiclos = () => {
             </CRow>
 
             <CRow className='align-items-center mt-4 mb-2'>
-
                 {/* Barra de búsqueda */}
                 <CCol xs="12" md="8" className='d-flex flex-wrap align-items-center'>
                     <CInputGroup className="me-3" style={{ width: '350px' }}>
@@ -969,100 +976,100 @@ const ListaPonderacionesCiclos = () => {
             </CRow>
             <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
             <CTable striped bordered hover responsive>
-  <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
-    <CTableRow>
-      <CTableHeaderCell>#</CTableHeaderCell>
-      <CTableHeaderCell>NOMBRE DE CICLO</CTableHeaderCell>
-      <CTableHeaderCell>GRADOS ASIGNADOS</CTableHeaderCell>
-      <CTableHeaderCell>ACCIONES</CTableHeaderCell>
-    </CTableRow>
-  </CTableHead>
-  <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
-    {filteredCiclos.length > 0 ? (
-      filteredCiclos
-        .slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage) // Paginar
-        .map((ciclo, index) => (
-          <CTableRow key={ciclo.Cod_ciclo}>
-            <CTableDataCell>{index + 1 + (currentPage - 1) * recordsPerPage}</CTableDataCell>
-            <CTableDataCell>{ciclo.Nombre_ciclo}</CTableDataCell>
-            <CTableDataCell>
-              {filtrarGradosPorCiclo(ciclo.Cod_ciclo)
-                .map((grado) => grado.Nombre_grado)
-                .join(', ')}
-            </CTableDataCell>
-            <CTableDataCell>
-            <div style={{display: 'flex',gap: '10px',justifyContent: 'center',alignItems: 'center', }}>
-              <CButton
-                style={{
-                  backgroundColor: '#4B6251',
-                  color: '#FFFFFF',
-                  padding: '5px 10px',
-                  fontSize: '0.9rem',
-                  marginRight: '8px'
-                }}
-                onClick={() => handleOpenAssignModal(ciclo)}
-                onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#3C4B43'; // Fondo más oscuro
-                    e.currentTarget.style.color = '#FFFFFF'; // Texto más claro
-                    e.currentTarget.style.boxShadow = '0px 4px 10px rgba(60, 75, 67, 0.6)'; // Sombra suave
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#4B6251'; // Fondo original
-                    e.currentTarget.style.color = '#FFFFFF'; // Texto original
-                    e.currentTarget.style.boxShadow = 'none'; // Quita la sombra
-                  }}
-              >
-                <CIcon icon={cilPlus} className="me-2" style={{ color: '#FFFFFF', fontSize: '1rem' }} />
-                Asignar
-              </CButton>
+                <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
+                    <CTableRow>
+                    <CTableHeaderCell>#</CTableHeaderCell>
+                    <CTableHeaderCell>NOMBRE DE CICLO</CTableHeaderCell>
+                    <CTableHeaderCell>GRADOS ASIGNADOS</CTableHeaderCell>
+                    <CTableHeaderCell>ACCIONES</CTableHeaderCell>
+                    </CTableRow>
+                </CTableHead>
+                <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
+                    {filteredCiclos.length > 0 ? (
+                    filteredCiclos
+                        .slice((currentPage - 1) * recordsPerPage, currentPage * recordsPerPage) // Paginar
+                        .map((ciclo, index) => (
+                        <CTableRow key={ciclo.Cod_ciclo}>
+                            <CTableDataCell>{ciclo.originalIndex}</CTableDataCell>
+                            <CTableDataCell>{ciclo.Nombre_ciclo}</CTableDataCell>
+                            <CTableDataCell>
+                            {filtrarGradosPorCiclo(ciclo.Cod_ciclo)
+                                .map((grado) => grado.Nombre_grado)
+                                .join(', ')}
+                            </CTableDataCell>
+                            <CTableDataCell>
+                            <div style={{display: 'flex',gap: '10px',justifyContent: 'center',alignItems: 'center', }}>
+                            <CButton
+                                style={{
+                                backgroundColor: '#4B6251',
+                                color: '#FFFFFF',
+                                padding: '5px 10px',
+                                fontSize: '0.9rem',
+                                marginRight: '8px'
+                                }}
+                                onClick={() => handleOpenAssignModal(ciclo)}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#3C4B43'; // Fondo más oscuro
+                                    e.currentTarget.style.color = '#FFFFFF'; // Texto más claro
+                                    e.currentTarget.style.boxShadow = '0px 4px 10px rgba(60, 75, 67, 0.6)'; // Sombra suave
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#4B6251'; // Fondo original
+                                    e.currentTarget.style.color = '#FFFFFF'; // Texto original
+                                    e.currentTarget.style.boxShadow = 'none'; // Quita la sombra
+                                }}
+                            >
+                                <CIcon icon={cilPlus} className="me-2" style={{ color: '#FFFFFF', fontSize: '1rem' }} />
+                                Asignar
+                            </CButton>
 
-              <CButton
-                onClick={() => fetchPonderacionCiclo(ciclo.Cod_ciclo)}
-                onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
-                onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
-                style={{backgroundColor: '#F9B64E', color: '#5C4044', fontSize: '1rem' }} >
-                <CIcon icon={cilPen} />
-              </CButton>
-              </div>
-            </CTableDataCell>
-          </CTableRow>
-        ))
-    ) : (
-      <CTableRow>
-        <CTableDataCell colSpan={4} className="text-center">
-          No se encontraron resultados
-        </CTableDataCell>
-      </CTableRow>
-    )}
-  </CTableBody>
-</CTable>
- </div>
- {/* Paginación Fija */}
-<div style={{ display: 'flex',  justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
-    <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
-        <CButton
-        style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
-        disabled={currentPage === 1} // Deshabilitar si estás en la primera página
-        onClick={() => paginate(currentPage - 1)}>
-        Anterior
-        </CButton>
-        <CButton
-        style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
-        disabled={currentPage === Math.ceil(filteredCiclos.length / recordsPerPage)} // Deshabilitar si estás en la última página
-        onClick={() => paginate(currentPage + 1)}>
-        Siguiente
-    </CButton>
-    </CPagination>
-    {/* Mostrar total de páginas */}
-    <span style={{ marginLeft: '10px' }}>
-        Página {currentPage} de {Math.ceil(filteredCiclos.length / recordsPerPage)}
-    </span>
-</div>
+                            <CButton
+                                onClick={() => fetchPonderacionCiclo(ciclo.Cod_ciclo)}
+                                onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
+                                onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
+                                style={{backgroundColor: '#F9B64E', color: '#5C4044', fontSize: '1rem' }} >
+                                <CIcon icon={cilPen} />
+                            </CButton>
+                            </div>
+                            </CTableDataCell>
+                        </CTableRow>
+                        ))
+                    ) : (
+                    <CTableRow>
+                        <CTableDataCell colSpan={4} className="text-center">
+                        No se encontraron resultados
+                        </CTableDataCell>
+                    </CTableRow>
+                    )}
+                </CTableBody>
+            </CTable>
+            </div>
+            {/* Paginación Fija */}
+            <div style={{ display: 'flex',  justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
+                <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
+                    <CButton
+                    style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+                    disabled={currentPage === 1} // Deshabilitar si estás en la primera página
+                    onClick={() => paginate(currentPage - 1)}>
+                    Anterior
+                    </CButton>
+                    <CButton
+                    style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
+                    disabled={currentPage === Math.ceil(filteredCiclos.length / recordsPerPage)} // Deshabilitar si estás en la última página
+                    onClick={() => paginate(currentPage + 1)}>
+                    Siguiente
+                </CButton>
+                </CPagination>
+                {/* Mostrar total de páginas */}
+                <span style={{ marginLeft: '10px' }}>
+                    Página {currentPage} de {Math.ceil(filteredCiclos.length / recordsPerPage)}
+                </span>
+            </div>
 
             {/* Modal para mostrar las ponderaciones */}
             <CModal size="lg" visible={modalVisible} backdrop="static">
                 <CModalHeader onClick={() => setModalVisible(false)}>
-                    <CModalTitle>INFORMACIÓN DE: <strong>{getCicloName(selectedCiclo)}</strong></CModalTitle>
+                    <CModalTitle>Información de: <strong>{getCicloName(selectedCiclo)}</strong></CModalTitle>
                 </CModalHeader>
                 <CModalBody>
                     {loading ? (
@@ -1070,7 +1077,7 @@ const ListaPonderacionesCiclos = () => {
                             <CSpinner color="primary" />
                         </div>
                     ) : (
-                        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+                        <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll' }}>
                             {ponderacionesciclos.length > 0 ? (
                                 <CTable striped bordered hover>
                                     <CTableHead>
@@ -1194,7 +1201,7 @@ const ListaPonderacionesCiclos = () => {
                     <CButton color="secondary" style={{ fontSize: '0.85rem', cursor: 'pointer' }} onClick={() => setModalVisible(false)}>Cerrar</CButton>
                     <CDropdown>
                         <CDropdownToggle
-                             style={{backgroundColor: '#6C8E58',color: 'white',fontSize: '0.85rem',cursor: 'pointer',transition: 'all 0.3s ease', }}
+                             style={{backgroundColor: '#6C8E58',color: 'white',fontSize: '0.85rem',cursor: 'pointer',transition: 'all 0.3s ease'}}
                              onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
                              onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}
                         >

@@ -115,7 +115,7 @@ const ListaEstadonota = () => {
         swal.fire({
           icon: 'warning',
           title: 'Caracteres no permitidos',
-          text: 'Solo se permiten letras y espacios.',
+          text: 'Solo se permiten letras, números y espacios.',
           confirmButtonText: 'Aceptar',
         });
         return;
@@ -594,7 +594,7 @@ const paginate = (pageNumber) => {
 
   const generarReportePDF = () => {
     // Validar que haya datos en la tabla
-    if (!currentRecords || currentRecords.length === 0) {
+    if (!filteredEstadonota || filteredEstadonota.length === 0) {
       swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
@@ -654,8 +654,8 @@ const paginate = (pageNumber) => {
       doc.autoTable({
         startY: yPosition + 4,
         head: [['#', 'Descripción']],
-        body: currentRecords.map((estado, index) => [
-          index + 1,
+        body: filteredEstadonota.map((estado, index) => [
+          estado.originalIndex || index + 1,
           `${estado.Descripcion || ''}`.trim(),
         ]),
         headStyles: {
@@ -677,15 +677,25 @@ const paginate = (pageNumber) => {
           // Pie de página
           const currentDate = new Date();
           const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
           doc.setFontSize(10);
           doc.setTextColor(100);
+          // Fecha y hora en el pie de página
           doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-          const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-          doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-          pageNumber += 1; // Incrementar el número de página
         },
       });
-  
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); // Ve a cada página
+        doc.setTextColor(100);
+        const text = `Página ${i} de ${totalPages}`;
+        // Agrega número de página en la posición correcta
+        doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
+
       // Abrir el PDF en lugar de descargarlo automáticamente
       window.open(doc.output('bloburl'), '_blank');
     };
@@ -699,7 +709,7 @@ const paginate = (pageNumber) => {
 
   const generarReporteExcel = () => {
     // Validar que haya datos en la tabla
-    if (!currentRecords || currentRecords.length === 0) {
+    if (!filteredEstadonota || filteredEstadonota.length === 0) {
       swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
@@ -716,8 +726,8 @@ const paginate = (pageNumber) => {
     ];
   
     // Crear filas con asistencias filtradas
-    const filas = currentRecords.map((estado, index) => [
-      index + 1,
+    const filas = filteredEstadonota.map((estado, index) => [
+      estado.originalIndex || index + 1,
       estado.Descripcion
     ]);
   
@@ -802,70 +812,70 @@ return (
         </CButton>
         )}
 
-<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-      <CDropdownToggle
-        style={{
-          backgroundColor: '#6C8E58',
-          color: 'white',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#5A784C';
-          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#6C8E58';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
-      >
-        <CIcon icon={cilDescription}/> Reporte
-      </CDropdownToggle>
-      <CDropdownMenu
-        style={{
-          position: "absolute",
-          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
-          backgroundColor: "#fff",
-          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
-          borderRadius: "4px",
-          overflow: "hidden",
-        }}
-      >
-        <CDropdownItem
-          onClick={generarReportePDF}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            borderBottom: "1px solid #eaeaea",
-            transition: "background-color 0.1s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-        </CDropdownItem>
-        <CDropdownItem
-        onClick={generarReporteExcel}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            transition: "background-color 0.3s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+        <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+          <CDropdownToggle
+            style={{
+              backgroundColor: '#6C8E58',
+              color: 'white',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#5A784C';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#6C8E58';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <CIcon icon={cilDescription}/> Reporte
+          </CDropdownToggle>
+          <CDropdownMenu
+            style={{
+              position: "absolute",
+              zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+              backgroundColor: "#fff",
+              boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+              borderRadius: "4px",
+              overflow: "hidden",
+            }}
+          >
+            <CDropdownItem
+              onClick={generarReportePDF}
+              style={{
+                cursor: "pointer",
+                outline: "none",
+                backgroundColor: "transparent",
+                padding: "0.5rem 1rem",
+                fontSize: "0.85rem",
+                color: "#333",
+                borderBottom: "1px solid #eaeaea",
+                transition: "background-color 0.1s",
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+            >
+              <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+            </CDropdownItem>
+            <CDropdownItem
+              onClick={generarReporteExcel}
+              style={{
+                cursor: "pointer",
+                outline: "none",
+                backgroundColor: "transparent",
+                padding: "0.5rem 1rem",
+                fontSize: "0.85rem",
+                color: "#333",
+                transition: "background-color 0.3s",
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+            >
+              <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+            </CDropdownItem>
+          </CDropdownMenu>
+        </CDropdown>
       </CCol>
     </CRow>
 
@@ -881,6 +891,8 @@ return (
             placeholder="Buscar estado nota..."
             onChange={handleSearch}
             value={searchTerm}
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
           />
           <CButton
             style={{border: '1px solid #ccc',

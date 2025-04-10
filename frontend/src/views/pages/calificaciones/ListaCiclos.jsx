@@ -54,7 +54,7 @@ const ListaCiclos = () => {
   const [nuevoCiclo, setNuevoCiclo] = useState(''); // Estado para el nuevo ciclo
   const [cicloToUpdate, setCicloToUpdate] = useState({}); // Estado para el ciclo a actualizar
   const [cicloToDelete, setCicloToDelete] = useState({}); // Estado para el ciclo a eliminar
-  const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
+  const [recordsPerPage, setRecordsPerPage] = useState(10); // Hacer dinámico el número de registros por página
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
   const inputRef = useRef(null); // Referencia para el input
@@ -159,7 +159,7 @@ const ListaCiclos = () => {
 
   const handleReporteClick = () => {
     // Validar que haya datos en la tabla
-    if (!currentRecords || currentRecords.length === 0) {
+    if (!filteredCiclos || filteredCiclos.length === 0) {
       Swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
@@ -191,32 +191,32 @@ const ListaCiclos = () => {
       // Subtítulo
       doc.setFontSize(16);
       doc.text('Reporte de Ciclos', doc.internal.pageSize.width / 2, yPosition, {
-        align: 'center',
+      align: 'center',
       });
       yPosition += 10;
 
-         // Información adicional
-         doc.setFontSize(10);
-         doc.setTextColor(100); // Gris para texto secundario
-         doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-     
-         yPosition += 4;
-     
-         doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-     
-         yPosition += 4;
-     
-         doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-     
-        
-         yPosition += 6; // Espaciado antes de la línea divisoria
+      // Información adicional
+      doc.setFontSize(10);
+      doc.setTextColor(100); // Gris para texto secundario
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+      yPosition += 4;
+  
+      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  
+    
+      yPosition += 6; // Espaciado antes de la línea divisoria
 
       // Línea divisoria
       doc.setLineWidth(0.5);
       doc.setDrawColor(0, 102, 51);
       doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-            // Configuración para la tabla
+      // Configuración para la tabla
       const pageHeight = doc.internal.pageSize.height; // Altura de la página
       let pageNumber = 1; // Página inicial
 
@@ -224,7 +224,7 @@ const ListaCiclos = () => {
       doc.autoTable({
         startY: yPosition + 4,
         head: [['#', 'Nombre del Ciclo']],
-        body: currentRecords.map((ciclo, index) => [
+        body: filteredCiclos.map((ciclo, index) => [
           ciclo.originalIndex || index + 1, // Mostrar índice original o calcularlo
           ciclo.Nombre_ciclo, // Mostrar el nombre del ciclo
         ]),
@@ -244,27 +244,27 @@ const ListaCiclos = () => {
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); // Ve a cada página
+        doc.setTextColor(100);
+        const text = `Página ${i} de ${totalPages}`;
+        // Agrega número de página en la posición correcta
+        doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
 
       // Abrir el PDF
       window.open(doc.output('bloburl'), '_blank');
@@ -277,6 +277,16 @@ const ListaCiclos = () => {
   };
 
   const handleReporteExcelClick = () => {
+    // Validar que haya datos en la tabla
+    if (!filteredCiclos || filteredCiclos.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte excel.',
+        confirmButtonText: 'Aceptar',
+      });
+      return; // Salir de la función si no hay datos
+    }
     // Encabezados iniciales del reporte
     const encabezados = [
       ["Saint Patrick Academy"],
@@ -289,7 +299,7 @@ const ListaCiclos = () => {
     encabezados.push(["#", "Nombre del Ciclo"]);
   
     // Crear filas de la tabla con los datos de los ciclos
-    const filas = currentRecords.map((ciclo, index) => [
+    const filas = filteredCiclos.map((ciclo, index) => [
       ciclo.originalIndex || index + 1, // Mostrar índice original o generar índice
       ciclo.Nombre_ciclo, // Nombre del ciclo
     ]);
@@ -328,7 +338,7 @@ const ListaCiclos = () => {
       .toUpperCase() // Convertir a mayúsculas
       .trimStart(); // Evitar espacios al inicio
 
-      const regex = /^[A-Za-z0-9Ññ\s]*$/;  // Solo letras, números y espacios
+      const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/;  // Solo letras, números y espacios
 
     // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
     if (/\s{2,}/.test(value)) {
@@ -346,7 +356,7 @@ const ListaCiclos = () => {
       Swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
         confirmButtonText: 'Aceptar',
       });
       return;
@@ -827,70 +837,70 @@ const ListaCiclos = () => {
             </CButton>
           )}
 
-<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-      <CDropdownToggle
-        style={{
-          backgroundColor: '#6C8E58',
-          color: 'white',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#5A784C';
-          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#6C8E58';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
-      >
-        <CIcon icon={cilDescription}/> Reporte
-      </CDropdownToggle>
-      <CDropdownMenu
-        style={{
-          position: "absolute",
-          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
-          backgroundColor: "#fff",
-          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
-          borderRadius: "4px",
-          overflow: "hidden",
-        }}
-      >
-        <CDropdownItem
-          onClick={handleReporteClick}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            borderBottom: "1px solid #eaeaea",
-            transition: "background-color 0.1s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-        </CDropdownItem>
-        <CDropdownItem
-        onClick={handleReporteExcelClick}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            transition: "background-color 0.3s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+          <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+            <CDropdownToggle
+              style={{
+                backgroundColor: '#6C8E58',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#5A784C';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#6C8E58';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <CIcon icon={cilDescription}/> Reporte
+            </CDropdownToggle>
+            <CDropdownMenu
+              style={{
+                position: "absolute",
+                zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+                backgroundColor: "#fff",
+                boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+                borderRadius: "4px",
+                overflow: "hidden",
+              }}
+            >
+              <CDropdownItem
+                onClick={handleReporteClick}
+                style={{
+                  cursor: "pointer",
+                  outline: "none",
+                  backgroundColor: "transparent",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.85rem",
+                  color: "#333",
+                  borderBottom: "1px solid #eaeaea",
+                  transition: "background-color 0.1s",
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+              >
+                <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+              </CDropdownItem>
+              <CDropdownItem
+              onClick={handleReporteExcelClick}
+                style={{
+                  cursor: "pointer",
+                  outline: "none",
+                  backgroundColor: "transparent",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.85rem",
+                  color: "#333",
+                  transition: "background-color 0.3s",
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+              >
+                <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+              </CDropdownItem>
+            </CDropdownMenu>
+          </CDropdown>
         </CCol>
       </CRow>
 
@@ -906,7 +916,9 @@ const ListaCiclos = () => {
               placeholder="Buscar Ciclo..."
               onChange={handleSearch}
               value={searchTerm}
-            />
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
+              />
             <CButton
               style={{
                 border: '1px solid #ccc',
@@ -946,9 +958,9 @@ const ListaCiclos = () => {
                 }}
                 value={recordsPerPage}
               >
-                <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
+                <option value="30">30</option>
               </CFormSelect>
               <span>&nbsp;registros</span>
             </div>
