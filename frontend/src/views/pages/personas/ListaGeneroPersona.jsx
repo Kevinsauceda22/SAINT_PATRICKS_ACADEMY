@@ -40,7 +40,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaGeneroPersona = () => {
-  const {canSelect, canUpdate, canDelete, canInsert } = usePermission('ListaGeneroPersona');
+  const {canSelect, canUpdate, canDelete, canInsert } = usePermission('ListaGeneroPersona');  
 
   const [generoPersona, setGeneroPersona] = useState([]);
   const [generoError, setGeneroError] = useState('');
@@ -212,6 +212,31 @@ const handleTipoGeneroInputChange = (e, setFunction) => {
 
   setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
 };
+
+{/**************************************************************************************************************************************/}
+
+const handleGeneroPersonaKeyDown = (event) => {
+  const char = event.key;
+  
+  // Permitir teclas esenciales como borrar y navegación
+  const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "Enter"];
+
+  if (allowedKeys.includes(char)) {
+    return; // ✅ Permitir acciones básicas
+  }
+
+  // Bloquear caracteres especiales (solo permitir letras, acentos y comas)
+  if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ, ]$/.test(char)) {
+    event.preventDefault(); // 🚫 Bloquear cualquier otro carácter
+  }
+
+  // Bloquear más de un espacio consecutivo
+  const inputValue = event.target.value;
+  if (char === " " && inputValue.slice(-1) === " ") {
+    event.preventDefault(); // 🚫 Bloquear el segundo espacio
+  }
+};
+
 
 {/**************************************************************************************************************************************/}
 
@@ -433,8 +458,8 @@ const toggleEstado = async (generoPersona) => {
   try {
     setLoading(true);
 
-    const response = await axios.post('http://localhost:4000/api/generoPersona/actualizarEstadoGenero', {
-      cod_genero: generoPersona.Cod_genero,
+    const response = await axios.post('http://localhost:4000/api/generoPersona/actualizarEstadoGeneroPersona', {
+      Cod_genero: generoPersona.Cod_genero,
       estado: nuevoEstado,
     });
 
@@ -465,27 +490,23 @@ const handleSearch = (event) => {
   setCurrentPage(1);
 };
 
-const filteredGeneroPersona = generoPersona.filter((generoPersona) => 
-  generoPersona.tipo_genero &&
-  generoPersona.tipo_genero.toLowerCase().includes(searchTerm.toLowerCase())
+// Filtrado
+const filteredGeneroPersona = generoPersona.filter((genero) => 
+  genero.Tipo_genero && 
+  genero.Tipo_genero.toLowerCase().includes(searchTerm.toLowerCase())
 );
 
+// Paginación y currentRecords se mantienen igual:
 const indexOfLastRecord = currentPage * recordsPerPage;
 const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
 const currentRecords = filteredGeneroPersona.slice(indexOfFirstRecord, indexOfLastRecord);
-
-const paginate = (pageNumber) => {
-  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredGeneroPersona.length / recordsPerPage)) {
-    setCurrentPage(pageNumber);
-  }
-};
 
 
 
 {/**************************************************************************************************************************************/}
 const ReporteGenerosPDF = () => {
-  const doc = new jsPDF('p', 'mm', 'letter'); 
-  
+  const doc = new jsPDF('p', 'mm', 'letter'); // Formato vertical
+
   if (!filteredGeneroPersona || filteredGeneroPersona.length === 0) {
     alert('No hay datos para exportar.');
     return;
@@ -498,118 +519,144 @@ const ReporteGenerosPDF = () => {
     const pageWidth = doc.internal.pageSize.width;
 
     // Encabezado
-    doc.addImage(img, 'PNG', 10, 10, 45, 45);
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51);
-    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
-    // Subtítulo
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
     doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
-    doc.text('Reporte de Géneros', pageWidth / 2, 50, { align: 'center' });
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Géneros', pageWidth / 2, 40, { align: 'center' });
 
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 102, 51);
-    doc.line(10, 60, pageWidth - 10, 60);
+    doc.line(10, 45, pageWidth - 10, 45);
 
-    // Generar filas de la tabla (incluye estado)
-    const tableRows = filteredGeneroPersona.map((genero, index) => ({
-      index: (index + 1).toString(),
-      tipo_genero: genero.tipo_genero?.toUpperCase() || 'N/D',
-      estado: genero.estado === 1 ? 'Activo' : 'Inactivo',
-    }));
-
-    const columnWidths = {
-      index: 20,          // Ancho de la columna #
-      tipo_genero: 70,    // Ancho de la columna "Tipo Género"
-      estado: 30,         // Ancho de la columna "Estado"
-    };
-    const tableWidth = columnWidths.index + columnWidths.tipo_genero + columnWidths.estado;
+    let startY = 50; // Tabla más cerca del encabezado
 
     doc.autoTable({
-      startY: 65,
-      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrar la tabla
-      columns: [
-        { header: '#', dataKey: 'index' },
-        { header: 'Tipo de Género', dataKey: 'tipo_genero' },
-        { header: 'Estado', dataKey: 'estado' },
-      ],
-      body: tableRows,
+      startY: startY,
+      margin: { left: (pageWidth - 140) / 2 }, // Centrado horizontal
+      head: [['#', 'Tipo de Género', 'Estado']],
+      body: filteredGeneroPersona.map((genero, index) => [
+        index + 1,
+        genero.Tipo_genero?.toUpperCase() || 'N/D',
+        genero.estado === 1 ? 'ACTIVO' : 'INACTIVO'
+      ]),
       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
-        fontSize: 9,
-        halign: 'center',
+        fontSize: 8,
+        fontStyle: 'bold'
       },
       styles: {
         fontSize: 7,
-        cellPadding: 4,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        halign: 'center'
       },
       columnStyles: {
-        index: { cellWidth: columnWidths.index },
-        tipo_genero: { cellWidth: columnWidths.tipo_genero },
-        estado: { cellWidth: columnWidths.estado },
+        0: { cellWidth: 20 }, // #
+        1: { cellWidth: 80 }, // Tipo de Género
+        2: { cellWidth: 40 } // Estado
       },
-      alternateRowStyles: {
-        fillColor: [240, 248, 255],
-      },
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-        const footerY = doc.internal.pageSize.height - 10;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51);
-        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-      },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 2) {
+          data.cell.styles.textColor = data.cell.raw === 'ACTIVO' ? [0, 128, 0] : [255, 0, 0];
+          data.cell.styles.fontStyle = data.cell.raw === 'ACTIVO' ? 'bold' : 'normal';
+        }
+      }
     });
 
+    // Pie de página
+    const now = new Date();
+    const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const pageCount = doc.internal.getNumberOfPages();
+
+    doc.setFontSize(7);
+    doc.setTextColor(0, 102, 51);
+    doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+    doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+
+    // Mostrar visor PDF
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
-
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
-        <head><title>Reporte de Géneros</title></head>
-        <body style="margin:0;">
-          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:20px;">
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Generos.pdf'; a.click();">
-              Descargar PDF
+        <head>
+          <title>Reporte de Géneros</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100vw;
+              height: 100vh;
+            }
+            iframe {
+              width: 100vw;
+              height: 100vh;
+              border: none;
+            }
+            .icon-container {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              display: flex;
+              gap: 15px;
+              padding: 10px;
+              border-radius: 8px;
+            }
+            .icon-button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 22px;
+              color: white;
+              position: relative;
+              z-index: 9999;
+            }
+            .icon-button:focus,
+            .icon-button:active {
+              outline: none;
+              box-shadow: none;
+            }
+          </style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+        </head>
+        <body>
+          <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+          <div class="icon-container">
+            <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Generos.pdf'; a.click();">
+              <i class="fas fa-download"></i>
             </button>
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="window.print();">
-              Imprimir PDF
+            <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+              <i class="fas fa-print"></i>
             </button>
           </div>
         </body>
-      </html>`);
+      </html>
+    `);
   };
 
   img.onerror = () => {
     alert('No se pudo cargar el logo.');
   };
 };
+
 
 {/**************************************************************************************************************************************/}
 
@@ -622,18 +669,18 @@ const exportToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Géneros');
 
-  // Título del documento
+  // 🎯 **Título del documento**
   worksheet.mergeCells('A1:C1');
   worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
   worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
   worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
 
   worksheet.mergeCells('A2:C2');
-  worksheet.getCell('A2').value = 'GÉNEROS';
+  worksheet.getCell('A2').value = 'LISTA DE GÉNEROS';
   worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
   worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Encabezados de la tabla
+  // 📌 **Encabezados de la tabla**
   const headerRow = worksheet.addRow(['#', 'Tipo de Género', 'Estado']);
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
@@ -641,13 +688,20 @@ const exportToExcel = () => {
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
-  // Datos de la tabla (Usamos filteredGeneroPersona)
+  // 📊 **Datos de la tabla**
   filteredGeneroPersona.forEach((genero, index) => {
     const row = worksheet.addRow([
       index + 1,
-      typeof genero.tipo_genero === 'string' ? genero.tipo_genero.toUpperCase() : genero.tipo_genero,
-      genero.estado === 1 ? 'Activo' : 'Inactivo' // Estado en texto
+      genero.tipo_genero?.toUpperCase() || 'N/D',
+      genero.estado === 1 ? 'ACTIVO' : 'INACTIVO'
     ]);
+
+    // 🎨 **Estilos para la columna de Estado**
+    const estadoCell = row.getCell(3);
+    estadoCell.font = {
+      bold: true,
+      color: { argb: genero.estado === 1 ? '008000' : 'FF0000' } // ✅ Verde para "ACTIVO", rojo para "INACTIVO"
+    };
 
     row.eachCell((cell) => {
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -660,14 +714,12 @@ const exportToExcel = () => {
     });
   });
 
-  // Ajustar el ancho de las columnas
-  worksheet.columns = [
-    { width: 10 }, // Ancho de la columna #
-    { width: 30 }, // Ancho de la columna "Tipo de Género"
-    { width: 15 }, // Ancho de la columna "Estado"
-  ];
+  // 📏 **Ajustar el ancho de las columnas**
+  worksheet.columns.forEach((column) => {
+    column.width = 20;
+  });
 
-  // Crear archivo Excel
+  // 📂 **Crear archivo Excel**
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'Reporte_Generos.xlsx');
@@ -717,16 +769,31 @@ const exportToExcel = () => {
         <CIcon icon={cilSearch} />
       </CInputGroupText>
       <CFormInput
-        placeholder="Buscar género..."
-        onChange={handleSearch}
+        placeholder="Buscar Género ..."
         value={searchTerm}
+        onChange={(e) => {
+          let value = e.target.value;
+
+          // 🔄 **Eliminar espacios consecutivos**
+          value = value.replace(/\s{2,}/g, ' ');
+
+          // 🔄 **Permitir acentos, pero eliminar otros caracteres especiales**
+          value = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, '');
+
+          // 🔄 **Bloquear caracteres repetidos más de 10 veces**
+          value = value.replace(/(.)\1{10,}/g, '$1'.repeat(10));
+
+          setSearchTerm(value);
+        }}
+        onPaste={(e) => e.preventDefault()}
+        onCopy={(e) => e.preventDefault()}
       />
       <CButton
         style={{
           border: '1px solid #ccc',
           transition: 'all 0.1s ease-in-out',
           backgroundColor: '#F3F4F7',
-          color: '#343a40',
+          color: '#343a40'
         }}
         onClick={() => {
           setSearchTerm('');
@@ -774,20 +841,28 @@ const exportToExcel = () => {
 {/*************************************************************************************************************************************/}
 
 <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  {console.log('Current Records:', currentRecords)}
   <CTable striped>
     <CTableHead>
       <CTableRow>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
-        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Género</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+          #
+        </CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+          Tipo de Género
+        </CTableHeaderCell>
         <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
       </CTableRow>
     </CTableHead>
-
     <CTableBody>
       {currentRecords.map((generoPersona) => (
         <CTableRow key={generoPersona.Cod_genero}>
-          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{generoPersona.originalIndex}</CTableDataCell>
-          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{generoPersona.tipo_genero.toUpperCase()}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+            {generoPersona.originalIndex}
+          </CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+            {generoPersona.Tipo_genero.toUpperCase()}
+          </CTableDataCell>
           <CTableDataCell className="text-center">
             <div className="d-flex justify-content-center">
               {canUpdate && (
@@ -795,28 +870,25 @@ const exportToExcel = () => {
                   color="warning"
                   onClick={() => openUpdateModal(generoPersona)}
                   style={{ marginRight: '10px' }}
-                  disabled={generoPersona.estado === 0} // Deshabilitado si está inactivo
+                  disabled={generoPersona.estado === 0}
                   title={generoPersona.estado ? 'Editar género' : 'Género inactivo'}
                 >
                   <CIcon icon={cilPen} />
                 </CButton>
               )}
-
               {canDelete && (
                 <CButton color="danger" onClick={() => openDeleteModal(generoPersona)}>
                   <CIcon icon={cilTrash} />
                 </CButton>
               )}
-
-              {/* Botón de Activar/Inactivar */}
               <CButton
                 style={{
-                  backgroundColor: generoPersona.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+                  backgroundColor: generoPersona.estado ? '#4CAF50' : '#F44336',
                   color: 'white',
-                  marginLeft: '10px',
+                  marginLeft: '10px'
                 }}
-                onClick={() => toggleEstado(generoPersona)} // Función para cambiar estado
-                disabled={loading} // Deshabilitar mientras carga
+                onClick={() => toggleEstado(generoPersona)}
+                disabled={loading}
               >
                 {loading ? 'Cambiando...' : generoPersona.estado ? 'Activo' : 'Inactivo'}
               </CButton>
@@ -827,6 +899,7 @@ const exportToExcel = () => {
     </CTableBody>
   </CTable>
 </div>
+
 
 {/**************************************************************************************************************************************/}
 
@@ -855,10 +928,53 @@ const exportToExcel = () => {
 </div>
 
   
+{/**************************************************************************************************************************************/}
+<CModal visible={modalVisible} backdrop="static" size="lg">
+  <CModalHeader closeButton={false}>
+    <CModalTitle>Crear Género</CModalTitle>
+    <CButton 
+      className="btn-close" 
+      aria-label="Close" 
+      onClick={() => handleCloseModal(setModalVisible, resetNuevoGenero)} 
+    />
+  </CModalHeader>
+  <CModalBody>
+    <CForm>
+      <CInputGroup className="mb-3">
+        <CInputGroupText>Tipo Género</CInputGroupText>
+        <CFormInput
+          type="text"
+          placeholder="Ingrese el tipo de género"
+          maxLength={50}
+          onPaste={disableCopyPaste}
+          onCopy={disableCopyPaste}
+          value={nuevoGenero.Tipo_genero}
+          onChange={(e) => handleTipoGeneroInputChange(e, setNuevoGenero)}
+          onKeyDown={handleGeneroPersonaKeyDown } 
+          style={{ textTransform: 'uppercase' }}
+        />
+      </CInputGroup>
+      {generoError.Tipo_genero && <p style={{ color: 'red' }}>{generoError.Tipo_genero}</p>}
+    </CForm>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoGenero)}>
+      Cancelar
+    </CButton>
+    <CButton
+      style={{ backgroundColor: '#4B6251', color: 'white' }}
+      onClick={handleCreateGenero}
+      disabled={generoError.Tipo_genero}
+    >
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+    </CButton>
+  </CModalFooter>
+</CModal>
+
 
 {/**************************************************************************************************************************************/}
 
-<CModal visible={modalUpdateVisible} backdrop="static">
+<CModal visible={modalUpdateVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Género</CModalTitle>
     <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetGeneroToUpdate)} />
@@ -873,12 +989,13 @@ const exportToExcel = () => {
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
-          value={generoToUpdate.tipo_genero}
+          value={generoToUpdate.Tipo_genero}
           onChange={(e) => handleTipoGeneroInputChange(e, setGeneroToUpdate)}
+          onKeyDown={handleGeneroPersonaKeyDown } 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
-      {generoError.tipo_genero && <p style={{ color: 'red' }}>{generoError.tipo_genero}</p>}
+      {generoError.Tipo_genero && <p style={{ color: 'red' }}>{generoError.Tipo_genero}</p>}
     </CForm>
   </CModalBody>
   <CModalFooter>
@@ -888,12 +1005,13 @@ const exportToExcel = () => {
     <CButton
       style={{ backgroundColor: '#4B6251', color: 'white' }}
       onClick={handleUpdateGenero}
-      disabled={generoError.tipo_genero}
+      disabled={generoError.Tipo_genero}
     >
       <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
     </CButton>
   </CModalFooter>
 </CModal>
+
 
 
 {/**************************************************************************************************************************************/}

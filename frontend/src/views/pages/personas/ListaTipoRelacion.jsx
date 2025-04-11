@@ -56,21 +56,35 @@ const ListaTipoRelacion = () => {
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    fetchTipoRelacion();
+  }, []);
+  
 {/****************************************************************************************************************************************/}
-  const fetchTipoRelacion = async () => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/tipoRelacion/verTodoTipoRelacion`);
-      const data = await response.json();
-      console.log('Datos obtenidos:', data); // Agrega este log para depurar
-      const dataWithIndex = data.map((tipoRelacion, index) => ({
-        ...tipoRelacion,
-        originalIndex: index + 1,
-      }));
-      setTipoRelacion(dataWithIndex);
-    } catch (error) {
-      console.error('Error al obtener tipo relacion:', error);
+const fetchTipoRelacion = async () => {
+  try {
+    const response = await fetch(`http://localhost:4000/api/tipoRelacion/verTodoTipoRelacion`);
+    const data = await response.json();
+    console.log('Datos obtenidos desde la API:', data); // 🔍 LOG para confirmar los datos
+
+    // Verificamos si "data" es un array
+    if (!Array.isArray(data)) {
+      console.error(' Error: La API no está devolviendo un arreglo, sino:', data);
+      return;
     }
-  };
+
+    // Mapeamos los datos para asegurarnos de que tengan el formato correcto
+    const dataWithIndex = data.map((item, index) => ({
+      ...item,
+      originalIndex: index + 1,
+    }));
+
+    setTipoRelacion(dataWithIndex); // ✅ Ahora sí actualizamos el estado
+    console.log('✅ Estado actualizado:', dataWithIndex);
+  } catch (error) {
+    console.error('Error al obtener tipo relación:', error);
+  }
+};
 
 {/**************************************************************************************************************************************/}
 
@@ -125,19 +139,6 @@ const capitalizeWords = (str) => {
   return str.replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-// Validar que ningún campo esté vacío
-const validateEmptyFields = () => {
-  const { tipo_contacto } = nuevoContacto; // Ajuste al campo tipo_contacto
-  if (!tipo_contacto) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Campos vacíos',
-      text: 'Todos los campos deben estar llenos para poder crear un tipo de contacto.',
-    });
-    return false;
-  }
-  return true;
-};
 
 
 {/************************************************************************************************************************************/}
@@ -170,39 +171,59 @@ const validateEmptyFields = () => {
   {/***********************************************************************************************************************************/}
 
 
-    // Función para controlar la entrada de texto en los campos
-    const handleTipoRelacionInputChange = (e, setFunction) => {
-      let value = e.target.value;
+  const handleTipoRelacionInputChange = (e, setFunction) => {
+    let value = e.target.value;
   
-      // No permitir más de un espacio consecutivo
-      value = value.replace(/\s{2,}/g, ' ');
+    // No permitir más de un espacio consecutivo
+    value = value.replace(/\s{2,}/g, ' ');
   
-      // No permitir que una letra se repita más de 4 veces consecutivamente
-      const wordArray = value.split(' ');
-      const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
+    // No permitir que una letra se repita más de 4 veces consecutivamente
+    if (/([a-zA-ZÁÉÍÓÚáéíóúÑñ])\1{2,}/.test(value)) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Repetición de letras',
+        text: 'No se permite que la misma letra se repita más de 3 veces consecutivas.',
+      });
+      return;
+    }
   
-      if (!isValid) {
-        swal.fire({
-          icon: 'warning',
-          title: 'Repetición de letras',
-          text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
-        });
-        return;
-      }
-
-      if (value.length <= 2) {
-        setRelacionError('La relacion debe tener más de 2 letras.');
-      } else {
-        setRelacionError(''); // No hay error
-      }
+    // Validar longitud mínima
+    if (value.length <= 2) {
+      setRelacionError('La relación debe tener más de 2 letras.');
+    } else {
+      setRelacionError(''); // No hay error
+    }
   
-      setFunction((prevState) => ({
-        ...prevState,
-        tipo_relacion: value,
-      }));
+    setFunction((prevState) => ({
+      ...prevState,
+      tipo_relacion: value,
+    }));
   
-      setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
-    };
+    setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+  };
+  
+  const handleTipoRelacionKeyDown = (event) => {
+    const char = event.key;
+    
+    // Permitir teclas esenciales como borrar y navegación
+    const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "Enter"];
+  
+    if (allowedKeys.includes(char)) {
+      return; // ✅ Permitir acciones básicas
+    }
+  
+    // Bloquear caracteres especiales (solo permitir letras, acentos y comas)
+    if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ, ]$/.test(char)) {
+      event.preventDefault(); // 🚫 Bloquear cualquier otro carácter
+    }
+  
+    // Bloquear más de un espacio consecutivo
+    const inputValue = event.target.value;
+    if (char === " " && inputValue.slice(-1) === " ") {
+      event.preventDefault(); // 🚫 Bloquear el segundo espacio
+    }
+  };
+  
 
 {/*************************************************************************************************************************************/}
 
@@ -404,36 +425,38 @@ const handleCreateRelacion = async () => {
 
 
   {/***********************************************************************************************************************************/}
-  const toggleEstado = async (departamento) => {
-    const nuevoEstado = departamento.estado ? 0 : 1;
-  
-    try {
-      setLoading(true);
-  
-      const response = await axios.post('http://localhost:4000/api/departamentos/actualizarEstadoDepartamento', {
-        cod_departamento: departamento.Cod_departamento,
-        estado: nuevoEstado,
-      });
-  
-      if (response.data.mensaje === 'Estado actualizado exitosamente') {
-        // Actualizar el estado correctamente
-        setDepartamentos((prevDepartamentos) =>
-          prevDepartamentos.map((dep) =>
-            dep.Cod_departamento === departamento.Cod_departamento
-              ? { ...dep, estado: nuevoEstado }
-              : dep
-          )
-        );
-      } else {
-        console.error('Error al cambiar el estado:', response.data.mensaje);
+    const toggleEstado = async (tipoRelacion) => {
+      // Determinar el nuevo estado: si estaba activo (1) se vuelve inactivo (0) y viceversa
+      const nuevoEstado = tipoRelacion.estado ? 0 : 1;
+    
+      try {
+        setLoading(true);
+    
+        // Realizar la solicitud a la API
+        const response = await axios.post('http://localhost:4000/api/tipoRelacion/actualizarEstadoTipoRelacion', {
+          cod_tipo_relacion: tipoRelacion.Cod_tipo_relacion,
+          estado: nuevoEstado,
+        });
+    
+        // Si la respuesta es exitosa, actualiza el estado local de la lista
+        if (response.data.mensaje === 'Estado actualizado exitosamente') {
+          setTipoRelacion((prevTipoRelacion) =>
+            prevTipoRelacion.map((relacion) =>
+              relacion.Cod_tipo_relacion === tipoRelacion.Cod_tipo_relacion
+                ? { ...relacion, estado: nuevoEstado }
+                : relacion
+            )
+          );
+        } else {
+          console.error('Error al cambiar el estado:', response.data.mensaje);
+        }
+      } catch (error) {
+        console.error('Error al realizar la solicitud:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error al realizar la solicitud:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
+    };
+    
 
     {/***********************************************************************************************************************************/}
 
@@ -441,20 +464,26 @@ const handleCreateRelacion = async () => {
   {/**************************************************FILTRADO Y BUSQUEDA DE DATOS********************************************************/}
 
 /**************************************************BUSCADOR********************************************************/
+// Esta función se dispara al escribir en el campo de búsqueda
 const handleSearch = (event) => {
   setSearchTerm(event.target.value);
   setCurrentPage(1);
 };
 
-const filteredTipoRelacion = tipoRelacion.filter((tipoRelacion) => 
-  tipoRelacion.tipo_relacion &&
-  tipoRelacion.tipo_relacion.toLowerCase().includes(searchTerm.toLowerCase())
+// Filtrado de registros según el término de búsqueda
+const filteredTipoRelacion = tipoRelacion.filter((item) =>
+  item.tipo_relacion &&
+  item.tipo_relacion.toLowerCase().includes(searchTerm.toLowerCase())
 );
 
+
+// Cálculo de la paginación
 const indexOfLastRecord = currentPage * recordsPerPage;
 const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
 const currentRecords = filteredTipoRelacion.slice(indexOfFirstRecord, indexOfLastRecord);
 
+
+// Función para cambiar de página
 const paginate = (pageNumber) => {
   if (pageNumber > 0 && pageNumber <= Math.ceil(filteredTipoRelacion.length / recordsPerPage)) {
     setCurrentPage(pageNumber);
@@ -464,8 +493,8 @@ const paginate = (pageNumber) => {
 
 /**************************************************REPORTERIA DE PDF********************************************************/
 const ReporteRelacionesPDF = () => {
-  const doc = new jsPDF('p', 'mm', 'letter'); 
-  
+  const doc = new jsPDF('p', 'mm', 'letter'); // Formato vertical
+
   if (!filteredTipoRelacion || filteredTipoRelacion.length === 0) {
     alert('No hay datos para exportar.');
     return;
@@ -478,112 +507,137 @@ const ReporteRelacionesPDF = () => {
     const pageWidth = doc.internal.pageSize.width;
 
     // Encabezado
-    doc.addImage(img, 'PNG', 10, 10, 45, 45);
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51);
-    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
-    // Subtítulo
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
     doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
-    doc.text('Reporte de Relaciones', pageWidth / 2, 50, { align: 'center' });
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Relaciones', pageWidth / 2, 40, { align: 'center' });
 
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 102, 51);
-    doc.line(10, 60, pageWidth - 10, 60);
+    doc.line(10, 45, pageWidth - 10, 45);
 
-    // **Usar filteredTipoRelacion con estado**
-    const tableRows = filteredTipoRelacion.map((tipo, index) => ({
-      index: (index + 1).toString(),
-      tipo_relacion: tipo.tipo_relacion?.toUpperCase() || 'N/D',
-      estado: tipo.estado === 1 ? 'Activo' : 'Inactivo',
-    }));
-
-    const columnWidths = {
-      index: 20,           // Ancho de la columna #
-      tipo_relacion: 70,   // Ancho de la columna "Tipo Relación"
-      estado: 30           // Ancho de la columna "Estado"
-    };
-    const tableWidth = columnWidths.index + columnWidths.tipo_relacion + columnWidths.estado;
+    let startY = 50; // Reducimos el espacio para acercar la tabla al encabezado
 
     doc.autoTable({
-      startY: 65,
-      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrado de la tabla
-      columns: [
-        { header: '#', dataKey: 'index' },
-        { header: 'Tipo de Relación', dataKey: 'tipo_relacion' },
-        { header: 'Estado', dataKey: 'estado' },
-      ],
-      body: tableRows,
+      startY: startY,
+      margin: { left: (pageWidth - 140) / 2 }, // Centrado horizontal
+      head: [['#', 'Tipo de Relación', 'Estado']],
+      body: filteredTipoRelacion.map((tipo, index) => [
+        index + 1,
+        tipo.tipo_relacion?.toUpperCase() || 'N/D',
+        tipo.estado === 1 ? 'ACTIVO' : 'INACTIVO'
+      ]),
       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
-        fontSize: 9,
-        halign: 'center',
+        fontSize: 8,
+        fontStyle: 'bold'
       },
       styles: {
         fontSize: 7,
-        cellPadding: 4,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        halign: 'center'
       },
       columnStyles: {
-        index: { cellWidth: columnWidths.index },
-        tipo_relacion: { cellWidth: columnWidths.tipo_relacion },
-        estado: { cellWidth: columnWidths.estado },
+        0: { cellWidth: 20 }, // #
+        1: { cellWidth: 80 }, // Tipo de Relación
+        2: { cellWidth: 40 } // Estado
       },
-      alternateRowStyles: {
-        fillColor: [240, 248, 255],
-      },
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-        const footerY = doc.internal.pageSize.height - 10;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51);
-        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-      },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 2) {
+          data.cell.styles.textColor = data.cell.raw === 'ACTIVO' ? [0, 128, 0] : [255, 0, 0];
+          data.cell.styles.fontStyle = data.cell.raw === 'ACTIVO' ? 'bold' : 'normal';
+        }
+      }
     });
 
+    // Pie de página
+    const now = new Date();
+    const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const pageCount = doc.internal.getNumberOfPages();
+
+    doc.setFontSize(7);
+    doc.setTextColor(0, 102, 51);
+    doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+    doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+
+    // Mostrar visor PDF
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
-
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
-        <head><title>Reporte de Relaciones</title></head>
-        <body style="margin:0;">
-          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:20px;">
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Relaciones.pdf'; a.click();">
-              Descargar PDF
+        <head>
+          <title>Reporte de Relaciones</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100vw;
+              height: 100vh;
+            }
+            iframe {
+              width: 100vw;
+              height: 100vh;
+              border: none;
+            }
+            .icon-container {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              display: flex;
+              gap: 15px;
+              padding: 10px;
+              border-radius: 8px;
+            }
+            .icon-button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 22px;
+              color: white;
+              position: relative;
+              z-index: 9999;
+            }
+            .icon-button:focus,
+            .icon-button:active {
+              outline: none;
+              box-shadow: none;
+            }
+          </style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+        </head>
+        <body>
+          <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+          <div class="icon-container">
+            <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Relaciones.pdf'; a.click();">
+              <i class="fas fa-download"></i>
             </button>
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="window.print();">
-              Imprimir PDF
+            <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+              <i class="fas fa-print"></i>
             </button>
           </div>
         </body>
-      </html>`);
+      </html>
+    `);
   };
 
   img.onerror = () => {
@@ -602,31 +656,39 @@ const exportToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Tipo Relación');
 
-  // Título del documento
-  worksheet.mergeCells('A1:B1');
+  // 🎯 **Título del documento**
+  worksheet.mergeCells('A1:C1');
   worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
   worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
   worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  worksheet.mergeCells('A2:B2');
+  worksheet.mergeCells('A2:C2');
   worksheet.getCell('A2').value = 'TIPOS DE RELACIÓN';
   worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
   worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Encabezados de la tabla
-  const headerRow = worksheet.addRow(['#', 'Tipo Relación']);
+  // 📌 **Encabezados de la tabla**
+  const headerRow = worksheet.addRow(['#', 'Tipo Relación', 'Estado']);
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
-  // Datos de la tabla (Usamos filteredTipoRelacion en lugar de tipoRelacion)
+  // 📊 **Datos de la tabla**
   filteredTipoRelacion.forEach((tipo, index) => {
     const row = worksheet.addRow([
       index + 1,
-      typeof tipo.tipo_relacion === 'string' ? tipo.tipo_relacion.toUpperCase() : tipo.tipo_relacion
+      tipo.tipo_relacion?.toUpperCase() || 'N/D',
+      tipo.estado === 1 ? 'ACTIVO' : 'INACTIVO'
     ]);
+
+    // 🎨 **Estilos para la columna de Estado**
+    const estadoCell = row.getCell(3);
+    estadoCell.font = {
+      bold: true,
+      color: { argb: tipo.estado === 1 ? '008000' : 'FF0000' } // ✅ Verde para "ACTIVO", rojo para "INACTIVO"
+    };
 
     row.eachCell((cell) => {
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -639,12 +701,12 @@ const exportToExcel = () => {
     });
   });
 
-  // Ajustar el ancho de las columnas
+  // 📏 **Ajustar el ancho de las columnas**
   worksheet.columns.forEach((column) => {
     column.width = 20;
   });
 
-  // Crear archivo Excel
+  // 📂 **Crear archivo Excel**
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'Reporte_TipoRelacion.xlsx');
@@ -697,40 +759,55 @@ const exportToExcel = () => {
 
     {/* Contenedor de la barra de búsqueda y el selector dinámico */}
     <CRow className="align-items-center mt-4 mb-2">
-      {/* Barra de búsqueda  */}
-      <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
-        <CInputGroup className="me-3" style={{ width: '400px' }}>
-          <CInputGroupText>
-            <CIcon icon={cilSearch} />
-          </CInputGroupText>
-          <CFormInput
-            placeholder="Buscar tipo relación..."
-            onChange={handleSearch}
-            value={searchTerm}
-          />
-          <CButton
-            style={{border: '1px solid #ccc',
-              transition: 'all 0.1s ease-in-out', // Duración de la transición
-              backgroundColor: '#F3F4F7', // Color por defecto
-              color: '#343a40' // Color de texto por defecto
-            }}
-            onClick={() => {
-              setSearchTerm('');
-              setCurrentPage(1);
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
-              e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
-              e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
-            }}
-          >
-            <CIcon icon={cilBrushAlt} /> Limpiar
-          </CButton>
-        </CInputGroup>
-     </CCol>
+  <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
+    <CInputGroup className="me-3" style={{ width: '400px' }}>
+      <CInputGroupText>
+        <CIcon icon={cilSearch} />
+      </CInputGroupText>
+      <CFormInput
+        placeholder="Buscar tipo relaciones ..."
+        value={searchTerm}
+        onChange={(e) => {
+          let value = e.target.value;
+
+          // 🔄 **Eliminar espacios consecutivos**
+          value = value.replace(/\s{2,}/g, ' ');
+
+          // 🔄 **Permitir acentos, pero eliminar otros caracteres especiales**
+          value = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, '');
+
+          // 🔄 **Bloquear caracteres repetidos más de 10 veces**
+          value = value.replace(/(.)\1{10,}/g, '$1'.repeat(10));
+
+          setSearchTerm(value);
+        }}
+        onPaste={(e) => e.preventDefault()}
+        onCopy={(e) => e.preventDefault()}
+      />
+      <CButton
+        style={{
+          border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out',
+          backgroundColor: '#F3F4F7',
+          color: '#343a40'
+        }}
+        onClick={() => {
+          setSearchTerm('');
+          setCurrentPage(1);
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
+        }}
+      >
+        <CIcon icon={cilBrushAlt} /> Limpiar
+      </CButton>
+    </CInputGroup>
+  </CCol>
 
       {/* Selector dinámico a la par de la barra de búsqueda */}
       <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
@@ -757,60 +834,60 @@ const exportToExcel = () => {
     </CRow>
 
 {/*************************************************************************************************************************************/}
-      <div  style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px', }}>
-      <CTable striped>
-  <CTableHead>
-    <CTableRow>
-      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center"> #</CTableHeaderCell>
-      <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Relación</CTableHeaderCell>
-      <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
-    </CTableRow>
-  </CTableHead>
-
-  <CTableBody>
-    {currentRecords.map((tipoRelacion) => (
-      <CTableRow key={tipoRelacion.Cod_tipo_relacion}>
-        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.originalIndex}</CTableDataCell>
-        <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.tipo_relacion.toUpperCase()}</CTableDataCell>
-        <CTableDataCell className="text-center">
-          <div className="d-flex justify-content-center">
-            {canUpdate && (
-              <CButton
-                color="warning"
-                onClick={() => openUpdateModal(tipoRelacion)}
-                style={{ marginRight: '10px' }}
-                disabled={tipoRelacion.estado === 0} // Deshabilitado si está inactivo
-                title={tipoRelacion.estado ? 'Editar relación' : 'Relación inactiva'}
-              >
-                <CIcon icon={cilPen} />
-              </CButton>
-            )}
-
-            {canDelete && (
-              <CButton color="danger" onClick={() => openDeleteModal(tipoRelacion)}>
-                <CIcon icon={cilTrash} />
-              </CButton>
-            )}
-
-            {/* Botón de Activar/Inactivar */}
-            <CButton
-              style={{
-                backgroundColor: tipoRelacion.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
-                color: 'white',
-                marginLeft: '10px',
-              }}
-              onClick={() => toggleEstado(tipoRelacion)} // Función para cambiar estado
-              disabled={loading} // Deshabilitar mientras carga
-            >
-              {loading ? 'Cambiando...' : tipoRelacion.estado ? 'Activo' : 'Inactivo'}
-            </CButton>
-          </div>
-        </CTableDataCell>
+<div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  {console.log('Current Records:', currentRecords)}
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Relación</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
       </CTableRow>
-    ))}
-  </CTableBody>
-</CTable>
-      </div>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords.map((tipoRelacion) => (
+        <CTableRow key={tipoRelacion.Cod_tipo_relacion}>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoRelacion.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+            { /* Usa la propiedad normalizada o la original, según tu solución */ }
+            {tipoRelacion.tipo_relacion ? tipoRelacion.tipo_relacion.toUpperCase() : tipoRelacion.Tipo_relacion.toUpperCase()}
+          </CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(tipoRelacion)}
+                  style={{ marginRight: '10px' }}
+                  disabled={tipoRelacion.estado === 0}
+                  title={tipoRelacion.estado ? 'Editar relación' : 'Relación inactiva'}
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
+              {canDelete && (
+                <CButton color="danger" onClick={() => openDeleteModal(tipoRelacion)}>
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+              <CButton
+                style={{
+                  backgroundColor: tipoRelacion.estado ? '#4CAF50' : '#F44336',
+                  color: 'white',
+                  marginLeft: '10px',
+                }}
+                onClick={() => toggleEstado(tipoRelacion)}
+                disabled={loading}
+              >
+                {loading ? 'Cambiando...' : tipoRelacion.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
 
 {/*************************************************************************************************************************************/}
                 {/* Paginación Fija */}
@@ -837,7 +914,7 @@ const exportToExcel = () => {
     </div>
   
 {/*********************************************************************************************************************************/}
-    <CModal visible={modalVisible} backdrop="static">
+    <CModal visible={modalVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
     <CModalTitle>Ingresar Nuevo Tipo de Relación</CModalTitle>
     <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevaRelacion)} />
@@ -852,9 +929,10 @@ const exportToExcel = () => {
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
-          value={nuevaRelacion.Tipo_relacion}
+          value={nuevaRelacion.tipo_relacion}
           onChange={(e) => handleTipoRelacionInputChange(e, setNuevaRelacion, setRelacionError)}
           onBlur={isDuplicateRelacion}
+          onKeyDown={handleTipoRelacionKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -874,7 +952,7 @@ const exportToExcel = () => {
 </CModal>
 
 {/**************************************************************************************************************************************/}
-<CModal visible={modalUpdateVisible} backdrop="static">
+<CModal visible={modalUpdateVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Tipo Relación</CModalTitle>
     <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetRelacionToUpdate)} />
@@ -891,6 +969,7 @@ const exportToExcel = () => {
           onCopy={disableCopyPaste}
           value={tipoRelacionToUpdate.tipo_relacion}
           onChange={(e) => handleTipoRelacionInputChange(e, setTipoRelacionToUpdate)}
+          onKeyDown={handleTipoRelacionKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>

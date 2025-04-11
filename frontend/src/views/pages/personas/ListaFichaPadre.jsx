@@ -42,6 +42,7 @@ import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaFichaPadre = () => {
+      const {canSelect} = usePermission('ListaFichaEstudiante');
     const [fichaPadre, setFichaPadre] = useState({});
 
 
@@ -344,7 +345,11 @@ const exportFichaPadreToExcel = () => {
 
 {/*********************************************************************************************************************************************/}
 
-
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+    
 
 {/*********************************************************************************************************************************************/}
   return (

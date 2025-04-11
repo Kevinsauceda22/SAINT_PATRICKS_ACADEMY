@@ -200,6 +200,9 @@ const isDuplicateTipoDocumento = () => {
 };
 
 
+
+
+
 {/***************************************************************************************************************************************/}
 
 // Función para controlar la entrada de texto en tipo_documento
@@ -217,7 +220,7 @@ const handleTipoDocumentoInputChange = (e, setFunction) => {
     swal.fire({
       icon: 'warning',
       title: 'Repetición de letras',
-      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+      text: 'No se permite que la misma letra se repita más de 3 veces consecutivas.',
     });
     return;
   }
@@ -235,28 +238,84 @@ const handleTipoDocumentoInputChange = (e, setFunction) => {
 
   setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
 };
+{/****************************************************************************************************************************************/}
 
-// Función para controlar la entrada de texto en descripcion
+const handleTipoDocumentoKeyDown = (event) => {
+  const char = event.key;
+  
+  // Permitir teclas esenciales como borrar, navegación y edición
+  const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "Enter"];
+
+  if (allowedKeys.includes(char)) {
+    return; // ✅ Permitir acciones básicas
+  }
+
+  // Bloquear números y caracteres especiales (excepto acentos y espacios)
+  if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ ]$/.test(char)) {
+    event.preventDefault(); // 🚫 Bloquea cualquier carácter no permitido
+  }
+
+  // Bloquear más de un espacio consecutivo
+  const inputValue = event.target.value;
+  if (char === " " && inputValue.slice(-1) === " ") {
+    event.preventDefault(); // 🚫 Bloquea el segundo espacio
+  }
+};
+
+
+{/*******************************************************************************************************************************/}
+const handleDescripcionKeyDown = (event) => {
+  const char = event.key;
+
+  // Permitir las teclas de borrar (Backspace, Delete)
+  if (char === "Backspace" || char === "Delete") {
+    return;
+  }
+
+  // Expresión regular: Permite letras, acentos y comas; bloquea números y caracteres especiales
+  if (!/^[a-zA-ZÁÉÍÓÚáéíóú, ]$/.test(char)) {
+    event.preventDefault(); // 🚫 Bloquea la entrada desde el teclado
+  }
+
+  // Bloqueo de más de 3 caracteres repetidos consecutivos
+  const input = event.target.value + char;
+  if (/([a-zA-ZÁÉÍÓÚáéíóú,])\1{1,}/.test(input)) {
+    event.preventDefault(); // 🚫 Bloquea la repetición excesiva
+  }
+};
+{/***************************************************************************************************************************/}
+
 const handleDescripcionInputChange = (e, setFunction) => {
   let value = e.target.value;
 
   // No permitir más de un espacio consecutivo
   value = value.replace(/\s{2,}/g, ' ');
 
-  // Validar longitud mínima
+  // Bloqueo de más de 3 caracteres consecutivos repetidos
+  if (/([a-zA-ZÁÉÍÓÚáéíóú,])\1{2,}/.test(value)) {
+    setDocumentoError('No se permiten más de tres caracteres repetidos consecutivos.');
+  }
+
+  // Bloqueo de números y caracteres especiales (excepto acentos y comas)
+  if (/[^a-zA-ZÁÉÍÓÚáéíóú, ]/.test(value)) {
+    setDocumentoError('Solo se permiten letras, acentos y comas.');
+  }
+
+  // NO bloqueamos el borrado, solo mostramos el error cuando se intenta guardar
   if (value.length < 10) {
     setDocumentoError('La descripción debe tener al menos 10 caracteres.');
   } else {
-    setDocumentoError(''); // No hay error
+    setDocumentoError(''); // Se limpia el error si la longitud es válida
   }
 
   setFunction((prevState) => ({
     ...prevState,
-    descripcion: value,
+    descripcion: value.toUpperCase(), // Convertir a mayúsculas
   }));
 
-  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+  setHasUnsavedChanges(true); // Indicar que hay cambios sin guardar
 };
+
 
 
 {/***************************************************************************************************************************************/}
@@ -320,7 +379,7 @@ const handleCreateDocumento = async () => {
   }
 
   try {
-    const response = await fetch(`http://localhost:4000/api/tipoDocumento/crearTipoDocumento`, {
+    const response = await fetch(`http://localhost:4000/api/tipoDocumento/crearTipoDocumentos`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -386,7 +445,7 @@ const handleUpdateDocumento = async () => {
   }
 
   try {
-    const response = await fetch(`http://localhost:4000/api/tipoDocumento/actualizarTipoDocumento/${tipoDocumentoToUpdate.cod_tipo_documento}`, {
+    const response = await fetch(`http://localhost:4000/api/tipoDocumento/actualizarTipoDocumentos/${tipoDocumentoToUpdate.Cod_tipo_documento}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -432,7 +491,7 @@ const handleUpdateDocumento = async () => {
 const handleDeleteDocumento = async () => {
   try {
     const response = await fetch(
-      `http://localhost:4000/api/tipoDocumento/eliminarTipoDocumento/${encodeURIComponent(tipoDocumentoToDelete.cod_tipo_documento)}`,
+      `http://localhost:4000/api/tipoDocumento/eliminarTipoDocumentos/${encodeURIComponent(tipoDocumentoToDelete.Cod_tipo_documento)}`,
       {
         method: 'DELETE',
         headers: {
@@ -489,8 +548,8 @@ const toggleEstado = async (tipoDocumento) => {
   try {
     setLoading(true);
 
-    const response = await axios.post('http://localhost:4000/api/tipoDocumento/actualizarEstadoTipoDocumento', {
-      cod_tipo_documento: tipoDocumento.cod_tipo_documento,
+    const response = await axios.post('http://localhost:4000/api/tipoDocumento/actualizarEstadoTipoDocumentos', {
+      Cod_tipo_documento: tipoDocumento.Cod_tipo_documento,
       estado: nuevoEstado,
     });
 
@@ -498,8 +557,8 @@ const toggleEstado = async (tipoDocumento) => {
       // Actualizar el estado correctamente
       setTipoDocumento((prevTipoDocumento) =>
         prevTipoDocumento.map((doc) =>
-          doc.cod_tipo_documento === tipoDocumento.cod_tipo_documento
-            ? { ...doc, estado: nuevoEstado }
+          doc.Cod_tipo_documento === tipoDocumento.Cod_tipo_documento
+            ? { ...doc, estado: nuevoEstado } 
             : doc
         )
       );
@@ -541,8 +600,8 @@ const paginate = (pageNumber) => {
 {/***************************************************************************************************************************************/}
 
 const ReporteDocumentosPDF = () => {
-  const doc = new jsPDF('p', 'mm', 'letter'); 
-  
+  const doc = new jsPDF('p', 'mm', 'letter'); // Formato vertical
+
   if (!filteredTipoDocumento || filteredTipoDocumento.length === 0) {
     alert('No hay datos para exportar.');
     return;
@@ -555,118 +614,146 @@ const ReporteDocumentosPDF = () => {
     const pageWidth = doc.internal.pageSize.width;
 
     // Encabezado
-    doc.addImage(img, 'PNG', 10, 10, 45, 45);
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51);
-    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
-    // Subtítulo
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
     doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
-    doc.text('Reporte de Tipos de Documento', pageWidth / 2, 50, { align: 'center' });
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Tipos de Documento', pageWidth / 2, 40, { align: 'center' });
 
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 102, 51);
-    doc.line(10, 60, pageWidth - 10, 60);
+    doc.line(10, 45, pageWidth - 10, 45);
 
-    // Datos de la tabla (agregar descripcion)
-    const tableRows = filteredTipoDocumento.map((tipo, index) => ({
-      index: (index + 1).toString(),
-      tipo_documento: tipo.tipo_documento?.toUpperCase() || 'N/D',
-      descripcion: tipo.descripcion || 'Sin descripción',
-    }));
-
-    const columnWidths = {
-      index: 15, // Ancho de la columna #
-      tipo_documento: 65, // Ancho de la columna "Tipo Documento"
-      descripcion: 90 // Ancho de la columna "Descripción"
-    };
-    const tableWidth = columnWidths.index + columnWidths.tipo_documento + columnWidths.descripcion;
+    let startY = 50; // Tabla más cerca del encabezado
 
     doc.autoTable({
-      startY: 65,
-      margin: { left: (pageWidth - tableWidth) / 2 }, // Centrar la tabla
-      columns: [
-        { header: '#', dataKey: 'index' },
-        { header: 'Tipo de Documento', dataKey: 'tipo_documento' },
-        { header: 'Descripción', dataKey: 'descripcion' },
-      ],
-      body: tableRows,
+      startY: startY,
+      margin: { left: (pageWidth - 140) / 2 }, // Centrado horizontal
+      head: [['#', 'Tipo de Documento', 'Descripción', 'Estado']],
+      body: filteredTipoDocumento.map((tipo, index) => [
+        index + 1,
+        tipo.tipo_documento?.toUpperCase() || 'N/D',
+        tipo.descripcion?.toUpperCase()|| 'Sin descripción',
+        tipo.estado === 1 ? 'ACTIVO' : 'INACTIVO'
+      ]),
       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
-        fontSize: 9,
-        halign: 'center',
+        fontSize: 8,
+        fontStyle: 'bold'
       },
       styles: {
         fontSize: 7,
-        cellPadding: 4,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        halign: 'center'
       },
       columnStyles: {
-        index: { cellWidth: columnWidths.index },
-        tipo_documento: { cellWidth: columnWidths.tipo_documento },
-        descripcion: { cellWidth: columnWidths.descripcion },
+        0: { cellWidth: 15 }, // #
+        1: { cellWidth: 50 }, // Tipo de Documento
+        2: { cellWidth: 50 }, // Descripción
+        3: { cellWidth: 25 } // Estado
       },
-      alternateRowStyles: {
-        fillColor: [240, 248, 255],
-      },
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-        const footerY = doc.internal.pageSize.height - 10;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51);
-        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-      },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 3) {
+          data.cell.styles.textColor = data.cell.raw === 'ACTIVO' ? [0, 128, 0] : [255, 0, 0];
+          data.cell.styles.fontStyle = data.cell.raw === 'ACTIVO' ? 'bold' : 'normal';
+        }
+      }
     });
 
+    // Pie de página
+    const now = new Date();
+    const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const pageCount = doc.internal.getNumberOfPages();
+
+    doc.setFontSize(7);
+    doc.setTextColor(0, 102, 51);
+    doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+    doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+
+    // Mostrar visor PDF
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
-
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
-        <head><title>Reporte de Tipos de Documento</title></head>
-        <body style="margin:0;">
-          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:20px;">
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_TipoDocumentos.pdf'; a.click();">
-              Descargar PDF
+        <head>
+          <title>Reporte de Tipos de Documento</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100vw;
+              height: 100vh;
+            }
+            iframe {
+              width: 100vw;
+              height: 100vh;
+              border: none;
+            }
+            .icon-container {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              display: flex;
+              gap: 15px;
+              padding: 10px;
+              border-radius: 8px;
+            }
+            .icon-button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 22px;
+              color: white;
+              position: relative;
+              z-index: 9999;
+            }
+            .icon-button:focus,
+            .icon-button:active {
+              outline: none;
+              box-shadow: none;
+            }
+          </style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+        </head>
+        <body>
+          <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+          <div class="icon-container">
+            <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_TipoDocumentos.pdf'; a.click();">
+              <i class="fas fa-download"></i>
             </button>
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="window.print();">
-              Imprimir PDF
+            <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+              <i class="fas fa-print"></i>
             </button>
           </div>
         </body>
-      </html>`);
+      </html>
+    `);
   };
 
   img.onerror = () => {
     alert('No se pudo cargar el logo.');
   };
 };
+
 
 
 {/***************************************************************************************************************************************/}
@@ -680,31 +767,39 @@ const exportToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Tipo Documento');
 
-  // Título del documento
-  worksheet.mergeCells('A1:B1');
+  // 🎯 **Título del documento**
+  worksheet.mergeCells('A1:C1');
   worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
   worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
   worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  worksheet.mergeCells('A2:B2');
+  worksheet.mergeCells('A2:C2');
   worksheet.getCell('A2').value = 'TIPOS DE DOCUMENTO';
   worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
   worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Encabezados de la tabla
-  const headerRow = worksheet.addRow(['#', 'Tipo Documento']);
+  // 📌 **Encabezados de la tabla**
+  const headerRow = worksheet.addRow(['#', 'Tipo Documento', 'Estado']);
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
-  // Datos de la tabla (Usamos filteredTipoDocumento en lugar de tipoRelacion)
+  // 📊 **Datos de la tabla**
   filteredTipoDocumento.forEach((tipo, index) => {
     const row = worksheet.addRow([
       index + 1,
-      typeof tipo.tipo_documento === 'string' ? tipo.tipo_documento.toUpperCase() : tipo.tipo_documento
+      tipo.tipo_documento?.toUpperCase() || 'N/D',
+      tipo.estado === 1 ? 'ACTIVO' : 'INACTIVO'
     ]);
+
+    // 🎨 **Estilos para la columna de Estado**
+    const estadoCell = row.getCell(3);
+    estadoCell.font = {
+      bold: true,
+      color: { argb: tipo.estado === 1 ? '008000' : 'FF0000' } // ✅ Verde para "ACTIVO", rojo para "INACTIVO"
+    };
 
     row.eachCell((cell) => {
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -717,12 +812,12 @@ const exportToExcel = () => {
     });
   });
 
-  // Ajustar el ancho de las columnas
+  // 📏 **Ajustar el ancho de las columnas**
   worksheet.columns.forEach((column) => {
     column.width = 20;
   });
 
-  // Crear archivo Excel
+  // 📂 **Crear archivo Excel**
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'Reporte_TipoDocumento.xlsx');
@@ -730,8 +825,6 @@ const exportToExcel = () => {
 };
 
 
-{/***************************************************************************************************************************************/}
-
 
 {/***************************************************************************************************************************************/}
 
@@ -741,6 +834,13 @@ const exportToExcel = () => {
 
 {/***************************************************************************************************************************************/}
 
+
+{/***************************************************************************************************************************************/}
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    }
+    
 
 {/***************************************************************************************************************************************/}
 
@@ -788,9 +888,24 @@ const exportToExcel = () => {
         <CIcon icon={cilSearch} />
       </CInputGroupText>
       <CFormInput
-        placeholder="Buscar tipo documento..."
-        onChange={handleSearch}
+        placeholder="Buscar tipo de documentos ..."
         value={searchTerm}
+        onChange={(e) => {
+          let value = e.target.value;
+
+          // 🔄 **Eliminar espacios consecutivos**
+          value = value.replace(/\s{2,}/g, ' ');
+
+          // 🔄 **Permitir acentos, pero eliminar otros caracteres especiales**
+          value = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, '');
+
+          // 🔄 **Bloquear caracteres repetidos más de 10 veces**
+          value = value.replace(/(.)\1{10,}/g, '$1'.repeat(10));
+
+          setSearchTerm(value);
+        }}
+        onPaste={(e) => e.preventDefault()}
+        onCopy={(e) => e.preventDefault()}
       />
       <CButton
         style={{
@@ -843,46 +958,63 @@ const exportToExcel = () => {
 
 {/**************************************************************************************************************************************/}
 
-  {/* Tabla para mostrar tipos de documento */}
-  <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
-    <CTable striped bordered hover>
-      <CTableHead>
-        <CTableRow>
-          <CTableHeaderCell style={{ width: '50px' }}>#</CTableHeaderCell>
-          <CTableHeaderCell style={{ width: '150px' }}>Tipo de Documento</CTableHeaderCell>
-          <CTableHeaderCell style={{ width: '200px' }}>Descripción</CTableHeaderCell>
-          <CTableHeaderCell style={{ width: '50px' }}>Estado</CTableHeaderCell>
-          <CTableHeaderCell style={{ width: '50px' }}>Acciones</CTableHeaderCell>
-        </CTableRow>
-      </CTableHead>
-      <CTableBody>
-        {currentRecords.map((tipoDocumento) => (
-          <CTableRow key={tipoDocumento.Cod_tipo_documento}>
-            <CTableDataCell>
-              {/* Mostrar el índice original en lugar del índice basado en la paginación */}
-              {tipoDocumento.originalIndex} 
-            </CTableDataCell>
-            <CTableDataCell>{tipoDocumento.tipo_documento}</CTableDataCell>
-            <CTableDataCell>{tipoDocumento.descripcion}</CTableDataCell>
-            <CTableDataCell>{tipoDocumento.estado_documento === 1 ? 'Activo' : 'Inactivo'}</CTableDataCell>
-            <CTableDataCell>
+<div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
+  {console.log('Current Records:', currentRecords)}
+  <CTable striped>
+    <CTableHead>
+      <CTableRow>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">#</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Tipo de Documento</CTableHeaderCell>
+        <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Descripción</CTableHeaderCell>
+        <CTableHeaderCell className="text-center">Acciones</CTableHeaderCell>
+      </CTableRow>
+    </CTableHead>
+    <CTableBody>
+      {currentRecords.map((tipoDocumento) => (
+        <CTableRow key={tipoDocumento.Cod_tipo_documento}>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">{tipoDocumento.originalIndex}</CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+            {tipoDocumento.tipo_documento.toUpperCase()}
+          </CTableDataCell>
+          <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
+            {tipoDocumento.descripcion.toUpperCase()}
+          </CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center">
               {canUpdate && (
-                <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(tipoDocumento)}>
+                <CButton
+                  color="warning"
+                  onClick={() => openUpdateModal(tipoDocumento)}
+                  style={{ marginRight: '10px' }}
+                  disabled={tipoDocumento.estado === 0}
+                  title={tipoDocumento.estado ? 'Editar documento' : 'Documento inactivo'}
+                >
                   <CIcon icon={cilPen} />
                 </CButton>
               )}
-
               {canDelete && (
-                <CButton style={{ backgroundColor: '#E57368', marginRight: '10px' }} onClick={() => openDeleteModal(tipoDocumento)}>
+                <CButton color="danger" onClick={() => openDeleteModal(tipoDocumento)}>
                   <CIcon icon={cilTrash} />
                 </CButton>
               )}
-            </CTableDataCell>
-          </CTableRow>
-        ))}
-      </CTableBody>
-    </CTable>
-  </div>
+              <CButton
+                style={{
+                  backgroundColor: tipoDocumento.estado ? '#4CAF50' : '#F44336',
+                  color: 'white',
+                  marginLeft: '10px',
+                }}
+                onClick={() => toggleEstado(tipoDocumento)}
+                disabled={loading}
+              >
+                {loading ? 'Cambiando...' : tipoDocumento.estado ? 'Activo' : 'Inactivo'}
+              </CButton>
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))}
+    </CTableBody>
+  </CTable>
+</div>
 
 {/**************************************************************************************************************************************/}
 {/* Paginación Fija */}
@@ -910,26 +1042,33 @@ const exportToExcel = () => {
 
 {/**************************************************************************************************************************************/}
 
-<CModal visible={modalVisible} backdrop="static">
+<CModal visible={modalVisible} backdrop="static" size="lg"> {/* Hacemos el modal más grande */}
   <CModalHeader closeButton={false}>
-    <CModalTitle>Ingresar Nuevo Tipo de Documento</CModalTitle>
+    <CModalTitle>Nuevo tipo de documento</CModalTitle> {/* Manteniendo título consistente en formato adecuado */}
     <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevoDocumento)} />
   </CModalHeader>
-  <CModalBody>
+
+  <CModalBody style={{ padding: '20px' }}> {/* Mayor espacio en el contenido */}
     <CForm>
       {/* Campo para Tipo Documento */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Tipo Documento</CInputGroupText>
+      <CInputGroup className="mb-4"> {/* Aumentamos el espacio entre campos */}
+        <CInputGroupText>Tipo documento</CInputGroupText>
         <CFormInput
           type="text"
-          placeholder="Ingrese un nuevo tipo de documento"
+          placeholder="ingrese un nuevo tipo de documento" 
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nuevoDocumento.tipo_documento}
+
           onChange={(e) => handleTipoDocumentoInputChange(e, setNuevoDocumento, setDocumentoError)}
           onBlur={isDuplicateTipoDocumento}
-          style={{ textTransform: 'uppercase' }}
+          onKeyDown={handleTipoDocumentoKeyDown}
+          style={{
+            textTransform: 'uppercase',  // Convierte el texto ingresado a mayúsculas
+            color: 'black',  // Texto ingresado en negro
+            fontSize: '1rem',  // Ajuste para mejor lectura
+          }}
         />
       </CInputGroup>
       {documentoError && (
@@ -937,90 +1076,116 @@ const exportToExcel = () => {
       )}
 
       {/* Campo para Descripción */}
-      <CInputGroup className="mb-3">
+      <CInputGroup className="mb-4"> {/* Espacio uniforme entre los campos */}
         <CInputGroupText>Descripción</CInputGroupText>
         <CFormInput
           type="text"
-          placeholder="Ingrese una descripción"
+          placeholder="ingrese una descripción"
           maxLength={100}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nuevoDocumento.descripcion}
           onChange={(e) => handleDescripcionInputChange(e, setNuevoDocumento)}
-          style={{ textTransform: 'capitalize' }}
+          onKeyDown={handleDescripcionKeyDown} // 🚫 Bloquea caracteres desde el teclado
+          style={{
+            textTransform: 'uppercase',  // Convierte texto ingresado a mayúsculas
+            color: 'black',  // Texto ingresado en negro
+          }}
         />
+
       </CInputGroup>
     </CForm>
   </CModalBody>
   <CModalFooter>
-    <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoDocumento)}>
-      Cancelar
-    </CButton>
-    <CButton
-      style={{ backgroundColor: '#4B6251', color: 'white' }}
-      onClick={handleCreateDocumento}
-      disabled={!!documentoError || !nuevoDocumento.tipo_documento || !nuevoDocumento.descripcion}
-    >
-      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
-    </CButton>
-  </CModalFooter>
-</CModal>
+  <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoDocumento)}>
+    Cancelar
+  </CButton>
+  <CButton
+  style={{
+    backgroundColor: '#4B6251', 
+    color: 'white',
+    opacity: '1', // 🔥 Mantiene el color sólido en todo momento
+    cursor: !!documentoError || !nuevoDocumento.tipo_documento || !nuevoDocumento.descripcion ? 'not-allowed' : 'pointer',
+  }}
+  onClick={handleCreateDocumento}
+  disabled={!!documentoError || !nuevoDocumento.tipo_documento || !nuevoDocumento.descripcion}
+>
+  <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+</CButton>
 
+
+</CModalFooter>
+
+</CModal>
 
 {/**************************************************************************************************************************************/}
 
-<CModal visible={modalUpdateVisible} backdrop="static">
+<CModal visible={modalUpdateVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
-    <CModalTitle>Actualizar Tipo Documento</CModalTitle>
+    <CModalTitle>Actualizar tipo de documento</CModalTitle>
     <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetDocumentoToUpdate)} />
   </CModalHeader>
-  <CModalBody>
+
+  <CModalBody style={{ padding: '20px' }}>
     <CForm>
       {/* Campo para Tipo Documento */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Tipo Documento</CInputGroupText>
+      <CInputGroup className="mb-4">
+        <CInputGroupText>Tipo documento</CInputGroupText>
         <CFormInput
           type="text"
-          placeholder="Ingrese el tipo de documento"
+          placeholder="ingrese el tipo de documento"
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={tipoDocumentoToUpdate.tipo_documento}
           onChange={(e) => handleTipoDocumentoInputChange(e, setTipoDocumentoToUpdate)}
-          style={{ textTransform: 'uppercase' }}
+          onKeyDown={handleTipoDocumentoKeyDown}
+          style={{
+            textTransform: 'uppercase',
+            color: 'black',
+            fontSize: '1rem',
+          }}
         />
       </CInputGroup>
-      {documentoError && <p style={{ color: 'red' }}>{documentoError}</p>}
+      {documentoError && <p style={{ color: 'red', fontSize: '0.9em' }}>{documentoError}</p>}
 
       {/* Campo para Descripción */}
-      <CInputGroup className="mb-3">
+      <CInputGroup className="mb-4">
         <CInputGroupText>Descripción</CInputGroupText>
         <CFormInput
           type="text"
-          placeholder="Ingrese la descripción"
+          placeholder="ingrese la descripción"
           maxLength={100}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={tipoDocumentoToUpdate.descripcion}
           onChange={(e) => handleDescripcionInputChange(e, setTipoDocumentoToUpdate)}
-          style={{ textTransform: 'capitalize' }}
+          onKeyDown={handleTipoDocumentoKeyDown}
+          style={{
+            textTransform: 'uppercase',
+            color: 'black',
+            fontSize: '1rem',
+          }}
         />
       </CInputGroup>
     </CForm>
   </CModalBody>
+
   <CModalFooter>
-    <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetDocumentoToUpdate)}>
-      Cancelar
-    </CButton>
-    <CButton
-      style={{ backgroundColor: '#4B6251', color: 'white' }}
-      onClick={handleUpdateDocumento}
-      disabled={!!documentoError || !tipoDocumentoToUpdate.tipo_documento || !tipoDocumentoToUpdate.descripcion}
-    >
-      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
-    </CButton>
-  </CModalFooter>
+  <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetDocumentoToUpdate)}>
+    Cancelar
+  </CButton>
+  <CButton
+    style={{ backgroundColor: '#4B6251', color: 'white' }} // Se mantiene el color original
+    onClick={handleUpdateDocumento}
+    disabled={!!documentoError || !tipoDocumentoToUpdate.tipo_documento || !tipoDocumentoToUpdate.descripcion}
+  >
+    <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+  </CButton>
+</CModalFooter>
+
 </CModal>
+
 
 
 {/**************************************************************************************************************************************/}

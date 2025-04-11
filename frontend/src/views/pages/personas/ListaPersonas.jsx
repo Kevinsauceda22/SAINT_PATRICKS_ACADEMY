@@ -217,6 +217,8 @@ useEffect(() => {
   }
 }, [personas]);
 
+{/********************************************************************************************************************************************/}
+
 useEffect(() => {
   const handleClickOutside = (event) => {
     if (!event.target.closest('.dropdown-container')) {
@@ -234,7 +236,7 @@ useEffect(() => {
   };
 }, []);
 
-
+{/********************************************************************************************************************************************/}
 useEffect(() => {
   setMunicipiosFiltradosNuevo(
     departamentoSeleccionado 
@@ -243,6 +245,7 @@ useEffect(() => {
   );
 }, [departamentoSeleccionado]);
 
+{/********************************************************************************************************************************************/}
 useEffect(() => {
   setMunicipiosFiltrados(
     personaToUpdate.cod_departamento 
@@ -251,9 +254,7 @@ useEffect(() => {
   );
 }, [personaToUpdate.cod_departamento]);
 
-
-
-
+{/********************************************************************************************************************************************/}
 useEffect(() => {
   if (!departamentoSeleccionado) {
     setMunicipiosFiltradosNuevo(municipio); // ✅ Si no hay departamento, usar todos los municipios
@@ -262,8 +263,7 @@ useEffect(() => {
   }
 }, [departamentoSeleccionado]);
 
-
-
+{/********************************************************************************************************************************************/}
 useEffect(() => {
   if (nuevaPersona.cod_departamento) {
     const municipiosFiltrados = municipio.filter(
@@ -277,7 +277,7 @@ useEffect(() => {
   }
 }, [nuevaPersona.cod_departamento]); // 🔄 Se ejecuta cada vez que cambia el departamento
 
-
+{/********************************************************************************************************************************************/}
 useEffect(() => {
   const tipoSeleccionado = tipoPersona.find(tipo => tipo.Cod_tipo_persona === parseInt(nuevaPersona.cod_tipo_persona, 10));
   
@@ -306,26 +306,10 @@ const resetPersonaToUpdate = () => {
 
 {/**********************************************************************************************************************************************/}
 const handleCloseModal = (setModalVisible, resetData, formData = {}) => {
-  const { 
-    dni_persona = '', 
-    Nombre = '', 
-    Segundo_nombre = '', 
-    Primer_apellido = '', 
-    Segundo_apellido = '', 
-    direccion_persona = '', 
-    fecha_nacimiento = '', 
-    Estado_Persona = '', 
-    principal = '', 
-    cod_tipo_persona = '', 
-    cod_genero = '', 
-    cod_nacionalidad = '', 
-    cod_departamento = '', 
-    cod_municipio = '' 
-  } = formData;
-
-  const hayDatos = dni_persona || Nombre || Segundo_nombre || Primer_apellido || Segundo_apellido ||
-                   direccion_persona || fecha_nacimiento || Estado_Persona || principal || 
-                   cod_tipo_persona || cod_genero || cod_nacionalidad || cod_departamento || cod_municipio;
+  // 🔄 **Convertimos los valores a string antes de aplicar `.trim()`**
+  const hayDatos = Object.values(formData).some(value => 
+    typeof value === 'string' && value.trim() !== ''
+  );
 
   if (hayDatos) {
     swal.fire({
@@ -344,6 +328,28 @@ const handleCloseModal = (setModalVisible, resetData, formData = {}) => {
   } else {  
     setModalVisible(false);
   }
+};
+
+
+{/******************************************************************************************************************************************* */}
+
+const closeUpdateModal = () => {
+  handleCloseModal(setModalUpdateVisible, resetPersonaToUpdate, personaToUpdate);
+};
+
+const closeAddModal = () => {
+  handleCloseModal(setModalVisible, resetNuevaPersona, nuevaPersona);
+};
+
+
+const openAddModal = () => {
+  setModalVisible(true);
+};
+
+
+const openDeleteModal = (persona) => {
+  setPersonaToDelete(persona);
+  setModalDeleteVisible(true);
 };
 
 {/********************************************************************************************************************************************/}
@@ -386,32 +392,6 @@ const openUpdateModal = (persona) => {
   setTimeout(() => {
     setModalUpdateVisible(true);
   }, 100);
-};
-
-
-
-{/******************************************************************************************************************************************* */}
-
-const closeUpdateModal = () => {
-  handleCloseModal(setModalUpdateVisible, resetPersonaToUpdate, personaToUpdate);
-};
-
-const openAddModal = () => {
-  setModalVisible(true);
-};
-
-const closeAddModal = () => {
-  handleCloseModal(setModalVisible, resetNuevaPersona, nuevaPersona);
-};
-
-const openDeleteModal = (persona) => {
-  setPersonaToDelete(persona);
-  setModalDeleteVisible(true);
-};
-
-const closeDetailModal = () => {
-  setShowDetailModal(false);
-  setSelectedPersona(null);
 };
 
 
@@ -624,26 +604,32 @@ const handleKeyPress = (e) => {
 {/***************************************************************************************************************************************************/}
 const fetchPersonas = async () => {
   try {
-    const response = await fetch('http://localhost:4000/api/personas/verPersonas')
-    const data = await response.json()
+    const response = await fetch('http://localhost:4000/api/personas/verPersonas');
+    const data = await response.json();
 
-    console.log('Datos recibidos del servidor:', data)
+    console.log('Datos recibidos del servidor:', data);
 
-    // Agregar índice y ordenar de forma descendente (último creado primero)
-    const dataWithIndex = data
-      .map((persona, index) => ({
-        ...persona,
-        originalIndex: index + 1,
-      }))
-      .reverse() // Invierte el orden para que el último creado aparezca primero
+    // 🔄 **Agregar índice y ordenar de forma descendente (último creado primero)**
+    const dataWithIndex = data.map((persona, index) => ({
+      ...persona,
+      originalIndex: index,
+    })).reverse(); // 🔄 Invierte el orden para que el último creado aparezca primero
 
-    console.log('Datos con índice añadido y ordenados:', dataWithIndex)
+    // 🔄 **Ordenar: Mantener orden original para estado 1/true, mover estado 0/false al final**
+    const sortedData = dataWithIndex.sort((a, b) => {
+      if (a.estado === 0 || a.estado === false) return 1;  // Mueve estado 0/false al final
+      if (b.estado === 0 || b.estado === false) return -1; // Mantiene estado 1/true en su posición original
+      return 0; // 🔄 Mantiene el orden original sin alteraciones
+    });
 
-    setPersonas(dataWithIndex)
+    console.log('Datos ordenados correctamente:', sortedData);
+
+    setPersonas(sortedData);
   } catch (error) {
-    console.error('Error al obtener las personas:', error)
+    console.error('Error al obtener las personas:', error);
   }
-}
+};
+
 
 {/********************************************************************************************************************************************/}
   const fetchNacionalidad = async () => {
@@ -1031,12 +1017,24 @@ const toggleEstado = async (persona) => {
     });
 
     if (response.data.mensaje === 'Estado actualizado exitosamente') {
-      // Actualizar el estado correctamente
-      setPersonas((prevPersonas) =>
-        prevPersonas.map((p) =>
-          p.cod_persona === persona.cod_persona ? { ...p, estado: nuevoEstado } : p
-        )
-      );
+      // 🔄 **Actualizar estado en la lista y aplicar desvanecimiento**
+      setPersonas((prevPersonas) => {
+        const updatedPersonas = prevPersonas.map((p) =>
+          p.cod_persona === persona.cod_persona ? { ...p, estado: nuevoEstado, fading: true } : p
+        );
+
+        // **Reordenar sin perder el orden original**
+        setTimeout(() => {
+          setPersonas((finalPersonas) => {
+            const activos = finalPersonas.filter(p => p.estado === 1).sort((a, b) => b.originalIndex - a.originalIndex);
+            const inactivos = finalPersonas.filter(p => p.estado === 0);
+
+            return [...activos, ...inactivos.map(p => ({ ...p, fading: false }))];
+          });
+        }, 1000); // 🔄 Esperar 1 segundo antes de mover los inactivos al final
+
+        return updatedPersonas;
+      });
     } else {
       console.error('Error al cambiar el estado:', response.data.mensaje);
     }
@@ -1044,60 +1042,70 @@ const toggleEstado = async (persona) => {
     console.error('Error al realizar la solicitud:', error);
   } finally {
     setLoading(false);
+    fetchPersonas();
   }
 };
+
 
   {/***************************************************FUNCIONES DE REPORTERIA Y BÚSQUEDA******************************************************/}
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value)
-    setCurrentPage(1)
-  }
+ 
+  const searchPersonas = (searchTerm) => {
+    return personas.map((persona, index) => ({
+      ...persona,
+      originalIndex: index + 1, // Agregar índice original para ordenar
+    })).filter((persona) => {
+      
+      // 📌 **Obteniendo valores correctos**
+      const tipoDocumentoTexto = tipoDocumento.find((tipo) => tipo.Cod_tipo_documento === persona.tipo_documento)?.tipo_documento?.toUpperCase() || 'N/D';
+      const tipoPersonaTexto = tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona?.toUpperCase() || 'N/D';
+      const generoTexto = generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero?.toUpperCase() || 'N/D';
+      const nacionalidadTexto = nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad?.toUpperCase() || 'N/D';
+      const departamentoTexto = departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento?.toUpperCase() || 'N/D';
+      const municipioTexto = municipio.find((municipio) => municipio.cod_municipio === persona.cod_municipio)?.nombre_municipio?.toUpperCase() || 'N/D';
+      const fechaNacimientoTexto = persona.fecha_nacimiento ? new Date(persona.fecha_nacimiento).toLocaleDateString('es-ES') : 'N/D';
 
-// Función de búsqueda de personas
-const searchPersonas = (searchTerm) => {
-  return personas.map((persona, index) => ({
-    ...persona,
-    originalIndex: index + 1, // Agregar índice original para ordenar
-  })).filter((persona) => {
-    // Lógica de filtro
-    const tipoPersonaTexto = tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D';
-    const generoTexto = generos.find((genero) => genero.Cod_genero === persona.cod_genero)?.Tipo_genero.toUpperCase() || 'N/D';
-    const nacionalidadTexto = nacionalidad.find((nac) => nac.Cod_nacionalidad === persona.cod_nacionalidad)?.pais_nacionalidad.toUpperCase() || 'N/D';
-    const departamentoTexto = departamentos.find((depto) => depto.Cod_departamento === persona.cod_departamento)?.Nombre_departamento.toUpperCase() || 'N/D';
-    const municipioTexto = municipio.find((municipio) => municipio.cod_municipio === persona.cod_municipio)?.nombre_municipio.toUpperCase() || 'N/D';
-    const fechaNacimientoTexto = persona.fecha_nacimiento ? new Date(persona.fecha_nacimiento).toLocaleDateString('es-ES') : 'N/D';
-    const estadoPersonaTexto = persona.Estado_Persona === 'A' ? 'ACTIVO' : 'SUSPENDIDO';
+      // ✅ **Corrección: Convertir estado booleano en texto**
+      const estadoTexto = persona.estado === 1 ? 'ACTIVO' : persona.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
 
-    return (
-      (persona.dni_persona && persona.dni_persona.toUpperCase().includes(searchTerm.toUpperCase())) ||
-      (persona.Nombre && persona.Nombre.toUpperCase().includes(searchTerm.toUpperCase())) ||
-      (persona.Segundo_nombre && persona.Segundo_nombre.toUpperCase().includes(searchTerm.toUpperCase())) ||  
-      (persona.Primer_apellido && persona.Primer_apellido.toUpperCase().includes(searchTerm.toUpperCase())) ||
-      (persona.Segundo_apellido && persona.Segundo_apellido.toUpperCase().includes(searchTerm.toUpperCase())) ||
-      (persona.direccion_persona && persona.direccion_persona.toUpperCase().includes(searchTerm.toUpperCase())) ||
-      (fechaNacimientoTexto && fechaNacimientoTexto.includes(searchTerm)) ||
-      (estadoPersonaTexto && estadoPersonaTexto.includes(searchTerm.toUpperCase())) ||
-      (nacionalidadTexto && nacionalidadTexto.includes(searchTerm.toUpperCase())) ||
-      (departamentoTexto && departamentoTexto.includes(searchTerm.toUpperCase())) ||
-      (municipioTexto && municipioTexto.includes(searchTerm.toUpperCase())) ||
-      (tipoPersonaTexto && tipoPersonaTexto.includes(searchTerm.toUpperCase())) ||
-      (generoTexto && generoTexto.includes(searchTerm.toUpperCase())) ||
-      (persona.principal ? 'SÍ' : 'NO').includes(searchTerm.toUpperCase())
-    );
-  });
-};
+      const principalTexto = persona.principal === 1 ? 'SÍ' : persona.principal === 0 ? 'NO' : 'DESCONOCIDO';
 
-// Filtrado de personas
-const filteredPersonas = searchPersonas(searchTerm);
-const indexOfLastRecord = currentPage * recordsPerPage;
-const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-const currentRecords = filteredPersonas.slice(indexOfFirstRecord, indexOfLastRecord);
-
-const paginate = (pageNumber) => {
-  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPersonas.length / recordsPerPage)) {
-    setCurrentPage(pageNumber);
-  }
-};
+      
+  
+      // 🏷️ **Lógica de filtro actualizada**
+      return (
+        tipoDocumentoTexto.includes(searchTerm.toUpperCase()) ||
+        persona.dni_persona?.toUpperCase().includes(searchTerm.toUpperCase()) ||
+        persona.Nombre?.toUpperCase().includes(searchTerm.toUpperCase()) ||
+        persona.Segundo_nombre?.toUpperCase().includes(searchTerm.toUpperCase()) ||  
+        persona.Primer_apellido?.toUpperCase().includes(searchTerm.toUpperCase()) ||
+        persona.Segundo_apellido?.toUpperCase().includes(searchTerm.toUpperCase()) ||
+        persona.direccion_persona?.toUpperCase().includes(searchTerm.toUpperCase()) ||
+        fechaNacimientoTexto.includes(searchTerm) ||
+        estadoTexto.includes(searchTerm.toUpperCase()) ||  // 🔄 **Ahora permite buscar "Activo"/"Inactivo"**
+        principalTexto.includes(searchTerm.toUpperCase()) ||  // 🔄 **Ahora permite buscar "SÍ"/"NO"**
+        nacionalidadTexto.includes(searchTerm.toUpperCase()) ||
+        departamentoTexto.includes(searchTerm.toUpperCase()) ||
+        municipioTexto.includes(searchTerm.toUpperCase()) ||
+        tipoPersonaTexto.includes(searchTerm.toUpperCase()) ||
+        generoTexto.includes(searchTerm.toUpperCase())
+      );
+    });
+  };
+  
+  
+  // 🔄 **Filtrado actualizado**
+  const filteredPersonas = searchPersonas(searchTerm);
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredPersonas.slice(indexOfFirstRecord, indexOfLastRecord);
+  
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredPersonas.length / recordsPerPage)) {
+      setCurrentPage(pageNumber);
+    }
+  };
+  
+  
 
 {/**********************************************************************************************************************************************/}
 const ReportePersonasExcel = () => {
@@ -1121,10 +1129,15 @@ const ReportePersonasExcel = () => {
   worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
 
   // 📌 **Encabezados de la tabla**
-  const headerRow = worksheet.addRow([
+const headerRow = worksheet.addRow([
     '#', 'Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 
     'Primer Apellido', 'Segundo Apellido', 'Fecha Nacimiento', 'Tipo Persona', 'Principal', 'Estado'
-  ]);
+]);
+
+headerRow.eachCell((cell) => {
+    cell.alignment = { horizontal: 'center' };
+});
+
 
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
@@ -1183,7 +1196,7 @@ const ReportePersonasExcel = () => {
 
 
 const ReportePersonasPDF = () => {
-  const doc = new jsPDF('l', 'mm', 'letter'); // 📌 Formato horizontal
+  const doc = new jsPDF('l', 'mm', 'letter'); // Horizontal
 
   if (!filteredPersonas || filteredPersonas.length === 0) {
     alert('No hay datos para exportar.');
@@ -1196,9 +1209,9 @@ const ReportePersonasPDF = () => {
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
 
-    // 🏷️ Encabezado del documento
+    // Encabezado
     doc.addImage(img, 'PNG', 10, 10, 30, 30);
-    doc.setFontSize(14); // 📌 Reducí el tamaño del título
+    doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
     doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
 
@@ -1218,38 +1231,62 @@ const ReportePersonasPDF = () => {
 
     let startY = 50;
 
-    // 🏷️ Tabla con encabezados más pequeños y columna "Estado"
     doc.autoTable({
       startY: startY,
-      margin: { left: 10 },
-      head: [['#', 'Tipo Documento', 'DNI', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido', 'Fecha Nacimiento', 'Tipo Persona', 'Principal', 'Estado']],
+      margin: { left: 10, right: 10 },
+      head: [[
+        '#', 'Documento', 'Documentación', 'Primer Nombre', 'Segundo Nombre', 'Primer Apellido', 'Segundo Apellido',
+        'Fecha Nacimiento', 'Tipo Persona', 'Principal', 'Estado'
+      ]],
       body: filteredPersonas.map((persona, index) => [
-        { content: index + 1, styles: { halign: 'center' } }, // 🔄 Numeración
-        { content: tipoDocumento.find((tipo) => tipo.Cod_tipo_documento === persona.tipo_documento)?.tipo_documento.toUpperCase() || 'N/D', styles: { halign: 'center' } },
-        { content: persona.dni_persona?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
-        { content: persona.Nombre?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
-        { content: persona.Segundo_nombre?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
-        { content: persona.Primer_apellido?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
-        { content: persona.Segundo_apellido?.toUpperCase() || 'N/D', styles: { halign: 'center' } },
-        { content: new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA'), styles: { halign: 'center' } },
-        { content: tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D', styles: { halign: 'center' } },
-        { content: persona.principal ? 'SÍ' : 'NO', styles: { halign: 'center' } },
-        {
-          content: persona.estado === 1 ? 'ACTIVO' : 'INACTIVO',
-          styles: {
-            halign: 'center',
-            textColor: persona.estado === 1 ? [0, 128, 0] : [255, 0, 0], // 🔄 Verde si activo, rojo si inactivo
-            fontStyle: persona.estado === 1 ? 'bold' : 'normal',
-          },
-        }
-        
+        index + 1,
+        tipoDocumento.find((tipo) => tipo.Cod_tipo_documento === persona.tipo_documento)?.tipo_documento.toUpperCase() || 'N/D',
+        persona.dni_persona?.toUpperCase() || 'N/D',
+        persona.Nombre?.toUpperCase() || 'N/D',
+        persona.Segundo_nombre?.toUpperCase() || 'N/D',
+        persona.Primer_apellido?.toUpperCase() || 'N/D',
+        persona.Segundo_apellido?.toUpperCase() || 'N/D',
+        new Date(persona.fecha_nacimiento).toLocaleDateString('en-CA'),
+        tipoPersona.find((tipo) => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() || 'N/D',
+        persona.principal ? 'SÍ' : 'NO',
+        persona.estado === 1 ? 'ACTIVO' : 'INACTIVO'
       ]),
-      headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' }, // 📌 Tamaño más pequeño
-      styles: { fontSize: 7, cellPadding: 2 }, // 📌 Filas más compactas
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 7 }, // #
+        1: { cellWidth: 25 }, // Tipo Documento
+        2: { cellWidth: 25 }, // DNI
+        3: { cellWidth: 28 }, // Primer Nombre
+        4: { cellWidth: 28 }, // Segundo Nombre
+        5: { cellWidth: 28 }, // Primer Apellido
+        6: { cellWidth: 28 }, // Segundo Apellido
+        7: { cellWidth: 28 }, // Fecha Nacimiento
+        8: { cellWidth: 28 }, // Tipo Persona
+        9: { cellWidth: 18 }, // Principal
+        10: { cellWidth: 18 } // Estado
+      },
       alternateRowStyles: { fillColor: [240, 248, 255] },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 10) {
+          data.cell.styles.textColor = data.cell.raw === 'ACTIVO' ? [0, 128, 0] : [255, 0, 0];
+          data.cell.styles.fontStyle = data.cell.raw === 'ACTIVO' ? 'bold' : 'normal';
+        }
+      }
+      
     });
 
-    // 🎯 Pie de página con fecha y número de página
+    // Pie de página
     const now = new Date();
     const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
     const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -1261,7 +1298,7 @@ const ReportePersonasPDF = () => {
     doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
     doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
 
-    // 📄 Convertir PDF en Blob y mostrar visor
+    // Mostrar visor PDF
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
     const newWindow = window.open('', '_blank');
@@ -1301,9 +1338,8 @@ const ReportePersonasPDF = () => {
               font-size: 22px;
               color: white;
               position: relative;
-              z-index: 9999; /* 🔄 Asegura que el botón esté encima */
+              z-index: 9999;
             }
-            /* 🔄 Eliminamos cualquier sombra que pueda interferir */
             .icon-button:focus,
             .icon-button:active {
               outline: none;
@@ -1385,7 +1421,6 @@ return (
   </CCol>
 </CRow>
 
-{/* Barra de búsqueda y selector dinámico */}
 <CRow className="align-items-center mt-3 mb-2">
   <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
     <CInputGroup className="me-3" style={{ width: '400px' }}>
@@ -1398,11 +1433,14 @@ return (
         onChange={(e) => {
           let value = e.target.value;
 
-          // Bloqueo de caracteres y espacios consecutivos
+          // 🔄 **Eliminar espacios consecutivos**
           value = value.replace(/\s{2,}/g, ' ');
-          value = value.replace(/([A-Za-z])\1{2,}/g, '$1$1');
-          value = value.replace(/([0-9])\1{2,}/g, '$1$1');
-          value = value.replace(/[^A-Za-z0-9\s]/g, '');
+
+          // 🔄 **Permitir acentos, pero eliminar otros caracteres especiales**
+          value = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, '');
+
+          // 🔄 **Bloquear caracteres repetidos más de 10 veces**
+          value = value.replace(/(.)\1{10,}/g, '$1'.repeat(10));
 
           setSearchTerm(value);
         }}
@@ -1456,7 +1494,6 @@ return (
   </CCol>
 </CRow>
 
-
       <div className="table-container">
       <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
   <CTable striped bordered hover>
@@ -1472,7 +1509,13 @@ return (
     <CTableBody>
       {currentRecords.length > 0 ? (
         currentRecords.map((persona) => (
-          <CTableRow key={persona.cod_persona}>
+          <CTableRow key={persona.cod_persona}
+          style={{ 
+            transition: 'opacity 1s ease-in-out', 
+            opacity: persona.fading ? 0 : 1 
+          }}
+          >
+            
             <CTableDataCell style={{ fontSize: '0.85rem', textAlign: 'center' }}>
               {tipoDocumento.find((tipo) => tipo.Cod_tipo_documento === persona.tipo_documento)?.tipo_documento.toUpperCase() || 'N/D'}
             </CTableDataCell>
@@ -1510,42 +1553,69 @@ return (
             </CTableDataCell>
 
             <CTableDataCell className="text-center">
-            <div className="d-flex justify-content-center align-items-center" style={{ gap: '10px', flexWrap: 'nowrap' }}>
-              <CButton color="warning" onClick={() => openUpdateModal(persona)} style={{ fontSize: '0.75rem' }}>
-                <CIcon icon={cilPen} />
-              </CButton>
-              <CButton color="secondary" onClick={() => abrirEstructuraFamiliarModal(persona)} style={{ fontSize: '0.75rem' }}>
-                <CIcon icon={cilPeople} />
-              </CButton>
-              {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() !== 'ESTUDIANTE' && (
-                <CButton color="primary" onClick={() => abrirContactoModal(persona)} style={{ fontSize: '0.75rem' }}>
-                  <CIcon icon={cilContact} />
-                </CButton>
-              )}
-              {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() === 'ESTUDIANTE' && (
-                <CButton
-                  onClick={() => abrirProcedenciaEstudianteModal(persona)}
-                  style={{ backgroundColor: '#90EE90', borderColor: '#90EE90', fontSize: '0.75rem' }}
-                >
-                  <CIcon icon={cilHistory} />
-                </CButton>
-              )}
-              <CButton
-                style={{
-                  backgroundColor: persona.estado ? '#4CAF50' : '#F44336',
-                  color: 'white',
-                  fontSize: '0.75rem',
-                }}
-                onClick={() => toggleEstado(persona)}
-                disabled={loading}
-              >
-                {loading ? 'Cambiando...' : persona.estado ? 'Activo' : 'Inactivo'}
-              </CButton>
-              <CButton color="danger" onClick={() => openDeleteModal(persona)} style={{ fontSize: '0.75rem' }}>
-                <CIcon icon={cilTrash} />
-              </CButton>
-            </div>
-          </CTableDataCell>
+  <div className="d-flex justify-content-center align-items-center" style={{ gap: '10px', flexWrap: 'nowrap' }}>
+    <CButton 
+      color="warning" 
+      onClick={() => openUpdateModal(persona)} 
+      style={{ fontSize: '0.75rem' }} 
+      disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
+    >
+      <CIcon icon={cilPen} />
+    </CButton>
+
+    <CButton 
+      color="secondary" 
+      onClick={() => abrirEstructuraFamiliarModal(persona)} 
+      style={{ fontSize: '0.75rem' }} 
+      disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
+    >
+      <CIcon icon={cilPeople} />
+    </CButton>
+
+    {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() !== 'ESTUDIANTE' && (
+      <CButton 
+        color="primary" 
+        onClick={() => abrirContactoModal(persona)} 
+        style={{ fontSize: '0.75rem' }} 
+        disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
+      >
+        <CIcon icon={cilContact} />
+      </CButton>
+    )}
+
+    {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() === 'ESTUDIANTE' && (
+      <CButton
+        onClick={() => abrirProcedenciaEstudianteModal(persona)}
+        style={{ backgroundColor: '#90EE90', borderColor: '#90EE90', fontSize: '0.75rem' }}
+        disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
+      >
+        <CIcon icon={cilHistory} />
+      </CButton>
+    )}
+
+    <CButton
+      style={{
+        backgroundColor: persona.estado ? '#4CAF50' : '#F44336',
+        color: 'white',
+        fontSize: '0.75rem',
+      }}
+      onClick={() => toggleEstado(persona)}
+      disabled={loading}
+    >
+      {loading ? 'Cambiando...' : persona.estado ? 'Activo' : 'Inactivo'}
+    </CButton>
+
+    <CButton 
+      color="danger" 
+      onClick={() => openDeleteModal(persona)} 
+      style={{ fontSize: '0.75rem' }} 
+      disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
+    >
+      <CIcon icon={cilTrash} />
+    </CButton>
+  </div>
+</CTableDataCell>
+
 
 
           </CTableRow>
@@ -1655,7 +1725,7 @@ return (
             <CInputGroupText>Documentación</CInputGroupText>
         <CFormInput
           type="text"
-          placeholder="Documento de la persona"
+          placeholder="Identificación de la persona"
           value={nuevaPersona.dni_persona || ''}
           onChange={(e) => {
             let value = e.target.value.toUpperCase();

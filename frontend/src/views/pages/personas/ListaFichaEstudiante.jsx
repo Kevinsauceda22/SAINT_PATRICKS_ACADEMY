@@ -44,10 +44,10 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaFichaEstudiante = () => {
+    const {canSelect} = usePermission('ListaFichaEstudiante');
+  
+
     const [fichaEstudiante, setFichaEstudiante] = useState({});
-    const [fichaError, setFichaError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState('');
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -352,7 +352,10 @@ const ListaFichaEstudiante = () => {
   {/************************************************************************************************************************************/}
 
   {/************************************************************************************************************************************/}
-
+    // Verificar permisos
+    if (!canSelect) {
+      return <AccessDenied />;
+    } 
   {/************************************************************************************************************************************/}
   return (
 

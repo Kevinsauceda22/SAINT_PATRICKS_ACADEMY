@@ -81,7 +81,7 @@ const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
 const ListaNacionalidad = React.lazy(() => import('./views/pages/personas/ListaNacionalidad')); 
-const ListaDepartamentos = React.lazy(() => import('./views/pages/personas/ListaDepartamento'));
+const ListaDepartamentos = React.lazy(() => import('./views/pages/personas/ListaDepartamentos'));
 const ListaMunicipios = React.lazy(() => import('./views/pages/personas/ListaMunicipios'));
 const ListaFichaEstudiante = React.lazy(() => import('./views/pages/personas/ListaFichaEstudiante')); 
 const ListaProcedenciaEstudiante = React.lazy(() => import('./views/pages/personas/ListaProcedenciaEstudiante')); 

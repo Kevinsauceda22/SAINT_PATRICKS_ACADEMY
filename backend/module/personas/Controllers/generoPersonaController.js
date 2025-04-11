@@ -19,10 +19,10 @@ export const obtenerTodoGeneroPersona = async (req, res) => {
 
 // Controlador para crear un género de persona
 export const crearGeneroPersona = async (req, res) => {
-    const { tipo_genero, estado } = req.body;
+    const { Tipo_genero, estado } = req.body;
 
     try {
-        await pool.query('CALL P_Post_GeneroPersona(?, ?)', [tipo_genero, estado]);
+        await pool.query('CALL P_Post_GeneroPersona(?, ?)', [Tipo_genero, estado]);
 
         res.status(201).json({ mensaje: 'Género de persona creado exitosamente' });
     } catch (error) {
@@ -33,13 +33,13 @@ export const crearGeneroPersona = async (req, res) => {
 
 // Controlador para actualizar un género de persona
 export const actualizarGeneroPersona = async (req, res) => {
-    const { cod_genero } = req.params;
-    const { tipo_genero, estado } = req.body;
+    const { Cod_genero } = req.params;
+    const { Tipo_genero, estado } = req.body;
 
     try {
         await pool.query('CALL P_Put_GeneroPersona(?, ?, ?)', [
-            cod_genero,
-            tipo_genero,
+            Cod_genero,
+            Tipo_genero,
             estado
         ]);
 
@@ -52,22 +52,22 @@ export const actualizarGeneroPersona = async (req, res) => {
 
 // Controlador para actualizar el estado de un género de persona
 export const actualizarEstadoGeneroPersona = async (req, res) => {
-    const { cod_genero, estado } = req.body;
+    const { Cod_genero, estado } = req.body;
 
     // Validar parámetros
-    if (!cod_genero || estado === undefined) {
+    if (!Cod_genero || estado === undefined) {
         return res.status(400).json({ mensaje: 'Faltan parámetros' });
     }
 
     try {
         // Llamar al procedimiento almacenado
-        const [results] = await pool.query('CALL P_Put_EstadoGeneroPersona(?, ?)', [cod_genero, estado]);
+        const [results] = await pool.query('CALL P_Put_EstadoGeneroPersona(?, ?)', [Cod_genero, estado]);
 
         // Obtener el mensaje devuelto por el procedimiento
         const mensaje = results[0][0].mensaje;
 
-        console.log(`Estado actualizado para género ${cod_genero}: ${estado}`); // Debug en consola
-        res.json({ mensaje, cod_genero, estado }); // Respuesta al frontend
+        console.log(`Estado actualizado para género ${Cod_genero}: ${estado}`); // Debug en consola
+        res.json({ mensaje, Cod_genero, estado }); // Respuesta al frontend
     } catch (error) {
         console.error('Error al ejecutar el procedimiento almacenado:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor' });
@@ -76,14 +76,14 @@ export const actualizarEstadoGeneroPersona = async (req, res) => {
 
 // Controlador para eliminar un género de persona
 export const eliminarGeneroPersona = async (req, res) => {
-    const { cod_genero } = req.params;
+    const { Cod_genero } = req.params;
 
-    if (!cod_genero) {
+    if (!Cod_genero) {
         return res.status(400).json({ Mensaje: 'cod_genero es requerido' });
     }
 
     try {
-        await pool.query('CALL P_Delete_GeneroPersona(?)', [cod_genero]);
+        await pool.query('CALL P_Delete_GeneroPersona(?)', [Cod_genero]);
         res.status(200).json({ Mensaje: 'Género de persona eliminado exitosamente' });
     } catch (error) {
         console.error('Error al eliminar género de persona:', error);

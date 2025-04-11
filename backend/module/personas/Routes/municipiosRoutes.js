@@ -16,12 +16,12 @@ router.get('/verTodoMunicipio', obtenerTodoMunicipio);
 router.post('/crearMunicipio', crearMunicipio);
 
 // Ruta para actualizar un municipio
-router.put('/actualizarMunicipio/:cod_municipio', actualizarMunicipio);
+router.put('/actualizarMunicipio/:Cod_municipio', actualizarMunicipio);
 
 // Ruta para actualizar el estado de un municipio
 router.post('/actualizarEstadoMunicipio', actualizarEstadoMunicipio);
 
 // Ruta para eliminar un municipio
-router.delete('/eliminarMunicipio/:cod_municipio', eliminarMunicipio);
+router.delete('/eliminarMunicipio/:Cod_municipio', eliminarMunicipio);
 
 export default router;

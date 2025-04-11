@@ -5,7 +5,7 @@ const pool = await conectarDB();
 //CONTROLADOR PARA OBTENER LAS PERSONAS
 export const obtenerPersonas = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL P_Get_Personas()');
+        const [rows] = await pool.query('CALL P_Get_Personas()');   
 
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);

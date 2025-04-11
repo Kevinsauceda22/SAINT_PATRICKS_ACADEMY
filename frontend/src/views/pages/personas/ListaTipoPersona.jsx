@@ -180,21 +180,27 @@ const handleTipoPersonaInputChange = (e, setFunction) => {
   // No permitir más de un espacio consecutivo
   value = value.replace(/\s{2,}/g, ' ');
 
-  // No permitir que una letra se repita más de 4 veces consecutivamente
-  const wordArray = value.split(' ');
-  const isValid = wordArray.every(word => !/(.)\1{2,}/.test(word));
-
-  if (!isValid) {
+  // Bloquear caracteres especiales, permitiendo solo letras, acentos y comas
+  if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ,\s]*$/.test(value)) {
     swal.fire({
       icon: 'warning',
-      title: 'Repetición de letras',
-      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+      title: 'Caracteres inválidos',
+      text: 'Solo se permiten letras, acentos y comas.',
     });
-    setTipoPersonaError('Repetición de letras no permitida.');
     return;
   }
 
-  // Validar que el valor tenga más de 2 letras
+  // No permitir que una letra se repita más de 4 veces consecutivamente
+  if (/([a-zA-ZÁÉÍÓÚáéíóúÑñ])\1{2,}/.test(value)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 3 veces consecutivas.',
+    });
+    return;
+  }
+
+  // Validar longitud mínima
   if (value.length <= 2) {
     setTipoPersonaError('El tipo de persona debe tener más de 2 letras.');
   } else {
@@ -211,6 +217,30 @@ const handleTipoPersonaInputChange = (e, setFunction) => {
 };
 
 
+{/*****************************************************************************************************************************************/}
+const handleTipoPersonaKeyDown = (event) => {
+  const char = event.key;
+  
+  // Permitir teclas esenciales como borrar y navegación
+  const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "Enter"];
+
+  if (allowedKeys.includes(char)) {
+    return; // ✅ Permitir acciones básicas
+  }
+
+  // Bloquear caracteres especiales (solo permitir letras, acentos y comas)
+  if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ, ]$/.test(char)) {
+    event.preventDefault(); // 🚫 Bloquear cualquier otro carácter
+  }
+
+  // Bloquear más de un espacio consecutivo
+  const inputValue = event.target.value;
+  if (char === " " && inputValue.slice(-1) === " ") {
+    event.preventDefault(); // 🚫 Bloquear el segundo espacio
+  }
+};
+
+
 {/*************************************************************************************************************************************/}
   const disableCopyPaste = (e) => {
     e.preventDefault();
@@ -221,6 +251,8 @@ const handleTipoPersonaInputChange = (e, setFunction) => {
     });
   };
 
+
+{/*******************************************************************************************************************************************/}
 const resetNuevoTipoPersona = () => {
   setNuevoTipoPersona({ Tipo_persona: '' });
 };
@@ -490,134 +522,158 @@ const openDeleteModal = (tipoPersona) => {
 
   {/***********************************************************************************************************************************/}
   const exportToPDF = () => {
-    const doc = new jsPDF({
-      orientation: 'portrait',  // Vertical
-      unit: 'mm',
-      format: 'a4',
-    });
-  
+    const doc = new jsPDF('p', 'mm', 'letter'); // Formato vertical
+
     if (!filteredTipoPersona || filteredTipoPersona.length === 0) {
-      alert('No hay datos para exportar.');
-      return;
+        alert('No hay datos para exportar.');
+        return;
     }
-  
+
     const img = new Image();
     img.src = logo;
-  
+
     img.onload = () => {
-      const pageWidth = doc.internal.pageSize.width;
-      const pageHeight = doc.internal.pageSize.height;
-  
-      // Logo
-      doc.addImage(img, 'PNG', 10, 10, 45, 45);
-  
-      // Encabezado principal
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-  
-      // Información de contacto
-      doc.setFontSize(10);
-      doc.setTextColor(100); // Gris
-      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-  
-      // Título del reporte
-      doc.setFontSize(14);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text('Reporte de Tipos de Persona', pageWidth / 2, 50, { align: 'center' });
-  
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51); // Verde
-      doc.line(10, 55, pageWidth - 10, 55);
-  
-      // Tabla de datos: Usar datos filtrados
-      doc.autoTable({
-        startY: 70, // Posición inicial vertical
-        head: [['#', 'Tipo de Persona']],
-        body: filteredTipoPersona.map((tipo, index) => [
-          { content: (index + 1).toString(), styles: { halign: 'center', valign: 'middle', fontSize: 10 } },
-          { content: tipo.Tipo_persona.toUpperCase(), styles: { halign: 'center', valign: 'middle', fontSize: 10 } },
-        ]),
-        headStyles: {
-          fillColor: [0, 102, 51], // Verde
-          textColor: [255, 255, 255], // Blanco
-          fontSize: 10,
-          halign: 'center', // Centrado
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-          minCellWidth: 20,
-        },
-        alternateRowStyles: {
-          fillColor: [240, 248, 255], // Azul claro
-        },
-        columnStyles: {
-          0: { halign: 'center', cellWidth: 10 },
-          1: { halign: 'center', cellWidth: 50 },
-        },
-        margin: { top: 70 }, // Ajustamos los márgenes para no interferir con otros elementos
-        tableWidth: 'wrap', // Hace que la tabla se ajuste a su contenido
-      });
-  
-      const tablePosition = (pageWidth - doc.autoTable.previous.finalWidth) / 2;
-      doc.autoTable.previous.settings.margin.left = tablePosition; // Centramos la tabla en el eje X
-  
-      // Pie de página
-      const pageCount = doc.internal.getNumberOfPages();
-      const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-  
-      doc.setFontSize(10);
-      doc.setTextColor(0, 102, 51); // Verde
-      doc.text(
-        `Página ${pageCurrent} de ${pageCount}`,
-        pageWidth - 10,
-        pageHeight - 10,
-        { align: 'right' }
-      );
-  
-      const now = new Date();
-      const dateString = now.toLocaleDateString('es-HN', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      const timeString = now.toLocaleTimeString('es-HN', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
-      doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, pageHeight - 10);
-  
-      // Convertir PDF en Blob
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
-  
-      // Crear una nueva ventana con visor personalizado
-      const newWindow = window.open('', '_blank');
-      newWindow.document.write(`
-        <html>
-          <head><title>Reporte de Tipos de Persona</title></head>
-          <body style="margin:0;">
-            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-            <div style="position:fixed;top:10px;right:200px;">
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_de_Tipos_Persona.pdf'; a.click();">
-                Descargar PDF
-              </button>
-            </div>
-          </body>
-        </html>`);
+        const pageWidth = doc.internal.pageSize.width;
+
+        // Encabezado
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+        doc.setFontSize(14);
+        doc.setTextColor(0, 102, 51);
+        doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+
+        doc.setFontSize(8);
+        doc.setTextColor(100);
+        doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+        doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+        doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
+
+        doc.setFontSize(10);
+        doc.setTextColor(0, 102, 51);
+        doc.text('Reporte de Tipos de Persona', pageWidth / 2, 40, { align: 'center' });
+
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51);
+        doc.line(10, 45, pageWidth - 10, 45);
+
+        let startY = 50; // Tabla más cerca del encabezado
+
+        doc.autoTable({
+            startY: startY,
+            margin: { left: (pageWidth - 140) / 2 }, // Centrado horizontal
+            head: [['#', 'Tipo de Persona', 'Estado']],
+            body: filteredTipoPersona.map((tipo, index) => [
+                index + 1,
+                tipo.Tipo_persona?.toUpperCase() || 'N/D',
+                tipo.estado === 1 ? 'ACTIVO' : 'INACTIVO'
+            ]),
+            headStyles: {
+                fillColor: [0, 102, 51],
+                textColor: [255, 255, 255],
+                fontSize: 8,
+                fontStyle: 'bold'
+            },
+            styles: {
+                fontSize: 7,
+                cellPadding: 2,
+                overflow: 'linebreak',
+                halign: 'center'
+            },
+            columnStyles: {
+                0: { cellWidth: 20 }, // #
+                1: { cellWidth: 80 }, // Tipo de Persona
+                2: { cellWidth: 40 } // Estado
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] },
+            didParseCell: (data) => {
+                if (data.section === 'body' && data.column.index === 2) {
+                    data.cell.styles.textColor = data.cell.raw === 'ACTIVO' ? [0, 128, 0] : [255, 0, 0];
+                    data.cell.styles.fontStyle = data.cell.raw === 'ACTIVO' ? 'bold' : 'normal';
+                }
+            }
+        });
+
+        // Pie de página
+        const now = new Date();
+        const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+        const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+        const pageCount = doc.internal.getNumberOfPages();
+
+        doc.setFontSize(7);
+        doc.setTextColor(0, 102, 51);
+        doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+        doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+
+        // Mostrar visor PDF
+        const pdfBlob = doc.output('blob');
+        const pdfURL = URL.createObjectURL(pdfBlob);
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(`
+            <html>
+                <head>
+                    <title>Reporte de Tipos de Persona</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            padding: 0;
+                            overflow: hidden;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            width: 100vw;
+                            height: 100vh;
+                        }
+                        iframe {
+                            width: 100vw;
+                            height: 100vh;
+                            border: none;
+                        }
+                        .icon-container {
+                            position: fixed;
+                            top: 15px;
+                            right: 15px;
+                            display: flex;
+                            gap: 15px;
+                            padding: 10px;
+                            border-radius: 8px;
+                        }
+                        .icon-button {
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            font-size: 22px;
+                            color: white;
+                            position: relative;
+                            z-index: 9999;
+                        }
+                        .icon-button:focus,
+                        .icon-button:active {
+                            outline: none;
+                            box-shadow: none;
+                        }
+                    </style>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+                </head>
+                <body>
+                    <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+                    <div class="icon-container">
+                        <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_de_Tipos_Persona.pdf'; a.click();">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+                </body>
+            </html>
+        `);
     };
-  
+
     img.onerror = () => {
-      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+        alert('No se pudo cargar el logo.');
     };
-  };
-  
+};
+
   
 {/*************************************************************************************************************************************/}
 const exportToExcel = () => {
@@ -629,31 +685,39 @@ const exportToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Tipos de Persona');
 
-  // Título del documento
-  worksheet.mergeCells('A1:B1');
+  // 🎯 **Título del documento**
+  worksheet.mergeCells('A1:C1');
   worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
   worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
   worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  worksheet.mergeCells('A2:B2');
+  worksheet.mergeCells('A2:C2');
   worksheet.getCell('A2').value = 'TIPOS DE PERSONA';
   worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
   worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Encabezados de la tabla
-  const headerRow = worksheet.addRow(['#', 'Tipo de Persona']);
+  // 📌 **Encabezados de la tabla**
+  const headerRow = worksheet.addRow(['#', 'Tipo de Persona', 'Estado']);
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
-  // Datos de la tabla - Usar `filteredTipoPersona`
+  // 📊 **Datos de la tabla**
   filteredTipoPersona.forEach((tipo, index) => {
     const row = worksheet.addRow([
-      index + 1, // Número de fila
-      typeof tipo.Tipo_persona === 'string' ? tipo.Tipo_persona.toUpperCase() : tipo.Tipo_persona // Tipo de Persona en mayúsculas
+      index + 1,
+      tipo.Tipo_persona?.toUpperCase() || 'N/D',
+      tipo.estado === 1 ? 'ACTIVO' : 'INACTIVO'
     ]);
+
+    // 🎨 **Estilos para la columna de Estado**
+    const estadoCell = row.getCell(3);
+    estadoCell.font = {
+      bold: true,
+      color: { argb: tipo.estado === 1 ? '008000' : 'FF0000' } // ✅ Verde para "ACTIVO", rojo para "INACTIVO"
+    };
 
     row.eachCell((cell) => {
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -666,15 +730,15 @@ const exportToExcel = () => {
     });
   });
 
-  // Ajustar el ancho de las columnas
+  // 📏 **Ajustar el ancho de las columnas**
   worksheet.columns.forEach((column) => {
     column.width = 20;
   });
 
-  // Crear archivo Excel
+  // 📂 **Crear archivo Excel**
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    saveAs(blob, 'Reporte_Tipos_Persona.xlsx'); // Descargar archivo con nombre
+    saveAs(blob, 'Reporte_Tipos_Persona.xlsx');
   });
 };
 
@@ -726,18 +790,31 @@ const exportToExcel = () => {
         <CIcon icon={cilSearch} />
       </CInputGroupText>
       <CFormInput
-        placeholder="Buscar tipo de persona"
-        onChange={handleSearch}
+        placeholder="Buscar tipo de persona ..."
         value={searchTerm}
-        style={{ fontSize: '0.9rem' }}
+        onChange={(e) => {
+          let value = e.target.value;
+
+          // 🔄 **Eliminar espacios consecutivos**
+          value = value.replace(/\s{2,}/g, ' ');
+
+          // 🔄 **Permitir acentos, pero eliminar otros caracteres especiales**
+          value = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, '');
+
+          // 🔄 **Bloquear caracteres repetidos más de 10 veces**
+          value = value.replace(/(.)\1{10,}/g, '$1'.repeat(10));
+
+          setSearchTerm(value);
+        }}
+        onPaste={(e) => e.preventDefault()}
+        onCopy={(e) => e.preventDefault()}
       />
       <CButton
         style={{
           border: '1px solid #ccc',
           transition: 'all 0.1s ease-in-out',
           backgroundColor: '#F3F4F7',
-          color: '#343a40',
-          fontSize: '0.9rem',
+          color: '#343a40'
         }}
         onClick={() => {
           setSearchTerm('');
@@ -869,7 +946,7 @@ const exportToExcel = () => {
 
 {/*******************************************************************************************************************************/}
 
-<CModal visible={modalVisible} backdrop="static">
+<CModal visible={modalVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
     <CModalTitle>Ingresar Nuevo Tipo de Persona</CModalTitle>
     <CButton
@@ -891,7 +968,8 @@ const exportToExcel = () => {
           value={setNuevoTipoPersona.Tipo_persona} // Actualizado para Tipo_persona
           onChange={(e) =>
             handleTipoPersonaInputChange(e, setNuevoTipoPersona) // Adaptado a Tipo Persona
-          }
+          }  onKeyDown={handleTipoPersonaKeyDown} 
+
           onBlur={isDuplicateTipoPersona} // Adaptado a Tipo Persona
           style={{ textTransform: 'uppercase' }}
         />
@@ -920,7 +998,7 @@ const exportToExcel = () => {
 
 
 {/*******************************************************************************************************************************/}
-<CModal visible={modalUpdateVisible} backdrop="static">
+<CModal visible={modalUpdateVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Tipo de Persona</CModalTitle>
     <CButton
@@ -943,6 +1021,7 @@ const exportToExcel = () => {
           onChange={(e) =>
             handleTipoPersonaInputChange(e, setTipoPersonaToUpdate) // Adaptado para Tipo Persona
           }
+          onKeyDown={handleTipoPersonaKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>

@@ -21,10 +21,10 @@ export const obtenerTodoDepartamento = async (req, res) => {
 
 // Controlador para crear un departamento
 export const crearDepartamento = async (req, res) => {
-    const { nombre_departamento, estado } = req.body;
+    const { Nombre_departamento, estado } = req.body;
 
     try {
-        await pool.query('CALL P_Post_Departamentos(?, ?)', [nombre_departamento, estado]);
+        await pool.query('CALL P_Post_Departamentos(?, ?)', [Nombre_departamento, estado]);
 
         res.status(201).json({ mensaje: 'Departamento creado exitosamente' });
     } catch (error) {

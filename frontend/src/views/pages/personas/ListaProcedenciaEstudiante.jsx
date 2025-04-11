@@ -45,7 +45,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaProcedenciaEstudiante = () => {
 
-  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaHistoricoProc');
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('ListaProcedenciaEstudiante');
 
   const [procedenciaEstudiante, setProcedenciaEstudiante] = useState([]);
   const [procedenciaError, setProcedenciaError] = useState('');

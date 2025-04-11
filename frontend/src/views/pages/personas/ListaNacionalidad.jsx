@@ -50,11 +50,19 @@ const ListaNacionalidad = () => {
     const [modalUpdateVisible, setModalUpdateVisible] = useState(false);
     const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
     const [nuevaNacionalidad, setNuevaNacionalidad] = useState({
-      Id_nacionalidad: '',
-      pais_nacionalidad: '',
-      pais: '',
+      Id_nacionalidad: "",
+      pais_nacionalidad: "",
+      pais: "",
+      estado: 1,
     });
-    const [nacionalidadToUpdate, setNacionalidadToUpdate] = useState({});
+    
+    const [nacionalidadToUpdate, setNacionalidadToUpdate] = useState({
+      Id_nacionalidad: "",
+      pais_nacionalidad: "",
+      pais: "",
+      estado: 1,
+    });
+    
     const [nacionalidadToDelete, setNacionalidadToDelete] = useState({});
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
@@ -119,11 +127,11 @@ const validateNacionalidad = (nacionalidad) => {
     const letterCounts = {};
     for (let letter of word) {
       letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-      if (letterCounts[letter] > 4) {
+      if (letterCounts[letter] > 3) {
         swal.fire({
           icon: 'warning',
           title: 'Repetición de letras',
-          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          text: `La letra "${letter}" se repite más de 3 veces en la palabra "${word}".`,
         });
         return false;
       }
@@ -138,6 +146,7 @@ const validateNacionalidad = (nacionalidad) => {
   // Validar que ningún campo esté vacío
 const validateEmptyFields = () => {
   const { Cod_nacionalidad, Id_nacionalidad, pais_nacionalidad, pais } = nuevaNacionalidad;
+
 
   if (!Cod_nacionalidad || !Id_nacionalidad || !pais_nacionalidad || !pais) {
     swal.fire({
@@ -177,49 +186,59 @@ const validateEmptyFields = () => {
     return false; // No hay duplicado
   };
 
+{/*******************************************************************************************************************************************/}
+  const handleNacionalidadKeyDown = (event) => {
+    const char = event.key;
+    
+    // Permitir teclas esenciales como borrar y navegación
+    const allowedKeys = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Tab", "Enter"];
   
-  {/**************************************************************************************************************************************/}
+    if (allowedKeys.includes(char)) {
+      return; // ✅ Permitir acciones básicas
+    }
   
-  // Función para controlar la entrada de texto en los campos
-const handleNacionalidadInputChange = (e, setFunction) => {
-  let value = e.target.value;
-
-  // No permitir más de un espacio consecutivo
-  value = value.replace(/\s{2,}/g, ' ');
-
-  // No permitir que una letra se repita más de 4 veces consecutivamente
-  const wordArray = value.split(' ');
-  const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
-
-  if (!isValid) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Repetición de letras',
-      text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
-    });
-    return;
-  }
-
-  // Validación adicional para cada campo de la API
-  if (!value || value.length <= 2) {
-    setNacionalidadError('Cada campo debe tener más de 2 letras.');
-  } else {
-    setNacionalidadError(''); // No hay error
-  }
-
-  // Actualizar el estado con todos los campos relevantes
-  setFunction((prevState) => ({
-    ...prevState,
-    // Actualizar todos los campos de nacionalidad según la entrada
-    Cod_nacionalidad: prevState.Cod_nacionalidad || '',
-    Id_nacionalidad: prevState.Id_nacionalidad || '',
-    pais_nacionalidad: prevState.pais_nacionalidad || '',
-    pais: prevState.pais || '',
-  }));
-
-  setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+    // Bloquear caracteres especiales (solo permitir letras, acentos y comas)
+    if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ, ]$/.test(char)) {
+      event.preventDefault(); // 🚫 Bloquear cualquier otro carácter
+    }
+  
+    // Bloquear más de un espacio consecutivo
+    const inputValue = event.target.value;
+    if (char === " " && inputValue.slice(-1) === " ") {
+      event.preventDefault(); // 🚫 Bloquear el segundo espacio
+    }
 };
 
+  {/**************************************************************************************************************************************/}
+  
+  const handleNacionalidadInputChange = (e, setFunction) => {
+    let value = e.target.value;
+  
+    // No permitir más de un espacio consecutivo
+    value = value.replace(/\s{2,}/g, ' ');
+  
+    // No permitir que una letra se repita más de 4 veces consecutivamente, pero sin bloquear la escritura
+    const wordArray = value.split(' ');
+    const isValid = wordArray.every(word => !/(.)\1{3,}/.test(word));
+  
+    if (!isValid) {
+      swal.fire({
+        icon: 'warning',
+        title: 'Repetición de letras',
+        text: 'No se permite que la misma letra se repita más de 4 veces consecutivas.',
+      });
+    }
+  
+    // Actualizar el estado correctamente con el valor del input
+    setFunction((prevState) => ({
+      ...prevState,
+      [e.target.name]: value, // ✅ Usa `name` para identificar el campo dinámicamente
+    }));
+  
+    setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
+  };
+  
+  
   {/**************************************************************************************************************************************/}
   
         // Deshabilitar copiar y pegar
@@ -258,6 +277,9 @@ const handleNacionalidadInputChange = (e, setFunction) => {
         }
       };
 
+
+{/*******************************************************************************************************************************************/}
+
       const resetNuevaNacionalidad = () => {
         setNuevaNacionalidad({
           Id_nacionalidad: '',
@@ -278,29 +300,19 @@ const handleNacionalidadInputChange = (e, setFunction) => {
   {/**************************************************************************************************************************************/}
   
   const handleCreateNacionalidad = async () => {
-    // Validar los campos antes de enviarlos
-    const idCapitalizado = capitalizeWords(nuevaNacionalidad.Id_nacionalidad.trim().replace(/\s+/g, ' '));
-    const paisNacionalidadCapitalizado = capitalizeWords(nuevaNacionalidad.pais_nacionalidad.trim().replace(/\s+/g, ' '));
-    const paisCapitalizado = capitalizeWords(nuevaNacionalidad.pais.trim().replace(/\s+/g, ' '));
-  
-    // Validaciones antes de crear
-    if (
-      !validateEmptyFields() || // Asegurarnos de que no haya campos vacíos
-      isDuplicateNacionalidad() // Verificar si ya existe una nacionalidad con los mismos datos
-    ) {
-      return;
-    }
+
   
     try {
-      const response = await fetch(`http://localhost:4000/api/nacionalidades/crearNacionalidad`, {
+      const response = await fetch(`http://localhost:4000/api/nacionalidad/crearNacionalidad`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          Id_nacionalidad: idCapitalizado,         // Id validado y capitalizado
-          pais_nacionalidad: paisNacionalidadCapitalizado, // Nacionalidad capitalizada
-          pais: paisCapitalizado,                 // País capitalizado
+          Id_nacionalidad: nuevaNacionalidad.Id_nacionalidad,
+          pais_nacionalidad: nuevaNacionalidad.pais_nacionalidad,
+          pais: nuevaNacionalidad.pais,
+          estado: 1, // 🆕 Estado por defecto: Activo
         }),
       });
   
@@ -311,10 +323,11 @@ const handleNacionalidadInputChange = (e, setFunction) => {
         } catch (error) {
           console.warn("La API no devolvió JSON, pero la nacionalidad fue creada.");
           result = {
-            Id_nacionalidad: idCapitalizado,
-            pais_nacionalidad: paisNacionalidadCapitalizado,
-            pais: paisCapitalizado,
-          }; // Asumimos que se creó correctamente
+            Id_nacionalidad: nuevaNacionalidad.Id_nacionalidad,
+            pais_nacionalidad: nuevaNacionalidad.pais_nacionalidad,
+            pais: nuevaNacionalidad.pais,
+            estado: 1, // 🆕 Confirmamos que se guarda como activo
+          };
         }
   
         // Actualiza la lista sin recargar la página
@@ -344,39 +357,33 @@ const handleNacionalidadInputChange = (e, setFunction) => {
       });
     }
   };
-
   
   {/**************************************************************************************************************************************/}
   
   const handleUpdateNacionalidad = async () => {
-    const idCapitalizado = capitalizeWords(nacionalidadToUpdate.Id_nacionalidad.trim().replace(/\s+/g, ' '));
-    const paisNacionalidadCapitalizado = capitalizeWords(nacionalidadToUpdate.pais_nacionalidad.trim().replace(/\s+/g, ' '));
-    const paisCapitalizado = capitalizeWords(nacionalidadToUpdate.pais.trim().replace(/\s+/g, ' '));
-  
-    // Validaciones antes de actualizar
-    if (!validateEmptyFields()) {
-      return;
-    }
-  
     try {
-      const response = await fetch(`http://localhost:4000/api/nacionalidades/actualizarNacionalidad/${nacionalidadToUpdate.Cod_nacionalidad}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          Cod_nacionalidad: nacionalidadToUpdate.Cod_nacionalidad, // Código único
-          Id_nacionalidad: idCapitalizado, // ID actualizado
-          pais_nacionalidad: paisNacionalidadCapitalizado, // Nacionalidad actualizada
-          pais: paisCapitalizado, // País actualizado
-        }),
-      });
+      const response = await fetch(
+        `http://localhost:4000/api/nacionalidad/actualizarNacionalidad/${nacionalidadToUpdate.Cod_nacionalidad}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            Cod_nacionalidad: nacionalidadToUpdate.Cod_nacionalidad, // Código único
+            Id_nacionalidad: nacionalidadToUpdate.Id_nacionalidad, // ID actualizado
+            pais_nacionalidad: nacionalidadToUpdate.pais_nacionalidad, // Nacionalidad actualizada
+            pais: nacionalidadToUpdate.pais, // País actualizado
+            estado: 1, // 🆕 Estado por defecto
+          }),
+        }
+      );
   
       if (response.ok) {
-        fetchNacionalidades(); // Actualiza la lista de nacionalidades
-        setModalUpdateVisible(false); // Cierra el modal sin advertencia al guardar
-        resetNacionalidadToUpdate(); // Reinicia el estado de nacionalidad a actualizar
-        setHasUnsavedChanges(false); // Reinicia el estado de cambios no guardados
+        fetchNacionalidades(); // 🔄 Refrescar lista después de actualizar
+        setModalUpdateVisible(false); // 🔄 Cerrar modal sin advertencia al guardar
+        resetNacionalidadToUpdate(); // 🔄 Reiniciar estado de nacionalidad a actualizar
+        setHasUnsavedChanges(false); // 🔄 Reiniciar cambios no guardados
   
         swal.fire({
           icon: 'success',
@@ -389,9 +396,11 @@ const handleNacionalidadInputChange = (e, setFunction) => {
           title: 'Error',
           text: 'No se pudo actualizar la nacionalidad.',
         });
+  
+        console.error("❌ Error en la API:", await response.text()); // 🔍 Mostrar error de la API si hay problema
       }
     } catch (error) {
-      console.error('Error al actualizar la nacionalidad:', error);
+      console.error("🔥 Error al actualizar la nacionalidad:", error);
       swal.fire({
         icon: 'error',
         title: 'Error',
@@ -399,6 +408,7 @@ const handleNacionalidadInputChange = (e, setFunction) => {
       });
     }
   };
+  
 
   
   {/**************************************************************************************************************************************/}
@@ -406,7 +416,7 @@ const handleNacionalidadInputChange = (e, setFunction) => {
   const handleDeleteNacionalidad = async () => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/nacionalidades/eliminarNacionalidad/${encodeURIComponent(nacionalidadToDelete.Cod_nacionalidad)}`,
+        `http://localhost:4000/api/nacionalidad/eliminarNacionalidad/${encodeURIComponent(nacionalidadToDelete.Cod_nacionalidad)}`,
         {
           method: 'DELETE',
           headers: {
@@ -449,7 +459,7 @@ const handleNacionalidadInputChange = (e, setFunction) => {
     try {
       setLoading(true);
   
-      const response = await axios.post('http://localhost:4000/api/nacionalidades/actualizarEstadoNacionalidad', {
+      const response = await axios.post('http://localhost:4000/api/nacionalidad/actualizarEstadoNacionalidad', {
         Cod_nacionalidad: nacionalidad.Cod_nacionalidad,
         estado: nuevoEstado,
       });
@@ -514,7 +524,7 @@ const handleNacionalidadInputChange = (e, setFunction) => {
   {/**************************************************************************************************************************************/}
   
   const ReporteNacionalidadesPDF = () => {
-    const doc = new jsPDF('p', 'mm', 'letter'); 
+    const doc = new jsPDF('p', 'mm', 'letter'); // Formato vertical
   
     if (!filteredNacionalidades || filteredNacionalidades.length === 0) {
       alert('No hay datos para exportar.');
@@ -528,123 +538,148 @@ const handleNacionalidadInputChange = (e, setFunction) => {
       const pageWidth = doc.internal.pageSize.width;
   
       // Encabezado
-      doc.addImage(img, 'PNG', 10, 10, 45, 45);
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-  
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-  
-      // Subtítulo
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
       doc.setFontSize(14);
       doc.setTextColor(0, 102, 51);
-      doc.text('Reporte de Nacionalidades', pageWidth / 2, 50, { align: 'center' });
+      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+  
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
+  
+      doc.setFontSize(10);
+      doc.setTextColor(0, 102, 51);
+      doc.text('Reporte de Nacionalidades', pageWidth / 2, 40, { align: 'center' });
   
       doc.setLineWidth(0.5);
       doc.setDrawColor(0, 102, 51);
-      doc.line(10, 60, pageWidth - 10, 60);
+      doc.line(10, 45, pageWidth - 10, 45);
   
-      // Preparar filas de la tabla con los datos de nacionalidades
-      const tableRows = filteredNacionalidades.map((nacionalidad, index) => ({
-        index: (index + 1).toString(),
-        Id_nacionalidad: nacionalidad.Id_nacionalidad || 'N/D',
-        pais_nacionalidad: nacionalidad.pais_nacionalidad?.toUpperCase() || 'N/D',
-        pais: nacionalidad.pais?.toUpperCase() || 'N/D',
-      }));
-  
-      const columnWidths = {
-        index: 20, // Ancho de la columna #
-        Id_nacionalidad: 40, // Ancho de la columna "ID Nacionalidad"
-        pais_nacionalidad: 70, // Ancho de la columna "Nacionalidad"
-        pais: 70, // Ancho de la columna "País"
-      };
-      const tableWidth = columnWidths.index + columnWidths.Id_nacionalidad + columnWidths.pais_nacionalidad + columnWidths.pais;
+      let startY = 50; // Tabla más cerca del encabezado
   
       doc.autoTable({
-        startY: 65,
-        margin: { left: (pageWidth - tableWidth) / 2 }, // Centrado de la tabla
-        columns: [
-          { header: '#', dataKey: 'index' },
-          { header: 'ID Nacionalidad', dataKey: 'Id_nacionalidad' },
-          { header: 'Nacionalidad', dataKey: 'pais_nacionalidad' },
-          { header: 'País', dataKey: 'pais' },
-        ],
-        body: tableRows,
+        startY: startY,
+        margin: { left: (pageWidth - 140) / 2 }, // Centrado horizontal
+        head: [['#', 'ID Nacionalidad', 'Nacionalidad', 'País', 'Estado']],
+        body: filteredNacionalidades.map((nacionalidad, index) => [
+          index + 1,
+          nacionalidad.Id_nacionalidad || 'N/D',
+          nacionalidad.pais_nacionalidad?.toUpperCase() || 'N/D',
+          nacionalidad.pais?.toUpperCase() || 'N/D',
+          nacionalidad.estado === 1 ? 'ACTIVO' : 'INACTIVO'
+        ]),
         headStyles: {
           fillColor: [0, 102, 51],
           textColor: [255, 255, 255],
-          fontSize: 9,
-          halign: 'center',
+          fontSize: 8,
+          fontStyle: 'bold'
         },
         styles: {
           fontSize: 7,
-          cellPadding: 4,
+          cellPadding: 2,
+          overflow: 'linebreak',
+          halign: 'center'
         },
         columnStyles: {
-          index: { cellWidth: 10 },
-          Id_nacionalidad: { cellWidth: 40 },
-          pais_nacionalidad: { cellWidth: 70 },
-          pais: { cellWidth: 70 },
+          0: { cellWidth: 15 }, // #
+          1: { cellWidth: 30 }, // ID Nacionalidad
+          2: { cellWidth: 40 }, // Nacionalidad
+          3: { cellWidth: 40 }, // País
+          4: { cellWidth: 25 } // Estado
         },
-        alternateRowStyles: {
-          fillColor: [240, 248, 255],
-        },
-        didDrawPage: (data) => {
-          const pageCount = doc.internal.getNumberOfPages();
-          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-  
-          const footerY = doc.internal.pageSize.height - 10;
-          doc.setFontSize(10);
-          doc.setTextColor(0, 102, 51);
-          doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-  
-          const now = new Date();
-          const dateString = now.toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-          const timeString = now.toLocaleTimeString('es-HN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
-          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 4) {
+            data.cell.styles.textColor = data.cell.raw === 'ACTIVO' ? [0, 128, 0] : [255, 0, 0];
+            data.cell.styles.fontStyle = data.cell.raw === 'ACTIVO' ? 'bold' : 'normal';
+          }
+        }
       });
   
+      // Pie de página
+      const now = new Date();
+      const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+      const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  
+      const pageCount = doc.internal.getNumberOfPages();
+  
+      doc.setFontSize(7);
+      doc.setTextColor(0, 102, 51);
+      doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+      doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+  
+      // Mostrar visor PDF
       const pdfBlob = doc.output('blob');
       const pdfURL = URL.createObjectURL(pdfBlob);
-  
       const newWindow = window.open('', '_blank');
       newWindow.document.write(`
         <html>
-          <head><title>Reporte de Nacionalidades</title></head>
-          <body style="margin:0;">
-            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-            <div style="position:fixed;top:10px;right:20px;">
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Nacionalidades.pdf'; a.click();">
-                Descargar PDF
+          <head>
+            <title>Reporte de Nacionalidades</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100vw;
+                height: 100vh;
+              }
+              iframe {
+                width: 100vw;
+                height: 100vh;
+                border: none;
+              }
+              .icon-container {
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                display: flex;
+                gap: 15px;
+                padding: 10px;
+                border-radius: 8px;
+              }
+              .icon-button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 22px;
+                color: white;
+                position: relative;
+                z-index: 9999;
+              }
+              .icon-button:focus,
+              .icon-button:active {
+                outline: none;
+                box-shadow: none;
+              }
+            </style>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+          </head>
+          <body>
+            <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+            <div class="icon-container">
+              <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Nacionalidades.pdf'; a.click();">
+                <i class="fas fa-download"></i>
               </button>
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="window.print();">
-                Imprimir PDF
+              <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+                <i class="fas fa-print"></i>
               </button>
             </div>
           </body>
-        </html>`);
+        </html>
+      `);
     };
   
     img.onerror = () => {
       alert('No se pudo cargar el logo.');
     };
   };
-
+  
   
   {/**************************************************************************************************************************************/}
   
@@ -657,33 +692,41 @@ const handleNacionalidadInputChange = (e, setFunction) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Nacionalidades');
   
-    // Título del documento
-    worksheet.mergeCells('A1:D1');
+    // 🎯 **Título del documento**
+    worksheet.mergeCells('A1:E1');
     worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
     worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
     worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
   
-    worksheet.mergeCells('A2:D2');
+    worksheet.mergeCells('A2:E2');
     worksheet.getCell('A2').value = 'LISTA DE NACIONALIDADES';
     worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
     worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
   
-    // Encabezados de la tabla
-    const headerRow = worksheet.addRow(['#', 'ID Nacionalidad', 'Nacionalidad', 'País']);
+    // 📌 **Encabezados de la tabla**
+    const headerRow = worksheet.addRow(['#', 'ID Nacionalidad', 'Nacionalidad', 'País', 'Estado']);
     headerRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FFFFFF' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
     });
   
-    // Datos de la tabla (Usamos filteredNacionalidades en lugar de filteredTipoRelacion)
+    // 📊 **Datos de la tabla**
     filteredNacionalidades.forEach((nacionalidad, index) => {
       const row = worksheet.addRow([
         index + 1,
         nacionalidad.Id_nacionalidad || 'N/D',
-        nacionalidad.pais_nacionalidad ? nacionalidad.pais_nacionalidad.toUpperCase() : 'N/D',
-        nacionalidad.pais ? nacionalidad.pais.toUpperCase() : 'N/D',
+        nacionalidad.pais_nacionalidad?.toUpperCase() || 'N/D',
+        nacionalidad.pais?.toUpperCase() || 'N/D',
+        nacionalidad.estado === 1 ? 'ACTIVO' : 'INACTIVO'
       ]);
+  
+      // 🎨 **Estilos para la columna de Estado**
+      const estadoCell = row.getCell(5);
+      estadoCell.font = {
+        bold: true,
+        color: { argb: nacionalidad.estado === 1 ? '008000' : 'FF0000' } // ✅ Verde para "ACTIVO", rojo para "INACTIVO"
+      };
   
       row.eachCell((cell) => {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -696,21 +739,18 @@ const handleNacionalidadInputChange = (e, setFunction) => {
       });
     });
   
-    // Ajustar el ancho de las columnas
-    worksheet.columns = [
-      { key: 'index', width: 10 },
-      { key: 'id_nacionalidad', width: 20 },
-      { key: 'pais_nacionalidad', width: 30 },
-      { key: 'pais', width: 30 },
-    ];
+    // 📏 **Ajustar el ancho de las columnas**
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
   
-    // Crear archivo Excel
+    // 📂 **Crear archivo Excel**
     workbook.xlsx.writeBuffer().then((buffer) => {
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       saveAs(blob, 'Reporte_Nacionalidades.xlsx');
     });
   };
-
+  
   
   {/**************************************************************************************************************************************/}
   
@@ -722,6 +762,10 @@ const handleNacionalidadInputChange = (e, setFunction) => {
   
   {/**************************************************************************************************************************************/}
   
+      if (!canSelect) {
+        return <AccessDenied />;
+      }
+      
   {/**************************************************************************************************************************************/}
 
 
@@ -769,27 +813,43 @@ const handleNacionalidadInputChange = (e, setFunction) => {
         <CIcon icon={cilSearch} />
       </CInputGroupText>
       <CFormInput
-        placeholder="Buscar nacionalidad..."
-        onChange={handleSearch}
+        placeholder="Buscar nacionalidad ..."
         value={searchTerm}
+        onChange={(e) => {
+          let value = e.target.value;
+
+          // 🔄 **Eliminar espacios consecutivos**
+          value = value.replace(/\s{2,}/g, ' ');
+
+          // 🔄 **Permitir acentos, pero eliminar otros caracteres especiales**
+          value = value.replace(/[^A-Za-zÀ-ÿ0-9\s]/g, '');
+
+          // 🔄 **Bloquear caracteres repetidos más de 10 veces**
+          value = value.replace(/(.)\1{10,}/g, '$1'.repeat(10));
+
+          setSearchTerm(value);
+        }}
+        onPaste={(e) => e.preventDefault()}
+        onCopy={(e) => e.preventDefault()}
       />
       <CButton
-        style={{border: '1px solid #ccc',
-          transition: 'all 0.1s ease-in-out', // Duración de la transición
-          backgroundColor: '#F3F4F7', // Color por defecto
-          color: '#343a40' // Color de texto por defecto
+        style={{
+          border: '1px solid #ccc',
+          transition: 'all 0.1s ease-in-out',
+          backgroundColor: '#F3F4F7',
+          color: '#343a40'
         }}
         onClick={() => {
           setSearchTerm('');
           setCurrentPage(1);
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el botón "limpiar"
-          e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el botón "limpiar"
+          e.currentTarget.style.backgroundColor = '#E0E0E0';
+          e.currentTarget.style.color = 'black';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el botón "limpiar"
-          e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el botón "limpiar"
+          e.currentTarget.style.backgroundColor = '#F3F4F7';
+          e.currentTarget.style.color = '#343a40';
         }}
       >
         <CIcon icon={cilBrushAlt} /> Limpiar
@@ -907,7 +967,7 @@ const handleNacionalidadInputChange = (e, setFunction) => {
   
 
 {/************************************************************************************************************************************/}
-<CModal visible={modalVisible} backdrop="static">
+<CModal visible={modalVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
     <CModalTitle>Ingresar Nueva Nacionalidad</CModalTitle>
     <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetNuevaNacionalidad)} />
@@ -919,71 +979,65 @@ const handleNacionalidadInputChange = (e, setFunction) => {
         <CInputGroupText>ID Nacionalidad</CInputGroupText>
         <CFormInput
           type="text"
+          name="Id_nacionalidad" // 🆕 Name agregado
           placeholder="Ingrese el ID de la nacionalidad"
           maxLength={10}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nuevaNacionalidad.Id_nacionalidad}
-          onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad, setNacionalidadError)}
-          onBlur={isDuplicateNacionalidad}
+          onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad)}
+          onKeyDown={handleNacionalidadKeyDown} 
+
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
-      {nacionalidadError && (
-        <p style={{ color: 'red', fontSize: '0.9em' }}>{nacionalidadError.Id_nacionalidad}</p>
-      )}
 
-      {/* Campo para Nacionalidad */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Nacionalidad</CInputGroupText>
         <CFormInput
           type="text"
+          name="pais_nacionalidad" // 🆕 Name agregado
           placeholder="Ingrese la nacionalidad"
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nuevaNacionalidad.pais_nacionalidad}
-          onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad, setNacionalidadError)}
-          onBlur={isDuplicateNacionalidad}
+          onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad)}
+          onKeyDown={handleNacionalidadKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
-      {nacionalidadError && (
-        <p style={{ color: 'red', fontSize: '0.9em' }}>{nacionalidadError.pais_nacionalidad}</p>
-      )}
 
-      {/* Campo para País */}
       <CInputGroup className="mb-3">
         <CInputGroupText>País</CInputGroupText>
         <CFormInput
           type="text"
+          name="pais" // 🆕 Name agregado
           placeholder="Ingrese el país"
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nuevaNacionalidad.pais}
-          onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad, setNacionalidadError)}
-          onBlur={isDuplicateNacionalidad}
+          onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad)}
+          onKeyDown={handleNacionalidadKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
-      {nacionalidadError && (
-        <p style={{ color: 'red', fontSize: '0.9em' }}>{nacionalidadError.pais}</p>
-      )}
     </CForm>
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevaNacionalidad)}>
       Cancelar
     </CButton>
-    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateNacionalidad} disabled={!!nacionalidadError}>
+    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateNacionalidad} >
       <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
     </CButton>
   </CModalFooter>
 </CModal>
+
 {/*************************************************************************************************************************************/}
 
-<CModal visible={modalUpdateVisible} backdrop="static">
+<CModal visible={modalUpdateVisible} backdrop="static" size="lg">
   <CModalHeader closeButton={false}>
     <CModalTitle>Actualizar Nacionalidad</CModalTitle>
     <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetNacionalidadToUpdate)} />
@@ -995,12 +1049,14 @@ const handleNacionalidadInputChange = (e, setFunction) => {
         <CInputGroupText>ID Nacionalidad</CInputGroupText>
         <CFormInput
           type="text"
+          name="Id_nacionalidad" // ✅ Name agregado
           placeholder="Ingrese el ID de la nacionalidad"
           maxLength={10}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nacionalidadToUpdate.Id_nacionalidad}
           onChange={(e) => handleNacionalidadInputChange(e, setNacionalidadToUpdate)}
+          onKeyDown={handleNacionalidadKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1011,12 +1067,14 @@ const handleNacionalidadInputChange = (e, setFunction) => {
         <CInputGroupText>Nacionalidad</CInputGroupText>
         <CFormInput
           type="text"
+          name="pais_nacionalidad" // ✅ Name agregado
           placeholder="Ingrese la nacionalidad"
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nacionalidadToUpdate.pais_nacionalidad}
           onChange={(e) => handleNacionalidadInputChange(e, setNacionalidadToUpdate)}
+          onKeyDown={handleNacionalidadKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1027,12 +1085,14 @@ const handleNacionalidadInputChange = (e, setFunction) => {
         <CInputGroupText>País</CInputGroupText>
         <CFormInput
           type="text"
+          name="pais" // ✅ Name agregado
           placeholder="Ingrese el país"
           maxLength={50}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nacionalidadToUpdate.pais}
           onChange={(e) => handleNacionalidadInputChange(e, setNacionalidadToUpdate)}
+          onKeyDown={handleNacionalidadKeyDown} 
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1043,11 +1103,17 @@ const handleNacionalidadInputChange = (e, setFunction) => {
     <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetNacionalidadToUpdate)}>
       Cancelar
     </CButton>
-    <CButton style={{ backgroundColor: '#4B6251', color: 'white' }} onClick={handleUpdateNacionalidad} disabled={!!nacionalidadError}>
-      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
-    </CButton>
+    <CButton 
+  style={{ backgroundColor: '#4B6251', color: 'white', opacity: nacionalidadError ? 0.5 : 1 }} 
+  onClick={handleUpdateNacionalidad} 
+  disabled={!!nacionalidadError}
+>
+  <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
+</CButton>
+
   </CModalFooter>
 </CModal>
+
 
 {/*************************************************************************************************************************************/}
 

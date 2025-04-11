@@ -16,12 +16,12 @@ router.get('/verTodoGeneroPersona', obtenerTodoGeneroPersona);
 router.post('/crearGeneroPersona', crearGeneroPersona);
 
 // Ruta para actualizar género de persona
-router.put('/actualizarGeneroPersona/:cod_genero', actualizarGeneroPersona);
+router.put('/actualizarGeneroPersona/:Cod_genero', actualizarGeneroPersona);
 
 // Ruta para actualizar el estado de un género de persona
 router.post('/actualizarEstadoGeneroPersona', actualizarEstadoGeneroPersona);
 
 // Ruta para eliminar un género de persona
-router.delete('/eliminarGeneroPersona/:cod_genero', eliminarGeneroPersona);
+router.delete('/eliminarGeneroPersona/:Cod_genero', eliminarGeneroPersona);
 
 export default router;

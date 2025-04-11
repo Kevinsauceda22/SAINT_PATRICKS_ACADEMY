@@ -16,12 +16,12 @@ router.get('/verTodoNacionalidad', obtenerTodoNacionalidad);
 router.post('/crearNacionalidad', crearNacionalidad);
 
 // Ruta para actualizar una nacionalidad
-router.put('/actualizarNacionalidad/:cod_nacionalidad', actualizarNacionalidad);
+router.put('/actualizarNacionalidad/:Cod_nacionalidad', actualizarNacionalidad);
 
 // Ruta para actualizar el estado de una nacionalidad
 router.post('/actualizarEstadoNacionalidad', actualizarEstadoNacionalidad);
 
 // Ruta para eliminar una nacionalidad
-router.delete('/eliminarNacionalidad/:cod_nacionalidad', eliminarNacionalidad);
+router.delete('/eliminarNacionalidad/:Cod_nacionalidad', eliminarNacionalidad);
 
 export default router;

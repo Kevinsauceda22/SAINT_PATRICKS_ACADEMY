@@ -53,22 +53,22 @@ export const actualizarTipoDocumentos = async (req, res) => {
 
 // Controlador para actualizar el estado de un tipo de documento
 export const actualizarEstadoTipoDocumentos = async (req, res) => {
-    const { cod_tipo_documento, estado } = req.body;
+    const { Cod_tipo_documento, estado } = req.body;
 
     // Validar parámetros
-    if (!cod_tipo_documento || estado === undefined) {
+    if (!Cod_tipo_documento || estado === undefined) {
         return res.status(400).json({ mensaje: 'Faltan parámetros' });
     }
 
     try {
         // Llamar al procedimiento almacenado
-        const [results] = await pool.query('CALL P_Put_EstadoTipoDocumentos(?, ?)', [cod_tipo_documento, estado]);
+        const [results] = await pool.query('CALL P_Put_EstadoTipoDocumentos(?, ?)', [Cod_tipo_documento, estado]);
 
         // Obtener el mensaje devuelto por el procedimiento
         const mensaje = results[0][0].mensaje;
 
-        console.log(`Estado actualizado para tipo de documento ${cod_tipo_documento}: ${estado}`); // Debug en consola
-        res.json({ mensaje, cod_tipo_documento, estado }); // Respuesta al frontend
+        console.log(`Estado actualizado para tipo de documento ${Cod_tipo_documento}: ${estado}`); // Debug en consola
+        res.json({ mensaje, Cod_tipo_documento, estado }); // Respuesta al frontend
     } catch (error) {
         console.error('Error al ejecutar el procedimiento almacenado:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor' });
