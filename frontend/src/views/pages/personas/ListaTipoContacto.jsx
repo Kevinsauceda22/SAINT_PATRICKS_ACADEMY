@@ -64,20 +64,31 @@ const fetchTipoContacto = async () => {
     const response = await fetch(`http://localhost:4000/api/tipoContacto/verTodoTipoContacto`);
     const data = await response.json();
     console.log('Datos obtenidos:', data); // Agrega este log para depurar
-    const dataWithIndex = data.map((tipoContacto, index) => ({
-      ...tipoContacto,
-      originalIndex: index + 1,
-    }));
+
+    // Verificamos si "data" es un array antes de manipularlo
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo, sino:', data);
+      return;
+    }
+
+    // Mapeamos los datos y luego los invertimos para que el último creado sea primero
+    const dataWithIndex = data
+      .map((tipoContacto, index) => ({
+        ...tipoContacto,
+        originalIndex: index + 1,
+      }))
+      .reverse(); // 🔄 Invertimos el orden para que el último sea el primero
+
     setTipoContacto(dataWithIndex);
   } catch (error) {
     console.error('Error al obtener tipo contacto:', error);
   }
 };
 
+useEffect(() => {
+  fetchTipoContacto();
+}, []);
 
-  useEffect(() => {
-    fetchTipoContacto();
-  }, []);
 
 {/**************************************************************************************************************************************/}
 

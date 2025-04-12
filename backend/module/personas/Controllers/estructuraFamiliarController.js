@@ -128,36 +128,31 @@ export const obtenerPersonasPorRol= async (req, res) => {
     }
 };
 
-
-//Controlador para crear 
 export const crearEstructuraFamiliar = async (req, res) => {
-    const {
-        cod_persona_estudiante,
-        cod_persona_padre,
-        cod_tipo_relacion,
-        descripcion,
-    } = req.body;
+    const { cod_persona_estudiante, cod_persona_padre, cod_tipo_relacion, descripcion } = req.body;
 
     try {
-        // Convertir a mayúsculas el valor de cod_tipo_relacion para la validación
-        const tipoRelacion = cod_tipo_relacion.toUpperCase(); // Asegurarse de que esté en mayúsculas
-
-        // Solo validar para "PADRE" o "MADRE"
-        if (tipoRelacion === "PADRE" || tipoRelacion === "MADRE") {
-            // Verificar si ya existe un registro con el mismo tipo de relación para el mismo estudiante
-            const [resultado] = await pool.query(
-                'SELECT COUNT(*) AS total FROM tbl_estructura_familiar WHERE cod_persona_estudiante = ? AND cod_tipo_relacion = ?',
-                [cod_persona_estudiante, tipoRelacion]
-            );
-
-            if (resultado[0].total > 0) {
-                return res.status(400).json({
-                    mensaje: `El estudiante ya tiene registrado como ${tipoRelacion}. No se puede agregar otro.`,
-                });
-            }
+        // 🔹 **Validación: No permitir que una persona sea su propio padre/tutor**
+        if (cod_persona_estudiante === cod_persona_padre) {
+            return res.status(400).json({ 
+                mensaje: "El estudiante no puede ser su propio familiar. Verifica los datos ingresados." 
+            });
         }
 
-        // Si no hay conflicto, continuar con la inserción
+        // 🔹 **Validación: Impedir que una misma persona esté más de una vez en la estructura**
+        const [validarDuplicado] = await pool.query(`
+            SELECT COUNT(*) as existe FROM tbl_estructura_familiar 
+            WHERE cod_persona_estudiante = ? 
+            AND cod_persona_padre = ?
+        `, [cod_persona_estudiante, cod_persona_padre]);
+
+        if (validarDuplicado[0].existe > 0) {
+            return res.status(400).json({ 
+                mensaje: `Esta persona ya está registrada en la estructura familiar de este estudiante. No puede agregarse nuevamente.` 
+            });
+        }
+
+        // 🔹 **Insertar el nuevo registro si pasa la validación**
         await pool.query('CALL P_Post_EstructuraFamiliar(?, ?, ?, ?)', [
             cod_persona_estudiante,
             cod_persona_padre,
@@ -168,24 +163,44 @@ export const crearEstructuraFamiliar = async (req, res) => {
         res.status(201).json({ mensaje: 'Estructura Familiar creada exitosamente' });
     } catch (error) {
         console.error('Error al crear la estructura familiar:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+        res.status(500).json({ 
+            mensaje: 'Error en el servidor al procesar la solicitud.', 
+            detalle: error.message 
+        });
     }
 };
 
 
 
+
+
 export const actualizarEstructuraFamiliar = async (req, res) => {
     const { Cod_genealogia } = req.params;
-
-    const {
-        cod_persona_estudiante,
-        cod_persona_padre,
-        cod_tipo_relacion,
-        descripcion,
-    } = req.body;
+    const { cod_persona_estudiante, cod_persona_padre, cod_tipo_relacion, descripcion } = req.body;
 
     try {
-        // Ejecutar el procedimiento almacenado sin validaciones adicionales
+        // 🔹 **Validación: No permitir que una persona sea su propio padre/madre/tutor**
+        if (cod_persona_estudiante === cod_persona_padre) {
+            return res.status(400).json({ 
+                mensaje: "El estudiante no puede ser su propio familiar. Verifica los datos ingresados." 
+            });
+        }
+
+        // 🔹 **Validación: Impedir que una misma persona esté más de una vez en la estructura**
+        const [validarDuplicado] = await pool.query(`
+            SELECT COUNT(*) as existe FROM tbl_estructura_familiar 
+            WHERE cod_persona_estudiante = ? 
+            AND cod_persona_padre = ?
+            AND Cod_genealogia <> ?
+        `, [cod_persona_estudiante, cod_persona_padre, Cod_genealogia]);
+
+        if (validarDuplicado[0].existe > 0) {
+            return res.status(400).json({ 
+                mensaje: `Esta persona ya está registrada en la estructura familiar de este estudiante. No puede agregarse nuevamente.` 
+            });
+        }
+
+        // 🔹 **Ejecutar el procedimiento almacenado solo si pasa la validación**
         await pool.query('CALL P_Put_EstructuraFamiliar(?, ?, ?, ?, ?)', [
             Cod_genealogia,
             cod_persona_estudiante,
@@ -197,10 +212,12 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
         res.status(200).json({ mensaje: 'Estructura Familiar actualizada exitosamente' });
     } catch (error) {
         console.error('Error al actualizar:', error);
-        res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+        res.status(500).json({ 
+            mensaje: 'Error en el servidor al procesar la solicitud.', 
+            detalle: error.message 
+        });
     }
 };
-
 
 
 

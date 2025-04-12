@@ -37,12 +37,12 @@ export const crearDepartamento = async (req, res) => {
 // Controlador para actualizar un departamento
 export const actualizarDepartamento = async (req, res) => {
     const { Cod_departamento } = req.params;
-    const { nombre_departamento, estado } = req.body;
+    const { Nombre_departamento, estado } = req.body;
 
     try {
         await pool.query('CALL P_Put_Departamentos(?, ?, ?)', [
             Cod_departamento,
-            nombre_departamento,
+            Nombre_departamento,
             estado
         ]);
 
@@ -55,22 +55,22 @@ export const actualizarDepartamento = async (req, res) => {
 
 // Controlador para actualizar el estado de un departamento
 export const actualizarEstadoDepartamento = async (req, res) => {
-    const { cod_departamento, estado } = req.body;
+    const { Cod_departamento, estado } = req.body;
 
     // Validar parámetros
-    if (!cod_departamento || estado === undefined) {
+    if (!Cod_departamento || estado === undefined) {
         return res.status(400).json({ mensaje: 'Faltan parámetros' });
     }
 
     try {
         // Llamar al procedimiento almacenado
-        const [results] = await pool.query('CALL P_Put_EstadoDepartamento(?, ?)', [cod_departamento, estado]);
+        const [results] = await pool.query('CALL P_Put_EstadoDepartamento(?, ?)', [Cod_departamento, estado]);
 
         // Obtener el mensaje devuelto por el procedimiento
         const mensaje = results[0][0].mensaje;
 
-        console.log(`Estado actualizado para departamento ${cod_departamento}: ${estado}`); // Debug en consola
-        res.json({ mensaje, cod_departamento, estado }); // Respuesta al frontend
+        console.log(`Estado actualizado para departamento ${Cod_departamento}: ${estado}`); // Debug en consola
+        res.json({ mensaje, Cod_departamento, estado }); // Respuesta al frontend
     } catch (error) {
         console.error('Error al ejecutar el procedimiento almacenado:', error);
         res.status(500).json({ mensaje: 'Error interno del servidor' });

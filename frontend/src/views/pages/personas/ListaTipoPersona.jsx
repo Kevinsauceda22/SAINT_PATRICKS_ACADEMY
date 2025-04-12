@@ -77,9 +77,11 @@ const obtenerTiposPersona = async () => {
   try {
     const response = await fetch('http://localhost:4000/api/tipoPersona/verTodoTipoPersona');
     const data = await response.json();
+
     if (response.ok) {
-      setTipoPersona(data);
-      setFilteredTipos(data);
+      const reversedData = data.reverse(); // 🔄 Invertimos el orden para mostrar el último primero
+      setTipoPersona(reversedData);
+      setFilteredTipos(reversedData);
     } else {
       throw new Error(data.message || 'Error al obtener los tipos de persona');
     }
@@ -89,6 +91,7 @@ const obtenerTiposPersona = async () => {
     setLoading(false);
   }
 };
+
 
 {/*************************************************************************************************************************************/}
 

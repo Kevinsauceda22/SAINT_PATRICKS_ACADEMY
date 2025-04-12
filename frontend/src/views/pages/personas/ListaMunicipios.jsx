@@ -62,24 +62,43 @@ const MunicipioMantenimiento = () => {
 
 
 
-  const fetchMunicipios = async () => {
-    try {
-      const response = await fetch(`http://localhost:4000/api/municipio/verTodoMunicipio`);
-      const data = await response.json();
-      console.log('Datos obtenidos:', data); // Agrega este log para depurar
-      const dataWithIndex = data.map((municipio, index) => ({
+const fetchMunicipios = async () => {
+  try {
+    const response = await fetch(`http://localhost:4000/api/municipio/verTodoMunicipio`);
+    const data = await response.json();
+    console.log('Datos obtenidos:', data); // Agrega este log para depurar
+
+    // Verificamos si "data" es un array antes de manipularlo
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo, sino:', data);
+      return;
+    }
+
+    // Ordenamos los municipios primero por Cod_departamento y luego por Nombre_municipio
+    const dataSorted = data
+      .map((municipio, index) => ({
         ...municipio,
         originalIndex: index + 1,
-      }));
-      setMunicipios(dataWithIndex);
-    } catch (error) {
-      console.error('Error al obtener municipios:', error);
-    }
-  };
-  
-  useEffect(() => {
-    fetchMunicipios(); // Llama a la función para obtener los municipios
-  }, []);
+      }))
+      .sort((a, b) => {
+        // Ordenamos primero por Cod_departamento
+        if (a.Cod_departamento !== b.Cod_departamento) {
+          return a.Cod_departamento - b.Cod_departamento;
+        }
+        // Si tienen el mismo Cod_departamento, ordenamos por Nombre_municipio
+        return a.Nombre_municipio.localeCompare(b.Nombre_municipio);
+      });
+
+    setMunicipios(dataSorted); // Actualiza el estado con los datos ordenados
+  } catch (error) {
+    console.error('Error al obtener municipios:', error);
+  }
+};
+
+useEffect(() => {
+  fetchMunicipios(); // Llama a la función para obtener los municipios
+}, []);
+
   
 {/*********************************************************************************************************************************************/}
 const fetchDepartamentos = async () => {

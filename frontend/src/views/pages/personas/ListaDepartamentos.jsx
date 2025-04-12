@@ -66,21 +66,31 @@ const ListaDepartamentos = () => {
       const response = await fetch(`http://localhost:4000/api/departamentos/verTodoDepartamento`);
       const data = await response.json();
       console.log('Datos obtenidos:', data); // Agrega este log para depurar
-  
-      const dataWithIndex = data.map((departamentos, index) => ({
-        ...departamentos,
-        originalIndex: index + 1, // Índice basado en el orden de obtención
-      }));
-  
-      setDepartamentos(dataWithIndex); // Actualiza el estado principal
+
+      // Verificamos si "data" es un array antes de manipularlo
+      if (!Array.isArray(data)) {
+        console.error('Error: La API no está devolviendo un arreglo, sino:', data);
+        return;
+      }
+
+      // Ordenamos los datos alfabéticamente por "Nombre_departamento"
+      const dataSorted = data
+        .map((departamentos, index) => ({
+          ...departamentos,
+          originalIndex: index + 1, // Índice basado en el orden de obtención
+        }))
+        .sort((a, b) => a.Nombre_departamento.localeCompare(b.Nombre_departamento)); // 🔠 Ordenamos alfabéticamente
+
+      setDepartamentos(dataSorted); // Actualiza el estado con datos ordenados
     } catch (error) {
       console.error('Error al obtener departamentos:', error);
     }
   };
-  
+
   useEffect(() => {
     fetchDepartamentos();
   }, []);
+
   
 
 {/*********************************************************************************************************************************** */}
@@ -447,7 +457,7 @@ const toggleEstado = async (departamento) => {
 
       // Realizar la solicitud a la API
       const response = await axios.post('http://localhost:4000/api/departamentos/actualizarEstadoDepartamento', {
-          cod_departamento: departamento.Cod_departamento,
+        Cod_departamento: departamento.Cod_departamento,
           estado: nuevoEstado,
       });
 

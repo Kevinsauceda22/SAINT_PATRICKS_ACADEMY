@@ -568,8 +568,8 @@ const paginate = (pageNumber) => {
 {/***************************************************************************************************************************************/}
 
 const ReporteProcedenciaEstudiantePDF = () => {
-  const doc = new jsPDF('p', 'mm', 'letter'); 
-  
+  const doc = new jsPDF('p', 'mm', 'letter');
+
   if (!filteredProcedenciaEstudiante || filteredProcedenciaEstudiante.length === 0) {
     alert('No hay datos para exportar.');
     return;
@@ -581,75 +581,137 @@ const ReporteProcedenciaEstudiantePDF = () => {
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
 
-    // ✅ Encabezado
-    doc.addImage(img, 'PNG', 10, 10, 45, 45);
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51);
-    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
-    // ✅ Subtítulo
+    // Encabezado
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
     doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
-    doc.text('Reporte de Procedencia Estudiante', pageWidth / 2, 50, { align: 'center' });
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Procedencia Estudiante', pageWidth / 2, 40, { align: 'center' });
 
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 102, 51);
-    doc.line(10, 60, pageWidth - 10, 60);
+    doc.line(10, 45, pageWidth - 10, 45);
 
-    // ✅ Filtrar datos y formatear para la tabla
-    const tableRows = filteredProcedenciaEstudiante.map((procedencia, index) => ({
-      index: (index + 1).toString(),
-      nombre_instituto: procedencia.nombre_instituto?.toUpperCase() || 'N/D',
-      descripcion: procedencia.descripcion?.toUpperCase() || 'N/D',
-      año_desde: procedencia.año_desde?.toString() || 'N/D',
-      año_hasta: procedencia.año_hasta?.toString() || 'N/D',
-    }));
+    let startY = 50;
 
+    // Tabla
     doc.autoTable({
-      startY: 65,
-      columns: [
-        { header: '#', dataKey: 'index' },
-        { header: 'Instituto', dataKey: 'nombre_instituto' },
-        { header: 'Descripción', dataKey: 'descripcion' },
-        { header: 'Desde', dataKey: 'año_desde' },
-        { header: 'Hasta', dataKey: 'año_hasta' },
-        { header: 'Estado', dataKey: 'estado' },
-      ],
-      body: tableRows,
-      styles: { fontSize: 7, cellPadding: 4 },
-      headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255] },
-      alternateRowStyles: { fillColor: [240, 248, 255] },
+      startY: startY,
+      margin: { left: (pageWidth - 200) / 2 }, // Centrar tabla con el nuevo ancho
+      head: [['#', 'Instituto', 'Descripción', 'Desde', 'Hasta']],
+      body: filteredProcedenciaEstudiante.map((item, index) => [
+        index + 1,
+        item.nombre_instituto?.toUpperCase() || 'N/D',
+        item.descripcion?.toUpperCase() || 'N/D',
+        item.año_desde?.toString() || 'N/D',
+        item.año_hasta?.toString() || 'N/D'
+      ]),
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 8,
+        fontStyle: 'bold'
+      },
+      styles: {
+        fontSize: 7,
+        cellPadding: 2,
+        overflow: 'linebreak',
+        halign: 'center'
+      },
+      columnStyles: {
+        0: { cellWidth: 10 },  // #
+        1: { cellWidth: 70 },  // Instituto
+        2: { cellWidth: 70 },  // Descripción
+        3: { cellWidth: 25 },  // Desde
+        4: { cellWidth: 25 }   // Hasta
+      },
+      alternateRowStyles: { fillColor: [240, 248, 255] }
     });
 
-    // ✅ Generar Blob y URL del PDF
+    // Pie de página
+    const now = new Date();
+    const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const pageCount = doc.internal.getNumberOfPages();
+
+    doc.setFontSize(7);
+    doc.setTextColor(0, 102, 51);
+    doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+    doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+
+    // Mostrar visor PDF
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
-
-    // ✅ Abrir en nueva ventana con botones de descarga e impresión
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
-        <head><title>Reporte de Procedencia Estudiante</title></head>
-        <body style="margin:0;">
-          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:20px;">
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Procedencia_Estudiante.pdf'; a.click();">
-              Descargar PDF
+        <head>
+          <title>Reporte de Procedencia Estudiante</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100vw;
+              height: 100vh;
+            }
+            iframe {
+              width: 100vw;
+              height: 100vh;
+              border: none;
+            }
+            .icon-container {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              display: flex;
+              gap: 15px;
+              padding: 10px;
+              border-radius: 8px;
+            }
+            .icon-button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 22px;
+              color: white;
+              position: relative;
+              z-index: 9999;
+            }
+            .icon-button:focus,
+            .icon-button:active {
+              outline: none;
+              box-shadow: none;
+            }
+          </style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+        </head>
+        <body>
+          <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+          <div class="icon-container">
+            <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Procedencia_Estudiante.pdf'; a.click();">
+              <i class="fas fa-download"></i>
             </button>
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="window.print();">
-              Imprimir PDF
+            <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+              <i class="fas fa-print"></i>
             </button>
           </div>
         </body>
-      </html>`);
+      </html>
+    `);
   };
 
   img.onerror = () => {
@@ -669,18 +731,31 @@ const exportProcedenciaEstudianteToExcel = () => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Procedencia Estudiante');
 
-  // Título del documento
-  worksheet.mergeCells('A1:D1');
+  // ✅ Establecer las columnas antes de cualquier fusión
+  worksheet.columns = [
+    { header: '#', key: 'index', width: 10 },
+    { header: 'Instituto', key: 'instituto', width: 70 },
+    { header: 'Descripción', key: 'descripcion', width: 70 },
+    { header: 'Desde', key: 'desde', width: 20 },
+    { header: 'Hasta', key: 'hasta', width: 20 }
+  ];
+
+  // ✅ Obtener letra de la última columna correctamente (por ejemplo: E)
+  const ultimaColumna = String.fromCharCode(64 + worksheet.columns.length);
+
+  // 🎯 Encabezado principal
+  worksheet.mergeCells(`A1:${ultimaColumna}1`);
   worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
   worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
   worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  worksheet.mergeCells('A2:D2');
+  // 🎯 Subtítulo
+  worksheet.mergeCells(`A2:${ultimaColumna}2`);
   worksheet.getCell('A2').value = 'PROCEDENCIA ESTUDIANTE';
   worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
   worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
 
-  // Encabezados de la tabla
+  // 📌 Encabezados
   const headerRow = worksheet.addRow(['#', 'Instituto', 'Descripción', 'Desde', 'Hasta']);
   headerRow.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: 'FFFFFF' } };
@@ -688,18 +763,18 @@ const exportProcedenciaEstudianteToExcel = () => {
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
   });
 
-  // Datos de la tabla
+  // 📊 Datos
   filteredProcedenciaEstudiante.forEach((procedencia, index) => {
     const row = worksheet.addRow([
       index + 1,
-      typeof procedencia.nombre_instituto === 'string' ? procedencia.nombre_instituto.toUpperCase() : procedencia.nombre_instituto,
-      typeof procedencia.descripcion === 'string' ? procedencia.descripcion.toUpperCase() : procedencia.descripcion,
+      procedencia.nombre_instituto?.toUpperCase() || 'N/A',
+      procedencia.descripcion?.toUpperCase() || 'N/A',
       procedencia.año_desde,
       procedencia.año_hasta
     ]);
 
     row.eachCell((cell) => {
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       cell.border = {
         top: { style: 'thin', color: { argb: '000000' } },
         left: { style: 'thin', color: { argb: '000000' } },
@@ -709,17 +784,13 @@ const exportProcedenciaEstudianteToExcel = () => {
     });
   });
 
-  // Ajustar el ancho de las columnas
-  worksheet.columns.forEach((column) => {
-    column.width = 20;
-  });
-
-  // Crear archivo Excel
+  // 📂 Guardar archivo
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'Reporte_ProcedenciaEstudiante.xlsx');
   });
 };
+
 
 
 {/***************************************************************************************************************************************/}

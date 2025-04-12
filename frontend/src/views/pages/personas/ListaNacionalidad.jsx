@@ -77,18 +77,28 @@ const fetchNacionalidades = async () => {
   try {
     const response = await fetch(`http://localhost:4000/api/nacionalidad/verTodoNacionalidad`);
     const data = await response.json();
-    console.log('Datos obtenidos:', data); // Agrega este log para depurar
-    const dataWithIndex = data.map((nacionalidad, index) => ({
-      ...nacionalidad,
-      originalIndex: index + 1,
-    }));
-    setNacionalidades(dataWithIndex); // Estado para manejar las nacionalidades
+    console.log('Datos obtenidos:', data); // Agrega este log para depuración
+
+    // Verificamos si "data" es un array antes de manipularlo
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo, sino:', data);
+      return;
+    }
+
+    // Ordenamos las nacionalidades alfabéticamente por "pais"
+    const dataSorted = data
+      .map((nacionalidad, index) => ({
+        ...nacionalidad,
+        originalIndex: index + 1,
+      }))
+      .sort((a, b) => a.pais.localeCompare(b.pais)); // 🔠 Ordenamos por "pais"
+
+    setNacionalidades(dataSorted); // Actualiza el estado con los datos ordenados
   } catch (error) {
     console.error('Error al obtener nacionalidades:', error);
   }
 };
 
-    
 useEffect(() => {
   fetchNacionalidades();
 }, []);

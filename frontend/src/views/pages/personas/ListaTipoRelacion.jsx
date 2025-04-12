@@ -69,18 +69,20 @@ const fetchTipoRelacion = async () => {
 
     // Verificamos si "data" es un array
     if (!Array.isArray(data)) {
-      console.error(' Error: La API no está devolviendo un arreglo, sino:', data);
+      console.error('Error: La API no está devolviendo un arreglo, sino:', data);
       return;
     }
 
-    // Mapeamos los datos para asegurarnos de que tengan el formato correcto
-    const dataWithIndex = data.map((item, index) => ({
-      ...item,
-      originalIndex: index + 1,
-    }));
+    // Ordenamos los datos para que el último elemento aparezca primero
+    const dataWithIndex = data
+      .map((item, index) => ({
+        ...item,
+        originalIndex: index + 1,
+      }))
+      .reverse(); // 🔄 Invertimos el orden para mostrar el último primero
 
     setTipoRelacion(dataWithIndex); // ✅ Ahora sí actualizamos el estado
-    console.log('✅ Estado actualizado:', dataWithIndex);
+    console.log('✅ Estado actualizado en orden invertido:', dataWithIndex);
   } catch (error) {
     console.error('Error al obtener tipo relación:', error);
   }
@@ -239,6 +241,49 @@ const capitalizeWords = (str) => {
 
 {/*************************************************************************************************************************************/}
 
+const handleEstructuraFamiliarInputChange = (e, setFunction) => {
+  let value = e.target.value.trim(); // 🔹 Eliminamos espacios al inicio y al final
+
+  // 🔹 **No permitir más de un espacio consecutivo**
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // 🔹 **No permitir que una letra se repita más de 3 veces consecutivamente**
+  if (/([a-zA-ZÁÉÍÓÚáéíóúÑñ])\1{2,}/.test(value)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 3 veces consecutivas.',
+    });
+    return;
+  }
+
+  // 🔹 **Validar longitud mínima**
+  if (value.length <= 2) {
+    setRelacionError('La relación debe tener más de 2 letras.');
+  } else {
+    setRelacionError(''); // No hay error
+  }
+
+  // 🔹 **Validación adicional: evitar caracteres especiales**
+  if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(value)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Caracteres no permitidos',
+      text: 'Solo se permiten letras y espacios en la relación.',
+    });
+    return;
+  }
+
+  // 🔹 **Guardar el valor en el estado**
+  setFunction((prevState) => ({
+    ...prevState,
+    tipo_relacion: value,
+  }));
+
+  setHasUnsavedChanges(true); // 🔄 Marcar cambios no guardados
+};
+
+{/*******************************************************************************************************************************************/}
     // Función para cerrar el modal con advertencia si hay cambios sin guardar
     const handleCloseModal = (closeFunction, resetFields) => {
       if (hasUnsavedChanges) {

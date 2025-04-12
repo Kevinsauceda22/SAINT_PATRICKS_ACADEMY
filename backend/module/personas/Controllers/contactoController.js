@@ -24,7 +24,7 @@ export const crearContacto = async (req, res) => {
 
     try {
         await pool.query('CALL P_Post_Contactos(?, ?, ?, ?)', [
-            cod_persona,
+            cod_persona,    
             cod_tipo_contacto,
             Valor,
             principal,

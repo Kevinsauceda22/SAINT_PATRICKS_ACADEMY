@@ -632,16 +632,22 @@ const fetchPersonas = async () => {
 
 
 {/********************************************************************************************************************************************/}
-  const fetchNacionalidad = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/nacionalidad/verTodoNacionalidad')
-      const data = await response.json()
-      console.log('Datos recibidos de nacionalidad:', data)
-      setNacionalidad(data)
-    } catch (error) {
-      console.error('Error al obtener los nacionalidad:', error)
-    }
+const fetchNacionalidad = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/nacionalidad/verTodoNacionalidad');
+    const data = await response.json();
+    console.log('Datos recibidos de nacionalidad:', data);
+
+    // Filtrar solo los elementos con estado === 1
+    const nacionalidadFiltrada = data.filter((item) => item.estado === 1);
+
+    setNacionalidad(nacionalidadFiltrada); // Actualiza el estado solo con los datos que tienen estado 1
+    console.log('Datos filtrados con estado 1:', nacionalidadFiltrada); // Depuración final
+  } catch (error) {
+    console.error('Error al obtener los nacionalidad:', error);
   }
+};
+
 
 {/*********************************************************************************************************************************************/}
 const fetchMunicipio = async () => {
@@ -651,73 +657,119 @@ const fetchMunicipio = async () => {
     console.log('Datos recibidos de municipio:', data);
 
     if (Array.isArray(data) && Array.isArray(data[0])) {
-      setMunicipio(data[0]); // Usar solo el primer elemento del resultado
+      // Filtrar solo los municipios con estado === 1
+      const municipiosActivos = data[0].filter((municipio) => municipio.estado === 1);
+      setMunicipio(municipiosActivos);
+      console.log('Municipios filtrados con estado 1:', municipiosActivos);
     } else {
       console.error('Formato de datos inesperado:', data);
-      setMunicipio([]); // Evitar errores en caso de formato incorrecto
+      setMunicipio([]);
     }
   } catch (error) {
     console.error('Error al obtener los municipios:', error);
   }
 };
 
+
 {/**********************************************************************************************************************************************/}
-      const fetchTipoDocumento = async () => {
-        try {
-          const response = await fetch('http://localhost:4000/api/tipoDocumento/verTodoTipoDocumentos');
-          const data = await response.json();
-          const dataWithIndex = data.map((tipoDocumento, index) => ({
-            ...tipoDocumento,
-            originalIndex: index + 1,
-          }));
-          setTipoDocumento(dataWithIndex);
-        } catch (error) {
-          console.error('Error al obtener los tipos de documento:', error);
-        }
-      };
-      useEffect(() => {
-        fetchTipoDocumento();
-      }, []);
+const fetchTipoDocumento = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/tipoDocumento/verTodoTipoDocumentos');
+    const data = await response.json();
+    console.log('Datos obtenidos:', data); // Depuración
+
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo, sino:', data);
+      return;
+    }
+
+    // Filtrar solo los tipos de documento con estado === 1
+    const documentosActivos = data.filter((tipoDocumento) => tipoDocumento.estado === 1);
+
+    // Asignar nuevos índices desde 1
+    const dataWithIndex = documentosActivos.map((tipoDocumento, index) => ({
+      ...tipoDocumento,
+      originalIndex: index + 1,
+    }));
+
+    setTipoDocumento(dataWithIndex);
+    console.log('Tipos de documento filtrados con estado 1:', dataWithIndex); // Depuración final
+  } catch (error) {
+    console.error('Error al obtener los tipos de documento:', error);
+  }
+};
 
   
 {/*********************************************************************************************************************************************/}
-  const fetchDepartamentos = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/personas/verDepartamentos')
-      const data = await response.json()
-      console.log('Datos recibidos de departamentos:', data)
-      setDepartamentos(data)
-    } catch (error) {
-      console.error('Error al obtener los departamentos:', error)
+const fetchDepartamentos = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/personas/verDepartamentos');
+    const data = await response.json();
+    console.log('Datos recibidos de departamentos:', data); // Depuración
+
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo válido:', data);
+      return;
     }
+
+    // Filtrar solo los departamentos con estado === 1
+    const departamentosActivos = data.filter((departamento) => departamento.estado === 1);
+
+    setDepartamentos(departamentosActivos); // Actualiza el estado solo con los datos activos
+    console.log('Departamentos filtrados con estado 1:', departamentosActivos); // Depuración final
+  } catch (error) {
+    console.error('Error al obtener los departamentos:', error);
   }
+};
 
 {/********************************************************************************************************************************************/}
-  const fetchTipoPersona = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/personas/verTipoPersona')
-      const data = await response.json()
-      console.log('Datos recibidos de tipo de persona:', data)
-      setTipoPersona(data)
-    } catch (error) {
-      console.error('Error al obtener los tipos de persona:', error)
+const fetchTipoPersona = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/personas/verTipoPersona');
+    const data = await response.json();
+    console.log('Datos recibidos de tipo de persona:', data); // Depuración
+
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo válido:', data);
+      return;
     }
+
+    // Filtrar solo los tipos de persona con estado === 1
+    const tiposPersonaActivos = data.filter((tipoPersona) => tipoPersona.estado === 1);
+
+    setTipoPersona(tiposPersonaActivos); // Actualiza el estado solo con los datos activos
+    console.log('Tipos de persona filtrados con estado 1:', tiposPersonaActivos); // Depuración final
+  } catch (error) {
+    console.error('Error al obtener los tipos de persona:', error);
   }
+};
 
 {/*******************************************************************************************************************************************/}
-  const fetchGeneros = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/personas/verGeneros')
-      const data = await response.json()
-      console.log('Datos recibidos de géneros:', data)
-      setGeneros(data)
-    } catch (error) {
-      console.error('Error al obtener los géneros:', error)
+const fetchGeneros = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/personas/verGeneros');
+    const data = await response.json();
+    console.log('Datos recibidos de géneros:', data); // Depuración
+
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo válido:', data);
+      return;
     }
+
+    // Filtramos los géneros con estado === 1
+    const generosActivos = data.filter((genero) => genero.estado === 1);
+
+    setGeneros(generosActivos); // Actualiza el estado con los datos filtrados
+    console.log('Géneros filtrados con estado 1:', generosActivos); // Depuración final
+  } catch (error) {
+    console.error('Error al obtener los géneros:', error);
   }
+};
+
 {/******************************************************************************************************************************************/}
   useEffect(() => {
     fetchPersonas()
+    fetchTipoDocumento()
     fetchDepartamentos()
     fetchNacionalidad()
     fetchMunicipio()

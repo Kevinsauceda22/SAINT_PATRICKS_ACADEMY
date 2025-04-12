@@ -126,19 +126,35 @@ useEffect(() => {
     }
   }, [modalVisible]); // Se ejecuta cada vez que cambia el estado de modalVisible
   
+  {/***********************************************************************************************************************************************/}
   const fetchContactos = async () => {
     try {
       const response = await fetch('http://localhost:4000/api/contacto/verTodosContactos');
       if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
+      
       const data = await response.json();
       console.log('Datos obtenidos de la API:', data); // Verifica la respuesta de la API
-      setContacto(data);
-      console.log('Estado de contacto después de setContacto:', data); // Verifica el estado actualizado
+  
+      // Verificamos si "data" es un array antes de manipularlo
+      if (!Array.isArray(data)) {
+        console.error('Error: La API no está devolviendo un arreglo, sino:', data);
+        return;
+      }
+  
+      // Invertimos el orden para que el último creado sea el primero
+      const dataSorted = data.reverse();
+  
+      setContacto(dataSorted);
+      console.log('Estado de contacto después de setContacto:', dataSorted); // Verifica el estado actualizado
     } catch (error) {
       console.error('Error fetching contactos:', error);
     }
   };
-
+  
+  useEffect(() => {
+    fetchContactos();
+  }, []);
+  
 
   {/********************************************************************************************************************************************/}
   const fetchTiposContacto = async () => {

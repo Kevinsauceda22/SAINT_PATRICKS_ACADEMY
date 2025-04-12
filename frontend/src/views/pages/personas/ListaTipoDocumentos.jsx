@@ -60,22 +60,34 @@ const ListaTipoDocumentos = () => {
 
 {/***************************************************************************************************************************************/}      
 
-      const fetchTipoDocumento = async () => {
-        try {
-          const response = await fetch('http://localhost:4000/api/tipoDocumento/verTodoTipoDocumentos');
-          const data = await response.json();
-          const dataWithIndex = data.map((tipoDocumento, index) => ({
-            ...tipoDocumento,
-            originalIndex: index + 1,
-          }));
-          setTipoDocumento(dataWithIndex);
-        } catch (error) {
-          console.error('Error al obtener los tipos de documento:', error);
-        }
-      };
-      useEffect(() => {
-        fetchTipoDocumento();
-      }, []);
+const fetchTipoDocumento = async () => {
+  try {
+    const response = await fetch('http://localhost:4000/api/tipoDocumento/verTodoTipoDocumentos');
+    const data = await response.json();
+
+    // Verificamos si "data" es un array antes de manipularlo
+    if (!Array.isArray(data)) {
+      console.error('Error: La API no está devolviendo un arreglo, sino:', data);
+      return;
+    }
+
+    // Mapeamos los datos y luego los invertimos
+    const dataWithIndex = data
+      .map((tipoDocumento, index) => ({
+        ...tipoDocumento,
+        originalIndex: index + 1,
+      }))
+      .reverse(); // 🔄 Invertimos el orden para mostrar el último primero
+
+    setTipoDocumento(dataWithIndex);
+  } catch (error) {
+    console.error('Error al obtener los tipos de documento:', error);
+  }
+};
+
+useEffect(() => {
+  fetchTipoDocumento();
+}, []);
 
 {/***************************************************************************************************************************************/}      
 

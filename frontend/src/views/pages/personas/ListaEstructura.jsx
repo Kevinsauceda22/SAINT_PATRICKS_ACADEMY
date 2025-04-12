@@ -3,6 +3,7 @@ import { CIcon } from '@coreui/icons-react'
 import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilArrowLeft } from '@coreui/icons'
 import swal from 'sweetalert2' // Importar SweetAlert
 import axios from 'axios'
+import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf' // Para generar archivos PDF
 import 'jspdf-autotable' // Para crear tablas en los archivos PDF
 import * as XLSX from 'xlsx' // Para generar archivos Excel
@@ -76,8 +77,6 @@ const ListaEstructura = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
-  const [codPersonaEstudiante, setCodPersonaEstudiante] = useState('');
-  const [codPersonaPadre, setCodPersonaPadre] = useState('');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const [estructurasFamiliares, setEstructurasFamiliares] = useState([]);
@@ -87,14 +86,6 @@ const ListaEstructura = () => {
   // Nuevo estado para evitar que el dropdown se abra al cargar el modal
   const [userHasTyped, setUserHasTyped] = useState(false);
 
-
-
-
-
-  const [tipoPersona, setTipoPersona] = useState([]);
-
-
-  const [codPersona, setCodPersona] = useState('');
 
 
   // Navegación y ubicación
@@ -178,6 +169,7 @@ useEffect(() => {
     return;
   }
 
+  {/*******************************************************************************************************************/}
   // Filtrar la lista de personas en función del input
   const resultados = personas.filter((persona) =>
     persona.fullName?.toUpperCase().includes(buscadorRelacion.toUpperCase()) ||
@@ -230,27 +222,9 @@ const handleSeleccionarPersona = (persona) => {
 {/* ----------------------------------------------------------------------------------------------------------------------------------------*/}
 
 
-  // Resetear formulario
-  const resetNuevaEstructuraFamiliar = () => {
-    setNuevaEstructuraFamiliar({
-      cod_persona_padre: rolActual === 'PADRE' ? personaSeleccionada?.cod_persona || '' : '',
-      cod_persona_estudiante: rolActual === 'ESTUDIANTE' ? personaSeleccionada?.cod_persona || '' : '',
-      cod_tipo_relacion: '',
-      descripcion: '',
-    });
-    setBuscadorRelacion('');
-  };
 
-  const resetEstructuraToUpdate = () => {
-    setEstructuraToUpdate({
-      cod_persona_padre: rolActual === 'PADRE' ? personaSeleccionada?.cod_persona || '' : '',
-      cod_persona_estudiante: rolActual === 'ESTUDIANTE' ? personaSeleccionada?.cod_persona || '' : '',
-      cod_tipo_relacion: '',
-      descripcion: '',
-    });
-    setBuscadorRelacion(''); 
-  };
-  
+
+  {/********************************************************************************************************************************************/}
 
   // Efecto para limpiar el modal al abrirlo
   useEffect(() => {
@@ -259,6 +233,7 @@ const handleSeleccionarPersona = (persona) => {
     }
   }, [modalVisible]);
 
+  {/********************************************************************************************************************************************/}
   useEffect(() => {
     const fetchTipoRelacion = async () => {
       try {
@@ -280,72 +255,41 @@ const handleSeleccionarPersona = (persona) => {
 
 {/* ----------------------------------------------------------------------------------------------------------------------------------------- */}
 
- {/* Función para crear estructura */}
- const handleCreateEstructura = async () => {
-  console.log("Estructura familiar final:", nuevaEstructura);
-
-  // Validación de descripción obligatoria
-  if (!nuevaEstructura.descripcion.trim()) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Campo obligatorio',
-      text: 'La descripción no puede estar vacía.',
-    });
-    return;
-  }
-
-  // Validación de cod_persona_padre y cod_persona_estudiante
-  if (!nuevaEstructura.cod_persona_padre && !nuevaEstructura.cod_persona_estudiante) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Campos obligatorios',
-      text: 'Debe seleccionar al menos un padre o estudiante.',
-    });
-    return;
-  }
-
-  // Log para depuración
-  console.log('Datos enviados al backend:', nuevaEstructura);
-
+const handleCreateEstructura = async () => {
   try {
-    // Preparación del cuerpo de la solicitud
     const estructuraData = {
-      cod_persona_padre: nuevaEstructura.cod_persona_padre, // Permitir null si no está definido
-      cod_persona_estudiante: nuevaEstructura.cod_persona_estudiante, // Permitir null si no está definido
+      cod_persona_padre: nuevaEstructura.cod_persona_padre,
+      cod_persona_estudiante: nuevaEstructura.cod_persona_estudiante,
       cod_tipo_relacion: nuevaEstructura.cod_tipo_relacion,
       descripcion: nuevaEstructura.descripcion,
     };
 
     const response = await fetch('http://localhost:4000/api/estructuraFamiliar/crearEstructuraFamiliar', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(estructuraData),
     });
 
+    const errorData = await response.json(); // Asegurarse de capturar correctamente el JSON de error
+
     if (response.ok) {
-      // Éxito: Actualizar datos y cerrar el modal
-     
-      setModalVisible(false); // Cerrar el modal
-      resetNuevaEstructuraFamiliar(); // Reiniciar formulario
-      setHasUnsavedChanges(false); // Reiniciar control de cambios no guardados
+      setModalVisible(false);
+      resetNuevaEstructuraFamiliar();
+      setHasUnsavedChanges(false);
+      refreshEstructurasFamiliares();
       swal.fire({
         icon: 'success',
         title: 'Creación exitosa',
         text: 'La estructura ha sido creada correctamente.',
       });
     } else {
-      // Error en la respuesta del servidor
-      const errorData = await response.json();
       swal.fire({
         icon: 'error',
         title: 'Error al crear',
-        text: errorData.message || 'No se pudo crear la estructura.',
+        text: errorData.mensaje || 'No se pudo crear la estructura.',
       });
     }
   } catch (error) {
-    // Error de conexión o fetch
     console.error('Error al crear la estructura:', error);
     swal.fire({
       icon: 'error',
@@ -469,6 +413,60 @@ const handleUpdateEstructura = async () => {
 
 {/******************************************MANEJO DE CIERRE Y APERTURA DE MODAL********************************************************/}
 
+const handleEstructuraFamiliarInputChange = (e, setFunction) => {
+  let value = e.target.value.trim(); // 🔹 Eliminamos espacios al inicio y al final
+
+  // 🔹 **No permitir más de un espacio consecutivo**
+  value = value.replace(/\s{2,}/g, ' ');
+
+  // 🔹 **Validación: Evitar que una persona sea su propio tutor**
+  if (prevState.cod_persona_estudiante === prevState.cod_persona_padre) {
+    swal.fire({
+      icon: 'error',
+      title: 'Error en la relación',
+      text: 'Un estudiante no puede ser su propio tutor o padre.',
+    });
+    return;
+  }
+
+  // 🔹 **No permitir que una letra se repita más de 3 veces consecutivamente**
+  if (/([a-zA-ZÁÉÍÓÚáéíóúÑñ])\1{2,}/.test(value)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Repetición de letras',
+      text: 'No se permite que la misma letra se repita más de 3 veces consecutivas.',
+    });
+    return;
+  }
+
+  // 🔹 **Validar longitud mínima**
+  if (value.length <= 2) {
+    setRelacionError('La descripción debe tener más de 2 caracteres.');
+  } else {
+    setRelacionError(''); // No hay error
+  }
+
+  // 🔹 **Validación adicional: evitar caracteres especiales**
+  if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(value)) {
+    swal.fire({
+      icon: 'warning',
+      title: 'Caracteres no permitidos',
+      text: 'Solo se permiten letras y espacios en la descripción.',
+    });
+    return;
+  }
+
+  // 🔹 **Guardar el valor en el estado**
+  setFunction((prevState) => ({
+    ...prevState,
+    descripcion: value, // 🔥 Aplicado específicamente para estructura familiar
+  }));
+
+  setHasUnsavedChanges(true); // 🔄 Marcar cambios no guardados
+};
+
+
+
 const handleCloseModal = (closeFunction, resetFields) => {
   if (hasUnsavedChanges) {
     swal.fire({
@@ -481,8 +479,8 @@ const handleCloseModal = (closeFunction, resetFields) => {
     }).then((result) => {
       if (result.isConfirmed) {
         closeFunction(false);
-        resetFields(); // Limpiar los campos al cerrar
-        setHasUnsavedChanges(false); // Resetear cambios no guardados
+        resetFields();
+        setHasUnsavedChanges(false);
       }
     });
   } else {
@@ -490,6 +488,29 @@ const handleCloseModal = (closeFunction, resetFields) => {
     resetFields();
   }
 };
+
+
+  // Resetear formulario
+  const resetNuevaEstructuraFamiliar = () => {
+    setNuevaEstructuraFamiliar({
+      cod_persona_padre: rolActual === 'PADRE' ? personaSeleccionada?.cod_persona || '' : '',
+      cod_persona_estudiante: rolActual === 'ESTUDIANTE' ? personaSeleccionada?.cod_persona || '' : '',
+      cod_tipo_relacion: '',
+      descripcion: '',
+    });
+    setBuscadorRelacion('');
+  };
+
+  const resetEstructuraToUpdate = () => {
+    setEstructuraToUpdate({
+      cod_persona_padre: rolActual === 'PADRE' ? personaSeleccionada?.cod_persona || '' : '',
+      cod_persona_estudiante: rolActual === 'ESTUDIANTE' ? personaSeleccionada?.cod_persona || '' : '',
+      cod_tipo_relacion: '',
+      descripcion: '',
+    });
+    setBuscadorRelacion(''); 
+  };
+
 
 
 
@@ -591,7 +612,7 @@ const handleSearch = (e) => {
 /*******************************FUNCION DE REPORTERIA*************************************/
 // Función para generar reporte PDF
 const ReporteEstructuraPDF = () => {
-  const doc = new jsPDF('l  ', 'mm', 'letter'); //
+  const doc = new jsPDF('p', 'mm', 'letter'); // Formato vertical
 
   if (!filteredRecords || filteredRecords.length === 0) {
     alert('No hay datos para exportar.');
@@ -604,119 +625,137 @@ const ReporteEstructuraPDF = () => {
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
 
-    // Encabezado
-    doc.addImage(img, 'PNG', 10, 10, 45, 45);
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51);
-    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-
-    // Subtítulo
+    // 📌 **Encabezado del reporte**
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
     doc.setFontSize(14);
     doc.setTextColor(0, 102, 51);
-    doc.text('Reporte de Estructura Familiar', pageWidth / 2, 50, { align: 'center' });
+    doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 20, { align: 'center' });
+
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 26, { align: 'center' });
+    doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 30, { align: 'center' });
+    doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 34, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor(0, 102, 51);
+    doc.text('Reporte de Estructura Familiar', pageWidth / 2, 40, { align: 'center' });
 
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 102, 51);
-    doc.line(10, 60, pageWidth - 10, 60);
+    doc.line(10, 45, pageWidth - 10, 45);
 
-    // Tabla de datos
-    const tableRows = filteredRecords.map((estructura, index) => ({
-      index: (index + 1).toString(),
-      estudiante: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
-      padre: personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
-      tipo_relacion: tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
-      descripcion: estructura.descripcion?.toUpperCase() || 'N/D',
-    }));
-
-    const pageHeight = doc.internal.pageSize.height;
-
+    let startY = 50;
 
     doc.autoTable({
-      startY: 65,
-      startY: (pageHeight - tableRows.length * 10) / 2, // Centrado de la tabla
-      columns: [
-        { header: '#', dataKey: 'index' },
-        { header: 'Estudiante', dataKey: 'estudiante' },
-        { header: 'Padre/Tutor', dataKey: 'padre' },
-        { header: 'Tipo de Relación', dataKey: 'tipo_relacion' },
-        { header: 'Descripción', dataKey: 'descripcion' },
-      ],
-      body: tableRows,
+      startY: 50,
+      margin: { left: 10 },
+      head: [['#', 'Estudiante', 'Padre/Tutor', 'Tipo de Relación', 'Descripción']],
+      body: filteredRecords.map((estructura, index) => [
+        index + 1,
+        personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+        personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+        tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+        estructura.descripcion?.toUpperCase() || 'N/D'
+      ]),
       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
-        fontSize: 9, // Aumentado el tamaño de la fuente
-        halign: 'center',
+        fontSize: 7, // 🔽 Reducimos el tamaño de la fuente de los encabezados
+        fontStyle: 'bold',
+        halign: 'center'
       },
       styles: {
-        fontSize: 7, // Aumentado el tamaño de la fuente
-        cellPadding: 4, // Aumentado el relleno de las celdas
+        fontSize: 6, // 🔽 Reducimos la fuente de los datos en la tabla
+        cellPadding: 3, // Mantiene el espaciado pero más compacto
+        overflow: 'linebreak',
+        halign: 'center'
       },
       columnStyles: {
-        index: { cellWidth: 10 },
-        estudiante: { cellWidth: 75 },
-        padre: { cellWidth: 75 },
-        tipo_relacion: { cellWidth: 40 },
-        descripcion: { cellWidth: 60 },
+        0: { cellWidth: 15, halign: 'center' }, // #
+        1: { cellWidth: 50, halign: 'left' }, // Estudiante
+        2: { cellWidth: 50, halign: 'left' }, // Padre/Tutor
+        3: { cellWidth: 30, halign: 'center' }, // Tipo de Relación
+        4: { cellWidth: 50, halign: 'left' } // Descripción
       },
-      alternateRowStyles: {
-        fillColor: [240, 248, 255],
-      },
-
-      didDrawPage: (data) => {
-        const pageCount = doc.internal.getNumberOfPages();
-        const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-        // Pie de página
-        const footerY = doc.internal.pageSize.height - 10;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 102, 51);
-        doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-
-        const now = new Date();
-        const dateString = now.toLocaleDateString('es-HN', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        });
-        const timeString = now.toLocaleTimeString('es-HN', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        });
-        doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-      },
+      alternateRowStyles: { fillColor: [240, 248, 255] }
     });
 
-    // Convertir PDF en Blob
+
+    // 📌 **Pie de página**
+    const now = new Date();
+    const dateString = now.toLocaleDateString('es-HN', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeString = now.toLocaleTimeString('es-HN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const pageCount = doc.internal.getNumberOfPages();
+
+    doc.setFontSize(7);
+    doc.setTextColor(0, 102, 51);
+    doc.text(`Fecha: ${dateString} | Hora: ${timeString}`, 10, doc.internal.pageSize.height - 10);
+    doc.text(`Página ${pageCount}`, pageWidth - 20, doc.internal.pageSize.height - 10, { align: 'right' });
+
+    // 📂 **Generar y mostrar PDF**
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
-
-    // Crear ventana con visor
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
-        <head><title>Reporte de Estructura Familiar</title></head>
-        <body style="margin:0;">
-          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:20px;">
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Estructura_Familiar.pdf'; a.click();">
-              Descargar PDF
+        <head>
+          <title>Reporte de Estructura Familiar</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100vw;
+              height: 100vh;
+            }
+            iframe {
+              width: 100vw;
+              height: 100vh;
+              border: none;
+            }
+            .icon-container {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              display: flex;
+              gap: 15px;
+              padding: 10px;
+              border-radius: 8px;
+            }
+            .icon-button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 22px;
+              color: white;
+              position: relative;
+              z-index: 9999;
+            }
+            .icon-button:focus,
+            .icon-button:active {
+              outline: none;
+              box-shadow: none;
+            }
+          </style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+        </head>
+        <body>
+          <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+          <div class="icon-container">
+            <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Estructura_Familiar.pdf'; a.click();">
+              <i class="fas fa-download"></i>
             </button>
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="window.print();">
-              Imprimir PDF
+            <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+              <i class="fas fa-print"></i>
             </button>
           </div>
         </body>
-      </html>`);
+      </html>
+    `);
   };
 
   img.onerror = () => {
@@ -724,35 +763,76 @@ const ReporteEstructuraPDF = () => {
   };
 };
 
+
   
   
-  // Función para generar reporte Excel
-  const ReporteEstructuraExcel = () => {
-    if (!filteredRecords || filteredRecords.length === 0) {
-      alert('No hay datos para exportar.');
-      return;
-    }
-  
-    // Crear los datos para la tabla
-    const tableRows = filteredRecords.map((estructura, index) => ({
-      '#': (index + 1).toString(),
-      Estudiante: personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
-      'Padre/Tutor': personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
-      'Tipo de Relación': tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
-      Descripción: estructura.descripcion?.toUpperCase() || 'N/D',
-    }));
-  
-    // Crear un libro de trabajo (workbook)
-    const ws = XLSX.utils.json_to_sheet(tableRows);
-  
-    // Crear el libro (workbook) y agregarle la hoja (worksheet)
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Reporte Estructura Familiar');
-  
-    // Generar el archivo Excel y descargarlo
-    XLSX.writeFile(wb, 'Reporte_Estructura_Familiar.xlsx');
-  };
-  
+{/**********************************************************Función para generar reporte Excel***********************************************/}
+const ReporteEstructuraExcel = () => {
+  if (!filteredRecords || filteredRecords.length === 0) {
+    alert('No hay datos para exportar.');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Estructura Familiar');
+
+  // 🎯 **Título del documento**
+  worksheet.mergeCells('A1:E1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  worksheet.mergeCells('A2:E2');
+  worksheet.getCell('A2').value = 'REPORTE DE ESTRUCTURA FAMILIAR';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // 📌 **Encabezados de la tabla**
+  const headerRow = worksheet.addRow(['#', 'Estudiante', 'Padre/Tutor', 'Tipo de Relación', 'Descripción']);
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+  });
+
+  // 📊 **Datos de la tabla**
+  filteredRecords.forEach((estructura, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/D',
+      personas.find(p => p.cod_persona === estructura.cod_persona_padre)?.fullName?.toUpperCase() || 'N/D',
+      tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/D',
+      estructura.descripcion?.toUpperCase() || 'N/D',
+    ]);
+
+    // 🎨 **Aplicar estilos**
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; // 🔄 **Los textos largos se ajustan dentro de la celda**
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  });
+
+  // 📏 **Ajustar el ancho de las columnas**
+  worksheet.columns = [
+    { header: '#', key: 'index', width: 10 },
+    { header: 'Estudiante', key: 'estudiante', width: 35 }, // 🔄 **Más ancho**
+    { header: 'Padre/Tutor', key: 'padre', width: 35 }, // 🔄 **Más ancho**
+    { header: 'Tipo de Relación', key: 'tipo_relacion', width: 25 },
+    { header: 'Descripción', key: 'descripcion', width: 40 }, // 🔄 **Mayor espacio**
+  ];
+
+  // 📂 **Crear archivo Excel**
+  workbook.xlsx.writeBuffer().then((buffer) => {
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, 'Reporte_Estructura_Familiar.xlsx');
+  });
+};
+
 
 {/******************************************************************************************************************************************/}  
 
@@ -912,11 +992,11 @@ return (
                 {rolActual === 'ESTUDIANTE' ? (
                   <>
                     <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
-                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Familiar</CTableHeaderCell>
                   </>
                 ) : (
                   <>
-                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Padre/Tutor</CTableHeaderCell>
+                    <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Familiar</CTableHeaderCell>
                     <CTableHeaderCell style={{ borderRight: '1px solid #ddd' }} className="text-center">Estudiante</CTableHeaderCell>
                   </>
                 )}
@@ -1030,7 +1110,7 @@ return (
 
 <CModal 
   visible={modalVisible} 
-  onClose={() => setModalVisible(false)} 
+  onClose={() => setModalVisible(false)}
   backdrop="static" 
   size="lg" // ✅ Aumenta el tamaño del modal
 >
@@ -1049,12 +1129,17 @@ return (
       {/* Campo de búsqueda con lista de resultados dentro del input */}
       <div className="mb-3" style={{ position: 'relative' }}>
         <CInputGroup className="mb-3">
-          <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'}</CInputGroupText>
+          <CInputGroupText>{rolActual === 'ESTUDIANTE' ? 'Familiar' : 'Estudiante'}</CInputGroupText>
           <CFormInput
             type="text"
             value={buscadorRelacion}
-            onChange={handleBuscarRelacion}
-            placeholder={`Buscar por DNI o nombre (${rolActual === 'ESTUDIANTE' ? 'Padre/Tutor' : 'Estudiante'})`}
+            onChange={(e) => {
+              handleBuscarRelacion(e);
+              setHasUnsavedChanges(true);
+            }}
+            onCopy={disableCopyPaste}
+            onPaste={disableCopyPaste}
+            placeholder={`Buscar por DNI o nombre (${rolActual === 'ESTUDIANTE' ? 'Familiar' : 'Estudiante'})`}
             autoComplete="off" // ✅ Evita sugerencias automáticas del navegador
             style={{ position: 'relative' }}
           />
@@ -1092,10 +1177,13 @@ return (
         <CInputGroupText>Tipo Relación</CInputGroupText>
         <CFormSelect
           value={nuevaEstructura.cod_tipo_relacion}
-          onChange={e => setNuevaEstructuraFamiliar(prev => ({
-            ...prev,
-            cod_tipo_relacion: e.target.value,
-          }))}
+          onChange={(e) => {
+            setNuevaEstructuraFamiliar(prev => ({
+              ...prev,
+              cod_tipo_relacion: e.target.value,
+            }));
+            setHasUnsavedChanges(true);
+          }}
         >
           <option value="">Tipo de Relación</option>
           {tipoRelacion.map(tipo => (
@@ -1140,7 +1228,12 @@ return (
               descripcion: value,
             }));
             setErrorMessages(prev => ({ ...prev, descripcion: '' }));
+            setHasUnsavedChanges(true);
           }}
+          
+          onCopy={disableCopyPaste}
+          onPaste={disableCopyPaste}
+
           placeholder="Descripción de la relación"
           required
         />
@@ -1156,7 +1249,8 @@ return (
   </CModalBody>
 
   <CModalFooter>
-    <CButton style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} onClick={() => setModalVisible(false)}>
+    <CButton style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} onClick={() => handleCloseModal(setModalVisible, resetNuevaEstructuraFamiliar)}
+>
       Cancelar
     </CButton>
     <CButton style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} onClick={handleCreateEstructura}>
@@ -1197,7 +1291,10 @@ return (
     <CFormInput
       type="text"
       value={buscadorRelacion}
-      onChange={handleBuscarRelacion}  
+      onChange={(e) => {
+        handleBuscarRelacion(e);
+        setHasUnsavedChanges(true);
+      }}  
       placeholder="Buscar por DNI o nombre"
       autoComplete="off"
     />
@@ -1236,10 +1333,14 @@ return (
         <CInputGroupText>Tipo Relación</CInputGroupText>
         <CFormSelect
           value={estructuraToUpdate.cod_tipo_relacion}
-          onChange={e => setEstructuraToUpdate(prev => ({
-            ...prev,
-            cod_tipo_relacion: e.target.value,
-          }))}
+          
+          onChange={(e) => {
+            setEstructuraToUpdate(prev => ({
+              ...prev,
+              cod_tipo_relacion: e.target.value,
+            }));
+            setHasUnsavedChanges(true);
+          }}
         >
           <option value="">Tipo de Relación</option>
           {tipoRelacion.map(tipo => (
@@ -1284,6 +1385,7 @@ return (
               descripcion: value,
             }));
             setErrorMessages(prev => ({ ...prev, descripcion: '' }));
+            setHasUnsavedChanges(true);
           }}
           placeholder="Descripción de la relación"
           required
@@ -1300,7 +1402,7 @@ return (
   </CModalBody>
 
   <CModalFooter>
-    <CButton style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} onClick={() => setModalUpdateVisible(false)}>
+    <CButton style={{ backgroundColor: '#6c757d', color: 'white', borderColor: '#6c757d' }} onClick={() => handleCloseModal(setModalUpdateVisible, resetEstructuraToUpdate)}>
       Cancelar
     </CButton>
     <CButton style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} onClick={handleUpdateEstructura}>
