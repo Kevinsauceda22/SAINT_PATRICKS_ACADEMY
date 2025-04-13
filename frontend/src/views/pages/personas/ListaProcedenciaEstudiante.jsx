@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilArrowLeft,cilUser  } from '@coreui/icons';
+import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilArrowLeft,cilUser, cilDescription, cilSpreadsheet, cilFile  } from '@coreui/icons';
 import swal from 'sweetalert2'; // Importar SweetAlert para mostrar mensajes de advertencia y éxito
 import * as XLSX from 'xlsx';        // Para generar archivos Excel
 import { saveAs } from 'file-saver';
@@ -874,15 +874,78 @@ const exportProcedenciaEstudianteToExcel = () => {
       <CIcon icon={cilUser} /> Ficha 
     </CButton>
 
-    <CDropdown>
-      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
-        Reportes
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={exportProcedenciaEstudianteToExcel}>Descargar en Excel</CDropdownItem>
-        <CDropdownItem onClick={ReporteProcedenciaEstudiantePDF}>Descargar en PDF</CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#6C8E58',
+      color: 'white',
+      fontSize: '0.85rem',
+      cursor: 'pointer',
+      minWidth: '120px',
+      height: '38px',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#5A784C';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#6C8E58';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reportes
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050,
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={exportProcedenciaEstudianteToExcel}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Descargar en Excel
+    </CDropdownItem>
+
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={ReporteProcedenciaEstudiantePDF}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilFile} size="sm" /> Descargar en PDF
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
+
+
   </CCol>
 </CRow>
 

@@ -57,6 +57,9 @@ const ListaContacto = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessages, setErrorMessages] = useState({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [modalDeleteVisible, setModalDeleteVisible] = useState(false);
+  const [contactoToDelete, setContactoToDelete] = useState({});
+
 
 
   const location = useLocation();
@@ -198,7 +201,10 @@ const handleCloseModal = (closeFunction, resetFields, initialValues, currentValu
 };
 
 
-
+const openDeleteModal = (contacto) => {
+  setContactoToDelete(contacto);
+  setModalDeleteVisible(true);
+};
 {/****************************************************************************************************************************************/}
 
 const resetNuevoContacto = () => {
@@ -379,51 +385,48 @@ const resetContactoToUpdate = () => {
 {/*************************************************FUNCION PARA BORRAR****************************************************************/}
   
   
-  const handleDeleteContacto = async (cod_contacto, descripcionContacto) => {
-    try {
-      const confirmResult = await swal.fire({
-        title: 'Confirmar Eliminación',
-        html: `¿Estás seguro de que deseas eliminar el contacto: <strong>${descripcionContacto || 'Sin descripción'}</strong>?`,
-        showCancelButton: true,
-        confirmButtonColor: '#FF6B6B',
-        cancelButtonColor: '#6C757D',
-        confirmButtonText: '<i class="fa fa-trash"></i> Eliminar',
-        cancelButtonText: 'Cancelar',
-        reverseButtons: true,
-        focusCancel: true,
-      });
-  
-      if (!confirmResult.isConfirmed) return;
-  
+const handleDeleteContacto = async () => {
+  if (!contactoToDelete || !contactoToDelete.cod_contacto) {
+      console.error("Error: contactoToDelete es inválido", contactoToDelete);
+      return;
+  }
+
+  try {
       const response = await fetch(
-        `http://localhost:4000/api/contacto/eliminarContacto/${encodeURIComponent(cod_contacto)}`,
-        { method: 'DELETE' }
+          `http://localhost:4000/api/contacto/eliminarContacto/${encodeURIComponent(contactoToDelete.cod_contacto)}`,
+          { method: 'DELETE' }
       );
-  
+
       const result = await response.json();
-  
+
       if (response.ok) {
-        setContacto((prevContactos) =>
-          prevContactos.filter((item) => item.cod_contacto !== cod_contacto)
-        );
-  
-        swal.fire({
-          icon: 'success',
-          title: 'Contacto eliminado',
-          text: result.Mensaje || 'Eliminado correctamente',
-        });
+          setContacto((prevContactos) =>
+              prevContactos.filter((item) => item.cod_contacto !== contactoToDelete.cod_contacto)
+          );
+
+          // 🔹 **Mostrar alerta de éxito**
+          swal.fire({
+              icon: 'success',
+              title: 'Eliminación exitosa',
+              text: 'El contacto ha sido eliminado correctamente.',
+          });
       } else {
-        throw new Error(result.Mensaje || 'Error al eliminar');
+          throw new Error(result.Mensaje || "Error al eliminar");
       }
-    } catch (error) {
-      console.error('Error eliminando el contacto:', error);
+  } catch (error) {
+      console.error("Error eliminando el contacto:", error);
+
+      // 🔹 **Mostrar alerta de error**
       swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: error.message || 'No se pudo eliminar el contacto.',
+          icon: 'error',
+          title: 'Error',
+          text: 'No se pudo eliminar el contacto.',
       });
-    }
-  };  
+  }
+
+  setModalDeleteVisible(false); // 🔄 Cerrar el modal después de eliminar
+  setContactoToDelete(null); // 🔄 Limpiar el contacto seleccionado
+};
 
   {/*****************************************************************************************************************************************/}
 const toggleEstado = async (contacto) => {
@@ -502,117 +505,157 @@ const toggleEstado = async (contacto) => {
     img.onload = () => {
       const pageWidth = doc.internal.pageSize.width;
   
-      // Encabezado
-      doc.addImage(img, 'PNG', 10, 10, 45, 45);
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
-  
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
-      doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
-      doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
-  
-      // Subtítulo
-      doc.setFontSize(14);
-      doc.setTextColor(0, 102, 51);
-      doc.text('Reporte de Contactos', pageWidth / 2, 50, { align: 'center' });
-  
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, 60, pageWidth - 10, 60);
-  
-      // Tabla de datos
-      const tableRows = filteredContacto.map((contacto, index) => ({
-        index: (index + 1).toString(),
-        nombre_persona: personaSeleccionada && personaSeleccionada.cod_persona === contacto.cod_persona
-          ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}`
-          : 'Información no disponible',
-        tipo_contacto: tiposContacto.find(tc => tc.cod_tipo_contacto === contacto.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido',
-        valor: contacto.Valor || 'N/D',
-      }));
-      
-      
-  
-      doc.autoTable({
-        startY: 65,
-        margin: { left: 10, right: 10 }, // Centrado de la tabla
-        columns: [
-          { header: '#', dataKey: 'index' },
-          { header: 'NOMBRE', dataKey: 'nombre_persona' },
-          { header: 'TIPO', dataKey: 'tipo_contacto' },
-          { header: 'VALOR', dataKey: 'valor' },
-        ],
-        body: tableRows,
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 10, // Tamaño de la fuente
-          halign: 'center',
-        },
-        styles: {
-          fontSize: 9, // Tamaño de la fuente
-          cellPadding: 4, // Relleno de las celdas
-        },
-        columnStyles: {
-          index: { cellWidth: 15 },
-          codigo_persona: { cellWidth: 45 },
-          tipo_contacto: { cellWidth: 40 },
-          valor: { cellWidth: 60 },
-        },
-        alternateRowStyles: {
-          fillColor: [240, 248, 255],
-        },
-  
-        didDrawPage: (data) => {
-          const pageCount = doc.internal.getNumberOfPages();
-          const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-  
-          // Pie de página
-          const footerY = doc.internal.pageSize.height - 10;
-          doc.setFontSize(10);
-          doc.setTextColor(0, 102, 51);
-          doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-  
-          const now = new Date();
-          const dateString = now.toLocaleDateString('es-HN', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          });
-          const timeString = now.toLocaleTimeString('es-HN', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          });
-          doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
-        },
-      });
-  
-      // Convertir PDF en Blob
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
-  
-      // Crear ventana con visor
-      const newWindow = window.open('', '_blank');
-      newWindow.document.write(`
-        <html>
-          <head><title>Reporte de Contactos</title></head>
-          <body style="margin:0;">
-            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-            <div style="position:fixed;top:10px;right:20px;">
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Contactos.pdf'; a.click();">
-                Descargar PDF
-              </button>
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="window.print();">
-                Imprimir PDF
-              </button>
-            </div>
-          </body>
-        </html>`);
+ // Encabezado
+doc.addImage(img, 'PNG', 10, 10, 45, 45);
+doc.setFontSize(18);
+doc.setTextColor(0, 102, 51);
+doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
+
+doc.setFontSize(10);
+doc.setTextColor(100);
+doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
+doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
+
+// Subtítulo
+doc.setFontSize(14);
+doc.setTextColor(0, 102, 51);
+doc.text('Reporte de Contactos', pageWidth / 2, 50, { align: 'center' });
+
+doc.setLineWidth(0.5);
+doc.setDrawColor(0, 102, 51);
+doc.line(10, 60, pageWidth - 10, 60);
+
+// Tabla de datos
+const tableRows = filteredContacto.map((contacto, index) => ({
+  index: (index + 1).toString(),
+  nombre_persona: personaSeleccionada && personaSeleccionada.cod_persona === contacto.cod_persona
+    ? `${personaSeleccionada.Nombre.toUpperCase()} ${personaSeleccionada.Segundo_nombre?.toUpperCase() || ''} ${personaSeleccionada.Primer_apellido.toUpperCase()} ${personaSeleccionada.Segundo_apellido?.toUpperCase() || ''}`
+    : 'Información no disponible',
+  tipo_contacto: tiposContacto.find(tc => tc.cod_tipo_contacto === contacto.cod_tipo_contacto)?.tipo_contacto.toUpperCase() || 'Desconocido',
+  valor: contacto.Valor || 'N/D',
+}));
+
+doc.autoTable({
+  startY: 65,
+  margin: { left: 10, right: 10 },
+  columns: [
+    { header: '#', dataKey: 'index' },
+    { header: 'NOMBRE', dataKey: 'nombre_persona' },
+    { header: 'TIPO', dataKey: 'tipo_contacto' },
+    { header: 'VALOR', dataKey: 'valor' },
+  ],
+  body: tableRows,
+  headStyles: {
+    fillColor: [0, 102, 51],
+    textColor: [255, 255, 255],
+    fontSize: 10,
+    halign: 'center',
+  },
+  styles: {
+    fontSize: 9,
+    cellPadding: 4,
+  },
+  columnStyles: {
+    index: { cellWidth: 15 },
+    codigo_persona: { cellWidth: 45 },
+    tipo_contacto: { cellWidth: 40 },
+    valor: { cellWidth: 60 },
+  },
+  alternateRowStyles: {
+    fillColor: [240, 248, 255],
+  },
+
+  didDrawPage: (data) => {
+    const pageCount = doc.internal.getNumberOfPages();
+    const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
+
+    const footerY = doc.internal.pageSize.height - 10;
+    doc.setFontSize(10);
+    doc.setTextColor(0, 102, 51);
+    doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
+
+    const now = new Date();
+    const dateString = now.toLocaleDateString('es-HN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    const timeString = now.toLocaleTimeString('es-HN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+    doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
+  },
+});
+
+// Convertir PDF en Blob
+const pdfBlob = doc.output('blob');
+const pdfURL = URL.createObjectURL(pdfBlob);
+
+// Crear ventana con visor y botones personalizados
+const newWindow = window.open('', '_blank');
+newWindow.document.write(`
+  <html>
+    <head>
+      <title>Reporte de Contactos</title>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100vw;
+          height: 100vh;
+        }
+        iframe {
+          width: 100vw;
+          height: 100vh;
+          border: none;
+        }
+        .icon-container {
+          position: fixed;
+          top: 15px;
+          right: 15px;
+          display: flex;
+          gap: 15px;
+          padding: 10px;
+          border-radius: 8px;
+        }
+        .icon-button {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 22px;
+          color: white;
+          position: relative;
+          z-index: 9999;
+        }
+        .icon-button:focus,
+        .icon-button:active {
+          outline: none;
+          box-shadow: none;
+        }
+      </style>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    </head>
+    <body>
+      <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+      <div class="icon-container">
+        <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Contactos.pdf'; a.click();">
+          <i class="fas fa-download"></i>
+        </button>
+        <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+          <i class="fas fa-print"></i>
+        </button>
+      </div>
+    </body>
+  </html>
+`);
+
     };
   
     img.onerror = () => {
@@ -672,8 +715,8 @@ const ReporteContactoExcel = () => {
   });
 
   // **Ajustar el ancho de las columnas**
-  worksheet.columns.forEach((column) => {
-      column.width = 25;
+  worksheet.columns.forEach((column, index) => {
+    column.width = index === 1 ? 50 : 25; // Columna "Nombre" más ancha
   });
 
   // **Crear archivo Excel**
@@ -841,9 +884,9 @@ const ReporteContactoExcel = () => {
               <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
                 <CIcon icon={cilPen} />
               </CButton>
-              <CButton color="danger" onClick={() => handleDeleteContacto(item.cod_contacto, item.Valor)} className="ms-2">
+              <CButton color="danger" onClick={() => openDeleteModal(item)} className="ms-2">
                 <CIcon icon={cilTrash} />
-              </CButton>
+            </CButton>
               {/* Botón de estado ahora dentro de acciones */}
               <CButton
                 style={{
@@ -1088,7 +1131,26 @@ const ReporteContactoExcel = () => {
 
 {/********************************************FIN MODAL PARA CREAR Y ACTUALIZAR*************************************************************/}
 
-
+<CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">
+    <CModalHeader>
+        <CModalTitle>Eliminar Contacto</CModalTitle>
+    </CModalHeader>
+    <CModalBody>
+        {contactoToDelete ? (
+            <>¿Estás seguro de que deseas eliminar el contacto </>
+        ) : (
+            "¿Estás seguro de que deseas eliminar este contacto?"
+        )}
+    </CModalBody>
+    <CModalFooter>
+        <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>
+            Cancelar
+        </CButton>
+        <CButton color="danger" onClick={handleDeleteContacto}>
+            Eliminar
+        </CButton>
+    </CModalFooter>
+</CModal>
 
     </CContainer>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilArrowLeft,cilUser  } from '@coreui/icons';
+import { cilSearch,cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilArrowLeft,cilUser,cilDescription, cilSpreadsheet, cilFile  } from '@coreui/icons';
 import swal from 'sweetalert2'; // Importar SweetAlert para mostrar mensajes de advertencia y éxito
 import * as XLSX from 'xlsx';        // Para generar archivos Excel
 import { saveAs } from 'file-saver';
@@ -120,10 +120,10 @@ const ListaFichaEstudiante = () => {
     img.onload = () => {
       const pageWidth = doc.internal.pageSize.width;
   
-      // **Encabezado**
+      // Encabezado
       doc.addImage(img, 'PNG', 10, 10, 45, 45);
       doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51); // Color verde
+      doc.setTextColor(0, 102, 51);
       doc.text("SAINT PATRICK'S ACADEMY", pageWidth / 2, 24, { align: 'center' });
   
       doc.setFontSize(10);
@@ -132,16 +132,15 @@ const ListaFichaEstudiante = () => {
       doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
       doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
   
-      // **Título del reporte**
       doc.setFontSize(14);
-      doc.setTextColor(0, 102, 51); // Color verde
+      doc.setTextColor(0, 102, 51);
       doc.text('Ficha del Estudiante', pageWidth / 2, 50, { align: 'center' });
   
       doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51); // Línea verde
+      doc.setDrawColor(0, 102, 51);
       doc.line(10, 60, pageWidth - 10, 60);
   
-      // **Filas de la tabla**
+      // Datos
       const tableRows = [
         { label: "Nombre Completo", value: fichaEstudiante.Nombre_Completo?.toUpperCase() ?? "NO DISPONIBLE" },
         { label: "Tipo de Documento", value: fichaEstudiante.Tipo_Documento?.toUpperCase() ?? "NO DISPONIBLE" },
@@ -159,21 +158,21 @@ const ListaFichaEstudiante = () => {
   
       const padreRows = [
         { label: "Nombre", value: fichaEstudiante.Nombre_Padre_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },
-        { label: "Teléfono", value: fichaEstudiante.Telefono_Movil_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Teléfono Móvil", value: fichaEstudiante.Telefono_Movil_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },
+        { label: "Teléfono Fijo", value: fichaEstudiante.Telefono_Fijo_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },  // Nuevo campo
         { label: "Correo Electrónico", value: fichaEstudiante.Correo_Tutor?.toUpperCase() ?? "NO DISPONIBLE" },
       ];
   
-      // ✅ Secciones del PDF
       const addSectionTitle = (title, y) => {
-        doc.setFontSize(12); // Reducido el tamaño del subtítulo
+        doc.setFontSize(12);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 102, 51); // Color verde
+        doc.setTextColor(0, 102, 51);
         doc.text(title, 15, y);
-        doc.setFontSize(10); // Vuelvo al tamaño normal para el contenido
+        doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
       };
   
-      let yPosition = 65; // Ajustado para que no tape el logo
+      let yPosition = 65;
   
       addSectionTitle('DATOS DEL ESTUDIANTE', yPosition);
       yPosition += 5;
@@ -185,8 +184,8 @@ const ListaFichaEstudiante = () => {
         styles: { fontSize: 10 },
         columnStyles: { label: { fontStyle: "bold", cellWidth: 60 }, value: { halign: 'left', cellWidth: 80 } },
         headStyles: {
-          fillColor: [0, 102, 51], // Fondo verde para el encabezado de la tabla
-          textColor: [255, 255, 255], // Texto blanco
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
           fontSize: 9,
           halign: 'center',
         },
@@ -203,8 +202,8 @@ const ListaFichaEstudiante = () => {
         styles: { fontSize: 10 },
         columnStyles: { label: { fontStyle: "bold", cellWidth: 60 }, value: { halign: 'left', cellWidth: 80 } },
         headStyles: {
-          fillColor: [0, 102, 51], // Fondo verde para el encabezado de la tabla
-          textColor: [255, 255, 255], // Texto blanco
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
           fontSize: 9,
           halign: 'center',
         },
@@ -221,48 +220,91 @@ const ListaFichaEstudiante = () => {
         styles: { fontSize: 10 },
         columnStyles: { label: { fontStyle: "bold", cellWidth: 60 }, value: { halign: 'left', cellWidth: 80 } },
         headStyles: {
-          fillColor: [0, 102, 51], // Fondo verde para el encabezado de la tabla
-          textColor: [255, 255, 255], // Texto blanco
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
           fontSize: 9,
           halign: 'center',
         },
       });
   
-      // **Pie de página**
+      // Pie de página
       const footerY = doc.internal.pageSize.height - 10;
       doc.setFontSize(10);
-      doc.setTextColor(0, 102, 51); // Color verde
+      doc.setTextColor(0, 102, 51);
       const now = new Date();
       doc.text(`Fecha de generación: ${now.toLocaleDateString()} Hora: ${now.toLocaleTimeString()}`, 10, footerY);
       doc.text(`Página 1 de 1`, pageWidth - 10, footerY, { align: 'right' });
   
-      // **Exportación y vista previa en ventana emergente**
+      // Crear el PDF y abrir la vista previa con botones e íconos
       const pdfBlob = doc.output('blob');
       const pdfURL = URL.createObjectURL(pdfBlob);
       const newWindow = window.open('', '_blank');
       newWindow.document.write(`
         <html>
-          <head><title>Ficha del Estudiante</title></head>
-          <body style="margin:0;">
-            <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-            <div style="position:fixed;top:10px;right:20px;">
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Ficha_Estudiante.pdf'; a.click();">
-                Descargar PDF
+          <head>
+            <title>Ficha del Estudiante</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100vw;
+                height: 100vh;
+              }
+              iframe {
+                width: 100vw;
+                height: 100vh;
+                border: none;
+              }
+              .icon-container {
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                display: flex;
+                gap: 15px;
+                padding: 10px;
+                border-radius: 8px;
+              }
+              .icon-button {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 22px;
+                color: white;
+                position: relative;
+                z-index: 9999;
+              }
+              .icon-button:focus,
+              .icon-button:active {
+                outline: none;
+                box-shadow: none;
+              }
+            </style>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+          </head>
+          <body>
+            <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+            <div class="icon-container">
+              <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Ficha_Estudiante.pdf'; a.click();">
+                <i class="fas fa-download"></i>
               </button>
-              <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-                onclick="window.print();">
-                Imprimir PDF
+              <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+                <i class="fas fa-print"></i>
               </button>
             </div>
           </body>
-        </html>`);
+        </html>
+      `);
     };
   
     img.onerror = () => {
       alert('No se pudo cargar el logo.');
     };
   };
+  
   
   
   {/************************************************************************************************************************************/}
@@ -287,15 +329,22 @@ const ListaFichaEstudiante = () => {
     worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
     worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
   
-    // **Encabezados de la tabla**
-    const headerRow = worksheet.addRow(['Campo', 'Valor']);
-    headerRow.eachCell((cell) => {
-      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-    });
+    // **Sección Datos del Estudiante**
+    worksheet.addRow(['']);
+    worksheet.mergeCells('A3:B3');
+    worksheet.getCell('A3').value = 'DATOS DEL ESTUDIANTE';
+    worksheet.getCell('A3').font = { bold: true, size: 14, color: { argb: 'FFFFFF' } };
+    worksheet.getCell('A3').alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell('A3').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
   
-    // **Datos del estudiante**
+    // Añadir bordes al encabezado de la sección "Datos del Estudiante"
+    worksheet.getCell('A3').border = {
+      top: { style: 'thin', color: { argb: '000000' } },
+      left: { style: 'thin', color: { argb: '000000' } },
+      bottom: { style: 'thin', color: { argb: '000000' } },
+      right: { style: 'thin', color: { argb: '000000' } },
+    };
+  
     const datosEstudiante = [
       ['Nombre Completo', fichaEstudiante.Nombre_Completo],
       ['Tipo de Documento', fichaEstudiante.Tipo_Documento ?? 'No disponible'],
@@ -303,14 +352,7 @@ const ListaFichaEstudiante = () => {
       ['Fecha de Nacimiento', new Date(fichaEstudiante.Fecha_Nacimiento).toLocaleDateString()],
       ['Género', fichaEstudiante.Genero === 1 ? "Masculino" : fichaEstudiante.Genero === 2 ? "Femenino" : "No especificado"],
       ['Nacionalidad', fichaEstudiante.Nacionalidad ?? 'No disponible'],
-      ['Estado', fichaEstudiante.Estado ? 'Activo' : 'Inactivo'],
-      ['Dirección', fichaEstudiante.Direccion ?? 'No disponible'],
-      ['Departamento', fichaEstudiante.Departamento ?? 'No disponible'],
-      ['Municipio', fichaEstudiante.Municipio ?? 'No disponible'],
-      ['Nombre del Padre/Tutor', fichaEstudiante.Nombre_Padre_Tutor ?? 'No disponible'],
-      ['Teléfono Móvil Tutor', fichaEstudiante.Telefono_Movil_Tutor ?? 'No disponible'],
-      ['Teléfono Fijo Tutor', fichaEstudiante.Telefono_Fijo_Tutor ?? 'No disponible'],
-      ['Correo Tutor', fichaEstudiante.Correo_Tutor ?? 'No disponible']
+      ['Estado', fichaEstudiante.Estado ? 'Activo' : 'Inactivo']
     ];
   
     datosEstudiante.forEach((fila) => {
@@ -326,10 +368,80 @@ const ListaFichaEstudiante = () => {
       });
     });
   
-    // **Ajustar el ancho de las columnas**
-    worksheet.columns.forEach((column) => {
-      column.width = 25;
+    // **Sección Dirección y Ubicación**
+    worksheet.addRow(['']);
+    worksheet.mergeCells('A' + (worksheet.lastRow.number + 1) + ':B' + (worksheet.lastRow.number + 1));
+    worksheet.getCell('A' + (worksheet.lastRow.number)).value = 'DIRECCIÓN Y UBICACIÓN';
+    worksheet.getCell('A' + (worksheet.lastRow.number)).font = { bold: true, size: 14, color: { argb: 'FFFFFF' } };
+    worksheet.getCell('A' + (worksheet.lastRow.number)).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell('A' + (worksheet.lastRow.number)).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+  
+    // Añadir bordes al encabezado de la sección "Dirección y Ubicación"
+    worksheet.getCell('A' + (worksheet.lastRow.number)).border = {
+      top: { style: 'thin', color: { argb: '000000' } },
+      left: { style: 'thin', color: { argb: '000000' } },
+      bottom: { style: 'thin', color: { argb: '000000' } },
+      right: { style: 'thin', color: { argb: '000000' } },
+    };
+  
+    const direccionUbicacion = [
+      ['Dirección', fichaEstudiante.Direccion ?? 'No disponible'],
+      ['Departamento', fichaEstudiante.Departamento ?? 'No disponible'],
+      ['Municipio', fichaEstudiante.Municipio ?? 'No disponible'],
+    ];
+  
+    direccionUbicacion.forEach((fila) => {
+      const row = worksheet.addRow(fila);
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
     });
+  
+    // **Sección Información del Padre**
+    worksheet.addRow(['']);
+    worksheet.mergeCells('A' + (worksheet.lastRow.number + 1) + ':B' + (worksheet.lastRow.number + 1));
+    worksheet.getCell('A' + (worksheet.lastRow.number)).value = 'INFORMACIÓN DEL PADRE';
+    worksheet.getCell('A' + (worksheet.lastRow.number)).font = { bold: true, size: 14, color: { argb: 'FFFFFF' } };
+    worksheet.getCell('A' + (worksheet.lastRow.number)).alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell('A' + (worksheet.lastRow.number)).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+  
+    // Añadir bordes al encabezado de la sección "Información del Padre"
+    worksheet.getCell('A' + (worksheet.lastRow.number)).border = {
+      top: { style: 'thin', color: { argb: '000000' } },
+      left: { style: 'thin', color: { argb: '000000' } },
+      bottom: { style: 'thin', color: { argb: '000000' } },
+      right: { style: 'thin', color: { argb: '000000' } },
+    };
+  
+    const infoPadre = [
+      ['Nombre del Padre', fichaEstudiante.Nombre_Padre ?? 'No disponible'],
+      ['Teléfono Móvil Padre', fichaEstudiante.Telefono_Movil_Padre ?? 'No disponible'],
+      ['Teléfono Fijo Padre', fichaEstudiante.Telefono_Fijo_Padre ?? 'No disponible'],
+      ['Correo Padre', fichaEstudiante.Correo_Padre ?? 'No disponible']
+    ];
+  
+    infoPadre.forEach((fila) => {
+      const row = worksheet.addRow(fila);
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    });
+  
+    // **Ajustar el ancho de las columnas**
+    worksheet.getColumn(1).width = 40; // Aumentar el tamaño de la columna 'Campo'
+    worksheet.getColumn(2).width = 50; // Aumentar el tamaño de la columna 'Valor'
   
     // **Crear archivo Excel**
     workbook.xlsx.writeBuffer().then((buffer) => {
@@ -385,18 +497,78 @@ const ListaFichaEstudiante = () => {
     </CButton>
 
     {/* Botón Reportes alineado a la derecha */}
-    <CDropdown>
-      <CDropdownToggle 
-        className="btn-reportes" 
-        style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '160px', height: '38px' }}
-      >
-        Reportes
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={exportFichaEstudianteToExcel}>Descargar en Excel</CDropdownItem>
-        <CDropdownItem onClick={ReporteFichaEstudiantePDF}>Descargar en PDF</CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#6C8E58',
+      color: 'white',
+      fontSize: '0.85rem',
+      cursor: 'pointer',
+      minWidth: '120px',
+      height: '38px',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#5A784C';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#6C8E58';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reportes
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050,
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={exportFichaEstudianteToExcel}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Descargar en Excel
+    </CDropdownItem>
+
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={ReporteFichaEstudiantePDF}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilFile} size="sm" /> Descargar en PDF
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
+
+
   </div>
 </div>
 

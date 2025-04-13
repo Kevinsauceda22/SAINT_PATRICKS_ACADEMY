@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilArrowLeft } from '@coreui/icons'
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription, cilSave, cilFile , cilSpreadsheet ,cilArrowLeft } from '@coreui/icons'
 import swal from 'sweetalert2' // Importar SweetAlert
 import axios from 'axios'
 import ExcelJS from 'exceljs';
@@ -897,15 +897,77 @@ return (
       </CButton>
     )}
 
-    <CDropdown>
-      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
-        Reportes
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={ReporteEstructuraExcel}>Descargar en Excel</CDropdownItem>
-        <CDropdownItem onClick={ReporteEstructuraPDF}>Descargar en PDF</CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+    <CDropdownToggle
+        style={{
+            backgroundColor: '#6C8E58',
+            color: 'white',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            minWidth: '120px',
+            height: '38px',
+            transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#5A784C';
+            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#6C8E58';
+            e.currentTarget.style.boxShadow = 'none';
+        }}
+    >
+        <CIcon icon={cilDescription} /> Reportes
+    </CDropdownToggle>
+    <CDropdownMenu
+        style={{
+            position: 'absolute',
+            zIndex: 1050,
+            backgroundColor: '#fff',
+            boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+            borderRadius: '4px',
+            overflow: 'hidden',
+        }}
+    >
+        {/* Reporte PDF */}
+        <CDropdownItem
+            onClick={ReporteEstructuraPDF}
+            style={{
+                cursor: 'pointer',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                padding: '0.5rem 1rem',
+                fontSize: '0.85rem',
+                color: '#333',
+                borderBottom: '1px solid #eaeaea',
+                transition: 'background-color 0.3s',
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+        >
+            <CIcon icon={cilFile} size="sm" /> Descargar en PDF
+        </CDropdownItem>
+
+        {/* Reporte Excel */}
+        <CDropdownItem
+            onClick={ReporteEstructuraExcel}
+            style={{
+                cursor: 'pointer',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                padding: '0.5rem 1rem',
+                fontSize: '0.85rem',
+                color: '#333',
+                transition: 'background-color 0.3s',
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+            onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+        >
+            <CIcon icon={cilSpreadsheet} size="sm" /> Descargar en Excel
+        </CDropdownItem>
+    </CDropdownMenu>
+</CDropdown>
+
   </CCol>
 </CRow>
 
@@ -983,6 +1045,7 @@ return (
   </div>
 </div>
 
+{/********************************************************************************************************************************************/}
       <div className="table-container">
         <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: '500px' }}>
           <CTable striped>
@@ -1017,7 +1080,7 @@ return (
                       {(currentPage - 1) * recordsPerPage + index + 1}
                     </CTableDataCell>
 
-                    {rolActual === 'ESTUDIANTE' ? (
+                    {estructura.cod_persona_estudiante === personaSeleccionada.cod_persona ? (
                       <>
                         <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
                           {personas.find(p => p.cod_persona === estructura.cod_persona_estudiante)?.fullName?.toUpperCase() || 'N/A'}
@@ -1036,6 +1099,7 @@ return (
                         </CTableDataCell>
                       </>
                     )}
+
 
                     <CTableDataCell style={{ borderRight: '1px solid #ddd' }} className="text-center">
                       {tipoRelacion.find(tipo => tipo.Cod_tipo_relacion === estructura.cod_tipo_relacion)?.tipo_relacion?.toUpperCase() || 'N/A'}
@@ -1062,7 +1126,7 @@ return (
       </CButton>
     )}
   </div>
-</CTableDataCell>
+      </CTableDataCell>
                   </CTableRow>
                 ))
               ) : (

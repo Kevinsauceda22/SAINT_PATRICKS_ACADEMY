@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
-import { cilXCircle, cilCheckCircle, cilHistory } from '@coreui/icons';
+import { cilXCircle, cilCheckCircle, cilHistory,  cilSpreadsheet ,cilFile, cilDescription  } from '@coreui/icons';
 import { jsPDF } from 'jspdf';
 import ExcelJS from 'exceljs';
 import 'jspdf-autotable';
@@ -12,8 +12,6 @@ import {
   cilTrash,
   cilPlus,
   cilSave,
-  cilDescription,
-  cilInfo,
   cilContact,
   cilPeople,
 } from '@coreui/icons'
@@ -1461,15 +1459,78 @@ return (
         <CIcon icon={cilPlus} /> Nuevo
       </CButton>
     )}
-    <CDropdown>
-      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
-        Reportes
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={ReportePersonasExcel}>Descargar en Excel</CDropdownItem>
-        <CDropdownItem onClick={ReportePersonasPDF}>Descargar en PDF</CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+
+<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#6C8E58',
+      color: 'white',
+      fontSize: '0.85rem',
+      cursor: 'pointer',
+      minWidth: '120px',
+      height: '38px',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#5A784C';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#6C8E58';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reportes
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050,
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={ReportePersonasExcel}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Descargar en Excel
+    </CDropdownItem>
+
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={ReportePersonasPDF}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilFile} size="sm" /> Descargar en PDF
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
+
   </CCol>
 </CRow>
 

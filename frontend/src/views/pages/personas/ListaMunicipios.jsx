@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CIcon } from '@coreui/icons-react';
-import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilInfo, cilDescription} from '@coreui/icons';
+import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription, cilSpreadsheet, cilFile} from '@coreui/icons';
 import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
 import swal from 'sweetalert2'; // Importar SweetAlert
 import ExcelJS from 'exceljs';
@@ -846,18 +846,78 @@ const exportMunicipiosToExcel = () => {
       </CButton>
     )}
 
-    {/* Botón de Reporte */}
-    <CDropdown>
-      <CDropdownToggle
-        style={{ backgroundColor: '#6C8E58', color: 'white' }}
-      >
-        Reportes
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={exportMunicipiosToExcel}>Descargar en Excel</CDropdownItem>
-        <CDropdownItem onClick={ReporteMunicipiosPDF}>Descargar en PDF</CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#6C8E58',
+      color: 'white',
+      fontSize: '0.85rem',
+      cursor: 'pointer',
+      minWidth: '120px',
+      height: '38px',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#5A784C';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#6C8E58';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reportes
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050,
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={exportMunicipiosToExcel}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Descargar en Excel
+    </CDropdownItem>
+
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={ReporteMunicipiosPDF}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilFile} size="sm" /> Descargar en PDF
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
+
+
   </CCol>
 </CRow>
 
@@ -965,39 +1025,36 @@ const exportMunicipiosToExcel = () => {
           </CTableDataCell>
 
           <CTableDataCell className="text-center">
-            <div className="d-flex justify-content-center">
-              {canUpdate && (
-                <CButton
-                  color="warning"
-                  onClick={() => openUpdateModal(municipio)}
-                  style={{ marginRight: '10px' }}
-                  disabled={municipio.estado === 0}
-                  title={municipio.estado ? 'Editar municipio' : 'Municipio inactivo'}
-                >
-                  <CIcon icon={cilPen} />
-                </CButton>
-              )}
+  <div className="d-flex justify-content-center gap-2">
+    {canUpdate && (
+      <CButton
+        color="warning"
+        onClick={() => openUpdateModal(municipio)}
+        disabled={municipio.estado === 0}
+        title={municipio.estado ? 'Editar municipio' : 'Municipio inactivo'}
+      >
+        <CIcon icon={cilPen} />
+      </CButton>
+    )}
+    {/* Botón de Activar/Inactivar */}
+    <CButton
+      style={{
+        backgroundColor: municipio.estado ? '#4CAF50' : '#F44336',
+        color: 'white',
+      }}
+      onClick={() => toggleEstado(municipio)}
+      disabled={loading}
+    >
+      {loading ? 'Cambiando...' : municipio.estado ? 'Activo' : 'Inactivo'}
+    </CButton>
+    {canDelete && (
+      <CButton color="danger" onClick={() => openDeleteModal(municipio)}>
+        <CIcon icon={cilTrash} />
+      </CButton>
+    )}
+  </div>
+</CTableDataCell>
 
-              {canDelete && (
-                <CButton color="danger" onClick={() => openDeleteModal(municipio)}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
-              )}
-
-              {/* Botón de Activar/Inactivar */}
-              <CButton
-                style={{
-                  backgroundColor: municipio.estado ? '#4CAF50' : '#F44336',
-                  color: 'white',
-                  marginLeft: '10px',
-                }}
-                onClick={() => toggleEstado(municipio)}
-                disabled={loading}
-              >
-                {loading ? 'Cambiando...' : municipio.estado ? 'Activo' : 'Inactivo'}
-              </CButton>
-            </div>
-          </CTableDataCell>
         </CTableRow>
       ))}
     </CTableBody>

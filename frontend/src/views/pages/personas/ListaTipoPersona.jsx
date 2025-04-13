@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios'; // Asegúrate de instalar axios si no lo tienes
-import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilFile } from '@coreui/icons';
+import { cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave,cilDescription, cilSpreadsheet, cilFile } from '@coreui/icons';
 import { CIcon } from '@coreui/icons-react';
 import ExcelJS from 'exceljs';
 import swal from 'sweetalert2';
@@ -770,17 +770,77 @@ const exportToExcel = () => {
       </CButton>
     )}
     {/* Botón de Reporte */}
-    <CDropdown>
-      <CDropdownToggle
-        style={{ backgroundColor: '#6C8E58', color: 'white' }}
-      >
-        Reportes
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={exportToExcel}>Descargar en Excel</CDropdownItem>
-        <CDropdownItem onClick={exportToPDF}>Descargar en PDF</CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#6C8E58',
+      color: 'white',
+      fontSize: '0.85rem',
+      cursor: 'pointer',
+      minWidth: '120px',
+      height: '38px',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#5A784C';
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#6C8E58';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reportes
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050,
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={exportToExcel}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Descargar en Excel
+    </CDropdownItem>
+
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={exportToPDF}
+      style={{
+        cursor: 'pointer',
+        outline: 'none',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#f5f5f5')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilFile} size="sm" /> Descargar en PDF
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
+
   </CCol>
 </CRow>
 
@@ -881,41 +941,35 @@ const exportToExcel = () => {
           {tipoPersona.Tipo_persona.toUpperCase()}
         </CTableDataCell>
         <CTableDataCell className="text-center">
-          <div className="d-flex justify-content-center">
-            {canUpdate && (
-              <CButton
-                color="warning"
-                onClick={() => openUpdateModal(tipoPersona)}
-                style={{ marginRight: '10px' }}
-                title="Editar tipo de persona"
-              >
-                <CIcon icon={cilPen} />
-              </CButton>
-            )}
+  <div className="d-flex justify-content-center gap-2">
+    {canUpdate && (
+      <CButton
+        color="warning"
+        onClick={() => openUpdateModal(tipoPersona)}
+        title="Editar tipo de persona"
+      >
+        <CIcon icon={cilPen} />
+      </CButton>
+    )}
+    {/* Botón de Activar/Inactivar */}
+    <CButton
+      style={{
+        backgroundColor: tipoPersona.estado === 1 ? '#4CAF50' : '#F44336',
+        color: 'white',
+      }}
+      onClick={() => toggleEstado(tipoPersona)}
+      disabled={loading}
+    >
+      {loading ? 'Cambiando...' : tipoPersona.estado === 1 ? 'Activo' : 'Inactivo'}
+    </CButton>
+    {canDelete && (
+      <CButton color="danger" onClick={() => openDeleteModal(tipoPersona)}>
+        <CIcon icon={cilTrash} />
+      </CButton>
+    )}
+  </div>
+</CTableDataCell>
 
-            {canDelete && (
-              <CButton
-                color="danger"
-                onClick={() => openDeleteModal(tipoPersona)}
-              >
-                <CIcon icon={cilTrash} />
-              </CButton>
-            )}
-
-            {/* Botón de Activar/Inactivar */}
-            <CButton
-              style={{
-                backgroundColor: tipoPersona.estado === 1 ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
-                color: 'white',
-                marginLeft: '10px',
-              }}
-              onClick={() => toggleEstado(tipoPersona)} // Cambia el estado de Tipo Persona
-              disabled={loading} // Deshabilitar mientras se procesa
-            >
-              {loading ? 'Cambiando...' : tipoPersona.estado === 1 ? 'Activo' : 'Inactivo'}
-            </CButton>
-          </div>
-        </CTableDataCell>
       </CTableRow>
     ))}
   </CTableBody>
