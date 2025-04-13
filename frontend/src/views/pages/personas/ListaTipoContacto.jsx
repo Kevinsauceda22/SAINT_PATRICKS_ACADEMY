@@ -471,10 +471,16 @@ const handleSearch = (event) => {
   setCurrentPage(1);
 };
 
-const filteredTipoContacto = tipoContacto.filter((tipoContacto) => 
-  tipoContacto.tipo_contacto &&
-  tipoContacto.tipo_contacto.toLowerCase().includes(searchTerm.toLowerCase())
-);
+const filteredTipoContacto = tipoContacto.filter((tipoContacto) => {
+  // Convertimos estado a texto
+  const estadoTexto = tipoContacto.estado === 1 ? 'ACTIVO' : tipoContacto.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+
+  return (
+    tipoContacto.tipo_contacto &&
+    tipoContacto.tipo_contacto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+  );
+});
 
 const indexOfLastRecord = currentPage * recordsPerPage;
 const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;

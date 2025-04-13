@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'; 
 import { CIcon } from '@coreui/icons-react';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilBrushAlt , cilXCircle, cilCheckCircle, cilUser,  cilSave, cilArrowLeft } from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilBrushAlt , cilXCircle, cilCheckCircle, cilUser,  cilSave, cilArrowLeft,cilDescription, cilFile, cilSpreadsheet   } from '@coreui/icons';
 import swal from 'sweetalert2';
 import axios from 'axios'; 
 import { useNavigate } from 'react-router-dom';
@@ -783,15 +783,75 @@ const ReporteContactoExcel = () => {
       <CIcon icon={cilPlus} /> Nuevo
     </CButton>
 
-    <CDropdown>
-      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white', minWidth: '120px', height: '38px' }}>
-        Reporte
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem onClick={ReporteContactoPDF}>Descargar en PDF</CDropdownItem>
-        <CDropdownItem onClick={ReporteContactoExcel}>Descargar en Excel</CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#4B6251', // 🔄 Ahora usa el color estándar
+      color: 'white',
+      fontSize: '0.85rem',
+      cursor: 'pointer',
+      minWidth: '120px',
+      height: '38px',
+      transition: 'all 0.3s ease',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = '#3F5044'; // 🔄 Oscurece al pasar el mouse
+      e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = '#4B6251';
+      e.currentTarget.style.boxShadow = 'none';
+    }}
+  >
+    <CIcon icon={cilDescription} /> Reporte
+  </CDropdownToggle>
+  <CDropdownMenu
+    style={{
+      position: 'absolute',
+      zIndex: 1050,
+      backgroundColor: '#fff',
+      boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.2)',
+      borderRadius: '4px',
+      overflow: 'hidden',
+    }}
+  >
+    {/* Reporte PDF */}
+    <CDropdownItem
+      onClick={ReporteContactoPDF} 
+      style={{
+        cursor: 'pointer',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        borderBottom: '1px solid #eaeaea',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#E0E0E0')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilFile} size="sm" /> Descargar en PDF
+    </CDropdownItem>
+
+    {/* Reporte Excel */}
+    <CDropdownItem
+      onClick={ReporteContactoExcel} 
+      style={{
+        cursor: 'pointer',
+        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
+        fontSize: '0.85rem',
+        color: '#333',
+        transition: 'background-color 0.3s',
+      }}
+      onMouseOver={(e) => (e.target.style.backgroundColor = '#E0E0E0')}
+      onMouseOut={(e) => (e.target.style.backgroundColor = 'transparent')}
+    >
+      <CIcon icon={cilSpreadsheet} size="sm" /> Descargar en Excel
+    </CDropdownItem>
+  </CDropdownMenu>
+</CDropdown>
+
   </CCol>
 </CRow>
 
@@ -1121,11 +1181,16 @@ const ReporteContactoExcel = () => {
     <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, contactoToUpdate ? resetContactoToUpdate : resetNuevoContacto)}>
       Cancelar
     </CButton>
-    <CButton onClick={handleCreateOrUpdate} style={{ backgroundColor: '#28a745', color: 'white' }}>
-      <CIcon icon={contactoToUpdate ? cilPen : cilSave} />
-      &nbsp;
-      {contactoToUpdate ? 'Actualizar' : 'Guardar'}
-    </CButton>
+    <CButton 
+  onClick={handleCreateOrUpdate} 
+  style={{ backgroundColor: '#4B6251', color: 'white' }}
+>
+  <CIcon icon={cilSave} />
+  &nbsp;
+  Guardar
+</CButton>
+
+
   </CModalFooter> 
 </CModal>
 

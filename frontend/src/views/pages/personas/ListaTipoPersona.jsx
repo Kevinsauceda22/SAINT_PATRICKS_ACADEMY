@@ -503,11 +503,18 @@ const openDeleteModal = (tipoPersona) => {
   };
   
   const filteredTipoPersona = Array.isArray(tipoPersona) 
-  ? tipoPersona.filter((tipoPersona) =>
-      tipoPersona.Tipo_persona &&
-      tipoPersona.Tipo_persona.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+  ? tipoPersona.filter((tipoPersona) => {
+      // Convertimos estado a texto
+      const estadoTexto = tipoPersona.estado === 1 ? 'ACTIVO' : tipoPersona.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+
+      return (
+        tipoPersona.Tipo_persona &&
+        tipoPersona.Tipo_persona.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+      );
+    })
   : [];
+
   
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;

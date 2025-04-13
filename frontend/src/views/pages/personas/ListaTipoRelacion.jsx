@@ -241,48 +241,6 @@ const capitalizeWords = (str) => {
 
 {/*************************************************************************************************************************************/}
 
-const handleEstructuraFamiliarInputChange = (e, setFunction) => {
-  let value = e.target.value.trim(); // 🔹 Eliminamos espacios al inicio y al final
-
-  // 🔹 **No permitir más de un espacio consecutivo**
-  value = value.replace(/\s{2,}/g, ' ');
-
-  // 🔹 **No permitir que una letra se repita más de 3 veces consecutivamente**
-  if (/([a-zA-ZÁÉÍÓÚáéíóúÑñ])\1{2,}/.test(value)) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Repetición de letras',
-      text: 'No se permite que la misma letra se repita más de 3 veces consecutivas.',
-    });
-    return;
-  }
-
-  // 🔹 **Validar longitud mínima**
-  if (value.length <= 2) {
-    setRelacionError('La relación debe tener más de 2 letras.');
-  } else {
-    setRelacionError(''); // No hay error
-  }
-
-  // 🔹 **Validación adicional: evitar caracteres especiales**
-  if (!/^[a-zA-ZÁÉÍÓÚáéíóúÑñ\s]+$/.test(value)) {
-    swal.fire({
-      icon: 'warning',
-      title: 'Caracteres no permitidos',
-      text: 'Solo se permiten letras y espacios en la relación.',
-    });
-    return;
-  }
-
-  // 🔹 **Guardar el valor en el estado**
-  setFunction((prevState) => ({
-    ...prevState,
-    tipo_relacion: value,
-  }));
-
-  setHasUnsavedChanges(true); // 🔄 Marcar cambios no guardados
-};
-
 {/*******************************************************************************************************************************************/}
     // Función para cerrar el modal con advertencia si hay cambios sin guardar
     const handleCloseModal = (closeFunction, resetFields) => {
@@ -515,11 +473,17 @@ const handleSearch = (event) => {
   setCurrentPage(1);
 };
 
-// Filtrado de registros según el término de búsqueda
-const filteredTipoRelacion = tipoRelacion.filter((item) =>
-  item.tipo_relacion &&
-  item.tipo_relacion.toLowerCase().includes(searchTerm.toLowerCase())
-);
+// Filtrado de registros según el término de búsqueda, incluyendo estado
+const filteredTipoRelacion = tipoRelacion.filter((item) => {
+  // Convertimos estado a texto
+  const estadoTexto = item.estado === 1 ? 'ACTIVO' : item.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+
+  return (
+    item.tipo_relacion &&
+    item.tipo_relacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+  );
+});
 
 
 // Cálculo de la paginación

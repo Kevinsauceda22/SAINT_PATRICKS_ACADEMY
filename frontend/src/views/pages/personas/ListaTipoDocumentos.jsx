@@ -591,12 +591,18 @@ const handleSearch = (event) => {
   setCurrentPage(1);
 };
 
-const filteredTipoDocumento = tipoDocumento.filter((tipoDocumento) => 
-  (tipoDocumento.tipo_documento &&
-    tipoDocumento.tipo_documento.toLowerCase().includes(searchTerm.toLowerCase())) ||
-  (tipoDocumento.descripcion &&
-    tipoDocumento.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
-);
+const filteredTipoDocumento = tipoDocumento.filter((tipoDocumento) => {
+  // Convertimos estado a texto
+  const estadoTexto = tipoDocumento.estado === 1 ? 'ACTIVO' : tipoDocumento.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+
+  return (
+    (tipoDocumento.tipo_documento &&
+      tipoDocumento.tipo_documento.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (tipoDocumento.descripcion &&
+      tipoDocumento.descripcion.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+  );
+});
 
 const indexOfLastRecord = currentPage * recordsPerPage;
 const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;

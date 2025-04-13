@@ -491,10 +491,17 @@ const handleSearch = (event) => {
 };
 
 // Filtrado
-const filteredGeneroPersona = generoPersona.filter((genero) => 
-  genero.Tipo_genero && 
-  genero.Tipo_genero.toLowerCase().includes(searchTerm.toLowerCase())
-);
+const filteredGeneroPersona = generoPersona.filter((genero) => {
+  // Convertimos estado a texto
+  const estadoTexto = genero.estado === 1 ? 'ACTIVO' : genero.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+
+  return (
+    genero.Tipo_genero &&
+    genero.Tipo_genero.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+  );
+});
+
 
 // Paginación y currentRecords se mantienen igual:
 const indexOfLastRecord = currentPage * recordsPerPage;

@@ -80,14 +80,14 @@ const ListaPersonas = () => {
 
   })
   const [personaToUpdate, setPersonaToUpdate] = useState({});
-  const [formData, setFormData] = useState({ dni_persona: '',    Nombre: '',Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '',
-     direccion_persona: '', fecha_nacimiento: '', Estado_Persona: '', cod_tipo_persona: '', cod_departamento: '',
-    cod_municipio: '', cod_genero: '', principal: '',})
+
+
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+
   const [personaToDelete, setPersonaToDelete] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [recordsPerPage, setRecordsPerPage] = useState(10)
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
 
   const [tipoPersona, setTipoPersona] = useState([])
   const [generos, setGeneros] = useState([])
@@ -301,15 +301,44 @@ const resetPersonaToUpdate = () => {
     direccion_persona: '', fecha_nacimiento: '', Estado_Persona: '', cod_tipo_persona: '', principal: '', cod_nacionalidad: '', cod_departamento: '', cod_municipio: '', cod_genero: '', 
   });
 };
+{/**********************************************************************************************************************************************/}
+
+const handlePersonaInputChange = (e, setFunction) => {
+  let value = e.target.value;
+
+  // 🔄 No permitir espacios consecutivos
+  value = value.replace(/\s{2,}/g, " ");
+
+  // 🔄 No permitir que una letra se repita más de 3 veces consecutivamente
+  if (/([a-zA-ZÁÉÍÓÚáéíóúÑñ])\1{2,}/.test(value)) {
+    swal.fire({
+      icon: "warning",
+      title: "Repetición de letras",
+      text: "No se permite que la misma letra se repita más de 3 veces consecutivas.",
+    });
+    return;
+  }
+
+  setFunction((prevState) => ({
+    ...prevState,
+    [e.target.name]: value, // ✅ Actualiza el campo específico en el estado
+  }));
+
+  setHasUnsavedChanges(true); // ✅ Marca que hay cambios sin guardar
+};
+
+// 🔄 **Reseteamos cambios cuando se guarda**
+const resetHasUnsavedChanges = () => {
+  setHasUnsavedChanges(false);
+};
 
 {/**********************************************************************************************************************************************/}
-const handleCloseModal = (setModalVisible, resetData, formData = {}) => {
-  // 🔄 **Convertimos los valores a string antes de aplicar `.trim()`**
+const handleCloseModal = (setModalVisible, resetData, formData = {}, hasUnsavedChanges, setHasUnsavedChanges) => {
   const hayDatos = Object.values(formData).some(value => 
     typeof value === 'string' && value.trim() !== ''
   );
 
-  if (hayDatos) {
+  if (hayDatos || hasUnsavedChanges) { // 🔄 También verifica cambios con `hasUnsavedChanges`
     swal.fire({
       title: '¿Estás seguro?',
       text: 'Si cierras este formulario, perderás todos los datos ingresados.',
@@ -321,6 +350,7 @@ const handleCloseModal = (setModalVisible, resetData, formData = {}) => {
       if (result.isConfirmed) {
         resetData();
         setModalVisible(false);
+        setHasUnsavedChanges(false); // ✅ Ahora también resetea `hasUnsavedChanges` cuando se confirma el cierre
       }
     });
   } else {  
@@ -655,10 +685,10 @@ const fetchMunicipio = async () => {
     console.log('Datos recibidos de municipio:', data);
 
     if (Array.isArray(data) && Array.isArray(data[0])) {
-      // Filtrar solo los municipios con estado === 1
+      // 🔄 Filtramos solo los municipios activos (estado === 1)
       const municipiosActivos = data[0].filter((municipio) => municipio.estado === 1);
       setMunicipio(municipiosActivos);
-      console.log('Municipios filtrados con estado 1:', municipiosActivos);
+      console.log('Municipios activos almacenados:', municipiosActivos);
     } else {
       console.error('Formato de datos inesperado:', data);
       setMunicipio([]);
@@ -667,6 +697,7 @@ const fetchMunicipio = async () => {
     console.error('Error al obtener los municipios:', error);
   }
 };
+
 
 
 {/**********************************************************************************************************************************************/}
@@ -1774,7 +1805,7 @@ return (
 {/*//////////////////////////////////////////MODAL-PARA-AGREGAR-UNA-PERSONA********************************************************/}
 <CModal
         visible={modalVisible}
-        onClose={closeAddModal}
+        onClose={() => setModalVisible(false)} 
         backdrop="static"
         size="xl" 
       >
@@ -2552,7 +2583,8 @@ return (
 
 {/***********************************************************************************************************************************/}
 {/*////////////////////////////////////////////MODAL PARA ACTUALIZAR UNA PERSONA****************************************************/}
-          <CModal visible={modalUpdateVisible} onClose={closeUpdateModal}
+          <CModal visible={modalUpdateVisible} 
+          onClose={() => setModalUpdateVisible(false)}
               backdrop="static"
               size="xl" // Aumenta el tamaño del modal
             >

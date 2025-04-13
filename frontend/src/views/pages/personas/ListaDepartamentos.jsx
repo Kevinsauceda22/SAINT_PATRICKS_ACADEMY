@@ -500,11 +500,18 @@ const handleSearch = (event) => {
   setCurrentPage(1); // Reiniciar la paginación a la primera página
 };
 
-// Filtrar departamentos según el término de búsqueda
-const filteredDepartamentos = departamentos.filter((departamento) => 
-  departamento.Nombre_departamento &&
-  departamento.Nombre_departamento.toLowerCase().includes(searchTerm.toLowerCase())
-);
+// Filtrar departamentos según el término de búsqueda, incluyendo estado
+const filteredDepartamentos = departamentos.filter((departamento) => {
+  // Convertimos estado a texto
+  const estadoTexto = departamento.estado === 1 ? 'ACTIVO' : departamento.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+
+  return (
+    departamento.Nombre_departamento &&
+    departamento.Nombre_departamento.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+  );
+});
+
 
 // Calcular los índices para la paginación
 const indexOfLastRecord = currentPage * recordsPerPage;

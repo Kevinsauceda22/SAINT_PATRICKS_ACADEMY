@@ -567,13 +567,21 @@ const handleSearch = (event) => {
   setCurrentPage(1);
 };
 
-// Filtrar municipios por nombre de municipio o departamento
+// Filtrar municipios por nombre de municipio, departamento o estado
 const filteredMunicipios = municipios.filter((municipio) => {
   const nombreMunicipio = municipio.Nombre_municipio ? municipio.Nombre_municipio.toLowerCase() : "";
   const departamentoNombre = departamentos.find((depto) => depto.Cod_departamento === municipio.Cod_departamento)?.Nombre_departamento?.toLowerCase() || "";
   
-  return nombreMunicipio.includes(searchTerm.toLowerCase()) || departamentoNombre.includes(searchTerm.toLowerCase());
+  // Convertimos estado a texto
+  const estadoTexto = municipio.estado === 1 ? 'ACTIVO' : municipio.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+
+  return (
+    nombreMunicipio.includes(searchTerm.toLowerCase()) ||
+    departamentoNombre.includes(searchTerm.toLowerCase()) ||
+    estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+  );
 });
+
 
 
 // Paginación mejorada

@@ -512,14 +512,21 @@ const validateEmptyFields = () => {
     setCurrentPage(1);
   };
   
-  const filteredNacionalidades = nacionalidades.filter((nacionalidad) => 
-    (nacionalidad.pais_nacionalidad && 
-      nacionalidad.pais_nacionalidad.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (nacionalidad.Id_nacionalidad && 
-      nacionalidad.Id_nacionalidad.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (nacionalidad.pais && 
-      nacionalidad.pais.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredNacionalidades = nacionalidades.filter((nacionalidad) => {
+    // Convertimos estado a texto
+    const estadoTexto = nacionalidad.estado === 1 ? 'ACTIVO' : nacionalidad.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+  
+    return (
+      (nacionalidad.pais_nacionalidad && 
+        nacionalidad.pais_nacionalidad.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (nacionalidad.Id_nacionalidad && 
+        nacionalidad.Id_nacionalidad.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (nacionalidad.pais && 
+        nacionalidad.pais.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+    );
+  });
+  
   
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;

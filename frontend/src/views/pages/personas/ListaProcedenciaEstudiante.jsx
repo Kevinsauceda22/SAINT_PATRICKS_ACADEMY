@@ -858,6 +858,13 @@ const exportProcedenciaEstudianteToExcel = () => {
 
   {/* Botones alineados a la derecha */}
   <CCol xs="12" md="9" className="d-flex justify-content-end gap-3">
+  <CButton
+      style={{ backgroundColor: '#346B93', color: 'white', minWidth: '120px', height: '38px' }}
+      onClick={() => abrirFichaEstudiante(personaSeleccionada)} // Ahora pasa la persona correctamente
+    >
+      <CIcon icon={cilUser} /> Ficha 
+    </CButton>
+    
     {canInsert && (
       <CButton
         style={{ backgroundColor: '#4B6251', color: 'white', minWidth: '120px', height: '38px' }} // Botón menos ancho
@@ -867,12 +874,7 @@ const exportProcedenciaEstudianteToExcel = () => {
       </CButton>
     )}
 
-    <CButton
-      style={{ backgroundColor: '#346B93', color: 'white', minWidth: '120px', height: '38px' }}
-      onClick={() => abrirFichaEstudiante(personaSeleccionada)} // Ahora pasa la persona correctamente
-    >
-      <CIcon icon={cilUser} /> Ficha 
-    </CButton>
+
 
     <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
   <CDropdownToggle
@@ -1325,7 +1327,7 @@ const exportProcedenciaEstudianteToExcel = () => {
         }
       }}
     >
-      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Actualizar
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }} /> Guardar
     </CButton>
   </CModalFooter>
 </CModal>

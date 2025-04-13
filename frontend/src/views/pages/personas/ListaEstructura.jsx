@@ -1470,7 +1470,7 @@ return (
       Cancelar
     </CButton>
     <CButton style={{ backgroundColor: '#4B6251', color: 'white', borderColor: '#4B6251' }} onClick={handleUpdateEstructura}>
-      <CIcon icon={cilPen} /> Actualizar
+      <CIcon icon={cilSave} style={{ marginRight: '5px' }}/> Guardar
     </CButton>
   </CModalFooter>
 </CModal>
