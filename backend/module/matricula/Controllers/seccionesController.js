@@ -95,11 +95,13 @@ export const obtenerSeccionesPorPeriodo = async (req, res) => {
 // Proporciona opciones para seleccionar edificios en formularios de gestión de secciones.
 export const obtenerEdificios = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT Cod_edificio, Nombre_edificios FROM tbl_edificio'); // Cambia aquí la consulta
+        const [rows] = await pool.query(
+            'SELECT Cod_edificio, Nombre_edificios FROM tbl_edificio WHERE Estado = 1'
+        );
         res.json(rows);
     } catch (error) {
-        console.error('Error al obtener edificios:', error);
-        res.status(500).json({ mensaje: 'Error al obtener edificios', error: error.message });
+        console.error('Error al obtener edificios activos:', error);
+        res.status(500).json({ mensaje: 'Error al obtener edificios activos', error: error.message });
     }
 };
 

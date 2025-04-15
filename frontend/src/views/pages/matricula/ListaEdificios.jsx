@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CIcon } from '@coreui/icons-react';
 import { cilPen, cilTrash } from '@coreui/icons';
 import swal from 'sweetalert2'; // Importar SweetAlert para mostrar mensajes de advertencia y éxito
+import ExcelJS from 'exceljs';
 import { jsPDF } from 'jspdf';       // Para generar archivos PDF
 import 'jspdf-autotable';            // Para crear tablas en los archivos PDF
 import * as XLSX from 'xlsx';        // Para generar archivos Excel
@@ -408,7 +409,7 @@ const ListaEdificios = () => {
   const resetEdificioToUpdate = () => {
     setEdificioToUpdate({ Nombre_edificios: '', Numero_pisos: '', Aulas_disponibles: '' });
   };
-
+/*
   // Descargar reportes en excel y pdf
   const exportToExcel = () => {
     // Convierte los datos de los edificios a formato de hoja de cálculo
@@ -423,7 +424,7 @@ const ListaEdificios = () => {
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'reporte_edificios.xlsx'); // Descarga el archivo Excel
   };
-/*
+
   const exportToExcel = () => {
     if (!filteredEdificios || filteredEdificios.length === 0) {
       alert('No hay datos para exportar.');
@@ -491,6 +492,81 @@ const ListaEdificios = () => {
   };
   */
 
+  const exportToExcel = () => {
+    if (!filteredEdificios || filteredEdificios.length === 0) {
+      alert('No hay datos para exportar.');
+      return;
+    }
+  
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Lista de Edificios');
+  
+    // 🎯 Título
+    worksheet.mergeCells('A1:E1');
+    worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+    worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    worksheet.mergeCells('A2:E2');
+    worksheet.getCell('A2').value = 'LISTA DE EDIFICIOS';
+    worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // 📌 Encabezados
+    const headerRow = worksheet.addRow(['#', 'Nombre', 'Número de Pisos', 'Aulas Disponibles', 'Estado']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  
+    // 📊 Datos
+    filteredEdificios.forEach((edificio, index) => {
+      const estadoTexto = edificio.Estado === 1 ? 'ACTIVO' : 'INACTIVO';
+      const row = worksheet.addRow([
+        index + 1,
+        edificio.Nombre_edificios?.toUpperCase() || 'N/D',
+        edificio.Numero_pisos ?? 'N/D',
+        edificio.Aulas_disponibles ?? 'N/D',
+        estadoTexto
+      ]);
+  
+      const estadoCell = row.getCell(5);
+      estadoCell.font = {
+        bold: true,
+        color: { argb: edificio.Estado === 1 ? '008000' : 'FF0000' } // Verde o rojo según estado
+      };
+  
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    });
+  
+    // 📏 Ancho de columnas
+    worksheet.columns.forEach((column) => {
+      column.width = 25;
+    });
+  
+    // 📂 Exportar
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      });
+      saveAs(blob, 'Reporte_Lista_Edificios.xlsx');
+    });
+  };  
 
 
   const generatePDFForEdificios = () => {
@@ -546,7 +622,14 @@ const ListaEdificios = () => {
         { content: edificio.Nombre_edificios.toUpperCase(), styles: { halign: 'left' } }, // Alineado a la izquierda
         { content: edificio.Numero_pisos.toString(), styles: { halign: 'center' } }, // Centrado
         { content: edificio.Aulas_disponibles.toString(), styles: { halign: 'center' } }, // Centrado
-        { content: edificio.Estado.toUpperCase(), styles: { halign: 'center' } }, // Centrado
+        {
+          content: (edificio.Estado === 1 ? 'ACTIVO' : 'INACTIVO').toUpperCase(),
+          styles: {
+            halign: 'center',
+            textColor: edificio.Estado === 1 ? [0, 128, 0] : [255, 0, 0],
+            fontStyle: edificio.Estado === 1 ? 'bold' : 'normal',
+          },
+        },
       ]);
   
       doc.autoTable({
