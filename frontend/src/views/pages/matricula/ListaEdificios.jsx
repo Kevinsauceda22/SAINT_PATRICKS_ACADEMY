@@ -38,7 +38,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 
 const ListaEdificios = () => {
-  const { canSelect, loading, canDelete, canInsert, canUpdate } = usePermission('edificios');
+  const { canSelect, canDelete, canInsert, canUpdate } = usePermission('edificios');
 
   // Estados de la aplicación
   const [edificios, setEdificios] = useState([]); // Estado que almacena la lista de edificios
@@ -53,6 +53,7 @@ const ListaEdificios = () => {
   const [currentPage, setCurrentPage] = useState(1); // Estado de la página actual para la paginación
   const [recordsPerPage, setRecordsPerPage] = useState(5); // Controla cuántos registros se muestran por página
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Controla si hay cambios sin guardar
+  const [loading, setLoading] = useState(false);
 
   // useEffect para cargar los edificios al montar el componente
   useEffect(() => {
@@ -144,29 +145,57 @@ const ListaEdificios = () => {
   };
 
   // Función para actualizar el estado del edificio
- const actualizarEstado = async (Cod_edificio, Nuevo_estado) => {
-  try {
-    // Realiza la solicitud PUT al backend
-    const response = await fetch('http://localhost:4000/api/edificio/actualizar_estado', {
-      method: 'PUT', // Especifica el método HTTP
-      headers: {
-        'Content-Type': 'application/json', // Indica que el cuerpo de la solicitud será JSON
-      },
-      body: JSON.stringify({
-        Cod_edificio, // El ID del edificio que se va a actualizar
-        Nuevo_estado, // El nuevo estado (0 o 1)
-      }),
-    });
-
-    if (response.ok) { // Si la respuesta es exitosa
-      fetchEdificios(); // Recargar los edificios después de la actualización
-    } else {
-      console.error('Error al actualizar el estado');
+  const actualizarEstado = async (edificio) => {
+    const nuevoEstado = edificio.Estado ? 0 : 1;
+  
+    // Cambiar el estado localmente (opcional, si quieres efecto inmediato)
+    setEdificios((prev) =>
+      prev.map((e) =>
+        e.Cod_edificio === edificio.Cod_edificio
+          ? { ...e, Estado: nuevoEstado }
+          : e
+      )
+    );
+  
+    try {
+      setLoading(true); // Mostrar carga si tienes spinner o similar
+  
+      const response = await fetch('http://localhost:4000/api/edificio/actualizar_estado', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Cod_edificio: edificio.Cod_edificio,
+          Nuevo_estado: nuevoEstado,
+        }),
+      });
+  
+      const data = await response.json();
+  
+      if (!response.ok) {
+        console.error('Error al actualizar el estado:', data.mensaje);
+      } else {
+        console.log('✔️ Estado actualizado:', data);
+        fetchEdificios(); // Refrescar lista
+      }
+    } catch (error) {
+      console.error('Error al realizar la solicitud:', error);
+  
+      // Revertir estado en caso de error
+      setEdificios((prev) =>
+        prev.map((e) =>
+          e.Cod_edificio === edificio.Cod_edificio
+            ? { ...e, Estado: edificio.Estado }
+            : e
+        )
+      );
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error al actualizar el estado:', error); // Muestra el error en la consola si algo sale mal
-  }
-};
+  };
+  
+
 
   // Función para eliminar un edificio
   const handleDeleteEdificio = async () => {
@@ -394,6 +423,75 @@ const ListaEdificios = () => {
     const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     saveAs(blob, 'reporte_edificios.xlsx'); // Descarga el archivo Excel
   };
+/*
+  const exportToExcel = () => {
+    if (!filteredEdificios || filteredEdificios.length === 0) {
+      alert('No hay datos para exportar.');
+      return;
+    }
+  
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Lista de Edificios');
+  
+    // 🎯 **Título del documento**
+    worksheet.mergeCells('A1:E1');
+    worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+    worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    worksheet.mergeCells('A2:E2');
+    worksheet.getCell('A2').value = 'LISTA DE EDIFICIOS';
+    worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // 📌 **Encabezados de la tabla**
+    const headerRow = worksheet.addRow(['#', 'Nombre', 'Numero de Pisos', 'Aulas Disponibles', 'Estado']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+  
+    // 📊 **Datos de la tabla**
+    filteredEdificios.forEach((tipo, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        tipo.edificios?.toUpperCase() || 'N/D',
+        tipo.estado === 1 ? 'ACTIVO' : 'INACTIVO'
+      ]);
+  
+      // 🎨 **Estilos para la columna de Estado**
+      const estadoCell = row.getCell(3);
+      estadoCell.font = {
+        bold: true,
+        color: { argb: tipo.estado === 1 ? '008000' : 'FF0000' } // ✅ Verde para "ACTIVO", rojo para "INACTIVO"
+      };
+  
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    });
+  
+    // 📏 **Ajustar el ancho de las columnas**
+    worksheet.columns.forEach((column) => {
+      column.width = 20;
+    });
+  
+    // 📂 **Crear archivo Excel**
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'Reporte_Lista_Edificios.xlsx');
+    });
+  };
+  */
+
+
 
   const generatePDFForEdificios = () => {
     const doc = new jsPDF({
@@ -440,6 +538,7 @@ const ListaEdificios = () => {
         'Nombre del Edificio',
         'Número de Pisos',
         'Aulas Disponibles',
+        'Estado',
       ];
   
       const tableRows = edificios.map((edificio, index) => [
@@ -447,6 +546,7 @@ const ListaEdificios = () => {
         { content: edificio.Nombre_edificios.toUpperCase(), styles: { halign: 'left' } }, // Alineado a la izquierda
         { content: edificio.Numero_pisos.toString(), styles: { halign: 'center' } }, // Centrado
         { content: edificio.Aulas_disponibles.toString(), styles: { halign: 'center' } }, // Centrado
+        { content: edificio.Estado.toUpperCase(), styles: { halign: 'center' } }, // Centrado
       ]);
   
       doc.autoTable({
@@ -695,23 +795,19 @@ const ListaEdificios = () => {
               )}
               
               {/* Botón Activar/Inactivar */}
-              {edificio.Estado ? (
-                    <CButton
-                      color="danger"
-                      onClick={() => actualizarEstado(edificio.Cod_edificio, 0)} // Cambiar a inactivo (0)
-                      style={{ marginRight: '10px' }}
-                    >
-                      Desactivar
-                    </CButton>
-                  ) : (
-                    <CButton
-                      color="success"
-                      onClick={() => actualizarEstado(edificio.Cod_edificio, 1)} // Cambiar a activo (1)
-                      style={{ marginRight: '10px' }}
-                    >
-                      Activar
-                    </CButton>
-                )}
+              <CButton
+  style={{
+    backgroundColor: edificio.Estado === 1 ? '#4CAF50' : '#F44336',
+    color: 'white',
+    marginRight: '10px',
+  }}
+  onClick={() => actualizarEstado(edificio)}
+  disabled={loading}
+>
+  {loading ? 'Cambiando...' : edificio.Estado === 1 ? 'Activo' : 'Inactivo'}
+</CButton>
+
+
                 {canDelete && (
                 <CButton
                   color="danger"
