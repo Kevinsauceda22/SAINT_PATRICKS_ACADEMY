@@ -12,8 +12,6 @@ import * as XLSX from "xlsx";
 import axios from 'axios';
 import * as jwt_decode from 'jwt-decode';
 
-
-
 import {
   CTable,
   CTableHead,
@@ -61,10 +59,10 @@ const ListaGrados = () => {
   const [gradoToDelete, setGradoToDelete] = useState({}); // Estado para el grado a eliminar
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
-  const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
+  const [recordsPerPage, setRecordsPerPage] = useState(10); // Hacer dinámico el número de registros por página
   const inputRef = useRef(null); // Referencia para el input
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
-  const resetNuevoGrado = () => setNuevoGrado('');
+  const resetNuevoGrado = () => {setNuevoGrado('');setnuevoprefijo(''); setNuevoCiclo('')};
   const resetGradotoUpdate = () => setGradoToUpdate('');
 
 
@@ -112,8 +110,6 @@ const ListaGrados = () => {
         ...grado,
         originalIndex: index + 1, // Guardamos la secuencia original
       }));
-
-
       setGrados(dataWithIndex);
     } catch (error) {
       console.error('Error al obtener los grados:', error);
@@ -185,11 +181,8 @@ const ListaGrados = () => {
       });
       return false;
     }
-
     return true;
-
   };
-
 
   const validarGradoUpdate = () => {
     if (!gradoToUpdate.Nombre_grado) {
@@ -221,6 +214,7 @@ const ListaGrados = () => {
       });
       return false;
     }
+
     // Verificar si el nombre del ciclo ya existe (excluyendo el ciclo actual que se está editando)
     const PrefijoExistente = grados.some(
       (grado) =>
@@ -237,9 +231,6 @@ const ListaGrados = () => {
       });
       return false;
     }
-
-
-
     return true;
   };
 
@@ -252,7 +243,7 @@ const ListaGrados = () => {
       .toUpperCase() // Convertir a mayúsculas
       .trimStart(); // Evitar espacios al inicio
 
-      const regex = /^[A-Za-z0-9Ññ\s]*$/;  // Solo letras, números y espacios
+      const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/;  // Solo letras, números y espacios
 
     // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
     if (/\s{2,}/.test(value)) {
@@ -270,7 +261,7 @@ const ListaGrados = () => {
       Swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
         confirmButtonText: 'Aceptar',
       });
       return;
@@ -418,6 +409,7 @@ const ListaGrados = () => {
           fetchGrados();  // Refrescar la lista de grados
           setModalVisible(false);  // Cerrar el modal
           setNuevoCiclo('');  // Restablecer estado de ciclo
+          setnuevoprefijo('');
           resetNuevoGrado();  // Restablecer estado del grado
           setHasUnsavedChanges(false);  // Restablecer el estado de cambios no guardados
   
@@ -560,8 +552,6 @@ const ListaGrados = () => {
       });
     }
   };
-  
-
 
   const handleDeleteGrado = async () => {
     try {
@@ -658,14 +648,14 @@ const ListaGrados = () => {
   
   const handleReporteGradosPdfClick = () => {
     // Validar que haya datos en la tabla
-    if (!currentRecords || currentRecords.length === 0) {
-        Swal.fire({
-            icon: 'info',
-            title: 'Tabla vacía',
-            text: 'No hay datos disponibles para generar el reporte.',
-            confirmButtonText: 'Aceptar',
-        });
-        return; // Salir de la función si no hay datos
+    if (!filteredGrados || filteredGrados.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte.',
+        confirmButtonText: 'Aceptar',
+      });
+      return; // Salir de la función si no hay datos
     }
 
     const doc = new jsPDF();
@@ -673,106 +663,116 @@ const ListaGrados = () => {
     img.src = logo; // Asegúrate de importar el logo correctamente
 
     img.onload = () => {
-        // Agregar logo
-        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+      // Agregar logo
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
 
-        let yPosition = 20;
+      let yPosition = 20;
 
-        // Título principal
-        doc.setFontSize(18);
-        doc.setTextColor(0, 102, 51);
-        doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      // Título principal
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51);
+      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
 
-        yPosition += 12;
+      yPosition += 12;
 
-        // Subtítulo
-        doc.setFontSize(16);
-        doc.text('Reporte de Grados', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-        yPosition += 10;
+      // Subtítulo
+      doc.setFontSize(16);
+      doc.text('Reporte de Grados', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+      yPosition += 10;
 
       // Información adicional
       doc.setFontSize(10);
       doc.setTextColor(100); // Gris para texto secundario
       doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
+
       yPosition += 4;
-  
+
       doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
+
       yPosition += 4;
-  
+
       doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-  
+
       yPosition += 6; // Espaciado antes de la línea divisoria
-  
-        // Línea divisoria
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(0, 102, 51);
-        doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-        // Configuración para la tabla
-        const pageHeight = doc.internal.pageSize.height; // Altura de la página
-        let pageNumber = 1; // Página inicial
+      // Línea divisoria
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51);
+      doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-        // Configuración de tabla
-        doc.autoTable({
-            startY: yPosition + 4,
-            head: [['#', 'Nombre del Grado', 'Nombre del Ciclo', 'Prefijo']],
-            body: currentRecords.map((grado, index) => [
-                grado.originalIndex || index + 1, // Índice original o basado en el índice actual
-                grado.Nombre_grado, // Nombre del grado
-                getCicloName(grado.Cod_ciclo), // Nombre del ciclo asociado
-                grado.Prefijo, // Prefijo
-            ]),
-            headStyles: {
-                fillColor: [0, 102, 51],
-                textColor: [255, 255, 255],
-                fontSize: 10,
-            },
-            styles: {
-                fontSize: 10,
-                cellPadding: 3,
-                halign: 'center',
-            },
-            columnStyles: {
-              0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-              1: { cellWidth: 'auto' }, // Columna 'Descripción' se ajusta automáticamente
-            },
-            alternateRowStyles: { fillColor: [240, 248, 255] },
-            didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+      // Configuración para la tabla
+      const pageHeight = doc.internal.pageSize.height; // Altura de la página
+      let pageNumber = 1; // Página inicial
 
-        // Abrir el PDF
-        window.open(doc.output('bloburl'), '_blank');
+      // Configuración de tabla
+      doc.autoTable({
+        startY: yPosition + 4,
+        head: [['#', 'Nombre del Grado', 'Nombre del Ciclo', 'Prefijo']],
+        body: filteredGrados.map((grado, index) => [
+          grado.originalIndex || index + 1, // Índice original o basado en el índice actual
+          grado.Nombre_grado, // Nombre del grado
+          getCicloName(grado.Cod_ciclo), // Nombre del ciclo asociado
+          grado.Prefijo, // Prefijo
+        ]),
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+          halign: 'center',
+        },
+        columnStyles: {
+          0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
+          1: { cellWidth: 'auto' }, // Columna 'Descripción' se ajusta automáticamente
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+          didDrawPage: (data) => {
+            const currentDate = new Date();
+            const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+            const pageHeight = doc.internal.pageSize.height; // Altura de la página
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            // Fecha y hora en el pie de página
+            doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+          },
+      });
+        
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); // Ve a cada página
+        doc.setTextColor(100);
+        const text = `Página ${i} de ${totalPages}`;
+        // Agrega número de página en la posición correcta
+        doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
+
+      // Abrir el PDF
+      window.open(doc.output('bloburl'), '_blank');
     };
 
     img.onerror = () => {
-        console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
-        window.open(doc.output('bloburl'), '_blank');
+      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
+      window.open(doc.output('bloburl'), '_blank');
     };
-};
+  };
 
   const handleReporteExcelClick = () => {
+    // Validar que haya datos en la tabla
+    if (!filteredGrados || filteredGrados.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Tabla vacía',
+        text: 'No hay datos disponibles para generar el reporte excel.',
+        confirmButtonText: 'Aceptar',
+      });
+      return; // Salir de la función si no hay datos
+    }
     // Encabezados iniciales del reporte
     const encabezados = [
       ["Saint Patrick Academy"],
@@ -785,7 +785,7 @@ const ListaGrados = () => {
     encabezados.push(["#", "Nombre del Grado","Nombre del Ciclo", "Prefijo"]);
 
     // Crear filas de la tabla con los datos de los ciclos
-    const filas = currentRecords.map((grado, index) => [
+    const filas = filteredGrados.map((grado, index) => [
       grado.originalIndex || index + 1, // Mostrar índice original o generar índice
       grado.Nombre_grado, // Nombre del grado
       getCicloName(grado.Cod_ciclo), // Nombre del ciclo asociado
@@ -818,18 +818,18 @@ const ListaGrados = () => {
     XLSX.writeFile(libroDeTrabajo, nombreArchivo);
   };
 
-    const openUpdateModal = (grado) => {
-      setGradoToUpdate(grado); // Cargar los datos del grado a actualizar
-      setModalUpdateVisible(true); // Abrir el modal de actualización
-      setHasUnsavedChanges(false);
+  const openUpdateModal = (grado) => {
+    setGradoToUpdate(grado); // Cargar los datos del grado a actualizar
+    setModalUpdateVisible(true); // Abrir el modal de actualización
+    setHasUnsavedChanges(false);
 
-    };
+  };
 
-    const openDeleteModal = (grado) => {
-      setGradoToDelete(grado); // Guardar el grado que se desea eliminar
-      setModalDeleteVisible(true); // Abrir el modal de confirmación
+  const openDeleteModal = (grado) => {
+    setGradoToDelete(grado); // Guardar el grado que se desea eliminar
+    setModalDeleteVisible(true); // Abrir el modal de confirmación
 
-    };
+  };
 
   // Cambia el estado de la página actual después de aplicar el filtro
   // Validar el buscador
@@ -880,7 +880,6 @@ const ListaGrados = () => {
         }
       }
     }
-
     setSearchTerm(value);
     setCurrentPage(1); // Resetear a la primera página al buscar
   };
@@ -957,69 +956,69 @@ const ListaGrados = () => {
           </CButton>
            )}
           <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-      <CDropdownToggle
-        style={{
-          backgroundColor: '#6C8E58',
-          color: 'white',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#5A784C';
-          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#6C8E58';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
-      >
-        <CIcon icon={cilDescription}/> Reporte
-      </CDropdownToggle>
-      <CDropdownMenu
-        style={{
-          position: "absolute",
-          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
-          backgroundColor: "#fff",
-          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
-          borderRadius: "4px",
-          overflow: "hidden",
-        }}
-      >
-        <CDropdownItem
-          onClick={handleReporteGradosPdfClick}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            borderBottom: "1px solid #eaeaea",
-            transition: "background-color 0.1s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-        </CDropdownItem>
-        <CDropdownItem
-        onClick={handleReporteExcelClick}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            transition: "background-color 0.3s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+            <CDropdownToggle
+              style={{
+                backgroundColor: '#6C8E58',
+                color: 'white',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#5A784C';
+                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#6C8E58';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <CIcon icon={cilDescription}/> Reporte
+           </CDropdownToggle>
+            <CDropdownMenu
+              style={{
+                position: "absolute",
+                zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+                backgroundColor: "#fff",
+                boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+                borderRadius: "4px",
+                overflow: "hidden",
+              }}
+            >
+              <CDropdownItem
+                onClick={handleReporteGradosPdfClick}
+                style={{
+                  cursor: "pointer",
+                  outline: "none",
+                  backgroundColor: "transparent",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.85rem",
+                  color: "#333",
+                  borderBottom: "1px solid #eaeaea",
+                  transition: "background-color 0.1s",
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+              >
+                <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+             </CDropdownItem>
+              <CDropdownItem
+                onClick={handleReporteExcelClick}
+                style={{
+                  cursor: "pointer",
+                  outline: "none",
+                  backgroundColor: "transparent",
+                  padding: "0.5rem 1rem",
+                  fontSize: "0.85rem",
+                  color: "#333",
+                  transition: "background-color 0.3s",
+                }}
+                onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+                onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+              >
+                <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+              </CDropdownItem>
+           </CDropdownMenu>
+          </CDropdown>
         </CCol>
       </CRow>
 
@@ -1035,6 +1034,8 @@ const ListaGrados = () => {
               placeholder="Buscar por grado o ciclo..."
               onChange={handleSearch}
               value={searchTerm}
+              onPaste={disableCopyPaste}
+              onCopy={disableCopyPaste}
             />
             <CButton
               style={{

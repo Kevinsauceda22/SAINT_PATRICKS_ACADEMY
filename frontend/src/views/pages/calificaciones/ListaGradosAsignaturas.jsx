@@ -54,7 +54,7 @@ const ListaGradosAsignaturas = () => {
     const [nuevoGrado, setNuevoGrado] = useState(''); // Estado para el nuevo grado
     const [selectedGrado, setSelectedGrado] = useState('');
     const [GradoAsignaturaToDelete, setGradoAsignaturaToDelete] = useState({}); // Estado para la asignatura a eliminar
-    const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
+    const [recordsPerPage, setRecordsPerPage] = useState(10); // Hacer dinámico el número de registros por página
     const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
     const [searchTerm, setSearchTerm] = useState('');
     const [gradoActual, setGradoActual] = useState(null);
@@ -212,7 +212,7 @@ const ListaGradosAsignaturas = () => {
                     icon: 'info',
                     title: 'Sin datos',
                     text: 'No hay información disponible para generar el reporte.',
-                    confirmButtonText: 'Entendido',
+                    confirmButtonText: 'Aceptar',
                 });
                 return;
             }
@@ -494,7 +494,7 @@ const ListaGradosAsignaturas = () => {
                 icon: 'warning',
                 title: 'Asignatura duplicada',
                 text: 'La asignatura seleccionada ya está asignada a este grado. Por favor, elige otra.',
-                confirmButtonText: 'Entendido',
+                confirmButtonText: 'Aceptar',
             });
             return; // Detener la ejecución si hay duplicados
         }
@@ -533,7 +533,7 @@ const ListaGradosAsignaturas = () => {
                     icon: 'info',
                     title: 'Asignatura duplicada',
                     text: errorData.Mensaje || 'La asignatura seleccionada ya está asignada a este grado.',
-                    confirmButtonText: 'Entendido',
+                    confirmButtonText: 'Aceptar',
                 });
             } else {
                 Swal.fire({
@@ -583,7 +583,7 @@ const ListaGradosAsignaturas = () => {
     // Validar el buscador
     const handleSearch = (event) => {
         const input = event.target.value.toUpperCase();
-        const regex = /^[A-ZÑ\s]*$/; // Solo permite letras, espacios y la letra "Ñ"
+        const regex = /^[A-ZÑÁÉÍÓÚ\s,]*$/; // Solo permite letras, espacios y la letra "Ñ"
 
         if (!regex.test(input)) {
             Swal.fire({
@@ -624,9 +624,19 @@ const ListaGradosAsignaturas = () => {
         <CContainer>
             <div className="container mt-4">
                 <CRow className="align-items-center mb-5">
-                    <CCol xs="11" className="d-flex align-items-center">
+                    <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                         {/* Título de la página */}
-                        <h2 className="mb-0">Proceso de Asignación: Asignaturas a cada Grado</h2>
+                        <div className="flex-grow-1 text-center">
+                            <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Proceso de Asignación: Asignaturas a cada Grado</h4>
+                        </div>
+                        <CButton
+                            style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease', }}
+                            onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
+                            onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}
+                            onClick={() => handleReporteClickOrden()}
+                        >
+                         <CIcon icon={cilDescription}/> Reporte
+                        </CButton>
                     </CCol>
                 </CRow>
 
@@ -634,11 +644,12 @@ const ListaGradosAsignaturas = () => {
                 <CRow className="align-items-center mt-4 mb-2">
                     {/* Barra de búsqueda  */}
                     <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center">
-                        <CInputGroup className="me-3" style={{ width: '400px' }}>
+                        <CInputGroup className="me-3" style={{ width: '350px' }}>
                             <CInputGroupText>
                                 <CIcon icon={cilSearch} />
                             </CInputGroupText>
                             <CFormInput
+                               style={{ width: '80px',height:'35px', display: 'inline-block',fontSize: '0.8rem'}}
                                 placeholder="Buscar Grado..."
                                 onChange={handleSearch}
                                 value={searchTerm}
@@ -648,7 +659,8 @@ const ListaGradosAsignaturas = () => {
                                     border: '1px solid #ccc',
                                     transition: 'all 0.1s ease-in-out', // Duración de la transición
                                     backgroundColor: '#F3F4F7', // Color por defecto
-                                    color: '#343a40' // Color de texto por defecto
+                                    color: '#343a40', // Color de texto por defecto
+                                    height:'35px'
                                 }}
                                 onClick={() => {
                                     setSearchTerm('');
@@ -670,11 +682,11 @@ const ListaGradosAsignaturas = () => {
 
                     {/* Selector dinámico a la par de la barra de búsqueda */}
                     <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
-                        <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+                        <CInputGroup style={{ width: 'auto', display: 'inline-block' }}>
                             <div className="d-inline-flex align-items-center">
-                                <span>Mostrar&nbsp;</span>
+                                <span style={{ fontSize: '0.85rem' }}>Mostrar&nbsp;</span>
                                 <CFormSelect
-                                    style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                                    style={{ width: '80px',height:'35px', display: 'inline-block', textAlign: 'center' }}
                                     onChange={(e) => {
                                         const value = Number(e.target.value);
                                         setRecordsPerPage(value);
@@ -682,39 +694,28 @@ const ListaGradosAsignaturas = () => {
                                     }}
                                     value={recordsPerPage}
                                 >
-                                    <option value="5">5</option>
                                     <option value="10">10</option>
-                                    {/* <option value="20">20</option> */}
+                                    <option value="20">20</option>
+                                    <option value="30">30</option>
                                 </CFormSelect>
-                                <span>&nbsp;registros</span>
+                                <span style={{ fontSize: '0.85rem' }} >&nbsp;registros</span>
                             </div>
                         </CInputGroup>
                     </CCol>
                 </CRow>
-                <CCard>
-                    <CCardHeader>
-                        <div className="table-container" style={{ maxHeight: '400px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <strong>INFORMACION DE LOS GRADOS</strong> {/* Texto alineado a la izquierda */}
-                            <CButton
-                                style={{
-                                    backgroundColor: '#6C8E58',
-                                    color: 'white',
-                                }}
-                                onClick={() => handleReporteClickOrden()}
-                            >
-                                <CIcon icon={cilDescription}/> Reporte
-                            </CButton>
-                        </div>
-                        <div className="mt-4">
+
+                    
+                    
+                <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
                             <CTable striped bordered hover>
-                                <CTableHead>
+                                <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
                                     <CTableRow>
                                         <CTableHeaderCell>#</CTableHeaderCell>
                                         <CTableHeaderCell>NOMBRE DE LOS GRADOS</CTableHeaderCell>
                                         <CTableHeaderCell style={{ textAlign: 'center', width: '40%' }}>ACCIONES</CTableHeaderCell>
                                     </CTableRow>
                                 </CTableHead>
-                                <CTableBody>
+                                <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
                                     {currentRecords.map((grado, index) => (
                                         <CTableRow key={grado.Cod_grado}>
                                             <CTableDataCell>{index + 1}</CTableDataCell>
@@ -761,8 +762,8 @@ const ListaGradosAsignaturas = () => {
                             </CTable>
                         </div>
                         {/* Paginación Fija */}
-                        <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                            <CPagination aria-label="Page navigation">
+                        <div style={{ display: 'flex',  justifyContent: 'center', alignItems: 'center', marginTop: '16px' }}>
+                            <CPagination aria-label="Page navigation" style={{ display: 'flex', gap: '10px' }}>
                                 <CButton
                                     style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
                                     disabled={currentPage === 1} // Desactiva si es la primera página
@@ -782,7 +783,7 @@ const ListaGradosAsignaturas = () => {
                                 Página {currentPage} de {Math.ceil(filteredGrados.length / recordsPerPage)}
                             </span>
                         </div>
-                    </CCardHeader>
+                    
                     <CCardBody>
 
                         {loading && (
@@ -791,19 +792,104 @@ const ListaGradosAsignaturas = () => {
                             </div>
                         )}
                     </CCardBody>
-                </CCard>
+       
                 {/* Modal para mostrar las asignaturas de los grados*/}
                 <CModal size="lg" visible={modalVisible} onClose={handleCloseModal} backdrop="static">
                     <CModalHeader onClose={handleCloseModal}>
-                        <CModalTitle><strong>ASIGNATURAS EXISTENTES EN {getGradoName(gradoActual?.Cod_grado)}</strong></CModalTitle>
+                        <CModalTitle>Asignaturas existentes en: <strong>{getGradoName(gradoActual?.Cod_grado)}</strong></CModalTitle>
+                       
+                    </CModalHeader>
+                    {/*GENERACIÓN DE TABLA PARA MOSTRAR LA INFORMACION DEL GRADO*/}
+                    <CModalBody>
+                        {loading ? (
+                            <div className="d-flex justify-content-center my-3">
+                            <CSpinner color="primary" />
+                            </div>
+                        ) : (
+                            <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll' }}>
+                            {gradosAsignaturas.length > 0 ? (
+                                <CTable striped bordered hover>
+                                <CTableHead>
+                                    <CTableRow>
+                                    <CTableHeaderCell>#</CTableHeaderCell>
+                                    <CTableHeaderCell>NOMBRE DE LA ASIGNATURA</CTableHeaderCell>
+                                    <CTableHeaderCell style={{ textAlign: 'center', width: '15%' }}>ACCIONES</CTableHeaderCell>
+                                    </CTableRow>
+                                </CTableHead>
+                                <CTableBody>
+                                    {gradosAsignaturas.map((gradoAsignatura, index) => (
+                                    <CTableRow key={gradoAsignatura.Cod_grados_asignaturas}>
+                                        <CTableDataCell>{index + 1}</CTableDataCell>
+                                        <CTableDataCell>
+                                        {editIndex === index ? (
+                                            <select
+                                            style={{ width: '100%', padding: '4px', fontSize: '0.9rem' }}
+                                            value={editedData.Cod_asignatura || gradoAsignatura.Cod_asignatura}
+                                            onChange={(e) => setEditedData({ ...editedData, Cod_asignatura: e.target.value })}
+                                            >
+                                            {Asignaturas.map((asignatura) => (
+                                                <option key={asignatura.Cod_asignatura} value={asignatura.Cod_asignatura}>
+                                                {asignatura.Nombre_asignatura}
+                                                </option>
+                                            ))}
+                                            </select>
+                                        ) : (
+                                            getAsignaturaName(gradoAsignatura.Cod_asignatura)
+                                        )}
+                                        </CTableDataCell>
+                                        <CTableDataCell>
+                                        {editIndex === index ? (
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                            <CButton 
+                                                style={{
+                                                backgroundColor: '#E74C3C',
+                                                color: '#FFFFFF',
+                                                padding: '5px 10px',
+                                                fontSize: '0.9rem',
+                                                marginRight: '8px'
+                                                }}
+                                                onClick={() => openDeleteModal(gradoAsignatura)}
+                                            >
+                                                <CIcon icon={cilTrash} />
+                                            </CButton>
+                                            </div>
+                                        ) : (
+                                            <CButton
+                                            style={{ 
+                                                padding: '4px 8px', 
+                                                backgroundColor: '#E57368', 
+                                                color: 'white', 
+                                                margin: '0 41px' 
+                                            }}
+                                            onClick={() => openDeleteModal(gradoAsignatura)}
+                                            >
+                                            <CIcon icon={cilTrash} />
+                                            </CButton>
+                                        )}
+                                        </CTableDataCell>
+                                    </CTableRow>
+                                    ))}
+                                </CTableBody>
+                                </CTable>
+                            ) : (
+                                <p>No hay asignaturas disponibles para este grado.</p>
+                            )}
+                            </div>
+                        )}
+                        </CModalBody>
+                    <CModalFooter>
+                        {/* BOTON PARA CERRAR LA ACCIÓN */}
+                        <CButton size="small" color="secondary" style={{ fontSize: '0.85rem', cursor: 'pointer' }} onClick={handleCloseModal}>Cerrar</CButton>
                         <CDropdown>
                             <CDropdownToggle
-                                style={{ backgroundColor: '#6C8E58', color: 'white', marginLeft: '370px', fontSize: '0.85rem', cursor: 'pointer' }}
+                                style={{ backgroundColor: '#6C8E58', color: 'white', fontSize: '0.85rem', cursor: 'pointer',transition: 'all 0.3s ease'}}
+                                onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = '#5A784C'; e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';  }}
+                                onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = '#6C8E58'; e.currentTarget.style.boxShadow = 'none'; }}
                             >
                               <CIcon icon={cilDescription}/> Reporte
                             </CDropdownToggle>
                             {/* SELECION DE REPORTERIA EN PDF Y EXCEL*/}
-                            <CDropdownMenu>
+                            <CDropdownMenu style={{position: "absolute", zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos*/ backgroundColor: "#fff",boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",borderRadius: "4px",overflow: "hidden",}}>
                                 <CDropdownItem
                                     onClick={handleReporteClick}
                                     style={{
@@ -839,94 +925,6 @@ const ListaGradosAsignaturas = () => {
                                 </CDropdownItem>
                             </CDropdownMenu>
                         </CDropdown>
-                    </CModalHeader>
-                    {/*GENERACIÓN DE TABLA PARA MOSTRAR LA INFORMACION DEL GRADO*/}
-                    <CModalBody>
-                        {gradosAsignaturas.length > 0 ? (
-                            <CTable striped bordered hover>
-                                <CTableHead>
-                                    <CTableRow>
-                                        <CTableHeaderCell>#</CTableHeaderCell>
-                                        <CTableHeaderCell>NOMBRE DE LA ASIGNATURA</CTableHeaderCell>
-                                        {/* <CTableHeaderCell style={{  width: '35%' }}>GRADO</CTableHeaderCell> */}
-                                        <CTableHeaderCell style={{ textAlign: 'center', width: '15%' }}>ACCIONES</CTableHeaderCell>
-                                    </CTableRow>
-                                </CTableHead>
-                                <CTableBody>
-                                    {gradosAsignaturas.map((gradoAsignatura, index) => (
-                                        <CTableRow key={gradoAsignatura.Cod_grados_asignaturas}>
-                                            <CTableDataCell>{index + 1}</CTableDataCell>
-                                            <CTableDataCell>
-                                                {editIndex === index ? (
-                                                    <select
-                                                        style={{ width: '100%', padding: '4px', fontSize: '0.9rem' }} // Ajuste de estilo
-                                                        value={editedData.Cod_asignatura || gradoAsignatura.Cod_asignatura}
-                                                        onChange={(e) => setEditedData({ ...editedData, Cod_asignatura: e.target.value })}
-                                                    >
-                                                        {Asignaturas.map((gradoAsignatura) => (
-                                                            <option key={gradoAsignatura.Cod_asignatura} value={gradoAsignatura.Cod_asignatura}>
-                                                                {gradoAsignatura.Nombre_asignatura} {/* Usa el campo del nombre de la asignatura */}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                ) : (
-                                                    getAsignaturaName(gradoAsignatura.Cod_asignatura)  // Muestra el nombre si no se está editando
-                                                )}
-                                            </CTableDataCell>
-                                            {/* EXTRAER EL NOMBRE DEL GRADO*/}
-                                            {/* <CTableDataCell>{getGradoName(gradoAsignatura.Cod_grado)}</CTableDataCell> */}
-                                            <CTableDataCell>
-                                                {editIndex === index ? (
-                                                    <div style={{ display: 'flex', gap: '8px' }}> {/* Contenedor flex para alinear los botones */}
-
-                                                        {/* BOTON PARA ABRIR EL MODAL DE ACTUALIZAR LA ASIGNATURA */}
-                                                        {/* <CButton 
-                                                                style={{ padding: '4px 8px', backgroundColor: '#2ECC71', color: 'white' }} 
-                                                                onClick={() => gradoAsignaturaToUpdate(gradoAsignatura)}
-                                                            >          
-                                                                        
-                                                                <CIcon icon={cilCheck} /> 
-                                                            </CButton> */}
-
-                                                        <CButton //BOTON PARA ELIMINAR LA ASIGNATURA
-                                                         style={{
-                                                            backgroundColor: '#E74C3C',
-                                                            color: '#FFFFFF',
-                                                            padding: '5px 10px',
-                                                            fontSize: '0.9rem',
-                                                            marginRight: '8px'
-                                                        }}
-                                                            onClick={() => openDeleteModal(gradoAsignatura)}
-                                                        >
-                                                            {/* ICONO PARA ABRIR EL MODAL DE ELIMINAR*/}
-                                                            <CIcon icon={cilTrash} />
-                                                        </CButton>
-
-                                                    </div>
-                                                ) : (
-
-                                                    <CButton  //BOTON PARA DESPLEGAR LAS ACCIONES DE ELIMINAR
-                                                        style={{ padding: '4px 8px', backgroundColor: '#E57368', color: 'white', margin: '0 41px' }}
-                                                        //color="warning" 
-                                                        onClick={() => openDeleteModal(gradoAsignatura)}
-                                                    >
-                                                        {/* ICONO DE LAPIZ PARA ABRIR LAS ACCIONES*/}
-                                                        <CIcon icon={cilTrash} />
-                                                    </CButton>
-                                                )}
-                                            </CTableDataCell>
-                                        </CTableRow>
-                                    ))}
-                                </CTableBody>
-                            </CTable>
-                        ) : (
-                            <p>No hay asignaturas disponibles para este grado.</p>
-                        )}
-
-                    </CModalBody>
-                    <CModalFooter>
-                        {/* BOTON PARA CERRAR LA ACCIÓN */}
-                        <CButton size="small" color="secondary" onClick={handleCloseModal}>Cerrar</CButton>
                     </CModalFooter>
                 </CModal>
 

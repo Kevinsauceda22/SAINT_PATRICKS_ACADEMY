@@ -12,6 +12,7 @@ import {
   CContainer,
   CForm,
   CFormInput,
+  CFormTextarea,
   CInputGroup,
   CInputGroupText,
   CModal,
@@ -56,7 +57,7 @@ const ListaAsignaturas = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const inputRefNombre = useRef(null); // Referencia para el input
   const inputRefDescripcion = useRef(null);
-  const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinámico el número de registros por página
+  const [recordsPerPage, setRecordsPerPage] = useState(10); // Hacer dinámico el número de registros por página
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
   const resetAsignatura = () => setNueva_Asignatura({ Nombre_asignatura: '', Descripcion_asignatura: '' });
@@ -199,7 +200,7 @@ const ListaAsignaturas = () => {
       .toUpperCase() // Convertir a mayúsculas
       .trimStart(); // Evitar espacios al inicio
 
-    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras y espacios y la letra ñ
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras, números y espacios y la letra ñ
 
     // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
     if (/\s{2,}/.test(value)) {
@@ -217,7 +218,7 @@ const ListaAsignaturas = () => {
       Swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
         confirmButtonText: 'Aceptar'
       });
       return;
@@ -565,26 +566,26 @@ const ListaAsignaturas = () => {
     asignatura.Nombre_asignatura.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
- // Lógica de paginación
- const indexOfLastRecord = currentPage * recordsPerPage;
- const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
- const currentRecords = filteredAsignaturas.slice(indexOfFirstRecord, indexOfLastRecord);
+  // Lógica de paginación
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredAsignaturas.slice(indexOfFirstRecord, indexOfLastRecord);
 
- // Cambiar página
-const paginate = (pageNumber) => {
-  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredAsignaturas.length / recordsPerPage)) {
-    setCurrentPage(pageNumber);
-  }
-}
-
-    // Verificar permisos
-    if (!canSelect) {
-      return <AccessDenied />;
+  // Cambiar página
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredAsignaturas.length / recordsPerPage)) {
+      setCurrentPage(pageNumber);
     }
+  }
+
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
 
     const generarReportePDF = () => {
       // Validar que haya datos en la tabla
-      if (!currentRecords || currentRecords.length === 0) {
+      if (!filteredAsignaturas || filteredAsignaturas.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -644,8 +645,9 @@ const paginate = (pageNumber) => {
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Nombre', 'Descripción']],
-          body: currentRecords.map((asignatura, index) => [
-            index + 1,
+          body: filteredAsignaturas.map((asignatura, index) => [
+            //index + 1,
+            asignatura.originalIndex || index + 1,
             `${asignatura.Nombre_asignatura|| ''}`.trim(),
             asignatura.Descripcion_asignatura
           ]),
@@ -666,27 +668,27 @@ const paginate = (pageNumber) => {
           },
           alternateRowStyles: { fillColor: [240, 248, 255] },
          didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+            const currentDate = new Date();
+            const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+            const pageHeight = doc.internal.pageSize.height; // Altura de la página
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            // Fecha y hora en el pie de página
+            doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+         },
+        });
+        
+        // Asegúrate de calcular el total de páginas al final
+        const totalPages = doc.internal.getNumberOfPages();
+        const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+        
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i); // Ve a cada página
+          doc.setTextColor(100);
+          const text = `Página ${i} de ${totalPages}`;
+          // Agrega número de página en la posición correcta
+          doc.text(text, pageWidth - 30, pageHeight - 10);
+        }
     
         // Abrir el PDF en lugar de descargarlo automáticamente
         window.open(doc.output('bloburl'), '_blank');
@@ -702,7 +704,7 @@ const paginate = (pageNumber) => {
 
     const generarReporteExcel = () => {
       // Validar que haya datos en la tabla
-      if (!currentRecords || currentRecords.length === 0) {
+      if (!filteredAsignaturas || filteredAsignaturas.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -719,8 +721,9 @@ const paginate = (pageNumber) => {
       ];
     
       // Crear filas con asistencias filtradas
-      const filas = currentRecords.map((asignatura, index) => [
-        index + 1,
+      const filas = filteredAsignaturas.map((asignatura, index) => [
+        //index + 1,
+        asignatura.originalIndex,
         asignatura.Nombre_asignatura,
         asignatura.Descripcion_asignatura
       ]);
@@ -749,8 +752,8 @@ const paginate = (pageNumber) => {
       // Ajustar el ancho de columnas automáticamente
       const ajusteColumnas = [
         { wpx: 50 }, 
-        { wpx: 100 },
-        { wpx: 300 }
+        { wpx: 150 },
+        { wpx: 400 }
       ];
     
       hojaDeTrabajo['!cols'] = ajusteColumnas;
@@ -807,70 +810,70 @@ const paginate = (pageNumber) => {
         </CButton>
         )}
 
-<CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
-      <CDropdownToggle
-        style={{
-          backgroundColor: '#6C8E58',
-          color: 'white',
-          cursor: 'pointer',
-          transition: 'all 0.3s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#5A784C';
-          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#6C8E58';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
-      >
-        <CIcon icon={cilDescription}/> Reporte
-      </CDropdownToggle>
-      <CDropdownMenu
-        style={{
-          position: "absolute",
-          zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
-          backgroundColor: "#fff",
-          boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
-          borderRadius: "4px",
-          overflow: "hidden",
-        }}
-      >
-        <CDropdownItem
-          onClick={generarReportePDF}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            borderBottom: "1px solid #eaeaea",
-            transition: "background-color 0.1s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilFile} size="sm" /> Abrir en PDF
-        </CDropdownItem>
-        <CDropdownItem
-        onClick={generarReporteExcel}
-          style={{
-            cursor: "pointer",
-            outline: "none",
-            backgroundColor: "transparent",
-            padding: "0.5rem 1rem",
-            fontSize: "0.85rem",
-            color: "#333",
-            transition: "background-color 0.3s",
-          }}
-          onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
-          onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
-        >
-          <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
-        </CDropdownItem>
-      </CDropdownMenu>
-    </CDropdown>
+        <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+          <CDropdownToggle
+            style={{
+              backgroundColor: '#6C8E58',
+              color: 'white',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#5A784C';
+              e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#6C8E58';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <CIcon icon={cilDescription}/> Reporte
+          </CDropdownToggle>
+          <CDropdownMenu
+            style={{
+              position: "absolute",
+              zIndex: 1050, /* Asegura que el menú esté por encima de otros elementos */
+              backgroundColor: "#fff",
+              boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+              borderRadius: "4px",
+              overflow: "hidden",
+            }}
+          >
+            <CDropdownItem
+              onClick={generarReportePDF}
+              style={{
+                cursor: "pointer",
+                outline: "none",
+                backgroundColor: "transparent",
+                padding: "0.5rem 1rem",
+                fontSize: "0.85rem",
+                color: "#333",
+                borderBottom: "1px solid #eaeaea",
+                transition: "background-color 0.1s",
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+            >
+              <CIcon icon={cilFile} size="sm" /> Abrir en PDF
+            </CDropdownItem>
+            <CDropdownItem
+            onClick={generarReporteExcel}
+              style={{
+                cursor: "pointer",
+                outline: "none",
+                backgroundColor: "transparent",
+                padding: "0.5rem 1rem",
+                fontSize: "0.85rem",
+                color: "#333",
+                transition: "background-color 0.3s",
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = "#f5f5f5"}
+              onMouseOut={(e) => e.target.style.backgroundColor = "transparent"}
+            >
+              <CIcon icon={cilSpreadsheet} size="sm" /> Descargar Excel
+            </CDropdownItem>
+          </CDropdownMenu>
+        </CDropdown>
       </CCol>
     </CRow>
 
@@ -886,7 +889,9 @@ const paginate = (pageNumber) => {
             placeholder="Buscar asignatura..."
             onChange={handleSearch}
             value={searchTerm}
-          />
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
+            />
           <CButton
             style={{border: '1px solid #ccc',
               transition: 'all 0.1s ease-in-out', // Duración de la transición
@@ -925,9 +930,9 @@ const paginate = (pageNumber) => {
               }}
                 value={recordsPerPage}
               >
-                <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
+                <option value="30">30</option>
               </CFormSelect>
             <span>&nbsp;registros</span>
           </div>       
@@ -936,9 +941,9 @@ const paginate = (pageNumber) => {
     </CRow>
 
 
-    {/* Tabla para mostrar ciclos */}
-    {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+      {/* Tabla para mostrar ciclos */}
+      {/* Contenedor de tabla con scroll */}
+      <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
         <CTable striped bordered hover>
           <CTableHead>
             <CTableRow>
@@ -968,40 +973,40 @@ const paginate = (pageNumber) => {
                   <CButton style={{ backgroundColor: '#E57368' }} onClick={() => openDeleteModal(asignatura)}>
                     <CIcon icon={cilTrash} />
                   </CButton>
-)}
+                  )}
                 </CTableDataCell>
               </CTableRow>
             ))}
           </CTableBody>
        </CTable>
-    </div>
+      </div>
 
-    {/* Paginación Fija */}
-    <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <CPagination aria-label="Page navigation">
-        <CButton
-          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === 1} // Deshabilitar si estás en la primera página
-          onClick={() => paginate(currentPage - 1)}>
-          Anterior
-        </CButton>
-        <CButton
-          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
-          disabled={currentPage === Math.ceil(filteredAsignaturas.length / recordsPerPage)} // Deshabilitar si estás en la última página
-          onClick={() => paginate(currentPage + 1)}>
-          Siguiente
-       </CButton>
-     </CPagination>
-      {/* Mostrar total de páginas */}
-      <span style={{ marginLeft: '10px' }}>
-        Página {currentPage} de {Math.ceil(filteredAsignaturas.length / recordsPerPage)}
-      </span>
-   </div>
+      {/* Paginación Fija */}
+      <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <CPagination aria-label="Page navigation">
+          <CButton
+            style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+            disabled={currentPage === 1} // Deshabilitar si estás en la primera página
+            onClick={() => paginate(currentPage - 1)}>
+            Anterior
+          </CButton>
+          <CButton
+            style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
+            disabled={currentPage === Math.ceil(filteredAsignaturas.length / recordsPerPage)} // Deshabilitar si estás en la última página
+            onClick={() => paginate(currentPage + 1)}>
+            Siguiente
+         </CButton>
+       </CPagination>
+        {/* Mostrar total de páginas */}
+        <span style={{ marginLeft: '10px' }}>
+          Página {currentPage} de {Math.ceil(filteredAsignaturas.length / recordsPerPage)}
+        </span>
+      </div>
 
 
-    {/* Modal Crear Asignatura*/}
-    <CModal visible={modalVisible} backdrop="static">
-      <CModalHeader closeButton={false}>
+      {/* Modal Crear Asignatura*/}
+      <CModal visible={modalVisible} backdrop="static">
+        <CModalHeader closeButton={false}>
         <CModalTitle>Nueva Asignatura</CModalTitle>
         <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalVisible, resetAsignatura)} />
         </CModalHeader>
@@ -1024,10 +1029,9 @@ const paginate = (pageNumber) => {
           </CInputGroup>
           <CInputGroup className="mb-3">
             <CInputGroupText>Descripcion de la Asignatura</CInputGroupText>
-            <CFormInput
-              type="text"
+            <CFormTextarea
               value={nueva_Asignatura.Descripcion_asignatura}
-              maxLength={20}
+              maxLength={200}
               onPaste={disableCopyPaste}
               onCopy={disableCopyPaste}
               onChange={(e) => handleInputChange(e, (value) => setNueva_Asignatura({
@@ -1050,56 +1054,56 @@ const paginate = (pageNumber) => {
         </CModalFooter>
       </CModal>
 
-    {/* Modal Actualizar Asignatura */}
-    <CModal visible={modalUpdateVisible}  backdrop="static">
-      <CModalHeader closeButton={false}>
-      <CModalTitle>Actualizar Asignatura</CModalTitle>
-      <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetAsignaturatoUpdate)} />
-      </CModalHeader>
-      <CModalBody>
-        <CForm>
-          <CInputGroup className="mb-3">
-            <CInputGroupText>Nombre de la Asignatura</CInputGroupText>
-            <CFormInput
-              type="text"
-              maxLength={20}
-              onPaste={disableCopyPaste}
-              onCopy={disableCopyPaste}
-              placeholder="Ingrese la nueva asignatura"
-              value={asignaturaToUpdate.Nombre_asignatura}
-              onChange={(e) => handleInputChange(e, (value) =>
-                setAsignaturaToUpdate({ ...asignaturaToUpdate, Nombre_asignatura: value })
-              )}
-              ref={inputRefNombre}
-              />
-          </CInputGroup>
+      {/* Modal Actualizar Asignatura */}
+      <CModal visible={modalUpdateVisible}  backdrop="static">
+        <CModalHeader closeButton={false}>
+        <CModalTitle>Actualizar Asignatura</CModalTitle>
+        <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal(setModalUpdateVisible, resetAsignaturatoUpdate)} />
+        </CModalHeader>
+        <CModalBody>
+          <CForm>
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Nombre de la Asignatura</CInputGroupText>
+              <CFormInput
+                type="text"
+                maxLength={20}
+                onPaste={disableCopyPaste}
+                onCopy={disableCopyPaste}
+                placeholder="Ingrese la nueva asignatura"
+                value={asignaturaToUpdate.Nombre_asignatura}
+                onChange={(e) => handleInputChange(e, (value) =>
+                  setAsignaturaToUpdate({ ...asignaturaToUpdate, Nombre_asignatura: value })
+                )}
+                ref={inputRefNombre}
+                />
+            </CInputGroup>
 
-          <CInputGroup className="mb-3">
-            <CInputGroupText>Descripcion de la Asignatura</CInputGroupText>
-            <CFormInput 
-              type="text"
-              maxLength={20}
-              onPaste={disableCopyPaste}
-              onCopy={disableCopyPaste}
-              placeholder="Ingrese una descripcion nueva"
-              value={asignaturaToUpdate.Descripcion_asignatura}
-              onChange={(e) => handleInputChange(e, (value) =>
-                setAsignaturaToUpdate({ ...asignaturaToUpdate, Descripcion_asignatura: value })
-              )}
-              ref={inputRefDescripcion} // Asignar la referencia al input
-            />
-          </CInputGroup>
-        </CForm>
-      </CModalBody>
-      <CModalFooter>
-        <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetAsignaturatoUpdate)}>
-          Cancelar
-        </CButton>
-        <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }}   onClick={handleUpdateAsignatura}>
-        <CIcon icon={cilPen} style={{ marginRight: '5px' }} />Actualizar 
-        </CButton>
-      </CModalFooter>
-    </CModal>
+            <CInputGroup className="mb-3">
+              <CInputGroupText>Descripcion de la Asignatura</CInputGroupText>
+              <CFormInput 
+                type="text"
+                maxLength={200}
+                onPaste={disableCopyPaste}
+                onCopy={disableCopyPaste}
+                placeholder="Ingrese una descripcion nueva"
+                value={asignaturaToUpdate.Descripcion_asignatura}
+                onChange={(e) => handleInputChange(e, (value) =>
+                  setAsignaturaToUpdate({ ...asignaturaToUpdate, Descripcion_asignatura: value })
+                )}
+                ref={inputRefDescripcion} // Asignar la referencia al input
+              />
+            </CInputGroup>
+          </CForm>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => handleCloseModal(setModalUpdateVisible, resetAsignaturatoUpdate)}>
+            Cancelar
+          </CButton>
+          <CButton  style={{  backgroundColor: '#F9B64E',color: 'white' }}   onClick={handleUpdateAsignatura}>
+          <CIcon icon={cilPen} style={{ marginRight: '5px' }} />Actualizar 
+          </CButton>
+        </CModalFooter>
+     </CModal>
 
     {/* Modal Eliminar Asignatura */}
     <CModal visible={modalDeleteVisible} onClose={() => setModalDeleteVisible(false)} backdrop="static">

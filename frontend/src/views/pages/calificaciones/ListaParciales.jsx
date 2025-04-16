@@ -59,6 +59,7 @@ const ListaParciales = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
   const resetParcial = () => setNuevoParcial({ Nombre_parcial: '' });
   const resetParcialtoUpdate = () => setParcialesToUpdate({ Nombre_parcial: ''});
+
   useEffect(() => {
     fetchParciales();
     const token = localStorage.getItem('token');
@@ -92,115 +93,109 @@ const ListaParciales = () => {
   };
 
   // Validaciones respectivas
- const validateParcial = () => {
+  const validateParcial = () => {
+    // Comprobación de vacío
+      if (!nuevoParcial.trim()) {
+      Swal.fire('Error', 'El campo "Nombre del Parcial" no puede estar vacío', 'error');
+      return false;
+    }
+    // Verificar si el nombre del parcial ya existe en otro registro
+    const parcialExistente = Parciales.some(
+      (parcial) => parcial.Nombre_parcial.trim().toLowerCase() === nuevoParcial.trim().toLowerCase()
+    );
 
-  // Comprobación de vacío
-    if (!nuevoParcial.trim()) {
-    Swal.fire('Error', 'El campo "Nombre del Parcial" no puede estar vacío', 'error');
-    return false;
-  }
+    if (parcialExistente) {
+      Swal.fire('Error', `El parcial "${nuevoParcial}" ya existe`, 'error');
+      return false;
+    }
+    return true;
+  };
 
-  // Verificar si el nombre del parcial ya existe en otro registro
-  const parcialExistente = Parciales.some(
-    (parcial) => parcial.Nombre_parcial.trim().toLowerCase() === nuevoParcial.trim().toLowerCase()
-  );
+  const validarParcialesUpdate = () => {
+    // Verificar si el nombre del parcial está presente
+    if (!parcialToUpdate.Nombre_parcial.trim()) {
+      Swal.fire('Error', 'El campo "Nombre del Parcial" no puede estar vacío', 'error');
+      return false;
+    }
 
-  if (parcialExistente) {
-    Swal.fire('Error', `El parcial "${nuevoParcial}" ya existe`, 'error');
-    return false;
-  }
+    // Verificar si existe otro parcial con el mismo nombre, excluyendo el actual
+    const parcialExistente = Parciales.some(
+      (parcial) =>
+        parcial.Nombre_parcial.trim().toLowerCase() === parcialToUpdate.Nombre_parcial.trim().toLowerCase() &&
+        parcial.Cod_parcial !== parcialToUpdate.Cod_parcial
+    );
 
-
-  return true;
-};
-
-const validarParcialesUpdate = () => {
-  // Verificar si el nombre del parcial está presente
-  if (!parcialToUpdate.Nombre_parcial.trim()) {
-    Swal.fire('Error', 'El campo "Nombre del Parcial" no puede estar vacío', 'error');
-    return false;
-  }
-
-  // Verificar si existe otro parcial con el mismo nombre, excluyendo el actual
-  const parcialExistente = Parciales.some(
-    (parcial) =>
-      parcial.Nombre_parcial.trim().toLowerCase() === parcialToUpdate.Nombre_parcial.trim().toLowerCase() &&
-      parcial.Cod_parcial !== parcialToUpdate.Cod_parcial
-  );
-
-  if (parcialExistente) {
-    Swal.fire('Error', `El parcial "${parcialToUpdate.Nombre_parcial}" ya existe`, 'error');
-    return false;
-  }
+    if (parcialExistente) {
+      Swal.fire('Error', `El parcial "${parcialToUpdate.Nombre_parcial}" ya existe`, 'error');
+      return false;
+    }
 
 
-  // Permitir la actualización sin importar si hay cambios o no
-  return true;
-};
+    // Permitir la actualización sin importar si hay cambios o no
+    return true;
+  };
 
-
-
-// Función para manejar cambios en el input
-const handleInputChange = (e, setFunction) => {
-  const input = e.target;
-  const cursorPosition = input.selectionStart; // Guarda la posición actual del cursor
-  let value = input.value
-    .toUpperCase() // Convertir a mayúsculas
-    .trimStart(); // Evitar espacios al inicio
-
-  const regex =/^[A-ZÑÁÉÍÓÚ0-9\s,]*$/; // Solo letras y espacios
-
-  // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
-  if (/\s{2,}/.test(value)) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Espacios múltiples',
-      text: 'No se permite más de un espacio entre palabras.',
-    });
-    value = value.replace(/\s+/g, ' '); // Reemplazar múltiples espacios por uno solo
-  }
-
-  // Validar solo letras y espacios
-  if (!regex.test(value)) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Caracteres no permitidos',
-      text: 'Solo se permiten letras y espacios.',
-    });
-    return;
-  }
-
-  // Validación: no permitir letras repetidas más de 4 veces seguidas
-  const words = value.split(' ');
-  for (let word of words) {
-    const letterCounts = {};
-    for (let letter of word) {
-      letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-      if (letterCounts[letter] > 4) {
-        Swal.fire({
-          icon: 'warning',
-          title: 'Repetición de letras',
-          text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
-        });
-        return;
+  // Función para manejar cambios en el input
+  const handleInputChange = (e, setFunction) => {
+    const input = e.target;
+    const cursorPosition = input.selectionStart;
+    let value = input.value.toUpperCase().trimStart();
+  
+    // Verificar cada nuevo carácter ingresado
+    const lastChar = value.slice(-1);
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/;
+    
+    if (lastChar && !regex.test(lastChar)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Caracteres no permitidos',
+        text: 'Solo se permiten letras, números y espacios.',
+      });
+      // Mantener el valor anterior sin el carácter inválido
+      value = input.value.slice(0, -1).toUpperCase().trimStart();
+      input.value = value;
+      return;
+    }
+  
+    // Resto de validaciones (espacios múltiples, letras repetidas)
+    if (/\s{2,}/.test(value)) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Espacios múltiples',
+        text: 'No se permite más de un espacio entre palabras.',
+      });
+      value = value.replace(/\s+/g, ' ');
+    }
+  
+    // Validación de letras repetidas
+    const words = value.split(' ');
+    for (let word of words) {
+      const letterCounts = {};
+      for (let letter of word) {
+        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
+        if (letterCounts[letter] > 4) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Repetición de letras',
+            text: `La letra "${letter}" se repite más de 4 veces en la palabra "${word}".`,
+          });
+          value = input.value.slice(0, -1).toUpperCase().trimStart();
+          input.value = value;
+          return;
+        }
       }
     }
-  }
-
-  // Asigna el valor en el input manualmente para evitar el salto de transición
-  input.value = value;
-
-  // Establecer el valor con la función correspondiente
-  setFunction(value);
-  setHasUnsavedChanges(true); // Asegúrate de marcar que hay cambios sin guardar
-
-  // Restaurar la posición del cursor
-  requestAnimationFrame(() => {
-    if (inputRef.current) {
-      inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
-    }
-  });
-};
+  
+    input.value = value;
+    setFunction(value);
+    setHasUnsavedChanges(true);
+  
+    requestAnimationFrame(() => {
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(cursorPosition, cursorPosition);
+      }
+    });
+  };
 
   // Deshabilitar copiar y pegar
   const disableCopyPaste = (e) => {
@@ -378,19 +373,19 @@ const handleInputChange = (e, setFunction) => {
 
   const handleDeleteParcial = async () => {
     try {
-       // Verificar si obtenemos el token correctamente
-       const token = localStorage.getItem('token');
-       if (!token) {
-         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-         return;
-       }
-   
-       // Decodificar el token para obtener el nombre del usuario
-       const decodedToken = jwt_decode.jwtDecode(token);
-       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-         console.error('No se pudo obtener el código o el nombre de usuario del token');
-         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-       }
+      // Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
+  
+      // Decodificar el token para obtener el nombre del usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+        console.error('No se pudo obtener el código o el nombre de usuario del token');
+        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+      }
 
       const response = await fetch('http://localhost:4000/api/parciales/eliminar_parcial', {
         method: 'DELETE',
@@ -402,22 +397,22 @@ const handleInputChange = (e, setFunction) => {
       });
 
       if (response.ok) {
-         // 2. Registrar la acción en la bitácora
-         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el parcial con código: ${parcialToDelete.Cod_parcial}`;
-        
-         // Enviar a la bitácora
-         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
-           method: 'POST',
-           headers: {
-             'Content-Type': 'application/json',
-             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-           },
-           body: JSON.stringify({
-             cod_usuario: decodedToken.cod_usuario, // Código del usuario
-             cod_objeto: 57, // Código del objeto para la acción
-             accion: 'DELETE', // Acción realizada
-             descripcion: descripcion, // Descripción de la acción
-           }),
+        // 2. Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado el parcial con código: ${parcialToDelete.Cod_parcial}`;
+      
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 57, // Código del objeto para la acción
+            accion: 'DELETE', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
          });
    
          if (bitacoraResponse.ok) {
@@ -510,17 +505,17 @@ const handleInputChange = (e, setFunction) => {
     parcial.Nombre_parcial.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
- // Lógica de paginación
- const indexOfLastRecord = currentPage * recordsPerPage;
- const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
- const currentRecords = filteredParciales.slice(indexOfFirstRecord, indexOfLastRecord);
+  // Lógica de paginación
+  const indexOfLastRecord = currentPage * recordsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
+  const currentRecords = filteredParciales.slice(indexOfFirstRecord, indexOfLastRecord);
 
- // Cambiar página
-const paginate = (pageNumber) => {
-  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredParciales.length / recordsPerPage)) {
-    setCurrentPage(pageNumber);
+  // Cambiar página
+  const paginate = (pageNumber) => {
+    if (pageNumber > 0 && pageNumber <= Math.ceil(filteredParciales.length / recordsPerPage)) {
+      setCurrentPage(pageNumber);
+    }
   }
-}
 
   // Verificar permisos
   if (!canSelect) {
@@ -529,7 +524,7 @@ const paginate = (pageNumber) => {
 
   const generarReportePDF = () => {
     // Validar que haya datos en la tabla
-    if (!Parciales || Parciales.length === 0) {
+    if (!filteredParciales || filteredParciales.length === 0) {
       Swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
@@ -589,8 +584,8 @@ const paginate = (pageNumber) => {
       doc.autoTable({
         startY: yPosition + 4,
         head: [['#', 'Nombre Parcial']],
-        body: Parciales.map((parcial, index) => [
-          index + 1,
+        body: filteredParciales.map((parcial, index) => [
+          parcial.originalIndex || index + 1,
           `${parcial.Nombre_parcial || ''}`.trim(),
         ]),
         headStyles: {
@@ -609,27 +604,27 @@ const paginate = (pageNumber) => {
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); // Ve a cada página
+        doc.setTextColor(100);
+        const text = `Página ${i} de ${totalPages}`;
+        // Agrega número de página en la posición correcta
+        doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
   
       // Abrir el PDF en lugar de descargarlo automáticamente
       window.open(doc.output('bloburl'), '_blank');
@@ -644,7 +639,7 @@ const paginate = (pageNumber) => {
 
   const generarReporteExcel = () => {
     // Validar que haya datos en la tabla
-    if (!Parciales || Parciales.length === 0) {
+    if (!filteredParciales || filteredParciales.length === 0) {
       Swal.fire({
         icon: 'info',
         title: 'Tabla vacía',
@@ -661,8 +656,8 @@ const paginate = (pageNumber) => {
     ];
   
     // Crear filas con asistencias filtradas
-    const filas = Parciales.map((parcial, index) => [
-      index + 1,
+    const filas = filteredParciales.map((parcial, index) => [
+      parcial.originalIndex || index + 1,
       parcial.Nombre_parcial
     ]);
   
@@ -703,6 +698,8 @@ const paginate = (pageNumber) => {
 
     XLSX.writeFile(libroDeTrabajo, nombreArchivo);
   };
+
+
  return (//boton de busqueda
   <CContainer>
     {/* Contenedor del h1 y botón "Nuevo" */}
@@ -824,6 +821,8 @@ const paginate = (pageNumber) => {
             placeholder="Buscar parcial..."
             onChange={handleSearch}
             value={searchTerm}
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
           />
           <CButton
             style={{border: '1px solid #ccc',

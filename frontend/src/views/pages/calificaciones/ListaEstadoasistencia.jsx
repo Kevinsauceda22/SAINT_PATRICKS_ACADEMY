@@ -98,7 +98,7 @@ const ListaEstadoasistencia = () => {
       .toUpperCase() // Convertir a mayúsculas
       .trimStart(); // Evitar espacios al inicio
 
-    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/;// Solo letras y espacios
+    const regex = /^[A-ZÑÁÉÍÓÚ0-9\s,]*$/;// Solo letras, números y espacios
 
     // Verificar si hay múltiples espacios consecutivos antes de reemplazarlos
     if (/\s{2,}/.test(value)) {
@@ -116,7 +116,7 @@ const ListaEstadoasistencia = () => {
       swal.fire({
         icon: 'warning',
         title: 'Caracteres no permitidos',
-        text: 'Solo se permiten letras y espacios.',
+        text: 'Solo se permiten letras, números y espacios.',
         confirmButtonText: 'Aceptar',
       });
       return;
@@ -593,7 +593,7 @@ const ListaEstadoasistencia = () => {
   
     const generarReportePDF = () => {
       // Validar que haya datos en la tabla
-      if (!currentRecords || currentRecords.length === 0) {
+      if (!filteredEstadoasistencia || filteredEstadoasistencia.length === 0) {
         swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -653,8 +653,8 @@ const ListaEstadoasistencia = () => {
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Descripción']],
-          body: currentRecords.map((estado, index) => [
-            index + 1,
+          body: filteredEstadoasistencia.map((estado, index) => [
+            estado.originalIndex || index + 1,
             `${estado.Descripcion_asistencia || ''}`.trim(),
           ]),
           headStyles: {
@@ -673,28 +673,28 @@ const ListaEstadoasistencia = () => {
           },
           alternateRowStyles: { fillColor: [240, 248, 255] },
           didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
-    
+            const currentDate = new Date();
+            const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+            const pageHeight = doc.internal.pageSize.height; // Altura de la página
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            // Fecha y hora en el pie de página
+            doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+          },
+        });
+        
+        // Asegúrate de calcular el total de páginas al final
+        const totalPages = doc.internal.getNumberOfPages();
+        const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+        
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i); // Ve a cada página
+          doc.setTextColor(100);
+          const text = `Página ${i} de ${totalPages}`;
+          // Agrega número de página en la posición correcta
+          doc.text(text, pageWidth - 30, pageHeight - 10);
+        }
+
         // Abrir el PDF en lugar de descargarlo automáticamente
         window.open(doc.output('bloburl'), '_blank');
       };
@@ -709,7 +709,7 @@ const ListaEstadoasistencia = () => {
 
     const generarReporteExcel = () => {
       // Validar que haya datos en la tabla
-      if (!currentRecords || currentRecords.length === 0) {
+      if (!filteredEstadoasistencia || filteredEstadoasistencia.length === 0) {
         swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -726,8 +726,8 @@ const ListaEstadoasistencia = () => {
       ];
     
       // Crear filas con asistencias filtradas
-      const filas = currentRecords.map((estado, index) => [
-        index + 1,
+      const filas = filteredEstadoasistencia.map((estado, index) => [
+        estado.originalIndex || index + 1,
         estado.Descripcion_asistencia
       ]);
     
@@ -894,7 +894,9 @@ const ListaEstadoasistencia = () => {
             placeholder="Buscar estado asistencia..."
             onChange={handleSearch}
             value={searchTerm}
-          />
+            onPaste={disableCopyPaste}
+            onCopy={disableCopyPaste}
+            />
           <CButton
             style={{border: '1px solid #ccc',
               transition: 'all 0.1s ease-in-out', // Duración de la transición
@@ -961,7 +963,6 @@ const ListaEstadoasistencia = () => {
               <CTableDataCell>{estadoasistencia.originalIndex}</CTableDataCell>
               <CTableDataCell>{estadoasistencia.Descripcion_asistencia}</CTableDataCell>
               <CTableDataCell>
-
 
                 {canUpdate && (
                 <CButton style={{ backgroundColor: '#F9B64E', marginRight: '10px' }} onClick={() => openUpdateModal(estadoasistencia)}>

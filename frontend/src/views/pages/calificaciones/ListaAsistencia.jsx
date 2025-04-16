@@ -27,7 +27,7 @@ import AccessDenied from "../AccessDenied/AccessDenied"
 
 const ListaAsistencia = () => {
   const { canSelect, canInsert, canUpdate } = usePermission('ListaAsistencia');
-   const [secciones, setSecciones] = useState([]);
+  const [secciones, setSecciones] = useState([]);
   const [alumnos, setAlumnos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [codSeccionSeleccionada, setCodSeccionSeleccionada] = useState('');
@@ -37,8 +37,8 @@ const ListaAsistencia = () => {
   const [mostrarModalNuevo, setMostrarModalNuevo] = useState(false); // Estado para el modal para registrar
   const [todasAsistencias, setTodasAsistencias] = useState([]); // Estado para almacenar todas las asistencias por seccion y fecha
   const [mostrarModalActualizar, setMostrarModalActualizar] = useState(false);
-const [asistenciasActualizar, setAsistenciasActualizar] = useState([]); // Almacena las asistencias para actualizar
-const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea necesario
+  const [asistenciasActualizar, setAsistenciasActualizar] = useState([]); // Almacena las asistencias para actualizar
+  const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea necesario
   //filtro
   const [nombreBusqueda, setNombreBusqueda] = useState('');
   const [diaBusqueda, setDiaBusqueda] = useState('');
@@ -51,56 +51,56 @@ const [fecha, setFecha] = useState(''); // Asegúrate de actualizarlo cuando sea
   const [anioSeccionSeleccionada, setAnioSeccionSeleccionada] = useState('');
   const [profesorseleccionado, setProfesorSeleccionado] = useState('');
   //para paginacion y busqueda de la vista secciones
-  const [recordsPerPage2, setRecordsPerPage2] = useState(5);
+  const [recordsPerPage2, setRecordsPerPage2] = useState(10);
   const [searchTerm2, setSearchTerm2] = useState('');
   const [currentPage2, setCurrentPage2] = useState(1); 
   //Paginacion
   const [currentPage, setCurrentPage] = useState(1); // Página actual
-  const [recordsPerPage, setRecordsPerPage] = useState(5); // Registros por página
+  const [recordsPerPage, setRecordsPerPage] = useState(10); // Registros por página
   // recuento de estados asistencias
   const [recuentoAsistencias, setRecuentoAsistencias] = useState([]);
   const [nomenclaturaSeleccionada, setNomenclaturaSeleccionada] = useState('');
   const [estadoAsistenciaEstilos, setEstadoAsistenciaEstilos] = useState({}); // Lista de colores e íconos por defecto
+
   const asignarIconoYColor = (descripcion) => {
     const estado = descripcion.toLowerCase();
-
     if (['presente', 'asistió', 'asistencia', 'presencia', 'participó', 'vino', 'en clase'].some(palabra => estado.includes(palabra))) {
       return { color: '#28a745', icono: <span style={{ fontSize: '0.9em' }}>✔️</span> }; // Verde para "Presente"
-  } else if (['ausente', 'falta', 'no asistió', 'inexistente', 'no vino', 'no presencia'].some(palabra => estado.includes(palabra))) {
-      return { color: '#dc3545', icono: <span style={{ fontSize: '0.9em' }}>❌</span> }; // Rojo para "Ausente"
-  } else if (['tardanza', 'retraso', 'llegó tarde', 'demora', 'tarde'].some(palabra => estado.includes(palabra))) {
-      return { color: '#CC7722', icono: <span style={{ fontSize: '0.9em' }}>⏰</span> }; // Naranja para "Tardanza"
-  } else if (['justificado', 'excusa', 'autorizado', 'permisado', 'permitido', 'exento', 'aprobado'].some(palabra => estado.includes(palabra))) {
-      return { color: '#4169E1', icono: <span style={{ fontSize: '0.9em' }}>📝</span> }; // Azul para "Justificado"
-  } else {
-      return { color: 'gray', icono: <span style={{ fontSize: '0.9em' }}>❓</span> }; // Por defecto
-  }
-};
-
-
-useEffect(() => {
-  // Fetch secciones y estados de asistencia al cargar el componente
-  fetchSecciones();
-  const token = localStorage.getItem('token');
-  if (token) {
-    try {
-      const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
-      console.log('Token decodificado:', decodedToken);
-
-      // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
-
-    } catch (error) {
-      console.error('Error al decodificar el token:', error);
+    } else if (['ausente', 'falta', 'no asistió', 'inexistente', 'no vino', 'no presencia'].some(palabra => estado.includes(palabra))) {
+        return { color: '#dc3545', icono: <span style={{ fontSize: '0.9em' }}>❌</span> }; // Rojo para "Ausente"
+    } else if (['tardanza', 'retraso', 'llegó tarde', 'demora', 'tarde'].some(palabra => estado.includes(palabra))) {
+        return { color: '#CC7722', icono: <span style={{ fontSize: '0.9em' }}>⏰</span> }; // Naranja para "Tardanza"
+    } else if (['justificado', 'excusa', 'autorizado', 'permisado', 'permitido', 'exento', 'aprobado'].some(palabra => estado.includes(palabra))) {
+        return { color: '#4169E1', icono: <span style={{ fontSize: '0.9em' }}>📝</span> }; // Azul para "Justificado"
+    } else {
+        return { color: 'gray', icono: <span style={{ fontSize: '0.9em' }}>❓</span> }; // Por defecto
     }
-  }
-  fetchEstadosAsistencia();
-  
-  // Si hay una sección seleccionada, fetch de alumnos y recuento
-  if (codSeccionSeleccionada) {
-    fetchAlumnosPorSeccion(codSeccionSeleccionada);
-    fetchRecuentoAsistencias();
-  }
-}, [codSeccionSeleccionada]); 
+  };
+
+
+  useEffect(() => {
+    // Fetch secciones y estados de asistencia al cargar el componente
+    fetchSecciones();
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
+    fetchEstadosAsistencia();
+    
+    // Si hay una sección seleccionada, fetch de alumnos y recuento
+    if (codSeccionSeleccionada) {
+      fetchAlumnosPorSeccion(codSeccionSeleccionada);
+      fetchRecuentoAsistencias();
+    }
+  }, [codSeccionSeleccionada]); 
 
   //trae las secciones
   const fetchSecciones = async () => {
@@ -115,6 +115,7 @@ useEffect(() => {
       setCargando(false);
     }
   };
+
   //trae los estados asistencia y les aplica un estilo(color e icono)
   const fetchEstadosAsistencia = async () => {
     try {
@@ -132,6 +133,7 @@ useEffect(() => {
       console.error('Error al obtener los estados de asistencia:', error);
     }
   };
+
   // trae todos los alumnos por seccion 
   const fetchAlumnosPorSeccion = async (codSeccion) => {
     try {
@@ -164,6 +166,7 @@ useEffect(() => {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+
   // trae todas las asistencia por seccion y fecha 
   const fetchTodasAsistencias = async (fecha) => {
     try {
@@ -208,6 +211,7 @@ useEffect(() => {
       console.error('Error al obtener el recuento de asistencias:', error);
     }
   };
+
   // formatea la fecha y hora a dia, mes, año con un formato de 12 hrs si está en true
   const formatDateTime = (dateString) => {
     const date = new Date(dateString);
@@ -230,37 +234,37 @@ useEffect(() => {
   
 
   const cargarDatosParaActualizar = async (fechaSeleccionada) => {
-  try {
-    const date = new Date(fechaSeleccionada);
-    const formattedDate = date.toISOString().split('T')[0];
-    setFecha(formattedDate);
+    try {
+      const date = new Date(fechaSeleccionada);
+      const formattedDate = date.toISOString().split('T')[0];
+      setFecha(formattedDate);
 
-    const response = await fetch(`http://localhost:4000/api/asistencia/asistencias?cod_seccion=${codSeccionSeleccionada}&fecha=${formattedDate}`);
-    if (!response.ok) throw new Error('Error al obtener las asistencias.');
-    
-    const data = await response.json();
+      const response = await fetch(`http://localhost:4000/api/asistencia/asistencias?cod_seccion=${codSeccionSeleccionada}&fecha=${formattedDate}`);
+      if (!response.ok) throw new Error('Error al obtener las asistencias.');
+      
+      const data = await response.json();
 
-    // Ordena los datos de asistencia alfabéticamente por el nombre completo del estudiante
-    const datosOrdenados = data.sort((a, b) => a.Nombre_Completo.localeCompare(b.Nombre_Completo));
+      // Ordena los datos de asistencia alfabéticamente por el nombre completo del estudiante
+      const datosOrdenados = data.sort((a, b) => a.Nombre_Completo.localeCompare(b.Nombre_Completo));
 
-    // Convierte DescripcionEstado a Cod_estado_asistencia
-    const datosActualizados = datosOrdenados.map((asistencia) => ({
-      ...asistencia,
-      Cod_estado_asistencia: descripcionACodigo[asistencia.DescripcionEstado] || '',
-    }));
+      // Convierte DescripcionEstado a Cod_estado_asistencia
+      const datosActualizados = datosOrdenados.map((asistencia) => ({
+        ...asistencia,
+        Cod_estado_asistencia: descripcionACodigo[asistencia.DescripcionEstado] || '',
+      }));
 
-    setAsistenciasActualizar(datosActualizados);
-    setMostrarModalActualizar(true);
-  } catch (error) {
-    console.error('Error al cargar los datos para actualizar:', error);
-    Swal.fire({
-      title: 'Error',
-      text: 'No se pudieron cargar los datos de asistencia. Inténtalo más tarde.',
-      icon: 'error',
-      confirmButtonText: 'Aceptar',
-    });
-  }
-};
+      setAsistenciasActualizar(datosActualizados);
+      setMostrarModalActualizar(true);
+    } catch (error) {
+      console.error('Error al cargar los datos para actualizar:', error);
+      Swal.fire({
+        title: 'Error',
+        text: 'No se pudieron cargar los datos de asistencia. Inténtalo más tarde.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+    }
+  };
   
   
   // Deshabilitar copiar y pegar
@@ -323,7 +327,6 @@ useEffect(() => {
         }
       }
     }
-
     // Establecer el valor con la función correspondiente
     setFunction(value);
   };
@@ -335,13 +338,13 @@ useEffect(() => {
     updatedAsistencias[index].Observacion = value;
     setAsistencias(updatedAsistencias);
   };
-  // Actualiza la observación de un alumno en la lista de asistenciasActualizar
-const handleObservacionChangeActualizar = (index, value) => {
-  const updatedAsistencias = [...asistenciasActualizar];
-  updatedAsistencias[index].Observacion = value;
-  setAsistenciasActualizar(updatedAsistencias);
-};
 
+  // Actualiza la observación de un alumno en la lista de asistenciasActualizar
+  const handleObservacionChangeActualizar = (index, value) => {
+    const updatedAsistencias = [...asistenciasActualizar];
+    updatedAsistencias[index].Observacion = value;
+    setAsistenciasActualizar(updatedAsistencias);
+  };
   
   //Cambia el estado de asistencia de un alumno, 
   //alternando entre el estado seleccionado y sin estado
@@ -361,19 +364,19 @@ const handleObservacionChangeActualizar = (index, value) => {
 
   const handleGuardarAsistencias = async () => {
     try {
-       // Verificar si obtenemos el token correctamente
-       const token = localStorage.getItem('token');
-       if (!token) {
-         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
-         return;
-       }
+      // Verificar si obtenemos el token correctamente
+      const token = localStorage.getItem('token');
+      if (!token) {
+        Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+        return;
+      }
    
-       // Decodificar el token para obtener el nombre del usuario
-       const decodedToken = jwt_decode.jwtDecode(token);
-       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
-         console.error('No se pudo obtener el código o el nombre de usuario del token');
-         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
-       }
+      // Decodificar el token para obtener el nombre del usuario
+      const decodedToken = jwt_decode.jwtDecode(token);
+      if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+        console.error('No se pudo obtener el código o el nombre de usuario del token');
+        throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+      }
       // Verificar si todos los estudiantes tienen un estado de asistencia seleccionado
       const estudiantesSinEstado = asistencias.some(asistencia => !asistencia.Cod_estado_asistencia);
       if (estudiantesSinEstado) {
@@ -436,7 +439,6 @@ const handleObservacionChangeActualizar = (index, value) => {
       });
   
       if (response.ok) {
-
         // 2. Registrar la acción en la bitácora
         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva asistencia para la fecha: ${fechaConHoraFormateada} `;
         
@@ -490,7 +492,7 @@ const handleObservacionChangeActualizar = (index, value) => {
   
   const handleActualizarAsistencias = async () => {
     try {
-       // Verificar si obtenemos el token correctamente
+      // Verificar si obtenemos el token correctamente
       const token = localStorage.getItem('token');
       if (!token) {
         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
@@ -524,32 +526,32 @@ const handleObservacionChangeActualizar = (index, value) => {
   
       if (response.ok) {
         const data = await response.json();
-         // Generar un listado de los códigos de asistencia actualizados
-         const codigosActualizados = asistenciasParaActualizar.map((asistencia) => asistencia.Cod_asistencias).join(', ');
+        // Generar un listado de los códigos de asistencia actualizados
+        const codigosActualizados = asistenciasParaActualizar.map((asistencia) => asistencia.Cod_asistencias).join(', ');
 
-         // Registrar la acción en la bitácora
-         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado las asistencias con los códigos: ${codigosActualizados}`;
+        // Registrar la acción en la bitácora
+        const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado las asistencias con los códigos: ${codigosActualizados}`;
          
-          // Enviar a la bitácora
-          const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
-            },
-            body: JSON.stringify({
-              cod_usuario: decodedToken.cod_usuario, // Código del usuario
-              cod_objeto: 47, // Código del objeto para la acción
-              accion: 'UPDATE', // Acción realizada
-              descripcion: descripcion, // Descripción de la acción
-            }),
-          });
+        // Enviar a la bitácora
+        const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+          },
+          body: JSON.stringify({
+            cod_usuario: decodedToken.cod_usuario, // Código del usuario
+            cod_objeto: 47, // Código del objeto para la acción
+            accion: 'UPDATE', // Acción realizada
+            descripcion: descripcion, // Descripción de la acción
+          }),
+        });
     
-          if (bitacoraResponse.ok) {
-            console.log('Registro en bitácora exitoso');
-          } else {
-            Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
-          }
+        if (bitacoraResponse.ok) {
+          console.log('Registro en bitácora exitoso');
+        } else {
+          Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+        }
         
         Swal.fire({
           title: 'Asistencias actualizadas correctamente',
@@ -648,7 +650,7 @@ const handleObservacionChangeActualizar = (index, value) => {
     return true; // Por defecto, retorna true si no se aplica ningún filtro
   });
 
- // Lógica de paginación actualizada
+  // Lógica de paginación actualizada
   const indexOfLastRecord = currentPage * recordsPerPage;
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
   const currentRecords = recuentosFiltrados.slice(indexOfFirstRecord, indexOfLastRecord); // Usar recuentosFiltrados
@@ -686,6 +688,15 @@ const handleObservacionChangeActualizar = (index, value) => {
     })));
   };
 
+  //Función para reestableceer los filtros
+  const limpiarFiltros = () => {
+    setNombreBusqueda('');
+    setDiaBusqueda('');
+    setMesBusqueda('');
+    setAñoBusqueda('');
+    setTipoFiltro('dia');
+  };
+
   const handleCerrarModalNuevo = () => {
     limpiarAsistencias();
     setMostrarModalNuevo(false);
@@ -705,7 +716,7 @@ const handleObservacionChangeActualizar = (index, value) => {
   
     // Obtener la fecha de registro y limpiarla si es necesario
     const fechaRegistro = todasAsistencias.length > 0 ? formatDateTime(todasAsistencias[0].Fecha) : 'sin_fecha';
-    const fechaLimpia = fechaRegistro !== 'sin_fecha' ? fechaRegistro.split(' ')[0].replace(/[^0-9/-]/g, '') : '';
+    //const fechaLimpia = fechaRegistro !== 'sin_fecha' ? fechaRegistro.split(' ')[0].replace(/[^0-9/-]/g, '') : '';
   
     // Crear los encabezados con la sección y la fecha de generación
     const encabezados = [
@@ -714,7 +725,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       [
         `Sección: ${nomenclaturaSeleccionada || 'No especificada'}`,  // Asegurarse de que siempre haya un valor
         `Fecha de generación: ${new Date().toLocaleDateString()}`,    // Fecha en formato amigable
-        `Fecha de registro: ${fechaLimpia || 'Sin fecha'}`            // Mostrar la fecha limpia o 'Sin fecha'
+        `Fecha de registro: ${fechaRegistro || 'Sin fecha'}`            // Mostrar la fecha limpia o 'Sin fecha'
       ],
       [], // Espacio en blanco
       ["#", "Nombre Completo", "Estado", "Observación"] // Encabezado de la tabla de datos
@@ -776,14 +787,14 @@ const handleObservacionChangeActualizar = (index, value) => {
     XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Asistencia");
   
     // Guardar el archivo Excel con un nombre personalizado
-    const nombreArchivo = `${nomenclaturaSeleccionada || 'No_especificada'}_${fechaLimpia || 'sin_fecha'}.xlsx`;
+    const nombreArchivo = `${nomenclaturaSeleccionada || 'No_especificada'}_${fechaRegistro || 'sin_fecha'}.xlsx`;
     
     XLSX.writeFile(libroDeTrabajo, nombreArchivo);
   };
   
   
   const generarReportePDF = () => {
-     // Validar que haya datos en la tabla
+    // Validar que haya datos en la tabla
    if (!todasAsistencias || todasAsistencias.length === 0) {
     Swal.fire({
       icon: 'info',
@@ -819,37 +830,29 @@ const handleObservacionChangeActualizar = (index, value) => {
   
       yPosition += 10; // Espaciado entre subtítulo y detalles
   
-       // Detalles de la sección y fecha en una sola fila
-       doc.setFontSize(12);
-       doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+      // Detalles de la sección y fecha en una sola fila
+      doc.setFontSize(12);
+      doc.setTextColor(0, 0, 0); // Negro para el texto informativo
  
-       if (nomenclaturaSeleccionada && fechaRegistro && fechaRegistro !== 'sin_fecha') {
-         const fechaLimpia = fechaRegistro.split(' ')[0].replace(/[^0-9/-]/g, ''); // Limpia la fecha
-         doc.text(
-           `Sección: ${nomenclaturaSeleccionada} | Fecha del registro: ${fechaLimpia}`,
-           doc.internal.pageSize.width / 2,
-           yPosition,
-           { align: 'center' }
-         );
-       } else if (nomenclaturaSeleccionada) {
-         doc.text(
-           `Sección: ${nomenclaturaSeleccionada}`,
-           doc.internal.pageSize.width / 2,
-           yPosition,
-           { align: 'center' }
-         );
-       } else if (fechaRegistro && fechaRegistro !== 'sin_fecha') {
-         const fechaLimpia = fechaRegistro.split(' ')[0].replace(/[^0-9/-]/g, ''); // Limpia la fecha
-         doc.text(
-           `Fecha de registro: ${fechaLimpia}`,
-           doc.internal.pageSize.width / 2,
-           yPosition,
-           { align: 'center' }
-         );
-       }
-       
- 
-       yPosition += 8; // Espaciado entre líneas de detalle
+      if (nomenclaturaSeleccionada) {
+        doc.text(
+          `Sección: ${nomenclaturaSeleccionada}`,
+          doc.internal.pageSize.width / 2,
+          yPosition,
+          { align: 'center' }
+        );
+        yPosition += 6; // Espacio entre líneas
+      }
+  
+      if (fechaRegistro && fechaRegistro !== 'sin_fecha') {
+        doc.text(
+          `Fecha y hora del registro: ${fechaRegistro}`,
+          doc.internal.pageSize.width / 2,
+          yPosition,
+          { align: 'center' }
+        );
+        yPosition += 8; // Espacio entre líneas
+      }
   
       // Información adicional
       doc.setFontSize(10);
@@ -903,27 +906,27 @@ const handleObservacionChangeActualizar = (index, value) => {
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
          didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); // Ve a cada página
+        doc.setTextColor(100);
+        const text = `Página ${i} de ${totalPages}`;
+        // Agrega número de página en la posición correcta
+        doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
   
       // Abrir el PDF en lugar de descargarlo automáticamente
       window.open(doc.output('bloburl'), '_blank');
@@ -1092,27 +1095,27 @@ const handleObservacionChangeActualizar = (index, value) => {
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); // Ve a cada página
+        doc.setTextColor(100);
+        const text = `Página ${i} de ${totalPages}`;
+        // Agrega número de página en la posición correcta
+        doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
   
       // Abrir el PDF en lugar de descargarlo automáticamente
       window.open(doc.output('bloburl'), '_blank');
@@ -1125,51 +1128,54 @@ const handleObservacionChangeActualizar = (index, value) => {
     };
   };
     
-    const handleViewAsistencia = async (Cod_secciones, nombreSeccion,grado,anio,profesor) => {
-      setCodSeccionSeleccionada(Cod_secciones); // Asegúrate de actualizar la sección seleccionada
-      setNombreSeccionSeleccionada(nombreSeccion); // Establecer el nombre de la sección seleccionada
-      setGradoSeleccionado(grado);
-      setAnioSeccionSeleccionada(anio);
-      setProfesorSeleccionado(profesor);
-      fetchRecuentoAsistencias(); // Cargar los datos de asistencia
-      setCurrentView('asistencias'); // Cambiar a la vista de asistencias
+  const handleViewAsistencia = async (Cod_secciones, nombreSeccion,grado,anio,profesor) => {
+    // Limpiar filtros al cambiar de sección
+    limpiarFiltros();
+    setCodSeccionSeleccionada(Cod_secciones); // Asegúrate de actualizar la sección seleccionada
+    setNombreSeccionSeleccionada(nombreSeccion); // Establecer el nombre de la sección seleccionada
+    setGradoSeleccionado(grado);
+    setAnioSeccionSeleccionada(anio);
+    setProfesorSeleccionado(profesor);
+    fetchRecuentoAsistencias(); // Cargar los datos de asistencia
+    setCurrentView('asistencias'); // Cambiar a la vista de asistencias
 
-      if (Cod_secciones) {
-        try {
-            // Hacer una solicitud fetch para obtener la nomenclatura
-            const response = await fetch(`http://localhost:4000/api/seccionalumno/nomenclatura?codSeccion=${Cod_secciones}`);
-            if (!response.ok) throw new Error('Error al obtener la nomenclatura.');
+    if (Cod_secciones) {
+      try {
+        // Hacer una solicitud fetch para obtener la nomenclatura
+        const response = await fetch(`http://localhost:4000/api/seccionalumno/nomenclatura?codSeccion=${Cod_secciones}`);
+        if (!response.ok) throw new Error('Error al obtener la nomenclatura.');
 
-            const data = await response.json();
-            if (data) {
-                setNomenclaturaSeleccionada(data.Nomenclatura); // Guarda la nomenclatura en el estado
-            } else {
-                setNomenclaturaSeleccionada(''); // Si no se encuentra, limpiar el estado
-            }
-        } catch (error) {
-            console.error('Error al obtener la nomenclatura:', error);
+        const data = await response.json();
+        if (data) {
+            setNomenclaturaSeleccionada(data.Nomenclatura); // Guarda la nomenclatura en el estado
+        } else {
+            setNomenclaturaSeleccionada(''); // Si no se encuentra, limpiar el estado
         }
+      } catch (error) {
+        console.error('Error al obtener la nomenclatura:', error);
+      }
     } else {
-        setNomenclaturaSeleccionada(''); // Si no hay sección seleccionada, limpiar la nomenclatura
+      setNomenclaturaSeleccionada(''); // Si no hay sección seleccionada, limpiar la nomenclatura
     }
-    };
+  };
 
-    const handleBackToSecciones = () => {
-      setCurrentView('secciones'); // Cambiar a la vista de secciones
-      setRecuentoAsistencias([]); // Limpiar los datos de recuento de asistencias
-      setCodSeccionSeleccionada(null); // Limpiar la sección seleccionada
-      setNombreSeccionSeleccionada(''); // Limpiar el nombre de la sección
-      setGradoSeleccionado('');
-      setAnioSeccionSeleccionada('');
-      setProfesorSeleccionado('');
-      setNomenclaturaSeleccionada(''); // Limpiar la nomenclatura
-    };
-    
+  const handleBackToSecciones = () => {
+    // Limpiar filtros al cambiar de sección
+    limpiarFiltros();
+    setCurrentView('secciones'); // Cambiar a la vista de secciones
+    setRecuentoAsistencias([]); // Limpiar los datos de recuento de asistencias
+    setCodSeccionSeleccionada(null); // Limpiar la sección seleccionada
+    setNombreSeccionSeleccionada(''); // Limpiar el nombre de la sección
+    setGradoSeleccionado('');
+    setAnioSeccionSeleccionada('');
+    setProfesorSeleccionado('');
+    setNomenclaturaSeleccionada(''); // Limpiar la nomenclatura
+  };
 
-    // Verificar permisos
-    if (!canSelect) {
-      return <AccessDenied />;
-    }
+  // Verificar permisos
+  if (!canSelect) {
+    return <AccessDenied />;
+  }
     
   //-------------------paginacion, buscador vista actual : secciones-----------------------------
   const handleSearch2 = (event) => {
@@ -1340,9 +1346,9 @@ const handleObservacionChangeActualizar = (index, value) => {
                   }}
                     value={recordsPerPage2}
                   >
-                    <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
+                    <option value="30">30</option>
                   </CFormSelect>
                 <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
               </div>       
@@ -1365,7 +1371,7 @@ const handleObservacionChangeActualizar = (index, value) => {
               {currentRecords2.length > 0 ? (
                 currentRecords2.map((seccion, index) => (
                   <CTableRow key={index}>
-                    <CTableDataCell >{index + 1}</CTableDataCell>
+                    <CTableDataCell >{indexOfFirstRecord2 + index + 1}</CTableDataCell>
                     <CTableDataCell>{seccion.Seccion}</CTableDataCell>
                     <CTableDataCell>{seccion.Grado}</CTableDataCell>
                     <CTableDataCell>{seccion.Anio_Academico}</CTableDataCell>
@@ -1529,9 +1535,10 @@ const handleObservacionChangeActualizar = (index, value) => {
                   }}
                   value={recordsPerPage}
                 >
-                  <option value="5">5</option>
                   <option value="10">10</option>
                   <option value="20">20</option>
+                  <option value="30">30</option>
+                  <option value="40">40</option>
                 </CFormSelect>
                 <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
               </div>
@@ -1556,7 +1563,7 @@ const handleObservacionChangeActualizar = (index, value) => {
               <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
                 {currentRecords.map(([fecha, estados], index) => (
                   <CTableRow key={fecha} >
-                    <CTableDataCell >{index + 1}</CTableDataCell>
+                    <CTableDataCell >{indexOfFirstRecord + index + 1}</CTableDataCell>
                     <CTableDataCell>{formatDate(fecha)}</CTableDataCell>
                     {estadosAsistencia.map((estado) => (<CTableDataCell key={estado.Cod_estado_asistencia}>{estados[estado.Cod_estado_asistencia] || 0}</CTableDataCell> ))}
                   <CTableDataCell style={{ padding: '10px' }}>
@@ -1758,10 +1765,7 @@ const handleObservacionChangeActualizar = (index, value) => {
       <CModal visible={mostrarModal} onClose={() => setMostrarModal(false)} size="xl" backdrop="static" centered>
         <CModalHeader closeButton={false}>
           <h5 className="modal-title">Asistencias de la Sección </h5>
-          <CButton type="button" className="btn-close" onClick={() => {
-      setMostrarModal(false); // Cierra el modal
-      setNombreBusqueda("");  // Limpia la barra de búsqueda
-    }} />
+          <CButton type="button" className="btn-close" onClick={() => {setMostrarModal(false); /* Cierra el modal*/ setNombreBusqueda("");  /* Limpia la barra de búsqueda*/  }} />
         </CModalHeader>
         <CModalBody style={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'auto', padding: '1.5rem' }}>
           {/* Filtro por nombre */}
@@ -1828,10 +1832,7 @@ const handleObservacionChangeActualizar = (index, value) => {
           )}
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => {
-      setMostrarModal(false); // Cierra el modal
-      setNombreBusqueda("");  // Limpia la barra de búsqueda
-    }}>
+          <CButton color="secondary" onClick={() => {  setMostrarModal(false); /* Cierra el modal*/ setNombreBusqueda("");  /* Limpia la barra de búsqueda*/ }}>
             Cerrar
           </CButton>
         </CModalFooter>
@@ -1967,7 +1968,7 @@ const handleObservacionChangeActualizar = (index, value) => {
             Cerrar
           </CButton>
           <CButton onClick={handleActualizarAsistencias} onMouseEnter={(e) => {e.currentTarget.style.backgroundColor = "#b28541"; }}
-        onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = "#9f7536"; }} style={{ backgroundColor: '#9f7536', color: '#FFFFFF'}}>
+            onMouseLeave={(e) => {e.currentTarget.style.backgroundColor = "#9f7536"; }} style={{ backgroundColor: '#9f7536', color: '#FFFFFF'}}>
             <CIcon icon={cilPen}  /> Actualizar
           </CButton>
         </CModalFooter>
