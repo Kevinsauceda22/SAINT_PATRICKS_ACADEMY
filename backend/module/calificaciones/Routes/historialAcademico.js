@@ -1,31 +1,36 @@
 import express from 'express';
+
 import {
-    obtenerHistorialesPorPersona,
+    obtenerHistoriales,
     crearHistorial,
     actualizarHistorial,
     eliminarHistorial,
     obtenerGradosMatricula,
-    obtenerPersonasPorGrado 
+    obtenerPersonasPorGrado,
+    obtenerHistorialPorPersona,
+    getAllEstadoNota
 } from '../Controller/historialAcademicoController.js'; // Importamos las funciones del controlador
 
 const router = express.Router();
 
-// Ruta para obtener historiales acadÃ©micos por Cod_persona
-router.get('/historiales/persona/:Cod_persona', obtenerHistorialesPorPersona);
-
-//Ruta para obtener los grados de la tabla TBL_SECCIONES_MATRICULA
+// Ruta para obtener todos los historiales académicos
+router.get('/historiales', obtenerHistoriales);
 router.get('/gradosMatricula', obtenerGradosMatricula);
+router.get('/gradosMatricula/:cod_grado/:anio_academico', obtenerPersonasPorGrado);
+router.get('/gradosMatricula/:Cod_persona', obtenerHistorialPorPersona);
+router.get('/estado', getAllEstadoNota);
 
-//Ruta para obtener los estudiantes de cada grado
-router.get('/gradosMatricula/:cod_grado', obtenerPersonasPorGrado);
 
-// Ruta para crear un nuevo historial acadÃ©mico
+
+// Ruta para crear un nuevo historial académico
 router.post('/crearhistorial', crearHistorial);
 
-// Ruta para actualizar un historial acadÃ©mico
+// Ruta para actualizar un historial académico
 router.put('/actualizarhistorial', actualizarHistorial);
 
-// Ruta para eliminar un historial acadÃ©mico
+// Ruta para eliminar un historial académico
 router.delete('/eliminarhistorial', eliminarHistorial);
+
+
 
 export default router;
