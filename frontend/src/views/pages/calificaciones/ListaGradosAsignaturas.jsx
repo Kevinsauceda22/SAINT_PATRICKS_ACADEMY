@@ -622,7 +622,7 @@ const ListaGradosAsignaturas = () => {
 
     return (
         <CContainer>
-            <div className="container mt-4">
+            <div className="container">
                 <CRow className="align-items-center mb-5">
                     <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
                         {/* Título de la página */}
