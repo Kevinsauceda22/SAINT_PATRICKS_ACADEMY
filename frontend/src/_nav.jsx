@@ -16,6 +16,8 @@ import {
   cilGraph,
   cilUser,
   cilFolderOpen,
+  cilSpreadsheet,
+  cilLibrary,
 } from '@coreui/icons';
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react';
 
@@ -86,7 +88,7 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Actividades académicas',
+    name: 'Actividades Académicas',
     to: '/ListaActividadesAca',
     icon: cilTask,
     nameobject: 'ListaActividadesAca',
@@ -118,35 +120,35 @@ const _nav = [
     component: CNavItem,
     name: 'Mis Notas',
     to: '/ListaNotasProfesor',
-    icon: cilFile,
+    icon: cilSpreadsheet,
     nameobject: 'ListaNotasProfesor',
   },
   {
     component: CNavItem,
     name: 'Notas',
     to: '/ListaNotas',
-    icon: cilFile,
+    icon: cilSpreadsheet,
     nameobject: 'ListaNotas',
   },
   {
     component: CNavItem,
     name: 'Mis Cuadros',
     to: '/ListaCuadroProfesor',
-    icon: cilFile,
+    icon: cilLibrary,
     nameobject: 'ListaCuadroProfesor',
   },
    {
     component: CNavItem,
     name: 'Cuadros',
     to: '/ListaCuadroPadre',
-    icon: cilFile,
+    icon: cilLibrary,
     nameobject: 'ListaCuadroPadre',
   },
    {
     component: CNavItem,
     name: 'Cuadros',
     to: '/ListaCuadro',
-    icon: cilFile,
+    icon: cilLibrary,
     nameobject: 'ListaCuadro',
   },
   
@@ -175,7 +177,7 @@ const _nav = [
     items: [
       {
         component: CNavItem,
-        name: 'Parametro',
+        name: 'Parámetros',
         to: '/ListaParametro',
       },
       {
@@ -199,7 +201,7 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Estado asistencia',
+        name: 'Estados Asistencia',
         to: '/ListaEstadoasistencia',
         nameobject: 'ListaEstadoasistencia',
       },
@@ -207,7 +209,7 @@ const _nav = [
       
       {
         component: CNavItem,
-        name: 'Estado nota',
+        name: 'Estados Nota',
         to: '/ListaEstadonota',
         nameobject: 'ListaEstadonota',
       },
@@ -219,7 +221,7 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Grado académico',
+        name: 'Grados Académicos',
         to: '/ListaGradoAcademico',
         nameobject: 'ListaGradoAcademico',
       },
@@ -237,13 +239,13 @@ const _nav = [
       },
       {
         component: CNavItem,
-        name: 'Tipo de contrato',
+        name: 'Tipos de contratos',
         to: '/ListaTipoContrato',
         nameobject: 'ListaTipoContrato',
       },
       {
         component: CNavItem,
-        name: 'Historial Académico',
+        name: 'Historiales Académicos',
         to: '/ListaHistoriales',
         nameobject: 'ListaHistorial',
       },
