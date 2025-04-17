@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import CIcon from '@coreui/icons-react';
 import {  cilSearch, cilBrushAlt, cilPen, cilTrash, cilPlus, cilDescription} from '@coreui/icons';
 import swal from 'sweetalert2';
+import ExcelJS from 'exceljs';
+
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import logo from 'src/assets/brand/logo_saint_patrick.png'
@@ -57,6 +59,7 @@ const ListaAulas = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+  const [loading, setLoading] = useState(false);
   const resetNuevaAula = () => setNuevaAula('');
   useEffect(() => {
     fetchAulas();
@@ -255,6 +258,94 @@ const ListaAulas = () => {
         swal.fire('Error', 'No se pudo cargar el logo.', 'error');
       };
     };
+
+    const exportToExcel = () => {
+      if (!filteredAulas || filteredAulas.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+    
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Lista de Aulas');
+    
+      // 🎯 Título principal
+      worksheet.mergeCells('A1:H1');
+      worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+      worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+      worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+    
+      worksheet.mergeCells('A2:H2');
+      worksheet.getCell('A2').value = 'LISTADO GENERAL DE AULAS';
+      worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+      worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+    
+      // 📌 Encabezados
+      const headers = [
+        '#',
+        'Número de Aula',
+        'Capacidad',
+        'Cupos',
+        'División',
+        'Edificio',
+        'Secciones Disponibles',
+        'Secciones Ocupadas',
+      ];
+    
+      const headerRow = worksheet.addRow(headers);
+      headerRow.eachCell((cell) => {
+        cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    
+      // 📊 Datos
+      filteredAulas.forEach((aula, index) => {
+        const edificio = edificios.find((e) => e.Nombre_edificios === aula.Nombre_edificios);
+        const row = worksheet.addRow([
+          index + 1,
+          aula.Numero_aula || 'N/D',
+          aula.Capacidad ?? 'N/D',
+          aula.Cupos_aula ?? 'N/D',
+          aula.Division || 'N/D',
+          (edificio?.Nombre_edificios || 'Sin edificio').toUpperCase(),
+          aula.Secciones_disponibles ?? 'N/D',
+          aula.Secciones_ocupadas ?? 'N/D',
+        ]);
+    
+        row.eachCell((cell) => {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin', color: { argb: '000000' } },
+            left: { style: 'thin', color: { argb: '000000' } },
+            bottom: { style: 'thin', color: { argb: '000000' } },
+            right: { style: 'thin', color: { argb: '000000' } },
+          };
+        });
+    
+        // Columna edificio alineado a la izquierda
+        row.getCell(6).alignment = { horizontal: 'left' };
+      });
+    
+      // 📏 Ajuste de anchos
+      worksheet.columns.forEach((column) => {
+        column.width = 25;
+      });
+    
+      // 📂 Exportar archivo
+      workbook.xlsx.writeBuffer().then((buffer) => {
+        const blob = new Blob([buffer], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        });
+        saveAs(blob, 'Reporte_Lista_Aulas.xlsx');
+      });
+    };
+    
     
   const handleCreateAula = async () => {
 
@@ -420,25 +511,56 @@ const ListaAulas = () => {
     }
   };
 
-  const actualizarEstadoAula = async (Cod_aula, Nuevo_estado) => {
+  const actualizarEstadoAula = async (aula) => {
+    const nuevoEstado = aula.Estado ? 0 : 1;
+  
+    setAulas((prev) =>
+      prev.map((a) =>
+        a.Cod_aula === aula.Cod_aula ? { ...a, Estado: nuevoEstado } : a
+      )
+    );
+  
     try {
-        const response = await fetch('http://localhost:4000/api/aula/actualizar_estado', {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ Cod_aula, Nuevo_estado }),
-        });
-
-        if (response.ok) {
-            fetchAulas(); // Vuelve a cargar la lista de aulas
-        } else {
-            console.error('Error al actualizar el estado del aula');
-        }
+      setLoading(true);
+  
+      const response = await fetch('http://localhost:4000/api/aula/actualizar_estado_aula', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          Cod_aula: aula.Cod_aula,
+          Nuevo_estado: nuevoEstado,
+        }),
+      });
+  
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        throw new Error('La respuesta no es JSON válido');
+      }
+  
+      if (!response.ok) {
+        console.error('❌ Error al actualizar el estado del aula:', data?.mensaje || 'Error desconocido');
+      } else {
+        console.log('✔️ Aula actualizada:', data);
+        fetchAulas();
+      }
     } catch (error) {
-        console.error('Error al actualizar el estado del aula:', error);
+      console.error('❌ Error en la solicitud al actualizar el estado del aula:', error);
+      // Revertir estado
+      setAulas((prev) =>
+        prev.map((a) =>
+          a.Cod_aula === aula.Cod_aula ? { ...a, Estado: aula.Estado } : a
+        )
+      );
+    } finally {
+      setLoading(false);
     }
-};
+  };
+  
+  
 
   
   const handleDeleteAula = async () => {
@@ -523,8 +645,7 @@ const ListaAulas = () => {
           >
             {/* Botón Nuevo para abrir el modal */}
             <CButton
-              style={{ backgroundColor: '#4B6251', color: 'white' }}
-              className="mb-3 mb-md-0 me-md-3" // Margen inferior en pantallas pequeñas, margen derecho en pantallas grandes
+              style={{ backgroundColor: '#4B6251', color: 'white', marginRight: '10px' }}
               onClick={() => {
                 setModalVisible(true);}}>
               <CIcon icon={cilPlus}/> Nuevo
@@ -532,11 +653,22 @@ const ListaAulas = () => {
 
             {/* Botón de Reporte con opciones para Excel y PDF */}
           <CDropdown>
-      <CDropdownToggle style={{ backgroundColor: '#6C8E58', color: 'white' }}>
-        <CIcon icon={cilDescription} /> Reporte
-      </CDropdownToggle>
-      <CDropdownMenu>
-        <CDropdownItem
+            <CDropdownToggle
+              style={{ backgroundColor: '#6C8E58', color: 'white' }}
+            >
+              Reporte
+            </CDropdownToggle>
+            <CDropdownMenu>
+              <CDropdownItem
+                    onClick={exportToExcel} // Si ya tienes exportación a Excel
+                    style={{
+                      color: '#6C8E58',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    Descargar en Excel
+                  </CDropdownItem>
+              <CDropdownItem
            onClick={() => generatePDFForAulas(filteredAulas)}
           style={{
             color: '#6C8E58', // Color verde para armonizar con el botón
@@ -651,9 +783,22 @@ const ListaAulas = () => {
                     <CButton color="warning" onClick={() => openUpdateModal(aula)} style={{ marginRight: '10px' }} className="mr-2">
                     <CIcon icon={cilPen} />
                     </CButton>
+                    {/* Botón Activar/Inactivar Aula */}
+                    <CButton
+                      style={{
+                        backgroundColor: aula.Estado === 1 ? '#4CAF50' : '#F44336',
+                        color: 'white',
+                        marginRight: '10px',
+                      }}
+                      onClick={() => actualizarEstadoAula(aula)}
+                      disabled={loading}
+                    >
+                      {loading ? 'Cambiando...' : aula.Estado === 1 ? 'Activo' : 'Inactivo'}
+                    </CButton>
                     <CButton color="danger" onClick={() => openDeleteModal(aula)} style={{ marginRight: '10px' }}>
                     <CIcon icon={cilTrash} />
                     </CButton>
+
                 </CTableDataCell>
                 </CTableRow>
             ))}
