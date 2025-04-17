@@ -132,6 +132,17 @@ export const crearEstructuraFamiliar = async (req, res) => {
     const { cod_persona_estudiante, cod_persona_padre, cod_tipo_relacion, descripcion } = req.body;
 
     try {
+        // 🔹 **Obtener el nombre de la relación ingresada**
+        const [tipoRelacion] = await pool.query(`
+            SELECT tipo_relacion FROM tbl_tipo_relacion WHERE Cod_tipo_relacion = ?
+        `, [cod_tipo_relacion]);
+
+        if (tipoRelacion.length === 0) {
+            return res.status(400).json({ mensaje: "El tipo de relación ingresado no es válido." });
+        }
+
+        const nombreRelacion = tipoRelacion[0].tipo_relacion;
+
         // 🔹 **Validación: No permitir que una persona sea su propio padre/tutor**
         if (cod_persona_estudiante === cod_persona_padre) {
             return res.status(400).json({ 
@@ -150,6 +161,22 @@ export const crearEstructuraFamiliar = async (req, res) => {
             return res.status(400).json({ 
                 mensaje: `Esta persona ya está registrada en la estructura familiar de este estudiante. No puede agregarse nuevamente.` 
             });
+        }
+
+        // 🔹 **Validación: No permitir más de un PAPÁ o una MAMÁ**
+        if (nombreRelacion === "PAPÁ" || nombreRelacion === "MAMÁ") {
+            const [validarPadres] = await pool.query(`
+                SELECT COUNT(*) as cantidad FROM tbl_estructura_familiar 
+                INNER JOIN tbl_tipo_relacion ON tbl_estructura_familiar.cod_tipo_relacion = tbl_tipo_relacion.Cod_tipo_relacion
+                WHERE cod_persona_estudiante = ? 
+                AND tipo_relacion = ?
+            `, [cod_persona_estudiante, nombreRelacion]);
+
+            if (validarPadres[0].cantidad >= 1) {
+                return res.status(400).json({ 
+                    mensaje: `Este estudiante ya tiene un(a) ${nombreRelacion} registrado. No puede agregar otro(a) ${nombreRelacion}.` 
+                });
+            }
         }
 
         // 🔹 **Insertar el nuevo registro si pasa la validación**
@@ -174,11 +201,23 @@ export const crearEstructuraFamiliar = async (req, res) => {
 
 
 
+
 export const actualizarEstructuraFamiliar = async (req, res) => {
     const { Cod_genealogia } = req.params;
     const { cod_persona_estudiante, cod_persona_padre, cod_tipo_relacion, descripcion } = req.body;
 
     try {
+        // 🔹 **Obtener el nombre de la relación ingresada**
+        const [tipoRelacion] = await pool.query(`
+            SELECT tipo_relacion FROM tbl_tipo_relacion WHERE Cod_tipo_relacion = ?
+        `, [cod_tipo_relacion]);
+
+        if (tipoRelacion.length === 0) {
+            return res.status(400).json({ mensaje: "El tipo de relación ingresado no es válido." });
+        }
+
+        const nombreRelacion = tipoRelacion[0].tipo_relacion;
+
         // 🔹 **Validación: No permitir que una persona sea su propio padre/madre/tutor**
         if (cod_persona_estudiante === cod_persona_padre) {
             return res.status(400).json({ 
@@ -198,6 +237,23 @@ export const actualizarEstructuraFamiliar = async (req, res) => {
             return res.status(400).json({ 
                 mensaje: `Esta persona ya está registrada en la estructura familiar de este estudiante. No puede agregarse nuevamente.` 
             });
+        }
+
+        // 🔹 **Validación: No permitir más de un PAPÁ o una MAMÁ**
+        if (nombreRelacion === "PAPÁ" || nombreRelacion === "MAMÁ") {
+            const [validarPadres] = await pool.query(`
+                SELECT COUNT(*) as cantidad FROM tbl_estructura_familiar 
+                INNER JOIN tbl_tipo_relacion ON tbl_estructura_familiar.cod_tipo_relacion = tbl_tipo_relacion.Cod_tipo_relacion
+                WHERE cod_persona_estudiante = ? 
+                AND tipo_relacion = ?
+                AND Cod_genealogia <> ?
+            `, [cod_persona_estudiante, nombreRelacion, Cod_genealogia]);
+
+            if (validarPadres[0].cantidad >= 1) {
+                return res.status(400).json({ 
+                    mensaje: `Este estudiante ya tiene un ${nombreRelacion} registrado. No puede agregar otro ${nombreRelacion}.` 
+                });
+            }
         }
 
         // 🔹 **Ejecutar el procedimiento almacenado solo si pasa la validación**
