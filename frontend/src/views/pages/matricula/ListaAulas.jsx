@@ -165,6 +165,7 @@ const ListaAulas = () => {
            'Edificio',
           'Secciones Disponibles',
           'Secciones Ocupadas',
+          'Estado',
         
         ];
     
@@ -179,7 +180,14 @@ const ListaAulas = () => {
             { content: (edificio ? edificio.Nombre_edificios : 'Sin edificio').toUpperCase(), styles: { halign: 'left' } }, // Izquierda
             { content: aula.Secciones_disponibles, styles: { halign: 'center' } }, // Centrado
             { content: aula.Secciones_ocupadas, styles: { halign: 'center' } }, // Centrado
-           
+            {
+              content: (aula.Estado === 1 ? 'ACTIVO' : 'INACTIVO').toUpperCase(),
+              styles: {
+                halign: 'center',
+                textColor: aula.Estado === 1 ? [0, 128, 0] : [255, 0, 0],
+                fontStyle: aula.Estado === 1 ? 'bold' : 'normal',
+              },
+            },
           ];
         });
     
@@ -269,12 +277,12 @@ const ListaAulas = () => {
       const worksheet = workbook.addWorksheet('Lista de Aulas');
     
       // 🎯 Título principal
-      worksheet.mergeCells('A1:H1');
+      worksheet.mergeCells('A1:I1');
       worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
       worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
       worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
     
-      worksheet.mergeCells('A2:H2');
+      worksheet.mergeCells('A2:I2');
       worksheet.getCell('A2').value = 'LISTADO GENERAL DE AULAS';
       worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
       worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -289,6 +297,7 @@ const ListaAulas = () => {
         'Edificio',
         'Secciones Disponibles',
         'Secciones Ocupadas',
+        'Estado',
       ];
     
       const headerRow = worksheet.addRow(headers);
@@ -316,9 +325,10 @@ const ListaAulas = () => {
           (edificio?.Nombre_edificios || 'Sin edificio').toUpperCase(),
           aula.Secciones_disponibles ?? 'N/D',
           aula.Secciones_ocupadas ?? 'N/D',
+          (aula.Estado === 1 ? 'ACTIVO' : 'INACTIVO').toUpperCase(),
         ]);
     
-        row.eachCell((cell) => {
+        row.eachCell((cell, colNumber) => {
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
           cell.border = {
             top: { style: 'thin', color: { argb: '000000' } },
@@ -326,16 +336,36 @@ const ListaAulas = () => {
             bottom: { style: 'thin', color: { argb: '000000' } },
             right: { style: 'thin', color: { argb: '000000' } },
           };
+    
+          // 🎨 Color en columna "Estado"
+          if (colNumber === 9) {
+            cell.font = {
+              color: {
+                argb: aula.Estado === 1 ? '008000' : 'FF0000', // Verde o Rojo
+              },
+              bold: aula.Estado === 1,
+            };
+          }
         });
     
         // Columna edificio alineado a la izquierda
         row.getCell(6).alignment = { horizontal: 'left' };
       });
     
-      // 📏 Ajuste de anchos
-      worksheet.columns.forEach((column) => {
-        column.width = 25;
-      });
+      
+      // 📏 Ajuste de anchos personalizados por columna
+        worksheet.columns = [
+          { width: 5 },   // #
+          { width: 18 },  // Número de Aula
+          { width: 12 },  // Capacidad
+          { width: 12 },  // Cupos
+          { width: 18 },  // División
+          { width: 25 },  // Edificio
+          { width: 20 },  // Secciones Disponibles
+          { width: 20 },  // Secciones Ocupadas
+          { width: 12 },  // Estado
+        ];
+
     
       // 📂 Exportar archivo
       workbook.xlsx.writeBuffer().then((buffer) => {
@@ -693,25 +723,27 @@ const ListaAulas = () => {
       placeholder="Buscar número de aula.."
       value={searchTerm}
       onChange={(e) => {
-        let value = e.target.value.toUpperCase(); // Convertir a mayúsculas
-        value = value.replace(/[^A-Z0-9\s]/g, ''); // Eliminar caracteres especiales (permitir solo letras y números)
-        value = value.replace(/\s{2,}/g, ' '); // Reemplazar múltiples espacios por uno solo
-        if (/(.)\1\1/.test(value)) return; // Evitar tres letras iguales seguidas
-        if (value.length > 50) return; // Limitar a 50 caracteres
+        let value = e.target.value;
+      
+        // Eliminar todo lo que no sea un número
+        value = value.replace(/[^0-9]/g, '');
+      
+        // Evitar más de 3 dígitos iguales seguidos (por si quieres prevenir repeticiones)
+        if (/(.)\1\1\1\1/.test(value)) return;
+      
+        // Limitar a 10 caracteres (o el límite que tú desees)
+        if (value.length > 5) return;
+      
         setSearchTerm(value);
       }}
+      
     />
     <CButton
-      style={{
-        border: '1px solid #ccc',
-        transition: 'all 0.1s ease-in-out',
-        backgroundColor: '#F3F4F7',
-        color: '#343a40',
-      }}
-      onClick={() => {
-        setSearchTerm('');
-        setCurrentPage(1);
-      }}
+          style={{ backgroundColor: '#cccccc', color: 'black' }}
+          onClick={() => {
+            setSearchTerm('');
+            setCurrentPage(1);
+          }}
       onMouseEnter={(e) => {
         e.currentTarget.style.backgroundColor = '#E0E0E0';
         e.currentTarget.style.color = 'black';
@@ -743,7 +775,9 @@ const ListaAulas = () => {
               >
                 <option value="5">5</option>
                 <option value="10">10</option>
+                <option value="15">15</option>
                 <option value="20">20</option>
+                <option value="100">100</option>
               </CFormSelect>
               <span>&nbsp;registros</span>
             </div>
@@ -756,30 +790,30 @@ const ListaAulas = () => {
         <CTable striped bordered hover>
           <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
           <CTableRow>
-            <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>Número de Aula</CTableHeaderCell>
-            <CTableHeaderCell>Capacidad</CTableHeaderCell>
-            <CTableHeaderCell>Cupos</CTableHeaderCell>
-            <CTableHeaderCell>División</CTableHeaderCell>
-            <CTableHeaderCell>Edificio</CTableHeaderCell>
-            <CTableHeaderCell>Secciones disponibles</CTableHeaderCell>
-            <CTableHeaderCell>Secciones ocupadas</CTableHeaderCell>
-            <CTableHeaderCell>Acciones</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Número de Aula</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Capacidad</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Cupos</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>División</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '15%' }}>Edificio</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Secciones disponibles</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Secciones ocupadas</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '15%' }}>Acciones</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
         {currentRecords
             .map((aula, index) => (
                 <CTableRow key={aula.Cod_aula}>
-                <CTableDataCell>{indexOfFirstRecord+ index + 1}</CTableDataCell>
-                <CTableDataCell>{aula.Numero_aula}</CTableDataCell>
-                <CTableDataCell>{aula.Capacidad}</CTableDataCell>
-                <CTableDataCell>{aula.Cupos_aula}</CTableDataCell>
-                <CTableDataCell>{aula.Division}</CTableDataCell>
+                <CTableDataCell className="text-center">{indexOfFirstRecord+ index + 1}</CTableDataCell>
+                <CTableDataCell className="text-center">{aula.Numero_aula}</CTableDataCell>
+                <CTableDataCell className="text-center">{aula.Capacidad}</CTableDataCell>
+                <CTableDataCell className="text-center">{aula.Cupos_aula}</CTableDataCell>
+                <CTableDataCell className="text-center">{aula.Division}</CTableDataCell>
                 <CTableDataCell style={{ textTransform: 'uppercase' }}>{aula.Nombre_edificios}</CTableDataCell>
-                <CTableDataCell>{aula.Secciones_disponibles}</CTableDataCell>
-                <CTableDataCell>{aula.Secciones_ocupadas}</CTableDataCell>
-                <CTableDataCell>
+                <CTableDataCell className="text-center">{aula.Secciones_disponibles}</CTableDataCell>
+                <CTableDataCell className="text-center">{aula.Secciones_ocupadas}</CTableDataCell>
+                <CTableDataCell className="text-center">
                     <CButton color="warning" onClick={() => openUpdateModal(aula)} style={{ marginRight: '10px' }} className="mr-2">
                     <CIcon icon={cilPen} />
                     </CButton>

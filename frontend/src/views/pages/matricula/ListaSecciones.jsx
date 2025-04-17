@@ -612,9 +612,14 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
     });
   
     // Ajustar el ancho de las columnas
-    worksheet.columns.forEach((column) => {
-      column.width = 40;
-    });
+    worksheet.columns = [
+      { key: 'numero', width: 6 },          // #
+      { key: 'seccion', width: 15 },        // Sección
+      { key: 'aula', width: 15 },           // Aula
+      { key: 'grado', width: 25 },          // Grado
+      { key: 'maestro', width: 40 }         // Maestro guía
+    ];
+    
   
     // Crear archivo Excel
     workbook.xlsx.writeBuffer().then((buffer) => {
