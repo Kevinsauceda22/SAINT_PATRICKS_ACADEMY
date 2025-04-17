@@ -80,11 +80,6 @@ export const actualizarEdificio = async (req, res) => {
 export const actualizarEstadoEdificio = async (req, res) => {
     const { Cod_edificio, Nuevo_estado } = req.body;
 
-    // Validar parámetros
-    if (!Cod_edificio || Nuevo_estado === undefined) {
-        return res.status(400).json({ mensaje: 'Faltan parámetros' });
-    }
-
     // Validar que el estado solo pueda ser 0 o 1
     if (Nuevo_estado !== 0 && Nuevo_estado !== 1) {
         return res.status(400).json({ mensaje: "El estado debe ser 0 (inactivo) o 1 (activo)." });
@@ -92,19 +87,14 @@ export const actualizarEstadoEdificio = async (req, res) => {
 
     try {
         // Llamar al procedimiento almacenado
-        const [results] = await pool.query("CALL sp_actualizar_estado_edificio(?, ?)", [Cod_edificio, Nuevo_estado]);
+        await pool.query("CALL sp_actualizar_estado_edificio(?, ?)", [Cod_edificio, Nuevo_estado]);
 
-        // Obtener el mensaje devuelto por el procedimiento
-        const mensaje = results[0][0].mensaje;
-
-        console.log(`Estado actualizado para edificio ${Cod_edificio}: ${Nuevo_estado}`); // Debug
-        res.json({ mensaje, Cod_edificio, Nuevo_estado });
+        res.json({ mensaje: `Edificio ${Nuevo_estado ? 'activado' : 'inactivado'} correctamente` });
     } catch (error) {
         console.error("Error al actualizar el estado del edificio:", error);
-        res.status(500).json({ mensaje: "Error interno del servidor" });
+        res.status(500).json({ mensaje: "Error en el servidor", error: error.message });
     }
 };
-
 
 //Controlador para eliminar un edificio
 export const eliminarEdificio = async (req, res) => {

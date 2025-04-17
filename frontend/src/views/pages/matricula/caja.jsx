@@ -22,33 +22,15 @@ import {
   CRow,
   CCol,
   CFormSelect,
-  CPagination,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPlus, cilDollar, cilDescription, cilTags, cilWallet, cilFile, cilSearch, cilTrash, cilBrush, cilPen , } from '@coreui/icons';
+import { cilPlus, cilDollar, cilDescription, cilTags, cilWallet, cilFile } from '@coreui/icons';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
-import { AuthContext } from '/context/AuthProvider'; // Asegúrate de que la ruta sea correcta
 
 
-export const decodeJWT = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`) 
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error al decodificar el token JWT:', error);
-    return null;
-  }
-};
 
 const MySwal = withReactContent(Swal);
 
@@ -59,11 +41,6 @@ const CajasMatriculas = () => {
   const [valorMatricula, setValorMatricula] = useState(null); // Estado para almacenar el valor
   const [descuentos, setDescuentos] = useState([]); // Estado para almacenar los descuentos
   const [descripcionMatricula, setDescripcionMatricula] = useState(''); // Estado para la descripción
-  const [modalHistorialVisible, setModalHistorialVisible] = useState(false);
-const [dniBusqueda, setDniBusqueda] = useState('');
-const [historialPagos, setHistorialPagos] = useState([]);
-
-
   const [pagoActual, setPagoActual] = useState({
     cod_caja: '',
     monto: '',
@@ -83,8 +60,6 @@ const [historialPagos, setHistorialPagos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
-  const pageCount = Math.ceil((pagosPendientes?.length || 0) / itemsPerPage);
-
   const [dineroRecibido, setDineroRecibido] = useState('');
   const [errors, setErrors] = useState({}); // Para manejar mensajes de error
 const [vuelto, setVuelto] = useState(0);
@@ -184,18 +159,8 @@ const preventCopyPaste = (e) => {
         text: 'Hubo un problema al conectar con el servidor.',
       });
     }
-    // Ya está esto en tu código:
-await obtenerCajasPendientes();
-
-// Agrega aquí abajo:
-setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
-
   };
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   
-    
-  ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   const cargarConceptos = async () => {
     try {
       const response = await axios.get('http://localhost:4000/api/caja/conceptos');
@@ -204,132 +169,194 @@ setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
       console.error('Error al obtener conceptos:', error);
     }
   };
-  const registrarEnBitacora = async (accion, descripcionAdicional = '') => {
-    try {
-      const token = localStorage.getItem('token');
-      const decodedToken = decodeJWT(token);
-  
-      if (!decodedToken) {
-        Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
-        return;
-      }
-  
-      const cod_usuario = decodedToken.cod_usuario;
-      const nombre_usuario = decodedToken.nombre_usuario;
-  
-      if (!cod_usuario || !nombre_usuario) {
-        Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
-        return;
-      }
-  
-      const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
-      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 106, accion, descripcion });
-  
-      await axios.post(
-        'http://localhost:4000/api/bitacora/registro',
-        { cod_usuario, cod_objeto: 106, accion, descripcion },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      console.log('Registro en bitácora exitoso');
-    } catch (error) {
-      console.error('Error al registrar en bitácora:', error.message);
-      Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
-    }
-  };
-  
+
   const registrarPago = async (e) => {
     e.preventDefault();
   
-    try {
-      // Normalizar valores precargados
-      const cod_caja = pagoActual.cod_caja;
-      const cod_concepto = pagoActual.cod_concepto || (await axios.get('http://localhost:4000/api/caja/concepto/matricula')).data.cod_concepto;
-      const descripcionFinal = pagoActual.descripcion || descripcionMatricula || 'Pago de matrícula';
+   
+  try {
+    // Usar descripción ingresada o la obtenida de la API
+    const descripcionFinal = pagoActual.descripcion || descripcionMatricula;
+
+    // Validar que exista una descripción válida
+    if (!descripcionFinal || !descripcionFinal.trim()) {
+      MySwal.fire({
+        icon: 'warning',
+        title: 'Campo obligatorio',
+        text: 'La descripción no puede estar vacía.',
+        confirmButtonText: 'Entendido',
+      });
+      return;
+    }
+
+  
       const monto = parseFloat(pagoActual.monto || valorMatricula || 0);
   
-      if (!cod_caja || !descripcionFinal || !cod_concepto || !monto || isNaN(monto) || monto <= 0) {
+      if (!monto || isNaN(monto) || monto <= 0) {
         MySwal.fire({
           icon: 'warning',
-          title: 'Campos faltantes',
-          text: 'Verifica que la caja, concepto, descripción y monto estén definidos correctamente.',
+          title: 'Monto inválido',
+          text: 'El monto debe ser un número mayor a 0.',
+          confirmButtonText: 'Entendido',
         });
         return;
       }
   
+      // Validar que el concepto "Matricula" esté cargado antes de continuar
+      if (!pagoActual.cod_concepto) {
+        try {
+          const response = await axios.get('http://localhost:4000/api/caja/concepto/matricula');
+          if (response.status === 200 && response.data.cod_concepto) {
+            pagoActual.cod_concepto = response.data.cod_concepto;
+          } else {
+            MySwal.fire({
+              icon: 'error',
+              title: 'Error al obtener concepto',
+              text: 'No se pudo obtener el código del concepto "Matricula".',
+              confirmButtonText: 'Revisar',
+            });
+            return;
+          }
+        } catch (error) {
+          console.error('Error al obtener el concepto "Matricula":', error);
+          MySwal.fire({
+            icon: 'error',
+            title: 'Error inesperado',
+            text: 'Hubo un problema al obtener el código del concepto.',
+            confirmButtonText: 'Entendido',
+          });
+          return;
+        }
+      }
+  
+      // Validaciones adicionales
+      if (pagoActual.descripcion.length > 25) {
+        MySwal.fire({
+          icon: 'warning',
+          title: 'Descripción inválida',
+          text: 'La descripción no puede exceder los 25 caracteres.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+  
+      if (/[^A-Z0-9 ]/.test(pagoActual.descripcion)) {
+        MySwal.fire({
+          icon: 'warning',
+          title: 'Descripción inválida',
+          text: 'La descripción solo puede contener letras, números y espacios.',
+          confirmButtonText: 'Entendido',
+        });
+        return;
+      }
+  
+      // Validar descuento si aplica
       let descuentoAplicado = 0;
+  
       if (pagoActual.aplicar_descuento && pagoActual.cod_descuento) {
         const porcentajeDescuento = parseFloat(pagoActual.valor_descuento);
+  
         if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
           MySwal.fire({
             icon: 'warning',
             title: 'Descuento inválido',
             text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
+            confirmButtonText: 'Entendido',
           });
           return;
         }
+  
+        // Calcular el descuento en base al porcentaje
         descuentoAplicado = (monto * porcentajeDescuento) / 100;
       }
   
       const montoFinal = monto - descuentoAplicado;
+  
       if (montoFinal < 0) {
         MySwal.fire({
           icon: 'warning',
           title: 'Monto inválido',
           text: 'El monto final no puede ser negativo.',
+          confirmButtonText: 'Entendido',
         });
         return;
       }
   
+      // Preparar los datos para el envío
       const datosPago = {
-        cod_caja,
-        cod_concepto,
-        descripcion: descripcionFinal,
-        monto: montoFinal,
-        cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null,
+        cod_caja: pagoActual.cod_caja,
+        monto: montoFinal, // Monto ajustado con descuento aplicado
+        descripcion: descripcionFinal, // Usar la descripción final
+
+        cod_concepto: pagoActual.cod_concepto,
+        cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
       };
   
+      console.log('Datos enviados al servidor:', datosPago); // Depuración
+  
+      // Enviar los datos al servidor
       const response = await axios.post('http://localhost:4000/api/caja/pago', datosPago);
   
-      if (response.status === 200 || response.status === 201) {
-        await registrarEnBitacora('INSERT', `Registró un pago de L ${montoFinal.toFixed(2)} en la caja ${cod_caja}.`);
+      if (response.status === 201 || response.status === 200) {
+        MySwal.fire({
+          icon: 'success',
+          title: 'Éxito',
+          text: 'El pago se ha registrado correctamente.',
+          confirmButtonText: 'Aceptar',
+        });
   
+        // Construir datos de la caja para el reporte individual
         const cajaConDatos = {
-          Cod_caja: cod_caja,
-          Nombre_Padre: 'Nombre del Padre',
-          Apellido_Padre: 'Apellido del Padre',
-          Descripcion: descripcionFinal,
+          Cod_caja: pagoActual.cod_caja,
+          Nombre_Padre: 'Nombre del Padre', // Sustituir con los datos reales si están disponibles
+          Apellido_Padre: 'Apellido del Padre', // Sustituir con los datos reales si están disponibles
+          Descripcion: pagoActual.descripcion,
           Monto: montoFinal,
           Estado_pago: 'Pagado',
           Fecha_pago: new Date(),
           Hora_registro: new Date(),
         };
   
+        // Preguntar al usuario si desea generar el recibo
         MySwal.fire({
           title: '¿Deseas descargar el recibo?',
+          text: 'El recibo se generará como un archivo PDF.',
           icon: 'question',
           showCancelButton: true,
           confirmButtonText: 'Sí, generar',
           cancelButtonText: 'No',
         }).then((result) => {
-          if (result.isConfirmed) generarReporteIndividual(cajaConDatos, dineroRecibido, vuelto);
+          if (result.isConfirmed) {
+            // Generar e imprimir el PDF del reporte individual
+            generarReporteIndividual(cajaConDatos, dineroRecibido, vuelto);
+          }
         });
   
-        setModalVisible(false);
-        resetRegistrarPagoModal();
-        obtenerCajasPendientes();
+        setModalVisible(false); // Cerrar el modal
+        resetRegistrarPagoModal(); // Reiniciar el formulario
+        obtenerCajasPendientes(); // Actualizar la lista de cajas
       }
     } catch (error) {
-      const msg = error?.response?.data?.message || 'Hubo un problema al registrar el pago.';
-      MySwal.fire({
-        icon: 'error',
-        title: 'Error al registrar el pago',
-        text: msg,
-      });
+      console.error('Error al registrar el pago:', error);
+  
+      // Mostrar error específico si existe en la respuesta del servidor
+      if (error.response && error.response.data && error.response.data.message) {
+        MySwal.fire({
+          icon: 'error',
+          title: 'Error al registrar el pago',
+          text: error.response.data.message,
+          confirmButtonText: 'Revisar',
+        });
+      } else {
+        MySwal.fire({
+          icon: 'error',
+          title: 'Error inesperado',
+          text: 'Hubo un problema al procesar la solicitud. Por favor, intenta nuevamente más tarde.',
+          confirmButtonText: 'Entendido',
+        });
+      }
     }
   };
-  
-  
   
   
   // Obtener el concepto "Matricula"
@@ -373,248 +400,179 @@ setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
   
   const crearNuevaCaja = async () => {
     console.log("Datos de la nueva caja:", nuevaCaja);
-  
+
     // Validación de campos obligatorios
     if (!nuevaCaja.descripcion || !nuevaCaja.monto || !nuevaCaja.cod_concepto || !nuevaCaja.dni_padre) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Todos los campos son obligatorios.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Todos los campos son obligatorios.',
+        });
+        return;
     }
-  
+
     // Validación de formato del DNI
     const dniRegex = /^[0-9]{13}$/; // Asume que el DNI de Honduras tiene 13 dígitos
     if (!dniRegex.test(nuevaCaja.dni_padre)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en el DNI',
-        text: 'El DNI debe tener 13 dígitos y contener solo números.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en el DNI',
+            text: 'El DNI debe tener 13 dígitos y contener solo números.',
+        });
+        return;
     }
-  
+
     // Validación de descripción
     if (nuevaCaja.descripcion.length > 25) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede exceder los 25 caracteres.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede exceder los 25 caracteres.',
+        });
+        return;
     }
-  
+
     if (/([A-Z])\1\1/.test(nuevaCaja.descripcion)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede contener tres letras iguales consecutivas.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede contener tres letras iguales consecutivas.',
+        });
+        return;
     }
-  
+
     if (/[^a-zA-Z0-9 ]/.test(nuevaCaja.descripcion)) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en la descripción',
-        text: 'La descripción no puede contener símbolos o caracteres especiales.',
-      });
-      return;
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error en la descripción',
+            text: 'La descripción no puede contener símbolos o caracteres especiales.',
+        });
+        return;
     }
-  
+
     // Validación de descuento (si aplica)
     let descuentoAplicado = 0;
-  
+
     if (nuevaCaja.aplicar_descuento && nuevaCaja.valor_descuento) {
-      const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
-  
-      if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
-        await MySwal.fire({
-          icon: 'error',
-          title: 'Error en el descuento',
-          text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
-        });
-        return;
-      }
-  
-      descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
-    }
-  
-    const montoFinal = nuevaCaja.monto - descuentoAplicado;
-  
-    if (montoFinal < 0) {
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error en el monto',
-        text: 'El monto final no puede ser negativo.',
-      });
-      return;
-    }
-  
-    try {
-      // Preparar los datos para enviar al servidor
-      const datosCaja = {
-        descripcion: nuevaCaja.descripcion,
-        monto: montoFinal,
-        cod_concepto: nuevaCaja.cod_concepto,
-        dni_padre: nuevaCaja.dni_padre,
-        estado_pago: 'Pendiente',
-        aplicar_descuento: nuevaCaja.aplicar_descuento || false,
-        cod_descuento: nuevaCaja.aplicar_descuento ? nuevaCaja.cod_descuento : null,
-      };
-  
-      console.log("Datos enviados al servidor:", datosCaja);
-  
-      // Realizar la solicitud al servidor
-      const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
-  
-      if (response.status === 201 || response.status === 200) {
-        console.log("Caja creada exitosamente");
-  
-        // Registro en la bitácora
-        await registrarEnBitacora(
-          'INSERT',
-          `Caja creada. Descripción: "${nuevaCaja.descripcion}", Monto: ${montoFinal.toFixed(2)}, DNI del Padre: ${nuevaCaja.dni_padre}.`
-        );
-  
-        // Construir datos para el PDF
-        const cajaConDatos = {
-          Cod_caja: response.data.cod_caja || 'No disponible',
-          Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
-          Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
-          Descripcion: nuevaCaja.descripcion,
-          Monto: montoFinal,
-          Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
-          Estado_pago: 'Pendiente',
-          Fecha_pago: new Date(),
-          Hora_registro: new Date(),
-        };
-  
-        // Mostrar la alerta de éxito
-        await MySwal.fire({
-          icon: 'success',
-          title: 'Éxito',
-          text: 'La nueva caja se ha creado exitosamente.',
-        });
-  
-        // Preguntar si desea imprimir el recibo
-        const imprimir = await MySwal.fire({
-          title: '¿Desea imprimir el recibo?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, generar',
-          cancelButtonText: 'No',
-        });
-  
-        if (imprimir.isConfirmed) {
-          // Llamar a la función para generar el PDF
-          generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
+        const porcentajeDescuento = parseFloat(nuevaCaja.valor_descuento);
+
+        if (isNaN(porcentajeDescuento) || porcentajeDescuento <= 0 || porcentajeDescuento > 100) {
+            await MySwal.fire({
+                icon: 'error',
+                title: 'Error en el descuento',
+                text: 'El descuento debe ser un porcentaje válido entre 0% y 100%.',
+            });
+            return;
         }
-  
-        // Reiniciar el modal y recargar datos
-        resetNuevaCajaModal();
-        setModalNuevaCajaVisible(false);
-        obtenerCajasPendientes();
-      } else {
-        console.log("Error en el servidor:", response);
-  
-        // Manejo de error cuando el servidor no responde con 201 o 200
+
+        descuentoAplicado = (nuevaCaja.monto * porcentajeDescuento) / 100;
+    }
+
+    const montoFinal = nuevaCaja.monto - descuentoAplicado;
+
+    if (montoFinal < 0) {
         await MySwal.fire({
-          icon: 'warning',
-          title: 'Atención',
-          text: 'No se pudo crear la caja. Intente de nuevo.',
+            icon: 'error',
+            title: 'Error en el monto',
+            text: 'El monto final no puede ser negativo.',
         });
-      }
-    } catch (error) {
-      console.error("Error al crear la caja:", error);
-  
-      // Manejo de errores generales
-      await MySwal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Ocurrió un error al conectar con el servidor.',
-      });
+        return;
     }
-  };
-  const registrarEnBitacoracaja = async (accion, descripcionAdicional = '') => {
+
     try {
-      const token = localStorage.getItem('token');
-      const decodedToken = decodeJWT(token);
-  
-      if (!decodedToken) {
-        Swal.fire('Error', 'Token inválido o expirado. Por favor, inicie sesión nuevamente.', 'error');
-        return;
-      }
-  
-      const cod_usuario = decodedToken.cod_usuario;
-      const nombre_usuario = decodedToken.nombre_usuario;
-  
-      if (!cod_usuario || !nombre_usuario) {
-        Swal.fire('Error', 'El token no contiene información válida del usuario.', 'error');
-        return;
-      }
-  
-      const descripcion = `El usuario: ${nombre_usuario} realizó la acción: ${accion}. ${descripcionAdicional}`;
-  
-      console.log('Datos para bitácora:', { cod_usuario, cod_objeto: 106, accion, descripcion });
-  
-      await axios.post(
-        'http://localhost:4000/api/bitacora/registro',
-        { cod_usuario, cod_objeto: 106, accion, descripcion },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-  
-      console.log('Registro en bitácora exitoso');
+        // Preparar los datos para enviar al servidor
+        const datosCaja = {
+            descripcion: nuevaCaja.descripcion,
+            monto: montoFinal, // Monto ajustado con descuento aplicado
+            cod_concepto: nuevaCaja.cod_concepto,
+            dni_padre: nuevaCaja.dni_padre,
+            estado_pago: 'Pendiente',
+            aplicar_descuento: nuevaCaja.aplicar_descuento || false,
+            cod_descuento: pagoActual.aplicar_descuento ? pagoActual.cod_descuento : null, // Código del descuento, si aplica
+        };
+
+        console.log("Datos enviados al servidor:", datosCaja);
+
+        // Realizar la solicitud al servidor
+        const response = await axios.post('http://localhost:4000/api/caja/oficial', datosCaja);
+
+        if (response.status === 201 || response.status === 200) {
+            console.log("Caja creada exitosamente");
+
+            // Construir datos para el PDF
+            const cajaConDatos = {
+                Cod_caja: response.data.cod_caja || 'No disponible',
+                Nombre_Padre: nuevaCaja.Nombre_Padre || 'No disponible',
+                Apellido_Padre: nuevaCaja.Apellido_Padre || 'No disponible',
+                Descripcion: nuevaCaja.descripcion,
+                Monto: montoFinal,
+                Descuento: descuentoAplicado > 0 ? `L ${descuentoAplicado.toFixed(2)}` : 'No aplica',
+                Estado_pago: 'Pendiente',
+                Fecha_pago: new Date(),
+                Hora_registro: new Date(),
+            };
+
+            // Mostrar la alerta de éxito
+            await MySwal.fire({
+                icon: 'success',
+                title: 'Éxito',
+                text: 'La nueva caja se ha creado exitosamente.',
+            });
+
+            // Preguntar si desea imprimir el recibo
+            const imprimir = await MySwal.fire({
+                title: '¿Desea imprimir el recibo?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, generar',
+                cancelButtonText: 'No',
+            });
+
+            if (imprimir.isConfirmed) {
+                // Llamar a la función para generar el PDF
+                generarReporteIndividual(cajaConDatos, nuevaCaja.monto, descuentoAplicado);
+            }
+
+            // Reiniciar el modal y recargar datos
+            resetNuevaCajaModal();
+            setModalNuevaCajaVisible(false);
+            obtenerCajasPendientes();
+        } else {
+            console.log("Error en el servidor:", response);
+
+            // Manejo de error cuando el servidor no responde con 201 o 200
+            await MySwal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'No se pudo crear la caja. Intente de nuevo.',
+            });
+        }
     } catch (error) {
-      console.error('Error al registrar en bitácora:', error.message);
-      Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
+        console.error("Error al crear la caja:", error);
+
+        // Manejo de errores generales
+        await MySwal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Ocurrió un error al conectar con el servidor.',
+        });
     }
-  };
+};
+
+
+  
+
   const paginatedData = pagosPendientes
   .filter((pago) => {
     const searchLower = searchTerm.toLowerCase();
+
+    // Filtrar por nombre completo o por DNI
     return (
-      `${pago.Nombre_Padre} ${pago.Apellido_Padre}`.toLowerCase().includes(searchLower) ||
-      (pago.DNI_Padre && pago.DNI_Padre.toString().includes(searchTerm))
+      `${pago.Nombre_Padre} ${pago.Apellido_Padre}`.toLowerCase().includes(searchLower) || 
+      (pago.DNI_Padre && pago.DNI_Padre.toString().includes(searchTerm)) // Verificar si el DNI incluye el término
     );
   })
   .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  useEffect(() => {
-    const cargarNombreAlumno = async () => {
-      try {
-        if (!pagoActual.cod_caja) {
-          console.warn('No se proporcionó el código de la caja.');
-          return;
-        }
-  
-        const response = await axios.get(
-          `http://localhost:4000/api/caja/nombre-alumno?cod_caja=${pagoActual.cod_caja}`
-        );
-  
-        if (response.status === 200 && response.data) {
-          const { nombre, grado, seccion } = response.data;
-          setNombreAlumno(nombre || '');
-          setPagoActual((prev) => ({
-            ...prev,
-            Grado: grado || 'N/A',
-            Seccion: seccion || 'N/A',
-          }));
-        } else {
-          console.error('Error al cargar datos del alumno:', response.data.message);
-        }
-      } catch (error) {
-        console.error('Error al cargar el nombre del alumno:', error);
-      }
-    };
-  
-    cargarNombreAlumno();
-  }, [pagoActual.cod_caja]);
-  
-  // Estado para guardar el nombre del alumno
-  const [nombreAlumno, setNombreAlumno] = useState('');
-  
 
 useEffect(() => {
   console.log('Datos de pagos pendientes:', pagosPendientes);
@@ -655,39 +613,7 @@ const buscarCajasPorDni = async (dni) => {
     return null; // Devuelve null si ocurre un error
   }
 };
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const fetchHistorialMatricula = async () => {
-  if (!dniBusqueda || dniBusqueda.trim().length !== 13) {
-    Swal.fire('Campo requerido', 'Debe ingresar un DNI válido de 13 dígitos.', 'warning');
-    return;
-  }
 
-  try {
-    const response = await axios.get(`http://localhost:4000/api/caja/historial-matricula/${dniBusqueda.trim()}`);
-
-    if (response.status === 200 && Array.isArray(response.data.data)) {
-      const historial = response.data.data;
-      if (historial.length === 0) {
-        Swal.fire('Sin resultados', 'No se encontró historial para este DNI.', 'info');
-      }
-      setHistorialPagos(historial);
-    } else {
-      Swal.fire('Error', 'La respuesta del servidor no tiene el formato esperado.', 'error');
-    }
-  } catch (error) {
-    console.error('Error al buscar historial:', error);
-    if (error.response?.status === 404) {
-      Swal.fire('Sin resultados', 'No se encontró historial para este DNI.', 'info');
-    } else {
-      Swal.fire('Error', 'Hubo un problema al buscar el historial.', 'error');
-    }
-  }
-};
-
-
-
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   const totalPages = Math.ceil(pagosPendientes.length / itemsPerPage);
   const handleDineroRecibido = (valor) => {
@@ -710,7 +636,6 @@ const fetchHistorialMatricula = async () => {
         Swal.fire('Error', 'No hay datos para generar el reporte.', 'error');
         return;
     }
-
 
     const doc = new jsPDF();
 
@@ -770,17 +695,16 @@ const fetchHistorialMatricula = async () => {
 
         // Añadir tabla con los datos
         doc.autoTable({
-          startY: 75,
-          head: [['#', 'Nombre Alumno', 'Descripción', 'Monto', 'Estado', 'Fecha de Registro']],
-          body: allData.map((caja, index) => [
-            index + 1,
-            `${caja.Nombre_Hijo || 'N/A'} ${caja.Apellido_Hijo || 'N/A'}`,
-            caja.Descripcion || 'N/A',
-            `L ${parseFloat(caja.Monto || 0).toFixed(2)}`,
-            caja.Estado_pago || 'Pendiente',
-            caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A',
-          ]),
-        
+            startY: 75,
+            head: [['#', 'Nombre Padre', 'Descripción', 'Monto', 'Estado', 'Fecha de Registro']],
+            body: allData.map((caja, index) => [
+                index + 1,
+                `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}`,
+                caja.Descripcion || 'N/A',
+                `L ${parseFloat(caja.Monto || 0).toFixed(2)}`,
+                caja.Estado_pago || 'Pendiente',
+                caja.Fecha_pago ? new Date(caja.Fecha_pago).toLocaleDateString() : 'N/A',
+            ]),
             styles: {
                 fontSize: 10,
                 textColor: [34, 34, 34], // Gris oscuro para texto
@@ -896,7 +820,7 @@ const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
               startY: 75,
               head: [['Campo', 'Valor']],
               body: [
-                ['Nombre del Alumno', `${caja.Nombre_Hijo || 'N/A'} ${caja.Apellido_Hijo || 'N/A'}`],
+                  ['Nombre del Padre', `${caja.Nombre_Padre || 'N/A'} ${caja.Apellido_Padre || 'N/A'}`],
                   ['Descripción', caja.Descripcion || 'N/A'],
                   ['Monto', `L ${parseFloat(caja.Monto || 0).toFixed(2)}`],
                   ['Estado de Pago', caja.Estado_pago || 'Pendiente'],
@@ -976,376 +900,194 @@ const generarReporteIndividual = (caja, dineroRecibido, vuelto) => {
 };
 
   
-useEffect(() => {
-  const cargarValorMatriculaPorCaja = async () => {
-    try {
-      const codCaja = pagoActual.cod_caja; // Obtén el código de la caja
-
-      if (!codCaja) {
-        console.warn('No se proporcionó el código de la caja.');
-        return;
+  useEffect(() => {
+    const cargarValorMatricula = async () => {
+      try {
+        const response = await axios.get('http://localhost:4000/api/caja/parametro/Matricula');
+        if (response.status === 200) {
+          const { valor, parametro } = response.data;
+          setValorMatricula(valor); // Guarda el valor de la matrícula
+          setDescripcionMatricula(parametro); // Guarda la descripción de la matrícula
+          console.log('Descripción Matricula cargada:', parametro); // Depuración
+        }
+      } catch (error) {
+        console.error('Error al obtener la descripción de Matricula:', error);
       }
-
-      // Llama a la API para obtener el valor de matrícula basado en la caja
-      const response = await axios.get(
-        `http://localhost:4000/api/caja/parametro/Matricula?cod_caja=${codCaja}`
-      );
-
-      if (response.status === 200) {
-        const { valor, parametro } = response.data;
-        setValorMatricula(valor); // Actualiza el valor de matrícula
-        setDescripcionMatricula(parametro); // Actualiza la descripción con el nombre del ciclo
-      } else {
-        console.error('Error al cargar el valor de matrícula:', response.data.message);
-      }
-    } catch (error) {
-      console.error('Error al cargar el valor de matrícula por caja:', error);
+    };
+    cargarValorMatricula();
+  }, []);
+  
+  useEffect(() => {
+    if (descripcionMatricula) {
+      setPagoActual((prev) => ({
+        ...prev,
+        descripcion: prev.descripcion || descripcionMatricula, // Si no hay descripción manual, usa descripcionMatricula
+      }));
     }
-  };
+  }, [descripcionMatricula]);
+  
 
-  cargarValorMatriculaPorCaja();
-}, [pagoActual.cod_caja]); // Recalcular si cambia la caja
-
- const exportarHistorialPDF = (historial, filtroAnio, filtroEstado) => {
-  if (!Array.isArray(historial) || historial.length === 0) {
-    Swal.fire('Error', 'No hay datos para exportar.', 'error');
-    return;
-  }
-
-  const datosFiltrados = historial.filter((item) => {
-    const coincideAnio = !filtroAnio || item.Anio_academico === filtroAnio;
-    const coincideEstado = !filtroEstado || item.Estado_pago === filtroEstado;
-    return coincideAnio && coincideEstado;
-  });
-
-  if (datosFiltrados.length === 0) {
-    Swal.fire('Sin resultados', 'No hay datos que coincidan con los filtros.', 'info');
-    return;
-  }
-
-  const totalPagado = datosFiltrados
-    .filter((i) => i.Estado_pago === 'Pagado')
-    .reduce((acc, cur) => acc + parseFloat(cur.Valor_matricula), 0);
-
-  const totalPendiente = datosFiltrados
-    .filter((i) => i.Estado_pago === 'Pendiente')
-    .reduce((acc, cur) => acc + parseFloat(cur.Valor_matricula), 0);
-
-  const doc = new jsPDF();
-  const img = new Image();
-  img.src = logo;
-
-  img.onload = () => {
-    doc.addImage(img, 'PNG', 10, 10, 30, 30);
-    doc.setFontSize(18);
-    doc.setTextColor(0, 102, 51);
-    doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
-    doc.setFontSize(14);
-    doc.text('Historial de Matrículas por Responsable', doc.internal.pageSize.width / 2, 30, { align: 'center' });
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
-    doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
-    doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
-    doc.setLineWidth(0.5);
-    doc.setDrawColor(0, 102, 51);
-    doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
-    doc.setFontSize(12);
-    doc.setTextColor(0, 51, 102);
-    doc.text('Historial Detallado de Matrículas', doc.internal.pageSize.width / 2, 65, { align: 'center' });
-
-    const nombrePadre = `${datosFiltrados[0].Nombre_Padre || ''} ${datosFiltrados[0].Apellido_Padre || ''}`.trim();
-    if (nombrePadre) {
-      doc.setFontSize(11);
-      doc.text(`Responsable: ${nombrePadre}`, 10, 72);
-    }
-
-    doc.autoTable({
-      startY: 80,
-      head: [['#', 'Alumno', 'Año', 'Grado', 'Ciclo', 'Sección', 'Estado', 'Monto', 'Fecha']],
-      body: datosFiltrados.map((item, i) => [
-        i + 1,
-        `${item.Nombre_estudiante || 'N/A'} ${item.Apellido_estudiante || ''}`.trim(),
-        item.Anio_academico,
-        item.Nombre_grado,
-        item.Nombre_ciclo,
-        item.Nombre_seccion || 'N/A',
-        item.Estado_pago,
-        `L ${parseFloat(item.Valor_matricula).toFixed(2)}`,
-        item.Fecha_pago ? new Date(item.Fecha_pago).toLocaleDateString() : '---',
-      ]),
-      styles: {
-        fontSize: 10,
-        textColor: [34, 34, 34],
-        cellPadding: 4,
-        valign: 'middle',
-        overflow: 'linebreak',
-      },
-      headStyles: {
-        fillColor: [0, 102, 51],
-        textColor: [255, 255, 255],
-        fontSize: 10,
-      },
-      alternateRowStyles: { fillColor: [240, 248, 255] },
-      margin: { left: 10, right: 10 },
-    });
-
-    const finalY = doc.previousAutoTable.finalY + 10;
-    doc.setFontSize(11);
-    doc.text(`Total Pagado: L ${totalPagado.toFixed(2)}`, 10, finalY);
-    doc.text(`Total Pendiente: L ${totalPendiente.toFixed(2)}`, 10, finalY + 6);
-
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      const fecha = new Date().toLocaleString('es-ES', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
-      });
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(`Generado: ${fecha}`, 10, doc.internal.pageSize.height - 10);
-      doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10, { align: 'right' });
-    }
-
-    const pdfBlob = doc.output('blob');
-    const pdfURL = URL.createObjectURL(pdfBlob);
-    window.open(pdfURL);
-  };
-
-  img.onerror = () => {
-    Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
-  };
-};
-
-
-// Sincronizar la descripción en el estado de pagoActual
+// Actualizar el estado "pagoActual" con "valorMatricula" y "descripcionMatricula"
 useEffect(() => {
-  if (descripcionMatricula) {
+  if (valorMatricula && descripcionMatricula) {
     setPagoActual((prev) => ({
       ...prev,
-      descripcion: descripcionMatricula, // Usar la descripción dinámica
+      monto: valorMatricula, // Establece el monto
+      descripcion: descripcionMatricula, // Establece la descripción
     }));
   }
-}, [descripcionMatricula]);
-
-// Sincronizar descripción si cambia el valor
-useEffect(() => {
-  if (descripcionMatricula) {
-    setPagoActual((prev) => ({
-      ...prev,
-      descripcion: 'Pago de matrícula', // Descripción fija
-    }));
-  }
-}, [descripcionMatricula]);
-
-// Sincronizar monto con el valor de matrícula
-useEffect(() => {
-  if (valorMatricula) {
-    setPagoActual((prev) => ({
-      ...prev,
-      monto: valorMatricula, // Valor dinámico sincronizado según el ciclo
-    }));
-  }
-}, [valorMatricula]);
-
-// Calcular vuelto basado en monto, descuento y dinero recibido
-const calcularVuelto = (monto, descuento, recibido) => {
-  const montoConDescuento = monto - descuento;
-  return recibido - montoConDescuento;
-};
-
+}, [valorMatricula, descripcionMatricula]);
+  // Actualizar el monto con el valor de "Matricula"
+  useEffect(() => {
+    if (valorMatricula) {
+      setPagoActual((prev) => ({
+        ...prev,
+        monto: valorMatricula, // Asigna el valor de Matricula al monto
+      }));
+    }
+  }, [valorMatricula]);
+  
+  const calcularVuelto = (monto, descuento, recibido) => {
+    const montoConDescuento = monto - descuento;
+    return recibido - montoConDescuento;
+  };
+  
   
   return (
     <CContainer>
-    <CRow className="justify-content-center mb-2">
-  <CCol xs="auto" className="text-center">
-    <div style={{ display: 'inline-block' }}>
-      <h3 style={{ margin: 0, fontWeight: 'bold', color: '#4B6251' }}>
-        <CIcon icon={cilWallet} size="lg" style={{ color: '#4B6251', marginRight: '0.5rem' }} />
-        Caja
-      </h3>
-      <div
-        style={{
-          width: '100%',
-          height: '2px',
-          backgroundColor: '#4B6251',
-          marginTop: '4px',
-        }}
-      ></div>
+    <div className="text-center mb-4">
+      <h4 style={{ color: '#4A4A4A', fontWeight: 'bold' }}>Cajas </h4>
     </div>
-  </CCol>
-</CRow>
-
   
-<CRow className="justify-content-end align-items-center mb-2">
-  <CCol xs="auto" className="d-flex gap-2">
-  <CButton
-  onClick={() => {
-    setModalHistorialVisible(true);
-    setDniBusqueda('');
-    setHistorialPagos([]);
-  }}
-  style={{
-    backgroundColor: '#4CAF50',
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '0.45rem 1.2rem',
-    fontSize: '0.9rem',
-    fontWeight: '400',
-  }}
->
-  <CIcon icon={cilDescription} className="me-2" />
-  Historial
-</CButton>
-
-
-
+    {/* Botón de "Nueva Caja" alineado a la derecha */}
+    <CRow className="justify-content-end mb-3">
+  {/* Botón Nueva */}
+  <CCol xs="auto">
     <CButton
       onClick={() => setModalNuevaCajaVisible(true)}
       style={{
-        backgroundColor: '#4B6251',
-        color: '#FFFFFF',
+        backgroundColor: '#4B6251', // Verde oscuro
+        color: 'white',
         border: 'none',
-        borderRadius: '8px',
-        padding: '0.45rem 1.2rem',
+        borderRadius: '5px',
+        padding: '0.5rem 1rem',
         fontSize: '0.9rem',
-        fontWeight: '400'
+        fontWeight: 'bold',
       }}
     >
-      <CIcon icon={cilPlus} className="me-2" />
+      <CIcon icon={cilPlus} className="me-1" />
       Nueva
     </CButton>
+  </CCol>
 
-    <CButton
-      onClick={() => {
-        const filteredData = pagosPendientes.filter((pago) =>
-          `${pago.Nombre_Padre} ${pago.Apellido_Padre}`.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        exportToPDF(filteredData);
+ {/* Botón Reporte */}
+<CCol xs="auto">
+  <CButton
+    onClick={() => {
+      const filteredData = pagosPendientes.filter((pago) =>
+        `${pago.Nombre_Padre} ${pago.Apellido_Padre}`
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) // Filtra según el término de búsqueda
+      );
+      exportToPDF(filteredData); // Exporta solo los datos filtrados
+    }}
+    style={{
+      backgroundColor: '#6C8E58', // Verde oscuro
+      color: 'white', // Texto en blanco
+      border: 'none',
+      borderRadius: '5px',
+      padding: '0.5rem 1rem',
+      fontSize: '0.9rem',
+      fontWeight: 'bold',
+      cursor: 'pointer', // Cursor clickeable
+    }}
+    title="Exportar reporte filtrado según la búsqueda actual" // Tooltip
+  >
+    <CIcon icon={cilFile} className="me-1" />
+    Exportar PDF
+  </CButton>
+
+  </CCol>
+</CRow>
+ {/* Búsqueda y Selector de Paginación */}
+{/* Búsqueda y Selector de Paginación */}
+<CRow className="justify-content-between align-items-center mb-3">
+  <CCol xs={4} md={3}>
+    <CFormInput
+      placeholder="Buscar por nombre o DNI del padre" // Refleja el filtro actualizado
+      value={searchTerm}
+      onChange={async (e) => {
+        const inputValue = e.target.value;
+        setSearchTerm(inputValue);
+
+        // Realizar la búsqueda en el backend si hay un término ingresado
+        if (inputValue.trim() !== '') {
+          const results = await buscarCajasPorDni(inputValue); // Función fetch creada previamente
+          if (results) {
+            setPagosPendientes(results.data || []); // Actualiza el estado con los resultados
+          }
+        } else {
+          // Si no hay término de búsqueda, carga todas las cajas pendientes
+          obtenerCajasPendientes();
+        }
       }}
       style={{
-        backgroundColor: '#688E58',
-        color: '#FFFFFF',
-        border: 'none',
-        borderRadius: '8px',
-        padding: '0.45rem 1.2rem',
+        border: '1px solid #ccc',
+        borderRadius: '5px',
         fontSize: '0.9rem',
-        fontWeight: '400'
+      }}
+    />
+  </CCol>
+  <CCol xs="auto">
+    <CFormSelect
+      value={itemsPerPage}
+      onChange={(e) => {
+        setItemsPerPage(parseInt(e.target.value));
+        setCurrentPage(1); // Reiniciar a la primera página al cambiar la cantidad de elementos
+      }}
+      style={{
+        border: '1px solid #ccc',
+        borderRadius: '5px',
+        fontSize: '0.9rem',
+        color: '#4A4A4A',
       }}
     >
-      <CIcon icon={cilFile} className="me-2" />
-      Reporte
-    </CButton>
+      <option value={5}>Mostrar 5 registros</option>
+      <option value={10}>Mostrar 10 registros</option>
+      <option value={20}>Mostrar 20 registros</option>
+    </CFormSelect>
   </CCol>
 </CRow>
 
-
-
-{/* Barra de búsqueda y selector de registros */}
-<CRow className="justify-content-between align-items-center mb-3">
-  {/* Barra de búsqueda */}
-  <CCol xs="12" md="5">
-    <CInputGroup>
-      <CInputGroupText>
-        <CIcon icon={cilSearch} />
-      </CInputGroupText>
-      <CFormInput
-        placeholder="Buscar parámetro..."
-        value={searchTerm}
-        onChange={async (e) => {
-          const inputValue = e.target.value;
-          setSearchTerm(inputValue);
-
-          if (inputValue.trim() !== '') {
-            const results = await buscarCajasPorDni(inputValue);
-            if (results) {
-              setPagosPendientes(results.data || []);
-            }
-          } else {
-            obtenerCajasPendientes();
-          }
-        }}
-      />
-      <CButton
-        style={{
-          backgroundColor: '#5c636a',
-          border: 'none',
-          color: 'white',
-          fontWeight: '400'
-        }}
-        onClick={() => {
-          setSearchTerm('');
-          setCurrentPage(1);
-          obtenerCajasPendientes();
-        }}
-      >
-        <CIcon icon={cilTrash} className="me-1" /> Limpiar
-      </CButton>
-    </CInputGroup>
-  </CCol>
-
-  {/* Selector de registros */}
-  <CCol xs="auto">
-    <div className="d-flex align-items-center">
-      <span className="me-2">Mostrar</span>
-      <CFormSelect
-        value={itemsPerPage}
-        onChange={(e) => {
-          setItemsPerPage(parseInt(e.target.value));
-          setCurrentPage(1);
-        }}
-        style={{ width: '80px' }}
-      >
-        <option value={5}>5</option>
-        <option value={10}>10</option>
-        <option value={20}>20</option>
-      </CFormSelect>
-      <span className="ms-2">registros</span>
-    </div>
-  </CCol>
-</CRow>
-
-<CTable hover striped responsive bordered align="middle" className="shadow-sm text-center" style={{ textTransform: 'uppercase' }}>
-  <CTableHead color="light">
+    {/* Tabla de Datos */}
+    <CTable hover bordered className="shadow-sm" style={{ borderRadius: '10px' }}>
+  <CTableHead style={{ backgroundColor: '#0056b3', color: 'white' }}>
     <CTableRow>
-      <CTableHeaderCell>#</CTableHeaderCell>
-      <CTableHeaderCell>NOMBRE ALUMNO</CTableHeaderCell>
-      <CTableHeaderCell>DESCRIPCIÓN</CTableHeaderCell>
-      <CTableHeaderCell>MONTO</CTableHeaderCell>
-      <CTableHeaderCell>ESTADO</CTableHeaderCell>
-      <CTableHeaderCell>FECHA</CTableHeaderCell>
-      <CTableHeaderCell>HORA</CTableHeaderCell>
-      <CTableHeaderCell>ACCIONES</CTableHeaderCell>
+      <CTableHeaderCell>Nombre del Padre</CTableHeaderCell>
+      <CTableHeaderCell>Monto</CTableHeaderCell>
+      <CTableHeaderCell>Descripción</CTableHeaderCell>
+      <CTableHeaderCell>Hora</CTableHeaderCell>
+      <CTableHeaderCell>Fecha</CTableHeaderCell>
+      <CTableHeaderCell>Acciones</CTableHeaderCell>
     </CTableRow>
   </CTableHead>
   <CTableBody>
-    {paginatedData.map((caja, index) => (
+    {paginatedData.map((caja) => (
       <CTableRow key={caja.Cod_caja}>
-        <CTableDataCell>{(currentPage - 1) * itemsPerPage + index + 1}</CTableDataCell>
-
+        {/* Nombre del Padre */}
         <CTableDataCell>
-          {`${caja.Nombre_Hijo?.toUpperCase() || ''} ${caja.Apellido_Hijo?.toUpperCase() || ''}`}
+          {`${caja.Nombre_Padre?.toUpperCase() || ''} ${caja.Apellido_Padre?.toUpperCase() || ''}`}
         </CTableDataCell>
-
+        
+        {/* Monto */}
         <CTableDataCell>
-          {caja.Descripcion ? caja.Descripcion.toUpperCase() : 'FALTA DE PAGO DE MATRICULA'}
+          {caja.Monto ? `L ${parseFloat(caja.Monto).toFixed(2)}` : 'PENDIENTE'}
         </CTableDataCell>
-
-        <CTableDataCell>
-          {caja.Monto ? `L ${parseFloat(caja.Monto).toFixed(2)}` : '--'}
-        </CTableDataCell>
-
-        <CTableDataCell>
-          {caja.Estado_pago?.toUpperCase() || 'SIN ESTADO'}
-        </CTableDataCell>
-
-        <CTableDataCell>
-          {caja.Fecha_pago
-            ? new Date(caja.Fecha_pago).toLocaleDateString().toUpperCase()
-            : 'SIN FECHA'}
-        </CTableDataCell>
-
+        
+        {/* Descripción */}
+        <CTableDataCell>{caja.Descripcion ? caja.Descripcion.toUpperCase() : 'SIN DESCRIPCIÓN'}</CTableDataCell>
+        
+        {/* Hora */}
         <CTableDataCell>
           {caja.Hora_registro
             ? new Date(caja.Hora_registro).toLocaleTimeString([], {
@@ -1355,83 +1097,70 @@ const calcularVuelto = (monto, descuento, recibido) => {
               })
             : 'SIN HORA'}
         </CTableDataCell>
-
-        <CTableDataCell className="text-center">
-          <div className="d-flex justify-content-center gap-2">
-            {caja.Monto === null && (
-              <CButton
-                onClick={() => {
-                  setPagoActual({
-                    cod_caja: caja.Cod_caja,
-                    monto: '',
-                    descripcion: '',
-                    cod_concepto: '',
-                    aplicar_descuento: false,
-                    valor_descuento: '',
-                    descripcion_descuento: '',
-                  });
-                  setModalVisible(true);
-                }}
-                style={{
-                  backgroundColor: '#4B6251',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '5px',
-                  padding: '0.3rem 0.6rem',
-                  fontSize: '0.8rem',
-                }}
-              >
-                <CIcon icon={cilWallet} className="me-1" />
-              </CButton>
-            )}
-
-            {caja.Estado_pago === 'Pagado' && caja.Monto > 0 && (
-              <CButton
-                onClick={() => generarReporteIndividual(caja, dineroRecibido, vuelto)}
-                title="Descargar PDF"
-                style={{
-                  backgroundColor: '#688E58',
-                  color: '#FFFFFF',
-                  border: 'none',
-                  borderRadius: '8px',
-                  padding: '0.4rem 0.7rem',
-                  fontSize: '0.75rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.3rem',
-                }}
-              >
-                <CIcon icon={cilFile} />
-                PDF
-              </CButton>
-            )}
-
+        
+        {/* Fecha */}
+        <CTableDataCell>
+          {caja.Fecha_pago
+            ? new Date(caja.Fecha_pago).toLocaleDateString().toUpperCase()
+            : 'SIN FECHA'}
+        </CTableDataCell>
+        
+        {/* Acciones */}
+        <CTableDataCell>
+          {/* Mostrar botón "Registrar" solo si Monto es null */}
+          {caja.Monto === null && (
             <CButton
-              style={{
-                backgroundColor: '#F5B041',
-                border: 'none',
-                color: '#212529',
-                borderRadius: '8px',
-                padding: '0.3rem 0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '38px',
+              onClick={() => {
+                setPagoActual({
+                  cod_caja: caja.Cod_caja,
+                  monto: '',
+                  descripcion: '',
+                  cod_concepto: '',
+                  aplicar_descuento: false,
+                  valor_descuento: '',
+                  descripcion_descuento: '',
+                });
+                setModalVisible(true);
               }}
-              title="Editar"
-              onClick={() => handleEditarMatricula(caja)}
+              style={{
+                backgroundColor: '#4B6251', // Verde oscuro
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                padding: '0.3rem 0.6rem',
+                fontSize: '0.8rem',
+              }}
             >
-              <CIcon icon={cilPen} size="sm" />
+              <CIcon icon={cilWallet} className="me-1" />
+              
             </CButton>
-          </div>
+          )}
+
+          {/* Botón para generar reporte individual */}
+          <CButton
+  onClick={() => generarReporteIndividual(caja, dineroRecibido, vuelto)}
+  style={{
+    backgroundColor: '#008080', // Cambia el color si es necesario
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    padding: '0.3rem 0.6rem',
+    fontSize: '0.8rem',
+    marginLeft: '5px',
+  }}
+>
+  <CIcon icon={cilFile} className="me-1" />
+  
+</CButton>
+
+
         </CTableDataCell>
       </CTableRow>
     ))}
   </CTableBody>
 </CTable>
 
-
-    {/* Sección de paginación */}
+    {/* Paginación */}
     <CRow className="justify-content-center align-items-center mt-3">
   <CCol xs="auto">
     <CButton
@@ -1481,73 +1210,15 @@ const calcularVuelto = (monto, descuento, recibido) => {
   backdrop="static"
   className="modal-md border-0 rounded shadow"
 >
-<CModalHeader
-  className="bg-light border-bottom py-3 px-4"
-  style={{
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '5px',
-  }}
->
-  {/* Título principal */}
-  <div
-    className="d-flex align-items-center justify-content-start"
-    style={{
-      gap: '10px',
-      width: '100%',
-    }}
-  >
-    <CIcon icon={cilWallet} style={{ fontSize: '2rem', color: '#4B6251' }} />
-    <h4
-      className="fw-bold mb-0"
-      style={{
-        color: '#4B6251',
-        fontSize: '1.7rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-      }}
-    >
-      Pago de Matrícula
-    </h4>
-  </div>
-
-  {/* Subtítulo: Nombre, Grado y Sección del alumno */}
-  {nombreAlumno && (
-    <div
-      style={{
-        fontSize: '1.1rem',
-        fontWeight: '500',
-        color: '#6C757D',
-        marginLeft: '2.5rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '4px',
-      }}
-    >
-      <div>
-        Padre:{' '}
-        <strong style={{ color: '#4B6251', textTransform: 'uppercase' }}>
-          {nombreAlumno}
-        </strong>
-      </div>
-      <div>
-        Grado:{' '}
-        <strong style={{ color: '#4B6251' }}>
-          {pagoActual.Grado || 'N/A'}
-        </strong>{' '}
-        - Sección:{' '}
-        <strong style={{ color: '#4B6251' }}>
-          {pagoActual.Seccion || 'N/A'}
-        </strong>
-      </div>
-    </div>
-  )}
-</CModalHeader>
-
-
+  <CModalHeader closeButton className="bg-light border-0">
+    <CModalTitle className="fw-bold" style={{ color: '#4B6251' }}>
+      <CIcon icon={cilWallet} className="me-2" /> Registrar Pago
+    </CModalTitle>
+  </CModalHeader>
   <CModalBody className="p-4">
     <CForm onSubmit={registrarPago}>
-    <CInputGroup className="mb-3">
+      {/* Campo de descripción */}
+      <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
     <CIcon icon={cilDescription} className="text-muted" />
   </CInputGroupText>
@@ -1555,25 +1226,60 @@ const calcularVuelto = (monto, descuento, recibido) => {
     type="text"
     name="descripcion"
     placeholder="Descripción"
-    value={descripcionMatricula || pagoActual.descripcion || ''} // Descripción dinámica
-    readOnly
+    value={descripcionMatricula || pagoActual.descripcion || ''} // Prioriza descripcionMatricula
+    readOnly // Si no deseas que sea editable
     className="form-control border-0 shadow-sm"
   />
 </CInputGroup>
-
+{/* Campo de monto */}
 <CInputGroup className="mb-3">
   <CInputGroupText className="bg-white border-0">
     <CIcon icon={cilDollar} className="text-muted" />
   </CInputGroupText>
   <CFormInput
-    type="number"
-    name="monto"
-    placeholder="Monto (Lempiras)"
-    value={pagoActual.monto || valorMatricula || ''} // Monto dinámico
-    readOnly
-    className={`form-control border-0 shadow-sm`}
-    required
-  />
+  type="number"
+  name="monto"
+  placeholder="Monto (Lempiras)"
+  value={pagoActual.monto || valorMatricula || ''} // Toma el valor de Matricula como predeterminado
+  onChange={(e) => {
+    const value = e.target.value;
+
+    // Validaciones
+    if (/[^0-9.]/.test(value)) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto solo puede contener números y puntos.',
+      }));
+    } else if (parseFloat(value) <= 0 || isNaN(parseFloat(value))) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto debe ser mayor a 0.',
+      }));
+    } else if (value.length > 25) {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: 'El monto no puede exceder los 25 caracteres.',
+      }));
+    } else {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        monto: '', // Limpia los errores
+      }));
+    }
+
+    // Actualiza el estado con el valor ingresado
+    setPagoActual((prevState) => ({
+      ...prevState,
+      monto: value, // Actualiza monto manualmente
+    }));
+  }}
+  onPaste={(e) => e.preventDefault()} // Bloquea pegar
+  onCopy={(e) => e.preventDefault()} // Bloquea copiar
+  className={`form-control border-0 shadow-sm ${errors.monto ? 'is-invalid' : ''}`} // Resalta inválido si hay errores
+  required
+/>
+{errors.monto && <small className="text-danger">{errors.monto}</small>} {/* Muestra error debajo */}
+
 </CInputGroup>
 
       {/* Selección de concepto */}
@@ -1890,92 +1596,6 @@ const calcularVuelto = (monto, descuento, recibido) => {
     </CButton>
   </CModalFooter>
 </CModal>
-
-<CModal
-  visible={modalHistorialVisible}
-  onClose={() => setModalHistorialVisible(false)}
-  backdrop="static"
-  size="lg"
->
-  <CModalHeader>
-    <CModalTitle className="text-success">Historial de Matrículas</CModalTitle>
-  </CModalHeader>
-  <CModalBody>
-    <CForm className="mb-3">
-      <CInputGroup>
-        <CInputGroupText>DNI</CInputGroupText>
-        <CFormInput
-          maxLength={13}
-          value={dniBusqueda}
-          onChange={(e) => setDniBusqueda(e.target.value.replace(/\D/g, ''))}
-          placeholder="Ingrese DNI"
-        />
-        <CButton color="success" variant="outline" onClick={fetchHistorialMatricula}>
-          Buscar
-        </CButton>
-      </CInputGroup>
-    </CForm>
-
-    {historialPagos.length > 0 && (
-      <div className="text-end mb-2">
-        <CButton
-          color="primary"
-          variant="outline"
-          onClick={() => exportarHistorialPDF(historialPagos)}
-        >
-          Exportar a PDF
-        </CButton>
-      </div>
-    )}
-
-    {historialPagos.length === 0 ? (
-      <div className="text-center text-muted py-4">No hay historial disponible.</div>
-    ) : (
-      <CTable striped hover responsive bordered className="text-center">
-        <CTableHead>
-          <CTableRow>
-            <CTableHeaderCell>Alumno</CTableHeaderCell>
-            <CTableHeaderCell>Año</CTableHeaderCell>
-            <CTableHeaderCell>Grado</CTableHeaderCell>
-            <CTableHeaderCell>Ciclo</CTableHeaderCell>
-            <CTableHeaderCell>Sección</CTableHeaderCell>
-            <CTableHeaderCell>Estado</CTableHeaderCell>
-            <CTableHeaderCell>Monto</CTableHeaderCell>
-            <CTableHeaderCell>Fecha</CTableHeaderCell>
-          </CTableRow>
-        </CTableHead>
-        <CTableBody>
-          {historialPagos.map((pago, index) => (
-            <CTableRow key={index}>
-              <CTableDataCell>{`${pago.Nombre_estudiante} ${pago.Apellido_estudiante}`}</CTableDataCell>
-              <CTableDataCell>{pago.Anio_academico}</CTableDataCell>
-              <CTableDataCell>{pago.Nombre_grado}</CTableDataCell>
-              <CTableDataCell>{pago.Nombre_ciclo}</CTableDataCell>
-              <CTableDataCell>{pago.Nombre_seccion || 'N/A'}</CTableDataCell>
-              <CTableDataCell>
-  <span className={pago.Estado_pago === 'Pagado' ? 'text-success fw-bold' : 'text-warning fw-bold'}>
-    {pago.Estado_pago}
-  </span>
-</CTableDataCell>
-
-
-              <CTableDataCell>L {parseFloat(pago.Valor_matricula).toFixed(2)}</CTableDataCell>
-              <CTableDataCell>
-                {pago.Fecha_pago ? new Date(pago.Fecha_pago).toLocaleDateString() : '---'}
-              </CTableDataCell>
-            </CTableRow>
-          ))}
-        </CTableBody>
-      </CTable>
-    )}
-  </CModalBody>
-  <CModalFooter>
-    <CButton color="secondary" onClick={() => setModalHistorialVisible(false)}>
-      Cerrar
-    </CButton>
-  </CModalFooter>
-</CModal>
-
     </CContainer>
   );
 };

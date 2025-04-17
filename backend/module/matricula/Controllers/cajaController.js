@@ -426,14 +426,12 @@ export const obtenerTodasLasCajasPendientes = async (req, res) => {
         c.Hora_registro,
         c.Fecha AS Fecha_pago,
         c.Estado_pago,
-        h.Nombre AS Nombre_Hijo,
-        h.Primer_apellido AS Apellido_Hijo
+        p.Nombre AS Nombre_Padre,
+        p.Primer_apellido AS Apellido_Padre
       FROM 
         tbl_caja AS c
       LEFT JOIN 
-        tbl_matricula AS m ON c.Cod_caja = m.Cod_caja
-      LEFT JOIN 
-        tbl_personas AS h ON m.Cod_persona = h.Cod_persona
+        tbl_personas AS p ON c.Cod_persona = p.Cod_persona
       WHERE 
         c.Estado_pago IN ('Pendiente', 'Pagado')
       ORDER BY 
@@ -441,10 +439,12 @@ export const obtenerTodasLasCajasPendientes = async (req, res) => {
         c.Hora_registro DESC
     `);
 
+    // Si no hay resultados
     if (!cajasPendientes.length) {
       return res.status(404).json({ message: 'No se encontraron cajas pendientes o pagadas.' });
     }
 
+    // Devolver los datos al frontend
     return res.status(200).json({ data: cajasPendientes });
   } catch (error) {
     console.error('Error al obtener las cajas pendientes:', error);
@@ -455,87 +455,32 @@ export const obtenerTodasLasCajasPendientes = async (req, res) => {
   }
 };
 
-
+// Controlador para obtener el valor del parámetro "Matricula" y su descripción
 export const obtenerValorMatricula = async (req, res) => {
-  const { cod_caja } = req.query; // Obtener el código de la caja desde la solicitud
-
-  if (!cod_caja) {
-    return res.status(400).json({ message: 'El código de la caja es requerido.' });
-  }
-
   try {
-    // Paso 1: Obtener el grado asociado a la caja
-    const [[gradoResult]] = await pool.query(
-      `
-      SELECT sm.Cod_grado
-      FROM tbl_caja c
-      INNER JOIN tbl_matricula m ON c.Cod_caja = m.Cod_caja
-      INNER JOIN tbl_secciones_matricula sm ON m.Cod_matricula = sm.Cod_matricula
-      WHERE c.Cod_caja = ?;
-      `,
-      [cod_caja]
+    // Consulta para obtener el valor y la descripción del parámetro "Matricula"
+    const [rows] = await pool.query(
+      'SELECT Parametro, Valor FROM tbl_parametros WHERE Parametro = ?',
+      ['Pago de matricula']
     );
 
-    if (!gradoResult || !gradoResult.Cod_grado) {
+    if (rows.length === 0) {
+      // Si no se encuentra el parámetro
       return res
         .status(404)
-        .json({ message: 'No se encontró un grado asociado a la caja proporcionada.' });
+        .json({ message: 'El valor del parámetro "Pago de matricula" no se encontró.' });
     }
 
-    const codGrado = gradoResult.Cod_grado;
-
-    // Paso 2: Obtener el ciclo asociado al grado
-    const [[cicloResult]] = await pool.query(
-      'SELECT Cod_ciclo FROM tbl_grados WHERE Cod_grado = ?',
-      [codGrado]
-    );
-
-    if (!cicloResult || !cicloResult.Cod_ciclo) {
-      return res
-        .status(404)
-        .json({ message: 'No se encontró un ciclo asociado al grado proporcionado.' });
-    }
-
-    const codCiclo = cicloResult.Cod_ciclo;
-
-    // Paso 3: Obtener el nombre del ciclo
-    const [[nombreCicloResult]] = await pool.query(
-      'SELECT Nombre_ciclo FROM tbl_ciclos WHERE Cod_ciclo = ?',
-      [codCiclo]
-    );
-
-    if (!nombreCicloResult || !nombreCicloResult.Nombre_ciclo) {
-      return res
-        .status(404)
-        .json({ message: 'No se encontró el nombre del ciclo asociado.' });
-    }
-
-    const nombreCiclo = nombreCicloResult.Nombre_ciclo;
-
-    // Paso 4: Obtener el precio asociado al ciclo desde los parámetros
-    const [[parametroResult]] = await pool.query(
-      'SELECT Valor FROM tbl_parametros WHERE Parametro = ?',
-      [`Pago de matrícula - ${nombreCiclo}`]
-    );
-
-    if (!parametroResult || !parametroResult.Valor) {
-      return res.status(404).json({
-        message: `No se encontró un precio configurado para el ciclo: ${nombreCiclo}.`,
-      });
-    }
-
-    // Paso 5: Devolver el valor, el nombre del ciclo, y la descripción
+    // Devolver tanto el valor como la descripción del parámetro
     res.status(200).json({
-      parametro: `Pago de matrícula - ${nombreCiclo}`, // Descripción dinámica con el nombre del ciclo
-      valor: parametroResult.Valor, // Precio correspondiente al ciclo
+      parametro: rows[0].Parametro, // Descripción del parámetro
+      valor: rows[0].Valor, // Valor asociado
     });
   } catch (error) {
-    console.error('Error al obtener el valor de matrícula:', error);
+    console.error('Error al obtener el valor del parámetro "Matricula":', error);
     res.status(500).json({ message: 'Error interno del servidor.' });
   }
 };
-
-
 // Controlador para obtener el código del concepto "Matricula"
 export const obtenerConceptoMatricula = async (req, res) => {
   try {
@@ -634,187 +579,5 @@ export const obtenerValorMensualidad = async (req, res) => {
   } catch (error) {
     console.error('Error al obtener el valor de la mensualidad:', error);
     res.status(500).json({ message: 'Error interno del servidor.', error: error.message });
-  }
-};
-
-export const obtenerNombreAlumnoPorCaja = async (req, res) => {
-  const { cod_caja } = req.query;
-
-  if (!cod_caja) {
-    return res.status(400).json({
-      message: 'El código de la caja es requerido para obtener el nombre del padre.',
-    });
-  }
-
-  try {
-    const [rows] = await pool.query(
-      `
-      SELECT 
-        padre.Nombre AS primer_nombre, 
-        padre.Primer_apellido AS primer_apellido,
-        g.Nombre_grado AS grado,
-        c.Nombre_ciclo AS ciclo,
-        s.Nombre_seccion AS seccion,
-        param.Valor AS monto_matricula,
-        param.Parametro AS descripcion_parametro
-      FROM tbl_matricula m
-      JOIN tbl_personas estudiante ON m.cod_persona = estudiante.cod_persona
-      JOIN tbl_estructura_familiar ef ON estudiante.cod_persona = ef.Cod_persona_estudiante
-      JOIN tbl_personas padre ON ef.Cod_persona_padre = padre.cod_persona
-      JOIN tbl_secciones_matricula sm ON m.Cod_matricula = sm.Cod_matricula
-      JOIN tbl_grados g ON sm.Cod_grado = g.Cod_grado
-      JOIN tbl_ciclos c ON g.Cod_ciclo = c.Cod_ciclo
-      LEFT JOIN tbl_secciones s ON sm.Cod_seccion = s.Cod_secciones
-      LEFT JOIN tbl_parametros param ON param.Parametro = CONCAT('Pago de matrícula - ', c.Nombre_ciclo)
-      WHERE m.Cod_caja = ?
-      LIMIT 1
-      `,
-      [cod_caja]
-    );
-
-    if (!rows || rows.length === 0) {
-      return res.status(404).json({
-        message: 'No se encontró ningún padre asociado a esta caja.',
-      });
-    }
-
-    const padre = rows[0];
-    res.status(200).json({
-      nombre: `${padre.primer_nombre} ${padre.primer_apellido}`,
-      grado: padre.grado,
-      ciclo: padre.ciclo,
-      seccion: padre.seccion,
-      valor: padre.monto_matricula,
-      descripcion_parametro: padre.descripcion_parametro,
-    });
-  } catch (error) {
-    console.error('Error al obtener el nombre del padre:', error);
-    res.status(500).json({ message: 'Error interno del servidor.' });
-  }
-};
-
-
-export const obtenerHistorialPagosPorDni = async (req, res) => {
-  const { dni = '', estado = '' } = req.query;
-
-  if (!dni.trim()) {
-    return res.status(400).json({ message: 'El DNI es requerido.' });
-  }
-
-  try {
-    // Buscar cod_persona del padre
-    const [[padre]] = await pool.query(
-      'SELECT cod_persona FROM tbl_personas WHERE dni_persona = ?',
-      [dni]
-    );
-
-    if (!padre) {
-      return res.status(404).json({ message: 'No se encontró un padre con el DNI proporcionado.' });
-    }
-
-    const cod_padre = padre.cod_persona;
-
-    // Obtener historial de pagos
-    const [pagos] = await pool.query(
-      `SELECT 
-        c.Cod_caja,
-        c.Monto,
-        c.Descripcion,
-        c.Hora_registro,
-        c.Fecha AS Fecha_pago,
-        c.Estado_pago,
-
-        padre.Nombre AS Nombre_Padre,
-        padre.Primer_apellido AS Apellido_Padre,
-
-        hijo.Nombre AS Nombre_Hijo,
-        hijo.Primer_apellido AS Apellido_Hijo
-
-      FROM tbl_caja AS c
-      JOIN tbl_personas AS padre ON c.Cod_persona = padre.cod_persona
-      LEFT JOIN tbl_matricula AS m ON c.Cod_caja = m.Cod_caja
-      LEFT JOIN tbl_personas AS hijo ON m.Cod_persona = hijo.cod_persona
-      WHERE padre.cod_persona = ?
-      ${estado ? 'AND c.Estado_pago = ?' : ''}
-      ORDER BY c.Fecha DESC, c.Hora_registro DESC`,
-      estado ? [cod_padre, estado] : [cod_padre]
-    );
-
-    // Totales
-    const [totales] = await pool.query(
-      `SELECT 
-        SUM(CASE WHEN c.Estado_pago = 'Pagado' THEN c.Monto ELSE 0 END) AS total_pagado,
-        SUM(CASE WHEN c.Estado_pago = 'Pendiente' THEN c.Monto ELSE 0 END) AS total_pendiente
-      FROM tbl_caja AS c
-      JOIN tbl_personas AS padre ON c.Cod_persona = padre.cod_persona
-      WHERE padre.cod_persona = ?`,
-      [cod_padre]
-    );
-
-    res.status(200).json({ data: pagos, totales: totales[0] });
-  } catch (error) {
-    console.error('Error al obtener historial de pagos:', error);
-    res.status(500).json({ message: 'Error en el servidor.', error: error.message });
-  }
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Controlador para historial de matrícula (pagadas y pendientes con valor estimado por ciclo)
-// controllers/cajaController.js
-
-// Controlador para historial de matrícula (pagadas y pendientes con valor estimado por ciclo)
-// controllers/cajaController.js
-
-export const obtenerHistorialPagosMatricula = async (req, res) => {
-  const { dni_padre } = req.params;
-
-  try {
-    const [historial] = await pool.query(
-      `
-      SELECT 
-        pm.Anio_academico,
-        c.Estado_pago,
-        c.Fecha AS Fecha_pago,
-
-        g.Nombre_grado,
-        ci.Nombre_ciclo,
-        s.Nombre_seccion,
-
-        est.Nombre AS Nombre_estudiante,
-        est.Primer_apellido AS Apellido_estudiante,
-
-        CASE 
-            WHEN c.Estado_pago = 'Pagado' THEN c.Monto
-            ELSE (
-                SELECT Valor FROM tbl_parametros
-                WHERE Parametro COLLATE utf8mb4_general_ci = CONCAT('Pago de matrícula - ', ci.Nombre_ciclo) COLLATE utf8mb4_general_ci
-                LIMIT 1
-            )
-        END AS Valor_matricula
-
-      FROM tbl_matricula AS m
-      JOIN tbl_personas AS est ON m.Cod_persona = est.Cod_persona
-      JOIN tbl_estructura_familiar AS ef ON est.Cod_persona = ef.Cod_persona_estudiante
-      JOIN tbl_personas AS padre ON ef.Cod_persona_padre = padre.Cod_persona
-      JOIN tbl_periodo_matricula AS pm ON m.Cod_periodo_matricula = pm.Cod_periodo_matricula
-      JOIN tbl_secciones_matricula AS sm ON m.Cod_matricula = sm.Cod_matricula
-      JOIN tbl_grados AS g ON sm.Cod_grado = g.Cod_grado
-      JOIN tbl_ciclos AS ci ON g.Cod_ciclo = ci.Cod_ciclo
-      LEFT JOIN tbl_secciones AS s ON sm.Cod_seccion = s.Cod_secciones
-      LEFT JOIN tbl_caja AS c ON m.Cod_caja = c.Cod_caja
-      WHERE padre.dni_persona COLLATE utf8mb4_general_ci = ? COLLATE utf8mb4_general_ci
-      ORDER BY pm.Anio_academico DESC, c.Estado_pago DESC, c.Fecha DESC
-      `,
-      [dni_padre.trim()]
-    );
-
-    if (!historial || historial.length === 0) {
-      return res.status(404).json({ message: 'No se encontró historial de pagos para este padre.' });
-    }
-
-    res.status(200).json({ data: historial });
-  } catch (error) {
-    console.error('Error al obtener historial de pagos:', error);
-    res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };

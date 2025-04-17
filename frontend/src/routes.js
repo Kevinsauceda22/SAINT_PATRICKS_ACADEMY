@@ -1,6 +1,6 @@
 import React from 'react'
 
-/*
+const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
 const Colors = React.lazy(() => import('./views/theme/colors/Colors'))
 const Typography = React.lazy(() => import('./views/theme/typography/Typography'))
 
@@ -50,68 +50,10 @@ const Modals = React.lazy(() => import('./views/notifications/modals/Modals'))
 const Toasts = React.lazy(() => import('./views/notifications/toasts/Toasts'))
 
 const Widgets = React.lazy(() => import('./views/widgets/Widgets'))
-*/
 
-const Dashboard = React.lazy(() => import('./views/dashboard/Dashboard'))
-
-//Calificaciones para el breadcrumb
-const ListaActiviadesAca = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAca'));
-const ListaAsigaturas = React.lazy(() => import('./views/pages/calificaciones/ListaAsignaturas'));
-const ListaAsistencia = React.lazy(() => import('./views/pages/calificaciones/ListaAsistencia'));
-const ListaAsistenciaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaAsistenciaProfesor'));
-const ListaCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaCiclos'));
-const ListaEspecialidades = React.lazy(() => import('./views/pages/calificaciones/ListaEspecialidades'));
-const ListaEstadoasistencia = React.lazy(() => import('./views/pages/calificaciones/ListaEstadoasistencia'));
-const ListaEstadoNota = React.lazy(() => import('./views/pages/calificaciones/ListaEstadonota'));
-const ListaNotasProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaNotasProfesor'));
-const ListaNotas = React.lazy(() => import('./views/pages/calificaciones/ListaNotas'));
-const ListaCuadroProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaCuadroProfesor'));
-const ListaCuadro = React.lazy(() => import('./views/pages/calificaciones/ListaCuadro'));
-const ListaCuadroPadre = React.lazy(() => import('./views/pages/calificaciones/ListaCuadroPadre'));
-const ListaGradoAcademico = React.lazy(() => import('./views/pages/calificaciones/ListaGradoAcademico'));
-const ListaGrado = React.lazy(() => import('./views/pages/calificaciones/ListaGrados'));
-const ListaGradosAsignaturas = React.lazy(() => import('./views/pages/calificaciones/ListaGradosAsignaturas'))
-const ListaParciales = React.lazy(() => import('./views/pages/calificaciones/ListaParciales'));
-const ListaPonderaciones = React.lazy(() => import('./views/pages/calificaciones/ListaPonderaciones'));
-const ListaPonderacionesCiclos = React.lazy(() => import('./views/pages/calificaciones/ListaPonderacionesCiclos'));
-//const VistaListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaProfesor'));
-//const ListaActividadesPadre = React.lazy(() => import('./views/pages/calificaciones/ListaActividadesAcaVistaPadre'));
-const ListaInstitutos = React.lazy(() => import('./views/pages/calificaciones/ListaInstitutos'));
-const ListaParametro = React.lazy(() => import('./views/pages/calificaciones/ListaParametro'));
-const ListaHistoriales = React.lazy(() => import('./views/pages/calificaciones/ListaHistoriales')) 
-const ListaProfesor = React.lazy(() => import('./views/pages/calificaciones/ListaProfesores'));
-const ListaTipoContrato = React.lazy(() => import('./views/pages/calificaciones/ListaTipoContrato'));
-const s = [
+const routes = [
+  { path: '/', exact: true, name: 'Home' },
   { path: '/dashboard', name: 'Dashboard', element: Dashboard },
-  //rutas calificaciones para breadcrumb
-  { path: '/ListaAsistencia', name: 'Asistencias', element: ListaAsistencia },
-  { path:'/ListaActividadesAca', name: 'Actividades Académicas',  element:ListaActiviadesAca },
-  { path:'/ListaAsignaturas', name: 'Asignaturas',  element:ListaAsigaturas },
-  { path:'/ListaAsistencia', name: 'Asistencias',  element:ListaAsistencia },
-  { path:'/ListaAsistenciaProfesor', name: 'Asistencias',  element:ListaAsistenciaProfesor },
-  { path:'/ListaCiclos', name: 'Ciclos',  element:ListaCiclos},
-  { path:'/ListaEspecialidades', name: 'Especialidades',  element:ListaEspecialidades },
-  { path:'/ListaEstadoasistencia', name: 'Estados Asistencia',  element:ListaEstadoasistencia },
-  { path:'/ListaEstadonota', name: 'Estados Nota',  element:ListaEstadoNota },
-  { path:'/ListaNotasProfesor', name: 'Notas',  element:ListaNotasProfesor },
-  { path:'/ListaNotas', name: 'Notas',  element:ListaNotas },
-  { path:'/ListaCuadroProfesor', name: 'Cuadros',  element:ListaCuadroProfesor },
-  { path:'/ListaCuadroPadre', name: 'Cuadros',  element:ListaCuadroPadre },
-  { path:'/ListaCuadro', name: 'Cuadros',  element:ListaCuadro },
-  { path:'/ListaGradoAcademico', name: 'Grados Académicos',  element:ListaGradoAcademico },
-  { path:'/ListaGrados', name: 'Grados',  element:ListaGrado },
-  { path:'/ListaGradosAsignaturas', name: 'Grados Asignaturas',  element:ListaGradosAsignaturas },
-  { path:'/ListaParciales', name: 'Parciales',  element:ListaParciales },
-  { path:'/ListaPonderaciones', name: 'Ponderaciones',  element:ListaPonderaciones },
-  { path:'/ListaPonderacionesCiclos', name: 'Ponderaciones Ciclos',  element:ListaPonderacionesCiclos},
-  //{ path:'/VistaListaProfesor', name: 'Asistencias',  element:VistaListaProfesor },
-  //{ path:'/ListaActividadesAcaVistaPadre', name: 'Asistencias',  element:ListaActividadesPadre },
-  { path:'/ListaInstitutos', name: 'Institutos',  element:ListaInstitutos },
-  { path:'/ListaParametro', name: 'Parámetros',  element:ListaParametro },
-  { path:'/ListaHistoriales', name: 'Historiales Académicos',  element:ListaHistoriales },
-  { path:'/ListaProfesores', name: 'Profesores',  element:ListaProfesor },
-  { path:'/ListaTipoContrato', name:'Tipos de Contratos', element:ListaTipoContrato },
-/*
   { path: '/theme', name: 'Theme', element: Colors, exact: true },
   { path: '/theme/colors', name: 'Colors', element: Colors },
   { path: '/theme/typography', name: 'Typography', element: Typography },
@@ -155,7 +97,6 @@ const s = [
   { path: '/notifications/modals', name: 'Modals', element: Modals },
   { path: '/notifications/toasts', name: 'Toasts', element: Toasts },
   { path: '/widgets', name: 'Widgets', element: Widgets },
-   */
 ]
 
-export default s
+export default routes
