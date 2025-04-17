@@ -63,6 +63,7 @@ const ListaPersonas = () => {
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false)
   const [modalDeleteVisible, setModalDeleteVisible] = useState(false)
   const [nuevaPersona, setNuevaPersona] = useState({
+    tipo_documento: '', 
     dni_persona: '',
     Nombre: '',
     Segundo_nombre: '',
@@ -136,6 +137,7 @@ const ListaPersonas = () => {
 
 
   const [errorMessages, setErrorMessages] = useState({
+    tipo_documento: '', 
     dni_persona: '',
     Nombre: '',
     Segundo_nombre: '',
@@ -288,19 +290,56 @@ useEffect(() => {
 
 {/****************************************************RESETEAR FORMULARIO Y CERRAR MODAL*************************************************/}
 
-const resetNuevaPersona = () => {
-  setNuevaPersona({
-    dni_persona: '', Nombre: '', Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '', direccion_persona: '', fecha_nacimiento: '',
-    Estado_Persona: '', cod_tipo_persona: '', principal: '', cod_nacionalidad: '', cod_departamento: '', cod_municipio: '', cod_genero: '', 
+const resetNuevaPersona = () => { 
+  setNuevaPersona({ 
+      tipo_documento: '', 
+      dni_persona: '', 
+      Nombre: '', 
+      Segundo_nombre: '', 
+      Primer_apellido: '', 
+      Segundo_apellido: '', 
+      direccion_persona: '', 
+      fecha_nacimiento: '', 
+      Estado_Persona: '', 
+      cod_tipo_persona: '', 
+      principal: '', 
+      cod_nacionalidad: '', 
+      cod_departamento: '', 
+      cod_municipio: '', 
+      cod_genero: '', 
   });
+
+  // 🔹 También limpiar los valores de búsqueda
+  setBuscadorNacionalidadNuevo('');
+  setBuscadorMunicipioNuevo('');
 };
 
-const resetPersonaToUpdate = () => {
+const resetPersonaToUpdate = () => { 
   setPersonaToUpdate({ 
-    cod_persona: '', dni_persona: '', Nombre: '', Segundo_nombre: '', Primer_apellido: '', Segundo_apellido: '', 
-    direccion_persona: '', fecha_nacimiento: '', Estado_Persona: '', cod_tipo_persona: '', principal: '', cod_nacionalidad: '', cod_departamento: '', cod_municipio: '', cod_genero: '', 
+      tipo_documento: '', 
+      cod_persona: '', 
+      dni_persona: '', 
+      Nombre: '', 
+      Segundo_nombre: '', 
+      Primer_apellido: '', 
+      Segundo_apellido: '', 
+      direccion_persona: '', 
+      fecha_nacimiento: '', 
+      Estado_Persona: '', 
+      cod_tipo_persona: '', 
+      principal: '', 
+      cod_nacionalidad: '', 
+      cod_departamento: '', 
+      cod_municipio: '', 
+      cod_genero: '', 
   });
+
+  // 🔹 También limpiar los valores de búsqueda
+  setBuscadorNacionalidadNuevo('');
+  setBuscadorMunicipioNuevo('');
 };
+
+
 {/**********************************************************************************************************************************************/}
 
 const handlePersonaInputChange = (e, setFunction) => {

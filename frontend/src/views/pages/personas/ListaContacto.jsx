@@ -940,27 +940,32 @@ const ReporteContactoExcel = () => {
           </CTableDataCell>
           {/* Acciones incluyendo botón de estado */}
           <CTableDataCell>
-            <div className="d-flex justify-content-center">
-              <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
-                <CIcon icon={cilPen} />
-              </CButton>
-              <CButton color="danger" onClick={() => openDeleteModal(item)} className="ms-2">
-                <CIcon icon={cilTrash} />
-            </CButton>
-              {/* Botón de estado ahora dentro de acciones */}
-              <CButton
-                style={{
-                  backgroundColor: item.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
-                  color: 'white',
-                  marginLeft: '10px',
-                }}
-                onClick={() => toggleEstado(item)} // Función para cambiar estado
-                disabled={loading} // Deshabilitado mientras carga
-              >
-                {loading ? 'Cambiando...' : item.estado ? 'Activo' : 'Inactivo'}
-              </CButton>
-            </div>
-          </CTableDataCell>
+  <div className="d-flex justify-content-center">
+    {/* Botón de editar */}
+    <CButton color="warning" onClick={() => { setContactoToUpdate(item); setModalVisible(true); }}>
+      <CIcon icon={cilPen} />
+    </CButton>
+
+    {/* Botón de activar/desactivar en el centro */}
+    <CButton
+      style={{
+        backgroundColor: item.estado ? '#4CAF50' : '#F44336', // Verde si activo, rojo si inactivo
+        color: 'white',
+        marginLeft: '10px',
+      }}
+      onClick={() => toggleEstado(item)} // Función para cambiar estado
+      disabled={loading} // Deshabilitado mientras carga
+    >
+      {loading ? 'Cambiando...' : item.estado ? 'Activo' : 'Inactivo'}
+    </CButton>
+
+    {/* Botón de eliminar al final */}
+    <CButton color="danger" onClick={() => openDeleteModal(item)} className="ms-2">
+      <CIcon icon={cilTrash} />
+    </CButton>
+  </div>
+</CTableDataCell>
+
         </CTableRow>
       ))}
     </CTableBody>

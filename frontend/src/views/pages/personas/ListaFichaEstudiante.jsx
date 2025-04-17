@@ -420,10 +420,10 @@ const ListaFichaEstudiante = () => {
     };
   
     const infoPadre = [
-      ['Nombre del Padre', fichaEstudiante.Nombre_Padre ?? 'No disponible'],
-      ['Teléfono Móvil Padre', fichaEstudiante.Telefono_Movil_Padre ?? 'No disponible'],
-      ['Teléfono Fijo Padre', fichaEstudiante.Telefono_Fijo_Padre ?? 'No disponible'],
-      ['Correo Padre', fichaEstudiante.Correo_Padre ?? 'No disponible']
+      ['Nombre del Padre', fichaEstudiante.Nombre_Padre_Tutor ?? 'No disponible'],
+      ['Teléfono Móvil Padre', fichaEstudiante.Telefono_Movil_Tutor ?? 'No disponible'],
+      ['Teléfono Fijo Padre', fichaEstudiante.Telefono_Fijo_Tutor ?? 'No disponible'],
+      ['Correo Padre', fichaEstudiante.Correo_Tutor ?? 'No disponible']
     ];
   
     infoPadre.forEach((fila) => {
