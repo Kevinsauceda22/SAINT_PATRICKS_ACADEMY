@@ -790,7 +790,7 @@ const ListaAulas = () => {
         <CTable striped bordered hover>
           <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
           <CTableRow>
-            <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
+            <CTableHeaderCell className="text-center" style={{ width: '3%' }}>#</CTableHeaderCell>
             <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Número de Aula</CTableHeaderCell>
             <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Capacidad</CTableHeaderCell>
             <CTableHeaderCell className="text-center" style={{ width: '5%' }}>Cupos</CTableHeaderCell>
@@ -814,6 +814,7 @@ const ListaAulas = () => {
                 <CTableDataCell className="text-center">{aula.Secciones_disponibles}</CTableDataCell>
                 <CTableDataCell className="text-center">{aula.Secciones_ocupadas}</CTableDataCell>
                 <CTableDataCell className="text-center">
+                <div className="d-flex justify-content-center"></div>
                     <CButton color="warning" onClick={() => openUpdateModal(aula)} style={{ marginRight: '10px' }} className="mr-2">
                     <CIcon icon={cilPen} />
                     </CButton>
@@ -832,6 +833,7 @@ const ListaAulas = () => {
                     <CButton color="danger" onClick={() => openDeleteModal(aula)} style={{ marginRight: '10px' }}>
                     <CIcon icon={cilTrash} />
                     </CButton>
+                
 
                 </CTableDataCell>
                 </CTableRow>

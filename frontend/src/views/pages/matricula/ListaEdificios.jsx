@@ -886,16 +886,16 @@ const ListaEdificios = () => {
               
               {/* Botón Activar/Inactivar */}
               <CButton
-  style={{
-    backgroundColor: edificio.Estado === 1 ? '#4CAF50' : '#F44336',
-    color: 'white',
-    marginRight: '10px',
-  }}
-  onClick={() => actualizarEstado(edificio)}
-  disabled={loading}
->
-  {loading ? 'Cambiando...' : edificio.Estado === 1 ? 'Activo' : 'Inactivo'}
-</CButton>
+                  style={{
+                    backgroundColor: edificio.Estado === 1 ? '#4CAF50' : '#F44336',
+                    color: 'white',
+                    marginRight: '10px',
+                  }}
+                  onClick={() => actualizarEstado(edificio)}
+                  disabled={loading}
+                >
+                  {loading ? 'Cambiando...' : edificio.Estado === 1 ? 'Activo' : 'Inactivo'}
+                </CButton>
 
 
                 {canDelete && (
