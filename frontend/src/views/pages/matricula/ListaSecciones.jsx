@@ -284,13 +284,21 @@ const fetchEdificios = async () => {
     if (!response.ok) {
       throw new Error(`Error HTTP: ${response.status}`);
     }
+
     const data = await response.json();
-    setEdificios(data);
+
+    // Ordenar alfabéticamente por el nombre del edificio
+    const edificiosOrdenados = data.sort((a, b) => 
+      a.Nombre_edificios.localeCompare(b.Nombre_edificios)
+    );
+
+    setEdificios(edificiosOrdenados);
   } catch (error) {
-    console.error('Error capturado en este bloque:', error); // Detalle del error
+    console.error('Error capturado en este bloque:', error);
     console.error('Error al obtener los edificios:', error);
   }
 };
+
 
 const fetchAulasPorEdificio = async (Cod_edificio) => {
   try {
