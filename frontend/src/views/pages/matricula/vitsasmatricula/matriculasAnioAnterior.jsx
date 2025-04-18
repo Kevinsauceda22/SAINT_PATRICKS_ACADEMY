@@ -4,6 +4,8 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import {
   CContainer,
@@ -174,23 +176,93 @@ const MatriculaForm = () => {
 };
 
 
-  const exportToXLSX = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      obtenerMatriculasFiltradas().map((matricula, index) => ({
-        '#': index + 1,
-        'Código de Matrícula': matricula.codificacion_matricula,
-        'Nombre del Estudiante': `${matricula.Nombre} ${matricula.Segundo_nombre || ''} ${matricula.Primer_apellido || ''} ${matricula.Segundo_apellido || ''}`.trim(),
-        'Fecha de Nacimiento': matricula.fecha_nacimiento
-          ? new Date(matricula.fecha_nacimiento).toLocaleDateString('es-ES')
-          : 'No disponible',
-        'Grado': matricula.Nombre_grado || 'No disponible',
-        'Sección': matricula.Nombre_seccion || 'No disponible',
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Matrículas');
-    XLSX.writeFile(workbook, 'Reporte_Matriculas.xlsx');
-  };
+  
+const exportToXLSX = async () => {
+  const datos = obtenerMatriculasFiltradas();
+  
+  if (!datos || datos.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar.', 'warning');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Matrículas');
+
+  // Título principal
+  worksheet.mergeCells('A1:G1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Subtítulo
+  worksheet.mergeCells('A2:G2');
+  worksheet.getCell('A2').value = 'REPORTE DE MATRÍCULAS FILTRADAS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezado
+  const headerRow = worksheet.addRow([
+    '#',
+    'Código de Matrícula',
+    'Nombre del Estudiante',
+    'Fecha de Nacimiento',
+    'Grado',
+    'Sección'
+  ]);
+
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+
+  // Agregar datos
+  datos.forEach((matricula, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      matricula.codificacion_matricula,
+      `${matricula.Nombre || ''} ${matricula.Segundo_nombre || ''} ${matricula.Primer_apellido || ''} ${matricula.Segundo_apellido || ''}`.trim(),
+      matricula.fecha_nacimiento
+        ? new Date(matricula.fecha_nacimiento).toLocaleDateString('es-ES')
+        : 'No disponible',
+      matricula.Nombre_grado || 'No disponible',
+      matricula.Nombre_seccion || 'No disponible'
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+  });
+
+  // Ajuste de ancho de columnas
+  worksheet.columns = [
+    { width: 6 },   // #
+    { width: 25 },  // Código de Matrícula
+    { width: 40 },  // Nombre del Estudiante
+    { width: 20 },  // Fecha de Nacimiento
+    { width: 15 },  // Grado
+    { width: 15 }   // Sección
+  ];
+
+  // Descargar archivo
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  saveAs(blob, 'Reporte_Matriculas.xlsx');
+};
 
   useEffect(() => {
     obtenerMatriculasConPeriodo();

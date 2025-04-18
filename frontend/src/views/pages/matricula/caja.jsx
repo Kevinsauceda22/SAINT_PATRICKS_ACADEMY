@@ -23,9 +23,13 @@ import {
   CCol,
   CFormSelect,
   CPagination,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem,
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
-import { cilPlus, cilDollar, cilDescription, cilTags, cilWallet, cilFile, cilSearch, cilTrash, cilBrush, cilPen , } from '@coreui/icons';
+import { cilPlus, cilDollar, cilDescription, cilTags, cilWallet, cilFile, cilSearch, cilTrash, cilBrush, cilPen , cilSpreadsheet,} from '@coreui/icons';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -59,6 +63,8 @@ const CajasMatriculas = () => {
   const [valorMatricula, setValorMatricula] = useState(null); // Estado para almacenar el valor
   const [descuentos, setDescuentos] = useState([]); // Estado para almacenar los descuentos
   const [descripcionMatricula, setDescripcionMatricula] = useState(''); // Estado para la descripción
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+
   const [modalHistorialVisible, setModalHistorialVisible] = useState(false);
 const [dniBusqueda, setDniBusqueda] = useState('');
 const [historialPagos, setHistorialPagos] = useState([]);
@@ -237,12 +243,10 @@ setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
       Swal.fire('Error', 'Hubo un problema al registrar en la bitácora.', 'error');
     }
   };
-  
   const registrarPago = async (e) => {
     e.preventDefault();
   
     try {
-      // Normalizar valores precargados
       const cod_caja = pagoActual.cod_caja;
       const cod_concepto = pagoActual.cod_concepto || (await axios.get('http://localhost:4000/api/caja/concepto/matricula')).data.cod_concepto;
       const descripcionFinal = pagoActual.descripcion || descripcionMatricula || 'Pago de matrícula';
@@ -294,25 +298,13 @@ setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
       if (response.status === 200 || response.status === 201) {
         await registrarEnBitacora('INSERT', `Registró un pago de L ${montoFinal.toFixed(2)} en la caja ${cod_caja}.`);
   
-        const cajaConDatos = {
-          Cod_caja: cod_caja,
-          Nombre_Padre: 'Nombre del Padre',
-          Apellido_Padre: 'Apellido del Padre',
-          Descripcion: descripcionFinal,
-          Monto: montoFinal,
-          Estado_pago: 'Pagado',
-          Fecha_pago: new Date(),
-          Hora_registro: new Date(),
-        };
-  
+        // 🔔 Alerta de éxito
         MySwal.fire({
-          title: '¿Deseas descargar el recibo?',
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Sí, generar',
-          cancelButtonText: 'No',
-        }).then((result) => {
-          if (result.isConfirmed) generarReporteIndividual(cajaConDatos, dineroRecibido, vuelto);
+          icon: 'success',
+          title: 'Pago registrado exitosamente',
+          text: `El pago de L ${montoFinal.toFixed(2)} se ha registrado correctamente.`,
+          timer: 2500,
+          showConfirmButton: false,
         });
   
         setModalVisible(false);
@@ -328,7 +320,6 @@ setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
       });
     }
   };
-  
   
   
   
@@ -537,6 +528,9 @@ setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
       });
     }
   };
+
+
+  
   const registrarEnBitacoracaja = async (accion, descripcionAdicional = '') => {
     try {
       const token = localStorage.getItem('token');
@@ -574,12 +568,17 @@ setCurrentPage(1); // ← Esto asegura mostrar la nueva caja en la tabla
   const paginatedData = pagosPendientes
   .filter((pago) => {
     const searchLower = searchTerm.toLowerCase();
+
     return (
-      `${pago.Nombre_Padre} ${pago.Apellido_Padre}`.toLowerCase().includes(searchLower) ||
-      (pago.DNI_Padre && pago.DNI_Padre.toString().includes(searchTerm))
+      (`${pago.Nombre_Padre || ''} ${pago.Apellido_Padre || ''}`.toLowerCase().includes(searchLower)) ||
+      (`${pago.Nombre_Hijo || ''} ${pago.Apellido_Hijo || ''}`.toLowerCase().includes(searchLower)) ||
+      (pago.DNI_Padre && pago.DNI_Padre.toLowerCase().includes(searchLower)) ||
+      (pago.Descripcion && pago.Descripcion.toLowerCase().includes(searchLower)) ||
+      (pago.Estado_pago && pago.Estado_pago.toLowerCase().includes(searchLower))
     );
   })
   .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
 
   useEffect(() => {
     const cargarNombreAlumno = async () => {
@@ -1118,6 +1117,7 @@ useEffect(() => {
 };
 
 
+
 // Sincronizar la descripción en el estado de pagoActual
 useEffect(() => {
   if (descripcionMatricula) {
@@ -1179,92 +1179,99 @@ const calcularVuelto = (monto, descuento, recibido) => {
   
 <CRow className="justify-content-end align-items-center mb-2">
   <CCol xs="auto" className="d-flex gap-2">
-  <CButton
-  onClick={() => {
-    setModalHistorialVisible(true);
-    setDniBusqueda('');
-    setHistorialPagos([]);
-  }}
-  style={{
-    backgroundColor: '#4CAF50',
-    color: '#FFFFFF',
-    border: 'none',
-    borderRadius: '8px',
-    padding: '0.45rem 1.2rem',
-    fontSize: '0.9rem',
-    fontWeight: '400',
-  }}
->
-  <CIcon icon={cilDescription} className="me-2" />
-  Historial
-</CButton>
-
-
-
-    <CButton
-      onClick={() => setModalNuevaCajaVisible(true)}
-      style={{
-        backgroundColor: '#4B6251',
-        color: '#FFFFFF',
-        border: 'none',
-        borderRadius: '8px',
-        padding: '0.45rem 1.2rem',
-        fontSize: '0.9rem',
-        fontWeight: '400'
-      }}
-    >
-      <CIcon icon={cilPlus} className="me-2" />
-      Nueva
-    </CButton>
 
     <CButton
       onClick={() => {
-        const filteredData = pagosPendientes.filter((pago) =>
-          `${pago.Nombre_Padre} ${pago.Apellido_Padre}`.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        exportToPDF(filteredData);
+        setModalHistorialVisible(true);
+        setDniBusqueda('');
+        setHistorialPagos([]);
       }}
       style={{
-        backgroundColor: '#688E58',
+        backgroundColor: '#4CAF50',
         color: '#FFFFFF',
         border: 'none',
         borderRadius: '8px',
         padding: '0.45rem 1.2rem',
         fontSize: '0.9rem',
-        fontWeight: '400'
+        fontWeight: '400',
       }}
     >
-      <CIcon icon={cilFile} className="me-2" />
-      Reporte
+      <CIcon icon={cilDescription} className="me-2" />
+      Historial
     </CButton>
+
+    
+
+    <CDropdown>
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#5C7B3E', // Color exacto del botón en la imagen
+          borderColor: '#617341',
+          color: '#FFFFFF',
+          fontWeight: '500',
+          padding: '0.45rem 1.2rem',
+          borderRadius: '6px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        }}
+      >
+        <CIcon icon={cilFile} />
+        Reportes
+      </CDropdownToggle>
+    
+      <CDropdownMenu>
+        <CDropdownItem
+          onClick={() => {
+            const filteredData = matriculas.filter((matricula) =>
+              `${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
+            );
+            exportToExcel(filteredData);
+          }}
+        >
+          <CIcon icon={cilSpreadsheet} className="me-2" />
+          Descargar en Excel
+        </CDropdownItem>
+    
+        <CDropdownItem
+          onClick={() => {
+            const filteredData = matriculas.filter((matricula) =>
+              `${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`
+                .toLowerCase()
+                .includes(searchTerm.toLowerCase())
+            );
+            exportToPDF(filteredData);
+          }}
+        >
+          <CIcon icon={cilDescription} className="me-2" />
+          Descargar en PDF
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
+
+
   </CCol>
 </CRow>
 
 
 
+
 {/* Barra de búsqueda y selector de registros */}
 <CRow className="justify-content-between align-items-center mb-3">
-  {/* Barra de búsqueda */}
   <CCol xs="12" md="5">
     <CInputGroup>
       <CInputGroupText>
         <CIcon icon={cilSearch} />
       </CInputGroupText>
       <CFormInput
-        placeholder="Buscar parámetro..."
+        placeholder="Buscar por nombre o estado,..."
         value={searchTerm}
-        onChange={async (e) => {
+        onChange={(e) => {
           const inputValue = e.target.value;
           setSearchTerm(inputValue);
-
-          if (inputValue.trim() !== '') {
-            const results = await buscarCajasPorDni(inputValue);
-            if (results) {
-              setPagosPendientes(results.data || []);
-            }
-          } else {
-            obtenerCajasPendientes();
-          }
+          setCurrentPage(1); // Reinicia a página 1 al buscar
         }}
       />
       <CButton
@@ -1277,13 +1284,13 @@ const calcularVuelto = (monto, descuento, recibido) => {
         onClick={() => {
           setSearchTerm('');
           setCurrentPage(1);
-          obtenerCajasPendientes();
         }}
       >
         <CIcon icon={cilTrash} className="me-1" /> Limpiar
       </CButton>
     </CInputGroup>
   </CCol>
+
 
   {/* Selector de registros */}
   <CCol xs="auto">
@@ -1406,23 +1413,9 @@ const calcularVuelto = (monto, descuento, recibido) => {
               </CButton>
             )}
 
-            <CButton
-              style={{
-                backgroundColor: '#F5B041',
-                border: 'none',
-                color: '#212529',
-                borderRadius: '8px',
-                padding: '0.3rem 0.9rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '38px',
-              }}
-              title="Editar"
-              onClick={() => handleEditarMatricula(caja)}
-            >
-              <CIcon icon={cilPen} size="sm" />
-            </CButton>
+            
+
+            
           </div>
         </CTableDataCell>
       </CTableRow>
