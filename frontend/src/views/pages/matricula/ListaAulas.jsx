@@ -606,7 +606,7 @@ const ListaAulas = () => {
         swal.fire({icon: 'success',title: 'Eliminación exitosa',text: 'El aula ha sido eliminada correctamente.',
         });
       } else {
-        swal.fire({icon: 'error',title: 'Error',text: 'No se pudo eliminar el aula.',
+        swal.fire({icon: 'error',title: 'Error',text: 'No se pudo eliminar el aula ya que existen secciones vinculadas a ella.',
         });
       }
     } catch (error) {
@@ -1116,13 +1116,13 @@ const ListaAulas = () => {
       <CModal visible={modalDeleteVisible}  backdrop="static">
             <CModalHeader closeButton={false}>
               <CModalTitle>Confirmar Eliminación</CModalTitle>
-              <CButton className="btn-close" aria-label="Close" onClick={handleCloseModal} />
+              <CButton className="btn-close" aria-label="Close"onClick={() => setModalDeleteVisible(false)}  />
             </CModalHeader>
             <CModalBody>
               <p>¿Estás seguro de que deseas eliminar el aula: <strong>{aulaToDelete.Numero_aula}</strong>?</p>
             </CModalBody>
             <CModalFooter>
-              <CButton color="secondary" onClick={handleCloseModal}>
+              <CButton color="secondary" onClick={() => setModalDeleteVisible(false)} >
                 Cancelar
               </CButton>
               <CButton style={{ backgroundColor: '#E57368', color: 'white' }} onClick={handleDeleteAula}>

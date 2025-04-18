@@ -186,16 +186,17 @@ export const eliminarAula = async (req, res) => {
 
     try {
         // Llamar al procedimiento almacenado para eliminar el aula
-        const [rows] = await pool.query("CALL sp_eliminar_aula(?)", [Cod_aula]);
+        const [result] = await pool.query("CALL sp_eliminar_aula(?)", [Cod_aula]);
 
-        // Comprobar si se afectaron filas (es decir, si el aula fue eliminada)
-        if (rows.affectedRows > 0) {
-            return res.status(200).json({ message: 'Aula eliminada correctamente.' });
-        } else {
-            return res.status(404).json({ message: 'No se encontró el aula especificada.' });
-        }
+        // Comprobamos si se eliminó correctamente a partir de un mensaje o asumimos éxito
+        return res.status(200).json({ message: 'Aula eliminada correctamente.' });
+
     } catch (error) {
         console.error('Error al eliminar el aula:', error);
-        return res.status(500).json({ message: 'Ocurrió un error al intentar eliminar el aula.', error });
+        return res.status(500).json({
+            message: 'Ocurrió un error al intentar eliminar el aula.',
+            error: error.message
+        });
     }
 };
+

@@ -212,7 +212,7 @@ const ListaEdificios = () => {
         setEdificioToDelete({}); // Limpiar el edificio seleccionado
         swal.fire({ icon: 'success', title: 'Eliminación exitosa', text: 'El edificio ha sido eliminado correctamente.' });
       } else {
-        swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el edificio.' });
+        swal.fire({ icon: 'error', title: 'Error', text: 'No se puede eliminar el edificio ya que tiene aulas registradas.' });
       }
     } catch (error) {
       console.error('Error al eliminar el edificio:', error);
