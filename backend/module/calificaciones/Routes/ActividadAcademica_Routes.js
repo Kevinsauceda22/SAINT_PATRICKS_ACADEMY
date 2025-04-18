@@ -10,6 +10,7 @@ import {
     obtenerActividadesPorProfesorYAsignatura,
     obtenerActividadesPorFiltro ,
     obtenerPonderacionesPorProfesor,
+    obtenerPonderacionesPorProfesorAdmin,
     actualizarActividad,
     eliminarActividad,
     obtenerValoresPorPonderacionCiclo  ,
@@ -45,11 +46,13 @@ router.get('/porasignatura/:codAsignatura', obtenerActividadesPorAsignatura);
 router.post('/registrar', registrarActividadPorAsignatura);
 
 // Ruta para obtener actividades por profesor y asignatura
-router.get('/porProfesorYAsignatura/:Cod_profesor/:Cod_asignatura', obtenerActividadesPorProfesorYAsignatura);
+router.get('/porProfesorYAsignatura/:Cod_profesor/:Cod_grados_asignaturas/:Cod_parcial/:Cod_seccion', obtenerActividadesPorProfesorYAsignatura);
 
 router.get('/actividadesporparcialseccion', obtenerActividadesPorFiltro);
 
 router.get('/obtenerPonderacionesPorProfesor', obtenerPonderacionesPorProfesor);
+
+router.get('/obtenerPonderacionesPorProfesoradmin/:codProfesor', obtenerPonderacionesPorProfesorAdmin);
 
 // Ruta para obtener valores disponibles
 router.get("/valoresPorPonderacionCiclo", obtenerValoresPorPonderacionCiclo);
@@ -61,8 +64,8 @@ router.post('/validar-valor', validarValorActividad);
 router.post('/validar-valoractua', validarYActualizarActividad);
 
 //////admin actividades
-router.get('/parciales/:Cod_asignatura', obtenerParcialesPorAsignatura);
-router.get('/actividades/:Cod_seccion_asignatura/:CodParcial', obtenerActividadesPorParcialAsignatura);
+router.get('/parciales/:codAsignatura/:codSeccion', obtenerParcialesPorAsignatura);
+router.get('/actividades/:codGradosAsignaturas/:codParcial/:codSeccion', obtenerActividadesPorParcialAsignatura);
 
 
 export default router;

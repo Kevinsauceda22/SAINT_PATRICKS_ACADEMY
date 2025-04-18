@@ -50,15 +50,15 @@ const [mostrarModalActividades, setMostrarModalActividades] = useState(false);
 const [nombreParcialSeleccionado, setNombreParcialSeleccionado] = useState('');
 const [gradoSeleccionado, setGradoSeleccionado] = useState('');
 //para paginacion y busqueda de la vista secciones
-const [recordsPerPage2, setRecordsPerPage2] = useState(5);
+const [recordsPerPage2, setRecordsPerPage2] = useState(2);
 const [searchTerm2, setSearchTerm2] = useState('');
 const [currentPage2, setCurrentPage2] = useState(1); 
 //para paginacion y busqueda de la vista asignaturas
-const [recordsPerPage3, setRecordsPerPage3] = useState(5);
+const [recordsPerPage3, setRecordsPerPage3] = useState(2);
 const [searchTerm3, setSearchTerm3] = useState('');
 const [currentPage3, setCurrentPage3] = useState(1); 
 //para paginacion y busqueda de la vista gestionar notas
-const [recordsPerPage4, setRecordsPerPage4] = useState(5);
+const [recordsPerPage4, setRecordsPerPage4] = useState(2);
 const [searchTerm4, setSearchTerm4] = useState('');
 const [currentPage4, setCurrentPage4] = useState(1); 
 const [nombreBusqueda, setNombreBusqueda] = useState('');
@@ -110,10 +110,12 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     }
   };
 
-  const fetchPromedio = async (Cod_seccion_asignatura) => {
+  const fetchPromedio = async (Cod_secciones, Cod_grados_asignaturas) => {
     try {
       setCargando(true);
-      const response = await fetch(`http://localhost:4000/api/notas/promedio?Cod_seccion_asignatura=${Cod_seccion_asignatura}`);
+      const response = await fetch(
+        `http://localhost:4000/api/notas/promedio?Cod_secciones=${Cod_secciones}&Cod_grados_asignaturas=${Cod_grados_asignaturas}`
+      );
       if (!response.ok) throw new Error('Error al obtener los promedios');
       const data = await response.json();
       setPromedios(data);
@@ -125,10 +127,10 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     }
   };
 
-  const fetchActividades = async (Cod_seccion_asignatura) => {
+  const fetchActividades = async (Cod_grados_asignaturas, Cod_seccion) => {
     try {
       setCargando(true);
-      const response = await fetch(`http://localhost:4000/api/notas/actividades?Cod_seccion_asignatura=${Cod_seccion_asignatura}`);
+      const response = await fetch(`http://localhost:4000/api/notas/actividades?Cod_grados_asignaturas=${Cod_grados_asignaturas}&Cod_seccion=${Cod_seccion}`);
       if (!response.ok) throw new Error('Error al obtener las actividades');
       const data = await response.json();
   
@@ -158,14 +160,14 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   };
 
 
-  const fetchActividadcalificadas = async (Cod_seccion_asignatura, Cod_parcial, nombreParcial) => {
+  const fetchActividadcalificadas = async (Cod_grados_asignaturas, Cod_seccion , Cod_parcial, nombreParcial) => {
     try {
       setCargando(true);
       setNombreParcialSeleccionado(nombreParcial); // Guarda el nombre del parcial seleccionado
-      console.log('Cod_seccion_asignatura:', Cod_seccion_asignatura, 'Cod_parcial:', Cod_parcial);
+      console.log('Cod_seccion_asignatura:', Cod_grados_asignaturas, 'Cod_parcial:', Cod_parcial);
   
       const response = await fetch(
-        `http://localhost:4000/api/notas/actividadescalificadas?Cod_seccion_asignatura=${Cod_seccion_asignatura}`
+        `http://localhost:4000/api/notas/actividadescalificadas?Cod_grados_asignaturas=${Cod_grados_asignaturas}&Cod_seccion=${Cod_seccion}&Cod_parcial=${Cod_parcial}`
       );
       if (!response.ok) throw new Error('Error al obtener las actividades');
       const data = await response.json();
@@ -200,12 +202,12 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     }
   };
   
-  const fetchNotas = async (codSeccion, codSeccionAsignatura, codParcial, codActividadAsignatura) => {
+  const fetchNotas = async (codSeccion, codGradosAsignaturas, codParcial, codActividadAsignatura) => {
     try {
-      console.log('Parametros:', { codSeccion, codSeccionAsignatura, codParcial, codActividadAsignatura }); // Verifica los valores
+      console.log('Parametros:', { codSeccion, codGradosAsignaturas, codParcial, codActividadAsignatura }); // Verifica los valores
       setCargando(true);
       const response = await fetch(
-        `http://localhost:4000/api/notas/notasactividad/${codSeccion}/${codSeccionAsignatura}/${codParcial}/${codActividadAsignatura}`
+        `http://localhost:4000/api/notas/notasactividad/${codSeccion}/${codGradosAsignaturas}/${codParcial}/${codActividadAsignatura}`
       );
       if (!response.ok) throw new Error("Error al obtener las notas");
       const data = await response.json();
@@ -298,7 +300,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         
         // Refrescar las vistas de asignaturas y promedios
         if (selectedCodSeccionAsignatura) {
-          await fetchPromedio(selectedCodSeccionAsignatura);
+          await fetchPromedio(selectedCodSeccion,selectedCodSeccionAsignatura);
         }
   
         if (selectedCodSeccion) {
@@ -399,7 +401,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   
         // Refrescar las vistas de asignaturas y promedios
         if (selectedCodSeccionAsignatura) {
-          await fetchPromedio(selectedCodSeccionAsignatura);
+          await fetchPromedio(selectedCodSeccion,selectedCodSeccionAsignatura);
         }
   
         if (selectedCodSeccion) {
@@ -416,14 +418,14 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   };
   
   // Función para abrir el modal de estudiantes con datos del fetch
-  const handleAbrirModalEstudiantes = async (Cod_seccion, Cod_seccion_asignatura, Cod_parcial,nombreParcial) => {
+  const handleAbrirModalEstudiantes = async (Cod_seccion, CodGradosAsignaturas, Cod_parcial,nombreParcial) => {
     try {
       setNombreParcialSeleccionado(nombreParcial)
       setCargando(true); // Muestra el spinner
   
       // Realizar la solicitud con los parámetros
       const response = await fetch(
-        `http://localhost:4000/api/notas/notatotal/${Cod_seccion}/${Cod_seccion_asignatura}/${Cod_parcial}`
+        `http://localhost:4000/api/notas/notatotal/${Cod_seccion}/${CodGradosAsignaturas}/${Cod_parcial}`
       );
   
       if (!response.ok) throw new Error("Error al obtener la lista de estudiantes");
@@ -451,10 +453,10 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   };
   
 
-  const handleViewPromedios = (Cod_seccion_asignatura,Nombre_asignatura) => {
-    setSelectedCodSeccionAsignatura(Cod_seccion_asignatura);
+  const handleViewPromedios = (Cod_grados_asignaturas,Nombre_asignatura) => {
+    setSelectedCodSeccionAsignatura(Cod_grados_asignaturas);
     setNombreAsignaturaSeleccionada(Nombre_asignatura);
-    fetchPromedio(Cod_seccion_asignatura);
+    fetchPromedio(selectedCodSeccion, Cod_grados_asignaturas);
     setCurrentView('promedios');
   };
 
@@ -1095,7 +1097,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         });
         return; // Salir de la función si no hay datos
       }
-      const doc = new jsPDF();
+      const doc = new jsPDF('landscape');
       const img = new Image();
       img.src = logo;
     
@@ -1807,7 +1809,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                     {currentRecords2.length > 0 ? (
                       currentRecords2.map((seccion, index) => (
                         <CTableRow key={index}>
-                          <CTableDataCell>{index + 1}</CTableDataCell>
+                          <CTableDataCell>{indexOfFirstRecord2 + index + 1}</CTableDataCell>
                           <CTableDataCell>{seccion.Seccion}</CTableDataCell>
                           <CTableDataCell>{seccion.Grado}</CTableDataCell>
                           <CTableDataCell>{seccion.Total_Alumnos}</CTableDataCell>
@@ -1993,7 +1995,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
               {currentRecords3.length > 0 ? (
               currentRecords3.map((asignatura, index) => (
               <CTableRow key={index}>
-                <CTableDataCell>{index + 1}</CTableDataCell>
+                <CTableDataCell>{indexOfFirstRecord3 + index + 1}</CTableDataCell>
                 <CTableDataCell>{asignatura.Nombre_asignatura}</CTableDataCell>
                 <CTableDataCell>{asignatura.Descripcion_asignatura}</CTableDataCell>
                 <CTableDataCell className="text-center align-middle">{asignatura.Promedio_Notas}
@@ -2011,7 +2013,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                     size="sm"
                     onMouseEnter={(e) => (e.target.style.backgroundColor = "#dce3dc")}
                     onMouseLeave={(e) => (e.target.style.backgroundColor = "#F0F4F3")}
-                    onClick={() => { handleViewPromedios(asignatura.Cod_seccion_asignatura, asignatura.Nombre_asignatura);
+                    onClick={() => { handleViewPromedios(asignatura.Cod_grados_asignaturas, asignatura.Nombre_asignatura);
                     }}
 
                   >
@@ -2079,7 +2081,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
         {/* Botón "Nuevo" a la derecha */}
         {canInsert && (
           <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
-          onClick={() => fetchActividades(selectedCodSeccionAsignatura)} 
+          onClick={() => fetchActividades(selectedCodSeccionAsignatura,selectedCodSeccion)} 
             onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#3C4B43")}onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#4B6251")}
             style={{backgroundColor: "#4B6251",color: "#FFFFFF",padding: "5px 10px",fontSize: "0.9rem",}}>
             <CIcon icon={cilPlus} className="me-2" />
@@ -2190,7 +2192,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
         {currentRecords4.length > 0 ? (
         currentRecords4.map((promedio, index) => (
         <CTableRow key={index}>
-          <CTableDataCell>{index + 1}</CTableDataCell>
+          <CTableDataCell>{indexOfFirstRecord4 + index + 1}</CTableDataCell>
           <CTableDataCell>{promedio.NombreParcial}</CTableDataCell>
           <CTableDataCell className="text-center align-middle">{promedio.PromedioGeneral}</CTableDataCell>
           <CTableDataCell className="text-center align-middle">{promedio.TotalAprobados}</CTableDataCell>
@@ -2207,7 +2209,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
           >
              {canUpdate && (
             <CButton
-            onClick={() => fetchActividadcalificadas(selectedCodSeccionAsignatura, promedio.CodParcial, promedio.NombreParcial)}
+            onClick={() => fetchActividadcalificadas(selectedCodSeccionAsignatura,selectedCodSeccion, promedio.CodParcial, promedio.NombreParcial)}
             onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
             onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
             style={{backgroundColor: '#F9B64E',color: '#5C4044',border: 'none', transition: 'all 0.2s ease',padding: '5px 10px',height: '38px',width: '45px',}}>
@@ -2473,11 +2475,12 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
             const inputValue = e.target.value;
 
             // Validar que no exceda el máximo de 60 caracteres
-            if (inputValue.length > 60) {
+            if (inputValue.length > 200) {
               Swal.fire({
                 icon: 'info',
                 title: 'Límite de caracteres alcanzado',
-                text: 'La observación no puede tener más de 60 caracteres.',
+                text: 'La observación no puede tener más de 200 caracteres.',
+                confirmButtonText: 'Aceptar'
               });
               return; // Detener la actualización si excede el límite
             }
@@ -2690,6 +2693,18 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                   }}
                   onChange={(e) => {
                     const cursorPosition = e.target.selectionStart; // Obtiene la posición actual del cursor
+                    const inputValue = e.target.value;
+
+                    // Validar que no exceda el máximo de 200 caracteres
+                    if (inputValue.length > 200) {
+                      Swal.fire({
+                        icon: 'info',
+                        title: 'Límite de caracteres alcanzado',
+                        text: 'La observación no puede tener más de 200 caracteres.',
+                        confirmButtonText: 'Aceptar'
+                      });
+                      return; // Detener la actualización si excede el límite
+                    }
 
                     // Validación y transformación del input usando `handleInputChange`
                     handleInputChange(e, (nuevoValor) => {

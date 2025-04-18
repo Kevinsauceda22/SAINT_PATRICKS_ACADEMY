@@ -39,7 +39,7 @@ const ActividadesAcademicasProfesor = () => {
     Fechayhora_Fin: "",
     Valor: "",
     Cod_secciones: "",
-    Cod_seccion_asignatura: "",
+    Cod_grados_asignaturas: "",
   });
 
   const [listaponderacionesC, setlistaponderacionesC] = useState([]);
@@ -53,7 +53,7 @@ const ActividadesAcademicasProfesor = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1); 
 //para paginacion y busqueda de la vista asignaturas
-  const [recordsPerPage2, setRecordsPerPage2] = useState(5);
+  const [recordsPerPage2, setRecordsPerPage2] = useState(10);
   const [searchTerm2, setSearchTerm2] = useState('');
   const [currentPage2, setCurrentPage2] = useState(1);
 //para paginacion y busqueda de la vista parciales
@@ -61,7 +61,7 @@ const ActividadesAcademicasProfesor = () => {
   const [searchTerm3, setSearchTerm3] = useState('');
   const [currentPage3, setCurrentPage3] = useState(1);
   //para paginacion y busqueda de la vista Actividades
-  const [recordsPerPage4, setRecordsPerPage4] = useState(5);
+  const [recordsPerPage4, setRecordsPerPage4] = useState(10);
   const [searchTerm4, setSearchTerm4] = useState('');
   const [currentPage4, setCurrentPage4] = useState(1);
 
@@ -289,7 +289,7 @@ const handleAbrirModal = async () => {
       Fechayhora_Fin: "",
       Valor: "",
       Cod_secciones: selectedSeccion?.Cod_secciones || "N/A",
-      Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura || "N/A",
+      Cod_grados_asignaturas: selectedAsignatura?.Cod_grados_asignaturas || "N/A",
     });
 
     // Muestra el modal
@@ -476,17 +476,28 @@ const handleGestionarActividades = (parcial) => {
   fetchActividades(
     selectedSeccion?.Cod_secciones,
     parcial?.Cod_parcial,
-    selectedAsignatura?.Cod_seccion_asignatura
+    selectedAsignatura?.Cod_grados_asignaturas
   );
 };
 
 
 
   const handleRegresar = () => {
-    if (vistaActual === "actividades") setVistaActual("parciales");
-    else if (vistaActual === "parciales") setVistaActual("asignaturas");
-    else if (vistaActual === "asignaturas") setVistaActual("secciones");
-  };
+  // Limpiar términos de búsqueda y restablecer paginación
+  if (vistaActual === "actividades") {
+    setSearchTerm4('');
+    setCurrentPage4(1);
+    setVistaActual("parciales");
+  } else if (vistaActual === "parciales") {
+    setSearchTerm3('');
+    setCurrentPage3(1);
+    setVistaActual("asignaturas");
+  } else if (vistaActual === "asignaturas") {
+    setSearchTerm2('');
+    setCurrentPage2(1);
+    setVistaActual("secciones");
+  }
+};
 
   useEffect(() => {
     fetchSecciones();
@@ -526,7 +537,12 @@ const handleGestionarActividades = (parcial) => {
         !nuevaActividad.Fechayhora_Fin ||
         !nuevaActividad.Valor
       ) {
-        Swal.fire("Error", "Todos los campos son requeridos. Por favor, complete todos los campos.", "error");
+        Swal.fire({
+          title: 'Error',
+          text: 'Todos los campos son requeridos. Por favor, complete todos los campos.',
+          icon: 'error',
+          confirmButtonText: 'Aceptar'  // Esto cambia el texto del botón
+        });
         return;
       }
   
@@ -539,13 +555,15 @@ const handleGestionarActividades = (parcial) => {
           icon: "error",
           title: "Fechas inválidas",
           text: 'La "fecha inicio" no puede ser mayor que la "fecha fin".',
+          confirmButtonText: 'Aceptar'
+          
         });
         return;
       }
   
       const esValido = await validarValorActividad(
         nuevaActividad.Cod_ponderacion_ciclo,
-        selectedAsignatura?.Cod_seccion_asignatura,
+        selectedAsignatura?.Cod_grados_asignaturas,
         selectedParcial?.Cod_parcial,
         nuevaActividad.Valor
     );
@@ -559,7 +577,7 @@ const handleGestionarActividades = (parcial) => {
         ...nuevaActividad,
         Cod_secciones: selectedSeccion?.Cod_secciones,
         Cod_parcial: selectedParcial?.Cod_parcial,
-        Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura,
+        Cod_grados_asignaturas: selectedAsignatura?.Cod_grados_asignaturas,
       };
   
       const response = await fetch("http://localhost:4000/api/actividadesAcademicas/registrar", {
@@ -577,13 +595,14 @@ const handleGestionarActividades = (parcial) => {
           icon: "success",
           title: "¡Éxito!",
           text: "La actividad se ha creado correctamente.",
+          confirmButtonText: 'Aceptar',
         });
   
         // Refrescar actividades sin cambiar a vista inicial
         fetchActividades(
           selectedSeccion?.Cod_secciones,
           selectedParcial?.Cod_parcial,
-          selectedAsignatura?.Cod_seccion_asignatura
+          selectedAsignatura?.Cod_grados_asignaturas
         );
   
         // Cerrar el modal y limpiar los campos
@@ -598,7 +617,7 @@ const handleGestionarActividades = (parcial) => {
           Fechayhora_Fin: '',
           Valor: '',
           Cod_secciones: '',
-          Cod_seccion_asignatura: '',
+          Cod_grados_asignaturas: '',
         });
       } else {
         Swal.fire("Error", `Problema al crear actividad: ${responseData.mensaje}`, "error");
@@ -615,14 +634,14 @@ const handleGestionarActividades = (parcial) => {
 
 
 
-  const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor) => {
+  const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial, Valor) => {
     try {
         const response = await fetch('http://localhost:4000/api/actividadesacademicas/validar-valor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
               Cod_ponderacion_ciclo,
-              Cod_seccion_asignatura,
+              Cod_grados_asignaturas,
               Cod_parcial,
               Valor,
           }),
@@ -685,6 +704,7 @@ const handleActualizarActividad = async () => {
       icon: "error",
       title: "Error",
       text: "Todos los campos son obligatorios.",
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
@@ -698,6 +718,7 @@ const handleActualizarActividad = async () => {
       icon: "error",
       title: "Fechas inválidas",
       text: 'La "fecha inicio" no puede ser mayor que la "fecha fin".',
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
@@ -711,7 +732,7 @@ const handleActualizarActividad = async () => {
       },
       body: JSON.stringify({
           Cod_ponderacion_ciclo: actividadToUpdate.Cod_ponderacion_ciclo,
-          Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura,
+          Cod_grados_asignaturas: selectedAsignatura?.Cod_grados_asignaturas,
           Cod_parcial: selectedParcial?.Cod_parcial,
           Valor: parseFloat(Valor), // Nuevo valor propuesto
           Cod_actividad_academica: Cod_actividad_academica, // Usar el código correcto
@@ -751,13 +772,14 @@ const handleActualizarActividad = async () => {
       icon: "success",
       title: "¡Éxito!",
       text: "La actividad se ha actualizado correctamente.",
+      confirmButtonText: 'Aceptar',
     });
 
     // Refrescar actividades
     await fetchActividades(
       selectedSeccion?.Cod_secciones,
       selectedParcial?.Cod_parcial,
-      selectedAsignatura?.Cod_seccion_asignatura
+      selectedAsignatura?.Cod_grados_asignaturas
     );
 
     handleCloseUpdateModal(); // Cerrar el modal
@@ -836,7 +858,7 @@ const handleEliminarActividad = async (id) => {
                 fetchActividades(
                     selectedSeccion?.Cod_secciones,
                     selectedParcial?.Cod_parcial,
-                    selectedAsignatura?.Cod_seccion_asignatura
+                    selectedAsignatura?.Cod_grados_asignaturas
                 );
             } else {
                 Swal.fire("Error", `Problema al eliminar actividad: ${responseData.mensaje}`, "error");
@@ -1047,12 +1069,12 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredActividades.length / recor
 //-------------------Reporte y Excel vista secciones-----------------------------
 const generarReporteExcel = () => {
   // Validar que haya datos en la tabla
-  if (!secciones || secciones.length === 0) {
+  if (!filteredSecciones || filteredSecciones.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1064,8 +1086,14 @@ const generarReporteExcel = () => {
   ];
 
   // Crear filas con asistencias filtradas
-  const filas = secciones.map((seccion, index) => [
-    index + 1,
+  const seccionesIndexMap = {};
+  secciones.forEach((seccion, index) => {
+    seccionesIndexMap[seccion.Cod_secciones] = index + 1;
+  });
+
+  // 2. Crear filas con numeración original
+  const filas = filteredSecciones.map((seccion) => [
+    seccionesIndexMap[seccion.Cod_secciones], // Índice original
     seccion.Nombre_seccion,
     seccion.Nombre_grado,
     seccion.Anio_academico
@@ -1114,12 +1142,12 @@ const generarReporteExcel = () => {
 
 const generarReportePDF = () => {
    // Validar que haya datos en la tabla
-   if (!secciones || secciones.length === 0) {
+   if (!filteredSecciones || filteredSecciones.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1170,12 +1198,18 @@ const generarReportePDF = () => {
     const pageHeight = doc.internal.pageSize.height; // Altura de la página
     let pageNumber = 1; // Página inicial
 
+    // Crear un mapa de índices para búsqueda rápida
+    const indexMap = {};
+    secciones.forEach((seccion, index) => {
+      indexMap[seccion.Cod_secciones] = index + 1;
+    });
+  
     // Agregar tabla con auto-paginación
     doc.autoTable({
       startY: yPosition + 4,
       head: [['#', 'Sección', 'Grado','Año Académico']],
-      body: secciones.map((seccion, index) => [
-        index + 1,
+      body: filteredSecciones.map((seccion) => [
+        indexMap[seccion.Cod_secciones], // Usar el índice original del array completo
         `${seccion.Nombre_seccion || ''}`.trim(),
         seccion.Nombre_grado,
         seccion.Anio_academico
@@ -1191,24 +1225,34 @@ const generarReportePDF = () => {
         halign: 'center', // Centrado del texto en las celdas
       },
       columnStyles: {
-        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-        1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
-        2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
-        3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
+        0: { cellWidth: 30 }, // Columna '#' se ajusta automáticamente
+        1: { cellWidth: 50 }, // Columna 'Sección' se ajusta automáticamente
+        2: { cellWidth: 60 }, // Columna 'Grado' se ajusta automáticamente
+        3: { cellWidth: 40 }, // Columna 'Año Académico' se ajusta automáticamente
       },
       alternateRowStyles: { fillColor: [240, 248, 255] },
       didDrawPage: (data) => {
-        // Pie de página
         const currentDate = new Date();
         const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
         doc.setFontSize(10);
         doc.setTextColor(100);
+        // Fecha y hora en el pie de página
         doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-        const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-        pageNumber += 1; // Incrementar el número de página
       },
     });
+    
+    // Asegúrate de calcular el total de páginas al final
+    const totalPages = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+    
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i); // Ve a cada página
+      doc.setTextColor(100);
+      const text = `Página ${i} de ${totalPages}`;
+      // Agrega número de página en la posición correcta
+      doc.text(text, pageWidth - 30, pageHeight - 10);
+    }
 
     // Abrir el PDF en lugar de descargarlo automáticamente
     window.open(doc.output('bloburl'), '_blank');
@@ -1227,12 +1271,12 @@ const generarReportePDF = () => {
 //-------------------Reporte y Excel vista parcial-----------------------------
 const generarReporteParcialExcel = () => {
   // Validar que haya datos en la tabla
-  if (!parciales || parciales.length === 0) {
+  if (!filteredParciales || filteredParciales.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1244,8 +1288,14 @@ const generarReporteParcialExcel = () => {
   ];
 
   // Crear filas con asistencias filtradas
-  const filas = parciales.map((parcial, index) => [
-    index + 1,
+  const parcialesIndexMap = {};
+  parciales.forEach((parcial, index) => {
+    parcialesIndexMap[parcial.Cod_parcial] = index + 1;
+  });
+
+  // 2. Crear filas con numeración original
+  const filas = filteredParciales.map((parcial) => [
+    parcialesIndexMap[parcial.Cod_parcial], // Índice original
     parcial.Nombre_parcial
   ]);
 
@@ -1292,12 +1342,12 @@ const generarReporteParcialExcel = () => {
 
 const generarReporteParcialPDF = () => {
    // Validar que haya datos en la tabla
-   if (!parciales || parciales.length === 0) {
+   if (!filteredParciales || filteredParciales.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
@@ -1348,12 +1398,18 @@ const generarReporteParcialPDF = () => {
     const pageHeight = doc.internal.pageSize.height; // Altura de la página
     let pageNumber = 1; // Página inicial
 
+    // Crear un mapa de índices para búsqueda rápida
+    const indexMap = {};
+    parciales.forEach((parcial, index) => {
+      indexMap[parcial.Cod_parcial] = index + 1;
+    });
+
     // Agregar tabla con auto-paginación
     doc.autoTable({
       startY: yPosition + 4,
       head: [['#', 'Parcial']],
-      body: parciales.map((parcial, index) => [
-        index + 1,
+      body: filteredParciales.map((parcial) => [
+        indexMap[parcial.Cod_parcial],
         `${parcial.Nombre_parcial || ''}`.trim()
       ]),
       headStyles: {
@@ -1367,24 +1423,32 @@ const generarReporteParcialPDF = () => {
         halign: 'center', // Centrado del texto en las celdas
       },
       columnStyles: {
-        0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-        1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
-        2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
-        3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
+        0: { cellWidth: 10 }, // Columna #
+        1: { cellWidth: 170}, // Columna Nombre parcial
       },
       alternateRowStyles: { fillColor: [240, 248, 255] },
       didDrawPage: (data) => {
-        // Pie de página
         const currentDate = new Date();
         const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
         doc.setFontSize(10);
         doc.setTextColor(100);
+        // Fecha y hora en el pie de página
         doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-        const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-        pageNumber += 1; // Incrementar el número de página
       },
     });
+    
+    // Asegúrate de calcular el total de páginas al final
+    const totalPages = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+    
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i); // Ve a cada página
+      doc.setTextColor(100);
+      const text = `Página ${i} de ${totalPages}`;
+      // Agrega número de página en la posición correcta
+      doc.text(text, pageWidth - 30, pageHeight - 10);
+    }
 
     // Abrir el PDF en lugar de descargarlo automáticamente
     window.open(doc.output('bloburl'), '_blank');
@@ -1412,83 +1476,112 @@ const formatFechaHora = (fechaHora) => {
 //-------------------Reporte y Excel vista actividades-----------------------------
 const generarReporteActividadesExcel = () => {
   // Validar que haya datos en la tabla
-  if (!actividades || actividades.length === 0) {
+  if (!filteredActividades || filteredActividades.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
       text: 'No hay datos disponibles para generar el reporte excel.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
-   // Detalles dinámicos sobre la sección, asignatura, parcial y año
-   const detalles = [];
-   if (selectedSeccion?.Nombre_seccion && selectedAsignatura?.Nombre_asignatura && selectedParcial?.Nombre_parcial) {
-     detalles.push([`Sección: ${selectedSeccion.Nombre_seccion} | Asignatura: ${selectedAsignatura.Nombre_asignatura} | Parcial: ${selectedParcial.Nombre_parcial}`]);
-   } else if (selectedSeccion?.Nombre_seccion && anioSeccionSeleccionada) {
-     detalles.push([`Sección: ${selectedSeccion.Nombre_seccion} | Año: ${anioSeccionSeleccionada}`]);
-   } else if (selectedAsignatura?.Nombre_asignatura) {
-     detalles.push([`Asignatura: ${selectedAsignatura.Nombre_asignatura}`]);
-   }
- 
-   detalles.push([]); // Espacio en blanco después de los detalles
+  // Calcular el total
+  const totalValor = filteredActividades.reduce(
+    (total, actividad) => total + parseFloat(actividad?.Valor || 0),
+    0
+  ).toFixed(2);
+  
+  // 1. Encabezado principal
   const encabezados = [
-    ["Saint Patric'ks Academy"],
-    ["Reporte de Actividades"],
+    ['SAINT PATRICK\'S ACADEMY'],
+    ['Reporte de Actividades Académicas'],
+    ['Fecha de generación: ' + new Date().toLocaleString('es-ES')],
     [], // Espacio en blanco
-    ["#","Nombre Actividad", "Descripción", "FechayHora_Inicio","FechayHora_Fin","Valor"]
+    // Información contextual (similar al PDF)
+    [`Sección: ${selectedSeccion.Nombre_seccion} | Grado: ${selectedSeccion.Nombre_grado} | Año: ${selectedSeccion.Anio_academico}`],
+    [`Asignatura: ${selectedAsignatura.Nombre_asignatura} | Parcial: ${selectedParcial.Nombre_parcial}`],
+    [], // Espacio en blanco
+    // Encabezados de tabla
+    ['#', 'Nombre Actividad', 'Descripción','Ponderación', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor'],
+    [], // Línea en blanco para separación
   ];
 
   // Crear filas con asistencias filtradas
-  const filas = actividades.map((actividad, index) => [
-    index + 1,
+  const actividadesIndexMap = {};
+  actividades.forEach((actividad, index) => {
+    actividadesIndexMap[actividad.Cod_actividad_academica] = index + 1;
+  });
+
+  // 2. Datos de las actividades
+  const filas = filteredActividades.map((actividad) => [
+    actividadesIndexMap[actividad.Cod_actividad_academica],
     actividad.Nombre_actividad_academica,
     actividad.Descripcion,
-    formatFechaHora(actividad.Fechayhora_Inicio),
-    formatFechaHora(actividad.Fechayhora_Fin),
-    actividad.Valor
+    listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A",
+    new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    actividad.Valor,
   ]);
 
-  // Combinar encabezados y filas
-  const datos = [...detalles,...encabezados,  ...filas];
+   // 3. Pie con el total
+    const pie = [
+      [],
+      ['', '', '', '', '', 'Total:', totalValor]
+    ];
+  
+    // Combinar todos los datos
+    const datos = [...encabezados, ...filas, ...pie];
+  
+    // Crear hoja de trabajo
+    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
 
-  // Crear una hoja de trabajo
-  const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
-
-  // Estilos personalizados para encabezados
-  const rangoEncabezado = XLSX.utils.decode_range(hojaDeTrabajo['!ref']);
-  for (let row = 0; row <= 3; row++) {
-    for (let col = rangoEncabezado.s.c; col <= rangoEncabezado.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-      if (hojaDeTrabajo[cellAddress]) {
-        hojaDeTrabajo[cellAddress].s = {
-          font: { bold: true, sz: 14, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "15401D" } },
-          alignment: { horizontal: "center" }
-        };
-      }
-    }
-  }
-
-  // Ajustar el ancho de columnas automáticamente
-  const ajusteColumnas = [
-    { wpx: 100 },
-    { wpx: 150 },
-    { wpx: 200 },
-    { wpx: 150 },
-    { wpx: 150 },
-    { wpx: 100 }
-  ];
-
-  hojaDeTrabajo['!cols'] = ajusteColumnas;
-
-  // Crear el libro de trabajo
-  const libroDeTrabajo = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, "Reporte de Actividades");
-  // Guardar el archivo Excel con un nombre fijo
-  const nombreArchivo = `Reporte_Actividades.xlsx`;
-
-  XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  // Aplicar estilos y formatos
+    // 1. Combinar celdas para títulos
+    if (!hojaDeTrabajo['!merges']) hojaDeTrabajo['!merges'] = [];
+    
+    // Combinar celdas para títulos principales
+    hojaDeTrabajo['!merges'].push(
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Título principal
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }, // Subtítulo
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }, // Fecha
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 6 } }, // Línea profesor
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 6 } }, // Línea sección/grado/año
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 6 } }  // Línea asignatura/parcial
+    );
+  
+    // 2. Ajustar anchos de columnas
+    hojaDeTrabajo['!cols'] = [
+      { wpx: 40 },  // #
+      { wpx: 200 }, // Nombre de la Actividad
+      { wpx: 300 }, // Descripción
+      { wpx: 200 }, // ponderacion
+      { wpx: 130 }, // Fecha y Hora Inicio
+      { wpx: 130 }, // Fecha y Hora Fin
+      { wpx: 80 },  // Valor
+      { wpx: 120 }  // Tipo de Actividad
+    ];
+  
+    // 3. Crear libro y guardar
+    const libroDeTrabajo = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Actividades');
+  
+    // Nombre del archivo con fecha
+    const fecha = new Date().toISOString().split('T')[0];
+    const nombreArchivo = `Reporte_Actividades_${fecha}.xlsx`;
+  
+    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
 };
 
 
@@ -1499,10 +1592,15 @@ const generarReporteActividadesPDF = () => {
       icon: 'info',
       title: 'Sin datos',
       text: 'No hay datos disponibles para generar el reporte.',
-      confirmButtonText: 'Entendido',
+      confirmButtonText: 'Aceptar',
     });
     return; // Salir de la función si no hay datos
   }
+
+  const totalValor = filteredActividades.reduce(
+    (total, actividad) => total + parseFloat(actividad?.Valor || 0),
+    0
+  ).toFixed(2);
 
   // Crear el PDF en orientación horizontal
   const doc = new jsPDF('landscape');
@@ -1522,6 +1620,25 @@ const generarReporteActividadesPDF = () => {
 
     yPosition += 10;
 
+    // Subtítulo
+    doc.setTextColor(0, 102, 51); // Verde
+    doc.setFontSize(16);
+    doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    yPosition += 8;
+
+    
+     // Información del profesor y sección (primera línea)
+     doc.setFontSize(12);
+     doc.setTextColor(0,0,0);
+     let infoLine1 = `Grado: ${selectedSeccion.Nombre_grado} | `;
+     infoLine1 += `Sección: ${selectedSeccion.Nombre_seccion} | `;
+     infoLine1 += `Año: ${selectedSeccion.Anio_academico}`;
+     infoLine1 += `Asignatura: ${selectedAsignatura.Nombre_asignatura} | `;
+     infoLine1 += `Parcial: ${selectedParcial.Nombre_parcial}`;
+     doc.text(infoLine1, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+     yPosition += 8;
+ 
+   
     // Información adicional
     doc.setFontSize(10);
     doc.setTextColor(100);
@@ -1533,60 +1650,29 @@ const generarReporteActividadesPDF = () => {
     yPosition += 4;
     doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
 
-    yPosition += 10;
-
-    // Subtítulo
-    doc.setTextColor(0, 102, 51); // Verde
-    doc.setFontSize(16);
-    doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-
-    yPosition += 10;
-
-    // Detalles dinámicos sobre la sección, asignatura, parcial y año
-    doc.setFontSize(12);
-    doc.setTextColor(0, 102, 51); // Verde
-    doc.setFont('helvetica', 'bold'); // Negrita
-    if (selectedSeccion?.Nombre_seccion && selectedAsignatura?.Nombre_asignatura && selectedParcial?.Nombre_parcial) {
-      doc.text(
-        `Sección: ${selectedSeccion.Nombre_seccion} | Asignatura: ${selectedAsignatura.Nombre_asignatura} | Parcial: ${selectedParcial.Nombre_parcial}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
-    } else if (selectedSeccion?.Nombre_seccion && anioSeccionSeleccionada) {
-      doc.text(
-        `Sección: ${selectedSeccion.Nombre_seccion} | Año: ${anioSeccionSeleccionada}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
-    } else if (selectedAsignatura?.Nombre_asignatura) {
-      doc.text(
-        `Asignatura: ${selectedAsignatura.Nombre_asignatura}`,
-        doc.internal.pageSize.width / 2,
-        yPosition,
-        { align: 'center' }
-      );
-    }
-
-    yPosition += 10;
-
+    yPosition += 6;
     // Línea divisoria
     doc.setLineWidth(0.5);
     doc.setDrawColor(0, 102, 51);
     doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-    yPosition += 6; // Espaciado antes de la tabla
+    yPosition += 4; // Espaciado antes de la tabla
 
     // Configuración para la tabla
     const pageHeight = doc.internal.pageSize.height; // Altura de la página
     let pageNumber = 1; // Página inicial
 
+   // Crear un mapa de índices para búsqueda rápida
+    const indexMap = {};
+    actividades.forEach((actividad, index) => {
+      indexMap[actividad.Cod_actividad_academica] = index + 1;
+    });
+  
     doc.autoTable({
       startY: yPosition,
-      head: [['#', 'Nombre Actividad', 'Descripción', 'Ponderación', 'Inicio', 'Fin', 'Valor']],
-      body: filteredActividades.map((actividad, index) => [
-        index + 1,
+      head: [['#', 'Nombre Actividad', 'Descripción', 'Ponderación', 'Fecha/Hora Ini', 'Fecha/hora Fin', 'Valor']],
+      body: filteredActividades.map((actividad) => [
+        indexMap[actividad.Cod_actividad_academica],
         actividad.Nombre_actividad_academica || '',
         actividad.Descripcion || '',
         listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A",
@@ -1610,39 +1696,58 @@ const generarReporteActividadesPDF = () => {
           : 'N/A',
         actividad.Valor,
       ]),
-      headStyles: {
+       // Cambiado a 'lastPage' para mostrar el total solo al final
+       showFoot: 'lastPage',
+       foot: [
+         ['', '', '', '', '', 'Total:', totalValor]
+       ],
+       headStyles: {
         fillColor: [0, 102, 51],
         textColor: [255, 255, 255],
         fontSize: 9,
       },
-      styles: {
+      bodyStyles: {
         fontSize: 8,
-        cellPadding: 2,
-        overflow: 'linebreak',
+        cellPadding: 4,
         valign: 'middle',
       },
-      columnStyles: {
-        0: { cellWidth: 10 }, // Columna '#'
-        1: { cellWidth: 50 }, // 'Nombre Actividad'
-        2: { cellWidth: 60 }, // 'Descripción'
-        3: { cellWidth: 50 }, // 'Ponderación'
-        4: { cellWidth: 40 }, // 'Inicio'
-        5: { cellWidth: 40 }, // 'Fin'
-        6: { cellWidth: 20 }, // 'Valor'
+      footStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        fontStyle: 'bold',
       },
-      tableWidth: 'auto', // Ajustar tabla automáticamente al ancho disponible
-      margin: { left: 10, right: 10 },
+      columnStyles: {
+        0: { cellWidth: 10 }, // Columna #
+        1: { cellWidth: 43 }, // Columna Nombre Actividad
+        2: { cellWidth: 65 }, // Columna Descripción
+        3: { cellWidth: 40 }, // Columna Ponderación
+        4: { cellWidth: 40 }, // Columna Fecha/Hora Ini
+        5: { cellWidth: 40 }, // Columna Fecha/Hora Fin
+        6: { cellWidth: 30 }, // Columna Valor
+      },
       didDrawPage: (data) => {
         const currentDate = new Date();
         const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
         doc.setFontSize(10);
         doc.setTextColor(100);
+        // Fecha y hora en el pie de página
         doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-        const totalPages = doc.internal.getNumberOfPages();
-        doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-        pageNumber += 1;
       },
     });
+    
+    // Asegúrate de calcular el total de páginas al final
+    const totalPages = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+    
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i); // Ve a cada página
+      doc.setTextColor(100);
+      const text = `Página ${i} de ${totalPages}`;
+      // Agrega número de página en la posición correcta
+      doc.text(text, pageWidth - 30, pageHeight - 10);
+    }
 
     // Abrir el PDF
     window.open(doc.output('bloburl'), '_blank');
@@ -1653,6 +1758,7 @@ const generarReporteActividadesPDF = () => {
       icon: 'error',
       title: 'Error',
       text: 'No se pudo cargar el logo para el reporte.',
+      confirmButtonText: 'Aceptar',
     });
   };
 };
@@ -1668,7 +1774,7 @@ const generarReporteActividadesPDF = () => {
   };
   
 
-
+ 
 //------------------------------------------------------------------------------------------------------
 
   return (
@@ -1715,7 +1821,7 @@ const generarReporteActividadesPDF = () => {
             <CIcon icon={cilSearch} />
           </CInputGroupText>
           <CFormInput
-          style={{ width: '80px',height:'35px', display: 'inline-block'}}
+          style={{ width: '80px',height:'35px', display: 'inline-block',fontSize: '0.8rem'}}
             placeholder="Buscar sección..."
             onChange={handleSearch}
             value={searchTerm}
@@ -1783,7 +1889,7 @@ const generarReporteActividadesPDF = () => {
             <CTableBody className="text-center" style={{ fontSize: '0.85rem' }}>
               {currentRecords.map((seccion, index) => (
                 <CTableRow key={seccion.Cod_secciones}>
-                  <CTableDataCell >{index + 1}</CTableDataCell>
+                  {secciones.findIndex(s => s.Cod_secciones === seccion.Cod_secciones) + 1}
                   <CTableDataCell>{seccion.Nombre_seccion}</CTableDataCell>
                   <CTableDataCell>{seccion.Nombre_grado}</CTableDataCell>
                   <CTableDataCell>{seccion.Anio_academico}</CTableDataCell>
@@ -1846,8 +1952,13 @@ const generarReporteActividadesPDF = () => {
                 onClick={handleRegresar}>
                <CIcon icon={cilArrowLeft} /> Regresar a secciones
                 </CButton>
-                <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",}}>Asignaturas de la Sección: {selectedSeccion.Nombre_seccion}</h4>
+                <div className="flex-grow-1 text-center">
+                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",}}>Asignaturas</h4>
+                <div className="d-flex justify-content-center align-items-center mt-2">
+                <div className="me-3" style={{fontSize: "1rem"}}>Grado: {selectedSeccion.Nombre_grado}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Sección: {selectedSeccion.Nombre_seccion}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Año: {selectedSeccion.Anio_academico}</div>
+                </div>
                 </div>
             </CCol>
         </CRow>
@@ -1860,7 +1971,7 @@ const generarReporteActividadesPDF = () => {
             <CIcon icon={cilSearch} />
           </CInputGroupText>
           <CFormInput
-          style={{ width: '80px',height:'35px', display: 'inline-block'}}
+          style={{ width: '80px',height:'35px', display: 'inline-block' ,fontSize: '0.8rem'}}
             placeholder="Buscar Asignatura..."
             onChange={handleSearch2}
             value={searchTerm2}
@@ -1904,9 +2015,9 @@ const generarReporteActividadesPDF = () => {
               }}
                 value={recordsPerPage}
               >
-                <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
+                <option value="30">30</option>
               </CFormSelect>
             <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
           </div>       
@@ -1926,7 +2037,7 @@ const generarReporteActividadesPDF = () => {
             <CTableBody className="text-center" style={{ fontSize: '0.85rem' }}>
                 {currentRecords2.map((asignatura, index) => (
                     <CTableRow key={asignatura.Cod_asignatura}>
-                      <CTableDataCell>{index + 1}</CTableDataCell>
+                      <CTableDataCell>{asignaturas.findIndex(a => a.Cod_asignatura === asignatura.Cod_asignatura) + 1}</CTableDataCell>
                         <CTableDataCell>{asignatura.Nombre_asignatura}</CTableDataCell>
                         <CTableDataCell>{asignatura.Descripcion_asignatura}</CTableDataCell>
                         <CTableDataCell>
@@ -1988,8 +2099,14 @@ const generarReporteActividadesPDF = () => {
                 onClick={handleRegresar}>
                 <CIcon icon={cilArrowLeft}/>Regresar a asignatura
                 </CButton>
-                <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",fontSize: "1.5rem"}}> Seccion: {selectedSeccion.Nombre_seccion} / Asignatura: {selectedAsignatura.Nombre_asignatura} / Parciales:  </h4>
+                <div className="flex-grow-1 text-center">
+                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",fontSize: "1.5rem"}}>Parciales</h4>
+                <div className="d-flex justify-content-center align-items-center mt-2">
+                  <div className="me-3" style={{fontSize: "1rem"}}>Grado: {selectedSeccion.Nombre_grado}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Sección: {selectedSeccion.Nombre_seccion}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Año: {selectedSeccion.Anio_academico}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Asignatura: {selectedAsignatura.Nombre_asignatura}</div>
+                </div>
                 </div>
                 <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
                 <CDropdownToggle
@@ -2025,7 +2142,7 @@ const generarReporteActividadesPDF = () => {
             <CIcon icon={cilSearch} />
           </CInputGroupText>
           <CFormInput
-          style={{ width: '80px',height:'35px', display: 'inline-block'}}
+          style={{ width: '80px',height:'35px', display: 'inline-block',fontSize: '0.8rem'}}
             placeholder="Buscar parcial..."
             onChange={handleSearch3}
             value={searchTerm3}
@@ -2091,7 +2208,7 @@ const generarReporteActividadesPDF = () => {
             {parciales.length > 0 ? (
     currentRecords3.map((parcial, index) => (
       <CTableRow key={parcial.Cod_parcial}>
-        <CTableDataCell>{index + 1}</CTableDataCell>
+        <CTableDataCell> {parciales.findIndex(p => p.Cod_parcial === parcial.Cod_parcial) + 1}</CTableDataCell>
         <CTableDataCell>{parcial.Nombre_parcial}</CTableDataCell>
         <CTableDataCell>
           <CButton
@@ -2164,8 +2281,14 @@ const generarReporteActividadesPDF = () => {
                 onClick={handleRegresar}>
                 <CIcon icon={cilArrowLeft} /> Regresar a parciales
                 </CButton>
-                <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",fontSize: "1.5rem",}}> Seccion: {selectedSeccion.Nombre_seccion} / Asignatura: {selectedAsignatura.Nombre_asignatura} / Parcial: {selectedParcial.Nombre_parcial}</h4>
+                <div className="flex-grow-1 text-center">
+                <h4 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",fontSize: "1.5rem",}}>Actividades Académicas</h4>
+                <div className="d-flex justify-content-center align-items-center mt-2">
+                  <div className="me-3" style={{fontSize: "1rem"}}>Grado: {selectedSeccion.Nombre_grado}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Sección: {selectedSeccion.Nombre_seccion}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Parcial: {selectedParcial.Nombre_parcial}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Asignatura: {selectedAsignatura.Nombre_asignatura}</div>
+                </div>
                 </div>
                
 
@@ -2214,9 +2337,6 @@ const generarReporteActividadesPDF = () => {
             
         </CRow>
         <CRow>
-       <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                  <h2 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",fontSize: "1.5rem",}}>Actividades Academicas</h2>
-                </div>
        </CRow>
          {/* Contenedor de la barra de búsqueda y el selector dinámico */}
     <CRow className="align-items-center mt-4 mb-2">
@@ -2228,7 +2348,7 @@ const generarReporteActividadesPDF = () => {
             <CIcon icon={cilSearch} />
           </CInputGroupText>
           <CFormInput
-          style={{ width: '80px',height:'35px', display: 'inline-block'}}
+          style={{ width: '80px',height:'35px', display: 'inline-block', fontSize: '0.8rem'}}
             placeholder="Buscar actividad..."
             onChange={handleSearch4}
             value={searchTerm4}
@@ -2272,9 +2392,9 @@ const generarReporteActividadesPDF = () => {
               }}
                 value={recordsPerPage4}
               >
-                <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
+                <option value="30">30</option>
               </CFormSelect>
             <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
           </div>       
@@ -2285,24 +2405,24 @@ const generarReporteActividadesPDF = () => {
         
         <div className="table-responsive" style={{overflowX: 'auto',overflow: "hidden", boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
         <CTable striped bordered hover responsive>
-            <CTableHead className="sticky-top bg-light text-start" style={{  whiteSpace: "nowrap",overflow: "hidden",fontSize: '0.8rem' }}>
-                <CTableRow>
-                <CTableHeaderCell>#</CTableHeaderCell>
-                    <CTableHeaderCell>NOMBRE</CTableHeaderCell>
-                    <CTableHeaderCell>DESCRIPCIÓN</CTableHeaderCell>
-                    <CTableHeaderCell>PONDERACIÓN</CTableHeaderCell>
-                    <CTableHeaderCell>FECHA INICIO </CTableHeaderCell>
-                    <CTableHeaderCell>FECHA FIN</CTableHeaderCell>
-                    <CTableHeaderCell>VALOR</CTableHeaderCell>
-                    <CTableHeaderCell>ACCIONES</CTableHeaderCell>
-                </CTableRow>
+            <CTableHead className="sticky-top bg-light text-center" style={{  whiteSpace: "nowrap",overflow: "hidden",fontSize: '0.8rem' }}>
+            <CTableRow>
+              <CTableHeaderCell style={{ width: '30px' }}>#</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '200px' }}>NOMBRE</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '250px' }}>DESCRIPCIÓN</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '150px' }}>PONDERACIÓN</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '150px' }}>FECHA/HORA INI</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '150px' }}>FECHA/HORA FIN</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '80px' }}>VALOR</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '180px' }}>ACCIONES</CTableHeaderCell>
+            </CTableRow>
             </CTableHead>
-            <CTableBody>
+            <CTableBody className="text-center" style={{ fontSize: '0.85rem' }}>
   {actividades.length > 0 ? (
     currentRecords4.map((actividad, index) => (
       
       <CTableRow key={actividad?.Cod_actividad_academica || index}>
-        <CTableDataCell>{index + 1}</CTableDataCell>
+        <CTableDataCell>{actividades.findIndex(a => a.Cod_actividad_academica === actividad.Cod_actividad_academica) + 1}</CTableDataCell>
         <CTableDataCell>{actividad?.Nombre_actividad_academica || "N/A"}</CTableDataCell>
         <CTableDataCell>{actividad?.Descripcion || "N/A"}</CTableDataCell>
         <CTableDataCell>{listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad?.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A"}</CTableDataCell>
@@ -2451,7 +2571,7 @@ const generarReporteActividadesPDF = () => {
         />
         <CFormInput
           type="hidden"
-          value={nuevaActividad.Cod_seccion_asignatura}
+          value={nuevaActividad.Cod_grados_asignaturas}
           readOnly
         />
 
@@ -2612,7 +2732,7 @@ const generarReporteActividadesPDF = () => {
 key={actividadToUpdate?.Cod_actividad_academica || "default-key"}
 backdrop="static" >
 <CModalHeader closeButton>
-        <h5>Actualizar Actividad</h5>
+        <h5>Actualizar Actividad Académica</h5>
     </CModalHeader>
     <CModalBody>
         <CForm>
@@ -2657,25 +2777,26 @@ backdrop="static" >
             />
            </CInputGroup>
           {/* Ponderación */}
-<CInputGroup className="mb-3">
-  <CInputGroupText>Ponderación</CInputGroupText>
-  <CFormInput
-    type="text"
-    value={
-      listaponderacionesC.find(
-        (ponderacion) =>
-          ponderacion.Cod_ponderacion_ciclo ===
-          actividadToUpdate?.Cod_ponderacion_ciclo
-      )?.Descripcion_ponderacion || "N/A"
-    }
-    readOnly
-    style={{
-      backgroundColor: "#f1f1f1", // Sombreado gris claro
-      color: "#6c757d", // Texto en gris oscuro
-      cursor: "not-allowed", // Cursor de no permitido para mayor claridad
-    }}
-  />
-</CInputGroup>
+          <CInputGroup className="mb-3">
+            <CInputGroupText>Ponderación</CInputGroupText>
+            <CFormInput
+              type="text"
+              value={
+                (() => {
+                  const ponderacion = listaponderacionesC.find(
+                    p => p.Cod_ponderacion_ciclo === actividadToUpdate?.Cod_ponderacion_ciclo
+                  );
+                  return ponderacion ? `${ponderacion.Descripcion_ponderacion} ${ponderacion.Valor}%` : "N/A";
+                })()
+              }
+              readOnly
+              style={{
+                backgroundColor: "#f1f1f1",
+                color: "#6c757d",
+                cursor: "not-allowed",
+              }}
+            />
+          </CInputGroup>
 
            {/* valor*/}
            <CInputGroup className="mb-3">

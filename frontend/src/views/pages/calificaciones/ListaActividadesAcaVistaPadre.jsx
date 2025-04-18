@@ -664,7 +664,7 @@ const ListaActividadesAcaVistaPadre = () => {
                className="text-center fw-semibold pb-2 mb-0"
                style={{ display: 'inline-block', borderBottom: '2px solid #4CAF50' }}
              >
-              Lista de Hijos
+              Actividades Académicas: Mis Hijos
               </h3>
               </div>
             </CCol>
@@ -677,8 +677,8 @@ const ListaActividadesAcaVistaPadre = () => {
         <CTableHead>
           <CTableRow>
             <CTableHeaderCell>#</CTableHeaderCell>
-            <CTableHeaderCell>Nombre del Hijo</CTableHeaderCell>
-            <CTableHeaderCell>Acción</CTableHeaderCell>
+            <CTableHeaderCell>NOMBRE DE HIJO</CTableHeaderCell>
+            <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
         <CTableBody>
@@ -734,8 +734,8 @@ const ListaActividadesAcaVistaPadre = () => {
                   <CTableHead className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
                     <CTableRow>
                       <CTableHeaderCell>#</CTableHeaderCell>
-                      <CTableHeaderCell>Asignatura</CTableHeaderCell>
-                      <CTableHeaderCell>Acción</CTableHeaderCell>
+                      <CTableHeaderCell>ASIGNATURA</CTableHeaderCell>
+                      <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
                     </CTableRow>
                   </CTableHead>
                   <CTableBody>
@@ -790,8 +790,8 @@ const ListaActividadesAcaVistaPadre = () => {
                   <CTableHead className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
                     <CTableRow>
                       <CTableHeaderCell>#</CTableHeaderCell>
-                      <CTableHeaderCell>Parcial</CTableHeaderCell>
-                      <CTableHeaderCell>Acción</CTableHeaderCell>
+                      <CTableHeaderCell>PARCIAL</CTableHeaderCell>
+                      <CTableHeaderCell>ACCIÓN</CTableHeaderCell>
                     </CTableRow>
                   </CTableHead>
                   <CTableBody>
@@ -832,7 +832,7 @@ const ListaActividadesAcaVistaPadre = () => {
                 onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")} onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#656565")}
                 style={{ backgroundColor: "#656565", color: "#FFFFFF", padding: "6px 12px", fontSize: "0.9rem", transition: "background-color 0.2s ease, box-shadow 0.3s ease", boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)", }}
                 onClick={volverAVistaParciales}>
-                 Volver a Parciales
+                 <CIcon icon={cilArrowLeft} />Volver a Parciales
           </CButton>
           <div className="d-flex justify-content-center align-items-center flex-grow-1">
          <h3 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem" }}>Actividades del {parcialSeleccionado} - {asignaturaSeleccionada}</h3>
@@ -845,12 +845,12 @@ const ListaActividadesAcaVistaPadre = () => {
     <CTable striped bordered hover responsive>
       <CTableHead  className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
         <CTableRow>
-          <CTableHeaderCell>#</CTableHeaderCell>
-          <CTableHeaderCell>Actividad</CTableHeaderCell>
-          <CTableHeaderCell>Descripción</CTableHeaderCell>
-          <CTableHeaderCell>Inicio</CTableHeaderCell>
-          <CTableHeaderCell>Fin</CTableHeaderCell>
-          <CTableHeaderCell>Valor</CTableHeaderCell> {/* Nueva columna para el valor */}
+          <CTableHeaderCell style={{ width: '30px' }}>#</CTableHeaderCell>
+          <CTableHeaderCell style={{ width: '150px' }}>NOMBRE ACTIVIDAD</CTableHeaderCell>
+          <CTableHeaderCell style={{ width: '300px' }}>DESCRIPCIÓN</CTableHeaderCell>
+          <CTableHeaderCell style={{ width: '100px' }}>FECHA/HORA INICIO</CTableHeaderCell>
+          <CTableHeaderCell style={{ width: '100px' }}>FECHA/HORA FIN</CTableHeaderCell>
+          <CTableHeaderCell style={{ width: '60px' }}>VALOR</CTableHeaderCell> {/* Nueva columna para el valor */}
         </CTableRow>
       </CTableHead>
       <CTableBody>

@@ -26,9 +26,9 @@ router.get('/notas/editar', obtenerNotasParaEdicion);
 router.get('/promedio', obtenerpromedionotas);
 router.get('/actividades', ObtenerActividadesPorAsignatura);
 router.get('/actividadescalificadas', ObtenerActividadesPorAsignaturaCalificadas);
-router.get('/notatotal/:Cod_seccion/:Cod_seccion_asignatura/:Cod_parcial', obtenerEstudiantesConTotal);
+router.get('/notatotal/:Cod_seccion/:CodGradosAsignaturas/:Cod_parcial', obtenerEstudiantesConTotal);
 router.get('/seccionesporprofe', obtenerSeccionesPorProfesor);
-router.get('/notasactividad/:codSeccion/:codSeccionAsignatura/:codParcial/:codActividadAsignatura', obtenerNotasPorActividad);
+router.get('/notasactividad/:codSeccion/:codGradosAsignaturas/:codParcial/:codActividadAsignatura', obtenerNotasPorActividad);
 // Ruta para crear una nueva nota
 router.post('/crearnota', crearNota);
 

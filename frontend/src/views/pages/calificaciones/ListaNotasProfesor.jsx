@@ -1088,7 +1088,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         });
         return; // Salir de la función si no hay datos
       }
-      const doc = new jsPDF();
+      const doc = new jsPDF('landscape');
       const img = new Image();
       img.src = logo;
     

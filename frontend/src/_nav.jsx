@@ -103,7 +103,7 @@ const _nav = [
 
   {
     component: CNavItem,
-    name: 'Mis Actividades ',
+    name: 'Actividades Académicas ',
     to: '/ListaActividadesAcaVistaPadre',
     icon: cilTask,
     nameobject: 'ListaActividadesAcaVistaPadre',

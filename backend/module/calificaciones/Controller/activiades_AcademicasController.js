@@ -17,7 +17,7 @@ export const actualizarActividadAcademica = async (req, res) => {
         Fechayhora_Fin,
         Valor,
         Cod_secciones,
-        Cod_seccion_asignatura
+        Cod_grados_asignaturas
     } = req.body;
 
     try {
@@ -29,8 +29,8 @@ export const actualizarActividadAcademica = async (req, res) => {
 
         // Obtener la lista actualizada de actividades del profesor y asignatura
         const [actividades] = await pool.query(
-            'CALL getActividadesPorProfesorYAsignatura(?, ?)',
-            [Cod_profesor, Cod_seccion_asignatura]
+            'CALL getActividadesPorProfesorYAsignatura(?, ?,?,?)',
+            [Cod_profesor, Cod_grados_asignaturas,  Cod_parcial, Cod_secciones]
         );
 
         res.status(200).json({ mensaje: 'Actividad actualizada correctamente', actividades: actividades[0] });
@@ -226,10 +226,10 @@ export const obtenerActividadesPorAsignatura = async (req, res) => {
             Fechayhora_Fin,
             Valor,
             Cod_secciones,
-            Cod_seccion_asignatura
+            Cod_grados_asignaturas
         } = req.body;
 
-        if (!Cod_profesor || !Cod_ponderacion_ciclo || !Cod_parcial || !Nombre_actividad_academica || !Valor || !Cod_seccion_asignatura) {
+        if (!Cod_profesor || !Cod_ponderacion_ciclo || !Cod_parcial || !Nombre_actividad_academica || !Valor || !Cod_grados_asignaturas) {
             return res.status(400).json({ mensaje: 'Faltan datos obligatorios' });
         }
 
@@ -246,14 +246,14 @@ export const obtenerActividadesPorAsignatura = async (req, res) => {
                 Fechayhora_Fin,
                 Valor,
                 Cod_secciones,
-                Cod_seccion_asignatura
+                Cod_grados_asignaturas
             ]
         );
 
         // Obtén las actividades actualizadas del profesor y asignatura
         const [actividades] = await pool.query(
-            'CALL getActividadesPorProfesorYAsignatura(?, ?)',
-            [Cod_profesor, Cod_seccion_asignatura]
+            'CALL getActividadesPorProfesorYAsignatura(?, ?,?,?)',
+            [Cod_profesor, Cod_grados_asignaturas,  Cod_parcial, Cod_secciones]
         );
 
         res.status(201).json({ mensaje: 'Actividad creada correctamente', actividades: actividades[0] });
@@ -267,15 +267,15 @@ export const obtenerActividadesPorAsignatura = async (req, res) => {
 
   export const obtenerActividadesPorProfesorYAsignatura = async (req, res) => {
     try {
-        const { Cod_profesor, Cod_asignatura } = req.params;
+        const { Cod_profesor, Cod_grados_asignaturas, Cod_parcial, Cod_seccion } = req.params;
 
-        if (!Cod_profesor || !Cod_asignatura) {
+        if (!Cod_profesor || !Cod_grados_asignaturas || !Cod_parcial || !Cod_seccion) {
             return res.status(400).json({ mensaje: 'Faltan parámetros obligatorios' });
         }
 
         const [actividades] = await pool.query(
-            'CALL getActividadesPorProfesorYAsignatura(?, ?)',
-            [Cod_profesor, Cod_asignatura]
+            'CALL getActividadesPorProfesorYAsignatura(?, ?,?,?)',
+            [Cod_profesor, Cod_grados_asignaturas,  Cod_parcial, Cod_seccion]
         );
 
         if (actividades.length === 0) {
@@ -288,18 +288,19 @@ export const obtenerActividadesPorAsignatura = async (req, res) => {
         res.status(500).json({ mensaje: 'Error al obtener las actividades' });
     }
 };
+
 export const obtenerParcialesPorAsignatura = async (req, res) => {
     
     try {
-    const { Cod_asignatura } = req.params;
+    const { codAsignatura, codSeccion} = req.params;
 
-    if (!Cod_asignatura) {
-        return res.status(400).json({ mensaje: 'Falta el parámetro Cod_asignatura' });
+    if (!codAsignatura || !codSeccion) {
+        return res.status(400).json({ mensaje: 'Faltan parámetros ' });
     }
 
     const [parciales] = await pool.query(
-        'CALL getParcialesPorSeccionAsignatura(?)',
-        [Cod_asignatura]
+        'CALL getParcialesPorSeccionAsignatura(?,?)',
+        [codAsignatura, codSeccion]
     );
 
     if (parciales.length === 0) {
@@ -314,17 +315,17 @@ export const obtenerParcialesPorAsignatura = async (req, res) => {
 };
 export const obtenerActividadesPorParcialAsignatura = async (req, res) => {
     try {
-        const { Cod_seccion_asignatura, CodParcial } = req.params;
+        const { codGradosAsignaturas, codParcial, codSeccion } = req.params;
 
         // Validar que se reciban los parámetros necesarios
-        if (!Cod_seccion_asignatura || !CodParcial) {
-            return res.status(400).json({ mensaje: 'Faltan parámetros necesarios (Cod_seccion_asignatura o CodParcial)' });
+        if (!codGradosAsignaturas || !codParcial || !codSeccion) {
+            return res.status(400).json({ mensaje: 'Faltan parámetros necesarios (Cod_grados_asignaturas o CodParcial)' });
         }
 
         // Llamar al procedimiento almacenado con los parámetros
         const [result] = await pool.query(
-            'CALL getActividadesPorParcialAsignatura(?, ?)',
-            [Cod_seccion_asignatura, CodParcial]
+            'CALL getActividadesPorParcialAsignatura(?, ?,?)',
+            [codGradosAsignaturas, codParcial , codSeccion]
         );
 
         // Verificar si hay resultados
@@ -438,7 +439,28 @@ export const obtenerPonderacionesPorProfesor = async (req, res) => {
 };
 
 
+// En tu controlador (ej: actividadesAcademicasController.js)
+export const obtenerPonderacionesPorProfesorAdmin = async (req, res) => {
+    try {
+        const { codProfesor } = req.params;
+        
+        if (!codProfesor) {
+            return res.status(400).json({ mensaje: 'Código de profesor no proporcionado' });
+        }
 
+        // Llamar al procedimiento almacenado para obtener las ponderaciones
+        const [ponderaciones] = await pool.query('CALL ObtenerPonderacionesPorProfesorAdmin(?)', [codProfesor]);
+
+        if (ponderaciones.length === 0) {
+            return res.status(404).json({ mensaje: 'No se encontraron ponderaciones para el profesor' });
+        }
+
+        res.status(200).json(ponderaciones[0]);
+    } catch (error) {
+        console.error('Error al obtener las ponderaciones:', error);
+        res.status(500).json({ mensaje: 'Error al obtener las ponderaciones' });
+    }
+};
   
 
 // Controlador para actualizar una actividad académica
@@ -482,10 +504,10 @@ export const actualizarActividad = async (req, res) => {
 // Obtener el total de valores por Cod_ponderacion_ciclo y Cod_ciclo
 export const obtenerValoresPorPonderacionCiclo = async (req, res) => {
     try {
-        const { Cod_ponderacion_ciclo, Cod_ciclo, Cod_seccion_asignatura, Cod_parcial } = req.query;
+        const { Cod_ponderacion_ciclo, Cod_ciclo, Cod_grados_asignaturas, Cod_parcial } = req.query;
 
         // Validar parámetros
-        if (!Cod_ponderacion_ciclo || !Cod_ciclo || !Cod_seccion_asignatura || !Cod_parcial) {
+        if (!Cod_ponderacion_ciclo || !Cod_ciclo || !Cod_grados_asignaturas || !Cod_parcial) {
             return res.status(400).json({
                 mensaje: "Parámetros insuficientes. Se requieren Cod_ponderacion_ciclo, Cod_ciclo, Cod_seccion_asignatura y Cod_parcial.",
             });
@@ -508,9 +530,9 @@ export const obtenerValoresPorPonderacionCiclo = async (req, res) => {
             `SELECT SUM(a.Valor) AS totalValor
              FROM tbl_actividades_academicas a
              WHERE a.Cod_ponderacion_ciclo = ?
-               AND a.Cod_seccion_asignatura = ?
+               AND a.Cod_grados_asignaturas = ?
                AND a.Cod_parcial = ?`,
-            [Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial]
+            [Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial]
         );
 
         const valorActual = actividades[0].totalValor || 0;
@@ -527,7 +549,7 @@ export const obtenerValoresPorPonderacionCiclo = async (req, res) => {
 
 
 export const validarValorActividad = async (req, res) => {
-    const { Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor } = req.body;
+    const { Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial, Valor } = req.body;
 
     try {
         // Obtener maxValor desde tbl_ponderaciones_ciclos
@@ -551,10 +573,10 @@ export const validarValorActividad = async (req, res) => {
             FROM tbl_actividades_academicas a
             INNER JOIN tbl_actividades_asignatura aa ON a.Cod_actividad_academica = aa.Cod_actividad_academica
             WHERE a.Cod_ponderacion_ciclo = ?
-              AND aa.Cod_seccion_asignatura = ?
+              AND aa.Cod_grados_asignaturas = ?
               AND a.Cod_parcial = ?
             `,
-            [Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial]
+            [Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial]
         );
 
         const totalValor = parseFloat(actividades[0].totalValor);
@@ -585,7 +607,7 @@ export const validarValorActividad = async (req, res) => {
 
 
 export const validarYActualizarActividad = async (req, res) => {
-    const { Cod_actividad_academica, Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor } = req.body;
+    const { Cod_actividad_academica, Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial, Valor } = req.body;
 
     try {
         // 1. Obtener el valor máximo permitido para la ponderación
@@ -609,10 +631,10 @@ export const validarYActualizarActividad = async (req, res) => {
             FROM tbl_actividades_academicas a
             INNER JOIN tbl_actividades_asignatura aa ON a.Cod_actividad_academica = aa.Cod_actividad_academica
             WHERE a.Cod_ponderacion_ciclo = ?
-              AND aa.Cod_seccion_asignatura = ?
+              AND aa.Cod_grados_asignaturas = ?
               AND a.Cod_parcial = ?
               AND a.Cod_actividad_academica != ?`, // Excluimos la actividad que se va a actualizar
-            [Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Cod_actividad_academica]
+            [Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial, Cod_actividad_academica]
         );
 
         const totalValorExistente = parseFloat(actividades[0].totalValor); // Suma de las actividades existentes (sin incluir la actual)

@@ -111,7 +111,7 @@ export const obtenerHijosPorToken = async (req, res) => {
 
         // Consulta para obtener los hijos asociados al padre
         const [result] = await pool.query(
-            `SELECT p.cod_persona, p.nombre, p.primer_apellido, p.segundo_apellido, p.fecha_nacimiento
+            `SELECT p.cod_persona, p.Nombre,p.Segundo_nombre, p.Primer_apellido, p.Segundo_apellido, p.fecha_nacimiento
              FROM tbl_personas AS p
              INNER JOIN tbl_estructura_familiar AS ef ON ef.cod_persona_estudiante = p.cod_persona
              WHERE ef.cod_persona_padre = ? AND p.cod_tipo_persona = 1`,

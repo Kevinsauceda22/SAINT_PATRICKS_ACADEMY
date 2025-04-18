@@ -416,11 +416,24 @@ export const obtenerSeccionesPorProfesor = async (req, res) => {
         const codProfesor = profesorResult[0].Cod_Profesor;
        
 
-        // Obtener las secciones del profesor
+        // Obtener las secciones del profesor con nombre de grado y año académico, ordenadas
         const [secciones] = await pool.query(
-            'SELECT Cod_secciones, Nombre_seccion, Cod_aula, Cod_grado, Cod_periodo_matricula FROM tbl_secciones WHERE Cod_Profesor = ?',
-            [codProfesor]
+        `SELECT 
+            s.Cod_secciones, 
+            s.Nombre_seccion, 
+            s.Cod_aula, 
+            s.Cod_grado, 
+            s.Cod_periodo_matricula,
+            g.Nombre_grado,
+            p.Anio_academico
+            FROM tbl_secciones s
+            JOIN tbl_grados g ON s.Cod_grado = g.Cod_grado
+            JOIN tbl_periodo_matricula p ON s.Cod_periodo_matricula = p.Cod_periodo_matricula
+            WHERE s.Cod_Profesor = ?
+            ORDER BY p.Anio_academico DESC, g.Nombre_grado ASC`,
+        [codProfesor]
         );
+
 
         // Obtener los nombres de grado y período para cada sección
         for (let seccion of secciones) {
