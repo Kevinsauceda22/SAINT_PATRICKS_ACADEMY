@@ -50,15 +50,15 @@ const [mostrarModalActividades, setMostrarModalActividades] = useState(false);
 const [nombreParcialSeleccionado, setNombreParcialSeleccionado] = useState('');
 const [gradoSeleccionado, setGradoSeleccionado] = useState('');
 //para paginacion y busqueda de la vista secciones
-const [recordsPerPage2, setRecordsPerPage2] = useState(2);
+const [recordsPerPage2, setRecordsPerPage2] = useState(10);
 const [searchTerm2, setSearchTerm2] = useState('');
 const [currentPage2, setCurrentPage2] = useState(1); 
 //para paginacion y busqueda de la vista asignaturas
-const [recordsPerPage3, setRecordsPerPage3] = useState(2);
+const [recordsPerPage3, setRecordsPerPage3] = useState(10);
 const [searchTerm3, setSearchTerm3] = useState('');
 const [currentPage3, setCurrentPage3] = useState(1); 
 //para paginacion y busqueda de la vista gestionar notas
-const [recordsPerPage4, setRecordsPerPage4] = useState(2);
+const [recordsPerPage4, setRecordsPerPage4] = useState(5);
 const [searchTerm4, setSearchTerm4] = useState('');
 const [currentPage4, setCurrentPage4] = useState(1); 
 const [nombreBusqueda, setNombreBusqueda] = useState('');
@@ -86,7 +86,12 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
 
         if (!response.ok) throw new Error('Error al cargar secciones.');
         const data = await response.json();
-        setSecciones(data); // Ajusta según el formato de la respuesta
+       // Asignar un índice original basado en el orden en la base de datos
+      const dataWithIndex = data.map((seccion, index) => ({
+        ...seccion,
+        originalIndex: index + 1, // Guardamos la secuencia original
+      }));
+      setSecciones(dataWithIndex);
     } catch (error) {
         console.error('Error al obtener las secciones:', error);
     } finally {
@@ -101,7 +106,14 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       const response = await fetch(`http://localhost:4000/api/notas/notas?Cod_seccion=${Cod_secciones}`);
       if (!response.ok) throw new Error('Error al obtener las asignaturas');
       const data = await response.json();
-      setAsignaturas(data);
+
+      // Asignar un índice original basado en el orden en la base de datos
+      const dataWithIndex = data.map((asignatura, index) => ({
+        ...asignatura,
+        originalIndex: index + 1, // Guardamos la secuencia original
+      }));
+
+      setAsignaturas(dataWithIndex);
     } catch (error) {
       console.error('Error:', error);
       Swal.fire('Error', 'Hubo un problema al obtener las asignaturas', 'error');
@@ -118,7 +130,13 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       );
       if (!response.ok) throw new Error('Error al obtener los promedios');
       const data = await response.json();
-      setPromedios(data);
+
+      const dataWithIndex = data.map((promedio, index) => ({
+        ...promedio,
+        originalIndex: index + 1, // Guardamos la secuencia original
+      }));
+      setPromedios(dataWithIndex);
+
     } catch (error) {
       console.error('Error:', error);
       Swal.fire('Error', 'Hubo un problema al obtener los promedios', 'error');
@@ -442,8 +460,21 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     }
   };
   
+  const limpiarFiltros = () => {
+    // Limpiar filtros de búsqueda
+    setSearchTerm2('');
+    setSearchTerm3('');
+    setSearchTerm4('');
+    setNombreBusqueda('');
+    
+    // Reiniciar paginación
+    setCurrentPage2(1);
+    setCurrentPage3(1);
+    setCurrentPage4(1);
+  };
 
   const handleViewAsignaturas = (Cod_secciones, nombreSeccion, grado, anio) => {
+    limpiarFiltros();
     setSelectedCodSeccion(Cod_secciones);
     fetchAsignaturas(Cod_secciones);
     setGradoSeleccionado(grado);
@@ -454,6 +485,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   
 
   const handleViewPromedios = (Cod_grados_asignaturas,Nombre_asignatura) => {
+    limpiarFiltros();
     setSelectedCodSeccionAsignatura(Cod_grados_asignaturas);
     setNombreAsignaturaSeleccionada(Nombre_asignatura);
     fetchPromedio(selectedCodSeccion, Cod_grados_asignaturas);
@@ -461,10 +493,12 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   };
 
   const handleBackToSecciones = () => {
+    limpiarFiltros();
     setCurrentView('secciones');
   };
 
   const handleBackToAsignaturas = () => {
+    limpiarFiltros();
     setCurrentView('asignaturas');
   };
   
@@ -598,7 +632,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     
     const generarReporteExcel = () => {
       // Validar que haya datos en la tabla
-      if (!currentRecords2 || currentRecords2.length === 0) {
+      if (!filteredSecciones || filteredSecciones.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -615,8 +649,8 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       ];
     
       // Crear filas con asistencias filtradas
-      const filas = currentRecords2.map((seccion, index) => [
-        index + 1,
+      const filas = filteredSecciones.map((seccion, index) => [
+        seccion.originalIndex || index + 1,
         seccion.Seccion,
         seccion.Grado,
         seccion.Total_Alumnos,
@@ -652,7 +686,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         { wpx: 100 }, 
         { wpx: 100 } ,
         { wpx: 100 } ,
-        { wpx: 100 } 
+        { wpx: 250 } 
       ];
     
       hojaDeTrabajo['!cols'] = ajusteColumnas;
@@ -667,7 +701,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     };
 
     const generarReporteasignaturasExcel = () => {
-      if (!currentRecords3 || currentRecords3.length === 0) {
+      if (!filteredAsignaturas || filteredAsignaturas.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -695,8 +729,8 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       ];
     
       // Crear filas con asignaturas
-      const filas = currentRecords3.map((asignatura, index) => [
-        index + 1,
+      const filas = filteredAsignaturas.map((asignatura, index) => [
+        asignatura.originalIndex || index + 1,
         asignatura.Nombre_asignatura || "N/A",
         asignatura.Descripcion_asignatura || "N/A",
         asignatura.Promedio_Notas || 0,
@@ -731,7 +765,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     
     
     const generarReportepromediosExcel = () => {
-      if (!currentRecords4 || currentRecords4.length === 0) {
+      if (!filteredPromedios || filteredPromedios.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -760,8 +794,8 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
       ];
     
       // Crear filas con asignaturas
-      const filas = currentRecords4.map((promedio, index) => [
-        index + 1,
+      const filas = filteredPromedios.map((promedio, index) => [
+        promedio.originalIndex || index + 1,
         promedio.NombreParcial || "N/A",
         promedio.PromedioGeneral || 0,
         promedio.TotalAprobados || 0,
@@ -799,7 +833,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     
     const generarReportepromediosPDF = () => {
        // Validar que haya datos en la tabla
-      if (!currentRecords4 || currentRecords4.length === 0) {
+      if (!filteredPromedios || filteredPromedios.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -887,8 +921,8 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Parcial', 'Promedio', 'Total Aprobados','Total Reprobados' ]],
-          body: currentRecords4.map((promedio, index) => [
-            index + 1,
+          body: filteredPromedios.map((promedio, index) => [
+            promedio.originalIndex || index + 1,
             `${promedio.NombreParcial}`.trim(),
             promedio.PromedioGeneral,
             promedio.TotalAprobados,
@@ -905,35 +939,35 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
             halign: 'center', // Centrado del texto en las celdas
           },
           columnStyles: {
-            0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-            1: { cellWidth: 'auto' }, // Columna 'Parcial' se ajusta automáticamente
-            2: { cellWidth: 'auto' }, // Columna 'Promedio' se ajusta automáticamente
-            3: { cellWidth: 'auto' }, // Columna 'Total Aprobado' se ajusta automáticamente
-            4: { cellWidth: 'auto' }, // Columna 'Total Reprobado' se ajusta automáticamente
+            0: { cellWidth: 20 }, // Columna '#' se ajusta automáticamente
+            1: { cellWidth: 40 }, // Columna 'Parcial' se ajusta automáticamente
+            2: { cellWidth: 40 }, // Columna 'Promedio' se ajusta automáticamente
+            3: { cellWidth: 40 }, // Columna 'Total Aprobado' se ajusta automáticamente
+            4: { cellWidth: 40 }, // Columna 'Total Reprobado' se ajusta automáticamente
           },
           alternateRowStyles: { fillColor: [240, 248, 255] },
          didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i); // Ve a cada página
+          doc.setTextColor(100);
+          const text = `Página ${i} de ${totalPages}`;
+          // Agrega número de página en la posición correcta
+          doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
     
         // Abrir el PDF en lugar de descargarlo automáticamente
         window.open(doc.output('bloburl'), '_blank');
@@ -948,7 +982,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
 
     const generarReporteasignaturasPDF = () => {
        // Validar que haya datos en la tabla
-      if (!currentRecords3 || currentRecords3.length === 0) {
+      if (!filteredAsignaturas || filteredAsignaturas.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -1029,8 +1063,8 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Asignatura', 'Descripción', 'Promedio']],
-          body: currentRecords3.map((asignatura, index) => [
-            index + 1,
+          body: filteredAsignaturas.map((asignatura, index) => [
+            asignatura.originalIndex || index + 1,
             `${asignatura.Nombre_asignatura}`.trim(),
             asignatura.Descripcion_asignatura,
             asignatura.Promedio_Notas,
@@ -1046,34 +1080,34 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
             halign: 'center', // Centrado del texto en las celdas
           },
           columnStyles: {
-            0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-            1: { cellWidth: 'auto' }, // Columna 'asignatura' se ajusta automáticamente
-            2: { cellWidth: 'auto' }, // Columna 'Descripcion' se ajusta automáticamente
-            3: { cellWidth: 'auto' }, // Columna 'Promedio' se ajusta automáticamente
+            0: { cellWidth: 20 }, // Columna '#' se ajusta automáticamente
+            1: { cellWidth: 40 }, // Columna 'asignatura' se ajusta automáticamente
+            2: { cellWidth: 90 }, // Columna 'Descripcion' se ajusta automáticamente
+            3: { cellWidth: 30 }, // Columna 'Promedio' se ajusta automáticamente
           },
           alternateRowStyles: { fillColor: [240, 248, 255] },
          didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i); // Ve a cada página
+          doc.setTextColor(100);
+          const text = `Página ${i} de ${totalPages}`;
+          // Agrega número de página en la posición correcta
+          doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
     
         // Abrir el PDF en lugar de descargarlo automáticamente
         window.open(doc.output('bloburl'), '_blank');
@@ -1088,7 +1122,7 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
 
     const generarReportePDF = () => {
       // Validar que haya datos en la tabla
-      if (!currentRecords2 || currentRecords2.length === 0) {
+      if (!filteredSecciones || filteredSecciones.length === 0) {
         Swal.fire({
           icon: 'info',
           title: 'Tabla vacía',
@@ -1148,8 +1182,8 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
         doc.autoTable({
           startY: yPosition + 4,
           head: [['#', 'Sección', 'Grado', 'Total Alumnos','Año Académico','Profesor']],
-          body: currentRecords2.map((seccion, index) => [
-            index + 1,
+          body: filteredSecciones.map((seccion, index) => [
+            seccion.originalIndex || index + 1,
             `${seccion.Seccion || ''}`.trim(),
             seccion.Grado,
             seccion.Total_Alumnos,
@@ -1167,36 +1201,36 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
             halign: 'center', // Centrado del texto en las celdas
           },
           columnStyles: {
-            0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-            1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
-            2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
-            3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
-            4: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
-            5: { cellWidth: 'auto' }, // Columna 'Profesor' se ajusta automáticamente
+            0: { cellWidth: 20 }, // Columna '#' se ajusta automáticamente
+            1: { cellWidth: 30 }, // Columna 'Sección' se ajusta automáticamente
+            2: { cellWidth: 50 }, // Columna 'Grado' se ajusta automáticamente
+            3: { cellWidth: 40 }, // Columna 'Total alumnos' se ajusta automáticamente
+            4: { cellWidth: 40 }, // Columna 'Año Académico' se ajusta automáticamente
+            5: { cellWidth: 88 }, // Columna 'Profesor' se ajusta automáticamente
           },
           alternateRowStyles: { fillColor: [240, 248, 255] },
          didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+          const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i); // Ve a cada página
+          doc.setTextColor(100);
+          const text = `Página ${i} de ${totalPages}`;
+          // Agrega número de página en la posición correcta
+          doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
     
         // Abrir el PDF en lugar de descargarlo automáticamente
         window.open(doc.output('bloburl'), '_blank');
@@ -1243,21 +1277,20 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
    
        yPosition += 10; // Espaciado entre subtítulo y detalles
 
-       // Detalles de la sección, asignatura y año
         // Detalles de la sección, asignatura y año
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+        doc.setFontSize(12);
+        doc.setTextColor(0, 0, 0); // Negro para el texto informativo
+        
+        // Crear el texto para mostrar
+        const textoLinea1 = `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} `;
+        const textoLinea2 = `Asignatura: ${nombreasignaturaSeleccionada} | Parcial: ${nombreParcialSeleccionado}`;
+        
+        // Agregar las dos líneas de texto al PDF
+        doc.text(textoLinea1, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+        yPosition += 8; // Espaciado entre las líneas
+        doc.text(textoLinea2, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
     
-    // Crear el texto para mostrar
-    const textoLinea1 = `Grado: ${gradoSeleccionado} | Sección: ${nombreSeccionSeleccionada} | Año: ${anioSeccionSeleccionada} `;
-    const textoLinea2 = `Asignatura: ${nombreasignaturaSeleccionada} | Parcial: ${nombreParcialSeleccionado}`;
-    
-    // Agregar las dos líneas de texto al PDF
-    doc.text(textoLinea1, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-    yPosition += 6; // Espaciado entre las líneas
-    doc.text(textoLinea2, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
-    
-    yPosition += 8; // Espaciado entre líneas de detalle
+        yPosition += 8; // Espaciado entre líneas de detalle
 
         // Información adicional
 
@@ -1287,9 +1320,10 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
        // Agregar tabla con auto-paginación
        doc.autoTable({
          startY: yPosition + 4,
-         head: [['#', 'Nombre Estudiante', 'Nota Total', 'Estado']],
+         head: [['#','Identidad', 'Nombre Estudiante', 'Nota Total', 'Estado']],
          body: estudiantesdetalles.map((estudiante, index) => [
            index + 1,
+           estudiante.Identidad,
            `${estudiante.NombreCompleto}`.trim(),
            estudiante.NotaTotal,
            estudiante.EstadoNota,
@@ -1305,34 +1339,35 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
            halign: 'center', // Centrado del texto en las celdas
          },
          columnStyles: {
-           0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-           1: { cellWidth: 'auto' }, // Columna 'asignatura' se ajusta automáticamente
-           2: { cellWidth: 'auto' }, // Columna 'Descripcion' se ajusta automáticamente
-           3: { cellWidth: 'auto' }, // Columna 'Promedio' se ajusta automáticamente
+           0: { cellWidth: 10 }, // Columna '#' se ajusta automáticamente
+           1: { cellWidth: 40 }, // Columna 'asignatura' se ajusta automáticamente
+           2: { cellWidth: 70 }, // Columna 'Descripcion' se ajusta automáticamente
+           3: { cellWidth: 30 }, // Columna 'Promedio' se ajusta automáticamente
+           4: { cellWidth: 30 }, // Columna 'Estado se ajusta automáticamente
          },
          alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
-                    const currentDate = new Date();
-                    const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-                    const pageHeight = doc.internal.pageSize.height; // Altura de la página
-                    doc.setFontSize(10);
-                    doc.setTextColor(100);
-                    // Fecha y hora en el pie de página
-                    doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-                },
-                });
-                
-                // Asegúrate de calcular el total de páginas al final
-                const totalPages = doc.internal.getNumberOfPages();
-                const pageWidth = doc.internal.pageSize.width; // Ancho de la página
-                
-                for (let i = 1; i <= totalPages; i++) {
-                    doc.setPage(i); // Ve a cada página
-                    doc.setTextColor(100);
-                    const text = `Página ${i} de ${totalPages}`;
-                    // Agrega número de página en la posición correcta
-                    doc.text(text, pageWidth - 30, pageHeight - 10);
-                }
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        // Fecha y hora en el pie de página
+        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+      },
+    });
+    
+    // Asegúrate de calcular el total de páginas al final
+    const totalPages = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+    
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i); // Ve a cada página
+      doc.setTextColor(100);
+      const text = `Página ${i} de ${totalPages}`;
+      // Agrega número de página en la posición correcta
+      doc.text(text, pageWidth - 30, pageHeight - 10);
+    }
    
        // Abrir el PDF en lugar de descargarlo automáticamente
        window.open(doc.output('bloburl'), '_blank');
@@ -1375,12 +1410,13 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
     ["Reporte de Nota por Parcial-Asignatura"],
     ...detalles, // Agregar los detalles dinámicos
     [], // Espacio en blanco
-    ["#", "Nombre Estudiante", "Nota Total", "Estado"],
+    ["#","Identidad", "Nombre Estudiante", "Nota Total", "Estado"],
   ];
 
   // Crear filas con asignaturas
   const filas = estudiantesdetalles.map((estudiante, index) => [
     index + 1,
+    estudiante.Identidad,
     estudiante.NombreCompleto || "N/A",
     estudiante.NotaTotal,
     estudiante.EstadoNota,
@@ -1395,7 +1431,8 @@ const [nombreBusqueda, setNombreBusqueda] = useState('');
   // Ajustar el texto para que haga salto de línea
   hojaDeTrabajo["!cols"] = [
     { wpx: 40 }, // # (Número)
-    { wpx: 200 }, // Nombre estudiante
+    { wpx: 100 }, // identidad
+    { wpx: 250 }, // Nombre estudiante
     { wpx: 100 }, // Nota Total
     { wpx: 100 }, // Estado
   ];
@@ -1683,8 +1720,13 @@ const handleNombreBusquedaChange = (e) => {
   setNombreBusqueda(value);
 };
 
+const notasConIndice = estudiantesdetalles.map((estudiante, index) => ({
+  ...estudiante,
+  originalIndex: index + 1
+}));
+
 // Filtro de estudiantes
-const NotasFiltradas = estudiantesdetalles.filter((estudiante) => 
+const NotasFiltradas = notasConIndice.filter((estudiante) => 
   estudiante.NombreCompleto.toUpperCase().includes(nombreBusqueda.toUpperCase()) // Realiza la comparación en mayúsculas
 );
 //------------------------------------------------------------------------------------------------------  
@@ -1783,9 +1825,9 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                       }}
                         value={recordsPerPage2}
                       >
-                        <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
+                        <option value="30">30</option>
                       </CFormSelect>
                     <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
                   </div>       
@@ -1809,7 +1851,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                     {currentRecords2.length > 0 ? (
                       currentRecords2.map((seccion, index) => (
                         <CTableRow key={index}>
-                          <CTableDataCell>{indexOfFirstRecord2 + index + 1}</CTableDataCell>
+                          <CTableDataCell>{seccion.originalIndex}</CTableDataCell>
                           <CTableDataCell>{seccion.Seccion}</CTableDataCell>
                           <CTableDataCell>{seccion.Grado}</CTableDataCell>
                           <CTableDataCell>{seccion.Total_Alumnos}</CTableDataCell>
@@ -1971,9 +2013,9 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
                   }}
                     value={recordsPerPage3}
                   >
-                    <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
+                    <option value="30">30</option>
                   </CFormSelect>
                 <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
               </div>       
@@ -1995,7 +2037,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
               {currentRecords3.length > 0 ? (
               currentRecords3.map((asignatura, index) => (
               <CTableRow key={index}>
-                <CTableDataCell>{indexOfFirstRecord3 + index + 1}</CTableDataCell>
+                <CTableDataCell>{asignatura.originalIndex}</CTableDataCell>
                 <CTableDataCell>{asignatura.Nombre_asignatura}</CTableDataCell>
                 <CTableDataCell>{asignatura.Descripcion_asignatura}</CTableDataCell>
                 <CTableDataCell className="text-center align-middle">{asignatura.Promedio_Notas}
@@ -2192,7 +2234,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
         {currentRecords4.length > 0 ? (
         currentRecords4.map((promedio, index) => (
         <CTableRow key={index}>
-          <CTableDataCell>{indexOfFirstRecord4 + index + 1}</CTableDataCell>
+          <CTableDataCell>{promedio.originalIndex}</CTableDataCell>
           <CTableDataCell>{promedio.NombreParcial}</CTableDataCell>
           <CTableDataCell className="text-center align-middle">{promedio.PromedioGeneral}</CTableDataCell>
           <CTableDataCell className="text-center align-middle">{promedio.TotalAprobados}</CTableDataCell>
@@ -2811,7 +2853,7 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
       </div>
     ) : NotasFiltradas.length > 0 ? (
       <CTable striped bordered hover responsive>
-        <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
+        <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.91rem'}}>
           <CTableRow>
             <CTableHeaderCell>#</CTableHeaderCell>
              <CTableHeaderCell>IDENTIDAD</CTableHeaderCell>
@@ -2820,10 +2862,10 @@ const NotasFiltradas = estudiantesdetalles.filter((estudiante) =>
             <CTableHeaderCell>ESTADO</CTableHeaderCell>
           </CTableRow>
         </CTableHead>
-        <CTableBody className="text-center" style={{fontSize: '0.9rem',}}>
+        <CTableBody className="text-center" style={{fontSize: '0.92rem',}}>
           {NotasFiltradas.map((estudiante, index) => (
             <CTableRow key={estudiante.CodPersona}>
-              <CTableDataCell>{index + 1}</CTableDataCell>
+              <CTableDataCell>{estudiante.originalIndex}</CTableDataCell>
               <CTableDataCell>{estudiante.Identidad}</CTableDataCell>
               <CTableDataCell>{estudiante.NombreCompleto}</CTableDataCell>
               <CTableDataCell>{`${estudiante.NotaTotal} %`}</CTableDataCell>
