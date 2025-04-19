@@ -108,7 +108,12 @@ const ListaAsistencia = () => {
       const response = await fetch('http://localhost:4000/api/seccionalumno/secciones');
       if (!response.ok) throw new Error('Error al cargar secciones.');
       const data = await response.json();
-      setSecciones(data);
+      // Asignar un índice original basado en el orden en la base de datos
+      const dataWithIndex = data.map((seccion, index) => ({
+        ...seccion,
+        originalIndex: index + 1, // Guardamos la secuencia original
+      }));
+      setSecciones(dataWithIndex);
     } catch (error) {
       console.error('Error al obtener las secciones:', error);
     } finally {
@@ -195,22 +200,28 @@ const ListaAsistencia = () => {
   };
 
   // trae todos los recuentos de la tabla asistencia cuantos presentes, ausentes... dependiendo de los estados asistencia  
-  const fetchRecuentoAsistencias = async () => {
-    if (!codSeccionSeleccionada) return;
-  
-    try {
-      const response = await fetch(`http://localhost:4000/api/asistencia/recuento?codSeccion=${codSeccionSeleccionada}`);
-      if (!response.ok) throw new Error('Error al obtener el recuento de asistencias.');
-      const data = await response.json();
-  
-      // Ordenar los datos por fecha en orden descendente (más reciente primero)
-      const dataOrdenada = data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
-  
-      setRecuentoAsistencias(dataOrdenada);
-    } catch (error) {
-      console.error('Error al obtener el recuento de asistencias:', error);
-    }
-  };
+  // En el fetchRecuentoAsistencias:
+const fetchRecuentoAsistencias = async () => {
+  if (!codSeccionSeleccionada) return;
+  try {
+    const response = await fetch(`http://localhost:4000/api/asistencia/recuento?codSeccion=${codSeccionSeleccionada}`);
+    if (!response.ok) throw new Error('Error al obtener el recuento de asistencias.');
+    const data = await response.json();
+    
+    // Ordenar por fecha (más reciente primero)
+    const dataOrdenada = data.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+    
+    // Asignar índice original basado en el orden
+    const dataConIndice = dataOrdenada.map((item, index) => ({
+      ...item,
+      originalIndex: index + 1, // Guarda el índice original (1-based)
+    }));
+    
+    setRecuentoAsistencias(dataConIndice);
+  } catch (error) {
+    console.error('Error al obtener el recuento de asistencias:', error);
+  }
+};
 
   // formatea la fecha y hora a dia, mes, año con un formato de 12 hrs si está en true
   const formatDateTime = (dateString) => {
@@ -592,7 +603,21 @@ const ListaAsistencia = () => {
     return agrupado;
   };
   const recuentosAgrupados = agruparRecuentosPorFecha();
-  
+
+  // Obtener fechas únicas ordenadas (fuera del render para eficiencia)
+  const fechasUnicasOrdenadas = React.useMemo(() => {
+    const fechasUnicas = [...new Set(recuentoAsistencias.map(item => item.fecha))];
+    return fechasUnicas.sort((a, b) => new Date(b) - new Date(a));
+  }, [recuentoAsistencias]);
+
+  // Mapear fechas a índices originales
+  const indicesPorFecha = React.useMemo(() => {
+    const indices = {};
+    fechasUnicasOrdenadas.forEach((fecha, index) => {
+      indices[fecha] = index + 1; // 1-based index
+    });
+    return indices;
+  }, [fechasUnicasOrdenadas]);
   
  // Función para seleccionar o deseleccionar todos los checkboxes de un estado específico
  const handleSelectAll = (estadoId) => {
@@ -672,8 +697,13 @@ const ListaAsistencia = () => {
     return `${day}/${month}/${year}`;
   };
 
-  // Función para filtrar asistencias por nombre
-  const asistenciasFiltradas = todasAsistencias.filter((asistencia) => 
+  const asistenciasConIndice = todasAsistencias.map((asistencia, index) => ({
+    ...asistencia,
+    originalIndex: index + 1
+  }));
+  
+  // Luego filtra
+  const asistenciasFiltradas = asistenciasConIndice.filter((asistencia) => 
     asistencia.Nombre_Completo.toLowerCase().includes(nombreBusqueda.toLowerCase())
   );
 
@@ -841,7 +871,7 @@ const ListaAsistencia = () => {
           yPosition,
           { align: 'center' }
         );
-        yPosition += 6; // Espacio entre líneas
+        yPosition += 8; // Espacio entre líneas
       }
   
       if (fechaRegistro && fechaRegistro !== 'sin_fecha') {
@@ -899,10 +929,10 @@ const ListaAsistencia = () => {
           halign: 'center',
         },
         columnStyles: {
-          0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-          1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
-          2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
-          3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
+          0: { cellWidth: 20 }, // Columna '#' se ajusta automáticamente
+          1: { cellWidth: 90 }, // Columna 'Sección' se ajusta automáticamente
+          2: { cellWidth: 30 }, // Columna 'Grado' se ajusta automáticamente
+          3: { cellWidth: 40 }, // Columna 'Año Académico' se ajusta automáticamente
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
          didDrawPage: (data) => {
@@ -941,7 +971,7 @@ const ListaAsistencia = () => {
   
   const generarReporteseccionesExcel = () => {
      // Validar que haya datos en la tabla
-  if (!currentRecords2 || currentRecords2.length === 0) {
+  if (!filteredSecciones || filteredSecciones.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
@@ -958,8 +988,8 @@ const ListaAsistencia = () => {
     ];
   
     // Crear filas con asistencias filtradas
-    const filas = currentRecords2.map((seccion, index) => [
-      index + 1,
+    const filas = filteredSecciones.map((seccion, index) => [
+      seccion.originalIndex || index + 1,
       seccion.Seccion,
       seccion.Grado,
       seccion.Anio_Academico,
@@ -1009,7 +1039,7 @@ const ListaAsistencia = () => {
   
   const generarReporteseccionesPDF = () => {
      // Validar que haya datos en la tabla
-   if (!currentRecords2 || currentRecords2.length === 0) {
+   if (!filteredSecciones || filteredSecciones.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
@@ -1018,7 +1048,7 @@ const ListaAsistencia = () => {
     });
     return; // Salir de la función si no hay datos
   }
-    const doc = new jsPDF();
+    const doc = new jsPDF('landscape');
     const img = new Image();
     img.src = logo;
   
@@ -1069,8 +1099,8 @@ const ListaAsistencia = () => {
       doc.autoTable({
         startY: yPosition + 4,
         head: [['#', 'Sección', 'Grado', 'Año Académico','Profesor']],
-        body: currentRecords2.map((seccion, index) => [
-          index + 1,
+        body: filteredSecciones.map((seccion, index) => [
+          seccion.originalIndex || index + 1,
           `${seccion.Seccion || ''}`.trim(),
           seccion.Grado,
           seccion.Anio_Academico,
@@ -1087,11 +1117,11 @@ const ListaAsistencia = () => {
           halign: 'center', // Centrado del texto en las celdas
         },
         columnStyles: {
-          0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-          1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
-          2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
-          3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
-          4: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
+          0: { cellWidth: 30 }, // Columna '#' se ajusta automáticamente
+          1: { cellWidth: 40 }, // Columna 'Sección' se ajusta automáticamente
+          2: { cellWidth: 55 }, // Columna 'Grado' se ajusta automáticamente
+          3: { cellWidth: 55 }, // Columna 'Año Académico' se ajusta automáticamente
+          4: { cellWidth: 85 }, // Columna 'Año Académico' se ajusta automáticamente
         },
         alternateRowStyles: { fillColor: [240, 248, 255] },
         didDrawPage: (data) => {
@@ -1371,7 +1401,7 @@ const ListaAsistencia = () => {
               {currentRecords2.length > 0 ? (
                 currentRecords2.map((seccion, index) => (
                   <CTableRow key={index}>
-                    <CTableDataCell >{indexOfFirstRecord2 + index + 1}</CTableDataCell>
+                    <CTableDataCell >{seccion.originalIndex}</CTableDataCell>
                     <CTableDataCell>{seccion.Seccion}</CTableDataCell>
                     <CTableDataCell>{seccion.Grado}</CTableDataCell>
                     <CTableDataCell>{seccion.Anio_Academico}</CTableDataCell>
@@ -1455,7 +1485,7 @@ const ListaAsistencia = () => {
           {/* Barra de búsqueda y selector de tipo de filtro */}
           <CCol xs="12" md="8" className="d-flex flex-wrap align-items-center gap-3">
             {/* Selector de tipo de filtro */}
-            <CInputGroup className="me-1" style={{ maxWidth: '150px' }}>
+            <CInputGroup className="me-0" style={{ maxWidth: '150px' }}>
               <CFormSelect
                 value={tipoFiltro}
                 onChange={(e) => {
@@ -1473,7 +1503,7 @@ const ListaAsistencia = () => {
             </CInputGroup>
             {/* Filtros condicionales */}
             {tipoFiltro === 'mes' && (
-              <CInputGroup className="me-3" style={{ maxWidth: '250px' }}>
+              <CInputGroup className="me-1" style={{ maxWidth: '250px' }}>
                 <CFormSelect
                   value={mesBusqueda}
                   onChange={(e) => setMesBusqueda(e.target.value)}
@@ -1505,7 +1535,7 @@ const ListaAsistencia = () => {
               </CInputGroup>
             )}
             {tipoFiltro === 'anio' && (
-              <CInputGroup className="me-3" style={{ maxWidth: '250px' }}>
+              <CInputGroup className="me-1" style={{ maxWidth: '250px' }}>
                 <CFormSelect
                   value={añoBusqueda}
                   onChange={(e) => setAñoBusqueda(e.target.value)}
@@ -1520,6 +1550,31 @@ const ListaAsistencia = () => {
                 </CFormSelect>
               </CInputGroup>
             )}
+             {/* Botón de limpieza */}
+            <CButton 
+            style={{border: '1px solid #ccc',
+              transition: 'all 0.1s ease-in-out', // Duración de la transición
+              backgroundColor: '#F3F4F7', // Color por defecto
+              color: '#343a40', // Color de texto por defecto
+              height:'35px'
+            }}
+              onClick={() => {
+                setTipoFiltro("dia");
+                setDiaBusqueda("");
+                setMesBusqueda("");
+                setAñoBusqueda("");
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#E0E0E0'; // Color cuando el mouse sobre el boton "limpiar"
+                e.currentTarget.style.color = 'black'; // Color del texto cuando el mouse sobre el boton "limpiar"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#F3F4F7'; // Color cuando el mouse no está sobre el boton "limpiar"
+                e.currentTarget.style.color = '#343a40'; // Color de texto cuando el mouse no está sobre el boton "limpiar"
+              }}
+            >
+              <CIcon icon={cilBrushAlt} /> Limpiar
+            </CButton>
           </CCol>
           {/* Selector dinámico de registros */}
           <CCol xs="12" md="4" className="text-md-end mt-3 mt-md-0">
@@ -1563,14 +1618,13 @@ const ListaAsistencia = () => {
               <CTableBody className="text-center" style={{fontSize: '0.85rem',}}>
                 {currentRecords.map(([fecha, estados], index) => (
                   <CTableRow key={fecha} >
-                    <CTableDataCell >{indexOfFirstRecord + index + 1}</CTableDataCell>
+                     <CTableDataCell>{indicesPorFecha[fecha]}</CTableDataCell>
                     <CTableDataCell>{formatDate(fecha)}</CTableDataCell>
                     {estadosAsistencia.map((estado) => (<CTableDataCell key={estado.Cod_estado_asistencia}>{estados[estado.Cod_estado_asistencia] || 0}</CTableDataCell> ))}
                   <CTableDataCell style={{ padding: '10px' }}>
                       <div style={{display: 'flex',gap: '10px',justifyContent: 'center',alignItems: 'center', }}>
                         {canUpdate && (
                           <CButton
-                            title="Clic para ver editar asistencias"
                             onClick={() => cargarDatosParaActualizar(fecha)}
                             onMouseEnter={(e) => {e.currentTarget.style.boxShadow = '0px 4px 10px rgba(249, 182, 78, 0.6)';e.currentTarget.style.color = '#000000';}}
                             onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
@@ -1579,7 +1633,6 @@ const ListaAsistencia = () => {
                           </CButton>
                         )}
                         <CButton
-                          title="Clic para ver el detalle de asistencias"
                           onClick={() => fetchTodasAsistencias(fecha)}
                           onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0px 4px 10px rgba(93, 138, 168, 0.6)';e.currentTarget.style.color = '#000000'; }}
                           onMouseLeave={(e) => {e.currentTarget.style.boxShadow = 'none';e.currentTarget.style.color = '#5C4044';}}
@@ -1777,8 +1830,13 @@ const ListaAsistencia = () => {
               <CFormInput
                 placeholder="Buscar por nombre"
                 value={nombreBusqueda}
-                onChange={(e) => setNombreBusqueda(e.target.value)}
+                onChange={(e) => setNombreBusqueda(e.target.value.toUpperCase())} // <- Conversión aquí
                 style={{ fontSize: '0.85rem', flex: 1 }}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  const pastedText = e.clipboardData.getData('text').toUpperCase();
+                  setNombreBusqueda(pastedText);
+                }}
               />
             </CCol>
             <CCol xs="auto">
@@ -1810,21 +1868,21 @@ const ListaAsistencia = () => {
             <CTable bordered hover responsive className="shadow-sm">
               <thead className="bg-light">
                 <tr>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Nombre Completo</CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Fecha</CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Estado</CTableHeaderCell>
-                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>Observación</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.91rem', padding: '3px', verticalAlign: 'middle' }}>#</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.91rem', padding: '3px', verticalAlign: 'middle' }}>NOMBRE COMPLETO</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.91rem', padding: '3px', verticalAlign: 'middle' }}>FECHA</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.91rem', padding: '3px', verticalAlign: 'middle' }}>ESTADO</CTableHeaderCell>
+                  <CTableHeaderCell className="text-center" style={{ fontSize: '0.91rem', padding: '3px', verticalAlign: 'middle' }}>OBSERVACIÓN</CTableHeaderCell>
                 </tr>
               </thead>
               <CTableBody>
                 {asistenciasFiltradas.map((asistencia, index) => (
                   <CTableRow key={asistencia.Cod_asistencias}>
                     <CTableDataCell className="text-center" style={{ fontSize: '1rem', padding: '3px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
-                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Nombre_Completo}</CTableDataCell>
-                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{formatDateTime(asistencia.Fecha)}</CTableDataCell>
-                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.DescripcionEstado}</CTableDataCell>
-                    <CTableDataCell style={{ fontSize: '0.95rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Observacion}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.92rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Nombre_Completo}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.92rem', padding: '3px', verticalAlign: 'middle' }}>{formatDateTime(asistencia.Fecha)}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.92rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.DescripcionEstado}</CTableDataCell>
+                    <CTableDataCell style={{ fontSize: '0.92rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Observacion}</CTableDataCell>
                   </CTableRow>
                 ))}
               </CTableBody>
