@@ -164,10 +164,10 @@ const fetchParciales = async () => {
 
 
 
-const fetchListaCiclo = async () => {
+const fetchListaCiclo = async (codSeccion) => {
   try {
-    const token = localStorage.getItem('token'); // Asegúrate de que el token esté disponible
-    const response = await fetch('http://localhost:4000/api/actividadesAcademicas/obtenerPonderacionesPorProfesor', {
+    const token = localStorage.getItem('token');
+    const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/obtenerPonderacionesPorProfesor/${codSeccion}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -179,13 +179,19 @@ const fetchListaCiclo = async () => {
     }
 
     const data = await response.json();
-    console.log('Ponderaciones obtenidas:', data); // Validación de datos
-    setlistaponderacionesC(data); // Actualiza el estado con las ponderaciones
+    console.log('📊 Ponderaciones obtenidas:', data);
+    setlistaponderacionesC(data);
   } catch (error) {
-    console.error('Error al obtener las ponderaciones:', error);
+    console.error('❌ Error al obtener las ponderaciones:', error);
     Swal.fire('Error', 'No se pudieron cargar las ponderaciones del profesor.', 'error');
   }
 };
+
+useEffect(() => {
+  if (selectedSeccion?.Cod_secciones) {
+    fetchListaCiclo(selectedSeccion.Cod_secciones);
+  }
+}, [selectedSeccion]);
 
  // Función para manejar cambios en el input
  const handleInputChange = (e, setFunction) => {

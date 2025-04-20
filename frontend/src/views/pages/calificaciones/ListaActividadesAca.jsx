@@ -389,15 +389,18 @@ const VistaActividadesAcademicasAdmin = () => {
   };
 
 
-  const fetchListaCiclo = async (codProfesor) => {
+  const fetchListaCiclo = async (codProfesor, codSeccion) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/obtenerPonderacionesPorProfesoradmin/${codProfesor}`);
-      
+      const response = await fetch(
+        `http://localhost:4000/api/actividadesAcademicas/obtenerPonderacionesPorProfesoradmin/${codProfesor}/${codSeccion}`
+      );
+  
       if (!response.ok) {
         throw new Error('Error al obtener las ponderaciones del profesor.');
       }
   
       const data = await response.json();
+      console.log('✅ Ponderaciones recibidas:', data);
       setlistaponderacionesC(data);
     } catch (error) {
       console.error('Error al obtener las ponderaciones:', error);
@@ -407,10 +410,17 @@ const VistaActividadesAcademicasAdmin = () => {
   
   // Llamar la función cuando tengas el profesor seleccionado
   useEffect(() => {
-    if (selectedProfesor?.Cod_profesor) {
-      fetchListaCiclo(selectedProfesor.Cod_profesor);
+    console.log("🧩 Profesor:", selectedProfesor?.Cod_profesor);
+    console.log("🧩 Sección:", selectedSeccion?.Cod_secciones); // ← Cambio aquí
+  
+    if (selectedProfesor?.Cod_profesor && selectedSeccion?.Cod_secciones) {
+      fetchListaCiclo(selectedProfesor.Cod_profesor, selectedSeccion.Cod_secciones); // ← Y aquí
     }
-  }, [selectedProfesor]);
+  }, [selectedProfesor, selectedSeccion]);
+  
+  useEffect(() => {
+    console.log('Ponderaciones cargadas:', listaponderacionesC);
+  }, [listaponderacionesC]);
   
   // Función para manejar cambios en el input
   const handleInputChange = (e, setFunction) => {
@@ -845,6 +855,8 @@ const generarReporteExcel = () => {
     });
     setUpdateModalVisible(true);
   };
+
+  
 
   // Asegúrate de que `abrirModalCrearActividad` se llama correctamente
   const abrirModalCrearActividad = () => {

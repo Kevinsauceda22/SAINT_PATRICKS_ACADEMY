@@ -420,12 +420,13 @@ export const obtenerPonderacionesPorProfesor = async (req, res) => {
         // Decodificar el token
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
         const codPersona = decodedToken.cod_persona;
+        const { codSeccion } = req.params;
         if (!codPersona) {
             return res.status(400).json({ mensaje: 'El token no contiene cod_persona' });
         }
 
         // Llamar al procedimiento almacenado para obtener las ponderaciones
-        const [ponderaciones] = await pool.query('CALL ObtenerPonderacionesPorProfesor(?)', [codPersona]);
+        const [ponderaciones] = await pool.query('CALL ObtenerPonderacionesPorProfesor(?,?)', [codPersona, codSeccion]);
 
         if (ponderaciones.length === 0) {
             return res.status(404).json({ mensaje: 'No se encontraron ponderaciones para el profesor' });
@@ -442,14 +443,14 @@ export const obtenerPonderacionesPorProfesor = async (req, res) => {
 // En tu controlador (ej: actividadesAcademicasController.js)
 export const obtenerPonderacionesPorProfesorAdmin = async (req, res) => {
     try {
-        const { codProfesor } = req.params;
+        const { codProfesor, codSeccion } = req.params;
         
         if (!codProfesor) {
             return res.status(400).json({ mensaje: 'Código de profesor no proporcionado' });
         }
 
         // Llamar al procedimiento almacenado para obtener las ponderaciones
-        const [ponderaciones] = await pool.query('CALL ObtenerPonderacionesPorProfesorAdmin(?)', [codProfesor]);
+        const [ponderaciones] = await pool.query('CALL ObtenerPonderacionesPorProfesorAdmin(?,?)', [codProfesor, codSeccion]);
 
         if (ponderaciones.length === 0) {
             return res.status(404).json({ mensaje: 'No se encontraron ponderaciones para el profesor' });

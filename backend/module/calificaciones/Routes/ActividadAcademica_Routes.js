@@ -50,9 +50,9 @@ router.get('/porProfesorYAsignatura/:Cod_profesor/:Cod_grados_asignaturas/:Cod_p
 
 router.get('/actividadesporparcialseccion', obtenerActividadesPorFiltro);
 
-router.get('/obtenerPonderacionesPorProfesor', obtenerPonderacionesPorProfesor);
+router.get('/obtenerPonderacionesPorProfesor/:codSeccion', obtenerPonderacionesPorProfesor);
 
-router.get('/obtenerPonderacionesPorProfesoradmin/:codProfesor', obtenerPonderacionesPorProfesorAdmin);
+router.get('/obtenerPonderacionesPorProfesoradmin/:codProfesor/:codSeccion', obtenerPonderacionesPorProfesorAdmin);
 
 // Ruta para obtener valores disponibles
 router.get("/valoresPorPonderacionCiclo", obtenerValoresPorPonderacionCiclo);
