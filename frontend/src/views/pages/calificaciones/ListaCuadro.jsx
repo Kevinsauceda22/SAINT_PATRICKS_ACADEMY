@@ -1832,6 +1832,10 @@ return (
       setNombreEstudiante('');
       setIdentidadEstudiante('');
       setCuadroNotas([]);
+      // Limpiar filtros y paginación de estudiantes
+      setSearchTerm3('');
+      setCurrentPage3(1);
+      setRecordsPerPage3(10);
     }} // Regresa a la vista de estudiantes
   >
     <CIcon icon={cilArrowLeft} /> Volver a Estudiantes
