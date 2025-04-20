@@ -246,7 +246,7 @@ export const obtenerActividadesPorAsignatura = async (req, res) => {
                 Fechayhora_Fin,
                 Valor,
                 Cod_secciones,
-                Cod_grados_asignaturass
+                Cod_grados_asignaturas
             ]
         );
 
