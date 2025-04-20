@@ -2139,8 +2139,6 @@ return (
               })}
                 <CTableDataCell className="text-center"></CTableDataCell>
                 <CTableDataCell className="text-center"></CTableDataCell>
-                <CTableDataCell className="text-center"></CTableDataCell>
-                <CTableDataCell className="text-center"></CTableDataCell>
           </CTableRow>
           </>
           ) : (

@@ -2108,7 +2108,7 @@ return (
             </CTableDataCell>
           ))
         }
-        
+
         {/* Celdas Recuperación */}
         {nota.NotasParciales
           .filter(p => p.Parcial.match(/recu/i))
@@ -2144,8 +2144,6 @@ return (
             </CTableDataCell>
           );
         })}
-          <CTableDataCell className="text-center"></CTableDataCell>
-          <CTableDataCell className="text-center"></CTableDataCell>
           <CTableDataCell className="text-center"></CTableDataCell>
           <CTableDataCell className="text-center"></CTableDataCell>
     </CTableRow>
