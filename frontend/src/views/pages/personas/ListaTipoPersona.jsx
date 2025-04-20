@@ -1086,6 +1086,7 @@ const exportToExcel = () => {
             handleTipoPersonaInputChange(e, setTipoPersonaToUpdate) // Adaptado para Tipo Persona
           }
           onKeyDown={handleTipoPersonaKeyDown} 
+          onBlur={isDuplicateTipoPersona}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>

@@ -56,10 +56,7 @@ const ListaTipoRelacion = () => {
   const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchTipoRelacion();
-  }, []);
-  
+
 {/****************************************************************************************************************************************/}
 const fetchTipoRelacion = async () => {
   try {
@@ -87,6 +84,11 @@ const fetchTipoRelacion = async () => {
     console.error('Error al obtener tipo relación:', error);
   }
 };
+
+useEffect(() => {
+  fetchTipoRelacion();
+}, []);
+
 
 {/**************************************************************************************************************************************/}
 
@@ -204,6 +206,7 @@ const capitalizeWords = (str) => {
     setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
   };
   
+  {/***********************************************************************************************************************************/}
   const handleTipoRelacionKeyDown = (event) => {
     const char = event.key;
     
@@ -1036,6 +1039,7 @@ const exportToExcel = () => {
           value={tipoRelacionToUpdate.tipo_relacion}
           onChange={(e) => handleTipoRelacionInputChange(e, setTipoRelacionToUpdate)}
           onKeyDown={handleTipoRelacionKeyDown} 
+          onBlur={isDuplicateRelacion}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1071,6 +1075,7 @@ const exportToExcel = () => {
           </CButton>
         </CModalFooter>
       </CModal>
+      
 {/**************************************************************************************************************************************/}
     </CContainer>
   )

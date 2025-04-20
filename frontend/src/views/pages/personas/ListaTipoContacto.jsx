@@ -1037,6 +1037,7 @@ if (!canSelect) {
           value={tipoContactoToUpdate.tipo_contacto}
           onChange={(e) => handleTipoContactoInputChange(e, setTipoContactoToUpdate)}
           onKeyDown={handleTipoContactoKeyDown } 
+          onBlur={isDuplicateTipoContacto}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>

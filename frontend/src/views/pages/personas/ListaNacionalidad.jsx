@@ -1061,7 +1061,7 @@ const validateEmptyFields = () => {
           value={nuevaNacionalidad.Id_nacionalidad}
           onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad)}
           onKeyDown={handleNacionalidadKeyDown} 
-
+          onBlur={isDuplicateNacionalidad}  
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1078,6 +1078,7 @@ const validateEmptyFields = () => {
           value={nuevaNacionalidad.pais_nacionalidad}
           onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad)}
           onKeyDown={handleNacionalidadKeyDown} 
+          onBlur={isDuplicateNacionalidad}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1094,6 +1095,7 @@ const validateEmptyFields = () => {
           value={nuevaNacionalidad.pais}
           onChange={(e) => handleNacionalidadInputChange(e, setNuevaNacionalidad)}
           onKeyDown={handleNacionalidadKeyDown} 
+          onBlur={isDuplicateNacionalidad}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1131,6 +1133,7 @@ const validateEmptyFields = () => {
           value={nacionalidadToUpdate.Id_nacionalidad}
           onChange={(e) => handleNacionalidadInputChange(e, setNacionalidadToUpdate)}
           onKeyDown={handleNacionalidadKeyDown} 
+          onBlur={isDuplicateNacionalidad}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1149,6 +1152,7 @@ const validateEmptyFields = () => {
           value={nacionalidadToUpdate.pais_nacionalidad}
           onChange={(e) => handleNacionalidadInputChange(e, setNacionalidadToUpdate)}
           onKeyDown={handleNacionalidadKeyDown} 
+          onBlur={isDuplicateNacionalidad}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
@@ -1167,6 +1171,7 @@ const validateEmptyFields = () => {
           value={nacionalidadToUpdate.pais}
           onChange={(e) => handleNacionalidadInputChange(e, setNacionalidadToUpdate)}
           onKeyDown={handleNacionalidadKeyDown} 
+          onBlur={isDuplicateNacionalidad}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>

@@ -1138,7 +1138,6 @@ const exportToExcel = () => {
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           value={nuevoDocumento.tipo_documento}
-
           onChange={(e) => handleTipoDocumentoInputChange(e, setNuevoDocumento, setDocumentoError)}
           onBlur={isDuplicateTipoDocumento}
           onKeyDown={handleTipoDocumentoKeyDown}
@@ -1218,6 +1217,7 @@ const exportToExcel = () => {
           value={tipoDocumentoToUpdate.tipo_documento}
           onChange={(e) => handleTipoDocumentoInputChange(e, setTipoDocumentoToUpdate)}
           onKeyDown={handleTipoDocumentoKeyDown}
+          onBlur={isDuplicateTipoDocumento}
           style={{
             textTransform: 'uppercase',
             color: 'black',

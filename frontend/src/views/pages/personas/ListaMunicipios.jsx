@@ -1181,6 +1181,7 @@ const exportMunicipiosToExcel = () => {
           value={municipioToUpdate.Nombre_municipio}
           onChange={(e) => handleMunicipioInputChange(e, setMunicipioToUpdate)}
           onKeyDown={handleMunicipioKeyDown} 
+          onBlur={isDuplicateMunicipio}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>

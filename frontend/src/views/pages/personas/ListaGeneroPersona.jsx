@@ -135,8 +135,8 @@ const capitalizeWords = (str) => {
 
 // Validar que ningún campo esté vacío
 const validateEmptyFields = () => {
-  const { tipo_genero } = nuevoGenero; // Ajuste al campo tipo_genero
-  if (!tipo_genero) {
+  const { Tipo_genero } = nuevoGenero; // Ajuste al campo tipo_genero
+  if (!Tipo_genero) {
     swal.fire({
       icon: 'warning',
       title: 'Campos vacíos',
@@ -151,10 +151,10 @@ const validateEmptyFields = () => {
 
 // Validar si el género ya existe
 const isDuplicateGenero = () => {
-  const { tipo_genero } = nuevoGenero;
+  const { Tipo_genero } = nuevoGenero;
   const existingGenero = generoPersona.find(
     (genero) =>
-      genero.tipo_genero.toLowerCase() === tipo_genero.toLowerCase()
+      genero.Tipo_genero.toLowerCase() === Tipo_genero.toLowerCase()
   );
 
   if (existingGenero) {
@@ -207,7 +207,7 @@ const handleTipoGeneroInputChange = (e, setFunction) => {
 
   setFunction((prevState) => ({
     ...prevState,
-    tipo_genero: value,
+    Tipo_genero: value,
   }));
 
   setHasUnsavedChanges(true); // Marcar que hay cambios no guardados
@@ -279,11 +279,11 @@ const handleCloseModal = (closeFunction, resetFields) => {
 {/**************************************************************************************************************************************/}
 
 const resetNuevoGenero = () => {
-  setNuevoGenero({ tipo_genero: '' });
+  setNuevoGenero({ Tipo_genero: '' });
 };
 
 const resetGeneroToUpdate = () => {
-  setGeneroToUpdate({ tipo_genero: '' });
+  setGeneroToUpdate({ Tipo_genero: '' });
 };
 
 
@@ -291,7 +291,7 @@ const resetGeneroToUpdate = () => {
 
 const handleCreateGenero = async () => {
   // Validar el tipo de género antes de enviarlo
-  const generoCapitalizado = capitalizeWords(nuevoGenero.tipo_genero.trim().replace(/\s+/g, ' '));
+  const generoCapitalizado = capitalizeWords(nuevoGenero.Tipo_genero.trim().replace(/\s+/g, ' '));
 
   // Validaciones antes de crear
   if (!validateTipoGenero(generoCapitalizado)) {
@@ -305,7 +305,7 @@ const handleCreateGenero = async () => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        tipo_genero: generoCapitalizado,  // Usamos el género validado
+        Tipo_genero: generoCapitalizado,  // Usamos el género validado
         estado: 1, // Género activo por defecto
       }),
     });
@@ -316,7 +316,7 @@ const handleCreateGenero = async () => {
         result = await response.json(); // Intentamos obtener el JSON de la respuesta
       } catch (error) {
         console.warn("La API no devolvió JSON, pero el género fue creado.");
-        result = { tipo_genero: generoCapitalizado }; // Asumimos que se creó correctamente
+        result = { Tipo_genero: generoCapitalizado }; // Asumimos que se creó correctamente
       }
 
       // Actualiza la lista sin recargar la página
@@ -350,7 +350,7 @@ const handleCreateGenero = async () => {
 
 {/**************************************************************************************************************************************/}
 const handleUpdateGenero = async () => {
-  const generoCapitalizado = capitalizeWords(generoToUpdate.tipo_genero.trim().replace(/\s+/g, ' '));
+  const generoCapitalizado = capitalizeWords(generoToUpdate.Tipo_genero.trim().replace(/\s+/g, ' '));
 
   if (!validateTipoGenero(generoCapitalizado)) {
     return;
@@ -364,7 +364,7 @@ const handleUpdateGenero = async () => {
       },
       body: JSON.stringify({
         Cod_genero: generoToUpdate.Cod_genero,
-        tipo_genero: generoCapitalizado,
+        Tipo_genero: generoCapitalizado,
         estado: generoToUpdate.estado,  // Mantener el estado o modificarlo
       }),
     });
@@ -1091,7 +1091,7 @@ const exportToExcel = () => {
     <CModalTitle>Eliminar Género</CModalTitle>
   </CModalHeader>
   <CModalBody>
-    ¿Estás seguro de que deseas eliminar el género "{generoToDelete.tipo_genero}"?
+    ¿Estás seguro de que deseas eliminar el género "{generoToDelete.Tipo_genero}"?
   </CModalBody>
   <CModalFooter>
     <CButton color="secondary" onClick={() => setModalDeleteVisible(false)}>

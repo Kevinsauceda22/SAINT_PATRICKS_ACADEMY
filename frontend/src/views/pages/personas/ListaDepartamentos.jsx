@@ -1064,6 +1064,7 @@ const exportDepartamentosToExcel = () => {
           value={departamentoToUpdate.Nombre_departamento}
           onChange={(e) => handleDepartamentoInputChange(e, setDepartamentoToUpdate)}
           onKeyDown={handleDepartamentoKeyDown} 
+          onBlur={isDuplicateDepartamento}
           style={{ textTransform: 'uppercase' }}
         />
       </CInputGroup>
