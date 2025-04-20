@@ -1227,7 +1227,7 @@ const generarExcelFiel = async () => {
     worksheet.mergeCells('B8:C8'); // Fusionar celdas B8 y C8
 
     const gradoCell = worksheet.getCell('B8');
-    gradoCell.value = ` Grade:  ${gradoSeleccionado}`;
+    gradoCell.value = `    Grade:  ${gradoSeleccionado}`;
     gradoCell.style = styles.textoNegrita; // o combiná estilo negrita con normal si querés diferencia
 
     //worksheet.mergeCells(`C8:D8`);
@@ -1258,7 +1258,7 @@ const generarExcelFiel = async () => {
 
       // Encabezados de la tabla - fila 8
     const headerRow1 = worksheet.getRow(startRowParciales);
-    headerRow1.height = 25;
+    headerRow1.height = 18;
         // Áreas curriculares
     const areaCell = headerRow1.getCell(2);
     areaCell.value = "ÁREAS CURRICULARES/\nCAMPOS DEL CONOCIMIENTO";
@@ -1293,7 +1293,7 @@ const generarExcelFiel = async () => {
 
         // Subencabezados de parciales normales (fila 9) con fechas
     const headerRow2 = worksheet.getRow(startRowParciales + 1);
-    headerRow2.height = 14;
+    headerRow2.height = 20;
 
     parcialesNormales.forEach((parcial, i) => {
       const cell = headerRow2.getCell(startColParciales + i);
