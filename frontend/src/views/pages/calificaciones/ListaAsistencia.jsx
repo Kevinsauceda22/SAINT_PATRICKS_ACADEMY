@@ -1878,7 +1878,7 @@ const fetchRecuentoAsistencias = async () => {
               <CTableBody>
                 {asistenciasFiltradas.map((asistencia, index) => (
                   <CTableRow key={asistencia.Cod_asistencias}>
-                    <CTableDataCell className="text-center" style={{ fontSize: '1rem', padding: '3px', verticalAlign: 'middle' }}>{index + 1}</CTableDataCell>
+                    <CTableDataCell className="text-center" style={{ fontSize: '1rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.originalIndex}</CTableDataCell>
                     <CTableDataCell style={{ fontSize: '0.92rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.Nombre_Completo}</CTableDataCell>
                     <CTableDataCell style={{ fontSize: '0.92rem', padding: '3px', verticalAlign: 'middle' }}>{formatDateTime(asistencia.Fecha)}</CTableDataCell>
                     <CTableDataCell style={{ fontSize: '0.92rem', padding: '3px', verticalAlign: 'middle' }}>{asistencia.DescripcionEstado}</CTableDataCell>
