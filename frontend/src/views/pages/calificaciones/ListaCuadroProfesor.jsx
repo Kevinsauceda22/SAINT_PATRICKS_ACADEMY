@@ -894,7 +894,7 @@ const espacioAntesTabla = 6; // Aumenté de 10mm a 15mm (ajusta este valor)
         // Notas de recuperaciones (todas)
         ...recuperaciones.map(recup => {
           const notaRecup = nota.NotasParciales.find(p => p.Parcial === recup.Parcial);
-          return notaRecup?.Nota || "-";
+          return notaRecup?.Nota || " ";
         }),
         // Nota final
         nota.PromedioFinal
@@ -902,7 +902,7 @@ const espacioAntesTabla = 6; // Aumenté de 10mm a 15mm (ajusta este valor)
       // Fila de promedios
       [
         { content: "PROMEDIO", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
-        // Promedios por parcial normal
+        // Promedios por parcial normal (solo estos se calculan)
         ...(cuadroNotas[0]?.NotasParciales
           .filter(p => !p.Parcial.match(/recu/i))
           .map((parcial, i) => {
@@ -916,14 +916,14 @@ const espacioAntesTabla = 6; // Aumenté de 10mm a 15mm (ajusta este valor)
               styles: { fontStyle: 'bold', fillColor: [240, 240, 240] }
             };
           }) || []),
-        // Celdas vacías para recuperaciones
+        // Celdas vacías para recuperaciones (no se calculan)
         ...recuperaciones.map(() => ({
-          content: "-",
+          content: " ",
           styles: { fontStyle: 'bold', fillColor: [240, 240, 240] }
         })),
-        // Promedio final
+        // Celda vacía para nota final (no se calcula)
         { 
-          content: (cuadroNotas.reduce((acc, nota) => acc + (parseFloat(nota.PromedioFinal) || 0), 0) / cuadroNotas.length).toFixed(2),
+          content: " ",
           styles: { fontStyle: 'bold', fillColor: [240, 240, 240] }
         }
       ]
@@ -935,14 +935,14 @@ const espacioAntesTabla = 6; // Aumenté de 10mm a 15mm (ajusta este valor)
       halign: 'center',
       valign: 'middle',
       lineColor: [0, 0, 0],
-      lineWidth: 0.2,
+      lineWidth: 0.4,
       textColor: [0, 0, 0]
     },
     headStyles: {
       fillColor: styles.encabezadoTabla.fill,
       textColor: styles.encabezadoTabla.color,
       fontStyle: 'bold',
-      lineWidth: 0.3,
+      lineWidth: 0.4,
       fontSize: '8',
       font:'times'
     },
@@ -1114,20 +1114,20 @@ const generarExcelFiel = async () => {
         fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'BFBFBF' } },
         alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
         border: {
-          top: { style: 'thin', color: { argb: '000000' } },
-          left: { style: 'thin', color: { argb: '000000' } },
-          right: { style: 'thin', color: { argb: '000000' } },
-          bottom: { style: 'thin', color: { argb: '000000' } }
+          top: { style: 'medium', color: { argb: '000000' } },    
+          left: { style: 'medium', color: { argb: '000000' } },  
+          right: { style: 'medium', color: { argb: '000000' } },  
+          bottom: { style: 'medium', color: { argb: '000000' } }  
         }
       },
       cuerpoTabla: {
         font: { name: 'Times New Roman', size: 8 },
         alignment: { vertical: 'middle' },
         border: {
-          top: { style: 'thin', color: { argb: '000000' } },
-          left: { style: 'thin', color: { argb: '000000' } },
-          right: { style: 'thin', color: { argb: '000000' } },
-          bottom: { style: 'thin', color: { argb: '000000' } }
+          top: { style: 'medium', color: { argb: '000000' } },
+          left: { style: 'medium', color: { argb: '000000' } },
+          right: { style: 'medium', color: { argb: '000000' } },
+          bottom: { style: 'medium', color: { argb: '000000' } }
         }
       },
       promedioTabla: {
@@ -1135,10 +1135,10 @@ const generarExcelFiel = async () => {
         fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F0F0F0' } },
         alignment: { horizontal: 'center', vertical: 'middle' },
         border: {
-          top: { style: 'thin', color: { argb: '000000' } },
-          left: { style: 'thin', color: { argb: '000000' } },
-          right: { style: 'thin', color: { argb: '000000' } },
-          bottom: { style: 'thin', color: { argb: '000000' } }
+          top: { style: 'medium', color: { argb: '000000' } },
+          left: { style: 'medium', color: { argb: '000000' } },
+          right: { style: 'medium', color: { argb: '000000' } },
+          bottom: { style: 'medium', color: { argb: '000000' } }
         }
       }
     };
@@ -1225,7 +1225,7 @@ const generarExcelFiel = async () => {
     worksheet.mergeCells('B8:C8'); // Fusionar celdas B8 y C8
 
     const gradoCell = worksheet.getCell('B8');
-    gradoCell.value = `         Grade:  ${gradoSeleccionado}`;
+    gradoCell.value = ` Grade:  ${gradoSeleccionado}`;
     gradoCell.style = styles.textoNegrita; // o combiná estilo negrita con normal si querés diferencia
 
     //worksheet.mergeCells(`C8:D8`);
@@ -1235,7 +1235,7 @@ const generarExcelFiel = async () => {
 
     // Asignar valor a la celda combinada
     const seccionCell = worksheet.getCell('E8');
-    seccionCell.value = `        Section:    ${nombreSeccionSeleccionada}`;
+    seccionCell.value = `Section:    ${nombreSeccionSeleccionada}`;
     seccionCell.style = styles.textoNegrita; // o styles.textoNormal si no querés que esté en negrita
 
     // (Opcional) Centrado o alineación a la izquierda
@@ -1245,7 +1245,7 @@ const generarExcelFiel = async () => {
     // Fusionar celdas F8 y G8
     worksheet.mergeCells('H8:J8');
     const añoLabelCell = worksheet.getCell('H8');
-    añoLabelCell.value = `     School year:   ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+    añoLabelCell.value = `School year:   ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
     añoLabelCell.style = styles.textoNegrita;
     
 
@@ -1331,7 +1331,7 @@ const generarExcelFiel = async () => {
         const col = startColRecuperaciones + i;
         const notaRecup = nota.NotasParciales.find(p => p.Parcial === recup.Parcial);
         const cell = row.getCell(col);
-        cell.value = notaRecup?.Nota || "-";
+        cell.value = notaRecup?.Nota || " ";
         cell.style = {
           ...styles.cuerpoTabla,
           alignment: { horizontal: 'center', vertical: 'middle' }
@@ -1348,17 +1348,17 @@ const generarExcelFiel = async () => {
     });
 
    // Fila de promedios
-  const promedioRow = worksheet.addRow([]);
-  promedioRow.height = 20;
+    const promedioRow = worksheet.addRow([]);
+    promedioRow.height = 20;
 
-  // Celda "PROMEDIO" combinando A y B
-  const promedioLabelCell = promedioRow.getCell(2);
-  promedioLabelCell.value = "PROMEDIO";
-  promedioLabelCell.style = styles.promedioTabla;
-  worksheet.mergeCells(`B${promedioRow.number}:C${promedioRow.number}`); // Combinar A y B
+    // Celda "PROMEDIO" combinando A y B
+    const promedioLabelCell = promedioRow.getCell(2);
+    promedioLabelCell.value = "PROMEDIO";
+    promedioLabelCell.style = styles.promedioTabla;
+    worksheet.mergeCells(`B${promedioRow.number}:C${promedioRow.number}`); // Combinar A y B
 
 
-    // Promedios por parcial normal
+    // Promedios por parcial normal (solo estos se calculan)
     parcialesNormales.forEach((parcial, i) => {
       const sum = cuadroNotas.reduce((acc, nota) => {
         const notaParcial = nota.NotasParciales.find(np => np.Parcial === parcial.Parcial);
@@ -1371,19 +1371,17 @@ const generarExcelFiel = async () => {
       cell.style = styles.promedioTabla;
     });
 
-    // Celdas vacías para recuperaciones
+    // Celdas vacías para recuperaciones (no se calculan)
     recuperaciones.forEach((_, i) => {
       const col = startColRecuperaciones + i;
       const cell = promedioRow.getCell(col);
-      cell.value = "-";
+      cell.value = " "; // o "N/A" si prefieres
       cell.style = styles.promedioTabla;
     });
 
-    // Promedio final
-    const promedioFinal = (cuadroNotas.reduce((acc, nota) => 
-      acc + (parseFloat(nota.PromedioFinal) || 0), 0) / cuadroNotas.length).toFixed(2);
+    // Celda vacía para nota final (no se calcula)
     const promedioFinalCell = promedioRow.getCell(notaFinalCol);
-    promedioFinalCell.value = promedioFinal;
+    promedioFinalCell.value = " "; // o "N/A" o dejar vacío ""
     promedioFinalCell.style = styles.promedioTabla;
 
     // Ajustar anchos de columnas
