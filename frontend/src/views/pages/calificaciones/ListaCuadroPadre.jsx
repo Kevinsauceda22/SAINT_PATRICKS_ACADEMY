@@ -602,29 +602,42 @@ return (
           </CTableDataCell>
           </CTableRow>
         ))}
-      {/* Fila de promedios (solo una vez al final) */}
-            <CTableRow style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
-            <CTableDataCell className="text-center" style={{ fontSize: '0.8rem' }}>
-              PROMEDIO
+       {/* Fila de promedios (solo una vez al final) */}
+      <CTableRow style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+        <CTableDataCell className="text-center" style={{ fontSize: '0.8rem' }}>
+          PROMEDIO
+        </CTableDataCell>
+        
+        {/* Promedios solo para parciales regulares */}
+        {cuadroNotas[0].NotasParciales
+          .filter(p => !p.Parcial.match(/recu/i))
+          .map((parcial, i) => {
+            const sum = cuadroNotas.reduce((acc, nota) => {
+              const notaParcial = nota.NotasParciales.find(np => np.Parcial === parcial.Parcial);
+              return acc + (parseFloat(notaParcial?.Nota) || 0);
+            }, 0);
+            const avg = (sum / cuadroNotas.length).toFixed(2);
+            return (
+              <CTableDataCell key={`avg-${i}`} className="text-center">
+                {avg}
+              </CTableDataCell>
+            );
+          })}
+        
+        {/* Celdas vacías para recuperaciones (manteniendo bordes) */}
+        {cuadroNotas[0].NotasParciales
+          .filter(p => p.Parcial.match(/recu/i))
+          .map((_, i) => (
+            <CTableDataCell key={`recup-avg-${i}`} className="text-center">
+              
             </CTableDataCell>
-            
-            {cuadroNotas[0].NotasParciales
-              .filter(p => !p.Parcial.match(/recu/i))
-              .map((parcial, i) => {
-                const sum = cuadroNotas.reduce((acc, nota) => {
-                  const notaParcial = nota.NotasParciales.find(np => np.Parcial === parcial.Parcial);
-                  return acc + (parseFloat(notaParcial?.Nota) || 0);
-                }, 0);
-                const avg = (sum / cuadroNotas.length).toFixed(2);
-                return (
-                  <CTableDataCell key={`avg-${i}`} className="text-center">
-                    {avg}
-                  </CTableDataCell>
-                );
-              })}
-                <CTableDataCell className="text-center"></CTableDataCell>
-                <CTableDataCell className="text-center"></CTableDataCell>
-          </CTableRow>
+          ))}
+        
+        {/* Celda vacía para el promedio final (si es necesario) */}
+        <CTableDataCell className="text-center">
+          
+        </CTableDataCell>
+      </CTableRow>
           </>
           ) : (
             <CTableRow>
