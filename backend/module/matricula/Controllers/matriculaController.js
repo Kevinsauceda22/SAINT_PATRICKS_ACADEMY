@@ -463,38 +463,34 @@ export const obtenerHorarioPorSeccion = async (req, res) => {
 // Controlador para obtener secciones por grado con información adicional, incluyendo el nombre del edificio y número del aula
 export const obtenerSeccionesConDetalles = async (req, res) => {
   const { cod_grado } = req.params;
+  const { anio_academico } = req.query;
+
+  if (!cod_grado || !anio_academico) {
+    return res.status(400).json({ message: 'Grado y año académico son requeridos.' });
+  }
 
   try {
     const [secciones] = await pool.query(
       `SELECT 
         s.Cod_secciones, 
         s.Nombre_seccion, 
-        a.Numero_aula,                  -- Número del aula de TBL_AULA
-        e.Nombre_edificios,             -- Nombre del edificio de TBL_EDIFICIOS
-        p.Nombre AS Nombre_profesor,    -- Nombre del profesor de TBL_PERSONAS
-        p.Primer_apellido AS Apellido_profesor -- Apellido del profesor de TBL_PERSONAS
-      FROM 
-        tbl_secciones AS s
-      LEFT JOIN 
-        tbl_aula AS a ON s.Cod_aula = a.Cod_aula
-      LEFT JOIN 
-        tbl_edificio AS e ON a.Cod_edificio = e.Cod_edificio
-      LEFT JOIN 
-        tbl_profesores AS pr ON s.Cod_profesor = pr.Cod_profesor
-      LEFT JOIN 
-        tbl_personas AS p ON pr.Cod_persona = p.Cod_persona
-      WHERE 
-        s.Cod_grado = ?`, [cod_grado]
+        a.Numero_aula,
+        e.Nombre_edificios,
+        p.Nombre AS Nombre_profesor,
+        p.Primer_apellido AS Apellido_profesor
+      FROM tbl_secciones AS s
+      LEFT JOIN tbl_aula AS a ON s.Cod_aula = a.Cod_aula
+      LEFT JOIN tbl_edificio AS e ON a.Cod_edificio = e.Cod_edificio
+      LEFT JOIN tbl_profesores AS pr ON s.Cod_profesor = pr.Cod_profesor
+      LEFT JOIN tbl_personas AS p ON pr.Cod_persona = p.Cod_persona
+      JOIN tbl_periodo_matricula AS pm ON s.Cod_periodo_matricula = pm.Cod_periodo_matricula
+      WHERE s.Cod_grado = ? AND pm.Anio_academico = ?`,
+      [cod_grado, anio_academico]
     );
 
-    if (secciones.length === 0) {
-      return res.status(200).json({ data: [] }); // Devolver array vacío si no hay secciones
-    }
-
-    // Devolver las secciones con la información adicional
     res.status(200).json({ data: secciones });
   } catch (error) {
-    console.error('Error al obtener secciones por grado:', error);
+    console.error('Error al obtener secciones por grado y año:', error);
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };

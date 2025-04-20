@@ -212,7 +212,7 @@ const ListaEdificios = () => {
         setEdificioToDelete({}); // Limpiar el edificio seleccionado
         swal.fire({ icon: 'success', title: 'Eliminación exitosa', text: 'El edificio ha sido eliminado correctamente.' });
       } else {
-        swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo eliminar el edificio.' });
+        swal.fire({ icon: 'error', title: 'Error', text: 'No se puede eliminar el edificio ya que tiene aulas registradas.' });
       }
     } catch (error) {
       console.error('Error al eliminar el edificio:', error);
@@ -555,9 +555,14 @@ const ListaEdificios = () => {
     });
   
     // 📏 Ancho de columnas
-    worksheet.columns.forEach((column) => {
-      column.width = 25;
-    });
+    worksheet.columns = [
+      { width: 10 },  // #
+      { width: 35 },  // Nombre
+      { width: 20 },  // Número de Pisos
+      { width: 20 },  // Aulas Disponibles
+      { width: 20 },  // Estado
+    ];
+
   
     // 📂 Exportar
     workbook.xlsx.writeBuffer().then((buffer) => {
@@ -821,11 +826,12 @@ const ListaEdificios = () => {
       Limpiar
     </CButton>
   </CInputGroup>
-  <div className="d-flex align-items-center">
+  <div className="d-inline-flex align-items-center">
     <label htmlFor="recordsPerPageSelect" className="mr-2">Mostrar</label>
     <select
       id="recordsPerPageSelect"
       value={recordsPerPage}
+      style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
       onChange={(e) => {
         setRecordsPerPage(Number(e.target.value));
         setCurrentPage(1);
@@ -835,17 +841,18 @@ const ListaEdificios = () => {
       <option value={10}>10</option>
       <option value={15}>15</option>
       <option value={20}>20</option>
+      <option value={100}>100</option>
     </select>
-    <span style={{ marginLeft: '10px' }}>registros</span>
+    <span>&nbsp;registros</span>
   </div>
 </div>
 
 
       {/* Tabla de edificios con tamaño fijo */}
-<div style={{ height: '300px', overflowY: 'scroll', border: '1px solid #ccc', padding: '10px', marginBottom: '30px' }}>
-  <CTable striped>
-    <CTableHead>
-      <CTableRow>
+<div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+        <CTable striped bordered hover>
+          <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
+          <CTableRow>
         <CTableHeaderCell className="text-center" style={{ width: '5%' }}>#</CTableHeaderCell>
         <CTableHeaderCell style={{ width: '30%' }}>Nombre del Edificio</CTableHeaderCell>
         <CTableHeaderCell className="text-center" style={{ width: '15%' }}>Número de Pisos</CTableHeaderCell>
@@ -879,16 +886,16 @@ const ListaEdificios = () => {
               
               {/* Botón Activar/Inactivar */}
               <CButton
-  style={{
-    backgroundColor: edificio.Estado === 1 ? '#4CAF50' : '#F44336',
-    color: 'white',
-    marginRight: '10px',
-  }}
-  onClick={() => actualizarEstado(edificio)}
-  disabled={loading}
->
-  {loading ? 'Cambiando...' : edificio.Estado === 1 ? 'Activo' : 'Inactivo'}
-</CButton>
+                  style={{
+                    backgroundColor: edificio.Estado === 1 ? '#4CAF50' : '#F44336',
+                    color: 'white',
+                    marginRight: '10px',
+                  }}
+                  onClick={() => actualizarEstado(edificio)}
+                  disabled={loading}
+                >
+                  {loading ? 'Cambiando...' : edificio.Estado === 1 ? 'Activo' : 'Inactivo'}
+                </CButton>
 
 
                 {canDelete && (

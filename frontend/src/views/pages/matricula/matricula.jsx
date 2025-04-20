@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // Importa useNavigate de react-router-dom
 import Swal from 'sweetalert2';
-import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilBrushAlt, cilFile, cilInfo,   cilArrowCircleBottom,
-} from '@coreui/icons';
+import { cilSearch, cilPen, cilTrash, cilPlus, cilSave, cilBrushAlt, cilFile, cilInfo, cilArrowCircleBottom, cilSpreadsheet, cilDescription,} from '@coreui/icons';
 import CIcon from '@coreui/icons-react';
 import {
   CButton,
@@ -40,6 +39,8 @@ import { cilUser, cilCalendar, cilCheckCircle, cilUserFemale, cilEducation, cilS
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import usePermission from '../../../../context/usePermission';
@@ -421,7 +422,6 @@ const resetFormularioMatricula = () => {
 const handleSubmit = async (e) => {
   e.preventDefault();
 
-  // Crear el objeto con los datos necesarios para el backend
   const dataToSend = {
     dni_padre: dniPadre,
     fecha_matricula: matriculaData.fecha_matricula,
@@ -433,7 +433,6 @@ const handleSubmit = async (e) => {
     cod_hijo: matriculaData.cod_hijo,
   };
 
-  // Lista de campos requeridos
   const requiredFields = [
     'dni_padre',
     'cod_grado',
@@ -443,30 +442,30 @@ const handleSubmit = async (e) => {
     'cod_hijo',
   ];
 
-  // Verificar campos requeridos
   const missingFields = requiredFields.filter((field) => !dataToSend[field]);
   if (missingFields.length > 0) {
-    Swal.fire(
-      'Error',
-      `Los siguientes campos son requeridos: ${missingFields.join(', ')}.`,
-      'error'
-    );
+    Swal.fire({
+      icon: 'warning',
+      title: 'Campos requeridos',
+      text: `Faltan los siguientes campos: ${missingFields.join(', ')}.`,
+    });
     return;
   }
 
-  // Validar que la fecha de matrícula esté asignada automáticamente
   if (!dataToSend.fecha_matricula) {
-    Swal.fire('Error', 'La fecha de matrícula no está asignada automáticamente.', 'error');
+    Swal.fire({
+      icon: 'warning',
+      title: 'Fecha no asignada',
+      text: 'La fecha de matrícula no está asignada automáticamente.',
+    });
     return;
   }
 
-  // Obtener el año académico del período actual
   const periodoActual = opciones?.periodos_matricula?.find(
     (p) => p.Cod_periodo_matricula === dataToSend.cod_periodo_matricula
   );
   const anioAcademicoActual = periodoActual?.Anio_academico;
 
-  // Validar localmente si ya existe una matrícula en este año para este alumno
   const existeMatriculaEnAnio = matriculas.some(
     (matricula) =>
       matricula.cod_hijo === dataToSend.cod_hijo &&
@@ -475,73 +474,76 @@ const handleSubmit = async (e) => {
 
   if (existeMatriculaEnAnio) {
     Swal.fire({
-      title: 'Advertencia',
-      text: `El alumno ya está matriculado en el período académico ${anioAcademicoActual}. No se puede registrar más de una vez en el mismo período.`,
-      icon: 'warning',
+      icon: 'error',
+      title: 'Matrícula duplicada',
+      text: `El estudiante ya está matriculado en el período académico ${anioAcademicoActual}. No se puede registrar dos veces en el mismo período.`,
     });
     return;
   }
 
   try {
-    // Realizar la solicitud al backend
-    const response = await axios.post('http://localhost:4000/api/matricula/crearmatricula', dataToSend);
+    const response = await axios.post(
+      'http://localhost:4000/api/matricula/crearmatricula',
+      dataToSend
+    );
 
     if (response.status === 201) {
       const message = response.data.message;
 
-      // Mostrar alerta de éxito simple
       Swal.fire({
-        title: 'Éxito',
-        text: message,
         icon: 'success',
+        title: 'Matrícula registrada',
+        text: message || 'La matrícula fue creada exitosamente.',
+        timer: 2500,
+        showConfirmButton: false,
       });
 
-      // Registrar en la bitácora
       await registrarEnBitacora(
         'INSERT',
         `Creó una matrícula para el estudiante con código ${dataToSend.cod_hijo} en el período ${dataToSend.cod_periodo_matricula}.`
       );
 
-      // Reiniciar el modal y los estados del formulario
-     // Reiniciar el modal y los estados del formulario
-setModalVisible(false);
-setStep(1);
-setMatriculaData({
-  fecha_matricula: getCurrentDate(),
-  cod_grado: '',
-  cod_seccion: '',
-  cod_estado_matricula: estadoPorDefecto?.Cod_estado_matricula || '',
-  cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
-  cod_tipo_matricula: tipoPorDefecto?.Cod_tipo_matricula || '',
-  cod_hijo: '',
-  primer_nombre_hijo: '',
-  segundo_nombre_hijo: '',
-  primer_apellido_hijo: '',
-  segundo_apellido_hijo: '',
-  fecha_nacimiento_hijo: '',
-  nombre_completo_hijo: '',
-});
-setDniPadre('');
-setNombrePadre('');
-setApellidoPadre('');
-setSelectedGrado('');
-setSelectedSeccion('');
-obtenerMatriculas();
-
+      // Reiniciar todo el formulario después del registro exitoso
+      setModalVisible(false);
+      setStep(1);
+      setMatriculaData({
+        fecha_matricula: getCurrentDate(),
+        cod_grado: '',
+        cod_seccion: '',
+        cod_estado_matricula: estadoPorDefecto?.Cod_estado_matricula || '',
+        cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
+        cod_tipo_matricula: tipoPorDefecto?.Cod_tipo_matricula || '',
+        cod_hijo: '',
+        primer_nombre_hijo: '',
+        segundo_nombre_hijo: '',
+        primer_apellido_hijo: '',
+        segundo_apellido_hijo: '',
+        fecha_nacimiento_hijo: '',
+        nombre_completo_hijo: '',
+      });
+      setDniPadre('');
+      setNombrePadre('');
+      setApellidoPadre('');
+      setSelectedGrado('');
+      setSelectedSeccion('');
+      obtenerMatriculas(); // refrescar la tabla
     }
   } catch (error) {
-    const errorMessage = error.response?.data?.message || error.message || 'Error al crear la matrícula.';
+    const errorMessage =
+      error.response?.data?.message || error.message || 'Error al crear la matrícula.';
     console.error('Error al crear la matrícula:', errorMessage);
 
-    // Registrar en la bitácora el error
-    await registrarEnBitacora(
-      'Error',
-      `Error al crear matrícula: ${errorMessage}`
-    );
+    await registrarEnBitacora('Error', `Error al crear matrícula: ${errorMessage}`);
 
-    Swal.fire('Error', errorMessage, 'error');
+    Swal.fire({
+      icon: 'error',
+      title: 'Error al registrar matrícula',
+      text: errorMessage,
+    });
   }
 };
+
+
 
 
 
@@ -574,16 +576,29 @@ const getCurrentDate = () => {
   };
   
   
+ 
 
-  const filteredMatriculas = matriculas.filter((matricula) =>
-    matricula.codificacion_matricula.toLowerCase().includes(searchTerm)
-  );
-
+  const filteredMatriculas = matriculas.filter((matricula) => {
+    const search = searchTerm.toLowerCase();
+  
+    const nombreCompleto = `${matricula.Nombre_Hijo} ${matricula.Apellido_Hijo}`.toLowerCase();
+    const anio = String(matricula.Anio_academico || '').toLowerCase();
+    const cod = (matricula.codificacion_matricula || '').toLowerCase();
+    const estado = (opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || '').toLowerCase();
+  
+    return (
+      nombreCompleto.includes(search) ||
+      anio.includes(search) ||
+      cod.includes(search) ||
+      estado.includes(search)
+    );
+  });
+  
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredMatriculas.slice(indexOfFirstItem, indexOfLastItem);
-
-
+  
+  
   useEffect(() => {
     obtenerOpciones();
     obtenerMatriculas();
@@ -726,58 +741,111 @@ const getCurrentDate = () => {
         Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
     };
 };
-const exportToExcel = () => {
-  const workbook = XLSX.utils.book_new();
+const exportToExcel = async () => {
+  const filteredData = searchTerm.trim() !== ''
+    ? matriculas.filter((matricula) => {
+        const fullName = `${matricula.Nombre_Hijo || ''} ${matricula.Apellido_Hijo || ''}`.toLowerCase();
+        const cod = (matricula.codificacion_matricula || '').toLowerCase();
+        const estado = (opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || '').toLowerCase();
+        const anio = (opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || '').toLowerCase();
 
-  // Datos de las matrículas con encabezado
-  const worksheetData = [
-      ['#', 'Cod Matrícula', 'Fecha Matrícula', 'Estado', 'Período', 'Grado', 'Sección'],
-      ...matriculas.map((matricula, index) => [
-          index + 1,
-          matricula.codificacion_matricula,
-          matricula.fecha_matricula.split('T')[0],
-          opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A',
-          opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A',
-          matricula.Nombre_grado || 'N/A',
-          matricula.Nombre_seccion || 'N/A',
-      ])
-  ];
+        return (
+          fullName.includes(searchTerm.toLowerCase()) ||
+          cod.includes(searchTerm.toLowerCase()) ||
+          estado.includes(searchTerm.toLowerCase()) ||
+          anio.includes(searchTerm.toLowerCase())
+        );
+      })
+    : matriculas;
 
-  // Crear la hoja de cálculo
-  const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
-
-  // Aplicar estilos personalizados
-  const range = XLSX.utils.decode_range(worksheet['!ref']);
-  for (let C = range.s.c; C <= range.e.c; ++C) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
-      if (!worksheet[cellAddress]) continue;
-      
-      // Establecer estilos en el encabezado
-      worksheet[cellAddress].s = {
-          font: { bold: true, color: { rgb: "FFFFFF" } },
-          fill: { fgColor: { rgb: "16A085" } }, // Fondo verde azulado
-          alignment: { horizontal: "center", vertical: "center" }
-      };
+  if (!filteredData || filteredData.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar.', 'warning');
+    return;
   }
 
-  // Ajustar el ancho de las columnas para un mejor aspecto
-  const columnWidths = [
-      { wpx: 30 },   // #
-      { wpx: 100 },  // Cod Matrícula
-      { wpx: 100 },  // Fecha Matrícula
-      { wpx: 80 },   // Estado
-      { wpx: 80 },   // Período
-      { wpx: 80 },   // Grado
-      { wpx: 80 }    // Sección
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Matrículas');
+
+  // Título principal
+  worksheet.mergeCells('A1:H1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Subtítulo
+  worksheet.mergeCells('A2:H2');
+  worksheet.getCell('A2').value = 'REPORTE GENERAL DE MATRÍCULAS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados
+  const headerRow = worksheet.addRow([
+    '#',
+    'Cod Matrícula',
+    'Nombre Estudiante',
+    'Grado',
+    'Sección',
+    'Fecha Matrícula',
+    'Estado',
+    'Período'
+  ]);
+
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+
+  // Agregar datos
+  filteredData.forEach((matricula, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      matricula.codificacion_matricula,
+      `${matricula.Nombre_Hijo || ''} ${matricula.Apellido_Hijo || ''}`.trim(),
+      matricula.Nombre_grado || 'N/A',
+      matricula.Nombre_seccion || 'N/A',
+      matricula.fecha_matricula?.split('T')[0] || 'N/A',
+      opciones.estados_matricula?.find(e => e.Cod_estado_matricula === matricula.Cod_estado_matricula)?.Tipo || 'N/A',
+      opciones.periodos_matricula?.find(p => p.Cod_periodo_matricula === matricula.Cod_periodo_matricula)?.Anio_academico || 'N/A'
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+  });
+
+  // Ajuste de anchos
+  worksheet.columns = [
+    { width: 6 },   // #
+    { width: 20 },  // Cod Matrícula
+    { width: 30 },  // Nombre Estudiante
+    { width: 15 },  // Grado
+    { width: 15 },  // Sección
+    { width: 18 },  // Fecha Matrícula
+    { width: 18 },  // Estado
+    { width: 18 }   // Período
   ];
-  worksheet['!cols'] = columnWidths;
 
-  // Añadir la hoja al libro de trabajo
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Matrículas');
-
-  // Exportar el archivo
-  XLSX.writeFile(workbook, 'Reporte_General_Matriculas.xlsx');
+  // Generar archivo
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  saveAs(blob, 'Reporte_General_Matriculas.xlsx');
 };
+
 
 
   const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
@@ -929,7 +997,6 @@ const exportToExcel = () => {
           10,
           85
         );
-        doc.text(`Fecha de Nacimiento: ${matricula.fecha_nacimiento_hijo?.split('T')[0] || 'N/A'}`, 10, 90);
         doc.text(`Padre/Madre/Tutor: ${matricula.Nombre_Padre || 'N/A'} ${matricula.Apellido_Padre || 'N/A'}`, 10, 95);
   
         // Detalles de Matrícula
@@ -1037,23 +1104,23 @@ const calculateAge = (birthDate) => {
     <CContainer>
   {/* Encabezado Mejorado y Centrado */}
   <CRow className="justify-content-center mb-2">
-    <CCol xs="auto">
-      <h3 style={{ margin: 0, fontWeight: 'bold', color: '#4B6251', textAlign: 'center' }}>
+  <CCol xs="auto" className="text-center">
+    <div style={{ display: 'inline-block' }}>
+      <h3 style={{ margin: 0, fontWeight: 'bold', color: '#4B6251' }}>
         <CIcon icon={cilSchool} size="lg" style={{ color: '#4B6251', marginRight: '0.5rem' }} />
         Matrículas
       </h3>
-    </CCol>
-  </CRow>
-
-  {/* Línea decorativa debajo del encabezado */}
-  <div
-    style={{
-      width: '100%',
-      height: '2px',
-      backgroundColor: '#4B6251',
-      marginBottom: '1rem',
-    }}
-  ></div>
+      <div
+        style={{
+          width: '100%',
+          height: '2px',
+          backgroundColor: '#4B6251',
+          marginTop: '4px',
+        }}
+      ></div>
+    </div>
+  </CCol>
+</CRow>
 
   {/* ComboBox y Botones en la misma fila */}
   <CRow className="justify-content-between align-items-center mb-4">
@@ -1099,39 +1166,56 @@ const calculateAge = (birthDate) => {
         <CIcon icon={cilPlus} /> Nueva
       </CButton>
 
-      <CDropdown>
-  <CDropdownToggle color="success" style={{ backgroundColor: '#6C8E58', borderColor: '#617341' }}>
-    <CIcon icon={cilFile} /> Reporte
+
+<CDropdown>
+  <CDropdownToggle
+    style={{
+      backgroundColor: '#5C7B3E', // Color exacto del botón en la imagen
+      borderColor: '#617341',
+      color: '#FFFFFF',
+      fontWeight: '500',
+      padding: '0.45rem 1.2rem',
+      borderRadius: '6px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.5rem',
+    }}
+  >
+    <CIcon icon={cilFile} />
+    Reportes
   </CDropdownToggle>
+
   <CDropdownMenu>
     <CDropdownItem
       onClick={() => {
-        // Filtrar matrículas según el término de búsqueda
         const filteredData = matriculas.filter((matricula) =>
           `${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`
             .toLowerCase()
-            .includes(searchTerm.toLowerCase()) // Filtra según el término en el buscador
+            .includes(searchTerm.toLowerCase())
         );
-        exportToPDF(filteredData); // Llama a exportToPDF con los datos filtrados
+        exportToExcel(filteredData);
       }}
     >
-      Exportar a PDF
+      <CIcon icon={cilSpreadsheet} className="me-2" />
+      Descargar en Excel
     </CDropdownItem>
+
     <CDropdownItem
       onClick={() => {
-        // Filtrar matrículas según el término de búsqueda
         const filteredData = matriculas.filter((matricula) =>
           `${matricula.Nombre_Padre} ${matricula.Apellido_Padre}`
             .toLowerCase()
-            .includes(searchTerm.toLowerCase()) // Filtra según el término en el buscador
+            .includes(searchTerm.toLowerCase())
         );
-        exportToExcel(filteredData); // Llama a exportToExcel con los datos filtrados
+        exportToPDF(filteredData);
       }}
     >
-      Exportar a Excel
+      <CIcon icon={cilDescription} className="me-2" />
+      Descargar en PDF
     </CDropdownItem>
   </CDropdownMenu>
 </CDropdown>
+
 
     </CCol>
   </CRow>
@@ -1236,23 +1320,7 @@ const calculateAge = (birthDate) => {
       PDF
     </CButton>
 
-    <CButton
-      style={{
-        backgroundColor: '#F5B041',
-        border: 'none',
-        color: '#212529',
-        borderRadius: '8px',
-        padding: '0.3rem 0.9rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '38px', // 👈 igual altura al PDF
-      }}
-      title="Editar"
-      onClick={() => handleEditarMatricula(matricula)}
-    >
-      <CIcon icon={cilPen} size="sm" />
-    </CButton>
+   
   </div>
 </CTableDataCell>
 

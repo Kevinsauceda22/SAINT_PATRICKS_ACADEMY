@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import {
@@ -51,19 +53,19 @@ const GradosYSecciones = () => {
   };
 
   const obtenerSeccionesConDetalles = async (cod_grado) => {
-    if (!cod_grado) return;
-    setLoading(true);
-    setSecciones([]);
-    setSelectedSeccion('');
+    if (!cod_grado || !anioReciente) return;
+  
     try {
-      const response = await axios.get(`http://localhost:4000/api/matricula/detalles/${cod_grado}`);
+      const response = await axios.get(`http://localhost:4000/api/matricula/detalles/${cod_grado}`, {
+        params: { anio_academico: anioReciente },
+      });
       setSecciones(response.data.data || []);
     } catch (error) {
       console.error('Error al obtener las secciones por grado:', error);
-    } finally {
-      setLoading(false);
+      setSecciones([]);
     }
   };
+  
 
   const obtenerAlumnosMatriculadosPorSeccionYAno = async (cod_seccion, anio_academico) => {
     if (!cod_seccion || !anio_academico) {
@@ -185,21 +187,81 @@ const GradosYSecciones = () => {
     };
 };
 
-  const exportToXLSX = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      alumnos.map((alumno, index) => ({
-        '#': index + 1,
-        'Nombre del Alumno': `${alumno.Nombre} ${alumno.Segundo_nombre || ''} ${alumno.Primer_apellido} ${alumno.Segundo_apellido}`.trim(),
-        'Fecha de Nacimiento': alumno.fecha_nacimiento
-          ? new Date(alumno.fecha_nacimiento).toLocaleDateString('es-ES')
-          : 'No disponible',
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Alumnos');
-    XLSX.writeFile(workbook, 'Reporte_Alumnos_Matriculados.xlsx');
-  };
+const exportToXLSX = async () => {
+  if (!alumnos || alumnos.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar.', 'warning');
+    return;
+  }
 
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Alumnos');
+
+  // Título principal
+  worksheet.mergeCells('A1:C1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Subtítulo
+  worksheet.mergeCells('A2:C2');
+  worksheet.getCell('A2').value = 'REPORTE DE ALUMNOS MATRICULADOS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados
+  const headerRow = worksheet.addRow([
+    '#',
+    'Nombre del Alumno',
+    'Fecha de Nacimiento'
+  ]);
+
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+
+  // Agregar datos
+  alumnos.forEach((alumno, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      `${alumno.Nombre} ${alumno.Segundo_nombre || ''} ${alumno.Primer_apellido} ${alumno.Segundo_apellido}`.trim(),
+      alumno.fecha_nacimiento
+        ? new Date(alumno.fecha_nacimiento).toLocaleDateString('es-ES')
+        : 'No disponible'
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+  });
+
+  // Ajuste de columnas
+  worksheet.columns = [
+    { width: 6 },   // #
+    { width: 40 },  // Nombre del Alumno
+    { width: 20 }   // Fecha de Nacimiento
+  ];
+
+  // Descargar
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  saveAs(blob, 'Reporte_Alumnos_Matriculados.xlsx');
+};
   useEffect(() => {
     obtenerGradosYAniosAcademicos();
   }, []);
@@ -217,6 +279,13 @@ const GradosYSecciones = () => {
       setAlumnos([]);
     }
   }, [selectedSeccion, anioReciente]);
+  useEffect(() => {
+    if (selectedGrado && anioReciente) {
+      obtenerSeccionesConDetalles(selectedGrado);
+      setSelectedSeccion(''); // Limpia la selección anterior
+    }
+  }, [anioReciente]);
+  
 
   return (
     <CContainer>

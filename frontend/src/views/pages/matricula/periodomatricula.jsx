@@ -31,7 +31,11 @@ import {
 import Swal from 'sweetalert2';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
+import logo from 'src/assets/brand/logo_saint_patrick.png';
+
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
@@ -80,6 +84,8 @@ const PeriodosMatricula = () => {
       crearPeriodo(e);
     }
   };
+  
+  
 
   const validarFechas = () => {
     const fechaInicio = new Date(nuevoPeriodo.fecha_inicio);
@@ -93,18 +99,19 @@ const PeriodosMatricula = () => {
 
   const crearPeriodo = async () => {
     if (!validarFechas()) return;
-
-    const existePeriodoActivo = filteredPeriodos.some(
-      (periodo) =>
-        periodo.anio_academico === nuevoPeriodo.anio_academico &&
-        periodo.estado.toLowerCase() === 'activo'
-    );
-
-    if (existePeriodoActivo) {
-      Swal.fire('Error', 'Ya existe un periodo activo para el año académico ' + nuevoPeriodo.anio_academico, 'error');
-      return;
+  
+    // Si el nuevo estado es "activo", valida que no exista otro activo
+    if (nuevoPeriodo.estado.toLowerCase() === 'activo') {
+      const yaExisteActivo = filteredPeriodos.some(
+        (periodo) => periodo.estado.toLowerCase() === 'activo'
+      );
+  
+      if (yaExisteActivo) {
+        Swal.fire('Error', 'Solo puede haber un periodo activo. Desactive el otro antes.', 'error');
+        return;
+      }
     }
-
+  
     try {
       const response = await fetch('http://localhost:4000/api/periodomatricula/crearperiodomatricula', {
         method: 'POST',
@@ -113,7 +120,7 @@ const PeriodosMatricula = () => {
         },
         body: JSON.stringify(nuevoPeriodo),
       });
-
+  
       if (response.ok) {
         Swal.fire('Éxito', 'Periodo de matrícula creado correctamente', 'success');
         resetNuevoPeriodo();
@@ -127,30 +134,33 @@ const PeriodosMatricula = () => {
       Swal.fire('Error', 'Error al crear el periodo de matrícula', 'error');
     }
   };
+  
 
   const actualizarPeriodo = async (e) => {
     if (!validarFechas()) return;
-
+  
     e.preventDefault();
     try {
       const id = nuevoPeriodo.cod_periodo_matricula;
-
+  
       if (!id) {
         throw new Error('El código del periodo de matrícula es obligatorio');
       }
-
-      const existePeriodoActivo = filteredPeriodos.some(
-        (periodo) =>
-          periodo.anio_academico === nuevoPeriodo.anio_academico &&
-          periodo.estado.toLowerCase() === 'activo' &&
-          periodo.cod_periodo_matricula !== id
-      );
-
-      if (existePeriodoActivo) {
-        Swal.fire('Error', 'Ya existe un periodo activo para el año académico ' + nuevoPeriodo.anio_academico, 'error');
-        return;
+  
+      // Validar que solo haya un periodo activo en toda la tabla
+      if (nuevoPeriodo.estado.toLowerCase() === 'activo') {
+        const yaExisteActivo = filteredPeriodos.some(
+          (p) =>
+            p.estado.toLowerCase() === 'activo' &&
+            p.Cod_periodo_matricula !== id
+        );
+  
+        if (yaExisteActivo) {
+          Swal.fire('Error', 'Solo puede haber un periodo activo. Desactive el otro antes.', 'error');
+          return;
+        }
       }
-
+  
       const response = await fetch(`http://localhost:4000/api/periodomatricula/periodos/${id}`, {
         method: 'PUT',
         headers: {
@@ -164,15 +174,15 @@ const PeriodosMatricula = () => {
           p_estado: nuevoPeriodo.estado,
         }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.Mensaje || 'Error al actualizar el periodo de matrícula');
       }
-
+  
       const result = await response.json();
       Swal.fire('Éxito', result.Mensaje, 'success');
-
+  
       resetNuevoPeriodo();
       obtenerPeriodos();
       setModalVisible(false);
@@ -182,6 +192,7 @@ const PeriodosMatricula = () => {
       Swal.fire('Error', err.message, 'error');
     }
   };
+  
 
   const resetNuevoPeriodo = () => {
     setNuevoPeriodo({
@@ -196,15 +207,19 @@ const PeriodosMatricula = () => {
   const handleSearch = (e) => {
     const value = e.target.value.toLowerCase();
     setSearchTerm(value);
-
+  
     const filtered = periodos.filter((periodo) =>
-      periodo.estado.toLowerCase().includes(value) ||
-      periodo.anio_academico.toString().includes(value)
+      (periodo.estado || '').toLowerCase().includes(value) ||
+      (periodo.anio_academico || '').toString().toLowerCase().includes(value) ||
+      (periodo.fecha_inicio || '').toLowerCase().includes(value) ||
+      (periodo.fecha_fin || '').toLowerCase().includes(value)
     );
-
+  
     setFilteredPeriodos(filtered);
     setCurrentPage(1);
   };
+  
+  
 
   const currentPeriodos = filteredPeriodos.slice(
     (currentPage - 1) * periodosPerPage,
@@ -230,16 +245,23 @@ const PeriodosMatricula = () => {
   };
 
   const handleEditClick = (periodo) => {
+    const formatoFecha = (fecha) => {
+      const [dia, mes, anio] = fecha.split('/');
+      return `${anio}-${mes}-${dia}`;
+    };
+  
     setNuevoPeriodo({
       cod_periodo_matricula: periodo.Cod_periodo_matricula,
-      fecha_inicio: periodo.Fecha_inicio,
-      fecha_fin: periodo.Fecha_fin,
+      fecha_inicio: formatoFecha(periodo.Fecha_inicio),
+      fecha_fin: formatoFecha(periodo.Fecha_fin),
       anio_academico: periodo.Anio_academico,
       estado: periodo.estado,
     });
+  
     setEditar(true);
     setModalVisible(true);
   };
+  
 
   const eliminarPeriodo = async (id) => {
     const result = await Swal.fire({
@@ -274,21 +296,140 @@ const PeriodosMatricula = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text('Reporte de Periodos de Matrícula', 10, 10);
 
-    doc.autoTable({
-      head: [['#', 'Fecha Inicio', 'Fecha Fin', 'Año Académico', 'Estado']],
-      body: periodos.map((periodo, index) => [
-        index + 1,
-        periodo.Fecha_inicio,
-        periodo.Fecha_fin,
-        periodo.Anio_academico,
-        periodo.estado,
-      ]),
-    });
+    // Configurar la imagen del logo
+    const img = new Image();
+    img.src = logo; // Asegúrate de importar el logo desde el directorio correspondiente
 
-    doc.save('Reporte_Periodos_Matricula.pdf');
-  };
+    img.onload = () => {
+        // Añadir el logo en la esquina superior izquierda
+        doc.addImage(img, 'PNG', 10, 10, 30, 30);
+
+        // Encabezado del documento
+        doc.setFontSize(18);
+        doc.setTextColor(0, 102, 51); // Verde oscuro
+        doc.text(
+            "SAINT PATRICK'S ACADEMY",
+            doc.internal.pageSize.width / 2,
+            20,
+            { align: 'center' }
+        );
+
+        // Título del reporte
+        doc.setFontSize(14);
+        doc.text(
+            'Reporte de Periodos de Matrícula',
+            doc.internal.pageSize.width / 2,
+            30,
+            { align: 'center' }
+        );
+
+        // Detalles de la institución
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(
+            'Casa Club del periodista, Colonia del Periodista',
+            doc.internal.pageSize.width / 2,
+            40,
+            { align: 'center' }
+        );
+        doc.text(
+            'Teléfono: (504) 2234-8871',
+            doc.internal.pageSize.width / 2,
+            45,
+            { align: 'center' }
+        );
+        doc.text(
+            'Correo: info@saintpatrickacademy.edu',
+            doc.internal.pageSize.width / 2,
+            50,
+            { align: 'center' }
+        );
+
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.setDrawColor(0, 102, 51); // Verde oscuro
+        doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+
+        // Título de la tabla
+        doc.setFontSize(12);
+        doc.setTextColor(0, 51, 102); // Azul oscuro
+        doc.text(
+            'Detalles de los Periodos de Matrícula',
+            doc.internal.pageSize.width / 2,
+            65,
+            { align: 'center' }
+        );
+
+        // Configurar la tabla de periodos con diseño mejorado
+        doc.autoTable({
+            startY: 75,
+            head: [['#', 'Fecha Inicio', 'Fecha Fin', 'Año Académico', 'Estado']],
+            body: periodos.map((periodo, index) => [
+                index + 1,
+                periodo.Fecha_inicio || 'N/A',
+                periodo.Fecha_fin || 'N/A',
+                periodo.Anio_academico || 'N/A',
+                periodo.estado || 'N/A',
+            ]),
+            styles: {
+                fontSize: 10,
+                textColor: [34, 34, 34], // Gris oscuro para texto
+                cellPadding: 4,
+                valign: 'middle',
+                overflow: 'linebreak',
+            },
+            headStyles: {
+                fillColor: [0, 102, 51], // Verde oscuro para encabezados
+                textColor: [255, 255, 255],
+                fontSize: 10,
+            },
+            alternateRowStyles: { fillColor: [240, 248, 255] }, // Azul claro alternado para filas
+            margin: { left: 10, right: 10 },
+        });
+
+        // Pie de página con fecha, hora y número de página
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            const creationDateTime = new Date().toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+            });
+
+            // Fecha y hora alineada a la izquierda
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(
+                `Fecha y Hora de Generación: ${creationDateTime}`,
+                10,
+                doc.internal.pageSize.height - 10
+            );
+
+            // Número de página alineado a la derecha
+            doc.text(
+                `Página ${i} de ${pageCount}`,
+                doc.internal.pageSize.width - 30,
+                doc.internal.pageSize.height - 10,
+                { align: 'right' }
+            );
+        }
+
+        // Generar el archivo PDF como un Blob y abrirlo en una nueva pestaña
+        const pdfBlob = doc.output('blob'); // Genera el PDF como un Blob
+        const pdfURL = URL.createObjectURL(pdfBlob); // Crea una URL para el Blob
+        window.open(pdfURL); // Abre el archivo PDF en una nueva pestaña
+    };
+
+    img.onerror = () => {
+        Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    };
+};
+
   const toggleEstado = async (periodo) => {
     try {
       const nuevoEstado = periodo.estado === 'activo' ? 'inactivo' : 'activo';
@@ -327,19 +468,73 @@ const PeriodosMatricula = () => {
   };
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      periodos.map((periodo, index) => ({
-        '#': index + 1,
-        'Fecha Inicio': periodo.Fecha_inicio,
-        'Fecha Fin': periodo.Fecha_fin,
-        'Año Académico': periodo.Anio_academico,
-        Estado: periodo.estado,
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Periodos de Matrícula');
-    XLSX.writeFile(workbook, 'Reporte_Periodos_Matricula.xlsx');
+    if (!periodos || periodos.length === 0) {
+      Swal.fire('Sin datos', 'No hay datos para exportar.', 'warning');
+      return;
+    }
+  
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Periodos de Matrícula');
+  
+    // Título principal
+    worksheet.mergeCells('A1:E1');
+    worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+    worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // Subtítulo
+    worksheet.mergeCells('A2:E2');
+    worksheet.getCell('A2').value = 'REPORTE DE PERIODOS DE MATRÍCULA';
+    worksheet.getCell('A2').font = { bold: true, size: 14, color: { argb: '006633' } };
+    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // Encabezados
+    const headerRow = worksheet.addRow(['#', 'Fecha Inicio', 'Fecha Fin', 'Año Académico', 'Estado']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  
+    // Datos
+    periodos.forEach((periodo, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        periodo.Fecha_inicio || 'N/A',
+        periodo.Fecha_fin || 'N/A',
+        periodo.Anio_academico || 'N/A',
+        periodo.estado?.toUpperCase() || 'N/A',
+      ]);
+  
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    });
+  
+    // Ajustar columnas
+    worksheet.columns.forEach((col) => {
+      col.width = 20;
+    });
+  
+    // Guardar archivo
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      saveAs(blob, 'Reporte_Periodo_Matricula_Styled.xlsx');
+    });
   };
     // Verificar permisos
     if (!canSelect) {
@@ -423,91 +618,111 @@ const PeriodosMatricula = () => {
       </CRow>
 
       {/* Tabla con scroll, con cabecera fija y botones fijos */}
-      <div style={{ maxHeight: '400px', overflowY: 'auto', overflowX: 'hidden' }}>
-        <CTable striped bordered hover responsive>
-          <CTableHead style={{ position: 'sticky', top: '0', backgroundColor: 'white', zIndex: '1' }}>
-          <CTableRow>
-    <CTableHeaderCell>#</CTableHeaderCell>
-    <CTableHeaderCell>Fecha Inicio</CTableHeaderCell>
-    <CTableHeaderCell>Fecha Fin</CTableHeaderCell>
-    <CTableHeaderCell>Año Académico</CTableHeaderCell>
-    <CTableHeaderCell>Estado</CTableHeaderCell>
-    <CTableHeaderCell>Acciones</CTableHeaderCell>
-  </CTableRow>
-</CTableHead>
-<CTableBody>
-  {currentPeriodos.length > 0 ? (
-    currentPeriodos.map((periodo, index) => (
-      <CTableRow key={periodo.Cod_periodo_matricula}>
-        <CTableDataCell>{index + 1}</CTableDataCell>
-        <CTableDataCell>{periodo.Fecha_inicio}</CTableDataCell>
-        <CTableDataCell>{periodo.Fecha_fin}</CTableDataCell>
-        <CTableDataCell>{periodo.Anio_academico}</CTableDataCell>
-        <CTableDataCell>
-          <CButton
-            color={periodo.estado === 'activo' ? 'danger' : 'success'}
-            onClick={() => toggleEstado(periodo)} // Llamada a la función toggleEstado
-            style={{ opacity: 0.9 }}
-          >
-            {periodo.estado === 'activo' ? 'Desactivar' : 'Activar'}
-          </CButton>
-        </CTableDataCell>
-        <CTableDataCell className="text-end">
-          {canUpdate && (
-            <CButton
-              color="warning"
-              className="me-2"
-              style={{ opacity: 0.8 }}
-              onClick={() => handleEditClick(periodo)}
-            >
-              <CIcon icon={cilPen} />
-            </CButton>
-          )}
-          {canDelete && (
-            <CButton
-              color="danger"
-              style={{ opacity: 0.8 }}
-              onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}
-            >
-              <CIcon icon={cilTrash} />
-            </CButton>
-          )}
+      <CTable striped bordered hover responsive>
+  <CTableHead style={{ position: 'sticky', top: '0', backgroundColor: 'white', zIndex: '1' }}>
+    <CTableRow>
+      <CTableHeaderCell style={{ width: '50px', textAlign: 'center' }}>#</CTableHeaderCell>
+      <CTableHeaderCell style={{ width: '150px' }}>Fecha Inicio</CTableHeaderCell>
+      <CTableHeaderCell style={{ width: '150px' }}>Fecha Fin</CTableHeaderCell>
+      <CTableHeaderCell style={{ width: '140px' }}>Año Académico</CTableHeaderCell>
+      <CTableHeaderCell style={{ width: '220px', textAlign: 'center' }}>Acciones</CTableHeaderCell>
+    </CTableRow>
+  </CTableHead>
+  <CTableBody>
+    {currentPeriodos.length > 0 ? (
+      currentPeriodos.map((periodo, index) => (
+        <CTableRow key={periodo.Cod_periodo_matricula}>
+          <CTableDataCell className="text-center">{index + 1}</CTableDataCell>
+          <CTableDataCell>{periodo.Fecha_inicio}</CTableDataCell>
+          <CTableDataCell>{periodo.Fecha_fin}</CTableDataCell>
+          <CTableDataCell>{periodo.Anio_academico}</CTableDataCell>
+          <CTableDataCell className="text-center">
+            <div className="d-flex justify-content-center align-items-center" style={{ gap: '0.3rem' }}>
+              <CButton
+                color={periodo.estado === 'activo' ? 'success' : 'danger'}
+                style={{
+                  fontWeight: 'bold',
+                  borderRadius: '8px',
+                  fontSize: '0.85rem',
+                  width: '80px',
+                  color: '#fff',
+                  padding: '0.3rem 0.5rem'
+                }}
+                onClick={() => toggleEstado(periodo)}
+              >
+                {periodo.estado === 'activo' ? 'Activo' : 'Inactivo'}
+              </CButton>
+
+              {canUpdate && (
+                <CButton
+                  color="warning"
+                  style={{ padding: '0.3rem 0.6rem' }}
+                  onClick={() => handleEditClick(periodo)}
+                >
+                  <CIcon icon={cilPen} />
+                </CButton>
+              )}
+
+              {canDelete && (
+                <CButton
+                  color="danger"
+                  style={{ padding: '0.3rem 0.6rem' }}
+                  onClick={() => eliminarPeriodo(periodo.Cod_periodo_matricula)}
+                >
+                  <CIcon icon={cilTrash} />
+                </CButton>
+              )}
+            </div>
+          </CTableDataCell>
+        </CTableRow>
+      ))
+    ) : (
+      <CTableRow>
+        <CTableDataCell colSpan="5" className="text-center">
+          No hay periodos disponibles
         </CTableDataCell>
       </CTableRow>
-    ))
-  ) : (
-    <CTableRow>
-      <CTableDataCell colSpan="6" className="text-center">
-        No hay periodos disponibles
-      </CTableDataCell>
-    </CTableRow>
-            )}
-          </CTableBody>
-        </CTable>
-      </div>
+    )}
+  </CTableBody>
+</CTable>
+
 
       {/* Paginación */}
       <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <CPagination aria-label="Page navigation">
-          <CButton
-            style={{ backgroundColor: '#6c757d', color: '#fff', marginRight: '0.3cm' }}
-            disabled={currentPage === 1}
-            onClick={() => paginate(currentPage - 1)}
-          >
-            Anterior
-          </CButton>
-          <CButton
-            style={{ backgroundColor: '#6c757d', color: '#fff' }}
-            disabled={currentPage === Math.ceil(filteredPeriodos.length / periodosPerPage)}
-            onClick={() => paginate(currentPage + 1)}
-          >
-            Siguiente
-          </CButton>
-        </CPagination>
-        <span className="ms-3">
-          Página {currentPage} de {Math.ceil(filteredPeriodos.length / periodosPerPage)}
-        </span>
-      </div>
+  <CPagination aria-label="Page navigation">
+    <CButton
+      style={{
+        backgroundColor: '#8C948A',
+        color: '#fff',
+        marginRight: '0.3cm',
+        border: 'none',
+        borderRadius: '6px',
+        padding: '6px 18px'
+      }}
+      disabled={currentPage === 1}
+      onClick={() => paginate(currentPage - 1)}
+    >
+      Anterior
+    </CButton>
+    <CButton
+      style={{
+        backgroundColor: '#495C45',
+        color: '#fff',
+        border: 'none',
+        borderRadius: '6px',
+        padding: '6px 18px'
+      }}
+      disabled={currentPage === Math.ceil(filteredPeriodos.length / periodosPerPage)}
+      onClick={() => paginate(currentPage + 1)}
+    >
+      Siguiente
+    </CButton>
+  </CPagination>
+  <span className="ms-3">
+    Página {currentPage} de {Math.ceil(filteredPeriodos.length / periodosPerPage)}
+  </span>
+</div>
+
 
       {/* Modal */}
       <CModal visible={modalVisible} onClose={closeModal} backdrop="static">

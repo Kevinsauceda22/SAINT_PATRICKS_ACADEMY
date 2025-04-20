@@ -263,21 +263,6 @@ export const crearSeccion = async (req, res) => {
             throw new Error('No se encontraron asignaturas asociadas al grado.');
         }
 
-        // PROBANDO 12-03-2025 PARA VER SI FUNCIONA SECCIONES
-        /*
-        const seccionesAsignaturasValues = asignaturas.map(asignatura => [
-            Cod_secciones,
-            null, // Hora_inicio
-            null, // Hora_fin
-            asignatura.Cod_grados_asignaturas,
-            null, // Dias_nombres
-        ]);
-        
-        await connection.query(
-            'INSERT INTO tbl_secciones_asignaturas (Cod_secciones, Hora_inicio, Hora_fin, Cod_grados_asignaturas, Dias_nombres) VALUES ?',
-            [seccionesAsignaturasValues]
-        );*/
-
         await connection.commit();
 
         res.status(201).json({
@@ -357,6 +342,7 @@ export const actualizarSeccion = async (req, res) => {
     }
 };
 
+/*
 // Controlador para eliminar una sección
 export const eliminarSeccion = async (req, res) => {
     const { Cod_secciones } = req.params;
@@ -384,6 +370,66 @@ export const eliminarSeccion = async (req, res) => {
       return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
     }
 };  
+*/
+
+export const eliminarSeccion = async (req, res) => {
+    const { Cod_secciones } = req.params;
+    console.log('Cod_secciones recibido en el backend:', Cod_secciones);
+  
+    const connection = await pool.getConnection();
+  
+    try {
+      if (!Cod_secciones || isNaN(Cod_secciones)) {
+        return res.status(400).json({ mensaje: 'El parámetro Cod_secciones es inválido.' });
+      }
+  
+      await connection.beginTransaction();
+  
+      // 1. Obtener el código del aula asociada a la sección
+      const [seccionData] = await connection.query(
+        'SELECT Cod_aula FROM tbl_secciones WHERE Cod_secciones = ?',
+        [Cod_secciones]
+      );
+  
+      if (!seccionData.length) {
+        await connection.rollback();
+        return res.status(404).json({ mensaje: 'La sección no existe o ya fue eliminada.' });
+      }
+  
+      const Cod_aula = seccionData[0].Cod_aula;
+  
+      // 2. Eliminar la sección
+      const [result] = await connection.query('CALL sp_eliminar_secciones(?)', [Cod_secciones]);
+  
+      if (result.affectedRows === 0) {
+        await connection.rollback();
+        return res.status(404).json({ mensaje: 'No se encontró la sección especificada.' });
+      }
+  
+      // 3. Actualizar el aula (recuperar el cupo)
+      await connection.query(
+        'UPDATE tbl_aula SET Secciones_disponibles = Secciones_disponibles + 1, Secciones_ocupadas = Secciones_ocupadas - 1 WHERE Cod_aula = ?',
+        [Cod_aula]
+      );
+  
+      await connection.commit();
+  
+      return res.status(200).json({ mensaje: 'Sección eliminada correctamente y aula actualizada.' });
+  
+    } catch (error) {
+      await connection.rollback();
+      console.error('Error al eliminar la sección:', error);
+  
+      if (error.sqlState === '45000') {
+        return res.status(400).json({ mensaje: error.message });
+      }
+  
+      return res.status(500).json({ mensaje: 'Error en el servidor', error: error.message });
+    } finally {
+      connection.release();
+    }
+  };
+  
 
 // Controlador para obtener el aula en el modal de actualizar
 export const obtenerAulaPorNumero = async (req, res) => {

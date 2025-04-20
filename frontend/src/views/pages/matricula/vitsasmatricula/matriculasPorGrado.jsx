@@ -3,6 +3,8 @@ import axios from 'axios';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import logo from 'src/assets/brand/logo_saint_patrick.png';
 import {
   CContainer,
@@ -186,22 +188,87 @@ const MatriculasPorGrado = () => {
 };
 
 
-  const exportToXLSX = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      alumnos.map((alumno, index) => ({
-        '#': index + 1,
-        'Nombre del Alumno': `${alumno.Nombre || ''} ${alumno.Segundo_nombre || ''} ${alumno.Primer_apellido || ''} ${alumno.Segundo_apellido || ''}`.trim(),
-        'Fecha de Nacimiento': alumno.fecha_nacimiento
-          ? new Date(alumno.fecha_nacimiento).toLocaleDateString('es-ES')
-          : 'No disponible',
-        'Grado': alumno.Nombre_grado || 'No disponible',
-        'Sección': alumno.Nombre_seccion || 'No disponible',
-      }))
-    );
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Alumnos');
-    XLSX.writeFile(workbook, 'Reporte_Alumnos_Matriculados.xlsx');
-  };
+const exportToXLSX = async () => {
+  if (!alumnos || alumnos.length === 0) {
+    Swal.fire('Advertencia', 'No hay datos para exportar.', 'warning');
+    return;
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Alumnos');
+
+  // Título principal
+  worksheet.mergeCells('A1:F1');
+  worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+  worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+  worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Subtítulo
+  worksheet.mergeCells('A2:F2');
+  worksheet.getCell('A2').value = 'REPORTE DE ALUMNOS MATRICULADOS';
+  worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
+  worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Encabezados
+  const headerRow = worksheet.addRow([
+    '#',
+    'Nombre del Alumno',
+    'Fecha de Nacimiento',
+    'Grado',
+    'Sección'
+  ]);
+
+  headerRow.eachCell((cell) => {
+    cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  });
+
+  // Datos
+  alumnos.forEach((alumno, index) => {
+    const row = worksheet.addRow([
+      index + 1,
+      `${alumno.Nombre || ''} ${alumno.Segundo_nombre || ''} ${alumno.Primer_apellido || ''} ${alumno.Segundo_apellido || ''}`.trim(),
+      alumno.fecha_nacimiento
+        ? new Date(alumno.fecha_nacimiento).toLocaleDateString('es-ES')
+        : 'No disponible',
+      alumno.Nombre_grado || 'No disponible',
+      alumno.Nombre_seccion || 'No disponible'
+    ]);
+
+    row.eachCell((cell) => {
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+  });
+
+  // Ancho de columnas
+  worksheet.columns = [
+    { width: 6 },   // #
+    { width: 40 },  // Nombre
+    { width: 20 },  // Fecha
+    { width: 15 },  // Grado
+    { width: 15 }   // Sección
+  ];
+
+  // Descargar archivo
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  saveAs(blob, 'Reporte_Alumnos_Matriculados.xlsx');
+};
 
   return (
     <CContainer>
