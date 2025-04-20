@@ -404,7 +404,6 @@ const VistaActividadesAcademicasAdmin = () => {
       setlistaponderacionesC(data);
     } catch (error) {
       console.error('Error al obtener las ponderaciones:', error);
-      Swal.fire('Error', 'No se pudieron cargar las ponderaciones del profesor.', 'error');
     }
   };
   
