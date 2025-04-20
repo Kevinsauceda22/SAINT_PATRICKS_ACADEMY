@@ -15,6 +15,9 @@ import * as XLSX from "xlsx";
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
 
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+
 const ListaCuadroProfesor = () => {
   const { canSelect, canInsert, canUpdate } = usePermission('ListaCuadroProfesor');
   const [secciones, setSecciones] = useState([]);
@@ -29,11 +32,11 @@ const ListaCuadroProfesor = () => {
   const [nombreEstudiante, setNombreEstudiante] = useState("");  // Estado para almacenar el nombre del estudiante
   const [identidadEstudiante, setIdentidadEstudiante] = useState("");
   //para paginacion y busqueda de la vista secciones
-const [recordsPerPage2, setRecordsPerPage2] = useState(5);
+const [recordsPerPage2, setRecordsPerPage2] = useState(10);
 const [searchTerm2, setSearchTerm2] = useState('');
 const [currentPage2, setCurrentPage2] = useState(1);
 //para paginacion y busqueda de la vista estudiantes
-const [recordsPerPage3, setRecordsPerPage3] = useState(5);
+const [recordsPerPage3, setRecordsPerPage3] = useState(10);
 const [searchTerm3, setSearchTerm3] = useState('');
 const [currentPage3, setCurrentPage3] = useState(1); 
 
@@ -59,7 +62,13 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
   
       if (!response.ok) throw new Error('Error al cargar secciones.');
       const data = await response.json();
-      setSecciones(data.secciones); // Ajusta según el formato de la respuesta
+     // Añadir índice original a cada sección
+    const dataWithIndex = data.secciones.map((seccion, index) => ({
+      ...seccion,
+      originalIndex: index + 1, // Guardamos la secuencia original
+    }));
+    
+    setSecciones(dataWithIndex);
     } catch (error) {
       console.error('Error al obtener las secciones:', error);
     } finally {
@@ -72,7 +81,11 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       const response = await fetch(`http://localhost:4000/api/seccionalumno/estudiantes/${Cod_secciones}`);
       if (!response.ok) throw new Error('Error al obtener la lista de estudiantes');
       const data = await response.json();
-      setEstudiantes(data);
+      const dataWithIndex = data.map((estudiante, index) => ({
+        ...estudiante,
+        originalIndex: index + 1, // Guardamos la secuencia original
+      }));
+      setEstudiantes(dataWithIndex);
     } catch (error) {
       console.error('Error:', error);
     }
@@ -93,11 +106,24 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       if (!response.ok) throw new Error('Error al obtener el cuadro de notas.');
   
       const data = await response.json();
-      setCuadroNotas(data);
-      setCurrentView('cuadroNotas'); // Cambiar la vista actual al cuadro de notas
-    } catch (error) {
+      const dataWithIndex = data.map((asignatura, index) => ({
+        ...asignatura,
+        originalIndex: index + 1, // Guardamos la posición original (1-based)
+      }));
+  
+      setCuadroNotas(dataWithIndex);
+     } catch (error) {
       console.error('Error al obtener el cuadro de notas:', error);
-      Swal.fire('Error', 'No se pudieron cargar los datos del cuadro de notas', 'error');
+      Swal.fire({
+        title: 'Sin datos disponibles',
+        text: 'Actualmente no hay notas registradas para generar el cuadro de notas',
+        icon: 'info',
+        confirmButtonText: 'Aceptar',
+      });
+      
+      setCuadroNotas([]); // Configurar un arreglo vacío en caso de error
+    } finally {
+      setCurrentView('cuadroNotas'); // Siempre cambiar a la vista del cuadro de notas
     }
   };
   
@@ -105,7 +131,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
   
   const generarReportePDF = () => {
     // Validar que haya datos en la tabla
-    if (!currentRecords2 || currentRecords2.length === 0) {
+    if (!filteredSecciones || filteredSecciones.length === 0) {
      Swal.fire({
        icon: 'info',
        title: 'Tabla vacía',
@@ -165,8 +191,8 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
      doc.autoTable({
        startY: yPosition + 4,
        head: [['#', 'Sección', 'Grado', 'Total Alumnos','Año Académico']],
-       body: currentRecords2.map((seccion, index) => [
-         index + 1,
+       body: filteredSecciones.map((seccion, index) => [
+        seccion.originalIndex || index + 1,
          `${seccion.Seccion || ''}`.trim(),
          seccion.Grado,
          seccion.Total_Alumnos,
@@ -183,25 +209,36 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
          halign: 'center', // Centrado del texto en las celdas
        },
        columnStyles: {
-         0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-         1: { cellWidth: 'auto' }, // Columna 'Sección' se ajusta automáticamente
-         2: { cellWidth: 'auto' }, // Columna 'Grado' se ajusta automáticamente
-         3: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
-         4: { cellWidth: 'auto' }, // Columna 'Año Académico' se ajusta automáticamente
+         0: { cellWidth: 20 }, // Columna '#' se ajusta automáticamente
+         1: { cellWidth: 30 }, // Columna 'Sección' se ajusta automáticamente
+         2: { cellWidth: 50 }, // Columna 'Grado' se ajusta automáticamente
+         3: { cellWidth: 40 }, // Columna 'Año Académico' se ajusta automáticamente
+         4: { cellWidth: 40 }, // Columna 'Año Académico' se ajusta automáticamente
        },
        alternateRowStyles: { fillColor: [240, 248, 255] },
        didDrawPage: (data) => {
-         // Pie de página
-         const currentDate = new Date();
-         const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-         doc.setFontSize(10);
-         doc.setTextColor(100);
-         doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-         const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-         doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-         pageNumber += 1; // Incrementar el número de página
-       },
-     });
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        // Fecha y hora en el pie de página
+        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+      },
+    });
+    
+    // Asegúrate de calcular el total de páginas al final
+    const totalPages = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+    
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i); // Ve a cada página
+      doc.setTextColor(100);
+      const text = `Página ${i} de ${totalPages}`;
+      // Agrega número de página en la posición correcta
+      doc.text(text, pageWidth - 30, pageHeight - 10);
+    }
+
  
      // Abrir el PDF en lugar de descargarlo automáticamente
      window.open(doc.output('bloburl'), '_blank');
@@ -216,7 +253,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
  const generarReporteExcel = () => {
   // Validar que haya datos en la tabla
-  if (!currentRecords2 || currentRecords2.length === 0) {
+  if (!filteredSecciones || filteredSecciones.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
@@ -233,8 +270,8 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
   ];
 
   // Crear filas con asistencias filtradas
-  const filas = currentRecords2.map((seccion, index) => [
-    index + 1,
+  const filas = filteredSecciones.map((seccion, index) => [
+    seccion.originalIndex || index + 1,
     seccion.Seccion,
     seccion.Grado,
     seccion.Total_Alumnos,
@@ -264,11 +301,11 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
   // Ajustar el ancho de columnas automáticamente
   const ajusteColumnas = [
-    { wpx: 40 }, 
+    { wpx: 100 }, 
     { wpx: 100 }, 
     { wpx: 100 }, 
     { wpx: 100 } ,
-    { wpx: 100 }  
+    { wpx: 250 }  
   ];
 
   hojaDeTrabajo['!cols'] = ajusteColumnas;
@@ -284,7 +321,7 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
 
 const generarReportealumnoPDF = () => {
   // Validar que haya datos en la tabla
- if (!currentRecords3 || currentRecords3.length === 0) {
+ if (!filteredEstudiantes || filteredEstudiantes.length === 0) {
    Swal.fire({
      icon: 'info',
      title: 'Tabla vacía',
@@ -365,8 +402,8 @@ const generarReportealumnoPDF = () => {
    doc.autoTable({
      startY: yPosition + 4,
     head: [['#','Identidad', 'Nombre Estudiante']],
-     body: currentRecords3.map((estudiante, index) => [
-       index + 1,
+     body: filteredEstudiantes.map((estudiante, index) => [
+      estudiante.originalIndex || index + 1,
        `${estudiante.Identidad}`.trim(),
           estudiante.Nombre_Completo,
      ]),
@@ -381,23 +418,33 @@ const generarReportealumnoPDF = () => {
        halign: 'center', // Centrado del texto en las celdas
      },
      columnStyles: {
-       0: { cellWidth: 'auto' }, // Columna '#' se ajusta automáticamente
-       1: { cellWidth: 'auto' }, // Columna 'identidad' se ajusta automáticamente
-       2: { cellWidth: 'auto' }, // Columna 'estudiante' se ajusta automáticamente
+       0: { cellWidth: 30 }, // Columna '#' se ajusta automáticamente
+       1: { cellWidth: 60 }, // Columna 'identidad' se ajusta automáticamente
+       2: { cellWidth: 90 }, // Columna 'estudiante' se ajusta automáticamente
      },
      alternateRowStyles: { fillColor: [240, 248, 255] },
      didDrawPage: (data) => {
-       // Pie de página
-       const currentDate = new Date();
-       const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
-       doc.setFontSize(10);
-       doc.setTextColor(100);
-       doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
-       const totalPages = doc.internal.getNumberOfPages(); // Obtener el total de páginas
-       doc.text(`Página ${pageNumber} de ${totalPages}`, doc.internal.pageSize.width - 30, pageHeight - 10);
-       pageNumber += 1; // Incrementar el número de página
-     },
-   });
+      const currentDate = new Date();
+      const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+      const pageHeight = doc.internal.pageSize.height; // Altura de la página
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      // Fecha y hora en el pie de página
+      doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+    },
+  });
+  
+  // Asegúrate de calcular el total de páginas al final
+  const totalPages = doc.internal.getNumberOfPages();
+  const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+  
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i); // Ve a cada página
+    doc.setTextColor(100);
+    const text = `Página ${i} de ${totalPages}`;
+    // Agrega número de página en la posición correcta
+    doc.text(text, pageWidth - 30, pageHeight - 10);
+  }
 
    // Abrir el PDF en lugar de descargarlo automáticamente
    window.open(doc.output('bloburl'), '_blank');
@@ -411,7 +458,7 @@ const generarReportealumnoPDF = () => {
 };
 
 const generarReportealumnoExcel = () => {
-  if (!currentRecords3 || currentRecords3.length === 0) {
+  if (!filteredEstudiantes || filteredEstudiantes.length === 0) {
     Swal.fire({
       icon: 'info',
       title: 'Tabla vacía',
@@ -439,8 +486,8 @@ const generarReportealumnoExcel = () => {
   ];
 
   // Crear filas con asignaturas
-  const filas = currentRecords3.map((estudiante, index) => [
-    index + 1,
+  const filas = filteredEstudiantes.map((estudiante, index) => [
+    estudiante.originalIndex || index + 1,
     estudiante.Identidad || "N/A",
     estudiante.Nombre_Completo || "N/A"
   ]);
@@ -557,10 +604,17 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredSecciones.length / records
 //------------------------------------------------------------------------------------------------------
  
 const handleViewEstudiantes = (Cod_secciones, nombreSeccion,grado,anio) => {
+  // Limpiar filtros y paginación de secciones (opcional)
+  setSearchTerm2('');
+  setCurrentPage2(1);
+  
+  // Establecer datos de la sección seleccionada
   setSelectedCodSeccion(Cod_secciones);
   setNombreSeccionSeleccionada(nombreSeccion);
   setGradoSeleccionado(grado);
   setAnioSeccionSeleccionada(anio);
+  
+  // Cargar estudiantes y cambiar vista
   fetchEstudiantes(Cod_secciones);
   setCurrentView('estudiantes');
 };
@@ -639,66 +693,762 @@ if (pageNumber > 0 && pageNumber <= Math.ceil(filteredEstudiantes.length / recor
 }
 
 const handleBackToSecciones = () => {
+  // Limpiar filtros y paginación de estudiantes
+  setSearchTerm3('');
+  setCurrentPage3(1);
+  setRecordsPerPage3(10);
+  
+  // Volver a la vista de secciones
   setCurrentView('secciones');
 };
 //------------------------------------------------------------------------------------------------------
-
-const exportarContenido = async () => {
-  const input = document.getElementById("cuadroNotasRender");
-
-  // Forzar un tamaño fijo en el render
-  const originalWidth = input.style.width;
-  const originalHeight = input.style.height;
-
-  // Asegúrate de que el tamaño sea fijo (en píxeles) durante la captura
-  input.style.width = "794px"; // Ancho A4 en píxeles a 96 DPI
-  input.style.height = "1123px"; // Altura A4 en píxeles a 96 DPI
-
-   // Ocultar los bordes temporalmente
-   const originalBorder = input.style.border;
-   input.style.border = "none";
-
-  const pdf = new jsPDF("p", "mm", "a4");
-  const margin = 10; // Márgenes en mm
-
-  try {
-    const canvas = await html2canvas(input, {
-      scale: 4, // Aumenta la calidad
-      useCORS: true, // Maneja imágenes externas
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth() - margin * 2;
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-
-    pdf.addImage(imgData, "PNG", margin, margin, pdfWidth, pdfHeight);
-
-    // Descarga el archivo PDF
-    pdf.save("cuadro_notas.pdf");
-  } catch (error) {
-    console.error("Error al generar el PDF:", error);
-    Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: "Hubo un problema al generar el PDF. Inténtalo nuevamente.",
-    });
-  } finally {
-    // Restaurar tamaño original
-    input.style.width = originalWidth;
-    input.style.height = originalHeight;
-    input.style.border = originalBorder;
-  }
-};
-
-
-
 
  // Verificar permisos
  if (!canSelect) {
   return <AccessDenied />;
 }
 
+const generarPDFFiel = () => {
+  // Validación de notas finales
+  const tieneNotasFinales = cuadroNotas && cuadroNotas.some(nota => 
+    nota.PromedioFinal && !isNaN(parseFloat(nota.PromedioFinal)));
+  
+  if (!tieneNotasFinales) {
+    Swal.fire({
+      icon: 'info',
+      title: 'No se puede generar el PDF',
+      text: 'No hay notas finales disponibles para exportar.',
+      confirmButtonText: 'Aceptar',
+    });
+    return;
+  }
+  try {
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4"
+  });
+  // --- Configuración de Fuentes ---
+  doc.setFont("times", "normal");
+  const styles = {
+    tituloPrincipal: { size: 23, color: [0, 0, 0] },
+    subtitulo: { size: 19, color: [0, 0, 0], font: "times", }, // Usar "times" para estilo Monotype Corsiva
+    textoNormal: { size: 11, color: [0, 0, 0] },
+    encabezadoTabla: { size: 8, color: [0, 0, 0], fill: [191, 191, 191] },
+    cuerpoTabla: { size: 8, color: [0, 0, 0] }
+  };
+
+  // --- Logo y Encabezado ---
+  doc.addImage(logo, "PNG", 18, 11, 40, 40); // Posición exacta (15mm desde izquierda, 10mm desde arriba)
+
+  // Título principal
+doc.setFontSize(styles.tituloPrincipal.size);
+doc.setTextColor(...styles.tituloPrincipal.color);
+doc.setFont("times", "bolditalic"); 
+doc.text("Saint Patrick's Academy", 105, 24, { align: "center" }); // 25mm desde arriba
+
+// Subtítulo "Report Card" con espacio de 10mm
+doc.setFontSize(styles.subtitulo.size);
+doc.setFont("times", "bolditalic"); 
+doc.text("Report Card", 105, 39, { align: "center" }); // 35mm (25 + 10mm)
+
+// --- Datos del Estudiante ---
+doc.setFontSize(styles.textoNormal.size);
+doc.setTextColor(0, 0, 0);
+doc.setFont("times", "normal");
+
+// Configuración para datos centrados
+const estiloLinea = { 
+  color: [0, 0, 0], 
+  grosor: 0.3, 
+  separacion: 2 // 2mm debajo del texto
+};
+const espacioEntreCampos = 45; // Espacio entre Name e ID
+
+// --- Primera línea (Name + ID) ---
+const yPosNameID = 63;
+
+const labelNombre = "Student Name: ";
+const labelID = "Student ID: ";
+
+// Calcular centrado total
+const textoCompletoNameID = labelNombre + nombreEstudiante + " ".repeat(espacioEntreCampos) + labelID + identidadEstudiante;
+const anchoTotalNameID = doc.getTextWidth(textoCompletoNameID);
+const xInicioNameID = (205 - anchoTotalNameID) / 2;
+
+// Dibujar "Student Name:" en negrita
+doc.setFont(undefined, "bold");
+doc.text(labelNombre, xInicioNameID, yPosNameID);
+
+// Dibujar nombre del estudiante en normal
+const xNombre = xInicioNameID + doc.getTextWidth(labelNombre);
+doc.setFont(undefined, "normal");
+doc.text(nombreEstudiante, xNombre, yPosNameID);
+
+// Subrayado del nombre
+doc.setDrawColor(...estiloLinea.color);
+doc.setLineWidth(estiloLinea.grosor);
+doc.line(
+  xNombre,
+  yPosNameID + estiloLinea.separacion,
+  xNombre + doc.getTextWidth(nombreEstudiante),
+  yPosNameID + estiloLinea.separacion
+);
+
+// Dibujar "Student ID:" en negrita
+const xID = xNombre + doc.getTextWidth(nombreEstudiante) + espacioEntreCampos;
+doc.setFont(undefined, "bold");
+doc.text(labelID, xID, yPosNameID);
+
+// Dibujar ID del estudiante en normal
+const xValorID = xID + doc.getTextWidth(labelID);
+doc.setFont(undefined, "normal");
+doc.text(identidadEstudiante, xValorID, yPosNameID);
+
+// Subrayado del ID
+doc.line(
+  xValorID,
+  yPosNameID + estiloLinea.separacion,
+  xValorID + doc.getTextWidth(identidadEstudiante),
+  yPosNameID + estiloLinea.separacion
+);
+
+
+// --- Segunda línea (Grade + Section + Year) ---
+const yPosDetails = 76; // 10mm debajo de la línea anterior (48 + 10)
+
+// Primero construimos el texto completo para calcular su ancho total
+const textoCompleto = `Grade: ${gradoSeleccionado}                              Section: ${nombreSeccionSeleccionada}                              School year: ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+const anchoTotal = doc.getTextWidth(textoCompleto);
+const xInicioCentrado = (210 - anchoTotal) / 2; // Centrado en página A4 (210mm)
+
+let currentX = xInicioCentrado;
+
+// Función para añadir texto con estilo y actualizar posición X
+function addText(text, isBold = false) {
+  doc.setFont(undefined, isBold ? 'bold' : 'normal');
+  doc.text(text, currentX, yPosDetails);
+  currentX += doc.getTextWidth(text);
+}
+
+// Escribimos cada parte con su formato correspondiente
+addText('Grade: ', true);
+addText(`${gradoSeleccionado}`, false);
+
+addText('                              Section: ', true);
+addText(`${nombreSeccionSeleccionada}`, false);
+
+addText('                              School year: ', true);
+addText(`${new Date().getFullYear()}-${new Date().getFullYear() + 1}`, false);
+
+// --- Aumentar espacio antes de la tabla ---
+const espacioAntesTabla = 6; // Aumenté de 10mm a 15mm (ajusta este valor)
+  // --- Tabla de Notas (Réplica exacta) ---
+
+  // Obtener TODOS los parciales de recuperación
+  const recuperaciones = cuadroNotas[0]?.NotasParciales.filter(p => p.Parcial.match(/recu/i)) || [];
+  doc.autoTable({
+    startY: yPosDetails + espacioAntesTabla,
+    head: [
+      [
+        {
+          content: "ÁREAS CURRICULARES/\nCAMPOS DEL CONOCIMIENTO",
+          rowSpan: 2,
+          styles: { valign: 'middle', halign: 'center' }
+        },
+        {
+          content: "PARCIALES",
+          colSpan: cuadroNotas[0]?.NotasParciales.filter(p => !p.Parcial.match(/recu/i)).length || 0,
+          styles: { halign: 'center' }
+        },
+       // Columnas dinámicas para cada recuperación
+       ...recuperaciones.map(recup => ({
+        content: recup.Parcial,
+        rowSpan: 2,
+        styles: { valign: 'middle', halign: 'center' }
+      })),
+        {
+          content: "NOTA PROM.FINAL (%)",
+          rowSpan: 2,
+          styles: { valign: 'middle', halign: 'center' }
+        }
+      ],
+      [
+        // Subcolumnas debajo de "PARCIALES"
+        ...cuadroNotas[0]?.NotasParciales
+          .filter(p => !p.Parcial.match(/recu/i))
+          .map(p => ({
+            content: p.Parcial,
+            styles: { halign: 'center' }
+          })) || []
+      ]
+    ],
+    body: [
+      // Filas de notas
+      ...cuadroNotas.map((nota, index) => [
+        `${index + 1}. ${nota.Asignatura}`,
+        // Notas de parciales normales
+        ...nota.NotasParciales
+          .filter(p => !p.Parcial.match(/recu/i))
+          .map(p => p.Nota),
+        // Notas de recuperaciones (todas)
+        ...recuperaciones.map(recup => {
+          const notaRecup = nota.NotasParciales.find(p => p.Parcial === recup.Parcial);
+          return notaRecup?.Nota || "-";
+        }),
+        // Nota final
+        nota.PromedioFinal
+      ]),
+      // Fila de promedios
+      [
+        { content: "PROMEDIO", styles: { fontStyle: 'bold', fillColor: [240, 240, 240] } },
+        // Promedios por parcial normal
+        ...(cuadroNotas[0]?.NotasParciales
+          .filter(p => !p.Parcial.match(/recu/i))
+          .map((parcial, i) => {
+            const sum = cuadroNotas.reduce((acc, nota) => {
+              const notaParcial = nota.NotasParciales.find(np => np.Parcial === parcial.Parcial);
+              return acc + (parseFloat(notaParcial?.Nota) || 0);
+            }, 0);
+            const avg = (sum / cuadroNotas.length).toFixed(2);
+            return { 
+              content: avg, 
+              styles: { fontStyle: 'bold', fillColor: [240, 240, 240] }
+            };
+          }) || []),
+        // Celdas vacías para recuperaciones
+        ...recuperaciones.map(() => ({
+          content: "-",
+          styles: { fontStyle: 'bold', fillColor: [240, 240, 240] }
+        })),
+        // Promedio final
+        { 
+          content: (cuadroNotas.reduce((acc, nota) => acc + (parseFloat(nota.PromedioFinal) || 0), 0) / cuadroNotas.length).toFixed(2),
+          styles: { fontStyle: 'bold', fillColor: [240, 240, 240] }
+        }
+      ]
+    ],
+    
+    styles: {
+      fontSize: styles.cuerpoTabla.size,
+      cellPadding: 2,
+      halign: 'center',
+      valign: 'middle',
+      lineColor: [0, 0, 0],
+      lineWidth: 0.2,
+      textColor: [0, 0, 0]
+    },
+    headStyles: {
+      fillColor: styles.encabezadoTabla.fill,
+      textColor: styles.encabezadoTabla.color,
+      fontStyle: 'bold',
+      lineWidth: 0.3,
+      fontSize: '8',
+      font:'times'
+    },
+    bodyStyles: {
+      textColor: [0, 0, 0], // Color azul oscuro para datos (RGB)
+      fontSize: '9',
+      font:'times'
+    },
+    columnStyles: {
+      0: { 
+        cellWidth: 60, // Ancho fijo para columna de asignaturas
+        halign: 'left',
+        fontStyle: 'normal'
+      },
+      // Alinear columnas de notas al centro
+      ...Object.fromEntries(
+        Array.from({ length: cuadroNotas[0]?.NotasParciales.length || 0 + 1 }, (_, i) => [i + 1, { halign: 'center' }])
+      )
+    },
+    didParseCell: (data) => {
+      // Estilo especial para celda de dos líneas en encabezado
+      if (data.section === 'head' && data.column.index === 0) {
+        data.cell.styles.valign = 'middle';
+        data.cell.styles.lineHeight = 1.2;
+      }
+      
+      // Numeración alineada a la izquierda con margen
+      if (data.section === 'body' && data.column.index === 0) {
+        data.cell.text = [`  ${data.cell.text[0]}`]; // Añade espacio izquierdo
+      }
+    }
+  });
+
+  const finalY = doc.lastAutoTable.finalY || 0;
+
+// Coordenadas de la línea
+const lineXStart = 110;
+const lineXEnd = 180;
+const lineY = finalY + 35; // más espacio desde la tabla
+
+// Dibuja una línea más delgada
+doc.setLineWidth(0.2);
+doc.line(lineXStart, lineY, lineXEnd, lineY);
+
+// Centra el texto debajo de la línea
+const centerX = (lineXStart + lineXEnd) / 2;
+
+doc.setFontSize(10);
+doc.setFont("Times", "normal");
+doc.text("Director / Principal", centerX, lineY + 6, { align: "center" });
+doc.text("Sello y firma", centerX, lineY + 12, { align: "center" });
+
+  // Supongamos que tienes estas variables:
+const grado = gradoSeleccionado.replace(/\s+/g, '_'); // Reemplaza espacios por guiones bajos
+const seccion = nombreSeccionSeleccionada.replace(/\s+/g, '_');
+const anio = anioSeccionSeleccionada || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+const alumno = nombreEstudiante.replace(/\s+/g, '_');
+
+// Generar el nombre del archivo
+const nombreArchivo = `Report_Card_Grade_${grado}_Section_${seccion}_${anio}_${alumno}.pdf`;
+
+// Guardar el PDF
+doc.save(nombreArchivo);
+} catch (error) {
+  console.error('Error al generar el PDF:', error);
+  Swal.fire({
+    icon: 'error',
+    title: 'Error al generar PDF',
+    text: error.message || 'Ocurrió un error al generar el archivo PDF',
+    confirmButtonText: 'Aceptar',
+  });
+}
+};
+
+// Convierte un número de columna a letra (1 = A, 27 = AA, etc.)
+const columnNumberToLetter = (colNum) => {
+  let letter = '';
+  while (colNum > 0) {
+    let remainder = (colNum - 1) % 26;
+    letter = String.fromCharCode(65 + remainder) + letter;
+    colNum = Math.floor((colNum - 1) / 26);
+  }
+  return letter;
+};
+
+const convertirImagenABase64 = (url) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous'; // Evita errores por CORS
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const dataURL = canvas.toDataURL('image/png');
+      resolve(dataURL);
+    };
+    img.onerror = (err) => reject(err);
+    img.src = url;
+  });
+};
+
+
+const generarExcelFiel = async () => {
+  // Validación de notas finales
+  const tieneNotasFinales = cuadroNotas && cuadroNotas.some(nota => 
+    nota.PromedioFinal && !isNaN(parseFloat(nota.PromedioFinal)));
+  
+  if (!tieneNotasFinales) {
+    Swal.fire({
+      icon: 'info',
+      title: 'No se puede generar el Excel',
+      text: 'No hay notas finales disponibles para exportar.',
+      confirmButtonText: 'Aceptar',
+    });
+    return;
+  }
+
+  try {
+    const base64 = await convertirImagenABase64(logo);
+    
+  
+    // Crear un nuevo libro de Excel
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Report Card');
+    // Agregar la imagen al archivo Excel
+    const imageId = workbook.addImage({
+      base64,
+      extension: 'png',
+    });
+
+    // Configuración general de la hoja
+    worksheet.properties.defaultRowHeight = 20;
+    worksheet.pageSetup.margins = {
+      left: 0.5, right: 0.5,
+      top: 0.5, bottom: 0.5,
+      header: 0.3, footer: 0.3
+    };
+    worksheet.pageSetup.paperSize = 9; // A4
+
+    // Obtener TODOS los parciales de recuperación (igual que en el PDF)
+    const recuperaciones = cuadroNotas[0]?.NotasParciales.filter(p => p.Parcial.match(/recu/i)) || [];
+    const parcialesNormales = cuadroNotas[0]?.NotasParciales.filter(p => !p.Parcial.match(/recu/i)) || [];
+
+    const totalColumnas = 3 + parcialesNormales.length + recuperaciones.length + 1; // Ajusta según tu estructura real
+    const ultimaColLetra = columnNumberToLetter(totalColumnas);
+
+    // Estilos personalizados
+    const styles = {
+      tituloPrincipal: {
+        font: { name: 'Times New Roman', size: 23, bold: true, italic: true },
+        alignment: { horizontal: 'center', vertical: 'middle' }
+      },
+      subtitulo: {
+        font: { name: 'Times New Roman', size: 19, bold: true, italic: true },
+        alignment: { horizontal: 'center', vertical: 'middle' }
+      },
+      textoNormal: {
+        font: { name: 'Times New Roman', size: 11 },
+        alignment: { vertical: 'middle' }
+      },
+      textoNegrita: {
+        font: { name: 'Times New Roman', size: 11, bold: true },
+        alignment: { vertical: 'middle' }
+      },
+      encabezadoTabla: {
+        font: { name: 'Times New Roman', size: 8, bold: true },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'BFBFBF' } },
+        alignment: { horizontal: 'center', vertical: 'middle', wrapText: true },
+        border: {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } }
+        }
+      },
+      cuerpoTabla: {
+        font: { name: 'Times New Roman', size: 8 },
+        alignment: { vertical: 'middle' },
+        border: {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } }
+        }
+      },
+      promedioTabla: {
+        font: { name: 'Times New Roman', size: 8, bold: true },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F0F0F0' } },
+        alignment: { horizontal: 'center', vertical: 'middle' },
+        border: {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } }
+        }
+      }
+    };
+    
+   
+    
+    // --- Encabezado ---
+    worksheet.addRow([]); // Fila 1 vacía
+    // Título principal
+    const tituloRow = worksheet.addRow([]);
+    tituloRow.height = 30;
+    const tituloCell = tituloRow.getCell(2);
+    tituloCell.value = "          Saint Patrick's Academy";
+    tituloCell.style = styles.tituloPrincipal;
+
+    // Esto es lo que debes CAMBIAR
+    // worksheet.mergeCells(`A1:${String.fromCharCode(65 + parcialesNormales.length + recuperaciones.length + 1)}1`);
+    worksheet.mergeCells(`B2:${ultimaColLetra}2`);
+
+
+    const subtituloRow = worksheet.addRow([]);
+    subtituloRow.height = 25;
+    const subtituloCell = subtituloRow.getCell(2);
+    subtituloCell.value = "          Report Card";
+    subtituloCell.style = styles.subtitulo;
+
+    // También actualizá el merge del subtítulo
+    worksheet.mergeCells(`B3:${ultimaColLetra}3`);
+
+    // Fila de espacio entre título y subtítulo
+    worksheet.addRow([]);  // <--- esta es la fila vacía
+
+    // Cambiar de A1 (0,0) a B2 (1,1)
+    worksheet.addImage(imageId, {
+      tl: { col: 1, row: 1, offsetX: 0, offsetY: 0 },  // desde B2
+      br: { col: 2, row: 4, offsetX: 0, offsetY: 0 },  // hasta D6 (agrandás el rango)
+      editAs: 'twoCell', // se adapta al área definida
+    });
+    
+    
+    // --- Datos del Estudiante ---
+    // Primera línea (Nombre + ID)
+    const nombreIdRow = worksheet.addRow([]);
+    nombreIdRow.height = 20;
+    
+   // Nombre del estudiante
+    const nombreLabelCell = nombreIdRow.getCell(2);
+    nombreLabelCell.value = "Student Name:";
+    nombreLabelCell.style = styles.textoNegrita;
+    
+
+    const nombreValueCell = nombreIdRow.getCell(3);
+    nombreValueCell.value = nombreEstudiante;
+    nombreValueCell.style = {
+      ...styles.textoNegrita,
+      border: { bottom: { style: 'thin', color: { argb: '000000' } } }
+    };
+    worksheet.mergeCells(`C6:F6`);
+
+    // Fusionar celdas G6 y H6
+    worksheet.mergeCells('G6:H6');
+
+    // Obtener la celda fusionada (solo se asigna a la primera)
+    const idLabelCell = worksheet.getCell('G6');
+    idLabelCell.value = "            Student ID: ";
+    idLabelCell.style = styles.textoNegrita;
+
+
+    const idValueCell = nombreIdRow.getCell(9);
+    idValueCell.value = identidadEstudiante;
+    idValueCell.style = {
+      ...styles.textoNegrita,
+      border: { bottom: { style: 'thin', color: { argb: '000000' } } }
+    };
+    worksheet.mergeCells(`I6:J6`);
+
+    // Agregar fila vacía entre nombre/ID y grado/sección/año
+    worksheet.addRow([]);
+
+   // Segunda línea (Grado + Sección + Año)
+    const detallesRow = worksheet.addRow([]);
+    detallesRow.height = 20;
+
+    worksheet.mergeCells('B8:C8'); // Fusionar celdas B8 y C8
+
+    const gradoCell = worksheet.getCell('B8');
+    gradoCell.value = `         Grade:  ${gradoSeleccionado}`;
+    gradoCell.style = styles.textoNegrita; // o combiná estilo negrita con normal si querés diferencia
+
+    //worksheet.mergeCells(`C8:D8`);
+
+    // Fusionar D8 y E8
+    worksheet.mergeCells('E8:F8');
+
+    // Asignar valor a la celda combinada
+    const seccionCell = worksheet.getCell('E8');
+    seccionCell.value = `        Section:    ${nombreSeccionSeleccionada}`;
+    seccionCell.style = styles.textoNegrita; // o styles.textoNormal si no querés que esté en negrita
+
+    // (Opcional) Centrado o alineación a la izquierda
+    seccionCell.alignment = { horizontal: 'left', vertical: 'middle' };
+
+
+    // Fusionar celdas F8 y G8
+    worksheet.mergeCells('H8:J8');
+    const añoLabelCell = worksheet.getCell('H8');
+    añoLabelCell.value = `     School year:   ${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+    añoLabelCell.style = styles.textoNegrita;
+    
+
+
+    // --- Tabla de Notas ---
+    const startColParciales = 4; // Comenzar en columna B (B8)
+    const startRowParciales = 10; // Fila 8 para los encabezados
+
+      // Encabezados de la tabla - fila 8
+    const headerRow1 = worksheet.getRow(startRowParciales);
+    headerRow1.height = 25;
+        // Áreas curriculares
+    const areaCell = headerRow1.getCell(2);
+    areaCell.value = "ÁREAS CURRICULARES/\nCAMPOS DEL CONOCIMIENTO";
+    areaCell.style = styles.encabezadoTabla;
+    worksheet.mergeCells(`B${startRowParciales}:C${startRowParciales + 1}`);
+
+        // Parciales normales
+    if (parcialesNormales.length > 0) {
+      const parcialesCell = headerRow1.getCell(startColParciales);
+      parcialesCell.value = "PARCIALES";
+      parcialesCell.style = styles.encabezadoTabla;
+      const endColParciales = startColParciales + parcialesNormales.length - 1;
+      worksheet.mergeCells(`${String.fromCharCode(64 + startColParciales)}${startRowParciales}:${String.fromCharCode(64 + endColParciales)}${startRowParciales}`);
+    }
+
+      // Recuperaciones (dinámicas como en el PDF)
+    const startColRecuperaciones = startColParciales + parcialesNormales.length;
+    recuperaciones.forEach((recup, index) => {
+      const col = startColRecuperaciones + index;
+      const cell = headerRow1.getCell(col);
+      cell.value = recup.Parcial;
+      cell.style = styles.encabezadoTabla;
+      worksheet.mergeCells(`${String.fromCharCode(64 + col)}${startRowParciales}:${String.fromCharCode(64 + col)}${startRowParciales + 1}`);
+    });
+
+      // Nota final
+    const notaFinalCol = startColRecuperaciones + recuperaciones.length;
+    const notaFinalCell = headerRow1.getCell(notaFinalCol);
+    notaFinalCell.value = "NOTA PROM.FINAL (%)";
+    notaFinalCell.style = styles.encabezadoTabla;
+    worksheet.mergeCells(`${String.fromCharCode(64 + notaFinalCol)}${startRowParciales}:${String.fromCharCode(64 + notaFinalCol)}${startRowParciales + 1}`);
+
+        // Subencabezados de parciales normales (fila 9) con fechas
+    const headerRow2 = worksheet.getRow(startRowParciales + 1);
+    headerRow2.height = 14;
+
+    parcialesNormales.forEach((parcial, i) => {
+      const cell = headerRow2.getCell(startColParciales + i);
+      cell.value = `${parcial.Parcial}`;
+      cell.style = styles.encabezadoTabla;
+    });
+
+        // Datos de las asignaturas
+    cuadroNotas.forEach((nota, index) => {
+      const row = worksheet.addRow([]);
+      row.height = 20;
+
+  // Asignatura - Combinando celdas A y B para cada fila
+  const asignaturaCell = row.getCell(2);
+  asignaturaCell.value = `${index + 1}. ${nota.Asignatura}`;
+  asignaturaCell.style = {
+    ...styles.cuerpoTabla,
+    alignment: { horizontal: 'left', vertical: 'middle', indent: 1 }
+  };
+  
+  // Combinar celdas A y B para cada fila de asignatura
+  worksheet.mergeCells(`B${row.number}:C${row.number}`);
+      // Notas de parciales normales
+      nota.NotasParciales
+        .filter(p => !p.Parcial.match(/recu/i))
+        .forEach((parcial, i) => {
+          const cell = row.getCell(startColParciales + i);
+          cell.value = parcial.Nota;
+          cell.style = {
+            ...styles.cuerpoTabla,
+            alignment: { horizontal: 'center', vertical: 'middle' }
+          };
+        });
+
+      // Notas de recuperaciones (dinámicas)
+      recuperaciones.forEach((recup, i) => {
+        const col = startColRecuperaciones + i;
+        const notaRecup = nota.NotasParciales.find(p => p.Parcial === recup.Parcial);
+        const cell = row.getCell(col);
+        cell.value = notaRecup?.Nota || "-";
+        cell.style = {
+          ...styles.cuerpoTabla,
+          alignment: { horizontal: 'center', vertical: 'middle' }
+        };
+      });
+
+      // Promedio final
+      const promedioCell = row.getCell(notaFinalCol);
+      promedioCell.value = nota.PromedioFinal;
+      promedioCell.style = {
+        ...styles.cuerpoTabla,
+        alignment: { horizontal: 'center', vertical: 'middle' }
+      };
+    });
+
+   // Fila de promedios
+  const promedioRow = worksheet.addRow([]);
+  promedioRow.height = 20;
+
+  // Celda "PROMEDIO" combinando A y B
+  const promedioLabelCell = promedioRow.getCell(2);
+  promedioLabelCell.value = "PROMEDIO";
+  promedioLabelCell.style = styles.promedioTabla;
+  worksheet.mergeCells(`B${promedioRow.number}:C${promedioRow.number}`); // Combinar A y B
+
+
+    // Promedios por parcial normal
+    parcialesNormales.forEach((parcial, i) => {
+      const sum = cuadroNotas.reduce((acc, nota) => {
+        const notaParcial = nota.NotasParciales.find(np => np.Parcial === parcial.Parcial);
+        return acc + (parseFloat(notaParcial?.Nota) || 0);
+      }, 0);
+      const avg = (sum / cuadroNotas.length).toFixed(2);
+      
+      const cell = promedioRow.getCell(startColParciales + i);
+      cell.value = avg;
+      cell.style = styles.promedioTabla;
+    });
+
+    // Celdas vacías para recuperaciones
+    recuperaciones.forEach((_, i) => {
+      const col = startColRecuperaciones + i;
+      const cell = promedioRow.getCell(col);
+      cell.value = "-";
+      cell.style = styles.promedioTabla;
+    });
+
+    // Promedio final
+    const promedioFinal = (cuadroNotas.reduce((acc, nota) => 
+      acc + (parseFloat(nota.PromedioFinal) || 0), 0) / cuadroNotas.length).toFixed(2);
+    const promedioFinalCell = promedioRow.getCell(notaFinalCol);
+    promedioFinalCell.value = promedioFinal;
+    promedioFinalCell.style = styles.promedioTabla;
+
+    // Ajustar anchos de columnas
+    worksheet.columns = [
+      { width: 5 }, // Columna A vacía
+      { width: 16 }, // Columna B (asignaturas)
+      { width: 17 }, // Columna C (asignaturas)
+      ...Array(parcialesNormales.length).fill().map(() => ({ width: 8 })),
+      ...Array(recuperaciones.length).fill().map(() => ({ width: 10 })),
+      { width: 12 } // Nota final
+    ];
+
+    // --- Pie de página ---
+    for (let i = 1; i < 6; i++) worksheet.addRow([]); // espacio entre tabla y firma
+
+    const columnaInicio = 6; // mueve la firma a la columna J
+    const letraInicio = String.fromCharCode(64 + columnaInicio);
+
+    // Línea de firma
+    const lineaRow = worksheet.addRow([]);
+    const lineaCell = lineaRow.getCell(columnaInicio);
+    lineaCell.value = '_______________________________';
+    lineaCell.style = {
+      alignment: { horizontal: 'center' },
+      font: { name: 'Times New Roman', size: 10 }
+    };
+    worksheet.mergeCells(
+      `${letraInicio}${lineaRow.number}:${String.fromCharCode(64 + columnaInicio + 2)}${lineaRow.number}`
+    );
+
+    // Texto debajo de la línea
+    const firmaRow = worksheet.addRow([]);
+    const firmaCell = firmaRow.getCell(columnaInicio);
+    firmaCell.value = 'Director / Principal\nSello y firma';
+    firmaCell.style = {
+      font: { name: 'Times New Roman', size: 10 },
+      alignment: { horizontal: 'center', vertical: 'middle', wrapText: true }
+    };
+    worksheet.mergeCells(
+      `${letraInicio}${firmaRow.number}:${String.fromCharCode(64 + columnaInicio + 2)}${firmaRow.number}`
+    );
+
+
+    // Generar el archivo Excel
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+    // Generar nombre con mismo formato que PDF incluyendo nombre estudiante
+    const grado = gradoSeleccionado.replace(/\s+/g, '_');
+    const seccion = nombreSeccionSeleccionada.replace(/\s+/g, '_');
+    const anio = anioSeccionSeleccionada || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+    const alumno = nombreEstudiante.replace(/\s+/g, '_');
+    const nombreArchivoExcel = `Report_Card_Grade_${grado}_Section_${seccion}_${anio}_${alumno}.xlsx`;
+
+    saveAs(blob, nombreArchivoExcel);
+  } catch (error) {
+    console.error('Error al generar el Excel:', error);
+    Swal.fire({
+      icon: 'error',
+      title: 'Error al generar Excel',
+      text: error.message || 'Ocurrió un error al generar el archivo Excel',
+      confirmButtonText: 'Aceptar',
+    });
+  }
+};
 
 return (
     <CContainer className="py-1">
@@ -795,9 +1545,9 @@ return (
                       }}
                         value={recordsPerPage2}
                       >
-                        <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
+                        <option value="30">30</option>
                       </CFormSelect>
                     <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
                   </div>       
@@ -820,7 +1570,7 @@ return (
                     {currentRecords2.length > 0 ? (
                       currentRecords2.map((seccion, index) => (
                         <CTableRow key={index}>
-                          <CTableDataCell>{index + 1}</CTableDataCell>
+                          <CTableDataCell>{seccion.originalIndex}</CTableDataCell>
                           <CTableDataCell>{seccion.Seccion}</CTableDataCell>
                           <CTableDataCell>{seccion.Grado}</CTableDataCell>
                           <CTableDataCell>{seccion.Total_Alumnos}</CTableDataCell>
@@ -977,9 +1727,9 @@ return (
                       }}
                         value={recordsPerPage3}
                       >
-                        <option value="5">5</option>
                         <option value="10">10</option>
                         <option value="20">20</option>
+                        <option value="30">30</option>
                       </CFormSelect>
                     <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
                   </div>       
@@ -1000,7 +1750,7 @@ return (
               {currentRecords3.length > 0 ? (
               currentRecords3.map((estudiante, index) => (
               <CTableRow key={estudiante.Cod_seccion_matricula}>
-                <CTableDataCell>{index + 1}</CTableDataCell>
+                <CTableDataCell>{estudiante.originalIndex}</CTableDataCell>
                 <CTableDataCell>{estudiante.Identidad}</CTableDataCell>
                 <CTableDataCell>{estudiante.Nombre_Completo}</CTableDataCell>
                 <CTableDataCell>
@@ -1074,50 +1824,100 @@ return (
       transition: "background-color 0.2s ease, box-shadow 0.3s ease",
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
     }}
-    onClick={() => setCurrentView('estudiantes')} // Regresa a la vista de estudiantes
+    onClick={() => {
+      setCurrentView('estudiantes');
+      setNombreEstudiante('');
+      setIdentidadEstudiante('');
+      setCuadroNotas([]);
+      // Limpiar filtros y paginación de estudiantes
+      setSearchTerm3('');
+      setCurrentPage3(1);
+      setRecordsPerPage3(10);
+    }} // Regresa a la vista de estudiantes
   >
     <CIcon icon={cilArrowLeft} /> Volver a Estudiantes
   </CButton>
 
   {/* Botón Exportar a PDF */}
-  <CButton
-  className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
-  style={{
-    backgroundColor: '#6C8E58',
-    color: 'white',
-    padding: "6px 12px",
-    fontSize: "0.9rem",
-    marginTop: "0", // Ajuste para evitar separación vertical
-  }}
-  onMouseEnter={(e) => {
-    e.currentTarget.style.backgroundColor = '#5A784C';
-    e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.backgroundColor = '#6C8E58';
-    e.currentTarget.style.boxShadow = 'none';
-  }}
-  onClick={exportarContenido} // Aquí está en la posición correcta
->
-  <CIcon icon={cilDescription} />
-  Guardar PDF
-</CButton>
-
+    {/* Dropdown para exportar */}
+    <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
+      <CDropdownToggle
+        style={{
+          backgroundColor: '#6C8E58',
+          color: 'white',
+          fontSize: '0.85rem',
+          cursor: 'pointer',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = '#5A784C';
+          e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.2)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = '#6C8E58';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+      >
+        <CIcon icon={cilDescription} /> Exportar
+      </CDropdownToggle>
+      <CDropdownMenu style={{
+        position: "absolute",
+        zIndex: 1050,
+        backgroundColor: "#fff",
+        boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.2)",
+        borderRadius: "4px",
+        overflow: "hidden",
+      }}>
+        <CDropdownItem
+          onClick={generarPDFFiel}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            borderBottom: "1px solid #eaeaea",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")}
+          onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}
+        >
+          <CIcon icon={cilFile} size="sm" /> PDF
+        </CDropdownItem>
+        <CDropdownItem
+          onClick={generarExcelFiel}
+          style={{
+            cursor: "pointer",
+            outline: "none",
+            backgroundColor: "transparent",
+            padding: "0.5rem 1rem",
+            fontSize: "0.85rem",
+            color: "#333",
+            transition: "background-color 0.3s",
+          }}
+          onMouseOver={(e) => (e.target.style.backgroundColor = "#f5f5f5")}
+          onMouseOut={(e) => (e.target.style.backgroundColor = "transparent")}
+        >
+          <CIcon icon={cilSpreadsheet} size="sm" /> Excel
+        </CDropdownItem>
+      </CDropdownMenu>
+    </CDropdown>
 </CCol>
 
 <div
   id="cuadroNotasRender"
   style={{
     width: "816px", // Carta width in pixels at 96 DPI
-    height: "1056px", // Carta height in pixels at 96 DPI
+    height: "1500px", // Carta height in pixels at 96 DPI
     backgroundColor: "white", // Fondo blanco para un diseño limpio
     padding: "20px", // Opcional, para dar espacio interno
     boxSizing: "border-box", // Incluye el padding en el tamaño total
     justifyContent: "center",
+    fontFamily: "'Times New Roman', Times, serif",
   }}
   
 >
-
     {/* Encabezado del reporte */}
     <div 
   style={{ 
@@ -1130,7 +1930,7 @@ return (
     marginLeft: '-70px',
     padding: '5px',
     borderRadius: '8px',
-    fontFamily: 'Arial Narrow, sans-serif', // Establecer fuente general
+    fontFamily: "'Times New Roman', Times, serif", // Establecer fuente general
     fontSize: '1rem',
     
   }}
@@ -1154,8 +1954,9 @@ return (
       fontSize: '2.333rem', 
       marginBottom: '10px',
       marginTop: '0', 
-      fontFamily: 'Monotype Corsiva, cursive', 
+      fontFamily: "'Times New Roman', Times, serif",  
       fontWeight: 'bold',
+      fontStyle: 'italic',
       color: '#000000',
     }}>
       Saint Patrick's Academy
@@ -1165,10 +1966,11 @@ return (
     <h2 style={{
       fontSize: '2.17rem', 
       marginBottom: '5px', 
-      fontFamily: 'Monotype Corsiva, cursive',
+      fontFamily: "'Times New Roman', Times, serif", 
       color: '#000000',
       marginTop: '0', 
-      fontWeight: 'bold'
+      fontWeight: 'bold',
+      fontStyle: 'italic'
     }}>
       Report Card
     </h2>
@@ -1176,7 +1978,7 @@ return (
 </div>
 
 
-    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000', marginTop:'30px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 30px', fontSize: '1.1rem', fontFamily: "'Times New Roman', Times, serif", color: '#000000', marginTop:'30px' }}>
       <span style={{ display: 'flex', alignItems: 'center'}}>
         <strong style={{ fontWeight: 'bold' }}>Student Name:</strong>
         <span style={{ borderBottom: '1px solid black', paddingBottom: '2px', display: 'inline-block', flex: '1', marginLeft: '5px', letterSpacing: '0.5px' }}>
@@ -1191,7 +1993,7 @@ return (
       </span>
     </div>
 
-    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000' , marginTop:'30px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px 30px', fontSize: '1.1rem', fontFamily: "'Times New Roman', Times, serif", color: '#000000' , marginTop:'30px' }}>
       <span style={{ marginLeft: '40px' }}>
         <strong style={{ fontWeight: 'bold' }}>Grade: </strong>
         <span style={{ paddingBottom: '2px', display: 'inline-block', letterSpacing: '0.5px' }}> {gradoSeleccionado}</span>
@@ -1202,8 +2004,11 @@ return (
     </div>
 
 
-          
-      <CTable className="table-bordered" style={{ border: '1px solid #000000', marginTop: '50px', fontSize: '0.8rem', lineHeight: '1', }}>
+    <div style={{
+  maxHeight: '700px', // Ajusta según necesidad
+  overflowY: 'auto',
+}}>        
+      <CTable className="table-bordered" style={{ width: '100%', border: '1px solid #000000', marginTop: '50px', fontSize: '0.75rem', lineHeight: '1',fontFamily: "'Times New Roman', Times, serif"  }}>
       <CTableHead>
   <CTableRow>
     <CTableHeaderCell 
@@ -1238,7 +2043,7 @@ return (
     {cuadroNotas.length > 0 && cuadroNotas[0].NotasParciales.some(p => p.Parcial.match(/recu/i)) && (
           cuadroNotas[0].NotasParciales.filter(p => p.Parcial.match(/recu/i)).map((parcial, index) => (
             <CTableHeaderCell 
-              key={index}
+            key={`recup-${index}`}
               rowSpan={2}
               className="text-center align-middle"
               style={{ backgroundColor: '#BFBFBF', padding: '10px' }}
@@ -1265,7 +2070,7 @@ return (
      {cuadroNotas.length > 0 &&
       cuadroNotas[0].NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, index) => (
         <CTableHeaderCell 
-          key={index} 
+          key={`parcial-${index}`}  
           className="text-center" 
           style={{ backgroundColor: '#BFBFBF' }}
         >
@@ -1275,10 +2080,10 @@ return (
   </CTableRow>
 </CTableHead>
 
-
         <CTableBody >
           {cuadroNotas.length > 0 ? (
-          cuadroNotas.map((nota, index) => (
+             <>
+         {cuadroNotas.map((nota, index) => (
             <CTableRow key={index}>
               {/* Celda combinada para el índice y la asignatura */}
               <CTableDataCell className="text-center bg-transparent" style={{ fontSize: '0.8rem', width: '350px' }}>
@@ -1290,30 +2095,69 @@ return (
 
             {/* Notas de parciales (sin "Recuperación" o palabras que contengan "recu") */}
           {nota.NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, i) => (
-            <CTableDataCell key={i} className="text-center bg-transparent">
+            <CTableDataCell key={`regular-${i}`} className="text-center bg-transparent">
               {parcial.Nota}
             </CTableDataCell>
           ))}
 
             {/* Columna de Recuperación */}
-        <CTableDataCell className="text-center bg-transparent">
-          {
-            nota.NotasParciales.find(p => p.Parcial.match(/recu/i))?.Nota || "-"
+         {/* Celdas Recuperación */}
+          {nota.NotasParciales
+            .filter(p => p.Parcial.match(/recu/i))
+            .map((recup, i) => (
+              <CTableDataCell key={`recupnote-${i}`} className="text-center bg-transparent">
+                {recup.Nota}
+              </CTableDataCell>
+            ))
           }
-        </CTableDataCell>
+
            {/* Columna Promedio Final */}
            <CTableDataCell className="text-center bg-transparent">
             {nota.PromedioFinal}
           </CTableDataCell>
           </CTableRow>
-        ))
-      ) : (
-        <CTableRow>
-          <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
-        </CTableRow>
-      )}
+        ))}
+      {/* Fila de promedios (solo una vez al final) */}
+            <CTableRow style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+            <CTableDataCell className="text-center" style={{ fontSize: '0.8rem' }}>
+              PROMEDIO
+            </CTableDataCell>
+            
+            {cuadroNotas[0].NotasParciales
+              .filter(p => !p.Parcial.match(/recu/i))
+              .map((parcial, i) => {
+                const sum = cuadroNotas.reduce((acc, nota) => {
+                  const notaParcial = nota.NotasParciales.find(np => np.Parcial === parcial.Parcial);
+                  return acc + (parseFloat(notaParcial?.Nota) || 0);
+                }, 0);
+                const avg = (sum / cuadroNotas.length).toFixed(2);
+                return (
+                  <CTableDataCell key={`avg-${i}`} className="text-center">
+                    {avg}
+                  </CTableDataCell>
+                );
+              })}
+                <CTableDataCell className="text-center"></CTableDataCell>
+                <CTableDataCell className="text-center"></CTableDataCell>
+                <CTableDataCell className="text-center"></CTableDataCell>
+                <CTableDataCell className="text-center"></CTableDataCell>
+          </CTableRow>
+          </>
+          ) : (
+            <CTableRow>
+              <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
+            </CTableRow>
+          )}
       </CTableBody>
     </CTable>
+    </div>
+<div style={{ marginTop: '130px', marginLeft: '400px' }}>
+  <div style={{ width: '300px', borderTop: '1px solid #000', textAlign: 'center' }}>
+    <div style={{ marginTop: '5px', fontSize: '0.8rem', fontFamily: "'Times New Roman', Times, serif" }}>
+      Director / Principal<br />Sello y firma
+    </div>
+  </div>
+</div>
     </div>
   </>
 )}

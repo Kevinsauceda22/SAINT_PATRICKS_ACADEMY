@@ -54,9 +54,15 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       });
 
       if (!response.ok) throw new Error('Error al obtener los hijos matriculados');
-      
       const data = await response.json();
-      setHijos(data.hijos); // Asignar los hijos al estado
+      
+       // Añadir índice original a cada sección
+      const dataWithIndex = data.hijos.map((hijo, index) => ({
+        ...hijo,
+        originalIndex: index + 1, // Guardamos la secuencia original
+      }));
+      
+      setHijos(dataWithIndex); // Asignar los hijos al estado
     } catch (error) {
       console.error('Error al obtener los hijos matriculados:', error);
     } finally {
@@ -79,15 +85,28 @@ const [cuadroNotas, setCuadroNotas] = useState([]);
       });
   
       if (!response.ok) throw new Error('Error al obtener el cuadro de notas.');
-  
+
       const data = await response.json();
-      setCuadroNotas(data);
-      setCurrentView('cuadroNotas'); // Cambiar la vista actual al cuadro de notas
-    } catch (error) {
-      console.error('Error al obtener el cuadro de notas:', error);
-      Swal.fire('Error', 'No se pudieron cargar los datos del cuadro de notas', 'error');
-    }
-  };
+      const dataWithIndex = data.map((asignatura, index) => ({
+        ...asignatura,
+        originalIndex: index + 1, // Guardamos la posición original (1-based)
+      }));
+  
+       setCuadroNotas(dataWithIndex);
+      } catch (error) {
+        console.error('Error al obtener el cuadro de notas:', error);
+        Swal.fire({
+          title: 'Sin datos disponibles',
+          text: 'Actualmente no hay notas registradas para generar el cuadro de notas',
+          icon: 'info',
+          confirmButtonText: 'Aceptar',
+        });
+        
+        setCuadroNotas([]); // Configurar un arreglo vacío en caso de error
+      } finally {
+        setCurrentView('cuadroNotas'); // Siempre cambiar a la vista del cuadro de notas
+      }
+    };
   
 
 const disableCopyPaste = (e) => {
@@ -276,7 +295,7 @@ return (
                     {currentRecords2.length > 0 ? (
                       currentRecords2.map((hijo, index) => (
                         <CTableRow key={index}>
-                          <CTableDataCell>{index + 1}</CTableDataCell>
+                          <CTableDataCell>{hijo.originalIndex}</CTableDataCell>
                           <CTableDataCell>{hijo.DNI}</CTableDataCell>
                           <CTableDataCell>{hijo.Nombre_Completo}</CTableDataCell>
                           <CTableDataCell>{hijo.nombre_grado}</CTableDataCell>
@@ -352,7 +371,21 @@ return (
       transition: "background-color 0.2s ease, box-shadow 0.3s ease",
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
     }}
-    onClick={() => setCurrentView('hijos')} // Regresa a la vista de estudiantes
+    onClick={() => {
+      // Limpiar los estados relacionados con el cuadro de notas
+      setNombreEstudiante('');
+      setIdentidadEstudiante('');
+      setGradoSeleccionado('');
+      setNombreSeccionSeleccionada('');
+      setCuadroNotas([]);
+      
+      // Resetear los filtros de búsqueda
+      setSearchTerm2('');
+      setCurrentPage2(1);
+      
+      // Volver a la vista de hijos
+      setCurrentView('hijos');
+    }} // Regresa a la vista de estudiantes
   >
     <CIcon icon={cilArrowLeft} /> Volver a Hijos
   </CButton>
@@ -362,11 +395,12 @@ return (
 <div
   style={{
     width: "816px", // Carta width in pixels at 96 DPI
-    height: "1056px", // Carta height in pixels at 96 DPI
+    height: "1500px", // Carta height in pixels at 96 DPI
     backgroundColor: "white", // Fondo blanco para un diseño limpio
     padding: "20px", // Opcional, para dar espacio interno
     boxSizing: "border-box", // Incluye el padding en el tamaño total
     justifyContent: "center",
+    fontFamily: "'Times New Roman', Times, serif",
   }}
   
 >
@@ -383,7 +417,7 @@ return (
     marginLeft: '-70px',
     padding: '5px',
     borderRadius: '8px',
-    fontFamily: 'Arial Narrow, sans-serif', // Establecer fuente general
+    fontFamily: "'Times New Roman', Times, serif",  // Establecer fuente general
     fontSize: '1rem',
     
   }}
@@ -407,8 +441,9 @@ return (
       fontSize: '2.333rem', 
       marginBottom: '10px',
       marginTop: '0', 
-      fontFamily: 'Monotype Corsiva, cursive', 
+      fontFamily: "'Times New Roman', Times, serif",  
       fontWeight: 'bold',
+      fontStyle: 'italic',
       color: '#000000',
     }}>
       Saint Patrick's Academy
@@ -418,10 +453,11 @@ return (
     <h2 style={{
       fontSize: '2.17rem', 
       marginBottom: '5px', 
-      fontFamily: 'Monotype Corsiva, cursive',
+      fontFamily: "'Times New Roman', Times, serif",
       color: '#000000',
       marginTop: '0', 
-      fontWeight: 'bold'
+      fontWeight: 'bold',
+      fontStyle: 'italic'
     }}>
       Report Card
     </h2>
@@ -429,7 +465,7 @@ return (
 </div>
 
 
-    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000', marginTop:'30px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '0 30px', fontSize: '1.1rem', fontFamily: "'Times New Roman', Times, serif", color: '#000000', marginTop:'30px' }}>
       <span style={{ display: 'flex', alignItems: 'center'}}>
         <strong style={{ fontWeight: 'bold' }}>Student Name:</strong>
         <span style={{ borderBottom: '1px solid black', paddingBottom: '2px', display: 'inline-block', flex: '1', marginLeft: '5px', letterSpacing: '0.5px' }}>
@@ -444,7 +480,7 @@ return (
       </span>
     </div>
 
-    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px 30px', fontSize: '1.1rem', fontFamily: 'Arial Narrow, sans-serif', color: '#000000' , marginTop:'30px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', margin: '20px 30px', fontSize: '1.1rem', fontFamily: "'Times New Roman', Times, serif", color: '#000000' , marginTop:'30px' }}>
       <span style={{ marginLeft: '40px' }}>
         <strong style={{ fontWeight: 'bold' }}>Grade: </strong>
         <span style={{ paddingBottom: '2px', display: 'inline-block', letterSpacing: '0.5px' }}> {gradoSeleccionado}</span>
@@ -454,9 +490,11 @@ return (
       <strong style={{ fontWeight: 'bold' }}>School year: </strong> {new Date().getFullYear()}-{new Date().getFullYear() + 1}</span>
     </div>
 
-
-          
-      <CTable className="table-bordered" style={{ border: '1px solid #000000', marginTop: '50px', fontSize: '0.8rem', lineHeight: '1', }}>
+    <div style={{
+  maxHeight: '700px', // Ajusta según necesidad
+  overflowY: 'auto',
+}}>        
+      <CTable className="table-bordered" style={{ width: '100%', border: '1px solid #000000', marginTop: '50px', fontSize: '0.75rem', lineHeight: '1',fontFamily: "'Times New Roman', Times, serif"  }}>
       <CTableHead>
   <CTableRow>
     <CTableHeaderCell 
@@ -491,7 +529,7 @@ return (
     {cuadroNotas.length > 0 && cuadroNotas[0].NotasParciales.some(p => p.Parcial.match(/recu/i)) && (
           cuadroNotas[0].NotasParciales.filter(p => p.Parcial.match(/recu/i)).map((parcial, index) => (
             <CTableHeaderCell 
-              key={index}
+              key={`recup-${index}`}
               rowSpan={2}
               className="text-center align-middle"
               style={{ backgroundColor: '#BFBFBF', padding: '10px' }}
@@ -518,7 +556,7 @@ return (
      {cuadroNotas.length > 0 &&
       cuadroNotas[0].NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, index) => (
         <CTableHeaderCell 
-          key={index} 
+        key={`parcial-${index}`} 
           className="text-center" 
           style={{ backgroundColor: '#BFBFBF' }}
         >
@@ -528,10 +566,10 @@ return (
   </CTableRow>
 </CTableHead>
 
-
         <CTableBody >
           {cuadroNotas.length > 0 ? (
-          cuadroNotas.map((nota, index) => (
+            <>
+          {cuadroNotas.map((nota, index) => (
             <CTableRow key={index}>
               {/* Celda combinada para el índice y la asignatura */}
               <CTableDataCell className="text-center bg-transparent" style={{ fontSize: '0.8rem', width: '350px' }}>
@@ -543,34 +581,73 @@ return (
 
             {/* Notas de parciales (sin "Recuperación" o palabras que contengan "recu") */}
           {nota.NotasParciales.filter(p => !p.Parcial.match(/recu/i)).map((parcial, i) => (
-            <CTableDataCell key={i} className="text-center bg-transparent">
+            <CTableDataCell key={`regular-${i}`} className="text-center bg-transparent">
               {parcial.Nota}
             </CTableDataCell>
           ))}
 
-            {/* Columna de Recuperación */}
-        <CTableDataCell className="text-center bg-transparent">
-          {
-            nota.NotasParciales.find(p => p.Parcial.match(/recu/i))?.Nota || "-"
-          }
-        </CTableDataCell>
+           {/* Celdas Recuperación */}
+            {nota.NotasParciales
+              .filter(p => p.Parcial.match(/recu/i))
+              .map((recup, i) => (
+                <CTableDataCell key={`recupnote-${i}`} className="text-center bg-transparent">
+                  {recup.Nota}
+                </CTableDataCell>
+              ))
+            }
+
            {/* Columna Promedio Final */}
            <CTableDataCell className="text-center bg-transparent">
             {nota.PromedioFinal}
           </CTableDataCell>
           </CTableRow>
-        ))
-      ) : (
-        <CTableRow>
-          <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
-        </CTableRow>
+        ))}
+      {/* Fila de promedios (solo una vez al final) */}
+            <CTableRow style={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+            <CTableDataCell className="text-center" style={{ fontSize: '0.8rem' }}>
+              PROMEDIO
+            </CTableDataCell>
+            
+            {cuadroNotas[0].NotasParciales
+              .filter(p => !p.Parcial.match(/recu/i))
+              .map((parcial, i) => {
+                const sum = cuadroNotas.reduce((acc, nota) => {
+                  const notaParcial = nota.NotasParciales.find(np => np.Parcial === parcial.Parcial);
+                  return acc + (parseFloat(notaParcial?.Nota) || 0);
+                }, 0);
+                const avg = (sum / cuadroNotas.length).toFixed(2);
+                return (
+                  <CTableDataCell key={`avg-${i}`} className="text-center">
+                    {avg}
+                  </CTableDataCell>
+                );
+              })}
+                <CTableDataCell className="text-center"></CTableDataCell>
+                <CTableDataCell className="text-center"></CTableDataCell>
+                <CTableDataCell className="text-center"></CTableDataCell>
+                <CTableDataCell className="text-center"></CTableDataCell>
+          </CTableRow>
+          </>
+          ) : (
+            <CTableRow>
+              <CTableDataCell colSpan="5">No se encontraron resultados</CTableDataCell>
+            </CTableRow>
+          )}
+        </CTableBody>
+      </CTable>
+      
+      </div>
+      <div style={{ marginTop: '130px', marginLeft: '400px' }}>
+        <div style={{ width: '300px', borderTop: '1px solid #000', textAlign: 'center' }}>
+          <div style={{ marginTop: '5px', fontSize: '0.8rem', fontFamily: "'Times New Roman', Times, serif" }}>
+            Director / Principal<br />Sello y firma
+          </div>
+        </div>
+      </div>
+      
+          </div>
+        </>
       )}
-      </CTableBody>
-    </CTable>
-    </div>
-  </>
-)}
-
  </CContainer>
 );
 };
