@@ -1,5 +1,5 @@
 import express from 'express';
-import {obtenerTodasSeccionesAsignaturas, 
+import {obtenerSeccionesAsignaturasPorSeccion, 
         obtenerTodasAsignaturas,
         obtenerTodasSecciones,
         obtenerTodosGrados,
@@ -12,7 +12,7 @@ const router = express.Router();
 
 
 // Ruta para obtener secciones
-router.get('/verSeccionesAsignaturas', obtenerTodasSeccionesAsignaturas);
+router.get('/verSeccionesAsignaturas/:cod_secciones', obtenerSeccionesAsignaturasPorSeccion);
 
 // Ruta para obtener Asignaturas
 router.get('/verAsignaturas', obtenerTodasAsignaturas);

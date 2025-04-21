@@ -303,12 +303,6 @@ const _nav = [
         to: '/Contabilidad',
         nameobject: 'Contabilidad',
       },
-      {
-        component: CNavItem,
-        name: 'Periodo Descanso',
-        to: '/ListaPeriodosDescanso',
-        nameobject: 'ListaPeriodosDescanso',
-      },
 
       
     ],

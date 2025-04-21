@@ -91,28 +91,6 @@ const [horarioToUpdate, setHorarioToUpdate] = useState([]);
   const [dropdownPosition, setDropdownPosition] = useState({});
 
 
-
-  
-
-
-  const horariosExistentes = seccionesAsignaturas.filter(fila => parseInt(fila.cod_secciones) === parseInt(seccionSeleccionada));
-
-  const [horarios, setHorarios] = useState([{
-    Cod_seccion_asignatura: '',
-    horario_inicio: '',
-    horario_fin: '',
-    cod_secciones: '',
-    cod_grado: '',
-    dias: {
-      Lunes: '',
-      Martes: '',
-      Miércoles: '',
-      Jueves: '',
-      Viernes: '',
-      Sábado: '',
-      Domingo: ''
-    }
-  }]);
   
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -128,37 +106,38 @@ const [horarioToUpdate, setHorarioToUpdate] = useState([]);
 {/***********************************************************************************************************************************/}
 
 {/******************************************EFECTOS Y APIS**************************************************************************/}
-useEffect(() => {
-  const horariosExistentes = seccionesAsignaturas.filter(
-    fila => parseInt(fila.cod_secciones) === parseInt(seccionSeleccionada)
-  );
 
-  const horariosFormateados = horariosExistentes.map(horario => ({
-    ...horario,
-    dias: diasFijos.reduce((acc, dia) => ({ ...acc, [dia]: horario.dias?.[dia] || '' }), {})
-  }));
-
-  setHorarios(horariosFormateados);
-}, [seccionSeleccionada, seccionesAsignaturas]);
-
-useEffect(() => {
-  console.log('Datos de horarios después de la filtración:', horarios);
-}, [horarios]);
 
 {/**************************************************************************************************************************************/}
 
 const fetchSeccionesAsignaturas = async () => {
   try {
-    const response = await fetch("http://localhost:4000/api/seccionesAsignaturas/verSeccionesAsignaturas");
+    if (!seccionSeleccionada) {
+      console.error("Error: No se ha seleccionado ninguna sección.");
+      return;
+    }
+
+    const response = await fetch(`http://localhost:4000/api/seccionesAsignaturas/verSeccionesAsignaturas/${seccionSeleccionada}`);
     if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
 
-    const data = await response.json();
-    console.log("Datos obtenidos de la API:", data); // Verifica la respuesta de la API
-    setSeccionesAsignaturas(data); // Asigna los datos al estado seccionesAsignaturas
+    let data = await response.json();
+    console.log("Datos obtenidos de la API para la sección seleccionada:", data);
+
+    // 📌 Asegurar formato correcto antes de ordenar
+    data.sort((a, b) => {
+      const inicioA = new Date(`1970-01-01T${a.horario_inicio}`).getTime();
+      const inicioB = new Date(`1970-01-01T${b.horario_inicio}`).getTime();
+      return inicioA - inicioB;
+    });
+
+    console.log("Datos ordenados:", data); // Verifica el orden antes de asignarlo al estado
+    setSeccionesAsignaturas(data); // Asigna los datos ordenados al estado
   } catch (error) {
     console.error("Error fetching Secciones Asignaturas:", error);
   }
 };
+
+
 
 
 const fetchAsignaturas = async () => {
@@ -198,22 +177,44 @@ const handleAddRowInsert = () => {
   }
 };
 
+{/***********************************************************************************************************************************************/}
+const validarHorario = (horario_inicio, horario_fin) => {
+  if (!horario_inicio || !horario_fin) {
+    return { valido: false, mensaje: 'Debe ingresar ambos horarios (inicio y fin).' };
+  }
+
+  const inicio = new Date(`1970-01-01T${horario_inicio}:00`);
+  const fin = new Date(`1970-01-01T${horario_fin}:00`);
+
+  if (inicio.getTime() === fin.getTime()) {
+    return { valido: false, mensaje: 'El horario de inicio no puede ser igual al horario de fin.' };
+  }
+
+  if (inicio >= fin) {
+    return { valido: false, mensaje: 'El horario de inicio debe ser menor que el horario de fin.' };
+  }
+
+  const dentroRango = inicio >= new Date('1970-01-01T07:00:00') && fin <= new Date('1970-01-01T14:00:00');
+
+  if (!dentroRango) {
+    return { valido: false, mensaje: 'Los horarios deben estar entre 7:00 AM y 2:00 PM.' };
+  }
+
+  return { valido: true, mensaje: '' };
+};
+
+
+{/***********************************************************************************************************************************************/}
 
 const handleChangeInsert = (rowIndex, field, value) => {
   setHorariosInsert((prevHorarios) => {
     const updatedHorarios = [...prevHorarios];
+
     if (field === 'horario_inicio' || field === 'horario_fin') {
       updatedHorarios[rowIndex] = {
         ...updatedHorarios[rowIndex],
         [field]: value,
       };
-      // Solo valide si ambos campos tienen valor
-      if (updatedHorarios[rowIndex].horario_inicio && updatedHorarios[rowIndex].horario_fin) {
-        if (!validarHorario(updatedHorarios[rowIndex].horario_inicio, updatedHorarios[rowIndex].horario_fin)) {
-          swal.fire('Error', 'Debe ingresar horarios entre 7:00 AM y 2:00 PM.', 'error');
-          return prevHorarios;
-        }
-      }
     } else {
       updatedHorarios[rowIndex] = {
         ...updatedHorarios[rowIndex],
@@ -223,9 +224,39 @@ const handleChangeInsert = (rowIndex, field, value) => {
         },
       };
     }
+
     return updatedHorarios;
   });
 };
+
+{/***********************************************************************************************************************************************/}
+// **Nueva validación en `onBlur`**
+const handleBlurInsert = (rowIndex) => {
+  const { horario_inicio, horario_fin } = horariosInsert[rowIndex];
+
+  // Validar solo si ambos horarios tienen formato completo `hh:mm`
+  if (/^\d{2}:\d{2}$/.test(horario_inicio) && /^\d{2}:\d{2}$/.test(horario_fin)) {
+    const validacion = validarHorario(horario_inicio, horario_fin);
+    if (!validacion.valido) {
+      swal.fire('Error', validacion.mensaje, 'error');
+    }
+  }
+};
+
+const handleBlurUpdate = (rowIndex) => {
+  const { horario_inicio, horario_fin } = horarioToUpdate[rowIndex];
+
+  // Validar solo si ambos horarios tienen formato completo `hh:mm`
+  if (/^\d{2}:\d{2}$/.test(horario_inicio) && /^\d{2}:\d{2}$/.test(horario_fin)) {
+    const validacion = validarHorario(horario_inicio, horario_fin);
+    if (!validacion.valido) {
+      swal.fire('Error', validacion.mensaje, 'error');
+    }
+  }
+};
+
+
+{/***********************************************************************************************************************************************/}
 
 const handleSelectAsignatura = (rowIndex, dia, value) => {
   handleChangeInsert(rowIndex, dia, value);
@@ -237,14 +268,8 @@ const borrarAsignatura = (rowIndex, dia) => {
 };
 
 
-const validarHorario = (horario_inicio, horario_fin) => {
-  const inicio = new Date(`1970-01-01T${horario_inicio}:00`);
-  const fin = new Date(`1970-01-01T${horario_fin}:00`);
-  const inicioValido = inicio >= new Date('1970-01-01T07:00:00') && inicio <= new Date('1970-01-01T14:00:00');
-  const finValido = fin >= new Date('1970-01-01T07:00:00') && fin <= new Date('1970-01-01T14:00:00');
-  return inicioValido && finValido && inicio < fin; // Asegura que el inicio sea antes del fin
-};
 
+{/***********************************************************************************************************************************************/}
 const handleInsertModalClose = () => {
   // Solo muestra la alerta si el modal está visible
   if (modalVisible) {
@@ -264,6 +289,7 @@ const handleInsertModalClose = () => {
   }
 };
 
+{/***********************************************************************************************************************************************/}
 const handleInsertModalOpen = () => {
   setModalVisible(true);
   setHorariosInsert([
@@ -301,32 +327,37 @@ const handleInsertModalOpen = () => {
   };
   
 {/*********************************************************************************************************************************************/}
-  const handleEditClick = (horarios) => {
-    if (!Array.isArray(horarios) || horarios.length === 0) {
-      console.error('No se pasaron horarios válidos:', horarios);
-      return;
+const handleEditClick = (secciones) => {
+  if (!Array.isArray(secciones) || secciones.length === 0) {
+    console.error('No se pasaron registros válidos:', secciones);
+    return;
+  }
+
+  console.log("Registros recibidos para edición:", secciones); // 📌 Verificación previa
+
+  const updatedSecciones = secciones.map(seccion => ({
+    Cod_seccion_asignatura: seccion.Cod_seccion_asignatura || '',
+    horario_inicio: seccion.horario_inicio || '',
+    horario_fin: seccion.horario_fin || '',
+    cod_secciones: seccion.cod_secciones || '',
+    dias: {
+      Lunes: seccion.lunes || '',
+      Martes: seccion.martes || '',
+      Miércoles: seccion.miercoles || '',
+      Jueves: seccion.jueves || '',
+      Viernes: seccion.viernes || '',
+      Sábado: seccion.sabado || '',
+      Domingo: seccion.domingo || ''
     }
-  
-    const updatedHorarios = horarios.map(horario => ({
-      Cod_seccion_asignatura: horario.Cod_seccion_asignatura || '',
-      horario_inicio: horario.horario_inicio || '',
-      horario_fin: horario.horario_fin || '',
-      cod_secciones: horario.cod_secciones || '',
-      dias: {
-        Lunes: horario.lunes || '',
-        Martes: horario.martes || '',
-        Miércoles: horario.miercoles || '',
-        Jueves: horario.jueves || '',
-        Viernes: horario.viernes || '',
-        Sábado: horario.sabado || '',
-        Domingo: horario.domingo || ''
-      }
-    }));
-  
-    setHorarioToUpdate(updatedHorarios);
-    setModalUpdateVisible(true);
-  };
-  
+  }));
+
+  console.log("Datos procesados para actualizar:", updatedSecciones); // 📌 Verificación final
+
+  setHorarioToUpdate(updatedSecciones);
+  setModalUpdateVisible(true);
+};
+
+
 {/************************************************************************************************************************************************/}
   const handleUpdateChange = (rowIndex, field, value) => {
     setHorarioToUpdate((prevHorarios) => {
@@ -347,7 +378,7 @@ const handleInsertModalOpen = () => {
     });
   };
   
-
+{/***********************************************************************************************************************************************/}
 
   const handleChangeUpdate = (rowIndex, field, value) => {
     setHorarioToUpdate((prevHorarios) => {
@@ -361,6 +392,8 @@ const handleInsertModalOpen = () => {
       return updatedHorarios;
     });
   };
+  
+  {/***********************************************************************************************************************************************/}
   
   const handleDeleteRow = async (rowIndex, Cod_seccion_asignatura) => {
     const horario = horarioToUpdate[rowIndex];
@@ -386,6 +419,8 @@ const handleInsertModalOpen = () => {
     setHorarioToUpdate(horarioToUpdate.filter((_, i) => i !== rowIndex));
   };
 
+{/***********************************************************************************************************************************************/}
+
 // Cerrar el modal de editar
 const handleUpdateModalClose = () => {
   setModalUpdateVisible(false);
@@ -399,7 +434,6 @@ const handleInsertSubmit = async () => {
   setIsSubmitting(true);
 
   // Filtrar filas válidas
-  // Filtrar filas válidas
   const validHorarios = horariosInsert.filter(horario => horario.horario_inicio && horario.horario_fin && validarHorario(horario.horario_inicio, horario.horario_fin));
 
   if (!validHorarios.length) {
@@ -408,10 +442,13 @@ const handleInsertSubmit = async () => {
     return;
   }
 
-    // Ordenar horarios por horario_inicio
-    const sortedHorarios = validHorarios.sort((a, b) => new Date(`1970-01-01T${a.horario_inicio}:00`) - new Date(`1970-01-01T${b.horario_inicio}:00`));
+  // 📌 Ordenar horarios por horario_inicio correctamente
+  const sortedHorarios = [...validHorarios].sort((a, b) => 
+    new Date(`1970-01-01T${a.horario_inicio}:00`).getTime() - new Date(`1970-01-01T${b.horario_inicio}:00`).getTime()
+  );
 
-  const dataToSubmit = validHorarios.map(horario => ({
+  // 🚀 Usar `sortedHorarios` en lugar de `validHorarios`
+  const dataToSubmit = sortedHorarios.map(horario => ({
     Cod_seccion_asignatura: horario.Cod_seccion_asignatura,
     horario_inicio: horario.horario_inicio,
     horario_fin: horario.horario_fin,
@@ -432,7 +469,7 @@ const handleInsertSubmit = async () => {
     return;
   }
 
-  console.log('Datos a enviar:', dataToSubmit);
+  console.log('Datos a enviar ordenados:', dataToSubmit); // 📌 Revisa en consola si se respeta el orden antes de enviar
 
   try {
     const urlInsert = 'http://localhost:4000/api/seccionesAsignaturas/crearSeccionAsignatura';
@@ -620,7 +657,7 @@ const handleDeleteSeccionAsignatura = async (Cod_seccion_asignatura) => {
 
 
 const generateSeccionesAsignaturasPDF = () => {
-  const doc = new jsPDF('p', 'mm', 'letter'); // Formato vertical
+  const doc = new jsPDF('l', 'mm', 'letter'); // Cambiado a horizontal
 
   if (!filteredSeccionesAsignaturas || filteredSeccionesAsignaturas.length === 0) {
     alert('No hay datos para exportar.');
@@ -628,7 +665,7 @@ const generateSeccionesAsignaturasPDF = () => {
   }
 
   const img = new Image();
-  img.src = logo; // Asegúrate de que tienes una variable `logo` con la ruta correcta
+  img.src = logo;
 
   img.onload = () => {
     const pageWidth = doc.internal.pageSize.width;
@@ -672,7 +709,7 @@ const generateSeccionesAsignaturasPDF = () => {
     ];
 
     const tableRows = filteredSeccionesAsignaturas.map((fila) => ({
-      horario: `${fila.horario_inicio} - ${fila.horario_fin}`,
+      horario: `${fila.horario_inicio.slice(0, 5)} - ${fila.horario_fin.slice(0, 5)}`,
       lunes: asignaturas.find(asig => asig.Cod_asignatura === fila.lunes)?.Nombre_asignatura.toUpperCase() || '-',
       martes: asignaturas.find(asig => asig.Cod_asignatura === fila.martes)?.Nombre_asignatura.toUpperCase() || '-',
       miercoles: asignaturas.find(asig => asig.Cod_asignatura === fila.miercoles)?.Nombre_asignatura.toUpperCase() || '-',
@@ -684,7 +721,7 @@ const generateSeccionesAsignaturasPDF = () => {
 
     doc.autoTable({
       startY: 75,
-      theme: 'grid', // Utilizar el tema 'grid' para asegurar líneas claras de división
+      theme: 'grid',
       columns: tableColumn,
       body: tableRows,
       headStyles: {
@@ -693,29 +730,41 @@ const generateSeccionesAsignaturasPDF = () => {
         fontSize: 8,
         halign: 'center',
         valign: 'middle',
+        lineColor: [0, 0, 0],  // 🟢 Añadido: bordes visibles
+        lineWidth: 0.2,        // 🟢 Añadido: grosor fino
       },
       bodyStyles: {
         fontSize: 7,
         halign: 'center',
         valign: 'middle',
+        fillColor: [241, 250, 240], // 🟢 Verde ultra claro #F1FAF0
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],       // 🟢 Bordes negros
+        lineWidth: 0.2,             // 🟢 Grosor fino
       },
-      alternateRowStyles: {
-        fillColor: [240, 248, 255],
-      },
-      tableWidth: 'auto', // Ajustar el ancho de la tabla automáticamente
+      tableWidth: 'auto',
       styles: {
-        overflow: 'linebreak', // Asegurar que el texto se ajuste dentro de las celdas
+        overflow: 'linebreak',
+      },
+      didParseCell: function (data) {
+        if (data.section === 'body') {
+          const descansoLabels = ['RECREO', 'RECESO', 'RECESS', 'BREAK'];
+          if (descansoLabels.includes(data.cell.raw)) {
+            data.cell.styles.fillColor = [129, 199, 132]; // 🟢 Verde descanso
+            data.cell.styles.textColor = [0, 0, 0];        // 🟢 Texto oscuro
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
       },
       didDrawPage: (data) => {
         const pageCount = doc.internal.getNumberOfPages();
         const pageCurrent = doc.internal.getCurrentPageInfo().pageNumber;
-
-        // Pie de página
         const footerY = doc.internal.pageSize.height - 10;
+    
         doc.setFontSize(10);
         doc.setTextColor(0, 102, 51);
         doc.text(`Página ${pageCurrent} de ${pageCount}`, pageWidth - 10, footerY, { align: 'right' });
-
+    
         const now = new Date();
         const dateString = now.toLocaleDateString('es-HN', {
           year: 'numeric',
@@ -730,7 +779,7 @@ const generateSeccionesAsignaturasPDF = () => {
         doc.text(`Fecha de generación: ${dateString} Hora: ${timeString}`, 10, footerY);
       },
     });
-
+    
     // Convertir PDF en Blob
     const pdfBlob = doc.output('blob');
     const pdfURL = URL.createObjectURL(pdfBlob);
@@ -739,21 +788,63 @@ const generateSeccionesAsignaturasPDF = () => {
     const newWindow = window.open('', '_blank');
     newWindow.document.write(`
       <html>
-        <head><title>Reporte de Horarios</title></head>
-        <body style="margin:0;">
-          <iframe width="100%" height="100%" src="${pdfURL}" frameborder="0"></iframe>
-          <div style="position:fixed;top:10px;right:20px;">
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Horarios.pdf'; a.click();">
-              Descargar PDF
+        <head>
+          <title>Reporte de Relaciones</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              width: 100vw;
+              height: 100vh;
+            }
+            iframe {
+              width: 100vw;
+              height: 100vh;
+              border: none;
+            }
+            .icon-container {
+              position: fixed;
+              top: 15px;
+              right: 15px;
+              display: flex;
+              gap: 15px;
+              padding: 10px;
+              border-radius: 8px;
+            }
+            .icon-button {
+              background: none;
+              border: none;
+              cursor: pointer;
+              font-size: 22px;
+              color: white;
+              position: relative;
+              z-index: 9999;
+            }
+            .icon-button:focus,
+            .icon-button:active {
+              outline: none;
+              box-shadow: none;
+            }
+          </style>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+        </head>
+        <body>
+          <iframe id="pdfViewer" src="${pdfURL}"></iframe>
+          <div class="icon-container">
+            <button class="icon-button" onclick="const a = document.createElement('a'); a.href='${pdfURL}'; a.download='Reporte_Relaciones.pdf'; a.click();">
+              <i class="fas fa-download"></i>
             </button>
-            <button style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer;" 
-              onclick="window.print();">
-              Imprimir PDF
+            <button class="icon-button" onclick="const printWindow = window.open('${pdfURL}', '_blank'); printWindow.onload = () => printWindow.print();">
+              <i class="fas fa-print"></i>
             </button>
           </div>
         </body>
-      </html>`);
+      </html>
+    `);
   };
 
   img.onerror = () => {
@@ -763,9 +854,9 @@ const generateSeccionesAsignaturasPDF = () => {
 
 
 
+
 {/************************************************************************************************************************************/}
   
-
 
 
 const generateSeccionesAsignaturasExcel = async () => {
@@ -819,7 +910,7 @@ const generateSeccionesAsignaturasExcel = async () => {
       asignaturas.find(asig => asig.Cod_asignatura === fila.domingo)?.Nombre_asignatura.toUpperCase() || '-',
     ]);
 
-    row.eachCell((cell) => {
+    row.eachCell((cell, colIndex) => {
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.border = {
         top: { style: 'thin', color: { argb: '000000' } },
@@ -827,11 +918,17 @@ const generateSeccionesAsignaturasExcel = async () => {
         bottom: { style: 'thin', color: { argb: '000000' } },
         right: { style: 'thin', color: { argb: '000000' } },
       };
+
+      // Si la asignatura es "RECREO", "RECESO", "RECESS" o "BREAK", cambia el color de fondo a verde
+      const asignatura = cell.value;
+      if (["RECREO", "RECESO", "RECESS", "BREAK"].includes(asignatura)) {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'A5D6A7' } }; // Verde claro
+      }
     });
   });
 
   // Ajustar el ancho de las columnas
-  worksheet.columns.forEach((column, index) => {
+  worksheet.columns.forEach((column) => {
     column.width = 20;
   });
 
@@ -842,38 +939,29 @@ const generateSeccionesAsignaturasExcel = async () => {
 };
 
 
+
 {/************************************************************************************************************************************/}
 
   
-// Primero declaramos la función
+// La función de asignaturas sigue siendo útil para obtener nombres
 const getAsignaturaNombre = (codigo) => {
   const asignatura = asignaturas.find(asignatura => asignatura.Cod_asignatura === codigo);
-  return asignatura ? asignatura.Nombre : ''; // Devuelve el nombre de la asignatura o una cadena vacía si no se encuentra
+  return asignatura ? asignatura.Nombre : '';
 };
 
-// Aplicamos el filtro
-
+// Eliminamos la filtración manual porque los datos ya vienen filtrados desde la API
 const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
-  console.log(`Comparando ${fila.cod_secciones} con ${seccionSeleccionada}`);
-
-  // Convertimos ambos valores a números enteros para asegurar una comparación correcta
-  return parseInt(fila.cod_secciones) === parseInt(seccionSeleccionada) &&
-    (
-      (getAsignaturaNombre(fila.lunes) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (getAsignaturaNombre(fila.martes) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (getAsignaturaNombre(fila.miercoles) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (getAsignaturaNombre(fila.jueves) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (getAsignaturaNombre(fila.viernes) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (getAsignaturaNombre(fila.sabado) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (getAsignaturaNombre(fila.domingo) || '').toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  return (
+    (getAsignaturaNombre(fila.lunes) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (getAsignaturaNombre(fila.martes) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (getAsignaturaNombre(fila.miercoles) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (getAsignaturaNombre(fila.jueves) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (getAsignaturaNombre(fila.viernes) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (getAsignaturaNombre(fila.sabado) || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (getAsignaturaNombre(fila.domingo) || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 });
 
-
-
-
-
-  
 
 
 
@@ -932,20 +1020,19 @@ const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
         </CButton>
 
         <CButton
-          style={{
-            backgroundColor: '#FFBF00',
-            color: 'black',
-            padding: "8px 12px",
-            fontSize: "0.8rem",
-            display: "flex",
-            alignItems: "center",
-          }}
-          className="rounded shadow"
-          onClick={() => handleEditClick(horarios)}
-        >
-          <CIcon icon={cilPen} style={{ marginRight: "5px" }} /> Editar
-        </CButton>
-
+  style={{
+    backgroundColor: '#FFBF00',
+    color: 'black',
+    padding: "8px 12px",
+    fontSize: "0.8rem",
+    display: "flex",
+    alignItems: "center",
+  }}
+  className="rounded shadow"
+  onClick={() => handleEditClick(seccionesAsignaturas.filter(fila => parseInt(fila.cod_secciones) === parseInt(seccionSeleccionada)))}
+>
+  <CIcon icon={cilPen} style={{ marginRight: "5px" }} /> Editar
+</CButton>
         <CDropdown>
           <CDropdownToggle
             style={{
@@ -984,43 +1071,48 @@ const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
     </CRow>
   </div>
 
-  {/* Tabla de asignaturas y horarios */}
-  <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+{/* Tabla de asignaturas y horarios */}
+<div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
   <CTable striped bordered hover style={{ borderCollapse: 'collapse' }}>
     <CTableHead>
-      <CTableRow style={{ backgroundColor: '#2E7D32 !important', color: 'white !important' }}>
+      <CTableRow style={{ backgroundColor: '#2E7D32', color: 'white' }}>
         <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Horario</CTableHeaderCell>
-        <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Lunes</CTableHeaderCell>
-        <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Martes</CTableHeaderCell>
-        <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Miércoles</CTableHeaderCell>
-        <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Jueves</CTableHeaderCell>
-        <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Viernes</CTableHeaderCell>
-        <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Sábado</CTableHeaderCell>
-        <CTableHeaderCell style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>Domingo</CTableHeaderCell>
+        {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((dia) => (
+          <CTableHeaderCell key={dia} style={{ textAlign: "center", border: '2px solid black', fontSize: "15px", fontWeight: "bold" }}>{dia}</CTableHeaderCell>
+        ))}
       </CTableRow>
     </CTableHead>
     <CTableBody>
       {filteredSeccionesAsignaturas.map((fila, rowIndex) => {
-        const rowStyle = rowIndex % 2 === 0 
-          ? { backgroundColor: "#FFFFFF !important" }  // Blanco
-          : { backgroundColor: "#E8F5E9 !important" }; // Verde claro
-
         return (
-          <CTableRow key={fila.Cod_seccion_asignatura} style={rowStyle}>
+          <CTableRow key={fila.Cod_seccion_asignatura} style={{ backgroundColor: rowIndex % 2 === 0 ? "#FFFFFF" : "#E8F5E9" }}>
             <CTableDataCell style={{ textAlign: "center", fontSize: "13px", border: '2px solid black' }}>
-              {fila.horario_inicio} - {fila.horario_fin}
+              {/* Formatear el horario sin los segundos */}
+              {fila.horario_inicio.slice(0, 5)} - {fila.horario_fin.slice(0, 5)}
             </CTableDataCell>
-            {['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].map((dia) => (
-              <CTableDataCell key={dia} style={{ textAlign: "center", fontSize: "12px", border: '2px solid black' }}>
-                {asignaturas.find(asig => asig.Cod_asignatura === fila[dia])?.Nombre_asignatura.toUpperCase() || '-'}
-              </CTableDataCell>
-            ))}
+            {['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'].map((dia) => {
+              const asignatura = asignaturas.find(asig => asig.Cod_asignatura === fila[dia])?.Nombre_asignatura.toUpperCase() || '-';
+
+              // 📌 Si la asignatura es RECREO, RECESO, RECESS o BREAK → fondo verde
+              const esDescanso = ["RECREO", "RECESO", "RECESS", "BREAK"].includes(asignatura);
+              const cellStyle = esDescanso
+                ? { textAlign: "center", fontSize: "12px", border: '2px solid black', backgroundColor: "#A5D6A7" } // Verde claro
+                : { textAlign: "center", fontSize: "12px", border: '2px solid black' };
+
+              return (
+                <CTableDataCell key={dia} style={cellStyle}>
+                  {asignatura}
+                </CTableDataCell>
+              );
+            })}
           </CTableRow>
         );
       })}
     </CTableBody>
   </CTable>
 </div>
+
+
 
 
 
@@ -1112,12 +1204,14 @@ const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
                       type="time"
                       value={horario.horario_inicio}
                       onChange={(e) => handleChangeInsert(rowIndex, 'horario_inicio', e.target.value)}
+                      onBlur={() => handleBlurInsert(rowIndex)}
                       style={{ width: '45%', minWidth: '80px', border: '1px solid black' }}
                     />
                     <CFormInput
                       type="time"
                       value={horario.horario_fin}
                       onChange={(e) => handleChangeInsert(rowIndex, 'horario_fin', e.target.value)}
+                      onBlur={() => handleBlurInsert(rowIndex)}
                       style={{ width: '45%', minWidth: '80px', border: '1px solid black' }}
                     />
                   </td>
@@ -1224,6 +1318,7 @@ const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
         <div
           key={asignatura.Cod_asignatura}
           onClick={() => handleUpdateChange(dropdownIndexUpdate.row, dropdownIndexUpdate.dia, asignatura.Cod_asignatura)}
+          
           style={{ padding: '5px', cursor: 'pointer' }}
         >
           {asignatura.Nombre_asignatura}
@@ -1303,12 +1398,14 @@ const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
                   type="time"
                   value={horario.horario_inicio}
                   onChange={(e) => handleChangeUpdate(rowIndex, 'horario_inicio', e.target.value)}
+                  onBlur={() => handleBlurUpdate(rowIndex)}
                   style={{ width: '45%', minWidth: '80px', border: '1px solid black' }}
                 />
                 <CFormInput
                   type="time"
                   value={horario.horario_fin}
                   onChange={(e) => handleChangeUpdate(rowIndex, 'horario_fin', e.target.value)}
+                  onBlur={() => handleBlurUpdate(rowIndex)}
                   style={{ width: '45%', minWidth: '80px', border: '1px solid black' }}
                 />
               </td>

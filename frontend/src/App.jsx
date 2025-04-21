@@ -77,7 +77,6 @@ const ListaAulas = React.lazy(() => import('./views/pages/matricula/ListaAulas')
 const ListaDias = React.lazy(() => import('./views/pages/matricula/ListaDias'));
 const ListaSecciones = React.lazy(() => import('./views/pages/matricula/ListaSecciones'));
 const ListaSecciones_Asignatura = React.lazy(() => import('./views/pages/matricula/ListaSecciones_Asignatura'));
-const ListaPeriodosDescanso = React.lazy(() => import('./views/pages/matricula/ListaPeriodosDescanso'));
 const ListaGestion_Academica = React.lazy(() => import('./views/pages/matricula/ListaGestion_Academica'));
 const ListaEstructura = React.lazy(() => import('./views/pages/personas/ListaEstructura')); 
 const ListaPersonas = React.lazy(() => import('./views/pages/personas/ListaPersonas')); 
@@ -210,7 +209,6 @@ const App = () => {
                 <Route path="/edificios" element={<ListaEdificios />} />
                 <Route path="/aulas" element={<ListaAulas />} />
                 <Route path="/dias" element={<ListaDias />} />
-                <Route path="/ListaPeriodosDescanso" element={<ListaPeriodosDescanso />} />
                 <Route path="/lista-secciones-asignatura" element={<ListaSecciones_Asignatura />} />
                 <Route path="/gestion_academica"  element={<ListaGestion_Academica />} />
                 <Route exact path="/lista-secciones" element={<ListaSecciones />} /> 

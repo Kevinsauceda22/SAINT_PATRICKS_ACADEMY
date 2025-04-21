@@ -5,19 +5,26 @@ const pool = await conectarDB();
 
 
 
-export const obtenerTodasSeccionesAsignaturas = async (req, res) => {
+export const obtenerSeccionesAsignaturasPorSeccion = async (req, res) => {
     try {
-        const [rows] = await pool.query('CALL G_Get_SeccionesAsignaturas()');
+        const { cod_secciones } = req.params; // Obtener el parámetro desde la URL
+        if (!cod_secciones) {
+            return res.status(400).json({ Mensaje: 'Se requiere el parámetro cod_secciones' });
+        }
+
+        const [rows] = await pool.query('CALL G_Get_SeccionesAsignaturas(?)', [cod_secciones]);
+
         if (rows[0].length > 0) {
             res.status(200).json(rows[0]);
         } else {
-            res.status(404).json({ Mensaje: 'No se encontraron las secciones y asignaturas' });
+            res.status(404).json({ Mensaje: 'No se encontraron datos para la sección seleccionada' });
         }
     } catch (error) {
         console.error('Error al obtener la lista de secciones y asignaturas:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
 
 export const obtenerTodasSecciones = async (req, res) => {
     try {

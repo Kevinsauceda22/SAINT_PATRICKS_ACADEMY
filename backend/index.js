@@ -40,7 +40,6 @@ import pagoRoutes from  "./module/pagosyfinanzas/Routes/pagosFinanzasRoutes.js";
 import personaRoutes from "./module/personas/Routes/personasRoutes.js";
 import seccionesRoutes from './module/matricula/Routes/seccionesRoutes.js';
 import secc_asigRoutes from './module/matricula/Routes/secc_asigRoutes.js';
-import periodoDescansoRoutes from './module/matricula/Routes/periodoDescansoRoutes.js';
 import gestion_academicaRoutes from './module/matricula/Routes/gestion_academicaRoutes.js';
 
 
@@ -187,7 +186,6 @@ app.use('/api/secciones', seccionesRoutes);
 // Rutas para secciones y asignaturas
 app.use('/api/seccionesAsignaturas', secc_asigRoutes);
 // Rutas para secciones y asignaturas y periodo descanso
-app.use('/api/periodosDescanso', periodoDescansoRoutes);
 // Rutas para Gestion academica
 app.use('/api/gestion_academica', gestion_academicaRoutes);
 
