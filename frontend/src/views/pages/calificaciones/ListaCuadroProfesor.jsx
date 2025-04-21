@@ -1194,6 +1194,10 @@ const generarExcelFiel = async () => {
     nombreValueCell.value = nombreEstudiante;
     nombreValueCell.style = {
       ...styles.textoNegrita,
+      font: {
+        ...styles.textoNegrita.font, // Conserva otras propiedades de fuente si existen
+        size: 9 // Tamaño de letra 9
+      },
       border: { bottom: { style: 'thin', color: { argb: '000000' } } }
     };
     worksheet.mergeCells(`C6:F6`);

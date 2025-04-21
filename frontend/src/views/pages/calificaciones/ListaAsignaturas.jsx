@@ -1017,7 +1017,7 @@ const ListaAsignaturas = () => {
             <CFormInput
               type="text"
               value={nueva_Asignatura.Nombre_asignatura}
-              maxLength={20}
+              maxLength={50}
               onPaste={disableCopyPaste}
               onCopy={disableCopyPaste}
               onChange={(e) => handleInputChange(e, (value) => setNueva_Asignatura({
@@ -1066,7 +1066,7 @@ const ListaAsignaturas = () => {
               <CInputGroupText>Nombre de la Asignatura</CInputGroupText>
               <CFormInput
                 type="text"
-                maxLength={20}
+                maxLength={50}
                 onPaste={disableCopyPaste}
                 onCopy={disableCopyPaste}
                 placeholder="Ingrese la nueva asignatura"
