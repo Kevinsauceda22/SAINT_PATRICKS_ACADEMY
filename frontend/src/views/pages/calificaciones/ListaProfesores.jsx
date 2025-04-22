@@ -491,16 +491,12 @@ const currentRecords = filteredRecords.slice(indexOfFirstRecord, indexOfLastReco
 }
 
 function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
-  const [busqueda, setBusqueda] = useState(
-    nuevoProfesor.nombreCompleto || ''
-  );
-  const [seleccionado, setSeleccionado] = useState(
-    listaPersonas.find(p => p.cod_persona === nuevoProfesor.cod_persona) || null
-  );
-  const [mostrarResultados, setMostrarResultados] = useState(false); // Nuevo estado
+  const [busqueda, setBusqueda] = useState('');
+  const [seleccionado, setSeleccionado] = useState(null);
+  const [mostrarResultados, setMostrarResultados] = useState(false);
 
   useEffect(() => {
-    if (nuevoProfesor.cod_persona && !seleccionado) {
+    if (nuevoProfesor.cod_persona) {
       const persona = listaPersonas.find(p => p.cod_persona === nuevoProfesor.cod_persona);
       if (persona) {
         setSeleccionado(persona);
@@ -510,21 +506,27 @@ function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
   }, [nuevoProfesor.cod_persona, listaPersonas]);
 
   const handleSelectPersona = (persona) => {
-    setNuevoProfesor((prev) => ({
+    setNuevoProfesor(prev => ({
       ...prev,
-      cod_persona: persona.cod_persona,
+      cod_persona: persona.cod_persona
     }));
     setBusqueda(`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`);
     setSeleccionado(persona);
-    setMostrarResultados(false); // Ocultar resultados después de seleccionar
+    setMostrarResultados(false);
+  };
+
+  const handleLimpiarSeleccion = () => {
+    setSeleccionado(null);
+    setBusqueda('');
+    setNuevoProfesor(prev => ({...prev, cod_persona: ''}));
+    setMostrarResultados(true); // Mostrar resultados después de limpiar
   };
 
   const personasFiltradas = listaPersonas.filter(
-    (persona) =>
-      persona.cod_tipo_persona === 3 &&
-      (`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
+    persona => persona.cod_tipo_persona === 3 &&
+      `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
         .toUpperCase()
-        .includes(busqueda.toUpperCase()))
+        .includes(busqueda.toUpperCase())
   );
 
   return (
@@ -533,34 +535,29 @@ function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
         <CInputGroupText>Nombre</CInputGroupText>
         <CFormInput
           type="text"
-          placeholder="Buscar por DNI, nombre o apellido..."
+          placeholder={seleccionado ? "" : "Buscar por DNI, nombre o apellido..."}
           value={busqueda}
           onChange={(e) => {
-            setBusqueda(e.target.value.toUpperCase());
-            setSeleccionado(null);
-            setMostrarResultados(true); // Mostrar resultados solo cuando se escribe
-          }}
-          onFocus={() => {
-            if (!seleccionado) {
+            if (!seleccionado) { // Solo permitir cambios si no hay selección
+              setBusqueda(e.target.value.toUpperCase());
               setMostrarResultados(true);
             }
           }}
+          onFocus={() => !seleccionado && setMostrarResultados(true)}
           style={{
             padding: '10px',
             borderRadius: '4px',
             fontSize: '0.95rem',
             textTransform: 'uppercase',
+            backgroundColor: seleccionado ? '#f8f9fa' : '#fff',
+            cursor: seleccionado ? 'default' : 'text'
           }}
-          readOnly={!!seleccionado} // Hacer el input de solo lectura si ya hay una selección
+          readOnly={!!seleccionado} // Hacer el campo de solo lectura cuando hay selección
         />
         {seleccionado && (
           <CButton 
             color="danger" 
-            onClick={() => {
-              setSeleccionado(null);
-              setBusqueda('');
-              setNuevoProfesor(prev => ({...prev, cod_persona: ''}));
-            }}
+            onClick={handleLimpiarSeleccion}
             style={{ marginLeft: '5px' }}
           >
             X
@@ -568,8 +565,7 @@ function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
         )}
       </CInputGroup>
 
-      {/* Mostrar resultados solo si mostrarResultados es true y hay búsqueda */}
-      {mostrarResultados && busqueda && (
+      {mostrarResultados && !seleccionado && busqueda && (
         <div style={{
           maxHeight: '150px',
           overflowY: 'auto',
