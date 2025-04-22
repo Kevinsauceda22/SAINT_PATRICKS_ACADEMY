@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { CIcon } from '@coreui/icons-react';
 import { cilSearch, cilInfo, cilBrushAlt, cilPen, cilTrash, cilPlus, cilSave, cilFile, cilSpreadsheet, cilDescription, cilArrowLeft } from '@coreui/icons'; // Importar iconos específicos
 import swal from 'sweetalert2';
+
+import * as jwt_decode from 'jwt-decode';
+
 import { left } from '@popperjs/core';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable'; // Importa el plugin para tablas
@@ -40,8 +43,11 @@ import {
 import Swal from 'sweetalert2';
 import logo from 'src/assets/brand/logo_saint_patrick.png'
 
+import usePermission from '../../../../context/usePermission';
+import AccessDenied from "../AccessDenied/AccessDenied"
 
 const VistaActividadesAcademicasAdmin = () => {
+  const { canSelect, canInsert, canUpdate } = usePermission('ListaActividadesAca');
   const [profesores, setProfesores] = useState([]);
   const [secciones, setSecciones] = useState([]);
   const [asignaturas, setAsignaturas] = useState([]);
@@ -50,6 +56,7 @@ const VistaActividadesAcademicasAdmin = () => {
   const [listaPersonas, setListaPersonas] = useState([]);
   const [listaponderacionesC, setlistaponderacionesC] = useState([]); // 
   const [selectedSeccion, setSelectedSeccion] = useState(null);
+  const [selectedGrado, setSelectedGrado] = useState(null);
   const [selectedParcial, setSelectedParcial] = useState(null);  // Inicializamos el estado para el parcial seleccionado
   const [modalVisible, setModalVisible] = useState(false);
   const [modalUpdateVisible, setModalUpdateVisible] = useState(false); // estado para el modal de actualizar
@@ -72,7 +79,7 @@ const VistaActividadesAcademicasAdmin = () => {
     Fechayhora_Fin: '',
     Valor: '',
     Cod_secciones: '',
-    Cod_seccion_asignatura: ''
+    Cod_grados_asignaturas: ''
   });
   const [listaponderaciones, setponderaciones] = useState([]);
   const [listaParcial, setparcial] = useState([]);
@@ -95,7 +102,7 @@ const VistaActividadesAcademicasAdmin = () => {
   );
 
   //Paginacion 
-  const [recordsPerPage, setRecordsPerPage] = useState(5);
+  const [recordsPerPage, setRecordsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   //Paginacion secciones
@@ -103,15 +110,15 @@ const VistaActividadesAcademicasAdmin = () => {
   const [searchTerm2, setSearchTerm2] = useState('');
   const [currentPage2, setCurrentPage2] = useState(1);
   //Paginacion asignaturas
-  const [recordsPerPage3, setRecordsPerPage3] = useState(5);
+  const [recordsPerPage3, setRecordsPerPage3] = useState(10);
   const [searchTerm3, setSearchTerm3] = useState('');
   const [currentPage3, setCurrentPage3] = useState(1);
-  //Paginacion actividades
+  //Paginacion parciales
   const [recordsPerPage4, setRecordsPerPage4] = useState(5);
   const [searchTerm4, setSearchTerm4] = useState('');
   const [currentPage4, setCurrentPage4] = useState(1);
   //Paginacion actividades
-  const [recordsPerPage5, setRecordsPerPage5] = useState(5);
+  const [recordsPerPage5, setRecordsPerPage5] = useState(10);
   const [searchTerm5, setSearchTerm5] = useState('');
   const [currentPage5, setCurrentPage5] = useState(1);
 
@@ -119,6 +126,18 @@ const VistaActividadesAcademicasAdmin = () => {
 
   // Fetch de profesores
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const decodedToken = jwt_decode(token); // Usamos jwt_decode para decodificar el token
+        console.log('Token decodificado:', decodedToken);
+
+        // Aquí puedes realizar otras acciones, como verificar si el token es válido o si el usuario tiene permisos
+
+      } catch (error) {
+        console.error('Error al decodificar el token:', error);
+      }
+    }
     const fetchProfesores = async () => {
       try {
         const response = await fetch('http://localhost:4000/api/profesores/VerProfesores');
@@ -126,13 +145,18 @@ const VistaActividadesAcademicasAdmin = () => {
         setProfesores(data);
       } catch (error) {
         console.error('Error al obtener los profesores:', error);
-        Swal.fire('Error', 'Hubo un problema al obtener los profesores.', 'error');
+        Swal.fire({
+          title: 'Error',
+          text: 'Hubo un problema al obtener los profesores.',
+          icon: 'error',
+          confirmButtonText: 'Aceptar'  // ← Esto cambia el texto del botón
+        });
       }
     };
 
     const fetchListaPersonas = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/persona/verpersonas');
+        const response = await fetch('http://localhost:4000/api/personas/verpersonas');
         const data = await response.json();
         const dataWithIndex = data.map((persona) => ({
           ...persona,
@@ -157,7 +181,7 @@ const VistaActividadesAcademicasAdmin = () => {
   
     // Filtra las actividades según el parcial
     const actividadesFiltradas = actividades.filter(
-      (actividad) => actividad.CodParcial === parcial.CodParcial
+      (actividad) => actividad.codParcial === parcial.codParcial
     );
   
     // Guarda las actividades filtradas
@@ -185,22 +209,39 @@ const VistaActividadesAcademicasAdmin = () => {
   const handleVerSecciones = async (profesor) => {
     setSelectedProfesor(profesor);
     try {
-      const response = await fetch(`http://localhost:4000/api/secciones/porprofesor/${profesor.Cod_profesor}`);
+      const response = await fetch(`http://localhost:4000/api/asigsec/porprofesor/${profesor.Cod_profesor}`);
       const data = await response.json();
+      
       if (response.ok) {
-        setSecciones(data);
+        // Si necesitas ordenar aquí (aunque ya se hace en la consulta)
+        const seccionesOrdenadas = [...data].sort((a, b) => {
+          // Primero por año académico (más reciente primero)
+          const ordenAño = parseInt(b.Anio_academico) - parseInt(a.Anio_academico);
+          if (ordenAño !== 0) return ordenAño;
+          
+          // Luego por nombre de grado alfabéticamente
+          return a.Nombre_grado.localeCompare(b.Nombre_grado);
+        });
+
+        setSecciones(seccionesOrdenadas);
       } else {
         Swal.fire('Error', 'No se encontraron secciones para este profesor.', 'info');
       }
     } catch (error) {
       console.error('Error al obtener las secciones:', error);
-      Swal.fire('Error', 'Hubo un problema al obtener las secciones.', 'error');
+      Swal.fire({
+        title: 'Error',
+        text: 'Hubo un problema al obtener las secciones.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
     }
-  };
+};
 
-  const obtenerParciales = async (codAsignatura) => {
+
+  const obtenerParciales = async (codAsignatura, codSeccion) => {
     try {
-      const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/parciales/${codAsignatura}`);
+      const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/parciales/${codAsignatura}/${codSeccion}`);
       if (response.ok) {
         const data = await response.json();
         console.log('Parciales:', data); // Verifica los datos
@@ -212,12 +253,13 @@ const VistaActividadesAcademicasAdmin = () => {
       console.error('Error al obtener los parciales:', error);
     }
   };
-  const obtenerActividades = async (Cod_seccion_asignatura, CodParcial) => {
-    console.log('Cod_seccion_asignatura:', Cod_seccion_asignatura);
-    console.log('CodParcial:', CodParcial);
+
+  const obtenerActividades = async (codGradoAsignaturas, codParcial, codSeccion) => {
+    console.log('Cod_grados_asignaturas:', codGradoAsignaturas);
+    console.log('codParcial:', codParcial);
 
     try {
-        const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/actividades/${Cod_seccion_asignatura}/${CodParcial}`);
+        const response = await fetch(`http://localhost:4000/api/actividadesAcademicas/actividades/${codGradoAsignaturas}/${codParcial}/${codSeccion}`);
         if (!response.ok) throw new Error('Error al obtener actividades');
         const data = await response.json();
         setActividades(data); // Actualiza las actividades en el estado
@@ -226,35 +268,37 @@ const VistaActividadesAcademicasAdmin = () => {
     }
 };
 
-const handleClick = () => {
-  const Cod_seccion_asignatura = selectedSection; // Obtén el valor dinámicamente
-  const CodParcial = selectedParcial; // Obtén el valor dinámicamente
-
-  if (!Cod_seccion_asignatura || !CodParcial) {
-      console.error("Faltan parámetros");
-      return;
-  }
-
-  obtenerActividades(Cod_seccion_asignatura, CodParcial);
-};
-  
-
-
-
   // Fetch de asignaturas de la sección seleccionada
   const handleVerAsignaturas = async (seccion) => {
+    // Limpiar estados relacionados antes de cargar nuevos datos
+    setAsignaturas([]); // ← Esto es crucial para limpiar las asignaturas anteriores
+    setSelectedAsignatura(null);
+    setParciales([]);
+    setActividades([]);
+    
     setSelectedSeccion(seccion);
+    setSelectedGrado(seccion.Nombre_grado);
     try {
-      const response = await fetch(`http://localhost:4000/api/secciones_asignaturas/porseccion/${seccion.Cod_secciones}`);
+      const response = await fetch(`http://localhost:4000/api/asigsec/porseccion/${seccion.Cod_secciones}`);
       const data = await response.json();
       if (response.ok) {
         setAsignaturas(data);
       } else {
-        Swal.fire('Error', 'No se encontraron asignaturas para esta sección.', 'info');
+        Swal.fire({
+          title: 'Error',
+          text: 'No se encontraron asignaturas para esta sección.',
+          icon: 'info',
+          confirmButtonText: 'Aceptar'  // ← Esto cambia el texto del botón
+        });
       }
     } catch (error) {
       console.error('Error al obtener las asignaturas:', error);
-      Swal.fire('Error', 'Hubo un problema al obtener las asignaturas.', 'error');
+      Swal.fire({
+        title: 'Error',
+        text: 'Hubo un problema al obtener las asignaturas.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar'
+      });
     }
   };
 
@@ -262,18 +306,18 @@ const handleClick = () => {
 
   const handleVerParciales = (asignatura) => {
     setSelectedAsignatura(asignatura); // Establece la asignatura seleccionada
-    obtenerParciales(asignatura.Cod_seccion_asignatura); // Obtén los parciales relacionados
+    obtenerParciales(asignatura.Cod_grados_asignaturas, selectedSeccion.Cod_secciones); // Obtén los parciales relacionados
   };
 
   const handleVerActividades = (parcial) => {
     setSelectedParcial(parcial); // Establece el parcial seleccionado
-    obtenerActividades(selectedAsignatura.Cod_seccion_asignatura, parcial.Cod_parcial); // Obtén las actividades relacionadas
+    obtenerActividades(parcial.Cod_grados_asignaturas, parcial.Cod_parcial,selectedSeccion.Cod_secciones); // Obtén las actividades relacionadas
   };
 
-  const fetchActividades = async (Cod_profesor, Cod_seccion_asignatura) => {
+  const fetchActividades = async (Cod_profesor, Cod_grados_asignaturas, Cod_parcial,Cod_secciones ) => {
     try {
       const response = await fetch(
-        `http://localhost:4000/api/actividadesAcademicas/porProfesorYAsignatura/${Cod_profesor}/${Cod_seccion_asignatura}`
+        `http://localhost:4000/api/actividadesAcademicas/porProfesorYAsignatura/${Cod_profesor}/${Cod_grados_asignaturas}/${Cod_parcial}/${Cod_secciones}`
       );
       const data = await response.json();
 
@@ -290,14 +334,14 @@ const handleClick = () => {
     }
   };
 
-  const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor) => {
+  const validarValorActividad = async (Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial, Valor,Cod_secciones) => {
     try {
       const response = await fetch('http://localhost:4000/api/actividadesacademicas/validar-valor', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ Cod_ponderacion_ciclo, Cod_seccion_asignatura, Cod_parcial, Valor }),
+        body: JSON.stringify({ Cod_ponderacion_ciclo, Cod_grados_asignaturas, Cod_parcial, Valor, Cod_secciones }),
       });
 
       const data = await response.json();
@@ -345,17 +389,38 @@ const handleClick = () => {
   };
 
 
-
-
-  const fetchListaCiclo = async () => {
+  const fetchListaCiclo = async (codProfesor, codSeccion) => {
     try {
-      const response = await fetch('http://localhost:4000/api/ponderacionCiclo/verPonderacionesCiclos');
+      const response = await fetch(
+        `http://localhost:4000/api/actividadesAcademicas/obtenerPonderacionesPorProfesoradmin/${codProfesor}/${codSeccion}`
+      );
+  
+      if (!response.ok) {
+        throw new Error('Error al obtener las ponderaciones del profesor.');
+      }
+  
       const data = await response.json();
+      console.log('✅ Ponderaciones recibidas:', data);
       setlistaponderacionesC(data);
     } catch (error) {
-      console.error('Error al obtener los parciales:', error);
+      console.error('Error al obtener las ponderaciones:', error);
     }
   };
+  
+  // Llamar la función cuando tengas el profesor seleccionado
+  useEffect(() => {
+    console.log("🧩 Profesor:", selectedProfesor?.Cod_profesor);
+    console.log("🧩 Sección:", selectedSeccion?.Cod_secciones); // ← Cambio aquí
+  
+    if (selectedProfesor?.Cod_profesor && selectedSeccion?.Cod_secciones) {
+      fetchListaCiclo(selectedProfesor.Cod_profesor, selectedSeccion.Cod_secciones); // ← Y aquí
+    }
+  }, [selectedProfesor, selectedSeccion]);
+  
+  useEffect(() => {
+    console.log('Ponderaciones cargadas:', listaponderacionesC);
+  }, [listaponderacionesC]);
+  
   // Función para manejar cambios en el input
   const handleInputChange = (e, setFunction) => {
     const input = e.target;
@@ -392,6 +457,7 @@ const handleClick = () => {
         icon: 'warning',
         title: 'Caracteres no permitidos',
         text: 'Solo se permiten letras, números, tildes, comas, punto y coma, dos puntos, puntos y espacios.',
+        confirmButtonText: 'Aceptar'
       });
       return;
     }
@@ -440,132 +506,282 @@ const handleClick = () => {
       text: 'Copiar y pegar no esta permitido'
     });
   };
-  ///////////////// PDF ///////////
-  const generarReportePDF = () => {
-    const doc = new jsPDF();
-    const img = new Image();
-    img.src = logo; // Reemplaza con la URL o ruta de tu logo.
+ ///////////////// PDF ///////////
+ const generarReportePDF = () => {
+  if (!filteredActividades || filteredActividades.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Sin datos',
+      text: 'No hay datos disponibles para generar el reporte.',
+      confirmButtonText: 'Aceptar',
+    });
+    return;
+  }
 
-    img.onload = () => {
-      // Agregar logo
-      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+  const totalValor = filteredActividades.reduce(
+    (total, actividad) => total + parseFloat(actividad?.Valor || 0),
+    0
+  ).toFixed(2);
 
-      let yPosition = 20;
+  const doc = new jsPDF('landscape');
+  const img = new Image();
+  img.src = logo;
 
-      // Título
-      doc.setFontSize(18);
-      doc.setTextColor(0, 102, 51);
-      doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+  img.onload = () => {
+    doc.addImage(img, 'PNG', 10, 10, 30, 30);
 
-      yPosition += 12;
+    let yPosition = 20;
 
-      doc.setFontSize(16);
-      doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    // Título principal
+    doc.setFontSize(18);
+    doc.setTextColor(0, 102, 51);
+    doc.text('SAINT PATRICK\'S ACADEMY', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
 
-      yPosition += 10;
+    yPosition += 10;
 
-      // Detalles
-      doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Listado de Actividades', 10, yPosition);
+    // Título del reporte
+    doc.setTextColor(0, 102, 51);
+    doc.setFontSize(16);
+    doc.text('Reporte de Actividades Académicas', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    yPosition += 8;
 
-      yPosition += 6;
+    // Información del profesor y sección (primera línea)
+    doc.setFontSize(12);
+    doc.setTextColor(0,0,0);
+    let infoLine1 = `Profesor: ${getNombreCompleto(selectedProfesor.cod_persona)} | `;
+    infoLine1 += `Grado: ${selectedGrado} | `;
+    infoLine1 += `Sección: ${selectedSeccion.Nombre_seccion} | `;
+    infoLine1 += `Año: ${selectedSeccion.Anio_academico}`;
+    doc.text(infoLine1, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    yPosition += 7;
 
-      // Línea divisoria
-      doc.setLineWidth(0.5);
-      doc.setDrawColor(0, 102, 51);
-      doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+    // Información de asignatura y parcial (segunda línea)
+    let infoLine2 = `Asignatura: ${selectedAsignatura.Nombre_asignatura} | `;
+    infoLine2 += `Parcial: ${selectedParcial.Nombre_parcial}`;
+    doc.text(infoLine2, doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    yPosition += 8;
 
-      yPosition += 4;
+    // Información de contacto
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    yPosition += 4;
+    doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    yPosition += 4;
+    doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, yPosition, { align: 'center' });
+    yPosition += 6;
 
-      // Tabla
-      doc.autoTable({
-        startY: yPosition,
-        head: [['Nombre de la Actividad', 'Descripción', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor']],
-        body: actividadesFiltradas.map((actividad) => [
-          actividad.Nombre_actividad_academica,
-          actividad.Descripcion,
-          new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-            dateStyle: 'short',
-            timeStyle: 'short',
-          }),
-          new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-            dateStyle: 'short',
-            timeStyle: 'short',
-          }),
-          actividad.Valor,
-        ]),
-        headStyles: {
-          fillColor: [0, 102, 51],
-          textColor: [255, 255, 255],
-          fontSize: 10,
-        },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-        },
-        alternateRowStyles: { fillColor: [240, 248, 255] },
-      });
+    // Línea divisoria
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(0, 102, 51);
+    doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
+    yPosition += 4;
 
-      // Guardar el PDF
-      window.open(doc.output('bloburl'), '_blank');
-    };
+    // Configuración para la tabla con total solo al final
+    const pageHeight = doc.internal.pageSize.height;
+    let pageNumber = 1;
 
-    img.onerror = () => {
-      console.warn('No se pudo cargar el logo. El PDF se generará sin el logo.');
-      window.open(doc.output('bloburl'), '_blank');
-    };
+    doc.autoTable({
+      startY: yPosition,
+      head: [['#', 'Nombre Actividad', 'Descripción','Ponderación',  'Fecha/hora Ini', 'Fecha/hora Fin', 'Valor']],
+      body: filteredActividades.map((actividad, index) => [
+        actividades.findIndex(a => a.Cod_actividad_academica === actividad.Cod_actividad_academica) + 1,
+        actividad.Nombre_actividad_academica || '',
+        actividad.Descripcion || '',
+        actividad.Descripcion_ponderacion || ' ',
+        actividad.Fechayhora_Inicio
+          ? new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'N/A',
+        actividad.Fechayhora_Fin
+          ? new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })
+          : 'N/A',
+        actividad.Valor,
+      ]),
+      // Cambiado a 'lastPage' para mostrar el total solo al final
+      showFoot: 'lastPage',
+      foot: [
+        ['', '', '', '','', 'Total:',totalValor]
+      ],
+      headStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+      },
+      bodyStyles: {
+        fontSize: 8,
+        cellPadding: 4,
+        valign: 'middle',
+        
+      },
+      footStyles: {
+        fillColor: [0, 102, 51],
+        textColor: [255, 255, 255],
+        fontSize: 9,
+        fontStyle: 'bold',
+      },
+      columnStyles: {
+        0: { cellWidth: 10 }, // Columna #
+        1: { cellWidth: 43 }, // Columna Nombre Actividad
+        2: { cellWidth: 65 }, // Columna Descripción
+        3: { cellWidth: 40 }, // Columna Ponderación
+        4: { cellWidth: 40 }, // Columna Fecha/Hora Ini
+        5: { cellWidth: 40 }, // Columna Fecha/Hora Fin
+        6: { cellWidth: 30 }, // Columna Valor
+      },
+      didDrawPage: (data) => {
+        const currentDate = new Date();
+        const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+        const pageHeight = doc.internal.pageSize.height; // Altura de la página
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        // Fecha y hora en el pie de página
+        doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+      },
+    });
+    
+    // Asegúrate de calcular el total de páginas al final
+    const totalPages = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+    
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i); // Ve a cada página
+      doc.setTextColor(100);
+      const text = `Página ${i} de ${totalPages}`;
+      // Agrega número de página en la posición correcta
+      doc.text(text, pageWidth - 30, pageHeight - 10);
+    }
+
+    window.open(doc.output('bloburl'), '_blank');
   };
 
-  /////////////////////7 EXCEL ///////////////////////////77
-  const generarReporteExcel = () => {
-    const encabezados = [
-      ['Saint Patrick Academy'],
-      ['Reporte de Actividades Académicas'],
-      ['Fecha de generación: ' + new Date().toLocaleDateString()],
-      [], // Espacio en blanco
-      ['Nombre de la Actividad', 'Descripción', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor'],
-    ];
-
-    // Crear filas con actividades filtradas
-    const filas = actividadesFiltradas.map((actividad) => [
-      actividad.Nombre_actividad_academica,
-      actividad.Descripcion,
-      new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }),
-      new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
-        dateStyle: 'short',
-        timeStyle: 'short',
-      }),
-      actividad.Valor,
-    ]);
-
-    // Combinar encabezados y filas
-    const datos = [...encabezados, ...filas];
-
-    // Crear una hoja de trabajo
-    const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
-
-    // Ajustar el ancho de columnas automáticamente
-    hojaDeTrabajo['!cols'] = [
-      { wpx: 200 }, // Nombre de la Actividad
-      { wpx: 300 }, // Descripción
-      { wpx: 150 }, // Fecha y Hora Inicio
-      { wpx: 150 }, // Fecha y Hora Fin
-      { wpx: 100 }, // Valor
-    ];
-
-    // Crear el libro de trabajo
-    const libroDeTrabajo = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Actividades Académicas');
-
-    // Guardar el archivo Excel con un nombre personalizado
-    const nombreArchivo = `Reporte_Actividades_${new Date().toLocaleDateString()}.xlsx`;
-
-    XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+  img.onerror = () => {
+    Swal.fire({
+      icon: 'error',
+      title: 'Error',
+      text: 'No se pudo cargar el logo para el reporte.',
+      confirmButtonText: 'Aceptar',
+    });
   };
+};
+
+
+/////////////////////7 EXCEL ///////////////////////////77
+const generarReporteExcel = () => {
+  if (!filteredActividades || filteredActividades.length === 0) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Sin datos',
+      text: 'No hay datos disponibles para generar el reporte.',
+      confirmButtonText: 'Aceptar',
+    });
+    return;
+  }
+
+  // Calcular el total
+  const totalValor = filteredActividades.reduce(
+    (total, actividad) => total + parseFloat(actividad?.Valor || 0),
+    0
+  ).toFixed(2);
+
+  // 1. Encabezado principal
+  const encabezados = [
+    ['SAINT PATRICK\'S ACADEMY'],
+    ['Reporte de Actividades Académicas'],
+    ['Fecha de generación: ' + new Date().toLocaleString('es-ES')],
+    [], // Espacio en blanco
+    // Información contextual (similar al PDF)
+    [`Profesor: ${getNombreCompleto(selectedProfesor.cod_persona)}`],
+    [`Sección: ${selectedSeccion.Nombre_seccion} | Grado: ${selectedGrado} | Año: ${selectedSeccion.Anio_academico}`],
+    [`Asignatura: ${selectedAsignatura.Nombre_asignatura} | Parcial: ${selectedParcial.Nombre_parcial}`],
+    [], // Espacio en blanco
+    // Encabezados de tabla
+    ['#', 'Nombre Actividad', 'Descripción','Ponderación', 'Fecha y Hora Inicio', 'Fecha y Hora Fin', 'Valor'],
+    [], // Línea en blanco para separación
+  ];
+
+  // 2. Datos de las actividades
+  const filas = filteredActividades.map((actividad, index) => [
+    actividades.findIndex(a => a.Cod_actividad_academica === actividad.Cod_actividad_academica) + 1,
+    actividad.Nombre_actividad_academica,
+    actividad.Descripcion,
+    actividad.Descripcion_ponderacion,
+    new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    new Date(actividad.Fechayhora_Fin).toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    actividad.Valor,
+  ]);
+
+  // 3. Pie con el total
+  const pie = [
+    [],
+    ['', '', '', '', '', 'Total:', totalValor]
+  ];
+
+  // Combinar todos los datos
+  const datos = [...encabezados, ...filas, ...pie];
+
+  // Crear hoja de trabajo
+  const hojaDeTrabajo = XLSX.utils.aoa_to_sheet(datos);
+
+  // Aplicar estilos y formatos
+  // 1. Combinar celdas para títulos
+  if (!hojaDeTrabajo['!merges']) hojaDeTrabajo['!merges'] = [];
+  
+  // Combinar celdas para títulos principales
+  hojaDeTrabajo['!merges'].push(
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }, // Título principal
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 6 } }, // Subtítulo
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 6 } }, // Fecha
+    { s: { r: 4, c: 0 }, e: { r: 4, c: 6 } }, // Línea profesor
+    { s: { r: 5, c: 0 }, e: { r: 5, c: 6 } }, // Línea sección/grado/año
+    { s: { r: 6, c: 0 }, e: { r: 6, c: 6 } }  // Línea asignatura/parcial
+  );
+
+  // 2. Ajustar anchos de columnas
+  hojaDeTrabajo['!cols'] = [
+    { wpx: 40 },  // #
+    { wpx: 200 }, // Nombre de la Actividad
+    { wpx: 300 }, // Descripción
+    { wpx: 200 }, // ponderacion
+    { wpx: 130 }, // Fecha y Hora Inicio
+    { wpx: 130 }, // Fecha y Hora Fin
+    { wpx: 80 },  // Valor
+    { wpx: 120 }  // Tipo de Actividad
+  ];
+
+  // 3. Crear libro y guardar
+  const libroDeTrabajo = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Actividades');
+
+  // Nombre del archivo con fecha
+  const fecha = new Date().toISOString().split('T')[0];
+  const nombreArchivo = `Reporte_Actividades_${fecha}.xlsx`;
+
+  XLSX.writeFile(libroDeTrabajo, nombreArchivo);
+};
 
 
 
@@ -601,37 +817,12 @@ const handleClick = () => {
     setModalDetalleVisible(true);
   };
 
-  // Función para actualizar las actividades después de crear una nueva
-  const onCreate = () => {
-    if (selectedProfesor && selectedAsignatura) {
-      fetchActividades(
-        selectedProfesor.Cod_profesor,
-        selectedAsignatura.Cod_asignatura
-      );
-    }
-  };
-
   const handleSeleccionarAsignatura = (asignatura) => {
     console.log("Asignatura seleccionada:", asignatura); // Para depuración
     setAsignaturaSeleccionada(asignatura); // Almacena la asignatura seleccionada
-    obtenerParciales(asignatura.Cod_seccion_asignatura); // Obtiene los parciales de la asignatura
+    obtenerParciales(asignatura.Cod_grados_asignaturas); // Obtiene los parciales de la asignatura
     setParciales([]); // Limpia los parciales previos
     setActividades([]); // Limpia las actividades previas
-  };
-
-
-  const handleVerParciales1 = (asignatura) => {
-    console.log('Asignatura seleccionada:', asignatura); // Log de depuración
-    setSelectedAsignatura(asignatura);
-    obtenerParciales(asignatura.Cod_seccion_asignatura); // Llamada al backend
-  };
-
-
-
-  const handlePageChange = (page) => {
-    if (page > 0 && page <= totalPages) {
-      setCurrentPage(page);
-    }
   };
 
   // Convertir las fechas al formato "YYYY-MM-DDTHH:mm"
@@ -647,6 +838,10 @@ const handleClick = () => {
   };
 
   const abrirModalActualizarActividad = (actividad) => {
+    // Encuentra la ponderación correspondiente
+    const ponderacion = listaponderacionesC.find(
+      (p) => p.Cod_ponderacion_ciclo === actividad.Cod_ponderacion_ciclo
+    );
     setActividadToUpdate({
       ...actividad,
       Fechayhora_Inicio: formatDateTime(actividad.Fechayhora_Inicio),
@@ -655,10 +850,12 @@ const handleClick = () => {
       Cod_parcial: selectedParcial?.Cod_parcial || actividad.Cod_parcial,
       Cod_asignatura: selectedAsignatura?.Cod_asignatura || actividad.Cod_asignatura,
       Cod_secciones: selectedSeccion?.Cod_secciones || actividad.Cod_secciones,
-      Cod_seccion_asignatura: selectedAsignatura?.Cod_asignatura || actividad.Cod_asignatura
+      Cod_grados_asignaturas: selectedAsignatura?.Cod_asignatura || actividad.Cod_asignatura
     });
     setUpdateModalVisible(true);
   };
+
+  
 
   // Asegúrate de que `abrirModalCrearActividad` se llama correctamente
   const abrirModalCrearActividad = () => {
@@ -673,7 +870,7 @@ const handleClick = () => {
       Cod_parcial: selectedParcial?.Cod_parcial ||'',
       Cod_secciones: selectedSeccion?.Cod_secciones || '',
       Cod_asignatura: selectedAsignatura?.Cod_asignatura || '',
-      Cod_seccion_asignatura: selectedAsignatura?.Cod_asignatura
+      Cod_grados_asignaturas: selectedAsignatura?.Cod_asignatura
     });
     setModalVisible(true);
   };
@@ -862,6 +1059,19 @@ const handleClick = () => {
 
   const handleCrearActividad = async () => {
     try {
+      // Verificar si obtenemos el token correctamente
+       const token = localStorage.getItem('token');
+       if (!token) {
+         Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+         return;
+       }
+   
+       // Decodificar el token para obtener el nombre del usuario
+       const decodedToken = jwt_decode.jwtDecode(token);
+       if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+         console.error('No se pudo obtener el código o el nombre de usuario del token');
+         throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+       }
       // Validación de campos requeridos
       if (
         !selectedProfesor?.Cod_profesor ||
@@ -873,9 +1083,14 @@ const handleClick = () => {
         !nuevaActividad.Fechayhora_Fin ||
         !nuevaActividad.Valor ||
         !selectedSeccion?.Cod_secciones ||
-        !selectedAsignatura?.Cod_seccion_asignatura
+        !selectedAsignatura?.Cod_grados_asignaturas
       ) {
-        Swal.fire('Error', 'Todos los campos son requeridos. Por favor, complete todos los campos.', 'error');
+        Swal.fire({
+          title: 'Error',
+          text: 'Todos los campos son requeridos. Por favor, complete todos los campos.',
+          icon: 'error',
+          confirmButtonText: 'Aceptar'  // Esto cambia el texto del botón
+        });
         return;
       }
 
@@ -888,15 +1103,17 @@ const handleClick = () => {
           icon: 'error',
           title: 'Fechas inválidas',
           text: 'La "fecha inicio" no puede ser mayor que la "fecha fin".',
+          confirmButtonText: 'Aceptar'
         });
         return;
       }
       // Validar valor contra las restricciones del backend
       const esValido = await validarValorActividad(
         nuevaActividad.Cod_ponderacion_ciclo,
-        selectedAsignatura?.Cod_seccion_asignatura,
+        selectedAsignatura?.Cod_grados_asignaturas,
         nuevaActividad.Cod_parcial,
-        nuevaActividad.Valor
+        nuevaActividad.Valor,
+        selectedSeccion?.Cod_secciones
       );
 
       if (!esValido) {
@@ -915,13 +1132,14 @@ const handleClick = () => {
         Fechayhora_Fin: nuevaActividad.Fechayhora_Fin,
         Valor: nuevaActividad.Valor,
         Cod_secciones: selectedSeccion?.Cod_secciones || '',
-        Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura || ''
+        Cod_grados_asignaturas: selectedAsignatura?.Cod_grados_asignaturas || ''
       };
 
       const response = await fetch('http://localhost:4000/api/actividadesAcademicas/registrar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(actividadData),
       });
@@ -929,6 +1147,29 @@ const handleClick = () => {
       const responseData = await response.json();
 
       if (response.ok) {
+         // 2. Registrar la acción en la bitácora
+         const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha creado nueva actividad académica: ${nuevaActividad.Nombre_actividad_academica} `;
+        
+         // Enviar a la bitácora
+         const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+           method: 'POST',
+           headers: {
+             'Content-Type': 'application/json',
+             'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+           },
+           body: JSON.stringify({
+             cod_usuario: decodedToken.cod_usuario, // Código del usuario
+             cod_objeto: 79, // Código del objeto para la acción
+             accion: 'INSERT', // Acción realizada
+             descripcion: descripcion, // Descripción de la acción
+           }),
+         });
+   
+         if (bitacoraResponse.ok) {
+           console.log('Registro en bitácora exitoso');
+         } else {
+           Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+         }
         setModalVisible(false);
         resetNuevaActividad();
         setHasUnsavedChanges(false)
@@ -936,9 +1177,17 @@ const handleClick = () => {
           icon: 'success',
           title: '¡Éxito!',
           text: 'La actividad se ha creado correctamente.',
+          confirmButtonText: 'Aceptar',
         });
         setModalVisible(false);
-
+         // Refrescar actividades
+         await fetchActividades(
+          selectedProfesor?.Cod_profesor,
+          selectedAsignatura?.Cod_grados_asignaturas,
+          selectedParcial?.Cod_parcial,
+          selectedSeccion?.Cod_secciones
+        );
+        
         // Actualiza la lista de actividades con la nueva lista del backend
         setActividades(responseData.actividades);
       } else {
@@ -964,6 +1213,7 @@ const handleActualizarActividad = async () => {
       icon: "error",
       title: "Error",
       text: "Todos los campos son obligatorios.",
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
@@ -977,11 +1227,25 @@ const handleActualizarActividad = async () => {
       icon: "error",
       title: "Fechas inválidas",
       text: 'La "fecha inicio" no puede ser mayor que la "fecha fin".',
+      confirmButtonText: 'Aceptar',
     });
     return;
   }
 
   try {
+     // Verificar si obtenemos el token correctamente
+     const token = localStorage.getItem('token');
+     if (!token) {
+       Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+       return;
+     }
+ 
+     // Decodificar el token para obtener el nombre del usuario
+     const decodedToken = jwt_decode.jwtDecode(token);
+     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+       console.error('No se pudo obtener el código o el nombre de usuario del token');
+       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+     }
     // Validar espacio restante en el backend
     const response = await fetch("http://localhost:4000/api/actividadesacademicas/validar-valoractua", {
       method: "POST",
@@ -990,9 +1254,10 @@ const handleActualizarActividad = async () => {
       },
       body: JSON.stringify({
           Cod_ponderacion_ciclo: actividadToUpdate.Cod_ponderacion_ciclo,
-          Cod_seccion_asignatura: selectedAsignatura?.Cod_seccion_asignatura,
+          Cod_grados_asignaturas: selectedAsignatura?.Cod_grados_asignaturas,
           Cod_parcial: selectedParcial?.Cod_parcial,
           Valor: parseFloat(Valor), // Nuevo valor propuesto
+          Cod_secciones:selectedSeccion?.Cod_secciones,
           Cod_actividad_academica: Cod_actividad_academica, // Usar el código correcto
       }),
   });
@@ -1011,6 +1276,7 @@ const handleActualizarActividad = async () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           Nombre_actividad_academica,
@@ -1026,17 +1292,42 @@ const handleActualizarActividad = async () => {
       throw new Error("Error en la actualización.");
     }
 
+     // Registrar la acción en la bitácora
+     const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha actualizado la actividad academica: ${Nombre_actividad_academica}, con valor ${Valor}`;
+         
+     // Enviar a la bitácora
+     const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+       method: 'POST',
+       headers: {
+         'Content-Type': 'application/json',
+         'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+       },
+       body: JSON.stringify({
+         cod_usuario: decodedToken.cod_usuario, // Código del usuario
+         cod_objeto: 79, // Código del objeto para la acción
+         accion: 'UPDATE', // Acción realizada
+         descripcion: descripcion, // Descripción de la acción
+       }),
+     });
+
+     if (bitacoraResponse.ok) {
+       console.log('Registro en bitácora exitoso');
+     } else {
+       Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+     }
     Swal.fire({
       icon: "success",
       title: "¡Éxito!",
       text: "La actividad se ha actualizado correctamente.",
+      confirmButtonText: 'Aceptar',
     });
 
     // Refrescar actividades
     await fetchActividades(
-      selectedSeccion?.Cod_secciones,
+      selectedProfesor?.Cod_profesor,
+      selectedAsignatura?.Cod_grados_asignaturas,
       selectedParcial?.Cod_parcial,
-      selectedAsignatura?.Cod_seccion_asignatura
+      selectedSeccion?.Cod_secciones
     );
 
     handleCloseUpdateModal(); // Cerrar el modal
@@ -1061,8 +1352,21 @@ const handleCloseUpdateModal = () => {
 
 
 
-const handleEliminarActividad = async (id) => {
+const handleEliminarActividad = async (id,nombre) => {
   try {
+     // Verificar si obtenemos el token correctamente
+     const token = localStorage.getItem('token');
+     if (!token) {
+       Swal.fire('Error', 'No tienes permiso para realizar esta acción', 'error');
+       return;
+     }
+ 
+     // Decodificar el token para obtener el nombre del usuario
+     const decodedToken = jwt_decode.jwtDecode(token);
+     if (!decodedToken.cod_usuario || !decodedToken.nombre_usuario) {
+       console.error('No se pudo obtener el código o el nombre de usuario del token');
+       throw new Error('No se pudo obtener el código o el nombre de usuario del token');
+     }
       const confirm = await Swal.fire({
           title: "¿Estás seguro?",
           text: "Esta acción eliminará la actividad de forma permanente.",
@@ -1079,6 +1383,7 @@ const handleEliminarActividad = async (id) => {
                   method: "DELETE",
                   headers: {
                       "Content-Type": "application/json",
+                    'Authorization': `Bearer ${token}`,
                   },
               }
           );
@@ -1086,18 +1391,43 @@ const handleEliminarActividad = async (id) => {
           const responseData = await response.json();
 
           if (response.ok) {
+             // 2. Registrar la acción en la bitácora
+             const descripcion = `El usuario: ${decodedToken.nombre_usuario} ha eliminado la actividad: ${nombre} con codigo ${id}`;
+              
+             // Enviar a la bitácora
+             const bitacoraResponse = await fetch('http://localhost:4000/api/bitacora/registro', {
+               method: 'POST',
+               headers: {
+                 'Content-Type': 'application/json',
+                 'Authorization': `Bearer ${token}`, // Incluir token en los encabezados
+               },
+               body: JSON.stringify({
+                 cod_usuario: decodedToken.cod_usuario, // Código del usuario
+                 cod_objeto: 79, // Código del objeto para la acción
+                 accion: 'DELETE', // Acción realizada
+                 descripcion: descripcion, // Descripción de la acción
+               }),
+             });
+       
+             if (bitacoraResponse.ok) {
+               console.log('Registro en bitácora exitoso');
+             } else {
+               Swal.fire('Error', 'No se pudo registrar la acción en la bitácora', 'error');
+             }
               Swal.fire({
                   icon: "success",
                   title: "¡Éxito!",
                   text: responseData.mensaje,
+                  confirmButtonText: 'Aceptar',
               });
 
               // Refrescar actividades después de eliminar
-              fetchActividades(
-                  selectedSeccion?.Cod_secciones,
+                await fetchActividades(
+                  selectedProfesor?.Cod_profesor,
+                  selectedAsignatura?.Cod_grados_asignaturas,
                   selectedParcial?.Cod_parcial,
-                  selectedAsignatura?.Cod_seccion_asignatura
-              );
+                  selectedSeccion?.Cod_secciones
+                );
           } else {
               Swal.fire("Error", `Problema al eliminar actividad: ${responseData.mensaje}`, "error");
           }
@@ -1120,7 +1450,21 @@ const handleEliminarActividad = async (id) => {
 
 
 
-
+useEffect(() => {
+  // Limpiar los términos de búsqueda cuando cambias de vista
+  setSearchTerm('');
+  setSearchTerm2('');
+  setSearchTerm3('');
+  setSearchTerm4('');
+  setSearchTerm5('');
+  
+  // También puedes reiniciar las páginas si es necesario
+  setCurrentPage(1);
+  setCurrentPage2(1);
+  setCurrentPage3(1);
+  setCurrentPage4(1);
+  setCurrentPage5(1);
+}, [selectedProfesor, selectedSeccion, selectedAsignatura, selectedParcial]);
 
 
 
@@ -1211,9 +1555,9 @@ const calcularTotalValor = () => {
                     }}
                     value={recordsPerPage}
                   >
-                    <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
+                    <option value="30">30</option>
                   </CFormSelect>
                   <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
                 </div>
@@ -1235,7 +1579,9 @@ const calcularTotalValor = () => {
                 {currentRecords.length > 0 ? (
                   currentRecords.map((profesor, index) => (
                     <CTableRow key={profesor.Cod_profesor}>
-                      <CTableDataCell >{index + 1}</CTableDataCell>
+                      <CTableDataCell>
+                        {profesores.findIndex(p => p.Cod_profesor === profesor.Cod_profesor) + 1}
+                      </CTableDataCell>
                       <CTableDataCell>{getNombreCompleto(profesor.cod_persona)}</CTableDataCell>
                       <CTableDataCell>
                         <CButton
@@ -1305,9 +1651,23 @@ const calcularTotalValor = () => {
                 onClick={() => setSelectedProfesor(null)}>
                 <CIcon icon={cilArrowLeft} />Regresar a Profesores
               </CButton>
-              <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h4 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem" }}>Secciones de:  {getNombreCompleto(selectedProfesor.cod_persona)}</h4>
+              <div className="d-flex flex-column justify-content-center align-items-center flex-grow-1">
+                <h4
+                  className="text-center pb-2 mb-0"
+                  style={{
+                    display: "inline-block",
+                    borderBottom: "2px solid #4CAF50",
+                    fontSize: "1.5rem"
+                  }}
+                >
+                  Secciones
+                </h4>
+
+                <div className="mt-2" style={{ fontSize: "1rem" }}>
+                  Profesor: {getNombreCompleto(selectedProfesor.cod_persona)}
+                </div>
               </div>
+
             </CCol>
           </CRow>
 
@@ -1399,7 +1759,9 @@ const calcularTotalValor = () => {
                 {currentRecords2.length > 0 ? (
                   currentRecords2.map((seccion, index) => (
                     <CTableRow key={seccion.Cod_secciones}>
-                      <CTableDataCell >{index + 1}</CTableDataCell>
+                      <CTableDataCell>
+                        {secciones.findIndex(s => s.Cod_secciones === seccion.Cod_secciones) + 1}
+                      </CTableDataCell>
                       <CTableDataCell>{seccion.Nombre_seccion}</CTableDataCell>
                       <CTableDataCell>{seccion.Nombre_grado}</CTableDataCell>
                       <CTableDataCell>{seccion.Anio_academico}</CTableDataCell>
@@ -1468,7 +1830,13 @@ const calcularTotalValor = () => {
                 <CIcon icon={cilArrowLeft} />Regresar a Secciones
               </CButton>
               <div className="flex-grow-1 text-center">
-                <h4 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50" }}>Profesor: {getNombreCompleto(selectedProfesor.cod_persona) } /  Sección: {selectedSeccion.Nombre_seccion}</h4>
+                <h4 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50" }}>Asignaturas</h4>
+                <div className="d-flex justify-content-center align-items-center mt-2">
+                  <div className="me-3" style={{fontSize: "1rem"}}>Grado: {selectedGrado}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Sección: {selectedSeccion.Nombre_seccion}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Año: {selectedSeccion.Anio_academico}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Profesor: {getNombreCompleto(selectedProfesor.cod_persona) }</div>
+                </div>
               </div>
             </CCol>
           </CRow>
@@ -1526,9 +1894,9 @@ const calcularTotalValor = () => {
                     }}
                     value={recordsPerPage3}
                   >
-                    <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
+                    <option value="30">30</option>
                   </CFormSelect>
                   <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
                 </div>
@@ -1551,9 +1919,11 @@ const calcularTotalValor = () => {
                 {currentRecords3.length > 0 ? (
                   currentRecords3.map((asignatura, index) => (
                     <CTableRow key={asignatura.Cod_asignatura}>
-                      <CTableDataCell >{index + 1}</CTableDataCell>
+                      <CTableDataCell>
+                        {asignaturas.findIndex(a => a.Cod_asignatura === asignatura.Cod_asignatura) + 1}
+                      </CTableDataCell>
                       <CTableDataCell>{asignatura.Nombre_asignatura}</CTableDataCell>
-                      <CTableDataCell>{asignatura.Nombre_asignatura}</CTableDataCell>
+                      <CTableDataCell>{asignatura.Descripcion_asignatura}</CTableDataCell>
                       <CTableDataCell>
                         <CButton
                           size="sm"
@@ -1638,8 +2008,13 @@ const calcularTotalValor = () => {
                     borderBottom: "2px solid #4CAF50",
                   }}
                 >
-                 Profesor: {getNombreCompleto(selectedProfesor.cod_persona) } /  Sección: {selectedSeccion.Nombre_seccion} / Parciales  {selectedAsignatura.Nombre_asignatura}
+                 Parciales
                 </h4>
+                <div className="d-flex justify-content-center align-items-center mt-2">
+                  <div className="me-3" style={{fontSize: "1rem"}}>Grado: {selectedGrado}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Sección: {selectedSeccion.Nombre_seccion}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Asignatura: {selectedAsignatura.Nombre_asignatura}</div>
+                </div>
               </div>
             </CCol>
           </CRow>
@@ -1733,7 +2108,9 @@ const calcularTotalValor = () => {
                 {currentRecords5.length > 0 ? (
                   currentRecords5.map((parcial, index) => (
                     <CTableRow key={parcial.Cod_parcial}>
-                      <CTableDataCell>{index + 1}</CTableDataCell>
+                      <CTableDataCell>
+                        {parciales.findIndex(p => p.Cod_parcial === parcial.Cod_parcial) + 1}
+                      </CTableDataCell>
                       <CTableDataCell>{parcial.Nombre_parcial}</CTableDataCell>
                       <CTableDataCell>
                         <CButton
@@ -1800,33 +2177,31 @@ const calcularTotalValor = () => {
 
 
 
-      <CModal visible={modalDetalleVisible} onClose={() => setModalDetalleVisible(false)} backdrop="static">
-        <CModalHeader>
-          <CModalTitle>Detalles de la Actividad</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <h5>INFORMACIÓN</h5>
-
-          <p><strong>Nombre de la Actividad:</strong> {actividadToView?.Nombre_actividad_academica || 'N/A'} </p>
-          <p><strong>Descripción:</strong> {actividadToView?.Descripcion || 'N/A'}</p>
-          <p><strong>Fecha y Hora Inicio:</strong>{' '}{actividadToView?.Fechayhora_Inicio ? new Date(actividadToView.Fechayhora_Inicio).toLocaleString('es-ES', {
-            dateStyle: 'short',
-            timeStyle: 'short',
-          }) : 'N/A'}</p>
-          <p><strong>Fecha y Hora Fin:</strong>{' '}{actividadToView?.Fechayhora_Fin ? new Date(actividadToView.Fechayhora_Fin).toLocaleString('es-ES', {
-            dateStyle: 'short',
-            timeStyle: 'short',
-          }) : 'N/A'}</p>
-          <p><strong>Valor:</strong> {actividadToView?.Valor || 'N/A'}</p>
-
-
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setModalDetalleVisible(false)}>
-            Cerrar
-          </CButton>
-        </CModalFooter>
-      </CModal>
+<CModal visible={modalDetalleVisible} onClose={() => setModalDetalleVisible(false)} backdrop="static">
+  <CModalHeader>
+    <CModalTitle>Detalles de la Actividad</CModalTitle>
+  </CModalHeader>
+  <CModalBody>
+    <p><strong>Nombre de la Actividad:</strong> {actividadToView?.Nombre_actividad_academica || 'N/A'}</p>
+    <p><strong>Descripción:</strong> {actividadToView?.Descripcion || 'N/A'}</p>
+    <p><strong>Tipo de Actividad:</strong> {actividadToView?.Descripcion_ponderacion || 'N/A'}</p>
+    <p><strong>Porcentaje:</strong> {actividadToView?.Porcentaje_ponderacion || 'N/A'}%</p>
+    <p><strong>Fecha y Hora Inicio:</strong> {actividadToView?.Fechayhora_Inicio ? new Date(actividadToView.Fechayhora_Inicio).toLocaleString('es-ES', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }) : 'N/A'}</p>
+    <p><strong>Fecha y Hora Fin:</strong> {actividadToView?.Fechayhora_Fin ? new Date(actividadToView.Fechayhora_Fin).toLocaleString('es-ES', {
+      dateStyle: 'short',
+      timeStyle: 'short',
+    }) : 'N/A'}</p>
+    <p><strong>Valor:</strong> {actividadToView?.Valor || 'N/A'}</p>
+  </CModalBody>
+  <CModalFooter>
+    <CButton color="secondary" onClick={() => setModalDetalleVisible(false)}>
+      Cerrar
+    </CButton>
+  </CModalFooter>
+</CModal>
 
 
 
@@ -1856,7 +2231,7 @@ const calcularTotalValor = () => {
       />
       <CFormInput
         type="hidden"
-        value={nuevaActividad.Cod_seccion_asignatura}
+        value={nuevaActividad.Cod_grados_asignaturas}
         readOnly
       />
 
@@ -1865,12 +2240,13 @@ const calcularTotalValor = () => {
       {/* Nombre de la actividad */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Nombre de la Actividad</CInputGroupText>
-        <CFormInput
+        <CFormTextarea
           value={nuevaActividad.Nombre_actividad_academica}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           onChange={(e) => handleInputChange(e, (value) => setNuevaActividad({...nuevaActividad, Nombre_actividad_academica: e.target.value}))}
-        />
+          maxLength={50}
+       />
       </CInputGroup>
 
       {/* Descripcion */}
@@ -1881,6 +2257,7 @@ const calcularTotalValor = () => {
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           onChange={(e) => handleInputChange(e, (value) => setNuevaActividad({...nuevaActividad, Descripcion: e.target.value}))}
+          maxLength={255}
         />
       </CInputGroup>
 
@@ -1911,25 +2288,28 @@ const calcularTotalValor = () => {
       {/* Ponderación */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Ponderación</CInputGroupText>
-        <CFormSelect
-          value={nuevaActividad.Cod_ponderacion_ciclo}
-          onChange={(e) => {
-            const seleccionada = listaponderacionesC.find(
-              (ponderacion) => ponderacion.Cod_ponderacion_ciclo === Number(e.target.value)
-            );
-            setNuevaActividad({
-              ...nuevaActividad,
-              Cod_ponderacion_ciclo: seleccionada?.Cod_ponderacion_ciclo || '',
-            });
-          }}
-        >
-         <option value="">Seleccione una ponderación</option>
-              {listaponderaciones.map((ponderacion) => (
-                <option key={ponderacion.Cod_ponderacion} value={ponderacion.Cod_ponderacion}>
-                  {ponderacion.Descripcion_ponderacion}
-                </option>
-          ))}
-        </CFormSelect>
+       <CFormSelect
+           value={nuevaActividad.Cod_ponderacion_ciclo}
+           onChange={(e) => {
+             const seleccionada = listaponderacionesC.find(
+               (ponderacion) => ponderacion.Cod_ponderacion_ciclo === Number(e.target.value)
+             );
+             setNuevaActividad({
+               ...nuevaActividad,
+               Cod_ponderacion_ciclo: seleccionada?.Cod_ponderacion_ciclo || '',
+             });
+           }}
+         >
+           <option value="">Seleccione una ponderación</option>
+           {listaponderacionesC.map((ponderacion) => (
+             <option
+               key={ponderacion.Cod_ponderacion_ciclo}
+               value={ponderacion.Cod_ponderacion_ciclo}
+             >
+               {ponderacion.Descripcion_ponderacion} - {ponderacion.Valor}%
+             </option>
+           ))}
+         </CFormSelect>
       </CInputGroup>
 
       {/* Valor */}
@@ -2035,29 +2415,31 @@ const calcularTotalValor = () => {
       />
       <CFormInput
         type="hidden"
-        value={actividadToUpdate?.Cod_seccion_asignatura || ''}
+        value={actividadToUpdate?.Cod_grados_asignaturas || ''}
         readOnly
       />
 
       {/* Nombre de la actividad */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Nombre de la actividad</CInputGroupText>
-        <CFormInput
+        <CFormTextarea
           value={actividadToUpdate?.Nombre_actividad_academica || ''}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           onChange={(e) => handleInputChange(e, (value) => setActividadToUpdate({ ...actividadToUpdate, Nombre_actividad_academica: e.target.value }))}
+          maxLength={50}
         />
       </CInputGroup>
 
       {/* Descripción */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Descripción</CInputGroupText>
-        <CFormInput
+        <CFormTextarea
           value={actividadToUpdate?.Descripcion || ''}
           onPaste={disableCopyPaste}
           onCopy={disableCopyPaste}
           onChange={(e) => handleInputChange(e, (value) => setActividadToUpdate({ ...actividadToUpdate, Descripcion: e.target.value }))}
+          maxLength={255}
         />
       </CInputGroup>
 
@@ -2084,22 +2466,27 @@ const calcularTotalValor = () => {
       {/* Ponderación */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Ponderación</CInputGroupText>
-        <CFormSelect
-          value={actividadToUpdate?.Cod_ponderacion_ciclo || ''}
-          onChange={(e) =>
-            setActividadToUpdate({ ...actividadToUpdate, Cod_ponderacion_ciclo: e.target.value })
+        <CFormInput
+          type="text"
+          value={
+            actividadToUpdate?.Descripcion_ponderacion
+              ? `${actividadToUpdate.Descripcion_ponderacion} - ${actividadToUpdate.Porcentaje_ponderacion}%`
+              : "N/A"
           }
-        >
-          <option value="">Seleccione una ponderación</option>
-          {listaponderaciones.map((ponderacion) => (
-            <option key={ponderacion.Cod_ponderacion} value={ponderacion.Cod_ponderacion}>
-              {ponderacion.Descripcion_ponderacion}
-            </option>
-          ))}
-        </CFormSelect>
+          readOnly
+          style={{
+            backgroundColor: "#f1f1f1",
+            color: "#6c757d",
+            cursor: "not-allowed",
+          }}
+        />
+        {/* Campo oculto para mantener Cod_ponderacion_ciclo en el formulario */}
+        <input
+          type="hidden"
+          name="Cod_ponderacion_ciclo"
+          value={actividadToUpdate?.Cod_ponderacion_ciclo || ""}
+        />
       </CInputGroup>
-
-      
 
       {/* Valor */}
       <CInputGroup className="mb-3">
@@ -2181,7 +2568,7 @@ const calcularTotalValor = () => {
       {/* Tabla de Actividades Académicas */}
       {selectedParcial && (    
             <>
-          <CRow className='align-items-center mb-5'>
+          <CRow className="align-items-center mb-5">
             {/* Botón "Volver a Secciones" a la izquierda */}
             <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
               <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
@@ -2190,8 +2577,14 @@ const calcularTotalValor = () => {
                 onClick={() => setSelectedParcial(null)}>
                 <CIcon icon={cilArrowLeft} />Regresar a parciales
               </CButton>
-              <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                <h1 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem", }}> Profesor: {getNombreCompleto(selectedProfesor.cod_persona) } /  Sección: {selectedSeccion.Nombre_seccion} / Parciales  {selectedAsignatura.Nombre_asignatura} </h1>
+              <div className="d-flex flex-column justify-content-center align-items-center flex-grow-1">
+                <h4 className="text-center fw-semibold pb-2 mb-0" style={{ display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto", fontSize: "1.5rem", }}> Actividades Académicas</h4>
+                <div className="d-flex justify-content-center align-items-center mt-2">
+                  <div className="me-3" style={{fontSize: "1rem"}}>Grado: {selectedGrado}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Sección: {selectedSeccion.Nombre_seccion}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Parcial: {selectedParcial.Nombre_parcial}</div>
+                  <div className="me-3" style={{fontSize: "1rem"}}>Asignatura: {selectedAsignatura.Nombre_asignatura}</div>
+                </div>
               </div>
               {/* Botón "Nuevo" a la derecha */}
               <CButton className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
@@ -2276,9 +2669,6 @@ const calcularTotalValor = () => {
             
           </CRow>
           <CRow>
-       <div className="d-flex justify-content-center align-items-center flex-grow-1">
-                  <h2 className="text-center fw-semibold pb-2 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50", margin: "0 auto",fontSize: "1.5rem",}}>Actividades Academicas</h2>
-                </div>
        </CRow>
           {/* Contenedor de la barra de búsqueda y el selector dinámico */}
           <CRow className="align-items-center mt-4 mb-2">
@@ -2289,7 +2679,7 @@ const calcularTotalValor = () => {
                   <CIcon icon={cilSearch} />
                 </CInputGroupText>
                 <CFormInput
-                  style={{ width: '80px', height: '35px', display: 'inline-block' }}
+                  style={{ width: '80px', height: '35px', display: 'inline-block',fontSize: '0.8rem'}}
                   placeholder="Buscar actividad..."
                   onChange={handleSearch4}
                   value={searchTerm4}
@@ -2334,9 +2724,9 @@ const calcularTotalValor = () => {
                     }}
                     value={recordsPerPage4}
                   >
-                    <option value="5">5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
+                    <option value="30">30</option>
                   </CFormSelect>
                   <span style={{ fontSize: '0.85rem' }}>&nbsp;registros</span>
                 </div>
@@ -2347,38 +2737,31 @@ const calcularTotalValor = () => {
 
 
           {/* Tabla de Actividades */}
-          <div
-            className="table-responsive"
-            style={{
-              maxHeight: '400px',
-              overflowX: 'auto',
-              overflowY: 'auto',
-              boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
-            }}
-          ></div >
 
           <div className="table-responsive" style={{ maxHeight: '400px', overflowX: 'auto', overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
             <CTable striped bordered hover responsive>
               <CTableHead className="sticky-top bg-light text-center" style={{ fontSize: '0.8rem' }}>
-                <CTableRow>
-                  <CTableHeaderCell>#</CTableHeaderCell>
-                  <CTableHeaderCell>NOMBRE DE LA ACTIVIDAD</CTableHeaderCell>
-                  <CTableHeaderCell>DESCRIPCIÓN</CTableHeaderCell>
-                  <CTableHeaderCell>PONDERACIÓN</CTableHeaderCell>
-                  <CTableHeaderCell>FECHA Y HORA INICIO</CTableHeaderCell>
-                  <CTableHeaderCell>FECHA Y HORA FIN</CTableHeaderCell>
-                  <CTableHeaderCell>VALOR</CTableHeaderCell>
-                  <CTableHeaderCell>ACCIONES</CTableHeaderCell>
-                </CTableRow>
+              <CTableRow>
+              <CTableHeaderCell style={{ width: '30px' }}>#</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '200px' }}>NOMBRE</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '250px' }}>DESCRIPCIÓN</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '150px' }}>PONDERACIÓN</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '150px' }}>FECHA/HORA INI</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '150px' }}>FECHA/HORA FIN</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '80px' }}>VALOR</CTableHeaderCell>
+              <CTableHeaderCell style={{ width: '180px' }}>ACCIONES</CTableHeaderCell>
+              </CTableRow>
               </CTableHead>
               <CTableBody className="text-center" style={{ fontSize: '0.85rem' }}>
                 {currentRecords4.length > 0 ? (
                   currentRecords4.map((actividad, index) => (
                     <CTableRow key={actividad.Cod_actividad_academica}>
-                      <CTableDataCell>{index + 1}</CTableDataCell>
+                     <CTableDataCell>
+                        {actividades.findIndex(a => a.Cod_actividad_academica === actividad.Cod_actividad_academica) + 1}
+                      </CTableDataCell>
                       <CTableDataCell>{actividad.Nombre_actividad_academica}</CTableDataCell>
                       <CTableDataCell>{actividad.Descripcion}</CTableDataCell>
-                      <CTableDataCell>{listaponderacionesC.find((ponderacion) => ponderacion.Cod_ponderacion_ciclo === actividad?.Cod_ponderacion_ciclo)?.Descripcion_ponderacion || "N/A"}</CTableDataCell>
+                      <CTableDataCell>{actividad.Descripcion_ponderacion}</CTableDataCell>
                       <CTableDataCell>
                         {new Date(actividad.Fechayhora_Inicio).toLocaleString('es-ES', {
                           dateStyle: 'short',
@@ -2438,7 +2821,7 @@ const calcularTotalValor = () => {
                             e.currentTarget.style.boxShadow = 'none';
                             e.currentTarget.style.color = '#5C4044';
                           }}
-                          onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica)}
+                          onClick={() => handleEliminarActividad(actividad.Cod_actividad_academica,actividad.Nombre_actividad_academica)}
                         >
                           <CIcon icon={cilTrash} />
                         </CButton>

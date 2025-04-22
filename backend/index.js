@@ -25,8 +25,9 @@ import seccionalumnoRoutes from './module/calificaciones/Routes/seccionalumnoRou
 import bitacoraRoutes from './module/auth/bitacora_routes.js';
 import dashboard from './module/dashboard/dashboardRoutes.js';
 import parametroRoutes from './module/calificaciones/Routes/parametroRoutes.js';
-
+import ActividadAcademicaPadreRoutes from './module/calificaciones/Routes/actividades_AcademicasPadreRoutes.js'
 import Ponderaciones_CiclosRoutes from './module/calificaciones/Routes/Ponderaciones_CiclosRoutes.js';
+import secciones_asignaturas from './module/calificaciones/Routes/secciones_asignaturasRoutes.js';
 
 //-------------------------------------------------------------------------------------------------------
 import matriculaRoutes from './module/matricula/Routes/matriculaRoutes.js'; 
@@ -155,6 +156,8 @@ app.use('/api/actividadesAcademicas', actividadesRoutes);
 //Ruta para asignar asignaturas a un grado
 app.use('/api/gradoAsignatura',gradoAsignaturaRoutes);
 app.use('/api/parametro',parametroRoutes);
+app.use('/api/actividades', ActividadAcademicaPadreRoutes); //vista padre de actividades
+app.use('/api/asigsec', secciones_asignaturas);
 
 // Matrícula
 app.use('/api/matricula', matriculaRoutes); // Usar las rutas de matrícula
