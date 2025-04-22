@@ -169,16 +169,16 @@ export const ObtenerPromedioParcialesPorSeccion = async (req, res) => {
 
 // Obtener el conteo de parciales por sección
 export const obtenerpromedionotas = async (req, res) => {
-    const { Cod_seccion_asignatura } = req.query;
+    const { Cod_secciones,Cod_grados_asignaturas } = req.query;
 
     // Validar si el parámetro Cod_seccion_asignatura fue proporcionado
-    if (!Cod_seccion_asignatura) {
-        return res.status(400).json({ Mensaje: 'El parámetro Cod_seccion_asignatura es requerido' });
+    if (!Cod_secciones || !Cod_grados_asignaturas) {
+        return res.status(400).json({ Mensaje: 'El parámetro Cod_secciones y Cod_grados_asignaturas es requerido' });
     }
 
     try {
         // Ejecutar el procedimiento almacenado con el parámetro proporcionado
-        const [results] = await pool.query('CALL CalcularPromedioPorParcial(?)', [Cod_seccion_asignatura]);
+        const [results] = await pool.query('CALL CalcularPromedioPorParcial(?,?)', [Cod_secciones, Cod_grados_asignaturas]);
 
         // Devolver los resultados
         res.status(200).json(results[0]);
@@ -195,16 +195,16 @@ export const obtenerpromedionotas = async (req, res) => {
 
 // Obtener el conteo de parciales por sección
 export const ObtenerActividadesPorAsignatura = async (req, res) => {
-    const { Cod_seccion_asignatura } = req.query;
+    const { Cod_grados_asignaturas,Cod_seccion } = req.query;
 
     // Validar si el parámetro Cod_seccion_asignatura fue proporcionado
-    if (!Cod_seccion_asignatura) {
-        return res.status(400).json({ Mensaje: 'El parámetro Cod_seccion_asignatura es requerido' });
+    if (!Cod_grados_asignaturas || !Cod_seccion ) {
+        return res.status(400).json({ Mensaje: 'El parámetro Cod_grados_asignaturas y Cod_seccion es requerido' });
     }
 
     try {
         // Ejecutar el procedimiento almacenado con el parámetro proporcionado
-        const [results] = await pool.query('CALL ObtenerActividadesPorAsignatura(?)', [Cod_seccion_asignatura]);
+        const [results] = await pool.query('CALL ObtenerActividadesPorAsignatura(?, ?)', [Cod_grados_asignaturas, Cod_seccion]);
 
         // Devolver los resultados
         res.status(200).json(results[0]);
@@ -221,16 +221,16 @@ export const ObtenerActividadesPorAsignatura = async (req, res) => {
 
 // Obtener el conteo de parciales por sección
 export const ObtenerActividadesPorAsignaturaCalificadas = async (req, res) => {
-    const { Cod_seccion_asignatura } = req.query;
+    const { Cod_grados_asignaturas,Cod_seccion,Cod_parcial } = req.query;
 
     // Validar si el parámetro Cod_seccion_asignatura fue proporcionado
-    if (!Cod_seccion_asignatura) {
-        return res.status(400).json({ Mensaje: 'El parámetro Cod_seccion_asignatura es requerido' });
+    if (!Cod_grados_asignaturas || !Cod_seccion ||!Cod_parcial) {
+        return res.status(400).json({ Mensaje: 'El parámetro Cod_seccion_asignatura, Cod_seccion, Cod_parcial es requerido' });
     }
 
     try {
         // Ejecutar el procedimiento almacenado con el parámetro proporcionado
-        const [results] = await pool.query('CALL ObtenerActividadesCalificadas(?)', [Cod_seccion_asignatura]);
+        const [results] = await pool.query('CALL ObtenerActividadesCalificadas(?,?,?)', [Cod_grados_asignaturas, Cod_seccion,Cod_parcial]);
 
         // Devolver los resultados
         res.status(200).json(results[0]);
@@ -314,13 +314,13 @@ export const actualizarNota = async (req, res) => {
 
 
 export const obtenerEstudiantesConTotal = async (req, res) => {
-    const { Cod_seccion, Cod_seccion_asignatura, Cod_parcial } = req.params;
+    const { Cod_seccion, CodGradosAsignaturas, Cod_parcial } = req.params;
   
     try {
       const query = `CALL ObtenerEstudiantesConNotas(?, ?, ?);`;
       const [results] = await pool.query(query, [
         Cod_seccion,
-        Cod_seccion_asignatura,
+        CodGradosAsignaturas,
         Cod_parcial,
       ]);
   
@@ -380,11 +380,11 @@ export const obtenerEstudiantesConTotal = async (req, res) => {
   
   // Controlador para obtener notas de estudiantes de una actividad en una sección específica
 export const obtenerNotasPorActividad = async (req, res) => {
-    const { codSeccion, codSeccionAsignatura, codParcial, codActividadAsignatura } = req.params; // Obtiene los parámetros desde la ruta
+    const { codSeccion, codGradosAsignaturas, codParcial, codActividadAsignatura } = req.params; // Obtiene los parámetros desde la ruta
 
     try {
         const query = `CALL ObtenerNotasModal(?, ?, ?, ?);`;
-        const [results] = await pool.query(query, [codSeccion, codSeccionAsignatura, codParcial, codActividadAsignatura]);
+        const [results] = await pool.query(query, [codSeccion, codGradosAsignaturas, codParcial, codActividadAsignatura]);
 
         if (results.length === 0 || results[0].length === 0) {
             return res.status(404).json({ message: 'No se encontraron notas para esta actividad y sección' });
