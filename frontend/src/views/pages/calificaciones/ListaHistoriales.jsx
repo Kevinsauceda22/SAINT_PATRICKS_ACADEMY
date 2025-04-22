@@ -1783,6 +1783,7 @@ const ListaHistoriales = () => {
             boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
           }}
         >
+          <div className="table-container" style={{ maxHeight: '550px', overflowY: 'scroll' }}></div>
           <CTable striped bordered hover responsive>
             <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
               <CTableRow>

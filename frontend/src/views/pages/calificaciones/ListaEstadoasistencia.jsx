@@ -948,7 +948,7 @@ const ListaEstadoasistencia = () => {
 
     {/* Tabla para mostrar Estadoasistencia */}
     {/* Contenedor de tabla con scroll */}
-    <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+    <div className="table-container" style={{ maxHeight: '550px', overflowY: 'scroll', marginBottom: '20px' }}>
       <CTable striped bordered hover>
         <CTableHead style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: '#fff' }}>
           <CTableRow> 

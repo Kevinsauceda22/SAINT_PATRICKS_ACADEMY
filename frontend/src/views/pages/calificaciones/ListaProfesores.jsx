@@ -65,15 +65,18 @@ const ListaProfesores = () => {
   const [listaPersonas, setListaPersonas] = useState([]);
   const [listaTiposContrato, setListaTiposContrato] = useState([]);
   const [listaGradosAcademicos, setListaGradosAcademicos] = useState([]);
+
   const [currentPage, setCurrentPage] = useState(1); // Estado para la página actual
-  const [recordsPerPage, setRecordsPerPage] = useState(5); // Hacer dinamico el número de registro de paginas
+  const [recordsPerPage, setRecordsPerPage] = useState(10); // Hacer dinamico el número de registro de paginas
   const inputRef = useRef(null); // referencia para el input
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Estado para detectar cambios sin guardar
+
   const [modalPDFVisible, setModalPDFVisible] = useState(false); // Nuevo estado para el modal de PDF
   // Lógica para determinar el estado en el renderizado
   const estadoProfesor = profesores.Estado === 1 ? 'Activo' : 'Inactivo';
   const [filteredRecords, setFilteredRecords] = useState(profesores); // Inicializa con todos los profesores
   const [loading, setLoading] = useState(false);
+  
   useEffect(() => {
     fetchProfesores();
     fetchListaPersonas();
@@ -93,7 +96,7 @@ const ListaProfesores = () => {
       const dataWithIndex = data.map((persona, index) => ({
         ...persona,
         // Creamos `nombreCompleto` concatenando nombre y apellidos
-        nombreCompleto: persona.nombreCompleto || `${persona.Nombre} ${persona.Segundo_nombre} ${persona.Primer_apellido} ${persona.Segundo_Apellido}`.trim(),
+        nombreCompleto: persona.nombreCompleto || `${persona.Nombre} ${persona.Segundo_nombre} ${persona.Primer_apellido} ${persona.Segundo_apellido}`.trim(),
         originalIndex: index + 1, // Guardamos el índice original
       }));
       
@@ -105,9 +108,14 @@ const ListaProfesores = () => {
 
 
   const getNombreCompleto = (codPersona) => {
-    if (!listaPersonas.length) return 'Personas no disponibles'; // Mensaje alternativo si no hay personas
-    const persona = listaPersonas.find((p) => p.cod_persona === codPersona);
-    return persona ? persona.nombreCompleto : 'Persona no encontrada';
+    if (!codPersona) return 'No asignado';
+    if (!listaPersonas.length) return 'Cargando...';
+    
+    const persona = listaPersonas.find((p) => String(p.cod_persona) === String(codPersona));
+    
+    if (!persona) return 'Persona no encontrada';
+    
+    return `${persona.Nombre}  ${persona.Segundo_nombre}   ${persona.Primer_apellido}   ${persona.Segundo_apellido}`;
   };
   
 
@@ -214,7 +222,13 @@ const resetProfesorToUpdate = () => setProfesorToUpdate('');
     try {
       const response = await fetch('http://localhost:4000/api/profesores/verprofesores');
       const data = await response.json();
-      setProfesores(data);
+
+      const dataWithIndex = data.map((profesor, index) => ({
+        ...profesor,
+        originalIndex: index + 1, // Guardamos la secuencia original
+      }));
+      
+      setProfesores(dataWithIndex);
     } catch (error) {
       console.error('Error al obtener los profesores:', error);
     }
@@ -466,72 +480,105 @@ const filteredProfesores = listaPersonas.length > 0
 // Lógica de paginación
 const indexOfLastRecord = currentPage * recordsPerPage;
 const indexOfFirstRecord = indexOfLastRecord - recordsPerPage;
-const currentRecords = filteredProfesores.slice(indexOfFirstRecord, indexOfLastRecord);
+const currentRecords = filteredRecords.slice(indexOfFirstRecord, indexOfLastRecord);
+
+
+ // Cambiar página
+ const paginate = (pageNumber) => {
+  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredRecords.length / recordsPerPage)) {
+    setCurrentPage(pageNumber);
+  }
+}
 
 function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
-  const [busqueda, setBusqueda] = useState(''); // Estado para el texto de búsqueda
-  const [seleccionado, setSeleccionado] = useState(null); // Estado para la persona seleccionada
+  const [busqueda, setBusqueda] = useState(
+    nuevoProfesor.nombreCompleto || ''
+  );
+  const [seleccionado, setSeleccionado] = useState(
+    listaPersonas.find(p => p.cod_persona === nuevoProfesor.cod_persona) || null
+  );
+  const [mostrarResultados, setMostrarResultados] = useState(false); // Nuevo estado
 
-  // Manejar la selección de una persona
+  useEffect(() => {
+    if (nuevoProfesor.cod_persona && !seleccionado) {
+      const persona = listaPersonas.find(p => p.cod_persona === nuevoProfesor.cod_persona);
+      if (persona) {
+        setSeleccionado(persona);
+        setBusqueda(`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`);
+      }
+    }
+  }, [nuevoProfesor.cod_persona, listaPersonas]);
+
   const handleSelectPersona = (persona) => {
-    console.log('Persona seleccionada:', persona); // Log para verificar selección
     setNuevoProfesor((prev) => ({
       ...prev,
-      cod_persona: persona.cod_persona, // Actualiza el cod_persona
+      cod_persona: persona.cod_persona,
     }));
-    setBusqueda(`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`); // Actualiza el campo de búsqueda con el nombre
-    setSeleccionado(persona); // Guarda la persona seleccionada
+    setBusqueda(`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`);
+    setSeleccionado(persona);
+    setMostrarResultados(false); // Ocultar resultados después de seleccionar
   };
 
-  // Filtrar personas según la búsqueda y el tipo
   const personasFiltradas = listaPersonas.filter(
     (persona) =>
-      persona.cod_tipo_persona === 3 && // Asegúrate de que este valor sea correcto
+      persona.cod_tipo_persona === 3 &&
       (`${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
         .toUpperCase()
-        .includes(busqueda)) // Convertir a mayúsculas para la comparación
+        .includes(busqueda.toUpperCase()))
   );
-
-  // Deshabilitar copiar y pegar
-  const disableCopyPaste = (e) => e.preventDefault();
 
   return (
     <>
-      {/* Campo de búsqueda */}
       <CInputGroup className="mb-3">
         <CInputGroupText>Nombre</CInputGroupText>
         <CFormInput
           type="text"
           placeholder="Buscar por DNI, nombre o apellido..."
           value={busqueda}
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
           onChange={(e) => {
-            setBusqueda(e.target.value.toUpperCase()); // Convertir automáticamente a mayúsculas
-            setSeleccionado(null); // Resetea la selección al cambiar la búsqueda
+            setBusqueda(e.target.value.toUpperCase());
+            setSeleccionado(null);
+            setMostrarResultados(true); // Mostrar resultados solo cuando se escribe
+          }}
+          onFocus={() => {
+            if (!seleccionado) {
+              setMostrarResultados(true);
+            }
           }}
           style={{
             padding: '10px',
             borderRadius: '4px',
             fontSize: '0.95rem',
-            textTransform: 'uppercase', // Forzar visualización en mayúsculas
+            textTransform: 'uppercase',
           }}
+          readOnly={!!seleccionado} // Hacer el input de solo lectura si ya hay una selección
         />
+        {seleccionado && (
+          <CButton 
+            color="danger" 
+            onClick={() => {
+              setSeleccionado(null);
+              setBusqueda('');
+              setNuevoProfesor(prev => ({...prev, cod_persona: ''}));
+            }}
+            style={{ marginLeft: '5px' }}
+          >
+            X
+          </CButton>
+        )}
       </CInputGroup>
 
-      {/* Lista de resultados filtrados */}
-      {busqueda && (
-        <div
-          style={{
-            maxHeight: '150px',
-            overflowY: 'auto',
-            border: '1px solid #ddd',
-            borderRadius: '4px',
-            backgroundColor: '#fff',
-            marginTop: '5px',
-            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-          }}
-        >
+      {/* Mostrar resultados solo si mostrarResultados es true y hay búsqueda */}
+      {mostrarResultados && busqueda && (
+        <div style={{
+          maxHeight: '150px',
+          overflowY: 'auto',
+          border: '1px solid #ddd',
+          borderRadius: '4px',
+          backgroundColor: '#fff',
+          marginTop: '5px',
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
+        }}>
           {personasFiltradas.length > 0 ? (
             personasFiltradas.map((persona) => (
               <div
@@ -540,10 +587,7 @@ function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
                 style={{
                   padding: '10px',
                   cursor: 'pointer',
-                  backgroundColor:
-                    seleccionado && seleccionado.cod_persona === persona.cod_persona
-                      ? '#e9ecef'
-                      : 'white',
+                  backgroundColor: seleccionado?.cod_persona === persona.cod_persona ? '#e9ecef' : 'white',
                   borderBottom: '1px solid #ddd',
                 }}
               >
@@ -562,30 +606,27 @@ function BuscadorDinamico({ listaPersonas, nuevoProfesor, setNuevoProfesor }) {
   );
 }
 
-
-
-console.log('Registros actuales en la página:', currentRecords); // Verificar registros paginados en la consola
-
- // Cambiar página
- const paginate = (pageNumber) => {
-  if (pageNumber > 0 && pageNumber <= Math.ceil(filteredProfesores.length / recordsPerPage)) {
-    setCurrentPage(pageNumber);
-  }
-}
 // Función para abrir el modal de actualización
 const openUpdateModal = (profesor) => {
-  // Cargar los datos del profesor seleccionado
+  // Buscar la persona asociada al profesor
+  const persona = listaPersonas.find(p => p.cod_persona === profesor.cod_persona);
+  
   setProfesorToUpdate({
     ...profesor,
+    // Asegurar que tenemos el nombre completo para mostrar en el buscador
+    nombreCompleto: persona 
+      ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
+      : 'Desconocido',
     Fecha_ingreso: profesor.Fecha_ingreso
       ? new Date(profesor.Fecha_ingreso).toISOString().split('T')[0]
-      : '', // Convertir fecha de ingreso al formato YYYY-MM-DD
+      : '',
     Fecha_fin_contrato: profesor.Fecha_fin_contrato
       ? new Date(profesor.Fecha_fin_contrato).toISOString().split('T')[0]
-      : '', // Convertir fecha de fin de contrato al formato YYYY-MM-DD
+      : ''
   });
-
-  setModalUpdateVisible(true); // Abrir el modal de actualización
+  
+  // Faltaba esta línea para mostrar el modal
+  setModalUpdateVisible(true);
   setHasUnsavedChanges(false); // Resetear el estado de cambios sin guardar
 };
 
@@ -684,6 +725,8 @@ const filteredRecords = searchTerm
 
   // Actualizar la lista filtrada
   setProfesoresFiltrados(filteredRecords);
+
+  setCurrentPage(1);
 };
 
 //-----------------------------------------------------------------------------------------------------------
@@ -713,7 +756,7 @@ const generarReportePDF = () => {
     return; // No continuar si no hay datos
   }
 
-  const doc = new jsPDF();
+  const doc = new jsPDF('landscape');
   const img = new Image();
   img.src = logo; // Reemplaza con la URL o ruta de tu logo.
 
@@ -760,11 +803,13 @@ const generarReportePDF = () => {
     doc.setDrawColor(0, 102, 51); // Verde
     doc.line(10, yPosition, doc.internal.pageSize.width - 10, yPosition);
 
-    yPosition += 4;
+   // Configuración para la tabla
+   const pageHeight = doc.internal.pageSize.height; // Altura de la página
+   let pageNumber = 1; // Página inicial
 
     // Generar tabla con registros filtrados o completos
     doc.autoTable({
-      startY: yPosition,
+      startY: yPosition + 4,
       head: [['#', 'Nombre', 'Grado Académico', 'Tipo de Contrato', 'Hora Entrada', 'Hora Salida', 'Fecha Ingreso', 'Fecha Fin Contrato', 'Años de Experiencia']],
       body: registrosParaReporte.map((profesor, index) => {
         const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
@@ -777,7 +822,7 @@ const generarReportePDF = () => {
         const añosExperiencia = profesor.Años_experiencia;
 
         return [
-          index + 1,
+          profesor.originalIndex|| index+1,
           nombreCompleto,
           listaGradosAcademicos.find(
             (grado) => grado.Cod_grado_academico === profesor.Cod_grado_academico
@@ -802,20 +847,40 @@ const generarReportePDF = () => {
         cellPadding: 2, // Aumentar el padding para mejorar la visibilidad
         overflow: 'linebreak', // Asegurar que el texto no se desborde
       },
+      columnStyles: {
+        0: { cellWidth: 10 }, // Columna '#' se ajusta automáticamente
+        1: { cellWidth: 65 }, // Columna 'Nombre' se ajusta automáticamente
+        2: { cellWidth: 35 },     // 'Grado Académico' con ancho fijo (ejemplo)
+        3: { cellWidth: 35 },     // 'Tipo de Contrato'
+        4: { cellWidth: 21 },     // 'Hora Entrada'
+        5: { cellWidth: 21 },     // 'Hora Salida'
+        6: { cellWidth: 30 },     // 'Fecha Ingreso'
+        7: { cellWidth: 30 },     // 'Fecha Fin Contrato'
+        8: { cellWidth: 23 },     // 'Años de Experiencia'
+      },
       alternateRowStyles: { fillColor: [240, 248, 255] }, // Fondo alternativo
       didDrawPage: (data) => {
-        // Pie de página
-        const pageCount = doc.internal.getNumberOfPages();
-        const pageHeight = doc.internal.pageSize.height;
-
-        // Fecha y hora en el lado izquierdo
-        doc.setFontSize(10);
-        doc.text(`Fecha y hora de generación: ${fechaHoraGeneracion}`, 10, pageHeight - 10);
-
-        // Número de página en el lado derecho
-        doc.text(`Página ${data.pageNumber} de ${pageCount}`, doc.internal.pageSize.width - 50, pageHeight - 10);
-      },
-    });
+        const currentDate = new Date();
+          const formattedDate = `${currentDate.toLocaleDateString()} ${currentDate.toLocaleTimeString()}`;
+          const pageHeight = doc.internal.pageSize.height; // Altura de la página
+          doc.setFontSize(10);
+          doc.setTextColor(100);
+          // Fecha y hora en el pie de página
+          doc.text(`Fecha y hora de generación: ${formattedDate}`, 10, pageHeight - 10);
+        },
+      });
+      
+      // Asegúrate de calcular el total de páginas al final
+      const totalPages = doc.internal.getNumberOfPages();
+      const pageWidth = doc.internal.pageSize.width; // Ancho de la página
+      
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i); // Ve a cada página
+        doc.setTextColor(100);
+        const text = `Página ${i} de ${totalPages}`;
+        // Agrega número de página en la posición correcta
+        doc.text(text, pageWidth - 30, pageHeight - 10);
+      }
 
     // Guardar o abrir el PDF
     window.open(doc.output('bloburl'), '_blank');
@@ -835,17 +900,19 @@ const generarReportePDF = () => {
 const generarReporteExcel = () => {
   const encabezados = [
     ["Saint Patrick Academy"],
-      ["Reporte de Profesores"],
-      [], // Espacio en blanco
+    ["Reporte de Profesores"],
+    [], // Espacio en blanco
     ['#', 'Nombre', 'Grado Académico', 'Tipo de Contrato', 'Hora Entrada', 'Hora Salida'],
   ];
 
   const datos = currentRecords.map((profesor, index) => {
     const persona = listaPersonas.find(p => p.cod_persona === profesor.cod_persona);
-    const nombreCompleto = persona ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}` : 'Desconocido';
+    const nombreCompleto = persona
+      ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
+      : 'Desconocido';
 
     return [
-      index + 1,
+      profesor.originalIndex || index+1,
       nombreCompleto,
       listaGradosAcademicos.find(grado => grado.Cod_grado_academico === profesor.Cod_grado_academico)?.Descripcion || 'N/A',
       listaTiposContrato.find(tipo => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato)?.Descripcion || 'N/A',
@@ -855,11 +922,23 @@ const generarReporteExcel = () => {
   });
 
   const hojaDeTrabajo = XLSX.utils.aoa_to_sheet([...encabezados, ...datos]);
+
+  // Establecer anchos de columnas en caracteres
+  hojaDeTrabajo['!cols'] = [
+    { wch: 5 },   // Columna '#'
+    { wch: 30 },  // Nombre completo
+    { wch: 25 },  // Grado Académico
+    { wch: 25 },  // Tipo de Contrato
+    { wch: 15 },  // Hora Entrada
+    { wch: 15 },  // Hora Salida
+  ];
+
   const libroDeTrabajo = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(libroDeTrabajo, hojaDeTrabajo, 'Reporte Profesores');
 
   XLSX.writeFile(libroDeTrabajo, 'reporte_profesores.xlsx');
 };
+
 
 
 
@@ -897,21 +976,7 @@ const generarReporteExcel = () => {
 
     {/* Botón "Nuevo" */}
     <div className="d-flex gap-2">
-      <CButton
-        className="btn btn-sm d-flex align-items-center gap-1 rounded shadow"
-        onClick={() => {
-          setModalVisible(true);
-          setHasUnsavedChanges(false);
-        }}
-        style={{
-          backgroundColor: "#4B6251",
-          color: "#FFFFFF",
-          padding: "5px 10px",
-          fontSize: "0.9rem",
-        }}
-      >
-        <CIcon icon={cilPlus} /> Nuevo
-      </CButton>
+     
 
       {/* Dropdown para reporte */}
       <CDropdown className="btn-sm d-flex align-items-center gap-1 rounded shadow">
@@ -932,7 +997,7 @@ const generarReporteExcel = () => {
             e.currentTarget.style.boxShadow = "none";
           }}
         >
-          Reporte
+          <CIcon icon={cilDescription} /> Reporte
         </CDropdownToggle>
         <CDropdownMenu
           style={{
@@ -1010,7 +1075,6 @@ const generarReporteExcel = () => {
     onChange={handleSearch}
     style={{ fontSize: '0.9rem' }}
     />
-
          {/* Botón para limpiar la búsqueda */}
       <CButton
             style={{border: '1px solid #ccc',
@@ -1036,10 +1100,31 @@ const generarReporteExcel = () => {
         
       </CInputGroup>
       </CCol>
-
+       {/* Selector dinámico a la par de la barra de búsqueda */}
+            <CCol xs="12" md="4" className="text-md-end mt-2 mt-md-0">
+              <CInputGroup className="mt-2 mt-md-0" style={{ width: 'auto', display: 'inline-block' }}>
+                <div className="d-inline-flex align-items-center">
+                  <span>Mostrar&nbsp;</span>
+                    <CFormSelect
+                      style={{ width: '80px', display: 'inline-block', textAlign: 'center' }}
+                      onChange={(e) => {
+                      const value = Number(e.target.value);
+                      setRecordsPerPage(value);
+                      setCurrentPage(1); // Reiniciar a la primera página cuando se cambia el número de registros
+                    }}
+                      value={recordsPerPage}
+                    >
+                      <option value="10">10</option>
+                      <option value="20">20</option>
+                      <option value="30">30</option>
+                    </CFormSelect>
+                  <span>&nbsp;registros</span>
+                </div>       
+             </CInputGroup>
+           </CCol>
     </CRow>
 {/* Tabla para mostrar Profesores*/}  
-<div className="table-responsive" style={{ boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)" }}>
+<div className="table-responsive" style={{ boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)", maxHeight: '550px', overflowY: 'scroll', marginBottom: '20px' }}>
   <CTable striped bordered hover responsive>
     <CTableHead className="sticky-top bg-light text-start" style={{ fontSize: '0.8rem' }}>
       <CTableRow>
@@ -1053,7 +1138,7 @@ const generarReporteExcel = () => {
       </CTableRow>
     </CTableHead>
     <CTableBody>
-      {filteredRecords.map((profesor, index) => {
+      {currentRecords.map((profesor, index) => {
         const persona = listaPersonas.find((p) => p.cod_persona === profesor.cod_persona);
         const nombreCompleto = persona
           ? `${persona.dni_persona} ${persona.Nombre} ${persona.Primer_apellido}`
@@ -1064,7 +1149,7 @@ const generarReporteExcel = () => {
 
         return (
           <CTableRow key={profesor.Cod_profesor} style={rowStyle}>
-            <CTableDataCell>{index + 1}</CTableDataCell>
+            <CTableDataCell>{profesor.originalIndex}</CTableDataCell>
             <CTableDataCell>{nombreCompleto}</CTableDataCell>
             <CTableDataCell>{listaGradosAcademicos.find(grado => grado.Cod_grado_academico === profesor.Cod_grado_academico)?.Descripcion || 'N/A'}</CTableDataCell>
             <CTableDataCell>{listaTiposContrato.find(tipo => tipo.Cod_tipo_contrato === profesor.Cod_tipo_contrato)?.Descripcion || 'N/A'}</CTableDataCell>
@@ -1083,17 +1168,27 @@ const generarReporteExcel = () => {
 
       {/* Botón de detalle, deshabilitado si el estado es inactivo */}
       <CButton
-        color="primary"
-        style={{ marginRight: '10px', marginBottom: '10px' }}
-        onClick={() => {
-          setProfesorToReportar(profesor);
-          setModalReporteVisible(true);
-        }}
-        disabled={!profesor.Estado} // Deshabilitar si el profesor está inactivo
-        title={profesor.Estado ? 'Ver detalles' : 'Profesor inactivo'}
-      >
-        <CIcon icon={cilInfo} />
-      </CButton>
+      color="primary"
+      style={{ marginRight: '10px', marginBottom: '10px' }}
+      onClick={() => {
+        setProfesorToReportar({
+          ...profesor, // Asegúrate de pasar todo el objeto profesor
+          cod_persona: profesor.cod_persona,
+          Cod_grado_academico: profesor.Cod_grado_academico,
+          Cod_tipo_contrato: profesor.Cod_tipo_contrato,
+          Hora_entrada: profesor.Hora_entrada,
+          Hora_salida: profesor.Hora_salida,
+          Fecha_ingreso: profesor.Fecha_ingreso,
+          Fecha_fin_contrato: profesor.Fecha_fin_contrato,
+          Años_experiencia: profesor.Años_experiencia
+        });
+        setModalReporteVisible(true);
+      }}
+      disabled={!profesor.Estado}
+      title={profesor.Estado ? 'Ver detalles' : 'Profesor inactivo'}
+    >
+      <CIcon icon={cilInfo} />
+    </CButton>
 
       {/* Botón para cambiar el estado */}
       <CButton
@@ -1116,6 +1211,27 @@ const generarReporteExcel = () => {
   </CTable>
 </div>
 
+{/* Paginación Fija */}
+    <div className="pagination-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+      <CPagination aria-label="Page navigation">
+        <CButton
+          style={{ backgroundColor: '#6f8173', color: '#D9EAD3' }}
+          disabled={currentPage === 1} // Deshabilitar si estás en la primera página
+          onClick={() => paginate(currentPage - 1)}>
+          Anterior
+        </CButton>
+        <CButton
+          style={{ marginLeft: '10px',backgroundColor: '#6f8173', color: '#D9EAD3' }}
+          disabled={currentPage === Math.ceil(filteredRecords.length / recordsPerPage)} // Deshabilitar si estás en la última página
+          onClick={() => paginate(currentPage + 1)}>
+          Siguiente
+       </CButton>
+     </CPagination>
+      {/* Mostrar total de páginas */}
+      <span style={{ marginLeft: '10px' }}>
+        Página {currentPage} de {Math.ceil(filteredRecords.length / recordsPerPage)}
+      </span>
+   </div>
 
 
 
@@ -1148,181 +1264,6 @@ const generarReporteExcel = () => {
       <CButton color="secondary" onClick={() => setModalReporteVisible(false)}>Cerrar</CButton>
     </CModalFooter>
     </CModal>
-
-      {/* Modal Crear */}
-      <CModal visible={modalVisible} backdrop='static'>
-  <CModalHeader closeButton={false}>
-    <CModalTitle>Nuevo profesor</CModalTitle>
-    <CButton className="btn-close" aria-label="Close" onClick={() => handleCloseModal( setModalVisible, resetNuevoProfesor)} />
-  </CModalHeader>
-  <CModalBody>
-    <CForm>
-
-      {/* Aquí se usa el componente BuscadorDinamico */}
-          <BuscadorDinamico
-            listaPersonas={listaPersonas} // Pasa la lista de personas
-            nuevoProfesor={nuevoProfesor} // Pasa el estado actual de nuevoProfesor
-            setNuevoProfesor={setNuevoProfesor} // Pasa la función para actualizar nuevoProfesor
-          />
-
-
-      {/* Select para Tipo de Contrato */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Tipo de Contrato</CInputGroupText>
-        <CFormSelect
-          value={nuevoProfesor.Cod_tipo_contrato}
-          maxLength={50} // Limitar a 50 caracteres
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          onChange={(e) => handleInputChange(e, (value) =>  setNuevoProfesor({ ...nuevoProfesor, Cod_tipo_contrato: value }))}
-        >
-          <option value="">Seleccione tipo de contrato</option>
-          {listaTiposContrato.map((tipo) => (
-            <option key={tipo.Cod_tipo_contrato} value={tipo.Cod_tipo_contrato}>
-              {tipo.Descripcion}
-            </option>
-          ))}
-        </CFormSelect>
-      </CInputGroup>
-
-      {/* Select para Grado Académico */}
-      <CInputGroup className="mb-3">
-        <CInputGroupText>Grado Académico</CInputGroupText>
-        <CFormSelect
-          value={nuevoProfesor.Cod_grado_academico}
-          maxLength={50} // Limitar a 50 caracteres
-          onPaste={disableCopyPaste}
-          onCopy={disableCopyPaste}
-          onChange={(e) => handleInputChange(e, (value) => setNuevoProfesor({ ...nuevoProfesor, Cod_grado_academico: value }))}
-        >
-          <option value="">Seleccione un grado académico</option>
-          {listaGradosAcademicos.map((grado) => (
-            <option key={grado.Cod_grado_academico} value={grado.Cod_grado_academico}>
-              {grado.Descripcion}
-            </option>
-          ))}
-        </CFormSelect>
-      </CInputGroup>
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Hora Entrada</CInputGroupText>
-              <CFormInput
-                type="time"
-                value={nuevoProfesor.Hora_entrada}
-                maxLength={50} // Limitar a 50 caracteres
-                onPaste={disableCopyPaste}
-                onCopy={disableCopyPaste}
-                onChange={(e) => handleInputChange(e, (value) => setNuevoProfesor({ ...nuevoProfesor, Hora_entrada: value }))}
-              />
-            </CInputGroup>
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Hora Salida</CInputGroupText>
-              <CFormInput
-                type="time"
-                value={nuevoProfesor.Hora_salida}
-                maxLength={50} // Limitar a 50 caracteres
-                onPaste={disableCopyPaste}
-                onCopy={disableCopyPaste}
-                onChange={(e) => handleInputChange(e, (value) => setNuevoProfesor({ ...nuevoProfesor, Hora_salida: value }))}
-              />
-            </CInputGroup>
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Fecha Ingreso</CInputGroupText>
-              <CFormInput
-                type="date"
-                value={nuevoProfesor.Fecha_ingreso}
-                maxLength={50} // Limitar a 50 caracteres
-                onPaste={disableCopyPaste}
-                onCopy={disableCopyPaste}
-                onChange={(e) => handleInputChange(e, (value) =>  setNuevoProfesor({ ...nuevoProfesor, Fecha_ingreso: value }))}
-              />
-            </CInputGroup>
-            <CInputGroup className="mb-3">
-              <CInputGroupText>Fecha Fin Contrato</CInputGroupText>
-              <CFormInput
-                type="date"
-                value={nuevoProfesor.Fecha_fin_contrato}
-
-                maxLength={50} // Limitar a 50 caracteres
-                onPaste={disableCopyPaste}
-                onCopy={disableCopyPaste}
-                onChange={(e) => handleInputChange(e, (value) =>  setNuevoProfesor({ ...nuevoProfesor, Fecha_fin_contrato: value }))}
-              />
-            </CInputGroup>
-            <CInputGroup className="mb-3">
-            <CInputGroupText>Años de Experiencia</CInputGroupText>
-          <CFormInput
-            type="number"
-            value={nuevoProfesor.Años_experiencia}
-            onPaste={disableCopyPaste}
-            onCopy={disableCopyPaste}
-            onChange={(e) => {
-             const value = e.target.value; // Obtener el valor del input
-             const añosExperiencia = parseInt(value, 10); // Convertir a entero
-
-    // Validar que no sea un número negativo
-    if (añosExperiencia < 0) {
-      swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'No se permiten números negativos en años de experiencia.',
-      });
-      // Limpiar el campo si el valor es negativo
-      setNuevoProfesor({
-        ...nuevoProfesor,
-        Años_experiencia: '', // Limpia el campo si es negativo
-      });
-      return; // Salir de la función para evitar actualizar el estado
-    }
-
-    // Validar que solo se ingresen hasta 2 dígitos
-    if (value.length > 2) {
-      swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Solo se permiten hasta 2 dígitos para los años de experiencia.',
-      });
-      // Limpiar el campo si excede el límite
-      setNuevoProfesor({
-        ...nuevoProfesor,
-        Años_experiencia: '', // Limpia el campo si excede el límite
-      });
-      return; // Salir de la función para evitar actualizar el estado
-    }
-
-    // Si es un número válido y dentro del rango, actualizar el estado
-    if (añosExperiencia <= 40) {
-      setNuevoProfesor({
-        ...nuevoProfesor,
-        Años_experiencia: value,
-      });
-    } else {
-      swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: 'Los años de experiencia deben estar entre 0 y 40.',
-      });
-      setNuevoProfesor({
-        ...nuevoProfesor,
-        Años_experiencia: '', // Limpia el campo si está fuera del rango
-      });
-    }
-  }}
-/>
-
-</CInputGroup>
-
-          </CForm>
-        </CModalBody>
-        <CModalFooter>
-        <CButton color="secondary" onClick={() => handleCloseModal(setModalVisible, resetNuevoProfesor)}>
-            Cancelar
-          </CButton>
-          <CButton style={{backgroundColor: '#4B6251', color: 'white' }} onClick={handleCreateProfesor}>
-          <CIcon icon={cilSave} style={{ marginRight: '5px' }} />Guardar
-          </CButton>
-        </CModalFooter>
-      </CModal>
-
 
 {/* Modal Actualizar */}
 

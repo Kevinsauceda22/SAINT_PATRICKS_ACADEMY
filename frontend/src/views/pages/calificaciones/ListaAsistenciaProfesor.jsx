@@ -1401,7 +1401,7 @@ const asistenciasFiltradas = asistenciasConIndice.filter((asistencia) =>
           </CInputGroup>
         </CCol>
         </CRow>
-          <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
+          <div className="table-responsive" style={{maxHeight: '550px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
             <CTable striped bordered hover responsive >
               <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
                 <CTableRow>
@@ -1629,7 +1629,7 @@ const asistenciasFiltradas = asistenciasConIndice.filter((asistencia) =>
             <p className="text-center text-muted mt-2">No se encontraron registros de asistencia para esta sección</p>
           ) : (
           <>
-          <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto',marginBottom: '20px',boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)'}}>
+          <div className="table-responsive" style={{maxHeight: '550px',overflowX: 'auto',overflowY: 'auto',marginBottom: '20px',boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)'}}>
             <CTable striped bordered hover responsive>
               <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem',}}>
                 <CTableRow>

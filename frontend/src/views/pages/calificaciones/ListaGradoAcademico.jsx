@@ -901,7 +901,7 @@ const ListaGradoAcademico = () => {
 
    
       {/* Tabla para mostrar grado academico  */}
-      <div className="table-container" style={{ maxHeight: '400px', overflowY: 'scroll', marginBottom: '20px' }}>
+      <div className="table-container" style={{ maxHeight: '550px', overflowY: 'scroll', marginBottom: '20px' }}>
         <CTable striped bordered hover>
           <CTableHead>
             <CTableRow>

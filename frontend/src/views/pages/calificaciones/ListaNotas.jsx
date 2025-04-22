@@ -1834,7 +1834,7 @@ const NotasFiltradas = notasConIndice.filter((estudiante) =>
               </CInputGroup>
             </CCol>
             </CRow>
-              <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
+              <div className="table-responsive" style={{maxHeight: '550px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
                  <CTable striped bordered hover responsive >
                  <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
                  <CTableRow>
@@ -2022,7 +2022,7 @@ const NotasFiltradas = notasConIndice.filter((estudiante) =>
           </CInputGroup>
         </CCol>
         </CRow>
-          <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
+          <div className="table-responsive" style={{maxHeight: '550px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
           <CTable striped bordered hover responsive >
           <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
           <CTableRow>
@@ -2218,7 +2218,7 @@ const NotasFiltradas = notasConIndice.filter((estudiante) =>
       </CInputGroup>
     </CCol>
     </CRow>   
-     <div className="table-responsive" style={{maxHeight: '400px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
+     <div className="table-responsive" style={{maxHeight: '550px',overflowX: 'auto',overflowY: 'auto', boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)"}}>
      <CTable striped bordered hover responsive >
      <CTableHead className="sticky-top bg-light text-center" style={{fontSize: '0.8rem'}}>
      <CTableRow>
