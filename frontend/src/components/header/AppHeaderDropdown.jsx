@@ -104,10 +104,6 @@ const AppHeaderDropdown = () => {
           Perfil
         </CDropdownItem>
 
-        <CDropdownItem href="/MisPagos">
-          <CIcon icon={cilCreditCard} className="me-2" />
-          Mis Pagos
-        </CDropdownItem>
 
         <CDropdownDivider />
 

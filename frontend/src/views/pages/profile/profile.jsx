@@ -198,7 +198,7 @@ const UserProfile = () => {
   };
 
   const closeModal = () => setModalIsOpen(false);
-  const rolMap = useMemo(() => ({ 1: 'PADRE', 2: 'ADMINISTRADOR', 3: 'DOCENTE', 4: 'MANAGER' }), []);
+  const rolMap = useMemo(() => ({ 1: 'PADRE', 2: 'ADMINISTRADOR', 3: 'DOCENTE', 4: 'ROOT' }), []);
 
   return (
     <div className="profile-container">
@@ -211,7 +211,7 @@ const UserProfile = () => {
           </button>
         </div>
         <div className="profile-info">
-          <h1 className="profile-name">{personData.Nombre || 'NO DISPONIBLE'}</h1>
+          <h1 className="profile-name">{personData.nombre_usuario || 'NO DISPONIBLE'}</h1>
           <p className="profile-username">@{auth.nombre_usuario || 'usuario'}</p>
           <span className="profile-role">{rolMap[auth.cod_rol] || 'ROL DESCONOCIDO'}</span>
         </div>

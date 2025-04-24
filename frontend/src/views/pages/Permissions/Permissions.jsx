@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import Swal from 'sweetalert2';
 import withReactContent from 'sweetalert2-react-content';
 import CIcon from '@coreui/icons-react';
-import { cilSearch, cilBrushAlt } from '@coreui/icons';
+import { cilSearch, cilFilter, cilSettings, cilUser, cilBrushAlt } from '@coreui/icons';
 import usePermission from '../../../../context/usePermission';
-import AccessDenied from "../AccessDenied/AccessDenied"
+import AccessDenied from "../AccessDenied/AccessDenied";
+import { 
+  CCard, CCardHeader, CCardBody, CNav, CNavItem, CNavLink, 
+  CButton, CInputGroup, CFormInput, CCollapse, CCardTitle 
+} from '@coreui/react';
 
 const GestorDePermisos = ({ pathName }) => {
   const { canSelect, canUpdate, canDelete, canInsert, loading, error } = usePermission('rolesandpermissions');
@@ -15,13 +19,16 @@ const GestorDePermisos = ({ pathName }) => {
   const [busquedaObjeto, setBusquedaObjeto] = useState('');
   const [busquedaRol, setBusquedaRol] = useState('');
   const [vistaActual, setVistaActual] = useState('general');
+  const [rolSeleccionado, setRolSeleccionado] = useState(null);
+  const [visibleSections, setVisibleSections] = useState({});
   const MySwal = withReactContent(Swal);
 
   const rolNombres = {
     1: 'Padre',
     2: 'Administrador',
     3: 'Docente',
-    4: 'Manager'
+    4: 'Manager',
+    5: 'Estudiante'
   };
 
   const paginasGenerales = [
@@ -43,12 +50,12 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '93', name: 'ListaSecciones Asignatura', description: 'ListaSecciones' },
     { id: '96', name: 'Gestion Academica', description: 'GestionAca' },
     { id: '97', name: 'Secciones', description: 'GestionAca' }
-
-
   ];
 
   const paginasPagos = [
-    { id: '71', name: 'Libro Diario', description: 'Libro Diario' }
+    { id: '71', name: 'Libro Diario', description: 'Libro Diario' },
+    { id: '98', name: 'Reportes Financieros', description: 'Reportes de pagos y finanzas' },
+    { id: '99', name: 'Facturación', description: 'Sistema de facturación' }
   ];
 
   const paginasPersonas = [
@@ -56,12 +63,14 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '69', name: 'Lista Relacion', description: 'Lista Relacion' },
     { id: '65', name: 'Tipo persona', description: 'tipo persona' },
     { id: '64', name: 'Departamento', description: 'departamento' },
-    { id: '81', name: 'Municipios', description: 'Muinicipios' }
+    { id: '81', name: 'Municipios', description: 'Muinicipios' },
+    { id: '100', name: 'Contactos de Emergencia', description: 'Contactos importantes' }
   ];
 
   const paginasUsuarios = [
     { id: '45', name: 'Admin. de Usuarios', description: 'Gestión Usuarios' },
-    { id: '72', name: 'Roles y Permisos', description: 'roles and permissions' }
+    { id: '72', name: 'Roles y Permisos', description: 'roles and permissions' },
+    { id: '101', name: 'Perfiles de Usuario', description: 'Gestión de perfiles' }
   ];
 
   const paginasMantenimiento = [
@@ -83,8 +92,8 @@ const GestorDePermisos = ({ pathName }) => {
     { id: '66', name: 'Edificios', description: 'edificios' },
     { id: '67', name: 'Días', description: 'dias' },
     { id: '68', name: 'Lista Historico Proc', description: 'Lista Historico Proc' },
-    { id: '70', name: 'Contabilidad', description: 'Contabilidad' }
-    
+    { id: '70', name: 'Contabilidad', description: 'Contabilidad' },
+    { id: '102', name: 'Configuración del Sistema', description: 'Ajustes generales' }
   ];
 
   const permisos = [
@@ -93,7 +102,8 @@ const GestorDePermisos = ({ pathName }) => {
     { id: 'Permiso_Insercion', name: 'Crear' },
     { id: 'Permiso_Actualizacion', name: 'Editar' },
     { id: 'Permiso_Eliminacion', name: 'Eliminar' },
-    { id: 'Permiso_Nav', name: 'Mostrar en Nav' }
+    { id: 'Permiso_Nav', name: 'Mostrar en Nav' },
+    { id: 'Permiso_Reportes', name: 'Generar Reportes' }
   ];
 
   const getPaginasActuales = () => {
@@ -110,6 +120,7 @@ const GestorDePermisos = ({ pathName }) => {
         return paginasGenerales;
     }
   };
+
   const cerrarAdvertencia = () => {
     setMostrarAdvertencia(false);
   };
@@ -129,6 +140,11 @@ const GestorDePermisos = ({ pathName }) => {
       const data = await response.json();
       const usuariosTransformados = transformarDatosPermisos(data);
       setUsuarios(usuariosTransformados);
+      
+      if (!rolSeleccionado && usuariosTransformados.length > 0) {
+        setRolSeleccionado(usuariosTransformados[0].id);
+      }
+      
       setCargando(false);
     } catch (error) {
       console.error('Error:', error);
@@ -174,7 +190,8 @@ const GestorDePermisos = ({ pathName }) => {
               Permiso_Insercion: permisoObjeto?.Permiso_Insercion === "1",
               Permiso_Actualizacion: permisoObjeto?.Permiso_Actualizacion === "1",
               Permiso_Eliminacion: permisoObjeto?.Permiso_Eliminacion === "1",
-              Permiso_Nav: permisoObjeto?.Permiso_Nav === "1"
+              Permiso_Nav: permisoObjeto?.Permiso_Nav === "1",
+              Permiso_Reportes: permisoObjeto?.Permiso_Reportes === "1"
             }
           };
         }, {})
@@ -202,22 +219,19 @@ const GestorDePermisos = ({ pathName }) => {
       const actualizaciones = {};
   
       if (Cod_Permiso === 'Permiso_Modulo') {
-        // Si estamos desactivando el módulo
         if (permisoActual) {
           actualizaciones.Permiso_Modulo = "0";
           actualizaciones.Permiso_Consultar = "0";
           actualizaciones.Permiso_Insercion = "0";
           actualizaciones.Permiso_Actualizacion = "0";
           actualizaciones.Permiso_Eliminacion = "0";
-          // NO desactivamos Permiso_Nav aquí
+          actualizaciones.Permiso_Reportes = "0";
         } else {
           actualizaciones.Permiso_Modulo = "1";
         }
       } else if (Cod_Permiso === 'Permiso_Nav') {
-        // Permiso_Nav puede cambiarse independientemente del estado del módulo
         actualizaciones.Permiso_Nav = !permisoActual ? "1" : "0";
       } else {
-        // Para otros permisos, mantener la validación del módulo
         if (!permisosObjeto.Permiso_Modulo) {
           MySwal.fire({
             icon: 'warning',
@@ -226,13 +240,14 @@ const GestorDePermisos = ({ pathName }) => {
           });
           return;
         }
-        // Mantener los permisos actuales
+        
         actualizaciones.Permiso_Modulo = permisosObjeto.Permiso_Modulo ? "1" : "0";
         actualizaciones.Permiso_Consultar = permisosObjeto.Permiso_Consultar ? "1" : "0";
         actualizaciones.Permiso_Insercion = permisosObjeto.Permiso_Insercion ? "1" : "0";
         actualizaciones.Permiso_Actualizacion = permisosObjeto.Permiso_Actualizacion ? "1" : "0";
         actualizaciones.Permiso_Eliminacion = permisosObjeto.Permiso_Eliminacion ? "1" : "0";
-        actualizaciones.Permiso_Nav = permisosObjeto.Permiso_Nav ? "1" : "0"; // Mantener el estado actual
+        actualizaciones.Permiso_Nav = permisosObjeto.Permiso_Nav ? "1" : "0";
+        actualizaciones.Permiso_Reportes = permisosObjeto.Permiso_Reportes ? "1" : "0";
         actualizaciones[Cod_Permiso] = !permisoActual ? "1" : "0";
       }
   
@@ -241,8 +256,6 @@ const GestorDePermisos = ({ pathName }) => {
         Cod_Rol: Cod_usuario,
         ...actualizaciones
       };
-  
-      console.log('Enviando actualización:', datosActualizacion);
   
       const response = await fetch(`http://localhost:4000/api/roles/permisos/estado/${Cod_Permiso}`, {
         method: 'PUT',
@@ -257,7 +270,7 @@ const GestorDePermisos = ({ pathName }) => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
   
-      const data = await response.json();
+      await response.json();
   
       setUsuarios(usuarios.map(usuario => {
         if (usuario.id === Cod_usuario) {
@@ -267,7 +280,7 @@ const GestorDePermisos = ({ pathName }) => {
               ...usuario.permisos,
               [Cod_Objeto]: {
                 ...usuario.permisos[Cod_Objeto],
-                ...actualizaciones
+                ...Object.fromEntries(Object.entries(actualizaciones).map(([key, value]) => [key, value === "1"]))
               },
             },
           };
@@ -327,12 +340,30 @@ const GestorDePermisos = ({ pathName }) => {
     }
   };
 
-  const usuariosFiltrados = usuarios.filter(usuario =>
-    usuario.nombre.toLowerCase().includes(busquedaRol.toLowerCase()) ||
-    usuario.rol.toLowerCase().includes(busquedaRol.toLowerCase())
-  );
+  // Ordenar roles alfabéticamente por nombre
+  const usuariosFiltrados = usuarios
+    .filter(usuario =>
+      usuario.nombre.toLowerCase().includes(busquedaRol.toLowerCase()) ||
+      usuario.rol.toLowerCase().includes(busquedaRol.toLowerCase())
+    )
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-  const paginasActuales = getPaginasActuales();
+  // Ordenar páginas alfabéticamente por nombre
+  const paginasActuales = getPaginasActuales()
+    .filter(pagina => 
+      pagina.name.toLowerCase().includes(busquedaObjeto.toLowerCase()) ||
+      pagina.description.toLowerCase().includes(busquedaObjeto.toLowerCase())
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const usuarioActual = usuarios.find(u => u.id === rolSeleccionado);
+
+  const toggleSection = (sectionId) => {
+    setVisibleSections(prev => ({
+      ...prev,
+      [sectionId]: !prev[sectionId]
+    }));
+  };
 
   if (cargando) {
     return (
@@ -351,192 +382,144 @@ const GestorDePermisos = ({ pathName }) => {
       <style>
         {`
           .permisos-container {
-            padding: 2rem;
+            padding: 1rem;
             max-width: 100%;
             margin: 0 auto;
           }
-
+          
           .warning-message {
             background-color: #fff3cd;
             border: 1px solid #ffeeba;
             color: #856404;
-            padding: 1rem;
+            padding: 0.75rem;
             margin-bottom: 1rem;
             border-radius: 0.25rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
           }
-
+          
           .close-button {
             background: none;
             border: none;
             color: #856404;
             cursor: pointer;
-            padding: 0.5rem;
+            padding: 0.25rem;
           }
-
+          
           .header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
           }
-
+          
           .title-section h1 {
             font-size: 1.5rem;
             font-weight: bold;
             color: #2d3748;
             margin: 0;
           }
-
+          
           .title-section p {
             color: #718096;
-            margin-top: 0.5rem;
+            margin-top: 0.25rem;
           }
 
           .control-section {
             display: flex;
-            gap: 1rem;
-            align-items: center;
-            flex-wrap: wrap;
-          }
-
-          .search-container {
-            position: relative;
-            width: 300px;
-          }
-
-          .search-input {
-            width: 100%;
-            padding: 0.5rem 1rem 0.5rem 2.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 0.375rem;
-          }
-
-          .search-icon {
-            position: absolute;
-            left: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #718096;
-          }
-
-          .view-toggle {
-            display: flex;
             gap: 0.5rem;
-            flex-wrap: wrap;
           }
 
-          .view-button {
-            padding: 0.75rem 1.5rem;
+          .roles-sidebar {
+            width: 250px;
+            flex-shrink: 0;
+            margin-right: 1rem;
+          }
+          
+          .role-button {
+            width: 100%;
+            text-align: left;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
             border: 1px solid #e2e8f0;
             border-radius: 0.375rem;
             background-color: white;
             cursor: pointer;
             transition: all 0.2s;
-            white-space: nowrap;
-            font-weight: 500;
           }
-
-          .view-button.active {
+          
+          .role-button.active {
             background-color: #4CAF50;
             color: white;
             border-color: #4CAF50;
           }
-
-          .save-button {
-            padding: 0.75rem 1.5rem;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 0.375rem;
-            cursor: pointer;
+          
+          .role-name {
             font-weight: 600;
           }
-
-          .save-button:hover {
-            background-color: #45a049;
+          
+          .role-type {
+            font-size: 0.8rem;
+            opacity: 0.8;
           }
 
-          .table-container {
-            overflow-x: auto;
-            margin-top: 1rem;
-            background-color: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          .main-content {
+            flex-grow: 1;
           }
 
-          .permisos-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 800px;
+          .category-tabs {
+            margin-bottom: 1rem;
           }
 
-          .permisos-table th,
-          .permisos-table td {
+          .pages-section {
+            margin-bottom: 1rem;
+          }
+
+          .page-card {
             padding: 1rem;
-            border: 1px solid #e2e8f0;
           }
 
-          .permisos-table th {
-            background-color: #f8fafc;
+          .page-title {
             font-weight: 600;
-            text-align: left;
-            color: #4a5568;
+            margin-bottom: 0.5rem;
           }
-
-          .user-cell {
-            background-color: #f8fafc;
-            min-width: 200px;
-          }
-
-          .user-name {
-            font-weight: 600;
-            color: #2d3748;
-            margin: 0;
-          }
-
-          .user-role {
+          
+          .page-description {
+            font-size: 0.8rem;
             color: #718096;
-            font-size: 0.875rem;
-            margin: 0;
+            margin-bottom: 0.75rem;
           }
-
-          .permission-cell {
-            min-width: 150px;
-          }
-
-          .permission-group {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-          }
-
+          
           .permission-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
           }
 
+          .permission-row:last-child {
+            border-bottom: none;
+          }
+          
           .permission-label {
-            color: #718096;
-            font-size: 0.875rem;
+            font-weight: 500;
           }
-
+          
           .switch {
             position: relative;
             display: inline-block;
             width: 40px;
             height: 20px;
           }
-
+          
           .switch input {
             opacity: 0;
             width: 0;
             height: 0;
           }
-
+          
           .slider {
             position: absolute;
             cursor: pointer;
@@ -548,7 +531,7 @@ const GestorDePermisos = ({ pathName }) => {
             transition: .4s;
             border-radius: 20px;
           }
-
+          
           .slider:before {
             position: absolute;
             content: "";
@@ -560,30 +543,45 @@ const GestorDePermisos = ({ pathName }) => {
             transition: .4s;
             border-radius: 50%;
           }
-
+          
           input:checked + .slider {
             background-color: #4CAF50;
           }
-
+          
           input:checked + .slider:before {
             transform: translateX(20px);
           }
 
-          @media (max-width: 768px) {
-            .control-section {
+          .save-button {
+            padding: 0.75rem 1.5rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 1rem;
+          }
+          
+          .save-button:hover {
+            background-color: #45a049;
+          }
+          
+          .no-selection-message {
+            text-align: center;
+            padding: 2rem;
+            color: #718096;
+          }
+          
+          @media (max-width: 992px) {
+            .layout-container {
               flex-direction: column;
             }
             
-            .search-container {
+            .roles-sidebar {
               width: 100%;
-            }
-
-            .view-toggle {
-              width: 100%;
-            }
-
-            .view-button {
-              flex: 1;
+              margin-right: 0;
+              margin-bottom: 1rem;
             }
           }
         `}
@@ -605,116 +603,130 @@ const GestorDePermisos = ({ pathName }) => {
           <h1>{pathName}</h1>
           <p>Gestión de permisos por módulo y rol</p>
         </div>
-        
+
         <div className="control-section">
-          <div className="search-container">
-            <CIcon icon={cilSearch} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Buscar por rol..."
-              value={busquedaRol}
-              onChange={(e) => setBusquedaRol(e.target.value)}
-              className="search-input"
-            />
-          </div>
-
-          <div className="view-toggle">
-            <button
-              className={`view-button ${vistaActual === 'general' ? 'active' : ''}`}
-              onClick={() => setVistaActual('general')}
-            >
-              General
-            </button>
-            <button
-              className={`view-button ${vistaActual === 'mantenimiento' ? 'active' : ''}`}
-              onClick={() => setVistaActual('mantenimiento')}
-            >
-              Mantenimiento
-            </button>
-            <button
-              className={`view-button ${vistaActual === 'pagos' ? 'active' : ''}`}
-              onClick={() => setVistaActual('pagos')}
-            >
-              Pagos y Finanzas
-            </button>
-            <button
-              className={`view-button ${vistaActual === 'personas' ? 'active' : ''}`}
-              onClick={() => setVistaActual('personas')}
-            >
-              Personas
-            </button>
-            <button
-              className={`view-button ${vistaActual === 'usuarios' ? 'active' : ''}`}
-              onClick={() => setVistaActual('usuarios')}
-            >
-              Usuarios
-            </button>
-          </div>
-
-          <button className="save-button" onClick={guardarCambios}>
+          <CButton color="success" onClick={guardarCambios}>
             Guardar Cambios
-          </button>
+          </CButton>
         </div>
       </div>
 
-      <div className="table-container">
-        <table className="permisos-table">
-          <thead>
-            <tr>
-              <th className="user-cell">Usuario</th>
-              {paginasActuales.map(pagina => (
-                <th key={pagina.id} className="permission-cell" title={pagina.description}>
-                  {pagina.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {usuariosFiltrados.map(usuario => (
-              <tr key={usuario.id}>
-   <td className="user-cell">
-  <div className="user-info-container">
-    <div className="user-info-header">
-      <p className="user-name">{usuario.nombre}</p>
-      <p className="user-role">{usuario.rol}</p>
-    </div>
-    <div className="sidebar-permission">
-      <span className="permission-label">Mostrar en el Nav</span>
-      <label className="switch">
-        <input
-          type="checkbox"
-          checked={usuario.permisos['global']?.Permiso_Nav || false}
-          onChange={() => cambiarPermiso(usuario.id, 'global', 'Permiso_Nav')}
-        />
-        <span className="slider"></span>
-      </label>
-    </div>
-  </div>
-</td>
+      <div className="layout-container d-flex">
+        {/* Panel de Roles (Izquierda) */}
+        <div className="roles-sidebar">
+          <CInputGroup className="mb-3">
+            <CFormInput 
+              placeholder="Buscar rol..."
+              value={busquedaRol}
+              onChange={(e) => setBusquedaRol(e.target.value)}
+            />
+          </CInputGroup>
+          
+          {usuariosFiltrados.map(usuario => (
+            <button
+              key={usuario.id}
+              className={`role-button ${usuario.id === rolSeleccionado ? 'active' : ''}`}
+              onClick={() => setRolSeleccionado(usuario.id)}
+            >
+              <div className="role-name">{usuario.nombre}</div>
+              <div className="role-type">{usuario.rol}</div>
+            </button>
+          ))}
+        </div>
 
-                {paginasActuales.map(pagina => (
-                  <td key={pagina.id} className="permission-cell">
-                    <div className="permission-group">
+        {/* Contenido Principal (Derecha) */}
+        <div className="main-content">
+          {/* Pestañas de categorías */}
+          <CNav variant="tabs" className="category-tabs">
+            <CNavItem>
+              <CNavLink 
+                active={vistaActual === 'general'} 
+                onClick={() => setVistaActual('general')}
+              >
+                General
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink 
+                active={vistaActual === 'mantenimiento'} 
+                onClick={() => setVistaActual('mantenimiento')}
+              >
+                Mantenimiento
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink 
+                active={vistaActual === 'pagos'} 
+                onClick={() => setVistaActual('pagos')}
+              >
+                Pagos y Finanzas
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink 
+                active={vistaActual === 'personas'} 
+                onClick={() => setVistaActual('personas')}
+              >
+                Personas
+              </CNavLink>
+            </CNavItem>
+            <CNavItem>
+              <CNavLink 
+                active={vistaActual === 'usuarios'} 
+                onClick={() => setVistaActual('usuarios')}
+              >
+                Usuarios
+              </CNavLink>
+            </CNavItem>
+          </CNav>
+
+          {/* Campo de búsqueda de objetos/páginas */}
+          <CInputGroup className="mb-3">
+            <CFormInput 
+              placeholder="Buscar página o módulo..."
+              value={busquedaObjeto}
+              onChange={(e) => setBusquedaObjeto(e.target.value)}
+            />
+          </CInputGroup>
+
+          {rolSeleccionado && usuarioActual ? (
+            <div className="pages-section">
+              {paginasActuales.map(pagina => (
+                <CCard key={pagina.id} className="mb-2">
+                  <CCardHeader 
+                    onClick={() => toggleSection(pagina.id)} 
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <CCardTitle>{pagina.name}</CCardTitle>
+                  </CCardHeader>
+                  <CCollapse visible={visibleSections[pagina.id]}>
+                    <CCardBody className="page-card">
+                      <div className="page-title">{pagina.name}</div>
+                      <div className="page-description">{pagina.description}</div>
                       {permisos.map(permiso => (
                         <div className="permission-row" key={permiso.id}>
                           <span className="permission-label">{permiso.name}</span>
                           <label className="switch">
                             <input
                               type="checkbox"
-                              checked={usuario.permisos[pagina.id]?.[permiso.id] || false}
-                              onChange={() => cambiarPermiso(usuario.id, pagina.id, permiso.id)}
+                              checked={usuarioActual.permisos[pagina.id]?.[permiso.id] || false}
+                              onChange={() => cambiarPermiso(usuarioActual.id, pagina.id, permiso.id)}
                             />
                             <span className="slider"></span>
                           </label>
                         </div>
                       ))}
-                    </div>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                    </CCardBody>
+                  </CCollapse>
+                </CCard>
+              ))}
+            </div>
+          ) : (
+            <div className="no-selection-message">
+              Selecciona un rol para comenzar la configuración
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

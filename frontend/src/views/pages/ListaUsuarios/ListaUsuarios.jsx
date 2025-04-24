@@ -9,7 +9,8 @@ import {
   BookOpen,
   Users,
   Briefcase,
-  UserCog
+  UserCog,
+  Edit
 } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -28,7 +29,6 @@ const UserManagement = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [loadingg, setLoadingg] = useState(true);
 
-  // Fixed: Corrected the state setter name from ssetProcessingUsers to setProcessingUsers
   const [processingUsers, setProcessingUsers] = useState(new Set());
   const loggedInUserId = localStorage.getItem('userId');
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -49,7 +49,7 @@ const UserManagement = () => {
     },
     {
       id: 4,
-      title: 'Manager',
+      title: 'SuperUsuario',
       description: 'Gestión de recursos y usuarios',
       icon: Briefcase,
       color: 'bg-green-500'
@@ -75,7 +75,7 @@ const UserManagement = () => {
       1: 'Padre',
       2: 'Administrador',
       3: 'Docente',
-      4: 'Manager'
+      4: 'ROOT'
     };
     let roleText = roleMap[roleType] || '';
     
@@ -86,7 +86,7 @@ const UserManagement = () => {
       const token = localStorage.getItem('token');
       // Cargar departamentos
       const deptoResponse = await axios.get(
-        'http://localhost:4000/api/departamento/departamentos',
+        'http://localhost:4000/api/departamentos/verTodoDepartamento',
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -104,7 +104,7 @@ const UserManagement = () => {
 
       // Cargar nacionalidades
       const nacResponse = await axios.get(
-        'http://localhost:4000/api/nacionalidad/vernacionalidades',
+        'http://localhost:4000/api/nacionalidad/verTodoNacionalidad',
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -187,11 +187,20 @@ const UserManagement = () => {
               <div class="form-group">
                 <select id="Cod_nacionalidad" class="swal2-select" required onchange="handleNacionalidadChange(this.value)">
                   <option value="">Nacionalidad *</option>
-                  ${nacionalidades.map(nac => `
-                    <option value="${nac.Cod_nacionalidad}">
-                      ${nac.pais_nacionalidad.toUpperCase()}
-                    </option>
-                  `).join('')}
+               // Replace the problematic part in the handleAddUser function
+// Find this section in the code (around line 225-227):
+${nacionalidades.map(nac => `
+  <option value="${nac.Cod_nacionalidad}">
+    ${nac.pais_nacionalidad.toUpperCase()}
+  </option>
+`).join('')}
+
+// And replace it with this safer version:
+${nacionalidades.map(nac => `
+  <option value="${nac.Cod_nacionalidad}">
+    ${nac.pais_nacionalidad ? nac.pais_nacionalidad.toUpperCase() : 'PAÍS NO ESPECIFICADO'}
+  </option>
+`).join('')}
                 </select>
               </div>
               <div class="form-group">
@@ -222,11 +231,12 @@ const UserManagement = () => {
               <div class="form-group">
                 <select id="cod_departamento" class="swal2-select" required onchange="handleDepartamentoChange(this.value)" disabled>
                   <option value="">Departamento *</option>
-                  ${departamentos.map(depto => `
-                    <option value="${depto.cod_departamento}">
-                      ${depto.nombre_departamento.toUpperCase()}
-                    </option>
-                  `).join('')}
+                // Replace the departamentos mapping with this safer version:
+${departamentos.map(depto => `
+  <option value="${depto.cod_departamento}">
+    ${depto.nombre_departamento ? depto.nombre_departamento.toUpperCase() : 'DEPARTAMENTO NO ESPECIFICADO'}
+  </option>
+`).join('')}
                 </select>
               </div>
               <div class="form-group">
@@ -438,7 +448,121 @@ const UserManagement = () => {
         });
       }
     });
-};
+  };
+
+  // Nueva función para editar el rol de un usuario
+  const handleEditRole = async (userId, currentRole, userName) => {
+    // Validaciones para evitar que se modifiquen roles críticos
+    if (parseInt(loggedInUserId) === userId) {
+      Swal.fire({
+        title: 'Error',
+        text: 'No puedes cambiar tu propio rol.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+  
+    // No permitir que los usuarios regulares editen roles de administradores o managers
+    if ((currentRole === '2' || currentRole === '4') && loggedInUserRole !== '2') {
+      Swal.fire({
+        title: 'Error',
+        text: 'No tienes permisos para modificar roles de administradores o managers.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem('token');
+      setProcessingUsers(prev => new Set(prev).add(userId));
+      
+      // Lista predefinida de roles
+      const rolesList = [
+        { Cod_rol: 1, Nom_rol: 'Padre', Descripcion: 'P' },
+        { Cod_rol: 2, Nom_rol: 'Administrador', Descripcion: 'A' },
+        { Cod_rol: 3, Nom_rol: 'Docente', Descripcion: 'D' },
+        { Cod_rol: 4, Nom_rol: 'Manager', Descripcion: 'M' },
+        // Puedes agregar más roles aquí si lo necesitas
+      ];
+  
+      // Diálogo para seleccionar el nuevo rol
+      const { value: newRole } = await Swal.fire({
+        title: `Cambiar rol de ${userName}`,
+        html: `
+          <div class="form-group">
+            <label for="new-role">Selecciona el nuevo rol:</label>
+            <select id="new-role" class="swal2-select">
+              ${rolesList.map(role => {
+                // Si el usuario no es admin, no mostrar opciones de admin/manager
+               
+                return `<option value="${role.Cod_rol}" ${currentRole == role.Cod_rol ? 'selected' : ''}>
+                  ${role.Nom_rol}
+                </option>`;
+              }).join('')}
+            </select>
+          </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Guardar Cambios',
+        cancelButtonText: 'Cancelar',
+        preConfirm: () => {
+          return document.getElementById('new-role').value;
+        }
+      });
+  
+      if (!newRole || newRole === currentRole) {
+        setProcessingUsers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(userId);
+          return newSet;
+        });
+        return;
+      }
+  
+      const response = await axios.put(
+        'http://localhost:4000/api/usuarios/cambiar-rol',
+        {
+          userId: userId,
+          newRoleId: newRole
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+  
+      if (response.data && response.status === 200) {
+        setUsers(prevUsers => prevUsers.map(user => 
+          user.cod_usuario === userId ? { ...user, Cod_rol: newRole } : user
+        ));
+        
+        Swal.fire({
+          title: 'Éxito',
+          text: 'Rol actualizado correctamente',
+          icon: 'success',
+          confirmButtonText: 'Aceptar',
+        });
+      }
+    } catch (error) {
+      console.error('Error detallado:', error.response?.data);
+      Swal.fire({
+        title: 'Error',
+        text: error.response?.data?.mensaje || 'Error al cambiar el rol del usuario',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+    } finally {
+      setProcessingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+    }
+  };
 
   const fetchUsers = async () => {
     setLoadingg(true);
@@ -687,8 +811,9 @@ const UserManagement = () => {
             Agregar Usuario
           </button>
         </div>
+        {/* Menú de tipos de usuario horizontal */}
         {showUserMenu && (
-          <div className="user-types-grid">
+          <div className="user-types-horizontal">
             {userTypes
               .filter(type => {
                 if (!canInsert) {
@@ -699,7 +824,7 @@ const UserManagement = () => {
               .map((type) => (
                 <button 
                   key={type.id}
-                  className="user-type-button"
+                  className="user-type-button-horizontal"
                   onClick={() => handleAddUser(type.id)}
                 >
                   <div className={`icon-wrapper ${type.color}`}>
@@ -764,7 +889,20 @@ const UserManagement = () => {
                         <span className="user-email">{user.correo_electronico}</span>
                       </div>
                     </td>
-                    <td>{getRoleText(user.Cod_rol)}</td>
+                    <td>
+                      <div className="role-display">
+                        <span>{getRoleText(user.Cod_rol)}</span>
+                        {canUpdate && (
+                          <button 
+                            className="btn-edit-role" 
+                            onClick={() => handleEditRole(user.cod_usuario, user.Cod_rol, user.nombre_usuario)}
+                            disabled={processingUsers.has(user.cod_usuario)}
+                          >
+                            <Edit size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                     <td>
                       <span className={`status-badge status-${user.Cod_estado_usuario}`}>
                         {getStatusIcon(user.Cod_estado_usuario)}
@@ -774,23 +912,23 @@ const UserManagement = () => {
                     <td>
                       <div className="action-buttons">
                         <button
-                          className={`btn btn-activate ${(user.Cod_estado_usuario === 1 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4') ? 'disabled' : ''}`}
+                          className={`btn btn-activate ${(user.Cod_estado_usuario === 1 || processingUsers.has(user.cod_usuario) || ((user.Cod_rol === '2' || user.Cod_rol === '4') && (loggedInUserRole !== '2'))) ? 'disabled' : ''}`}
                           onClick={() => handleStatusChange(user.cod_usuario, 1)}
-                          disabled={user.Cod_estado_usuario === 1 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4'}
+                          disabled={user.Cod_estado_usuario === 1 || processingUsers.has(user.cod_usuario) || ((user.Cod_rol === '2' || user.Cod_rol === '4') && (loggedInUserRole !== '2'))}
                         >
                           Activar
                         </button>
                         <button
-                          className={`btn btn-deactivate ${(user.Cod_estado_usuario === 2 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4') ? 'disabled' : ''}`}
+                          className={`btn btn-deactivate ${(user.Cod_estado_usuario === 2 || processingUsers.has(user.cod_usuario) || ((user.Cod_rol === '2' || user.Cod_rol === '4') && (loggedInUserRole !== '2'))) ? 'disabled' : ''}`}
                           onClick={() => handleStatusChange(user.cod_usuario, 2)}
-                          disabled={user.Cod_estado_usuario === 2 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4'}
+                          disabled={user.Cod_estado_usuario === 2 || processingUsers.has(user.cod_usuario) || ((user.Cod_rol === '2' || user.Cod_rol === '4') && (loggedInUserRole !== '2'))}
                         >
-                          Desactivar
+                          Bloquear
                         </button>
                         <button
-                          className={`btn btn-suspend ${(user.Cod_estado_usuario === 3 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4') ? 'disabled' : ''}`}
+                          className={`btn btn-suspend ${(user.Cod_estado_usuario === 3 || processingUsers.has(user.cod_usuario) || ((user.Cod_rol === '2' || user.Cod_rol === '4') && (loggedInUserRole !== '2'))) ? 'disabled' : ''}`}
                           onClick={() => handleStatusChange(user.cod_usuario, 3)}
-                          disabled={user.Cod_estado_usuario === 3 || processingUsers.has(user.cod_usuario) || user.Cod_rol === '2' || user.Cod_rol === '4'}
+                          disabled={user.Cod_estado_usuario === 3 || processingUsers.has(user.cod_usuario) || ((user.Cod_rol === '2' || user.Cod_rol === '4') && (loggedInUserRole !== '2'))}
                         >
                           Suspender
                         </button>
@@ -808,6 +946,93 @@ const UserManagement = () => {
           </>
         )}
       </div>
+
+      {/* Añadir CSS en línea para los nuevos estilos - Puede moverse a un archivo CSS externo */}
+      <style jsx>{`
+        /* Estilos para el menú horizontal de tipos de usuario */
+        .user-types-horizontal {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 15px;
+          margin-top: 15px;
+          margin-bottom: 20px;
+          width: 100%;
+          overflow-x: auto;
+          padding-bottom: 10px;
+        }
+        
+        .user-type-button-horizontal {
+          display: flex;
+          align-items: center;
+          background-color: #fff;
+          border: 1px solid #e0e0e0;
+          border-radius: 8px;
+          padding: 10px 15px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          min-width: 200px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .user-type-button-horizontal:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .user-type-button-horizontal .icon-wrapper {
+          border-radius: 50%;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-right: 12px;
+        }
+        
+        .user-type-button-horizontal .user-type-info {
+          display: flex;
+          flex-direction: column;
+        }
+        
+        .user-type-button-horizontal .user-type-info h3 {
+          margin: 0;
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        
+        .user-type-button-horizontal .user-type-info p {
+          margin: 0;
+          font-size: 0.75rem;
+          color: #666;
+        }
+
+        /* Estilos para la edición de rol */
+        .role-display {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-edit-role {
+          background: none;
+          border: none;
+          color: #4a5568;
+          cursor: pointer;
+          padding: 2px;
+          border-radius: 4px;
+          transition: all 0.2s;
+        }
+
+        .btn-edit-role:hover {
+          background-color: #edf2f7;
+          color: #2d3748;
+        }
+
+        .btn-edit-role:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      `}</style>
     </div>
   );
 };

@@ -65,7 +65,11 @@ import cajaRoutes from './module/matricula/Routes/cajaRoutes.js';
 import generoPersonaRoutes from './module/personas/Routes/generoPersonaRoutes.js';
 import contactoRoutes from './module/personas/Routes/contactoRoutes.js';
 import tipoContactoRoutes from './module/personas/Routes/tipoContactoRoutes.js';
-
+// Agregar estas importaciones
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import avatarRoutes from './module/auth/usuario_routes.js';
 
 
 
@@ -74,6 +78,9 @@ import tipoContactoRoutes from './module/personas/Routes/tipoContactoRoutes.js';
 
 
 dotenv.config(); 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 
@@ -101,6 +108,7 @@ app.use(express.json()); // Middleware para parsear el cuerpo de las solicitudes
 // Autenticación y seguridad
 // Usar las rutas de usuarios para autenticación y creación de cuentas de usuario
 app.use('/api/usuarios', usuariosRoutes); 
+
 app.use('/api/roles', PermisosRoutes); 
 // Registrar las rutas
 app.use('/api/usuarios', cuentasRouter);

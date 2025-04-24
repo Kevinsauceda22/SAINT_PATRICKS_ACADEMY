@@ -115,7 +115,7 @@ const ParentProfileForm = () => {
 
         // Cargar departamentos
         const departamentosResponse = await axios.get(
-          'http://localhost:4000/api/departamento/departamentos',
+          'http://localhost:4000/api/departamentos/verTodoDepartamento',
           config
         );
 

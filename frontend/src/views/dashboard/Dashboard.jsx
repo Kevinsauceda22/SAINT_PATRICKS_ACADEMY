@@ -14,6 +14,11 @@ import {
   CTableRow,
   CTableHeaderCell,
   CTableDataCell,
+  CButton,
+  CDropdown,
+  CDropdownToggle,
+  CDropdownMenu,
+  CDropdownItem
 } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import {
@@ -23,14 +28,22 @@ import {
   cilSchool,
   cilChart,
   cilMoney,
+  cilFile
 } from '@coreui/icons';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import axios from 'axios';
 import usePermission from '../../../context/usePermission';
 import AccessDenied from "../pages/AccessDenied/AccessDenied";
 import { jwtDecode } from 'jwt-decode';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
 const Dashboard = () => {
+  const [year, setYear] = useState(new Date().getFullYear());
+  const handleYearChange = (event) => {
+    setYear(event.target.value);
+  };
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalEstudiantes: 0,
@@ -43,6 +56,28 @@ const Dashboard = () => {
   const [matriculasPorGrado, setMatriculasPorGrado] = useState([]);
   const [ultimasMatriculas, setUltimasMatriculas] = useState([]);
   const { canSelect, error } = usePermission('Dashboard');
+  const dashboardRef = React.useRef(null);
+
+  // Nuevos estados para saludo personalizado
+  const [nombreUsuario, setNombreUsuario] = useState('');
+  const [saludo, setSaludo] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decoded = jwtDecode(token);
+      setNombreUsuario(decoded.nombre_usuario || 'Usuario');
+
+      const hora = new Date().getHours();
+      if (hora >= 5 && hora < 12) {
+        setSaludo('Buenos días');
+      } else if (hora >= 12 && hora < 18) {
+        setSaludo('Buenas tardes');
+      } else {
+        setSaludo('Buenas noches');
+      }
+    }
+  }, []);
 
   // Función para registrar en bitácora
   const registrarEnBitacora = async (accion, descripcion) => {
@@ -73,24 +108,88 @@ const Dashboard = () => {
       try {
         setLoading(true);
         const token = localStorage.getItem('token');
-        
-        // Registrar vista del dashboard en bitácora
-        await registrarEnBitacora('SELECT', 'Acceso al Dashboard');
 
-        // Peticiones en paralelo para mejor rendimiento
-        const response = await axios.get('http://localhost:4000/api/dashboard/stats', {
+        await registrarEnBitacora('SELECT', `Acceso al Dashboard - Año ${year}`);
+
+        const response = await axios.get(`http://localhost:4000/api/dashboard/stats?year=${year}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setStats(response.data);
+
+        const gradosResponse = await axios.get(`http://localhost:4000/api/dashboard/matriculas-por-grado?year=${year}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setMatriculasPorGrado(gradosResponse.data);
+
+        const ultimasResponse = await axios.get(`http://localhost:4000/api/dashboard/ultimas-matriculas?year=${year}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setUltimasMatriculas(ultimasResponse.data);
       } catch (error) {
-          console.error('Error al cargar datos del dashboard:', error);
-        } finally {
-          setLoading(false);
-        }
-      };
+        console.error('Error al cargar datos del dashboard:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     cargarDatos();
-  }, []);
+  }, [year]);
+
+  const generarReportePDF = async () => {
+    try {
+      await registrarEnBitacora('REPORT', 'Generación de reporte PDF del Dashboard');
+
+      const dashboard = dashboardRef.current;
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const fecha = new Date().toLocaleDateString();
+
+      pdf.setFontSize(18);
+      pdf.setTextColor(0, 102, 51);
+      pdf.text('Reporte de Dashboard - Saint Patrick´s Academy', 20, 20);
+
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Fecha de generación: ${fecha}`, 20, 30);
+      pdf.text(`Datos filtrados del año: ${year}`, 20, 40);
+
+      pdf.setDrawColor(0, 102, 51);
+      pdf.line(20, 45, 190, 45);
+
+      let yPos = 55;
+
+      const secciones = document.querySelectorAll('.dashboard-section');
+      for (let i = 0; i < secciones.length; i++) {
+        const seccion = secciones[i];
+        const canvas = await html2canvas(seccion, { scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+
+        const tituloSeccion = seccion.querySelector('.card-header')?.textContent || `Sección ${i + 1}`;
+        pdf.setFontSize(14);
+        pdf.text(tituloSeccion, 20, yPos);
+        yPos += 10;
+
+        const imgWidth = 170;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+
+        if (yPos + imgHeight > 280) {
+          pdf.addPage();
+          yPos = 20;
+        }
+
+        pdf.addImage(imgData, 'PNG', 20, yPos, imgWidth, imgHeight);
+        yPos += imgHeight + 15;
+      }
+
+      pdf.setFontSize(10);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text('© Saint Patricks - Sistema de Gestión de Matrículas', 20, 287);
+
+      pdf.save('Dashboard-Saint-Patricks.pdf');
+    } catch (error) {
+      console.error('Error al generar el PDF:', error);
+      alert('Ha ocurrido un error al generar el reporte PDF. Por favor, intente nuevamente.');
+    }
+  };
 
   if (loading) {
     return (
@@ -120,9 +219,63 @@ const Dashboard = () => {
   ];
 
   return (
-    <>
+    <div ref={dashboardRef}>
+      {/* Saludo personalizado */}
+      <CRow className="mb-2">
+        <CCol>
+          <h5>{`${saludo}, ${nombreUsuario}`}</h5>
+        </CCol>
+      </CRow>
+
+      {/* Cabecera con botón de reporte */}
+      <CRow className="mb-4 align-items-center">
+        <CCol>
+          <h2 className="mb-0">Página Principal - Saint Patrick´s Academy</h2>
+        </CCol>
+        <CCol xs="auto">
+          <CDropdown variant="btn-group">
+            <CButton
+              color="success"
+              onClick={generarReportePDF}
+              className="d-flex align-items-center"
+            >
+              <CIcon icon={cilFile} className="me-2" /> Reporte
+            </CButton>
+            <CDropdownToggle color="success" split />
+            <CDropdownMenu>
+              <CDropdownItem onClick={generarReportePDF}>PDF</CDropdownItem>
+              <CDropdownItem disabled>Excel</CDropdownItem>
+            </CDropdownMenu>
+          </CDropdown>
+        </CCol>
+      </CRow>
+
+      {/* Filtro por año */}
+      <CRow className="mb-4 align-items-center">
+        <CCol className="d-flex justify-content-start">
+         
+        </CCol>
+      </CRow>
       {/* Widgets de Estadísticas */}
-      <CRow>
+     
+      <CRow className="mb-4 align-items-center">
+  <CCol className="d-flex justify-content-start">
+    <label htmlFor="yearSelect" className="fw-bold me-2">Filtrar por año:</label>
+    <select
+      id="yearSelect"
+      value={year}
+      onChange={handleYearChange}
+      className="form-select"
+      style={{ width: "100px" }}
+    >
+      {Array.from({ length: 7 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+        <option key={y} value={y}>{y}</option>
+      ))}
+    </select>
+  </CCol>
+</CRow>
+
+      <CRow className="dashboard-section">
         <CCol sm={6} lg={3}>
           <CWidgetStatsA
             className="mb-4"
@@ -162,7 +315,7 @@ const Dashboard = () => {
       </CRow>
 
       {/* Gráfico de Métricas */}
-      <CRow>
+      <CRow className="dashboard-section">
         <CCol xs={12}>
           <CCard className="mb-4">
             <CCardHeader>Métricas Clave</CCardHeader>
@@ -185,7 +338,7 @@ const Dashboard = () => {
       </CRow>
     
       {/* Gráfico de Matrículas por Grado */}
-      <CRow>
+      <CRow className="dashboard-section">
         <CCol xs={12} lg={8}>
           <CCard className="mb-4">
             <CCardHeader>Matrículas por Grado</CCardHeader>
@@ -232,7 +385,7 @@ const Dashboard = () => {
       </CRow>
 
       {/* Últimas Matrículas */}
-      <CRow>
+      <CRow className="dashboard-section">
         <CCol xs={12}>
           <CCard className="mb-4">
             <CCardHeader>
@@ -275,7 +428,7 @@ const Dashboard = () => {
           </CCard>
         </CCol>
       </CRow>
-    </>
+    </div>
   );
 };
 
