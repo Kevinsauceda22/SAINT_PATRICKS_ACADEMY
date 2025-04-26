@@ -47,7 +47,7 @@ const _nav = [
   },
   {
     component: CNavItem,
-    name: 'Gestión Académica',
+    name: 'Agrupador de Secciones',
     to: '/gestion_academica',
     icon: cilFolderOpen,
     nameobject: 'Solicitud_admin',

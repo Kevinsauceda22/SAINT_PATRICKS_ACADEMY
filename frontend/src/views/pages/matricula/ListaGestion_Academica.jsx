@@ -506,7 +506,7 @@ const ListaGestion_Academica = () => {
     <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
     {/* Titulo */}
     <div className="flex-grow-1 text-center">
-    <h4 className="text-center fw-semibold pb-1 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Gestión Académica</h4>
+    <h4 className="text-center fw-semibold pb-1 mb-0" style={{display: "inline-block", borderBottom: "2px solid #4CAF50"  }}>Agrupador de Secciones</h4>
     </div>
 
     {/* Botón "Nuevo" */}

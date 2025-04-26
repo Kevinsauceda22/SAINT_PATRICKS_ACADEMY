@@ -894,7 +894,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
   <CRow className="align-items-center mb-5">
     <CCol xs="12" className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
     
-    {/* Botón "Gestión Académica" */}
+    {/* Botón "Agrupador de Secciones" */}
     <CButton
         className="btn-sm d-flex align-items-center gap-1 rounded shadow"
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#4B4B4B")}
@@ -910,7 +910,7 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         }}
         onClick={volverAListaGestion_Academica}
       >
-        <CIcon icon={cilArrowLeft} /> Gestión Académica
+        <CIcon icon={cilArrowLeft} /> Agrupador de Secciones
       </CButton>
     
     {/* Titulo */}
