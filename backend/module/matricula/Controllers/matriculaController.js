@@ -527,3 +527,91 @@ export const buscarPadrePorNombre = async (req, res) => {
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
+
+// Controlador para editar una matrícula
+// Controlador para editar una matrícula
+export const editarMatricula = async (req, res) => {
+  const { cod_matricula } = req.params;
+  const {
+    dni_padre,
+    fecha_matricula,
+    cod_grado,
+    cod_seccion,
+    cod_estado_matricula,
+    cod_periodo_matricula,
+    cod_tipo_matricula,
+    cod_hijo,
+  } = req.body;
+
+  // Log para ver lo que se recibe
+  console.log('Datos recibidos en editarMatricula:', {
+    cod_matricula,
+    dni_padre,
+    fecha_matricula,
+    cod_grado,
+    cod_seccion,
+    cod_estado_matricula,
+    cod_periodo_matricula,
+    cod_tipo_matricula,
+    cod_hijo,
+  });
+
+  // Validación
+  if (
+    !validarCamposMatricula({
+      dni_padre,
+      fecha_matricula,
+      cod_grado,
+      cod_seccion,
+      cod_estado_matricula,
+      cod_periodo_matricula,
+      cod_tipo_matricula,
+      cod_hijo,
+    })
+  ) {
+    return res.status(400).json({ message: 'Todos los campos son requeridos para editar.' });
+  }
+
+  try {
+    // Ejecutar procedimiento almacenado
+    await pool.query('CALL EditarMatriculaSaintPatrickAcademy(?, ?, ?, ?, ?, ?, ?, ?, ?, @mensaje)', [
+      cod_matricula,
+      dni_padre,
+      fecha_matricula,
+      cod_grado,
+      cod_seccion,
+      cod_estado_matricula,
+      cod_periodo_matricula,
+      cod_tipo_matricula,
+      cod_hijo,
+    ]);
+
+    res.status(200).json({ message: 'Matrícula actualizada correctamente.' });
+  } catch (error) {
+    console.error('Error detallado en editarMatricula:', error);
+    res.status(500).json({ 
+      message: 'Error en el servidor al editar matrícula.', 
+      error: error.sqlMessage || error.message || 'Error desconocido' 
+    });
+  }
+};
+
+
+// Controlador para eliminar una matrícula
+export const eliminarMatricula = async (req, res) => {
+  const { cod_matricula } = req.params;
+
+  if (!cod_matricula) {
+    return res.status(400).json({ message: 'El código de matrícula es requerido.' });
+  }
+
+  try {
+    // Asumiendo que tienes un procedimiento almacenado para eliminar una matrícula
+    await pool.query('CALL EliminarMatriculaSaintPatrickAcademy(?)', [cod_matricula]);
+
+    res.status(200).json({ message: 'Matrícula eliminada correctamente.' });
+  } catch (error) {
+    console.error('Error al eliminar matrícula:', error);
+    res.status(500).json({ message: 'Error en el servidor', error: error.message });
+  }
+};

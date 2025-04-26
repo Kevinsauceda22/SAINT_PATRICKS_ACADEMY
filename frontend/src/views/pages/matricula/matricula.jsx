@@ -428,17 +428,21 @@ const handleSubmit = async (e) => {
     cod_grado: selectedGrado,
     cod_seccion: selectedSeccion,
     cod_estado_matricula: matriculaData.cod_estado_matricula,
-    cod_periodo_matricula: matriculaData.cod_periodo_matricula,
+    cod_periodo_matricula: matriculaData.cod_periodo_matricula || periodoActivo?.Cod_periodo_matricula,
     cod_tipo_matricula: matriculaData.cod_tipo_matricula,
     cod_hijo: matriculaData.cod_hijo,
+    ...(matriculaData.Cod_matricula && { cod_matricula: matriculaData.Cod_matricula }), // 👈 Agregar aquí si existe
   };
+  
 
   const requiredFields = [
     'dni_padre',
+    'fecha_matricula',
     'cod_grado',
     'cod_seccion',
     'cod_estado_matricula',
     'cod_tipo_matricula',
+    'cod_periodo_matricula',
     'cod_hijo',
   ];
 
@@ -452,96 +456,57 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  if (!dataToSend.fecha_matricula) {
-    Swal.fire({
-      icon: 'warning',
-      title: 'Fecha no asignada',
-      text: 'La fecha de matrícula no está asignada automáticamente.',
-    });
-    return;
-  }
-
-  const periodoActual = opciones?.periodos_matricula?.find(
-    (p) => p.Cod_periodo_matricula === dataToSend.cod_periodo_matricula
-  );
-  const anioAcademicoActual = periodoActual?.Anio_academico;
-
-  const existeMatriculaEnAnio = matriculas.some(
-    (matricula) =>
-      matricula.cod_hijo === dataToSend.cod_hijo &&
-      matricula.anio_academico === anioAcademicoActual
-  );
-
-  if (existeMatriculaEnAnio) {
-    Swal.fire({
-      icon: 'error',
-      title: 'Matrícula duplicada',
-      text: `El estudiante ya está matriculado en el período académico ${anioAcademicoActual}. No se puede registrar dos veces en el mismo período.`,
-    });
-    return;
-  }
-
   try {
-    const response = await axios.post(
-      'http://localhost:4000/api/matricula/crearmatricula',
-      dataToSend
-    );
+    let response;
 
-    if (response.status === 201) {
-      const message = response.data.message;
+    if (matriculaData.Cod_matricula) {
+      // Estamos editando
+      response = await axios.put(
+        `http://localhost:4000/api/matricula/matriculas/${matriculaData.Cod_matricula}`,
+        dataToSend
+      );
+    } else {
+      // Estamos creando
+      response = await axios.post(
+        'http://localhost:4000/api/matricula/crearmatricula',
+        dataToSend
+      );
+    }
 
+    if (response.status === 201 || response.status === 200) {
       Swal.fire({
         icon: 'success',
-        title: 'Matrícula registrada',
-        text: message || 'La matrícula fue creada exitosamente.',
+        title: matriculaData.Cod_matricula ? 'Matrícula actualizada' : 'Matrícula registrada',
+        text: response.data.message || (matriculaData.Cod_matricula ? 'Actualización exitosa.' : 'Registro exitoso.'),
         timer: 2500,
         showConfirmButton: false,
       });
 
       await registrarEnBitacora(
-        'INSERT',
-        `Creó una matrícula para el estudiante con código ${dataToSend.cod_hijo} en el período ${dataToSend.cod_periodo_matricula}.`
+        matriculaData.Cod_matricula ? 'UPDATE' : 'INSERT',
+        `${matriculaData.Cod_matricula ? 'Actualizó' : 'Creó'} matrícula para el estudiante con código ${dataToSend.cod_hijo}.`
       );
 
-      // Reiniciar todo el formulario después del registro exitoso
-      setModalVisible(false);
-      setStep(1);
-      setMatriculaData({
-        fecha_matricula: getCurrentDate(),
-        cod_grado: '',
-        cod_seccion: '',
-        cod_estado_matricula: estadoPorDefecto?.Cod_estado_matricula || '',
-        cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
-        cod_tipo_matricula: tipoPorDefecto?.Cod_tipo_matricula || '',
-        cod_hijo: '',
-        primer_nombre_hijo: '',
-        segundo_nombre_hijo: '',
-        primer_apellido_hijo: '',
-        segundo_apellido_hijo: '',
-        fecha_nacimiento_hijo: '',
-        nombre_completo_hijo: '',
-      });
-      setDniPadre('');
-      setNombrePadre('');
-      setApellidoPadre('');
-      setSelectedGrado('');
-      setSelectedSeccion('');
+      // Reiniciar formulario
+      resetFormularioMatricula();
       obtenerMatriculas(); // refrescar la tabla
     }
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'Error al crear la matrícula.';
-    console.error('Error al crear la matrícula:', errorMessage);
+      error.response?.data?.message || error.message || 'Error al crear o actualizar matrícula.';
+    console.error('Error:', errorMessage);
 
-    await registrarEnBitacora('Error', `Error al crear matrícula: ${errorMessage}`);
+    await registrarEnBitacora('Error', `Error al crear o actualizar matrícula: ${errorMessage}`);
 
     Swal.fire({
       icon: 'error',
-      title: 'Error al registrar matrícula',
+      title: 'Error',
       text: errorMessage,
     });
   }
 };
+
+
 
 
 
@@ -1080,6 +1045,84 @@ const exportToExcel = async () => {
 
  };
 
+ const handleEditMatricula = async (matricula) => {
+  try {
+    setModalVisible(true);
+    setStep(1);
+    
+    // Setear los datos del padre
+    setDniPadre(matricula.dni_padre);
+    setNombrePadre(matricula.Nombre_Padre || '');
+    setApellidoPadre(matricula.Apellido_Padre || '');
+
+    // Cargar los hijos del padre
+    const hijosResponse = await axios.get(`http://localhost:4000/api/matricula/hijos/${matricula.dni_padre}`);
+    const hijosData = hijosResponse.data.hijos || [];
+    setHijos(
+      hijosData.map((hijo) => ({
+        ...hijo,
+        NombreCompleto: `${hijo.Primer_nombre} ${hijo.Segundo_nombre || ''} ${hijo.Primer_apellido} ${hijo.Segundo_apellido || ''}`.trim(),
+        FechaNacimiento: hijo.fecha_nacimiento
+          ? new Date(hijo.fecha_nacimiento).toISOString().split('T')[0]
+          : 'N/A',
+      }))
+    );
+
+    // Cargar las secciones disponibles del grado y período
+    await obtenerSeccionesPorGrado(matricula.Cod_grado);
+
+    // Llenar los datos de la matrícula en el formulario
+    setSelectedGrado(matricula.Cod_grado);
+    setSelectedSeccion(matricula.Cod_seccion);
+
+    setMatriculaData((prev) => ({
+      ...prev,
+      fecha_matricula: matricula.fecha_matricula.split('T')[0],
+      Cod_matricula: matricula.Cod_matricula,
+      cod_grado: matricula.Cod_grado,
+      cod_seccion: matricula.Cod_seccion,
+      cod_estado_matricula: matricula.cod_estado_matricula,
+      cod_periodo_matricula: matricula.cod_periodo_matricula,
+      cod_tipo_matricula: matricula.cod_tipo_matricula,
+      cod_hijo: matricula.cod_hijo,
+      primer_nombre_hijo: matricula.Nombre_Hijo,
+      segundo_nombre_hijo: matricula.Segundo_nombre_Hijo,
+      primer_apellido_hijo: matricula.Apellido_Hijo,
+      segundo_apellido_hijo: matricula.Segundo_apellido_Hijo,
+      fecha_nacimiento_hijo: matricula.fecha_nacimiento?.split('T')[0] || '',
+      nombre_completo_hijo: `${matricula.Nombre_Hijo} ${matricula.Segundo_nombre_Hijo || ''} ${matricula.Apellido_Hijo} ${matricula.Segundo_apellido_Hijo || ''}`.trim(),
+    }));
+  } catch (error) {
+    console.error('Error al preparar la matrícula para edición:', error);
+    Swal.fire('Error', 'Hubo un problema al preparar la matrícula para editar.', 'error');
+  }
+};
+
+const handleDeleteMatricula = async (cod_matricula) => {
+  const result = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: 'Esta acción no se puede deshacer.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#3085d6',
+    confirmButtonText: 'Sí, eliminar',
+    cancelButtonText: 'Cancelar',
+  });
+
+  if (result.isConfirmed) {
+    try {
+      await axios.delete(`http://localhost:4000/api/matricula/matriculas/${cod_matricula}`);
+      Swal.fire('Eliminado', 'La matrícula ha sido eliminada.', 'success');
+      obtenerMatriculas(); // Recargar la lista
+    } catch (error) {
+      console.error('Error al eliminar matrícula:', error);
+      Swal.fire('Error', 'Hubo un problema al eliminar la matrícula.', 'error');
+    }
+  }
+};
+
+
 useEffect(() => {
   if (opciones.periodos_activos && opciones.periodos_activos.length > 0) {
     // Seleccionar el primer período que esté activo
@@ -1298,6 +1341,22 @@ const calculateAge = (birthDate) => {
           <CTableDataCell>{anioAcademico}</CTableDataCell>
           <CTableDataCell>
   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+  <CButton
+      color="warning"
+      onClick={() => handleEditMatricula(matricula)}
+      title="Editar Matrícula"
+    >
+      <CIcon icon={cilPen} />
+    </CButton>
+
+    <CButton
+      color="danger"
+      onClick={() => handleDeleteMatricula(matricula.Cod_matricula)}
+      title="Eliminar Matrícula"
+    >
+      <CIcon icon={cilTrash} />
+    </CButton>
+
     <CButton
       color="success"
       style={{
@@ -1322,7 +1381,10 @@ const calculateAge = (birthDate) => {
 
    
   </div>
+
+  
 </CTableDataCell>
+
 
         </CTableRow>
       );

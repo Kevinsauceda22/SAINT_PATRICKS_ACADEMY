@@ -6,11 +6,13 @@ import {
   obtenerHijosPorDniPadre,
   obtenerSeccionesPorGrado,
   obtenerAlumnosMatriculadosPorGradoYAno,
-  obtenerMatriculasConPeriodo, 
+  obtenerMatriculasConPeriodo,
   obtenerAlumnosPorSeccion,
   obtenerHorarioPorSeccion,
   obtenerSeccionesConDetalles,
-  buscarPadrePorNombre,// Importar el nuevo controlador
+  buscarPadrePorNombre,
+  editarMatricula,      // <-- Importar editar
+  eliminarMatricula,    // <-- Importar eliminar
 } from '../Controllers/matriculaController.js';
 
 const router = express.Router();
@@ -30,18 +32,29 @@ router.get('/hijos/:dni_padre', obtenerHijosPorDniPadre);
 // Ruta para obtener secciones disponibles para un grado específico
 router.get('/secciones/:cod_grado', obtenerSeccionesPorGrado);
 
-// Nueva ruta para obtener alumnos matriculados por grado
+// Ruta para obtener alumnos matriculados por grado
 router.get('/alumnos/:cod_grado', obtenerAlumnosMatriculadosPorGradoYAno);
+
 // Ruta para obtener datos solo por año académico del período
 router.get('/matriculas-con-periodo', obtenerMatriculasConPeriodo);
+
+// Ruta para obtener alumnos por sección
 router.get('/alumnos/seccion/:cod_seccion', obtenerAlumnosPorSeccion);
 
 // Ruta para obtener el horario por sección
 router.get('/horario/:cod_seccion', obtenerHorarioPorSeccion);
 
+// Ruta para obtener detalles de secciones por grado
 router.get('/detalles/:cod_grado', obtenerSeccionesConDetalles);
 
+// Ruta para buscar padres por nombre
 router.get('/padres/buscar', buscarPadrePorNombre);
 
+// ✅ NUEVAS RUTAS
+// Ruta para editar matrícula
+router.put('/matriculas/:cod_matricula', editarMatricula);
+
+// Ruta para eliminar matrícula
+router.delete('/matriculas/:cod_matricula', eliminarMatricula);
 
 export default router;
