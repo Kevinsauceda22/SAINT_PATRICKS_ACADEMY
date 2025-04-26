@@ -112,7 +112,7 @@ const ListaGestion_Academica = () => {
   
           doc.setFontSize(10);
           doc.setTextColor(100);
-          doc.text("Casa Club del periodista, Colonia del Periodista", pageWidth / 2, 32, { align: "center" });
+          doc.text("Casa Club del Periodista, Colonia del Periodista", pageWidth / 2, 32, { align: "center" });
           doc.text("Teléfono: (504) 2234-8871", pageWidth / 2, 37, { align: "center" });
           doc.text("Correo: info@saintpatrickacademy.edu", pageWidth / 2, 42, { align: "center" });
   
@@ -256,13 +256,13 @@ const ListaGestion_Academica = () => {
     
         doc.setFontSize(10);
         doc.setTextColor(100);
-        doc.text('Casa Club del periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
+        doc.text('Casa Club del Periodista, Colonia del Periodista', pageWidth / 2, 32, { align: 'center' });
         doc.text('Teléfono: (504) 2234-8871', pageWidth / 2, 37, { align: 'center' });
         doc.text('Correo: info@saintpatrickacademy.edu', pageWidth / 2, 42, { align: 'center' });
     
         doc.setFontSize(14);
         doc.setTextColor(0, 102, 51);
-        doc.text('Reporte de Gestión Académica', pageWidth / 2, 50, { align: 'center' });
+        doc.text('Reporte de Agrupador de Secciones', pageWidth / 2, 50, { align: 'center' });
     
         doc.setLineWidth(0.5);
         doc.setDrawColor(0, 102, 51);
@@ -270,7 +270,8 @@ const ListaGestion_Academica = () => {
     
         // Cuerpo del PDF (tabla de datos)
         const tableColumn = ['#', 'Total Secciones', 'Año Académico', 'Fecha de Creación', 'Estado'];
-        const tableRows = currentRecords.map((agrupador, index) => [
+        //const tableRows = currentRecords.map((agrupador, index) => [
+        const tableRows = agrupadores.map((agrupador, index) => [
           { content: index + 1, styles: { halign: 'center' } },
           { content: agrupador.Total_secciones.toString(), styles: { halign: 'center' } },
           { content: agrupador.Anio_academico.toString(), styles: { halign: 'center' } },
@@ -334,7 +335,7 @@ const ListaGestion_Academica = () => {
         // Abrir el visor de PDF predeterminado del navegador
         const newWindow = window.open(pdfURL, '_blank');
         if (newWindow) {
-          newWindow.document.title = 'Reporte de Gestión Académica';
+          newWindow.document.title = 'Reporte de Agrupador de Secciones';
         }
       };
     
@@ -351,7 +352,7 @@ const ListaGestion_Academica = () => {
       }
     
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Gestión Académica');
+      const worksheet = workbook.addWorksheet('Agrupador de Secciones');
     
       // Título del documento
       worksheet.mergeCells('A1:E1');
@@ -360,7 +361,7 @@ const ListaGestion_Academica = () => {
       worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
     
       worksheet.mergeCells('A2:E2');
-      worksheet.getCell('A2').value = 'REPORTE DE GESTIÓN ACADÉMICA';
+      worksheet.getCell('A2').value = 'REPORTE DE AGRUPADOR DE SECCIONES';
       worksheet.getCell('A2').font = { bold: true, size: 16, color: { argb: '006633' } };
       worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
     
@@ -373,7 +374,8 @@ const ListaGestion_Academica = () => {
       });
     
       // Datos de la tabla
-      currentRecords.forEach((agrupador, index) => {
+      // currentRecords.forEach((agrupador, index) => {
+        agrupadores.forEach((agrupador, index) => {
         const row = worksheet.addRow([
           index + 1,
           agrupador.Total_secciones.toString(),
@@ -407,7 +409,7 @@ const ListaGestion_Academica = () => {
       // Crear archivo Excel
       workbook.xlsx.writeBuffer().then((buffer) => {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        saveAs(blob, 'Reporte_Gestion_Academica.xlsx');
+        saveAs(blob, 'Reporte_Agrupador_Secciones.xlsx');
       });
     };
     
