@@ -254,7 +254,7 @@ const _nav = [
   },
   {
     component: CNavGroup,
-    name: 'Catálogos Generales',
+    name: 'Mantenimientos',
     icon: cilListRich,
     nameobject: 'ListaAsignaturas',
     items: [
@@ -277,7 +277,6 @@ const _nav = [
       { component: CNavItem, name: 'Concepto Pago', to: '/conceptopago', nameobject: 'conceptopago' },
       { component: CNavItem, name: 'Edificios', to: '/edificios', nameobject: 'edificios' },
       { component: CNavItem, name: 'Aulas', to: '/aulas', nameobject: 'aulas' },
-      { component: CNavItem, name: 'Días', to: '/dias', nameobject: 'dias' },
       { component: CNavItem, name: 'Cuentas Contables', to: '/Contabilidad', nameobject: 'Contabilidad' },
     ],
   },
