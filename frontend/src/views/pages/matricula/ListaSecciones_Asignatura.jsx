@@ -1062,7 +1062,7 @@ const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
     {/* Título y datos del grado y sección */}
     <CRow className="align-items-center mb-3">
       <CCol xs="12" className="text-center">
-        <h2 className="fw-bold">Gestión de Asignaturas y Horarios</h2>
+        <h2 className="fw-bold">Gestión de Horarios</h2>
       </CCol>
       <CCol xs="12" className="text-center">
         <p className="fw-bold">GRADO: {gradoSeleccionado || 'Grado no disponible'}</p>

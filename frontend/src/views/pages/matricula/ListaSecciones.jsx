@@ -533,21 +533,65 @@ const currentRecords = filteredSecciones.slice(indexOfFirstRecord, indexOfLastRe
         },
       });
 
-      // Convertir PDF en Blob y mostrar en una nueva pestaña
-      const pdfBlob = doc.output('blob');
-      const pdfURL = URL.createObjectURL(pdfBlob);
+       // Mostrar el PDF en una nueva ventana con botón de descarga
+    const pdfBlob = doc.output('blob');
+    const pdfURL = URL.createObjectURL(pdfBlob);
 
-      // Abrir el visor de PDF predeterminado del navegador con el título y nombre de archivo especificado
-      const newWindow = window.open(pdfURL, '_blank');
-      if (newWindow) {
-        newWindow.document.title = 'Reporte de Secciones';
-        newWindow.document.filename = 'reporte_de_secciones.pdf';
-      }
-    };
+    const newWindow = window.open('', '_blank');
+newWindow.document.title = `Reporte de Secciones - Año ${periodoAcademico}`;
+newWindow.document.write(`
+  <html>
+    <head>
+      <title>Reporte de Secciones - Año ${periodoAcademico}</title>
+      <style>
+        body {
+          margin: 0;
+          padding: 0;
+          overflow: hidden;
+        }
+        iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+        }
+        .download-button {
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          background-color: #006633;
+          color: white;
+          border: none;
+          padding: 10px 15px;
+          border-radius: 5px;
+          font-size: 14px;
+          cursor: pointer;
+          z-index: 9999;
+        }
+        .download-button:hover {
+          background-color: #004d26;
+        }
+      </style>
+    </head>
+    <body>
+      <button class="download-button" onclick="downloadPDF()">Descargar PDF</button>
+      <iframe src="${pdfURL}"></iframe>
+      <script>
+        function downloadPDF() {
+          const link = document.createElement('a');
+          link.href = '${pdfURL}';
+          link.download = 'reporte_de_secciones_${periodoAcademico}.pdf';
+          link.click();
+        }
+      </script>
+    </body>
+  </html>
+`);
 
-    img.onerror = () => {
-      alert('No se pudo cargar el logo.');
-    };
+  };
+
+  img.onerror = () => {
+    alert('No se pudo cargar el logo.');
+  };
   };
 
 
