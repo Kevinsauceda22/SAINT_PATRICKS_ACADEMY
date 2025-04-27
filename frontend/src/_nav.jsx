@@ -236,6 +236,7 @@ const _nav = [
     nameobject: 'ListaPersonas',
     items: [
       { component: CNavItem, name: 'Personas', to: '/ListaPersonas', nameobject: 'ListaPersonas' },
+      { component: CNavItem, name: 'Caja', to: '/caja', nameobject: 'caja' },
       { component: CNavItem, name: 'Tipo de Relaciones', to: 'ListaRelacion', nameobject: 'ListaRelacion' },
       { component: CNavItem, name: 'Tipo de Persona', to: '/ListaTipoPersona', nameobject: 'ListaTipoPersona' },
       { component: CNavItem, name: 'Tipo de Documentos', to: '/ListaTipoDocumentos', nameobject: 'ListaTipoDocumentos' },
