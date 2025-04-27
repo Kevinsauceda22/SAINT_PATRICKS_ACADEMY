@@ -432,10 +432,11 @@ const handleUpdateProcedenciaEstudiante = async () => {
   // Capitalizar y limpiar espacios excesivos
   const institutoCapitalizado = capitalizeWords(procedenciaEstudianteToUpdate.nombre_instituto.trim().replace(/\s+/g, ' '));
   const descripcionCapitalizada = capitalizeWords(procedenciaEstudianteToUpdate.descripcion.trim().replace(/\s+/g, ' '));
-
+  const codPersonaSeleccionada = personaSeleccionada.cod_persona;
+  
   // Validaciones antes de actualizar
   if (!validateProcedenciaEstudiante({ 
-    cod_persona: personaSeleccionada,
+    cod_persona: codPersonaSeleccionada,
     nombre_instituto: institutoCapitalizado, 
     descripcion: descripcionCapitalizada, 
     año_desde: procedenciaEstudianteToUpdate.año_desde, 
@@ -452,7 +453,7 @@ const handleUpdateProcedenciaEstudiante = async () => {
       },
       body: JSON.stringify({
         Cod_procedencia_estudiante: procedenciaEstudianteToUpdate.Cod_procedencia_estudiante,
-        cod_persona: personaSeleccionada,
+        cod_persona: codPersonaSeleccionada,
         nombre_instituto: institutoCapitalizado,
         descripcion: descripcionCapitalizada,
         año_desde: procedenciaEstudianteToUpdate.año_desde,
