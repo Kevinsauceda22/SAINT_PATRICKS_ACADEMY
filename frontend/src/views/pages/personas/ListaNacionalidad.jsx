@@ -791,7 +791,7 @@ const validateEmptyFields = () => {
 <CRow className="align-items-center mb-5">
   <CCol xs="8" md="9">
     {/* Título de la página */}
-    <h1 className="mb-0">Mantenimiento de Nacionalidades</h1>
+    <h1 className="mb-0">Mantenimiento de Países</h1>
   </CCol>
   <CCol xs="4" md="3" className="text-end d-flex flex-column flex-md-row justify-content-md-end align-items-md-center">
     {/* Botón Nuevo para abrir el modal */}
