@@ -562,25 +562,32 @@ const toggleEstado = async (municipio) => {
 
 {/****************************************************************************************************************************************/}
 
-const handleSearch = (event) => {
-  setSearchTerm(event.target.value);
-  setCurrentPage(1);
+
+
+// Función para normalizar el texto eliminando tildes y caracteres especiales
+const normalizeText = (text) => {
+  return text
+    ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
+    : "";
 };
 
 // Filtrar municipios por nombre de municipio, departamento o estado
 const filteredMunicipios = municipios.filter((municipio) => {
-  const nombreMunicipio = municipio.Nombre_municipio ? municipio.Nombre_municipio.toLowerCase() : "";
-  const departamentoNombre = departamentos.find((depto) => depto.Cod_departamento === municipio.Cod_departamento)?.Nombre_departamento?.toLowerCase() || "";
+  const searchNormalized = normalizeText(searchTerm);
+  
+  const nombreMunicipio = normalizeText(municipio.Nombre_municipio);
+  const departamentoNombre = normalizeText(departamentos.find((depto) => depto.Cod_departamento === municipio.Cod_departamento)?.Nombre_departamento || "");
   
   // Convertimos estado a texto
-  const estadoTexto = municipio.estado === 1 ? 'ACTIVO' : municipio.estado === 0 ? 'INACTIVO' : 'DESCONOCIDO';
+  const estadoTexto = municipio.estado === 1 ? "ACTIVO" : municipio.estado === 0 ? "INACTIVO" : "DESCONOCIDO";
 
   return (
-    nombreMunicipio.includes(searchTerm.toLowerCase()) ||
-    departamentoNombre.includes(searchTerm.toLowerCase()) ||
-    estadoTexto.toLowerCase().includes(searchTerm.toLowerCase()) // 🔍 Ahora permite buscar por estado
+    nombreMunicipio.includes(searchNormalized) ||
+    departamentoNombre.includes(searchNormalized) ||
+    normalizeText(estadoTexto).includes(searchNormalized)
   );
 });
+
 
 
 

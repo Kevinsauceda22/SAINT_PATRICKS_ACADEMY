@@ -21,7 +21,7 @@ export const obtenerPersonas = async (req, res) => {
 
 export const obtenerFichaEstudiante = async (req, res) => {
     try {
-        const { cod_persona } = req.params; // Obtener el parámetro desde la URL
+        const { cod_persona } = req.params;
 
         if (!cod_persona) {
             return res.status(400).json({ Mensaje: 'Debe proporcionar un código de persona válido' });
@@ -29,16 +29,47 @@ export const obtenerFichaEstudiante = async (req, res) => {
 
         const [rows] = await pool.query('CALL P_Get_FichaEstudiante(?)', [cod_persona]);
 
-        if (rows[0].length > 0) {
-            res.status(200).json(rows[0]);
-        } else {
-            res.status(404).json({ Mensaje: 'No se encontró ficha de estudiante para el código proporcionado' });
+        console.log('Respuesta cruda desde la BD:', JSON.stringify(rows, null, 2)); // ✅ Depuración global
+
+        if (!rows || rows.length === 0 || rows[0].length === 0) {
+            return res.status(404).json({ Mensaje: 'No se encontró ficha de estudiante para el código proporcionado' });
         }
+
+        // ✅ Estructurar correctamente los datos del estudiante
+        const estudianteBase = {
+            cod_persona: rows[0][0]?.cod_persona || null,
+            Nombre_Completo: rows[0][0]?.Nombre_Completo || 'NO DISPONIBLE',
+            DNI: rows[0][0]?.DNI || 'NO DISPONIBLE',
+            Fecha_Nacimiento: rows[0][0]?.Fecha_Nacimiento 
+                ? new Date(rows[0][0].Fecha_Nacimiento).toISOString().split('T')[0] 
+                : 'NO DISPONIBLE',
+            Genero: rows[0][0]?.Genero || 'NO DISPONIBLE',
+            Nacionalidad: rows[0][0]?.Nacionalidad || 'NO DISPONIBLE',
+            Direccion: rows[0][0]?.Direccion || 'NO DISPONIBLE',
+            Departamento: rows[0][0]?.Departamento || 'NO DISPONIBLE',
+            Municipio: rows[0][0]?.Municipio || 'NO DISPONIBLE',
+            familiares: rows.length > 1 && rows[1].length > 0 ? rows[1].map(familiar => ({
+                cod_familiar: familiar?.Cod_Familiar || null,
+                nombre_familiar: familiar?.Nombre_Familiar || 'NO DISPONIBLE',
+                tipo_relacion: familiar?.Tipo_Relacion || 'NO DISPONIBLE',
+                dni_familiar: familiar?.DNI_Familiar || 'NO DISPONIBLE',
+                telefonos_moviles: familiar?.Telefonos_Moviles_Familiar ? familiar.Telefonos_Moviles_Familiar.split(', ') : [],
+                telefonos_fijos: familiar?.Telefonos_Fijos_Familiar ? familiar.Telefonos_Fijos_Familiar.split(', ') : [],
+                correos: familiar?.Correos_Familiar ? familiar.Correos_Familiar.split(', ') : []
+            })) : []
+        };
+
+        console.log('✅ Ficha del estudiante estructurada correctamente:', JSON.stringify(estudianteBase, null, 2));
+
+        res.status(200).json(estudianteBase);
     } catch (error) {
-        console.error('Error al obtener ficha de estudiante:', error);
+        console.error('❌ Error al obtener ficha de estudiante:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
+
+
 
 export const obtenerFichaPadre = async (req, res) => {
     try {
@@ -50,24 +81,33 @@ export const obtenerFichaPadre = async (req, res) => {
 
         const [results] = await pool.query('CALL P_Get_FichaPadre(?)', [cod_persona]);
 
-        if (results.length > 0) {
-            const fichaPadre = results[0]?.length > 0 ? results[0][0] : null;
-            const hijos = results[1] || []; // Segundo conjunto de resultados contiene los hijos
+        console.log('🔍 Respuesta cruda desde la BD:', JSON.stringify(results, null, 2)); // ✅ Depuración global
 
-            if (fichaPadre) {
-                fichaPadre.hijos = hijos; // Agregamos los hijos al objeto del padre
-                res.status(200).json(fichaPadre);
-            } else {
-                res.status(404).json({ Mensaje: 'No se encontró ficha de padre para el código proporcionado' });
-            }
-        } else {
-            res.status(404).json({ Mensaje: 'No se encontraron datos en la consulta' });
+        if (!results || results.length === 0 || results[0].length === 0) {
+            return res.status(404).json({ Mensaje: 'No se encontró ficha de padre para el código proporcionado' });
         }
+
+        // ✅ Procesamos los datos del padre correctamente
+        const fichaPadre = results[0][0];
+        const hijos = results.length > 1 && results[1].length > 0 ? results[1] : []; // ✅ Segundo conjunto de datos son los hijos
+
+        // ✅ Asegurar que los contactos siempre sean manejados correctamente
+        fichaPadre.Telefonos_Moviles = fichaPadre.Telefonos_Moviles ? fichaPadre.Telefonos_Moviles.split(', ') : [];
+        fichaPadre.Telefonos_Fijos = fichaPadre.Telefonos_Fijos ? fichaPadre.Telefonos_Fijos.split(', ') : [];
+        fichaPadre.Correos = fichaPadre.Correos ? fichaPadre.Correos.split(', ') : [];
+
+        // ✅ Agregar la lista de hijos al objeto del padre
+        fichaPadre.hijos = hijos;
+
+        console.log(' Ficha del padre estructurada correctamente:', JSON.stringify(fichaPadre, null, 2));
+
+        res.status(200).json(fichaPadre);
     } catch (error) {
-        console.error('Error al obtener ficha del padre:', error);
+        console.error('❌ Error al obtener ficha del padre:', error);
         res.status(500).json({ Mensaje: 'Error en el servidor', error: error.message });
     }
 };
+
 
     
 

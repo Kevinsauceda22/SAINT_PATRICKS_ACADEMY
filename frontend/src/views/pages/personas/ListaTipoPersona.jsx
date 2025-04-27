@@ -279,10 +279,6 @@ const handleCreateTipoPersona = async () => {
     return;
   }
 
-  if (!validateEmptyFields()) {
-    return;
-  }
-
   try {
     const response = await fetch('http://localhost:4000/api/tipoPersona/crearTipoPersona', {
       method: 'POST',

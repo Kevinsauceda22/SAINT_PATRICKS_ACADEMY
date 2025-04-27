@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { CIcon } from '@coreui/icons-react'
-import { cilXCircle, cilCheckCircle, cilHistory,  cilSpreadsheet ,cilFile, cilDescription  } from '@coreui/icons';
+import { cilXCircle, cilCheckCircle, cilHistory,  cilSpreadsheet ,cilFile, cilDescription, cilUser} from '@coreui/icons';
 import { jsPDF } from 'jspdf';
 import ExcelJS from 'exceljs';
 import 'jspdf-autotable';
@@ -175,6 +175,26 @@ const ListaPersonas = () => {
   const abrirProcedenciaEstudianteModal = (personas) => {
     console.log('Persona seleccionada en el componente origen:', personas); // Verifica que los datos estén presentes
     navigate('/ListaProcedenciaEstudiante', { state: { personaSeleccionada: personas } });
+  };
+
+  const abrirFichaEstudiante = (personas) => {
+    if (!personas || Object.keys(personas).length === 0) {
+      console.error('Error: No hay persona seleccionada.');
+      return;
+    }
+  
+    console.log('Persona seleccionada para ficha de estudiante:', personas); // Verificación correcta
+    navigate('/ListaFichaEstudiante', { state: { personaSeleccionada: personas } });
+  };
+
+  const abrirFichaPadre = (persona) => {
+    if (!persona || Object.keys(persona).length === 0) {
+      console.error('Error: No hay persona seleccionada.');
+      return;
+    }
+  
+    console.log('Persona seleccionada para ficha de estudiante:', persona); // Verificación correcta
+    navigate('/ListaFichaPadre', { state: { personaSeleccionada: persona } });
   };
 
   {/* ***********************************************************FUNCIONES DE VALIDACION*****************************************************/}
@@ -932,7 +952,7 @@ const handleCreatePersona = async () => {
         Segundo_apellido: nuevaPersona.Segundo_apellido,
         direccion_persona: nuevaPersona.direccion_persona,
         fecha_nacimiento: nuevaPersona.fecha_nacimiento,
-        principal: false,
+        principal: nuevaPersona.principal,
         cod_tipo_persona: nuevaPersona.cod_tipo_persona,
         cod_nacionalidad: nuevaPersona.cod_nacionalidad,
         cod_departamento: nuevaPersona.cod_departamento,
@@ -1746,14 +1766,6 @@ return (
       <CIcon icon={cilPen} />
     </CButton>
 
-    <CButton 
-      color="secondary" 
-      onClick={() => abrirEstructuraFamiliarModal(persona)} 
-      style={{ fontSize: '0.75rem' }} 
-      disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
-    >
-      <CIcon icon={cilPeople} />
-    </CButton>
 
     {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() !== 'ESTUDIANTE' && (
       <CButton 
@@ -1769,12 +1781,40 @@ return (
     {tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() === 'ESTUDIANTE' && (
       <CButton
         onClick={() => abrirProcedenciaEstudianteModal(persona)}
-        style={{ backgroundColor: '#90EE90', borderColor: '#90EE90', fontSize: '0.75rem' }}
+        style={{ backgroundColor: '#90EE90', fontSize: '0.75rem' }}
         disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
       >
         <CIcon icon={cilHistory} />
       </CButton>
     )}
+
+<CButton 
+      color="secondary" 
+      onClick={() => abrirEstructuraFamiliarModal(persona)} 
+      style={{ fontSize: '0.75rem' }} 
+      disabled={!persona.estado} // 🔄 Se desactiva si estado es 0
+    >
+      <CIcon icon={cilPeople} />
+    </CButton>
+
+{/* Mostrar botón según el rol */}
+{tipoPersona.find(tipo => tipo.Cod_tipo_persona === persona.cod_tipo_persona)?.Tipo_persona.toUpperCase() === 'ESTUDIANTE' ? (
+  <CButton
+    style={{ backgroundColor: '#346B93', borderColor: '#90EE90', fontSize: '0.75rem' }}
+    onClick={() => abrirFichaEstudiante(persona)}
+    disabled={!persona.estado}
+  >
+    <CIcon icon={cilUser} style={{ color: 'white' }} /> {/* ✅ Solo se muestra para estudiantes */}
+  </CButton>
+) : (
+  <CButton
+    style={{ backgroundColor: '#346B93', borderColor: '#90EE90', fontSize: '0.75rem' }}
+    onClick={() => abrirFichaPadre(persona)}
+    disabled={!persona.estado}
+  >
+    <CIcon icon={cilUser} style={{ color: 'white' }} /> {/* ✅ Solo se muestra para otros roles */}
+  </CButton>
+)}
 
     <CButton
       style={{
