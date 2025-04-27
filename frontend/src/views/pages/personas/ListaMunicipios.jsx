@@ -564,29 +564,38 @@ const toggleEstado = async (municipio) => {
 
 
 
-// Función para normalizar el texto eliminando tildes y caracteres especiales
 const normalizeText = (text) => {
   return text
     ? text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim()
     : "";
 };
 
+useEffect(() => {
+  if (!municipios || !departamentos) {
+    console.warn("Datos de municipios o departamentos no disponibles.");
+    return;
+  }
+}, [municipios, departamentos]);
+
 // Filtrar municipios por nombre de municipio, departamento o estado
 const filteredMunicipios = municipios.filter((municipio) => {
+  if (!municipio || !municipio.Nombre_municipio) return false; // Evita errores en objetos vacíos
+
   const searchNormalized = normalizeText(searchTerm);
-  
+
   const nombreMunicipio = normalizeText(municipio.Nombre_municipio);
   const departamentoNombre = normalizeText(departamentos.find((depto) => depto.Cod_departamento === municipio.Cod_departamento)?.Nombre_departamento || "");
-  
+
   // Convertimos estado a texto
   const estadoTexto = municipio.estado === 1 ? "ACTIVO" : municipio.estado === 0 ? "INACTIVO" : "DESCONOCIDO";
 
   return (
-    nombreMunicipio.includes(searchNormalized) ||
-    departamentoNombre.includes(searchNormalized) ||
-    normalizeText(estadoTexto).includes(searchNormalized)
+    nombreMunicipio.startsWith(searchNormalized) || // Evita errores con textos largos
+    departamentoNombre.includes(searchNormalized) || // Mantiene búsquedas flexibles
+    normalizeText(estadoTexto).match(new RegExp(`^${searchNormalized}`, "i")) // Usa Regex para mejorar la coincidencia
   );
 });
+
 
 
 
