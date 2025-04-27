@@ -774,7 +774,7 @@ newWindow.document.write(`
       }
     } catch (error) {
       console.error('Error al crear la sección:', error);
-      swal.fire('Error', 'Error de conexión o en el servidor.', 'error');
+      swal.fire('Error', 'El grado seleccionado no tiene asignaturas asignadas.', 'error');
     }
   };
 

@@ -259,9 +259,17 @@ export const crearSeccion = async (req, res) => {
             [p_Cod_grado]
         );
 
+        // En caso de no resultar, se quita este if else y solo se deja el if de abajo que esta comentado
+        if (!asignaturas.length) {
+            console.warn('No se encontraron asignaturas para el grado, se crea la sección sin asignaturas.');
+          } else {
+            throw new Error('No se encontraron asignaturas asociadas al grado.');
+          }
+
+        /*
         if (!asignaturas.length) {
             throw new Error('No se encontraron asignaturas asociadas al grado.');
-        }
+        }*/
 
         await connection.commit();
 
