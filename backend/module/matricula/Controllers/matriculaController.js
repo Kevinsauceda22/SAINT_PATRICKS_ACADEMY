@@ -420,6 +420,8 @@ export const obtenerAlumnosPorSeccion = async (req, res) => {
     });
   }
 };
+
+
 // Controlador para obtener el horario basado en la sección del alumno
 export const obtenerHorarioPorSeccion = async (req, res) => {
   const { cod_seccion } = req.params; // Obtiene el código de la sección desde la URL
@@ -434,18 +436,29 @@ export const obtenerHorarioPorSeccion = async (req, res) => {
     const [horarios] = await pool.query(`
       SELECT 
         sa.Cod_seccion_asignatura,
-        sa.Hora_inicio,
-        sa.Hora_fin,
-        sa.Cod_secciones,
+        sa.horario_inicio,
+        sa.horario_fin,
+        sa.cod_secciones,
         s.Nombre_seccion,
-        sa.Dias_nombres AS Nombre_dia, -- Cambiado para usar directamente la columna
-        a.Nombre_asignatura
+        a.Nombre_asignatura,
+        sa.lunes,
+        sa.martes,
+        sa.miercoles,
+        sa.jueves,
+        sa.viernes,
+        sa.sabado,
+        sa.domingo
       FROM tbl_secciones_asignaturas AS sa
-      JOIN tbl_grados_asignaturas AS ga ON sa.Cod_grados_asignaturas = ga.Cod_grados_asignaturas
-      JOIN tbl_asignaturas AS a ON ga.Cod_asignatura = a.Cod_asignatura
-      JOIN tbl_secciones AS s ON sa.Cod_secciones = s.Cod_secciones
-      WHERE sa.Cod_secciones = ?
-      ORDER BY sa.Dias_nombres, sa.Hora_inicio;
+      JOIN tbl_secciones AS s ON sa.cod_secciones = s.Cod_secciones
+      JOIN tbl_asignaturas AS a ON sa.lunes = a.Cod_asignatura 
+         OR sa.martes = a.Cod_asignatura 
+         OR sa.miercoles = a.Cod_asignatura 
+         OR sa.jueves = a.Cod_asignatura 
+         OR sa.viernes = a.Cod_asignatura 
+         OR sa.sabado = a.Cod_asignatura 
+         OR sa.domingo = a.Cod_asignatura
+      WHERE sa.cod_secciones = ?
+      ORDER BY sa.horario_inicio;
     `, [cod_seccion]);
 
     // Validar si no se encontraron horarios
@@ -460,6 +473,9 @@ export const obtenerHorarioPorSeccion = async (req, res) => {
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
+
+
+
 // Controlador para obtener secciones por grado con información adicional, incluyendo el nombre del edificio y número del aula
 export const obtenerSeccionesConDetalles = async (req, res) => {
   const { cod_grado } = req.params;
@@ -494,6 +510,10 @@ export const obtenerSeccionesConDetalles = async (req, res) => {
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
+
+
+
+
 
 export const buscarPadrePorNombre = async (req, res) => {
   const { nombre } = req.query;

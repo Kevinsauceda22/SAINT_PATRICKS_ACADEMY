@@ -569,6 +569,9 @@ const getCurrentDate = () => {
     obtenerMatriculas();
   }, []);
 
+
+
+
   const exportToPDF = () => {
     const doc = new jsPDF();
 
@@ -706,6 +709,8 @@ const getCurrentDate = () => {
         Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
     };
 };
+
+
 const exportToExcel = async () => {
   const filteredData = searchTerm.trim() !== ''
     ? matriculas.filter((matricula) => {
@@ -815,7 +820,7 @@ const exportToExcel = async () => {
 
   const pageCount = Math.ceil(filteredMatriculas.length / itemsPerPage);
   
-  
+  {/**********************************************************************************************************************************************/}
   const handleViewPDF = async (matricula) => {
     try {
       Swal.fire({
@@ -969,6 +974,8 @@ const exportToExcel = async () => {
         doc.setTextColor(0, 102, 51);
         doc.text('Detalles de Matrícula:', 10, 105);
   
+
+{/************************************************************************************************************************* */}
         doc.autoTable({
           startY: 110,
           head: [['Campo', 'Valor']],
@@ -991,18 +998,63 @@ const exportToExcel = async () => {
   
         doc.autoTable({
           startY: doc.lastAutoTable.finalY + 20,
-          head: [['Asignatura', 'Día', 'Hora Inicio', 'Hora Fin']],
+          head: [['Horario', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']],
           body: horarios.length > 0
-            ? horarios.map((h) => [
-                h.Nombre_asignatura || 'N/A',
-                h.Nombre_dia || 'N/A',
-                h.Hora_inicio || 'N/A',
-                h.Hora_fin || 'N/A',
-              ])
-            : [['No hay horarios disponibles', '', '', '']],
-          styles: { fontSize: 10 },
-          headStyles: { fillColor: [0, 102, 51], textColor: [255, 255, 255] },
+            ? horarios.map((h) => {
+                return [
+                  // Formato de hora sin segundos
+                  `${h.horario_inicio.slice(0, 5)} - ${h.horario_fin.slice(0, 5)}`,
+                  h.lunes ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del lunes
+                  h.martes ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del martes
+                  h.miercoles ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del miércoles
+                  h.jueves ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del jueves
+                  h.viernes ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del viernes
+                  h.sabado ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del sábado
+                  h.domingo ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del domingo
+                ];
+              })
+            : [['No hay horarios disponibles', '', '', '', '', '', '', '']], // Mensaje si no hay horarios
+          styles: {
+            fontSize: 6, // Reducir el tamaño de la letra aún más
+            overflow: 'linebreak',
+          },
+          headStyles: {
+            fillColor: [0, 102, 51],
+            textColor: [255, 255, 255],
+            fontSize: 6, // Reducir tamaño de la fuente en los encabezados
+            halign: 'center',
+            valign: 'middle',
+            lineColor: [0, 0, 0], // Bordes visibles
+            lineWidth: 0.2, // Grosor fino
+          },
+          bodyStyles: {
+            fontSize: 6, // Reducir tamaño de la fuente en el cuerpo
+            halign: 'center',
+            valign: 'middle',
+            fillColor: [241, 250, 240], // Color de fondo de las celdas
+            textColor: [0, 0, 0],
+            lineColor: [0, 0, 0], // Bordes visibles
+            lineWidth: 0.2, // Grosor fino
+          },
+          tableWidth: 'auto', // Ajustar automáticamente el ancho de la tabla
+          margin: { left: 10, right: 10 }, // Centrando la tabla en la página
+          
+          didParseCell: function (data) {
+            if (data.section === 'body') {
+              const descansoLabels = ['RECREO', 'LUNCH', 'RECESO', 'RECESS', 'BREAK'];
+              // Comprobamos si el valor de la celda corresponde a uno de los labels de descanso
+              if (descansoLabels.includes(data.cell.raw)) {
+                data.cell.styles.fillColor = [129, 199, 132]; // 🟢 Verde descanso
+                data.cell.styles.textColor = [0, 0, 0];        // 🟢 Texto oscuro
+                data.cell.styles.fontStyle = 'bold';            // Negrita
+              }
+            }
+          },
         });
+
+
+
+{/**********************************************************************************************************************************************/}        
   
         // Pie de página
         const pageCount = doc.internal.getNumberOfPages();

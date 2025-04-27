@@ -458,7 +458,7 @@ const handleInsertSubmit = async () => {
     miercoles: horario.dias.Miércoles ? asignaturas.find(a => a.Nombre_asignatura === horario.dias.Miércoles).Cod_asignatura : null,
     jueves: horario.dias.Jueves ? asignaturas.find(a => a.Nombre_asignatura === horario.dias.Jueves).Cod_asignatura : null,
     viernes: horario.dias.Viernes ? asignaturas.find(a => a.Nombre_asignatura === horario.dias.Viernes).Cod_asignatura : null,
-    sabado: horario.dias.Sabado ? asignaturas.find(a => a.Nombre_asignatura === horario.dias.Sabado).Cod_asignatura : null,
+    sabado: horario.dias.Sábado ? asignaturas.find(a => a.Nombre_asignatura === horario.dias.Sábado).Cod_asignatura : null,
     domingo: horario.dias.Domingo ? asignaturas.find(a => a.Nombre_asignatura === horario.dias.Domingo).Cod_asignatura : null
   }));
 
@@ -748,7 +748,7 @@ const generateSeccionesAsignaturasPDF = () => {
       },
       didParseCell: function (data) {
         if (data.section === 'body') {
-          const descansoLabels = ['RECREO', 'RECESO', 'RECESS', 'BREAK'];
+          const descansoLabels = ['RECREO', 'RECESO', 'RECESS', 'BREAK', 'LUNCH'];
           if (descansoLabels.includes(data.cell.raw)) {
             data.cell.styles.fillColor = [129, 199, 132]; // 🟢 Verde descanso
             data.cell.styles.textColor = [0, 0, 0];        // 🟢 Texto oscuro
@@ -921,7 +921,7 @@ const generateSeccionesAsignaturasExcel = async () => {
 
       // Si la asignatura es "RECREO", "RECESO", "RECESS" o "BREAK", cambia el color de fondo a verde
       const asignatura = cell.value;
-      if (["RECREO", "RECESO", "RECESS", "BREAK"].includes(asignatura)) {
+      if (["RECREO", "RECESO", 'LUNCH', "RECESS", "BREAK"].includes(asignatura)) {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'A5D6A7' } }; // Verde claro
       }
     });
@@ -1094,7 +1094,7 @@ const filteredSeccionesAsignaturas = seccionesAsignaturas.filter((fila) => {
               const asignatura = asignaturas.find(asig => asig.Cod_asignatura === fila[dia])?.Nombre_asignatura.toUpperCase() || '-';
 
               // 📌 Si la asignatura es RECREO, RECESO, RECESS o BREAK → fondo verde
-              const esDescanso = ["RECREO", "RECESO", "RECESS", "BREAK"].includes(asignatura);
+              const esDescanso = ["RECREO", "RECESO", "RECESS", 'LUNCH', "BREAK"].includes(asignatura);
               const cellStyle = esDescanso
                 ? { textAlign: "center", fontSize: "12px", border: '2px solid black', backgroundColor: "#A5D6A7" } // Verde claro
                 : { textAlign: "center", fontSize: "12px", border: '2px solid black' };
