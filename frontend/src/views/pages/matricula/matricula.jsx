@@ -1428,7 +1428,7 @@ const calculateAge = (birthDate) => {
   visible={modalVisible}
   onClose={resetFormularioMatricula}
   backdrop="static"
-  size="md"
+  size="xl"
 >
   <CModalHeader closeButton>
     <CModalTitle>Registrar Nueva Matrícula - Paso {step}</CModalTitle>
@@ -1584,14 +1584,13 @@ const calculateAge = (birthDate) => {
 
 
                 <CRow className="mb-3">
-                  <CCol>
-                    <label>Nombre del Padre</label>
-                    <CFormInput type="text" value={nombrePadre} readOnly />
-                  </CCol>
-                  <CCol>
-                    <label>Apellido del Padre</label>
-                    <CFormInput type="text" value={apellidoPadre} readOnly />
-                  </CCol>
+                 <CRow className="mb-3">
+  <CCol>
+    <label>Nombre Completo del Padre</label>
+    <CFormInput type="text" value={`${nombrePadre} ${apellidoPadre}`.trim()} readOnly />
+  </CCol>
+</CRow>
+
                 </CRow>
               </CCardBody>
             </CCard>

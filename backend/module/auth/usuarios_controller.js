@@ -1668,6 +1668,177 @@ export const listarRoles = async (req, res = response) => {
     }
 };
 
+export const obtenerUsuariosConNombre = async (req, res) => {
+    try {
+      const connection = await pool.getConnection();
+  
+      const [usuarios] = await connection.query(`
+        SELECT 
+          u.cod_usuario, 
+          u.nombre_usuario, 
+          u.correo_usuario, 
+          u.Cod_rol, 
+          u.Cod_estado_usuario,
+          CONCAT_WS(' ',
+            p.Nombre,
+            p.Segundo_nombre,
+            p.Primer_apellido,
+            p.Segundo_apellido
+          ) AS nombre_completo
+        FROM tbl_usuarios u
+        INNER JOIN tbl_personas p ON u.cod_persona = p.cod_persona
+        WHERE u.Cod_estado_usuario IS NOT NULL
+      `);
+  
+      connection.release();
+  
+      res.status(200).json(usuarios);
+    } catch (error) {
+      console.error('Error al obtener los usuarios con nombre completo:', error);
+      res.status(500).json({
+        status: false,
+        mensaje: 'Error al obtener los usuarios',
+        error: error.message
+      });
+    }
+  };
+
+  export const eliminarUsuario = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+      const { id } = req.params;
+  
+      await connection.beginTransaction();
+  
+      const [userExist] = await connection.query(
+        `SELECT * FROM tbl_usuarios WHERE cod_usuario = ?`,
+        [id]
+      );
+  
+      if (userExist.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({
+          status: false,
+          mensaje: 'Usuario no encontrado'
+        });
+      }
+  
+      // Eliminar solo el usuario
+      await connection.query(`DELETE FROM tbl_usuarios WHERE cod_usuario = ?`, [id]);
+  
+      await connection.commit();
+  
+      res.status(200).json({
+        status: true,
+        mensaje: 'Usuario eliminado exitosamente'
+      });
+  
+    } catch (error) {
+      await connection.rollback();
+      console.error('Error al eliminar usuario:', error);
+      res.status(500).json({
+        status: false,
+        mensaje: 'Error interno al eliminar usuario',
+        error: error.message
+      });
+    } finally {
+      connection.release();
+    }
+  };
+  
+  export const editarPersonaYUsuario = async (req, res) => {
+    const connection = await pool.getConnection();
+    try {
+        await connection.beginTransaction();
+
+        const { cod_usuario, personData, userData } = req.body;
+
+        // Validar existencia de usuario
+        const [usuario] = await connection.query(
+            `SELECT cod_persona FROM tbl_usuarios WHERE cod_usuario = ?`,
+            [cod_usuario]
+        );
+
+        if (usuario.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({ status: false, mensaje: 'Usuario no encontrado' });
+        }
+
+        const cod_persona = usuario[0].cod_persona;
+
+        // Actualizar persona
+        await connection.query(
+            `UPDATE tbl_personas
+             SET dni_persona = ?, Nombre = ?, Segundo_nombre = ?, Primer_apellido = ?, Segundo_apellido = ?, 
+                 cod_nacionalidad = ?, direccion_persona = ?, fecha_nacimiento = ?, cod_tipo_persona = ?, 
+                 cod_departamento = ?, cod_municipio = ?, cod_genero = ?
+             WHERE cod_persona = ?`,
+            [
+                personData.dni_persona,
+                personData.Nombre,
+                personData.Segundo_nombre || null,
+                personData.Primer_apellido,
+                personData.Segundo_apellido || null,
+                personData.cod_departamento !== undefined ? personData.cod_departamento : null,
+                personData.cod_municipio !== undefined ? personData.cod_municipio : null,    
+                personData.cod_nacionalidad !== undefined ? personData.cod_nacionalidad : null,                
+            
+                personData.direccion_persona || null,
+                personData.fecha_nacimiento || null,
+                personData.cod_tipo_persona,
+                personData.cod_departamento || null,
+                personData.cod_genero,
+                cod_persona
+            ]
+        );
+
+        // Actualizar usuario
+        await connection.query(
+            `UPDATE tbl_usuarios
+             SET correo_usuario = ?
+             WHERE cod_usuario = ?`,
+            [
+                userData.correo_usuario,
+                cod_usuario
+            ]
+        );
+
+        await connection.commit();
+        res.status(200).json({ status: true, mensaje: 'Usuario actualizado correctamente' });
+    } catch (error) {
+        await connection.rollback();
+        console.error('Error al editar usuario:', error);
+        res.status(500).json({ status: false, mensaje: 'Error al editar el usuario', error: error.message });
+    } finally {
+        connection.release();
+    }
+};
+
+export const obtenerUsuarioCompleto = async (req, res) => {
+    const { cod_usuario } = req.params;
+  
+    try {
+      const [usuario] = await pool.query(`
+        SELECT u.cod_usuario, u.correo_usuario, u.Cod_rol, u.Cod_estado_usuario,
+               p.cod_persona, p.Nombre, p.Segundo_nombre, p.Primer_apellido, p.Segundo_apellido,
+               p.dni_persona, p.Cod_nacionalidad, p.direccion_persona, p.fecha_nacimiento,
+               p.cod_genero, p.cod_departamento, p.cod_municipio, p.estado
+        FROM tbl_usuarios u
+        INNER JOIN tbl_personas p ON u.cod_persona = p.cod_persona
+        WHERE u.cod_usuario = ?
+      `, [cod_usuario]);
+  
+      if (!usuario || usuario.length === 0) {
+        return res.status(404).json({ mensaje: 'Usuario no encontrado' });
+      }
+  
+      res.status(200).json({ usuario: usuario[0] });
+    } catch (error) {
+      console.error('Error al obtener usuario completo:', error);
+      res.status(500).json({ mensaje: 'Error al obtener el usuario completo' });
+    }
+  };
+
 
 
 //ya no metan mas codigo aqui por favor hay demasiado codigo aqui JAJAJA

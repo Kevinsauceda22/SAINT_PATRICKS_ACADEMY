@@ -34,7 +34,11 @@ import {
     getDepartamentos,
     getMunicipios,
     cambiarRolUsuario,
-    listarRoles
+    listarRoles,
+    obtenerUsuariosConNombre,
+    eliminarUsuario,
+    editarPersonaYUsuario ,
+    obtenerUsuarioCompleto
 
 } from './usuarios_controller.js';
 
@@ -71,6 +75,10 @@ router.post('/update-2fa-status',checkAuth, updateTwoFactorAuthStatus);
 router.put('/actualizarOtp/:cod_usuario', checkAuth, actualizarOtp);
 // Nueva ruta para obtener solo el rol y el correo del usuario
 router.get('/rol-correo/:cod_usuario', checkAuth, mostrarRolYCorreo);
+router.get('/usuarios-con-nombre',checkAuth, obtenerUsuariosConNombre);
+router.delete('/eliminar-usuario/:id', eliminarUsuario);
+router.put('/editar-usuario/:cod_usuario', checkAuth, editarPersonaYUsuario);
+router.get('/usuario-completo/:cod_usuario', obtenerUsuarioCompleto);
 
 // Ruta para obtener datos pre-registrados
 router.get('/padre/datos-preregistro/:cod_usuario', checkAuth, obtenerDatosPreRegistro);

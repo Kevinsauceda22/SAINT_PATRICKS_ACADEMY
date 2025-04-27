@@ -168,7 +168,7 @@ export const obtenerHijosPorDniPadre = async (req, res) => {
     // Buscar por DNI exacto si es un número de 13 dígitos
     if (/^\d{13}$/.test(dni_padre)) {
       [[padre]] = await pool.query(
-        'SELECT cod_persona, Nombre, Primer_apellido, dni_persona FROM tbl_personas WHERE dni_persona = ?',
+        'SELECT cod_persona, Nombre, Segundo_nombre, Segundo_apellido Primer_apellido, dni_persona FROM tbl_personas WHERE dni_persona = ?',
         [dni_padre]
       );
     } else {

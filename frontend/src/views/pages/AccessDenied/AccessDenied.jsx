@@ -1,94 +1,26 @@
 import React from 'react';
 
 const AccessDenied = () => {
-  const styles = {
-    container: {
-      height: '100vh',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      background: '#ffffff',
-      fontFamily: 'Arial, sans-serif',
-      color: '#333333',
-      margin: 0,
-      padding: 0,
-    },
-    icon: {
-      width: '100px',
-      height: '100px',
-      background: '#ff4444',
-      borderRadius: '50%',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginBottom: '20px',
-      animation: 'pulse 2s infinite',
-    },
-    exclamation: {
-      color: 'white',
-      fontSize: '60px',
-      fontWeight: 'bold',
-    },
-    title: {
-      fontSize: '32px',
-      marginBottom: '10px',
-      textAlign: 'center',
-    },
-    message: {
-      fontSize: '18px',
-      color: '#666666',
-      textAlign: 'center',
-      maxWidth: '400px',
-    },
-    button: {
-      marginTop: '30px',
-      padding: '12px 24px',
-      background: '#ff4444',
-      border: 'none',
-      borderRadius: '5px',
-      color: 'white',
-      fontSize: '16px',
-      cursor: 'pointer',
-      transition: 'background 0.3s',
-    },
-    '@keyframes pulse': {
-      '0%': {
-        transform: 'scale(1)',
-        boxShadow: '0 0 0 0 rgba(255, 68, 68, 0.7)',
-      },
-      '70%': {
-        transform: 'scale(1.1)',
-        boxShadow: '0 0 0 10px rgba(255, 68, 68, 0)',
-      },
-      '100%': {
-        transform: 'scale(1)',
-        boxShadow: '0 0 0 0 rgba(255, 68, 68, 0)',
-      },
-    },
-  };
 
-  const handleGoBack = () => {
-    window.history.back();
-  };
+
+
 
   // Agregar la animación al documento
   React.useEffect(() => {
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      @keyframes expandWidth {
+        0% { width: 0; }
+        100% { width: 100%; }
+      }
       @keyframes pulse {
-        0% {
-          transform: scale(1);
-          box-shadow: 0 0 0 0 rgba(255, 68, 68, 0.7);
-        }
-        70% {
-          transform: scale(1.1);
-          box-shadow: 0 0 0 10px rgba(255, 68, 68, 0);
-        }
-        100% {
-          transform: scale(1);
-          box-shadow: 0 0 0 0 rgba(255, 68, 68, 0);
-        }
+        0% { transform: scale(1); opacity: 0.7; }
+        50% { transform: scale(1.05); opacity: 1; }
+        100% { transform: scale(1); opacity: 0.7; }
       }
     `;
     document.head.appendChild(styleSheet);
@@ -99,20 +31,32 @@ const AccessDenied = () => {
   }, []);
 
   return (
-    <div style={styles.container}>
-      <div style={styles.icon}>
-        <span style={styles.exclamation}>!</span>
+     <div className="h-screen flex flex-col justify-center items-center bg-white font-sans">
+      <div className="flex flex-col items-center">
+        {/* Main loader container */}
+        <div className="relative w-32 h-10 mb-6">
+          {/* Background track */}
+          <div className="absolute w-full h-2 bg-gray-100 rounded-full overflow-hidden top-3">
+            {/* Animated progress bar */}
+            <div className="h-full bg-green-500 rounded-full" 
+                 style={{
+                   animation: 'expandWidth 2s infinite ease-in-out',
+                   boxShadow: '0 0 10px rgba(52, 211, 153, 0.7)'
+                 }}>
+            </div>
+          </div>
+          {/* Animated circle indicator */}
+          <div className="absolute w-8 h-8 bg-green-500 rounded-full flex justify-center items-center"
+               style={{
+                 animation: 'spin 2s infinite linear, pulse 2s infinite ease-in-out',
+                 boxShadow: '0 0 15px rgba(52, 211, 153, 0.9)',
+                 left: 'calc(50% - 16px)'
+               }}>
+            <div className="w-3 h-3 bg-white rounded-full"></div>
+          </div>
+        </div>
+        <p className="text-green-600 font-medium text-center mt-4">Cargando...</p>
       </div>
-      <h1 style={styles.title}>Acceso Denegado</h1>
-      <p style={styles.message}>Lo sentimos, no tienes permiso para acceder a esta página.</p>
-      <button 
-        style={styles.button}
-        onClick={handleGoBack}
-        onMouseOver={(e) => e.currentTarget.style.background = '#ff6666'}
-        onMouseOut={(e) => e.currentTarget.style.background = '#ff4444'}
-      >
-        Volver atrás
-      </button>
     </div>
   );
 };

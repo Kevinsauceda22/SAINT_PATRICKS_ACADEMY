@@ -726,7 +726,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoadingg(true);
     const token = localStorage.getItem('token');
-
+  
     if (!token) {
       Swal.fire({
         title: 'Error',
@@ -737,15 +737,15 @@ const UserManagement = () => {
       setLoadingg(false);
       return;
     }
-
+  
     try {
-      const response = await axios.get('http://localhost:4000/api/usuarios/Todos-los-usuarios', {
+      const response = await axios.get('http://localhost:4000/api/usuarios/usuarios-con-nombre', {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      const userData = Array.isArray(response.data[0]) ? response.data[0] : response.data;
+  
+      const userData = Array.isArray(response.data) ? response.data : [];
       setUsers(userData);
-
+  
       if (!userData.length) {
         Swal.fire({
           title: 'Aviso',
@@ -767,6 +767,97 @@ const UserManagement = () => {
       setLoadingg(false);
     }
   };
+
+  const handleDeleteUser = (user) => {
+    Swal.fire({
+      title: '¿Estás seguro?',
+      text: `¿Deseas eliminar a ${user.nombre_usuario}? Esta acción no se puede deshacer.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const token = localStorage.getItem('token');
+          await axios.delete(`http://localhost:4000/api/usuarios/eliminar-usuario/${user.cod_usuario}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          Swal.fire('¡Eliminado!', 'El usuario fue eliminado correctamente.', 'success');
+          fetchUsers();
+        } catch (error) {
+          console.error('Error al eliminar usuario:', error);
+          Swal.fire('Error', 'Hubo un problema al eliminar el usuario.', 'error');
+        }
+      }
+    });
+  };
+  
+  const handleEditUser = async (user) => {
+    const token = localStorage.getItem('token');
+    try {
+      const response = await axios.get(`http://localhost:4000/api/usuarios/usuario-completo/${user.cod_usuario}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+  
+      if (response.data && response.data.usuario) {
+        const usuarioData = response.data.usuario;
+  
+        Swal.fire({
+          title: 'Editar Usuario',
+          html: `
+            <input id="Nombre" class="swal2-input" placeholder="Primer nombre" value="${usuarioData.Nombre || ''}">
+            <input id="Segundo_nombre" class="swal2-input" placeholder="Segundo nombre" value="${usuarioData.Segundo_nombre || ''}">
+            <input id="Primer_apellido" class="swal2-input" placeholder="Primer apellido" value="${usuarioData.Primer_apellido || ''}">
+            <input id="Segundo_apellido" class="swal2-input" placeholder="Segundo apellido" value="${usuarioData.Segundo_apellido || ''}">
+            <input id="dni_persona" class="swal2-input" placeholder="DNI" value="${usuarioData.dni_persona || ''}">
+            <input id="correo_usuario" class="swal2-input" placeholder="Correo" value="${usuarioData.correo_usuario || ''}">
+          `,
+          confirmButtonText: 'Guardar cambios',
+          showCancelButton: true,
+          preConfirm: async () => {
+            const updatedData = {
+              cod_usuario: user.cod_usuario,
+              personData: {
+                Nombre: document.getElementById('Nombre')?.value.trim().toUpperCase() || '',
+                Segundo_nombre: document.getElementById('Segundo_nombre')?.value.trim().toUpperCase() || '',
+                Primer_apellido: document.getElementById('Primer_apellido')?.value.trim().toUpperCase() || '',
+                Segundo_apellido: document.getElementById('Segundo_apellido')?.value.trim().toUpperCase() || '',
+                dni_persona: document.getElementById('dni_persona')?.value.trim() || '',
+                // ❌ Ya no mandamos cod_tipo_persona, direccion_persona, cod_departamento, etc.
+              },
+              userData: {
+                correo_usuario: document.getElementById('correo_usuario')?.value.trim() || '',
+              }
+            };
+          
+            // Ahora haces el PUT normal
+            const token = localStorage.getItem('token');
+            await axios.put(`http://localhost:4000/api/usuarios/editar-usuario/${user.cod_usuario}`, updatedData, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            
+          }
+          
+        }).then((result) => {
+          if (result.isConfirmed) {
+            Swal.fire('¡Actualizado!', 'El usuario ha sido actualizado correctamente.', 'success');
+            fetchUsers(); // Recargar la tabla
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error al cargar usuario:', error);
+      Swal.fire('Error', 'No se pudo cargar el usuario.', 'error');
+    }
+  };
+  
+  
+  
+  
+  
 
   const handleStatusChange = async (userId, newStatus) => {
     // Prevent the current user from modifying their own status
@@ -1044,8 +1135,8 @@ const UserManagement = () => {
                   <tr key={user.cod_usuario}>
                     <td className="user-cell">
                       <div className="user-info">
-                        <span className="user-name">{user.nombre_usuario}</span>
-                        <span className="user-email">{user.correo_electronico}</span>
+                      <span className="user-name">{user.nombre_completo || 'Nombre no disponible'}</span>
+                      <span className="user-email">{user.correo_electronico}</span>
                       </div>
                     </td>
                     <td>
@@ -1093,6 +1184,26 @@ const UserManagement = () => {
                         </button>
                       </div>
                     </td>
+
+                    <td>
+  <div className="action-buttons">
+    <button
+      className="btn btn-edit"
+      onClick={() => handleEditUser(user)}
+      disabled={processingUsers.has(user.cod_usuario)}
+    >
+      Editar
+    </button>
+    <button
+      className="btn btn-delete"
+      onClick={() => handleDeleteUser(user)}
+      disabled={processingUsers.has(user.cod_usuario)}
+    >
+      Eliminar
+    </button>
+  </div>
+</td>
+
                   </tr>
                 ))}
               </tbody>
