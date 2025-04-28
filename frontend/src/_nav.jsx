@@ -242,7 +242,7 @@ const _nav = [
       { component: CNavItem, name: 'Tipo de Documentos', to: '/ListaTipoDocumentos', nameobject: 'ListaTipoDocumentos' },
       { component: CNavItem, name: 'Departamentos', to: '/ListaDepartamentos', nameobject: 'ListaDepartamentos' },
       { component: CNavItem, name: 'Municipios', to: '/ListaMunicipios', nameobject: 'ListaMunicipios' },
-      { component: CNavItem, name: 'Nacionalidades', to: '/nacionalidad', nameobject: 'nacionalidad' },
+      { component: CNavItem, name: 'Países', to: '/nacionalidad', nameobject: 'nacionalidad' },
       { component: CNavItem, name: 'Tipo Contacto', to: '/tipoContacto' },
       { component: CNavItem, name: 'Género Persona', to: '/generoPersona' },
     ],
