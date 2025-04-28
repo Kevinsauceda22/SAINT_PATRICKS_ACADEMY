@@ -1050,7 +1050,7 @@ const validateEmptyFields = () => {
     <CForm>
       {/* Campo para ID Nacionalidad */}
       <CInputGroup className="mb-3">
-        <CInputGroupText>ID Nacionalidad</CInputGroupText>
+        <CInputGroupText>Prefijo Nacionalidad</CInputGroupText>
         <CFormInput
           type="text"
           name="Id_nacionalidad" // 🆕 Name agregado
@@ -1122,7 +1122,7 @@ const validateEmptyFields = () => {
     <CForm>
       {/* Campo para ID Nacionalidad */}
       <CInputGroup className="mb-3">
-        <CInputGroupText>ID Nacionalidad</CInputGroupText>
+        <CInputGroupText>Prefijo Nacionalidad</CInputGroupText>
         <CFormInput
           type="text"
           name="Id_nacionalidad" // ✅ Name agregado
@@ -1204,7 +1204,7 @@ const validateEmptyFields = () => {
   <CModalBody>
     ¿Estás seguro de que deseas eliminar la nacionalidad con los siguientes datos?
     <ul>
-      <li><strong>ID Nacionalidad:</strong> {nacionalidadToDelete.Id_nacionalidad}</li>
+      <li><strong>Prefijo Nacionalidad:</strong> {nacionalidadToDelete.Id_nacionalidad}</li>
       <li><strong>Nacionalidad:</strong> {nacionalidadToDelete.pais_nacionalidad}</li>
       <li><strong>País:</strong> {nacionalidadToDelete.pais}</li>
     </ul>
