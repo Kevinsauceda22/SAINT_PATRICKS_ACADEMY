@@ -1567,9 +1567,15 @@ const calculateAge = (birthDate) => {
     }}
     required
   />
-  <CButton color="info" onClick={() => setBuscarNombreVisible(true)}>
-    <CIcon icon={cilSearch} />
-  </CButton>
+  <CButton 
+  style={{ backgroundColor: '#495C45', color: 'white', borderRadius: '8px' }} 
+  onClick={() => setBuscarNombreVisible(true)}
+>
+  Búsqueda por nombre
+</CButton>
+
+
+
 </CInputGroup>
 
 
@@ -1580,31 +1586,26 @@ const calculateAge = (birthDate) => {
       style={{
         position: 'absolute',
         zIndex: 10,
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
-        borderRadius: '5px',
+        backgroundColor: '#ffffff',
+        borderRadius: '10px',
         width: '100%',
-        maxHeight: '260px',
+        maxHeight: '280px',
         overflowY: 'auto',
-        marginTop: '-10px',
-        boxShadow: '0px 2px 10px rgba(0,0,0,0.1)',
+        marginTop: '-8px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        padding: '1rem',
       }}
     >
       {/* Botón cerrar (X) */}
-      <div
-        style={{
-          textAlign: 'right',
-          padding: '0.3rem 0.8rem',
-          borderBottom: '1px solid #eee',
-        }}
-      >
+      <div style={{ textAlign: 'right', marginBottom: '0.5rem' }}>
         <button
           style={{
             border: 'none',
             background: 'none',
-            fontSize: '1.2rem',
-            color: '#888',
+            fontSize: '1.5rem',
+            color: '#6c757d',
             cursor: 'pointer',
+            transition: 'color 0.3s',
           }}
           onClick={() => {
             setBuscarNombreVisible(false);
@@ -1612,12 +1613,15 @@ const calculateAge = (birthDate) => {
             setResultadosBusqueda([]);
           }}
           title="Cerrar búsqueda"
+          onMouseEnter={(e) => (e.target.style.color = '#495057')}
+          onMouseLeave={(e) => (e.target.style.color = '#6c757d')}
         >
           ×
         </button>
       </div>
 
-      <CInputGroup className="p-2">
+      {/* Input de búsqueda */}
+      <CInputGroup className="mb-3">
         <CFormInput
           autoFocus
           placeholder="Buscar padre por nombre..."
@@ -1636,9 +1640,15 @@ const calculateAge = (birthDate) => {
               setResultadosBusqueda([]);
             }
           }}
+          style={{
+            borderRadius: '6px',
+            padding: '0.6rem 1rem',
+            border: '1px solid #ced4da',
+          }}
         />
       </CInputGroup>
 
+      {/* Resultados */}
       {resultadosBusqueda.map((padre) => (
         <div
           key={padre.dni_persona}
@@ -1649,20 +1659,29 @@ const calculateAge = (birthDate) => {
             setResultadosBusqueda([]);
             obtenerHijos(padre.dni_persona);
           }}
-          style={{ padding: '0.5rem 1rem', cursor: 'pointer', borderTop: '1px solid #eee' }}
+          style={{
+            padding: '0.6rem 1rem',
+            borderBottom: '1px solid #f1f1f1',
+            cursor: 'pointer',
+            transition: 'background 0.3s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          {padre.Nombre_Padre} {padre.Apellido_Padre} - DNI: {padre.dni_persona}
+          <strong>{padre.Nombre_Padre} {padre.Apellido_Padre}</strong> - DNI: {padre.dni_persona}
         </div>
       ))}
 
+      {/* No resultados */}
       {nombreBusqueda.length >= 3 && resultadosBusqueda.length === 0 && (
-        <div style={{ padding: '0.5rem 1rem', color: '#888' }}>
+        <div style={{ padding: '1rem', textAlign: 'center', color: '#adb5bd' }}>
           No se encontraron coincidencias.
         </div>
       )}
     </div>
   </div>
 )}
+
 
 
                 <CRow className="mb-3">
