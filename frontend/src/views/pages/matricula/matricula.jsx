@@ -428,21 +428,17 @@ const handleSubmit = async (e) => {
     cod_grado: selectedGrado,
     cod_seccion: selectedSeccion,
     cod_estado_matricula: matriculaData.cod_estado_matricula,
-    cod_periodo_matricula: matriculaData.cod_periodo_matricula || periodoActivo?.Cod_periodo_matricula,
+    cod_periodo_matricula: matriculaData.cod_periodo_matricula,
     cod_tipo_matricula: matriculaData.cod_tipo_matricula,
     cod_hijo: matriculaData.cod_hijo,
-    ...(matriculaData.Cod_matricula && { cod_matricula: matriculaData.Cod_matricula }), // 👈 Agregar aquí si existe
   };
-  
 
   const requiredFields = [
     'dni_padre',
-    'fecha_matricula',
     'cod_grado',
     'cod_seccion',
     'cod_estado_matricula',
     'cod_tipo_matricula',
-    'cod_periodo_matricula',
     'cod_hijo',
   ];
 
@@ -456,62 +452,96 @@ const handleSubmit = async (e) => {
     return;
   }
 
+  if (!dataToSend.fecha_matricula) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Fecha no asignada',
+      text: 'La fecha de matrícula no está asignada automáticamente.',
+    });
+    return;
+  }
+
+  const periodoActual = opciones?.periodos_matricula?.find(
+    (p) => p.Cod_periodo_matricula === dataToSend.cod_periodo_matricula
+  );
+  const anioAcademicoActual = periodoActual?.Anio_academico;
+
+  const existeMatriculaEnAnio = matriculas.some(
+    (matricula) =>
+      matricula.cod_hijo === dataToSend.cod_hijo &&
+      matricula.anio_academico === anioAcademicoActual
+  );
+
+  if (existeMatriculaEnAnio) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Matrícula duplicada',
+      text: `El estudiante ya está matriculado en el período académico ${anioAcademicoActual}. No se puede registrar dos veces en el mismo período.`,
+    });
+    return;
+  }
+
   try {
-    let response;
+    const response = await axios.post(
+      'http://localhost:4000/api/matricula/crearmatricula',
+      dataToSend
+    );
 
-    if (matriculaData.Cod_matricula) {
-      // Estamos editando
-      response = await axios.put(
-        `http://localhost:4000/api/matricula/matriculas/${matriculaData.Cod_matricula}`,
-        dataToSend
-      );
-    } else {
-      // Estamos creando
-      response = await axios.post(
-        'http://localhost:4000/api/matricula/crearmatricula',
-        dataToSend
-      );
-    }
+    if (response.status === 201) {
+      const message = response.data.message;
 
-    if (response.status === 201 || response.status === 200) {
       Swal.fire({
         icon: 'success',
-        title: matriculaData.Cod_matricula ? 'Matrícula actualizada' : 'Matrícula registrada',
-        text: response.data.message || (matriculaData.Cod_matricula ? 'Actualización exitosa.' : 'Registro exitoso.'),
+        title: 'Matrícula registrada',
+        text: message || 'La matrícula fue creada exitosamente.',
         timer: 2500,
         showConfirmButton: false,
       });
 
       await registrarEnBitacora(
-        matriculaData.Cod_matricula ? 'UPDATE' : 'INSERT',
-        `${matriculaData.Cod_matricula ? 'Actualizó' : 'Creó'} matrícula para el estudiante con código ${dataToSend.cod_hijo}.`
+        'INSERT',
+        `Creó una matrícula para el estudiante con código ${dataToSend.cod_hijo} en el período ${dataToSend.cod_periodo_matricula}.`
       );
 
-      // Reiniciar formulario
-      resetFormularioMatricula();
+      // Reiniciar todo el formulario después del registro exitoso
+      setModalVisible(false);
+      setStep(1);
+      setMatriculaData({
+        fecha_matricula: getCurrentDate(),
+        cod_grado: '',
+        cod_seccion: '',
+        cod_estado_matricula: estadoPorDefecto?.Cod_estado_matricula || '',
+        cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
+        cod_tipo_matricula: tipoPorDefecto?.Cod_tipo_matricula || '',
+        cod_hijo: '',
+        primer_nombre_hijo: '',
+        segundo_nombre_hijo: '',
+        primer_apellido_hijo: '',
+        segundo_apellido_hijo: '',
+        fecha_nacimiento_hijo: '',
+        nombre_completo_hijo: '',
+      });
+      setDniPadre('');
+      setNombrePadre('');
+      setApellidoPadre('');
+      setSelectedGrado('');
+      setSelectedSeccion('');
       obtenerMatriculas(); // refrescar la tabla
     }
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'Error al crear o actualizar matrícula.';
-    console.error('Error:', errorMessage);
+      error.response?.data?.message || error.message || 'Error al crear la matrícula.';
+    console.error('Error al crear la matrícula:', errorMessage);
 
-    await registrarEnBitacora('Error', `Error al crear o actualizar matrícula: ${errorMessage}`);
+    await registrarEnBitacora('Error', `Error al crear matrícula: ${errorMessage}`);
 
     Swal.fire({
       icon: 'error',
-      title: 'Error',
+      title: 'Error al registrar matrícula',
       text: errorMessage,
     });
   }
 };
-
-
-
-
-
-
-
 
 const getCurrentDate = () => {
   const today = new Date();
