@@ -1030,20 +1030,17 @@ const exportToExcel = async () => {
           startY: doc.lastAutoTable.finalY + 20,
           head: [['Horario', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']],
           body: horarios.length > 0
-            ? horarios.map((h) => {
-                return [
-                  // Formato de hora sin segundos
-                  `${h.horario_inicio.slice(0, 5)} - ${h.horario_fin.slice(0, 5)}`,
-                  h.lunes ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del lunes
-                  h.martes ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del martes
-                  h.miercoles ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del miércoles
-                  h.jueves ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del jueves
-                  h.viernes ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del viernes
-                  h.sabado ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del sábado
-                  h.domingo ? h.Nombre_asignatura || 'N/A' : '-', // Nombre de asignatura del domingo
-                ];
-              })
-            : [['No hay horarios disponibles', '', '', '', '', '', '', '']], // Mensaje si no hay horarios
+          ? horarios.map((h) => [
+              `${h.horario_inicio.slice(0, 5)} - ${h.horario_fin.slice(0, 5)}`,
+              h.lunes || '-',
+              h.martes || '-',
+              h.miercoles || '-',
+              h.jueves || '-',
+              h.viernes || '-',
+              h.sabado || '-',
+              h.domingo || '-',
+            ])
+          : [['No hay horarios disponibles', '', '', '', '', '', '', '']],
           styles: {
             fontSize: 6, // Reducir el tamaño de la letra aún más
             overflow: 'linebreak',

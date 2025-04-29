@@ -421,18 +421,16 @@ export const obtenerAlumnosPorSeccion = async (req, res) => {
   }
 };
 
-
 // Controlador para obtener el horario basado en la sección del alumno
 export const obtenerHorarioPorSeccion = async (req, res) => {
-  const { cod_seccion } = req.params; // Obtiene el código de la sección desde la URL
+  const { cod_seccion } = req.params;
 
   try {
-    // Validar que el parámetro `cod_seccion` esté presente
     if (!cod_seccion) {
       return res.status(400).json({ message: 'El código de la sección es requerido.' });
     }
 
-    // Consulta para obtener los horarios por sección
+    // 1. Obtener horarios de la sección
     const [horarios] = await pool.query(`
       SELECT 
         sa.Cod_seccion_asignatura,
@@ -440,7 +438,6 @@ export const obtenerHorarioPorSeccion = async (req, res) => {
         sa.horario_fin,
         sa.cod_secciones,
         s.Nombre_seccion,
-        a.Nombre_asignatura,
         sa.lunes,
         sa.martes,
         sa.miercoles,
@@ -450,29 +447,46 @@ export const obtenerHorarioPorSeccion = async (req, res) => {
         sa.domingo
       FROM tbl_secciones_asignaturas AS sa
       JOIN tbl_secciones AS s ON sa.cod_secciones = s.Cod_secciones
-      JOIN tbl_asignaturas AS a ON sa.lunes = a.Cod_asignatura 
-         OR sa.martes = a.Cod_asignatura 
-         OR sa.miercoles = a.Cod_asignatura 
-         OR sa.jueves = a.Cod_asignatura 
-         OR sa.viernes = a.Cod_asignatura 
-         OR sa.sabado = a.Cod_asignatura 
-         OR sa.domingo = a.Cod_asignatura
       WHERE sa.cod_secciones = ?
       ORDER BY sa.horario_inicio;
     `, [cod_seccion]);
 
-    // Validar si no se encontraron horarios
     if (!horarios || horarios.length === 0) {
       return res.status(404).json({ message: 'No se encontraron horarios para esta sección.' });
     }
 
-    // Enviar la respuesta con los datos del horario
-    res.status(200).json({ data: horarios });
+    // 2. Obtener todas las asignaturas
+    const [asignaturas] = await pool.query(`
+      SELECT Cod_asignatura, Nombre_asignatura FROM tbl_asignaturas;
+    `);
+
+    // 3. Crear un diccionario para asignaturas
+    const asignaturasMap = {};
+    asignaturas.forEach((a) => {
+      asignaturasMap[a.Cod_asignatura] = a.Nombre_asignatura;
+    });
+
+    // 4. Mapear cada día a su respectivo nombre de asignatura
+    const horariosConAsignaturas = horarios.map((h) => ({
+      ...h,
+      lunes: h.lunes ? asignaturasMap[h.lunes] || 'N/A' : null,
+      martes: h.martes ? asignaturasMap[h.martes] || 'N/A' : null,
+      miercoles: h.miercoles ? asignaturasMap[h.miercoles] || 'N/A' : null,
+      jueves: h.jueves ? asignaturasMap[h.jueves] || 'N/A' : null,
+      viernes: h.viernes ? asignaturasMap[h.viernes] || 'N/A' : null,
+      sabado: h.sabado ? asignaturasMap[h.sabado] || 'N/A' : null,
+      domingo: h.domingo ? asignaturasMap[h.domingo] || 'N/A' : null,
+    }));
+
+    // 5. Responder con el nuevo formato
+    res.status(200).json({ data: horariosConAsignaturas });
+
   } catch (error) {
     console.error('Error al obtener el horario:', error);
     res.status(500).json({ message: 'Error en el servidor', error: error.message });
   }
 };
+
 
 
 
