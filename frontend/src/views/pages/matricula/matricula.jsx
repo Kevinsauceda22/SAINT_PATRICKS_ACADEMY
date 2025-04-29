@@ -428,21 +428,17 @@ const handleSubmit = async (e) => {
     cod_grado: selectedGrado,
     cod_seccion: selectedSeccion,
     cod_estado_matricula: matriculaData.cod_estado_matricula,
-    cod_periodo_matricula: matriculaData.cod_periodo_matricula || periodoActivo?.Cod_periodo_matricula,
+    cod_periodo_matricula: matriculaData.cod_periodo_matricula,
     cod_tipo_matricula: matriculaData.cod_tipo_matricula,
     cod_hijo: matriculaData.cod_hijo,
-    ...(matriculaData.Cod_matricula && { cod_matricula: matriculaData.Cod_matricula }), // 👈 Agregar aquí si existe
   };
-  
 
   const requiredFields = [
     'dni_padre',
-    'fecha_matricula',
     'cod_grado',
     'cod_seccion',
     'cod_estado_matricula',
     'cod_tipo_matricula',
-    'cod_periodo_matricula',
     'cod_hijo',
   ];
 
@@ -456,62 +452,96 @@ const handleSubmit = async (e) => {
     return;
   }
 
+  if (!dataToSend.fecha_matricula) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Fecha no asignada',
+      text: 'La fecha de matrícula no está asignada automáticamente.',
+    });
+    return;
+  }
+
+  const periodoActual = opciones?.periodos_matricula?.find(
+    (p) => p.Cod_periodo_matricula === dataToSend.cod_periodo_matricula
+  );
+  const anioAcademicoActual = periodoActual?.Anio_academico;
+
+  const existeMatriculaEnAnio = matriculas.some(
+    (matricula) =>
+      matricula.cod_hijo === dataToSend.cod_hijo &&
+      matricula.anio_academico === anioAcademicoActual
+  );
+
+  if (existeMatriculaEnAnio) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Matrícula duplicada',
+      text: `El estudiante ya está matriculado en el período académico ${anioAcademicoActual}. No se puede registrar dos veces en el mismo período.`,
+    });
+    return;
+  }
+
   try {
-    let response;
+    const response = await axios.post(
+      'http://localhost:4000/api/matricula/crearmatricula',
+      dataToSend
+    );
 
-    if (matriculaData.Cod_matricula) {
-      // Estamos editando
-      response = await axios.put(
-        `http://localhost:4000/api/matricula/matriculas/${matriculaData.Cod_matricula}`,
-        dataToSend
-      );
-    } else {
-      // Estamos creando
-      response = await axios.post(
-        'http://localhost:4000/api/matricula/crearmatricula',
-        dataToSend
-      );
-    }
+    if (response.status === 201) {
+      const message = response.data.message;
 
-    if (response.status === 201 || response.status === 200) {
       Swal.fire({
         icon: 'success',
-        title: matriculaData.Cod_matricula ? 'Matrícula actualizada' : 'Matrícula registrada',
-        text: response.data.message || (matriculaData.Cod_matricula ? 'Actualización exitosa.' : 'Registro exitoso.'),
+        title: 'Matrícula registrada',
+        text: message || 'La matrícula fue creada exitosamente.',
         timer: 2500,
         showConfirmButton: false,
       });
 
       await registrarEnBitacora(
-        matriculaData.Cod_matricula ? 'UPDATE' : 'INSERT',
-        `${matriculaData.Cod_matricula ? 'Actualizó' : 'Creó'} matrícula para el estudiante con código ${dataToSend.cod_hijo}.`
+        'INSERT',
+        `Creó una matrícula para el estudiante con código ${dataToSend.cod_hijo} en el período ${dataToSend.cod_periodo_matricula}.`
       );
 
-      // Reiniciar formulario
-      resetFormularioMatricula();
+      // Reiniciar todo el formulario después del registro exitoso
+      setModalVisible(false);
+      setStep(1);
+      setMatriculaData({
+        fecha_matricula: getCurrentDate(),
+        cod_grado: '',
+        cod_seccion: '',
+        cod_estado_matricula: estadoPorDefecto?.Cod_estado_matricula || '',
+        cod_periodo_matricula: periodoActivo?.Cod_periodo_matricula || '',
+        cod_tipo_matricula: tipoPorDefecto?.Cod_tipo_matricula || '',
+        cod_hijo: '',
+        primer_nombre_hijo: '',
+        segundo_nombre_hijo: '',
+        primer_apellido_hijo: '',
+        segundo_apellido_hijo: '',
+        fecha_nacimiento_hijo: '',
+        nombre_completo_hijo: '',
+      });
+      setDniPadre('');
+      setNombrePadre('');
+      setApellidoPadre('');
+      setSelectedGrado('');
+      setSelectedSeccion('');
       obtenerMatriculas(); // refrescar la tabla
     }
   } catch (error) {
     const errorMessage =
-      error.response?.data?.message || error.message || 'Error al crear o actualizar matrícula.';
-    console.error('Error:', errorMessage);
+      error.response?.data?.message || error.message || 'Error al crear la matrícula.';
+    console.error('Error al crear la matrícula:', errorMessage);
 
-    await registrarEnBitacora('Error', `Error al crear o actualizar matrícula: ${errorMessage}`);
+    await registrarEnBitacora('Error', `Error al crear matrícula: ${errorMessage}`);
 
     Swal.fire({
       icon: 'error',
-      title: 'Error',
+      title: 'Error al registrar matrícula',
       text: errorMessage,
     });
   }
 };
-
-
-
-
-
-
-
 
 const getCurrentDate = () => {
   const today = new Date();
@@ -1537,9 +1567,15 @@ const calculateAge = (birthDate) => {
     }}
     required
   />
-  <CButton color="info" onClick={() => setBuscarNombreVisible(true)}>
-    <CIcon icon={cilSearch} />
-  </CButton>
+  <CButton 
+  style={{ backgroundColor: '#495C45', color: 'white', borderRadius: '8px' }} 
+  onClick={() => setBuscarNombreVisible(true)}
+>
+  Búsqueda por nombre
+</CButton>
+
+
+
 </CInputGroup>
 
 
@@ -1550,31 +1586,26 @@ const calculateAge = (birthDate) => {
       style={{
         position: 'absolute',
         zIndex: 10,
-        backgroundColor: 'white',
-        border: '1px solid #ccc',
-        borderRadius: '5px',
+        backgroundColor: '#ffffff',
+        borderRadius: '10px',
         width: '100%',
-        maxHeight: '260px',
+        maxHeight: '280px',
         overflowY: 'auto',
-        marginTop: '-10px',
-        boxShadow: '0px 2px 10px rgba(0,0,0,0.1)',
+        marginTop: '-8px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        padding: '1rem',
       }}
     >
       {/* Botón cerrar (X) */}
-      <div
-        style={{
-          textAlign: 'right',
-          padding: '0.3rem 0.8rem',
-          borderBottom: '1px solid #eee',
-        }}
-      >
+      <div style={{ textAlign: 'right', marginBottom: '0.5rem' }}>
         <button
           style={{
             border: 'none',
             background: 'none',
-            fontSize: '1.2rem',
-            color: '#888',
+            fontSize: '1.5rem',
+            color: '#6c757d',
             cursor: 'pointer',
+            transition: 'color 0.3s',
           }}
           onClick={() => {
             setBuscarNombreVisible(false);
@@ -1582,12 +1613,15 @@ const calculateAge = (birthDate) => {
             setResultadosBusqueda([]);
           }}
           title="Cerrar búsqueda"
+          onMouseEnter={(e) => (e.target.style.color = '#495057')}
+          onMouseLeave={(e) => (e.target.style.color = '#6c757d')}
         >
           ×
         </button>
       </div>
 
-      <CInputGroup className="p-2">
+      {/* Input de búsqueda */}
+      <CInputGroup className="mb-3">
         <CFormInput
           autoFocus
           placeholder="Buscar padre por nombre..."
@@ -1606,9 +1640,15 @@ const calculateAge = (birthDate) => {
               setResultadosBusqueda([]);
             }
           }}
+          style={{
+            borderRadius: '6px',
+            padding: '0.6rem 1rem',
+            border: '1px solid #ced4da',
+          }}
         />
       </CInputGroup>
 
+      {/* Resultados */}
       {resultadosBusqueda.map((padre) => (
         <div
           key={padre.dni_persona}
@@ -1619,20 +1659,29 @@ const calculateAge = (birthDate) => {
             setResultadosBusqueda([]);
             obtenerHijos(padre.dni_persona);
           }}
-          style={{ padding: '0.5rem 1rem', cursor: 'pointer', borderTop: '1px solid #eee' }}
+          style={{
+            padding: '0.6rem 1rem',
+            borderBottom: '1px solid #f1f1f1',
+            cursor: 'pointer',
+            transition: 'background 0.3s',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8f9fa')}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
         >
-          {padre.Nombre_Padre} {padre.Apellido_Padre} - DNI: {padre.dni_persona}
+          <strong>{padre.Nombre_Padre} {padre.Apellido_Padre}</strong> - DNI: {padre.dni_persona}
         </div>
       ))}
 
+      {/* No resultados */}
       {nombreBusqueda.length >= 3 && resultadosBusqueda.length === 0 && (
-        <div style={{ padding: '0.5rem 1rem', color: '#888' }}>
+        <div style={{ padding: '1rem', textAlign: 'center', color: '#adb5bd' }}>
           No se encontraron coincidencias.
         </div>
       )}
     </div>
   </div>
 )}
+
 
 
                 <CRow className="mb-3">

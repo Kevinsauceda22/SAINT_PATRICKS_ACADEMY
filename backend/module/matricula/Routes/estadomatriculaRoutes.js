@@ -3,7 +3,8 @@ import {
     crearEstadoMatricula,
     actualizarEstado,
     eliminarEstadoMatricula,
-    obtenerEstadoMatricula
+    obtenerEstadoMatricula,
+    cambiarEstadoEstadoMatricula, // 👈 Agregado para activar/inactivar
 } from '../Controllers/estadomatriculaController.js';
 
 const router = express.Router();
@@ -17,7 +18,10 @@ router.put('/estado-matricula/:p_cod_estado_matricula', actualizarEstado);
 // Eliminar un estado de matrícula
 router.delete('/estado-matricula/:p_cod_estado_matricula', eliminarEstadoMatricula);
 
-// Ruta para obtener todos los estados de matrícula o un estado específico
-router.get('/estado-matricula/:cod_estado_matricula?', obtenerEstadoMatricula); // El ? hace que el parámetro sea opcional
+// Obtener todos los estados de matrícula o uno específico
+router.get('/estado-matricula/:cod_estado_matricula?', obtenerEstadoMatricula);
+
+// 👉 Nueva ruta para cambiar el estado (activo/inactivo)
+router.put('/estado-matricula/estado/:p_cod_estado_matricula', cambiarEstadoEstadoMatricula);
 
 export default router;

@@ -32,6 +32,10 @@ import {
 import { BsCheckCircle, BsExclamationCircle, BsDashCircle, BsXCircle } from 'react-icons/bs';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import logo from 'src/assets/brand/logo_saint_patrick.png';
+
 import * as XLSX from 'xlsx';
 import usePermission from '../../../../context/usePermission';
 import AccessDenied from "../AccessDenied/AccessDenied"
@@ -183,37 +187,173 @@ const EstadoMatricula = () => {
       }
     });
   };
-
+  const toggleEstadoMatricula = async (estado) => {
+    try {
+      const nuevoEstado = estado.estado === 'activo' ? 'inactivo' : 'activo';
+  
+      const response = await fetch(`http://localhost:4000/api/estadomatricula/estado-matricula/estado/${estado.Cod_estado_matricula}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ p_estado: nuevoEstado }),
+      });
+  
+      if (response.ok) {
+        swal.fire('Éxito', 'Estado actualizado correctamente.', 'success');
+        obtenerEstados(); // Recargar la tabla
+      } else {
+        const result = await response.json();
+        throw new Error(result.Mensaje || 'Error al cambiar estado');
+      }
+    } catch (error) {
+      swal.fire('Error', error.message, 'error');
+    }
+  };
+  
   // Exportar a PDF
-  const exportToPDF = () => {
+  const exportToPDFEstado = () => {
     const doc = new jsPDF();
-    doc.text('Reporte de Estados de Matrícula', 10, 10);
-
-    doc.autoTable({
-      head: [['#', 'Tipo de Estado']],
-      body: estados.map((estado, index) => [
-        index + 1,
-        estado.Tipo,
-      ]),
-    });
-
-    doc.save('Reporte_Estados_Matricula.pdf');
+  
+    const img = new Image();
+    img.src = logo;
+  
+    img.onload = () => {
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+  
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51);
+      doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
+  
+      doc.setFontSize(14);
+      doc.text('Reporte de Estados de Matrícula', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+  
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+  
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51);
+      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+  
+      doc.setFontSize(12);
+      doc.setTextColor(0, 51, 102);
+      doc.text('Detalles de los Estados de Matrícula', doc.internal.pageSize.width / 2, 65, { align: 'center' });
+  
+      doc.autoTable({
+        startY: 75,
+        head: [['#', 'Estado', 'Estado Actual']],
+        body: estados.map((estado, index) => [
+          index + 1,
+          estado.Tipo || 'N/A',
+          estado.estado?.toUpperCase() || 'N/A',
+        ]),
+        styles: {
+          fontSize: 10,
+          textColor: [34, 34, 34],
+          cellPadding: 4,
+          valign: 'middle',
+          overflow: 'linebreak',
+        },
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+        margin: { left: 10, right: 10 },
+      });
+  
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const creationDateTime = new Date().toLocaleString('es-ES', {
+          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
+        });
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha y Hora de Generación: ${creationDateTime}`, 10, doc.internal.pageSize.height - 10);
+        doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10, { align: 'right' });
+      }
+  
+      const pdfBlob = doc.output('blob');
+      const pdfURL = URL.createObjectURL(pdfBlob);
+      window.open(pdfURL);
+    };
+  
+    img.onerror = () => {
+      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    };
   };
-
+  
   // Exportar a Excel
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      estados.map((estado, index) => ({
-        '#': index + 1,
-        'Tipo de Estado': estado.Tipo,
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Estados de Matrícula');
-    XLSX.writeFile(workbook, 'Reporte_Estados_Matricula.xlsx');
+  const exportToExcelEstado = () => {
+    if (!estados || estados.length === 0) {
+      Swal.fire('Sin datos', 'No hay datos para exportar.', 'warning');
+      return;
+    }
+  
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Estados de Matrícula');
+  
+    // Título principal
+    worksheet.mergeCells('A1:C1');
+    worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+    worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // Subtítulo
+    worksheet.mergeCells('A2:C2');
+    worksheet.getCell('A2').value = 'REPORTE DE ESTADOS DE MATRÍCULA';
+    worksheet.getCell('A2').font = { bold: true, size: 14, color: { argb: '006633' } };
+    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // Encabezados
+    const headerRow = worksheet.addRow(['#', 'Estado', 'Estado Actual']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  
+    // Datos
+    estados.forEach((estado, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        estado.Tipo || 'N/A',
+        estado.estado?.toUpperCase() || 'N/A',
+      ]);
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    });
+  
+    worksheet.columns.forEach((col) => {
+      col.width = 20;
+    });
+  
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      saveAs(blob, 'Reporte_Estados_Matricula.xlsx');
+    });
   };
-
+  
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredEstados.slice(indexOfFirstItem, indexOfLastItem);
@@ -253,9 +393,10 @@ const EstadoMatricula = () => {
         <CIcon icon={cilFile} /> Reporte
       </CDropdownToggle>
       <CDropdownMenu>
-        <CDropdownItem onClick={exportToPDF}>Exportar a PDF</CDropdownItem>
-        <CDropdownItem onClick={exportToExcel}>Exportar a Excel</CDropdownItem>
-      </CDropdownMenu>
+  <CDropdownItem onClick={exportToPDFEstado}>Exportar a PDF</CDropdownItem>
+  <CDropdownItem onClick={exportToExcelEstado}>Exportar a Excel</CDropdownItem>
+</CDropdownMenu>
+
     </CDropdown>
   </CCol>
 </CRow>
@@ -307,54 +448,90 @@ const EstadoMatricula = () => {
       </CRow>
 
       <div style={{ maxHeight: '300px', overflowY: 'auto', borderRadius: '8px', display: 'block' }}>
-        <CTable striped bordered hover>
-          <CTableHead>
-            <CTableRow>
-              <CTableHeaderCell>#</CTableHeaderCell>
-              <CTableHeaderCell>Tipo de Estado</CTableHeaderCell>
-              <CTableHeaderCell>Acciones</CTableHeaderCell>
-            </CTableRow>
-          </CTableHead>
-          <CTableBody>
-            {currentItems.map((estado, index) => (
-              <CTableRow key={estado.Cod_estado_matricula}>
-                <CTableDataCell>{index + 1 + indexOfFirstItem}</CTableDataCell>
-                <CTableDataCell style={{ textTransform: 'uppercase' }}>
-                  {estado.Tipo === 'Activa' && <BsCheckCircle className="text-success me-2" />}
-                  {estado.Tipo === 'Cancelada' && <BsXCircle className="text-danger me-2" />}
-                  {estado.Tipo === 'Pendiente' && <BsExclamationCircle className="text-warning me-2" />}
-                  {estado.Tipo === 'Inactiva' && <BsDashCircle className="text-secondary me-2" />}
-                  {estado.Tipo}
-                </CTableDataCell>
-                <CTableDataCell className="text-end">
+      <CTable striped bordered hover>
+  <CTableHead>
+    <CTableRow>
+      <CTableHeaderCell>#</CTableHeaderCell>
+      <CTableHeaderCell>Tipo de Estado</CTableHeaderCell>
+      <CTableHeaderCell>Acciones</CTableHeaderCell>
+    </CTableRow>
+  </CTableHead>
+  <CTableBody>
+  {currentItems.map((estado, index) => (
+    <CTableRow key={estado.Cod_estado_matricula}>
+      <CTableDataCell>{index + 1 + indexOfFirstItem}</CTableDataCell>
 
-                  {canUpdate && (
-  <CButton
-    color="warning"
-    size="sm"
-    style={{ opacity: 0.8 }}  // Opacidad ajustada
-    onClick={() => handleEditModal(estado)}
-  >
-    <CIcon icon={cilPen} />
-  </CButton> )}{' '}
+      <CTableDataCell style={{ textTransform: 'uppercase' }}>
+        {estado.Tipo}
+      </CTableDataCell>
 
-  {canDelete && (
+      <CTableDataCell className="text-center">
+  <div className="d-flex justify-content-center align-items-center" style={{ gap: '0.3rem' }}>
+    
+    {/* Botón Editar */}
+    {canUpdate && (
+      <CButton
+        color="warning"
+        size="sm"
+        style={{
+          opacity: 0.9,
+          fontWeight: 'bold',
+          borderRadius: '8px',
+          fontSize: '0.85rem',
+          width: '38px',
+          height: '38px',
+        }}
+        onClick={() => handleEditModal(estado)}
+      >
+        <CIcon icon={cilPen} />
+      </CButton>
+    )}
 
-  <CButton
-    color="danger"
-    size="sm"
-    style={{ opacity: 0.8 }}  // Opacidad ajustada
-    onClick={() => handleDelete(estado.Cod_estado_matricula)}
-  >
-    <CIcon icon={cilTrash} />
-  </CButton>
-  )}
+    {/* Botón Activar/Inactivar */}
+    <CButton
+      color={estado.estado === 'activo' ? 'success' : 'danger'}
+      size="sm"
+      style={{
+        fontWeight: 'bold',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        width: '80px',
+        padding: '0.3rem 0.5rem',
+        color: 'white',
+      }}
+      onClick={() => toggleEstadoMatricula(estado)}
+    >
+      {estado.estado === 'activo' ? 'Activo' : 'Inactivo'}
+    </CButton>
+
+    {/* Botón Eliminar */}
+    {canDelete && (
+      <CButton
+        color="danger"
+        size="sm"
+        style={{
+          opacity: 0.9,
+          fontWeight: 'bold',
+          borderRadius: '8px',
+          fontSize: '0.85rem',
+          width: '38px',
+          height: '38px',
+        }}
+        onClick={() => handleDelete(estado.Cod_estado_matricula)}
+      >
+        <CIcon icon={cilTrash} />
+      </CButton>
+    )}
+
+  </div>
 </CTableDataCell>
 
-              </CTableRow>
-            ))}
-          </CTableBody>
-        </CTable>
+    </CTableRow>
+  ))}
+</CTableBody>
+
+</CTable>
+
       </div>
 
       <nav className="d-flex justify-content-center align-items-center mt-4">

@@ -31,6 +31,10 @@ import {
 } from '@coreui/react';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import logo from 'src/assets/brand/logo_saint_patrick.png';
+
 import * as XLSX from 'xlsx';
 
 const TipoMatricula = () => {
@@ -179,6 +183,42 @@ const TipoMatricula = () => {
       });
     }
   };
+  const toggleEstadoTipo = async (tipo) => {
+    try {
+      // Ahora evaluamos texto, no números
+      const nuevoEstado = tipo.estado === 'activo' ? 'inactivo' : 'activo';
+  
+      const response = await fetch(`http://localhost:4000/api/tipomatricula/tipo-matricula/estado/${tipo.Cod_tipo_matricula}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ p_estado: nuevoEstado }),
+      });
+  
+      if (response.ok) {
+        swal.fire({
+          title: 'Éxito',
+          text: 'Estado actualizado correctamente.',
+          icon: 'success',
+          confirmButtonColor: '#4B6251',
+        });
+        obtenerTipos(); // Refresca la tabla después de cambiar
+      } else {
+        const result = await response.json();
+        throw new Error(result.Mensaje || 'Error al cambiar el estado');
+      }
+    } catch (error) {
+      swal.fire({
+        title: 'Error',
+        text: error.message,
+        icon: 'error',
+        confirmButtonColor: '#4B6251',
+      });
+    }
+  };
+  
+  
 
   const openAddModal = () => {
     setEditar(false);
@@ -240,33 +280,149 @@ const TipoMatricula = () => {
     setCurrentPage(0);
   };
 
-  const exportToPDF = () => {
+  const exportToPDFTipo = () => {
     const doc = new jsPDF();
-    doc.text('Reporte de Tipos de Matrícula', 14, 15);
-    doc.autoTable({
-      startY: 20,
-      head: [['#', 'TIPO DE MATRÍCULA']],
-      body: tipos.map((tipo, index) => [
-        index + 1,
-        tipo.Tipo.toUpperCase(),
-      ]),
-    });
-    doc.save('Reporte_Tipos_Matricula.pdf');
+  
+    const img = new Image();
+    img.src = logo;
+  
+    img.onload = () => {
+      doc.addImage(img, 'PNG', 10, 10, 30, 30);
+  
+      doc.setFontSize(18);
+      doc.setTextColor(0, 102, 51);
+      doc.text("SAINT PATRICK'S ACADEMY", doc.internal.pageSize.width / 2, 20, { align: 'center' });
+  
+      doc.setFontSize(14);
+      doc.text('Reporte de Tipos de Matrícula', doc.internal.pageSize.width / 2, 30, { align: 'center' });
+  
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      doc.text('Casa Club del periodista, Colonia del Periodista', doc.internal.pageSize.width / 2, 40, { align: 'center' });
+      doc.text('Teléfono: (504) 2234-8871', doc.internal.pageSize.width / 2, 45, { align: 'center' });
+      doc.text('Correo: info@saintpatrickacademy.edu', doc.internal.pageSize.width / 2, 50, { align: 'center' });
+  
+      doc.setLineWidth(0.5);
+      doc.setDrawColor(0, 102, 51);
+      doc.line(10, 55, doc.internal.pageSize.width - 10, 55);
+  
+      doc.setFontSize(12);
+      doc.setTextColor(0, 51, 102);
+      doc.text('Detalles de los Tipos de Matrícula', doc.internal.pageSize.width / 2, 65, { align: 'center' });
+  
+      doc.autoTable({
+        startY: 75,
+        head: [['#', 'Tipo de Matrícula', 'Estado']],
+        body: tipos.map((tipo, index) => [
+          index + 1,
+          tipo.Tipo || 'N/A',
+          tipo.estado?.toUpperCase() || 'N/A',
+        ]),
+        styles: {
+          fontSize: 10,
+          textColor: [34, 34, 34],
+          cellPadding: 4,
+          valign: 'middle',
+          overflow: 'linebreak',
+        },
+        headStyles: {
+          fillColor: [0, 102, 51],
+          textColor: [255, 255, 255],
+          fontSize: 10,
+        },
+        alternateRowStyles: { fillColor: [240, 248, 255] },
+        margin: { left: 10, right: 10 },
+      });
+  
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        const creationDateTime = new Date().toLocaleString('es-ES', {
+          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit',
+        });
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Fecha y Hora de Generación: ${creationDateTime}`, 10, doc.internal.pageSize.height - 10);
+        doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10, { align: 'right' });
+      }
+  
+      const pdfBlob = doc.output('blob');
+      const pdfURL = URL.createObjectURL(pdfBlob);
+      window.open(pdfURL);
+    };
+  
+    img.onerror = () => {
+      Swal.fire('Error', 'No se pudo cargar el logo.', 'error');
+    };
   };
+  
 
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(
-      tipos.map((tipo, index) => ({
-        '#': index + 1,
-        'Tipo de Matrícula': tipo.Tipo.toUpperCase(),
-      }))
-    );
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Tipos de Matrícula');
-    XLSX.writeFile(workbook, 'Reporte_Tipos_Matricula.xlsx');
+    if (!tipos || tipos.length === 0) {
+      swal.fire('Sin datos', 'No hay datos para exportar.', 'warning');
+      return;
+    }
+  
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Tipos de Matrícula');
+  
+    // Título principal
+    worksheet.mergeCells('A1:C1');
+    worksheet.getCell('A1').value = "SAINT PATRICK'S ACADEMY";
+    worksheet.getCell('A1').font = { bold: true, size: 18, color: { argb: '006633' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // Subtítulo
+    worksheet.mergeCells('A2:C2');
+    worksheet.getCell('A2').value = 'REPORTE DE TIPOS DE MATRÍCULA';
+    worksheet.getCell('A2').font = { bold: true, size: 14, color: { argb: '006633' } };
+    worksheet.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+  
+    // Encabezados
+    const headerRow = worksheet.addRow(['#', 'Tipo de Matrícula', 'Estado']);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '006633' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } },
+      };
+    });
+  
+    // Datos
+    tipos.forEach((tipo, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        tipo.Tipo || 'N/A',
+        tipo.estado?.toUpperCase() || 'N/A',
+      ]);
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } },
+        };
+      });
+    });
+  
+    worksheet.columns.forEach((col) => {
+      col.width = 20;
+    });
+  
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      saveAs(blob, 'Reporte_Tipos_Matricula.xlsx');
+    });
   };
-
+  
+  
   const indexOfLastItem = (currentPage + 1) * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredTipos.slice(indexOfFirstItem, indexOfLastItem);
@@ -288,9 +444,10 @@ const TipoMatricula = () => {
               <CIcon icon={cilFile} /> Reporte
             </CDropdownToggle>
             <CDropdownMenu>
-              <CDropdownItem onClick={exportToPDF}>Exportar a PDF</CDropdownItem>
-              <CDropdownItem onClick={exportToExcel}>Exportar a Excel</CDropdownItem>
-            </CDropdownMenu>
+  <CDropdownItem onClick={exportToPDFTipo}>Exportar a PDF</CDropdownItem>
+  <CDropdownItem onClick={exportToExcel}>Exportar a Excel</CDropdownItem>
+</CDropdownMenu>
+
           </CDropdown>
         </CCol>
       </CRow>
@@ -355,14 +512,63 @@ const TipoMatricula = () => {
             <CTableRow key={tipo.Cod_tipo_matricula}>
               <CTableDataCell>{indexOfFirstItem + index + 1}</CTableDataCell>
               <CTableDataCell>{tipo.Tipo.toUpperCase()}</CTableDataCell>
-              <CTableDataCell>
-                <CButton color="warning" size="sm" onClick={() => openEditModal(tipo)}>
-                  <CIcon icon={cilPen} />
-                </CButton>{' '}
-                <CButton color="danger" size="sm" onClick={() => confirmDelete(tipo.Cod_tipo_matricula)}>
-                  <CIcon icon={cilTrash} />
-                </CButton>
-              </CTableDataCell>
+              <CTableDataCell className="text-center">
+  <div className="d-flex justify-content-center align-items-center" style={{ gap: '0.3rem' }}>
+    
+    {/* Botón Editar */}
+    <CButton
+      color="warning"
+      size="sm"
+      style={{
+        opacity: 0.9,
+        fontWeight: 'bold',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        width: '38px',
+        height: '38px'
+      }}
+      onClick={() => openEditModal(tipo)}
+    >
+      <CIcon icon={cilPen} />
+    </CButton>
+
+    {/* Botón Activar/Inactivar */}
+    <CButton
+      color={tipo.estado === 'activo' ? 'success' : 'danger'}
+      style={{
+        fontWeight: 'bold',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        width: '80px',
+        color: '#fff',
+        padding: '0.3rem 0.5rem'
+      }}
+      onClick={() => toggleEstadoTipo(tipo)}
+    >
+      {tipo.estado === 'activo' ? 'Activo' : 'Inactivo'}
+    </CButton>
+
+    {/* Botón Eliminar */}
+    <CButton
+      color="danger"
+      size="sm"
+      style={{
+        opacity: 0.9,
+        fontWeight: 'bold',
+        borderRadius: '8px',
+        fontSize: '0.85rem',
+        width: '38px',
+        height: '38px'
+      }}
+      onClick={() => confirmDelete(tipo.Cod_tipo_matricula)}
+    >
+      <CIcon icon={cilTrash} />
+    </CButton>
+
+  </div>
+</CTableDataCell>
+
+
             </CTableRow>
           ))}
         </CTableBody>
